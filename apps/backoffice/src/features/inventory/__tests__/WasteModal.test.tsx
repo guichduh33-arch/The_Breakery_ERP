@@ -32,6 +32,15 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
+// `vi.hoisted` et non un `const` nu : vi.mock est hissé au-dessus des
+// déclarations, et cette fabrique-ci évalue son objet IMMÉDIATEMENT (elle le
+// renvoie), contrairement au mock de supabase qui ne référence sa fonction
+// qu'à l'appel. Sans hoisted, on lit la variable dans sa zone morte.
+const mockToast = vi.hoisted(() => ({
+  success: vi.fn(), info: vi.fn(), warning: vi.fn(), error: vi.fn(),
+}));
+vi.mock('sonner', () => ({ toast: mockToast }));
+
 if (typeof crypto.randomUUID !== 'function') {
   Object.defineProperty(globalThis.crypto, 'randomUUID', {
     value: () => '00000000-0000-0000-0000-000000000001',
@@ -66,7 +75,11 @@ function renderModal(initial?: typeof STOCK_ROW) {
 }
 
 describe('WasteModal', () => {
-  beforeEach(() => { mockRpc.mockReset(); });
+  beforeEach(() => {
+    mockRpc.mockReset();
+    mockToast.success.mockReset();
+    mockToast.info.mockReset();
+  });
 
   it('renders with locked product and preset Expired by default', () => {
     renderModal(STOCK_ROW);
@@ -128,5 +141,46 @@ describe('WasteModal', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/stock changed elsewhere/i);
     });
+  });
+
+  // L'écran disait deux fois le stock actuel — « 40 (max: 40) » — sans jamais
+  // dire ce qu'il resterait après le geste.
+  it('previews the resulting stock, not the current one twice', () => {
+    renderModal(STOCK_ROW);           // current_stock = 25
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
+    expect(screen.getByText(/25 → 22/)).toBeInTheDocument();
+    expect(screen.getByText(/−3/)).toBeInTheDocument();
+  });
+
+  // Le registre est append-only. L'interface doit le dire AVANT le bouton qui
+  // produit l'écriture, sinon l'utilisateur cherche un « Edit » qui n'existe pas.
+  it('states the irreversibility before the submit button', () => {
+    renderModal(STOCK_ROW);
+    expect(screen.getByText(/permanent movement in your name/i)).toBeInTheDocument();
+    expect(screen.getByText(/never by editing this one/i)).toBeInTheDocument();
+  });
+
+  it('confirms the recorded waste with the resulting on-hand', async () => {
+    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 22 }, error: null });
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+
+    await waitFor(() => { expect(mockToast.success).toHaveBeenCalledTimes(1); });
+    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/3 × Waste Sample.*On hand: 22/);
+  });
+
+  // Un rejeu ne doit pas se présenter comme une seconde perte enregistrée.
+  it('says a replay was not decremented twice', async () => {
+    mockRpc.mockReturnValue({
+      data: { movement_id: 'm-1', new_current_stock: 22, idempotent_replay: true }, error: null,
+    });
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+
+    await waitFor(() => { expect(mockToast.info).toHaveBeenCalledTimes(1); });
+    expect(mockToast.info.mock.calls[0]?.[0]).toMatch(/not decremented twice/i);
+    expect(mockToast.success).not.toHaveBeenCalled();
   });
 });

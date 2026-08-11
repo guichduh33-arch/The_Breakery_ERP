@@ -11,6 +11,7 @@
 
 import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input } from '@breakery/ui';
 import { validateAdjust } from '@breakery/domain';
 import { useAdjustStock, AdjustStockError } from '../hooks/useAdjustStock.js';
@@ -96,12 +97,23 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
 
     setFormError(null);
     try {
-      await adjustMut.mutateAsync({
+      const res = await adjustMut.mutateAsync({
         productId:      product.id,
         newQty:         numericNewQty,
         reason:         reason.trim(),
         idempotencyKey,
       });
+      // La modale se refermait en silence : l'utilisateur n'avait aucune
+      // confirmation que son comptage était enregistré, ni sous quel nom.
+      if (res.idempotent_replay === true) {
+        toast.info(`Already recorded — ${product.name} was not adjusted twice.`);
+      } else if (res.noop === true) {
+        toast.info(`${product.name} was already at ${numericNewQty.toLocaleString()} — no movement recorded.`);
+      } else {
+        toast.success(
+          `Stock adjusted — ${product.name} is now ${res.new_current_stock.toLocaleString()}.`,
+        );
+      }
       handleClose();
     } catch (err) {
       if (err instanceof AdjustStockError) {
@@ -142,7 +154,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
 
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
-            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
+            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red-as-text">
               {formError}
             </div>
           )}
@@ -188,7 +200,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
               disabled={product === null}
             />
             {newQty !== '' && !isNewQtyValid && (
-              <p id={newQtyErrId} className="text-red text-xs">
+              <p id={newQtyErrId} className="text-red-as-text text-xs">
                 Enter a non-negative integer.
               </p>
             )}
@@ -200,7 +212,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
               <span className="text-text-primary font-mono">
                 {product.current_stock.toLocaleString()} → {numericNewQty.toLocaleString()}
               </span>{' '}
-              <span className={delta === 0 ? 'text-text-muted' : delta > 0 ? 'text-green' : 'text-red'}>
+              <span className={delta === 0 ? 'text-text-muted' : delta > 0 ? 'text-green' : 'text-red-as-text'}>
                 (Δ {delta > 0 ? '+' : ''}{delta})
               </span>
             </div>
@@ -224,6 +236,13 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
               {reason.trim().length}/{MAX_REASON}
             </p>
           </div>
+
+          {/* Le registre est append-only : l'ajustement n'écrase pas le stock,
+              il émet un mouvement d'écart. Le dire avant le bouton, pas après. */}
+          <p className="rounded-md border border-border-subtle bg-surface-inert p-2 text-xs text-text-secondary">
+            Recorded as a permanent movement in your name. Corrections are made by a new
+            movement, never by editing this one.
+          </p>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
