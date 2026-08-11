@@ -71,8 +71,10 @@ const STOCK_ROW = {
   category_name: null,
   current_stock: 10,
   min_stock_threshold: 0,
+  track_inventory: true,
+  unit: 'pcs',
+  stock_value: 0,
   last_movement_at: null,
-  total_count: 1,
 };
 
 describe('AdjustModal', () => {

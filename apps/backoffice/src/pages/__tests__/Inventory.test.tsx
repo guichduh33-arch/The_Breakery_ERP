@@ -19,8 +19,9 @@ const MOCK_ROWS = [
     current_stock: 5,
     min_stock_threshold: 10,
     track_inventory: true,
+    unit: 'pcs',
+    stock_value: 25_000,
     last_movement_at: '2026-05-10T10:00:00Z',
-    total_count: 2,
   },
   {
     product_id: 'p-ok',
@@ -31,10 +32,19 @@ const MOCK_ROWS = [
     current_stock: 50,
     min_stock_threshold: 5,
     track_inventory: true,
+    unit: 'pcs',
+    stock_value: 500_000,
     last_movement_at: '2026-05-09T10:00:00Z',
-    total_count: 2,
   },
 ];
+
+// ADR-024 déc. 1-2 — les compteurs viennent du serveur et portent sur tout le
+// périmètre filtré. `low_count: 7` est volontairement INCOHÉRENT avec les deux
+// lignes du jeu d'essai : c'est ce qui prouve que la tuile lit bien le serveur
+// et non un comptage de la page affichée.
+const MOCK_COUNTERS = {
+  total_count: 42, low_count: 7, zero_count: 3, negative_count: 1, untracked_count: 9,
+};
 
 const MOCK_CATEGORIES = [
   { id: 'c-1', name: 'Beverage' },
@@ -68,12 +78,14 @@ vi.mock('@/lib/supabase.js', () => {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_stock_levels_v2') {
-          const lowOnly = args.p_low_stock_only === true;
-          const filtered = lowOnly
+        if (fn === 'get_stock_levels_v3') {
+          const filtered = args.p_bucket === 'low'
             ? MOCK_ROWS.filter((r) => r.min_stock_threshold > 0 && r.current_stock < r.min_stock_threshold)
             : MOCK_ROWS;
           return Promise.resolve({ data: filtered, error: null });
+        }
+        if (fn === 'get_stock_counters_v1') {
+          return Promise.resolve({ data: [MOCK_COUNTERS], error: null });
         }
         return Promise.resolve({ data: null, error: null });
       },
@@ -103,7 +115,7 @@ function renderPage() {
 describe('InventoryPage', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
-  it('renders the stock-level table with rows from get_stock_levels_v2', async () => {
+  it('renders the stock-level table with rows from get_stock_levels_v3', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Americano')).toBeInTheDocument();
@@ -130,17 +142,46 @@ describe('InventoryPage', () => {
     expect(screen.getByRole('button', { name: /Waste/i })).toBeInTheDocument();
   });
 
-  it('toggling "Low stock only" calls the RPC with p_low_stock_only=true', async () => {
+  it('toggling "Low stock only" calls the rows RPC with p_bucket=low', async () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));
     mockRpc.mockClear();
 
     fireEvent.click(screen.getByLabelText(/Low stock only/i));
     await waitFor(() => {
-      const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v2');
+      const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
       expect(lastCall).toBeDefined();
-      expect((lastCall as [string, { p_low_stock_only?: boolean }])[1].p_low_stock_only).toBe(true);
+      expect((lastCall as [string, { p_bucket?: string }])[1].p_bucket).toBe('low');
     });
+  });
+
+  // ADR-024 déc. 2 — les compteurs n'appliquent JAMAIS le panier actif, sinon la
+  // bande ne pourrait plus annoncer que le panier déjà sélectionné et cesserait
+  // d'être un moyen d'en changer.
+  it('never forwards the active bucket to the counters RPC', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+    mockRpc.mockClear();
+
+    fireEvent.click(screen.getByLabelText(/Low stock only/i));
+    await waitFor(() => {
+      expect(mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3')).toBeDefined();
+    });
+    for (const [fn, args] of mockRpc.mock.calls) {
+      if (fn === 'get_stock_counters_v1') {
+        expect(args).not.toHaveProperty('p_bucket');
+      }
+    }
+  });
+
+  // ADR-024 déc. 1 — la tuile lit le compteur serveur, pas un comptage des
+  // lignes affichées. MOCK_COUNTERS.low_count vaut 7 alors que la page ne rend
+  // qu'une seule ligne sous seuil : si la tuile affichait 1, elle mentirait.
+  it('shows the server-side low-stock count, not the count of rendered rows', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+    const tile = screen.getByText(/Critical alerts/i).closest('div')!.parentElement!;
+    expect(within(tile).getByText('7')).toBeInTheDocument();
   });
 
   it('changing the search input forwards p_search to the RPC and resets paging', async () => {
@@ -150,7 +191,7 @@ describe('InventoryPage', () => {
 
     fireEvent.change(screen.getByLabelText(/^Search$/i), { target: { value: 'amer' } });
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn, args]) => fn === 'get_stock_levels_v2' && (args as { p_search?: string }).p_search === 'amer');
+      const call = mockRpc.mock.calls.find(([fn, args]) => fn === 'get_stock_levels_v3' && (args as { p_search?: string }).p_search === 'amer');
       expect(call).toBeDefined();
       expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
     });
@@ -164,7 +205,7 @@ describe('InventoryPage', () => {
     fireEvent.change(screen.getByLabelText(/Category/i), { target: { value: 'c-1' } });
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn, args]) =>
-        fn === 'get_stock_levels_v2' && (args as { p_category_id?: string }).p_category_id === 'c-1');
+        fn === 'get_stock_levels_v3' && (args as { p_category_id?: string }).p_category_id === 'c-1');
       expect(call).toBeDefined();
     });
   });

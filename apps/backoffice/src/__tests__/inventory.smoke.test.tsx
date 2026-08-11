@@ -28,8 +28,9 @@ const MOCK_ROWS = [
     current_stock: 25,
     min_stock_threshold: 30,        // low-stock — badge expected
     track_inventory: true,
+    unit: 'pcs',
+    stock_value: 250_000,
     last_movement_at: '2026-05-10T10:00:00Z',
-    total_count: 2,
   },
   {
     product_id: 'p-2',
@@ -40,8 +41,9 @@ const MOCK_ROWS = [
     current_stock: 50,
     min_stock_threshold: 0,         // disabled — no badge
     track_inventory: true,
+    unit: 'pcs',
+    stock_value: 500_000,
     last_movement_at: '2026-05-09T10:00:00Z',
-    total_count: 2,
   },
 ];
 
@@ -88,8 +90,14 @@ vi.mock('@/lib/supabase.js', () => {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_stock_levels_v2') {
+        if (fn === 'get_stock_levels_v3') {
           return Promise.resolve({ data: MOCK_ROWS, error: null });
+        }
+        if (fn === 'get_stock_counters_v1') {
+          return Promise.resolve({
+            data: [{ total_count: 2, low_count: 1, zero_count: 0, negative_count: 0, untracked_count: 0 }],
+            error: null,
+          });
         }
         // Common shape for the three write RPCs.
         return Promise.resolve({

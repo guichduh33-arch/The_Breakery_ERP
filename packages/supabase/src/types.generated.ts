@@ -7600,11 +7600,24 @@ export type Database = {
           track_inventory: boolean
         }[]
       }
-      get_stock_levels_v2: {
+      get_stock_counters_v1: {
         Args: {
           p_category_id?: string
+          p_search?: string
+        }
+        Returns: {
+          low_count: number
+          negative_count: number
+          total_count: number
+          untracked_count: number
+          zero_count: number
+        }[]
+      }
+      get_stock_levels_v3: {
+        Args: {
+          p_bucket?: Database["public"]["Enums"]["stock_bucket"]
+          p_category_id?: string
           p_limit?: number
-          p_low_stock_only?: boolean
           p_offset?: number
           p_search?: string
         }
@@ -7617,8 +7630,9 @@ export type Database = {
           name: string
           product_id: string
           sku: string
-          total_count: number
+          stock_value: number
           track_inventory: boolean
+          unit: string
         }[]
       }
       get_stock_movement_ledger_v1: {
@@ -8904,6 +8918,7 @@ export type Database = {
         | "threshold"
         | "bundle"
       shift_status: "open" | "closed"
+      stock_bucket: "all" | "low" | "zero" | "negative" | "untracked"
       variant_axis_type: "flavor" | "size" | "format"
       waste_reason:
         | "mis_baked"
@@ -9148,6 +9163,7 @@ export const Constants = {
         "bundle",
       ],
       shift_status: ["open", "closed"],
+      stock_bucket: ["all", "low", "zero", "negative", "untracked"],
       variant_axis_type: ["flavor", "size", "format"],
       waste_reason: [
         "mis_baked",

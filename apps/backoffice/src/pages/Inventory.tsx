@@ -21,6 +21,7 @@ import {
   type StockLevelRow as Row,
   type StockLevelsFilters,
 } from '@/features/inventory/hooks/useStockLevels.js';
+import { useStockCounters } from '@/features/inventory/hooks/useStockCounters.js';
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
@@ -49,9 +50,9 @@ export default function InventoryPage() {
 
   const filters = useMemo<StockLevelsFilters>(
     () => ({
-      ...(search       !== ''   ? { search }     : {}),
-      ...(categoryId   !== ''   ? { categoryId } : {}),
-      ...(lowStockOnly === true ? { lowStockOnly: true } : {}),
+      ...(search     !== '' ? { search }     : {}),
+      ...(categoryId !== '' ? { categoryId } : {}),
+      bucket: lowStockOnly ? 'low' : 'all',
       limit:  PAGE_SIZE,
       offset: page * PAGE_SIZE,
     }),
@@ -61,12 +62,22 @@ export default function InventoryPage() {
   const list    = useStockLevels(filters);
   const refData = useInventoryReferenceData();
 
-  const totalCount = list.data?.[0]?.total_count ?? 0;
-  const pageRows = list.data ?? [];
-  const lowStockInPage = useMemo(
-    () => pageRows.filter((r) => r.min_stock_threshold > 0 && r.current_stock < r.min_stock_threshold).length,
-    [pageRows],
+  // ADR-024 déc. 1-2 — les agrégats viennent du serveur et portent sur TOUT le
+  // périmètre filtré, pas sur la page affichée. Ils ne prennent pas le panier
+  // actif : cocher « Low stock only » ne doit pas faire dire « Low 5 sur 5 ».
+  const counters = useStockCounters(
+    useMemo(
+      () => ({
+        ...(search     !== '' ? { search }     : {}),
+        ...(categoryId !== '' ? { categoryId } : {}),
+      }),
+      [search, categoryId],
+    ),
   );
+
+  const totalCount = counters.data?.total_count ?? 0;
+  const lowStockCount = counters.data?.low_count ?? 0;
+  const pageRows = list.data ?? [];
 
   if (!canRead) {
     return <div className="text-text-secondary">You do not have permission to view inventory.</div>;
@@ -115,7 +126,7 @@ export default function InventoryPage() {
           (categoryId !== '' ? 1 : 0) +
           (lowStockOnly ? 1 : 0)
         } icon={Coffee} footer="Search · category · low-stock toggle" />
-        <KpiTile label="Critical alerts"  value={lowStockInPage}  icon={AlertTriangle} footer="Below min threshold (page)" />
+        <KpiTile label="Critical alerts"  value={lowStockCount}  icon={AlertTriangle} footer="Below min threshold — all matching products" />
       </div>
 
       {/* Filters */}
