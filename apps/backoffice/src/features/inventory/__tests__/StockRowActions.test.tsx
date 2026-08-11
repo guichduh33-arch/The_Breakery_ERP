@@ -31,11 +31,15 @@ function renderActions(perms: { canAdjust: boolean; canWaste: boolean }) {
       canAdjust={perms.canAdjust}
       canWaste={perms.canWaste}
       onView={vi.fn()}
+      onMovements={vi.fn()}
       onAdjust={vi.fn()}
       onWaste={vi.fn()}
     />,
   );
 }
+
+/** Deux lectures + deux écritures quand toutes les permissions sont accordées. */
+const FULL_MENU = 4;
 
 function trigger(): HTMLElement {
   return screen.getByRole('button', { name: /Actions for Americano/i });
@@ -53,7 +57,7 @@ describe('StockRowActions — contrat clavier du menu', () => {
     fireEvent.keyDown(trigger(), { key: 'ArrowDown' });
 
     const all = items();
-    expect(all).toHaveLength(3);
+    expect(all).toHaveLength(FULL_MENU);
     expect(all[0]).toHaveFocus();
   });
 
@@ -70,18 +74,19 @@ describe('StockRowActions — contrat clavier du menu', () => {
     fireEvent.keyDown(trigger(), { key: 'ArrowDown' });
     const menu = screen.getByRole('menu');
 
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
-    expect(items()[1]).toHaveFocus();
+    // On descend jusqu'au dernier, un cran à la fois.
+    for (let i = 1; i < FULL_MENU; i++) {
+      fireEvent.keyDown(menu, { key: 'ArrowDown' });
+      expect(items()[i]).toHaveFocus();
+    }
 
     // Depuis le dernier, Flèche bas revient au premier.
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
-    expect(items()[2]).toHaveFocus();
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
     expect(items()[0]).toHaveFocus();
 
     // Et symétriquement vers le haut.
     fireEvent.keyDown(menu, { key: 'ArrowUp' });
-    expect(items()[2]).toHaveFocus();
+    expect(items()[FULL_MENU - 1]).toHaveFocus();
   });
 
   it('Origine et Fin vont aux extrémités', () => {
@@ -90,7 +95,7 @@ describe('StockRowActions — contrat clavier du menu', () => {
     const menu = screen.getByRole('menu');
 
     fireEvent.keyDown(menu, { key: 'End' });
-    expect(items()[2]).toHaveFocus();
+    expect(items()[FULL_MENU - 1]).toHaveFocus();
     fireEvent.keyDown(menu, { key: 'Home' });
     expect(items()[0]).toHaveFocus();
   });
@@ -112,15 +117,21 @@ describe('StockRowActions — contrat clavier du menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('les permissions retirent des entrées sans casser la navigation', () => {
+  // Les deux LECTURES restent offertes sans aucune permission d'écriture :
+  // consulter d'où vient un chiffre n'est pas un geste sensible.
+  it('les permissions retirent les écritures, jamais les lectures', () => {
     renderActions({ canAdjust: false, canWaste: false });
     fireEvent.keyDown(trigger(), { key: 'ArrowDown' });
 
     const all = items();
-    expect(all).toHaveLength(1);
+    expect(all).toHaveLength(2);
     expect(all[0]).toHaveTextContent(/View stock/i);
-    // Une seule entrée : la flèche boucle sur elle-même sans sortir du menu.
-    fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowDown' });
-    expect(all[0]).toHaveFocus();
+    expect(all[1]).toHaveTextContent(/View movements/i);
+    expect(screen.queryByRole('menuitem', { name: /Adjust stock/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Record waste/i })).not.toBeInTheDocument();
+
+    // Le bouclage tient sur un menu raccourci.
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowUp' });
+    expect(all[1]).toHaveFocus();
   });
 });

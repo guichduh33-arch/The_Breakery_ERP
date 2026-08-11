@@ -56,14 +56,38 @@ const MOCK_SUPPLIERS = [
   { id: 's-1', code: 'SUP-ROAST', name: 'Roastery' },
 ];
 
+// Une écriture de stock et une vente, pour que le tiroir ait quelque chose à
+// montrer et que les deux sens de mouvement soient rendus.
+const MOCK_MOVEMENTS = [
+  {
+    id: 'mv-1', product_id: 'p-1', movement_type: 'waste', quantity: -3,
+    reason: 'Expired', unit_cost: null, supplier_id: null,
+    reference_type: null, reference_id: null, idempotency_key: null,
+    created_at: '2026-08-10T02:00:00Z', created_by: 'u-1',
+    supplier: null, author: { id: 'u-1', full_name: 'Manager Demo' },
+  },
+  {
+    id: 'mv-2', product_id: 'p-1', movement_type: 'purchase', quantity: 20,
+    reason: null, unit_cost: 1000, supplier_id: 's-1',
+    reference_type: null, reference_id: null, idempotency_key: null,
+    created_at: '2026-08-09T02:00:00Z', created_by: 'u-1',
+    supplier: { code: 'SUP-ROAST', name: 'Roastery' },
+    author: { id: 'u-1', full_name: 'Manager Demo' },
+  },
+];
+
 interface RpcResult { data: unknown; error: { message: string } | null }
 
-interface MockChain {
+// La chaîne est THENABLE, comme le vrai constructeur de requête : certaines
+// requêtes se terminent sur `.order()` (les catégories) et d'autres continuent
+// vers `.range()` (le journal de mouvements du tiroir). Un `order()` qui rendait
+// une Promise cassait les secondes — `.range()` n'existe pas sur une Promise.
+interface MockChain extends PromiseLike<RpcResult> {
   select: () => MockChain;
   eq:     () => MockChain;
   is:     () => MockChain;
   ilike:  () => MockChain;
-  order:  () => Promise<RpcResult>;
+  order:  () => MockChain;
   limit:  () => Promise<RpcResult>;
   range:  () => Promise<RpcResult>;
 }
@@ -71,17 +95,19 @@ interface MockChain {
 vi.mock('@/lib/supabase.js', () => {
   function buildChain(table: string): MockChain {
     const tableData: RpcResult =
-      table === 'categories' ? { data: MOCK_CATEGORIES, error: null } :
-      table === 'suppliers'  ? { data: MOCK_SUPPLIERS,  error: null } :
+      table === 'categories'       ? { data: MOCK_CATEGORIES, error: null } :
+      table === 'suppliers'        ? { data: MOCK_SUPPLIERS,  error: null } :
+      table === 'stock_movements'  ? { data: MOCK_MOVEMENTS,  error: null } :
       { data: [], error: null };
     const chain: MockChain = {
       select: () => chain,
       eq:     () => chain,
       is:     () => chain,
       ilike:  () => chain,
-      order:  () => Promise.resolve(tableData),
+      order:  () => chain,
       limit:  () => Promise.resolve({ data: [], error: null }),
-      range:  () => Promise.resolve({ data: [], error: null }),
+      range:  () => Promise.resolve(tableData),
+      then:   (onFulfilled, onRejected) => Promise.resolve(tableData).then(onFulfilled, onRejected),
     };
     return chain;
   }
@@ -231,5 +257,30 @@ describe('Inventory smoke E2E', () => {
         p_reason:     'Physical recount after audit',
       });
     });
+  });
+
+  // Principe produit nº 3 : un chiffre doit pouvoir être remonté jusqu'à
+  // l'opération qui l'a produit. Le journal s'ouvre EN TIROIR, donc sans
+  // quitter la liste ni perdre son filtre.
+  it('« View movements » ouvre le journal du produit sans quitter la liste', async () => {
+    const r = await renderAs(['inventory.read']);
+    const w = within(r.container);
+    await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });
+
+    const americanoRow = w.getByText('Americano').closest('tr')!;
+    fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
+    fireEvent.click(w.getByRole('menuitem', { name: /View movements/i }));
+
+    // Le tiroir est porté par un portail : on interroge le document entier.
+    const drawer = await screen.findByTestId('movement-history-drawer');
+    expect(within(drawer).getByText(/BEV-AMER/)).toBeInTheDocument();
+    // Le journal est une seconde requête : elle arrive après l'ouverture.
+    await waitFor(() => {
+      expect(within(drawer).getByText(/Waste/i)).toBeInTheDocument();
+    });
+    expect(within(drawer).getByText(/Roastery/)).toBeInTheDocument();
+
+    // La liste est toujours là derrière — c'est tout l'intérêt du tiroir.
+    expect(w.getByText('Americano')).toBeInTheDocument();
   });
 });

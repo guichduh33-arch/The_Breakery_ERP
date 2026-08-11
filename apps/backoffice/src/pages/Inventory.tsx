@@ -33,6 +33,7 @@ import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbar
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
 import { WasteModal } from '@/features/inventory/components/WasteModal.js';
 import { StockRowActions } from '@/features/inventory/components/StockRowActions.js';
+import { MovementHistoryDrawer } from '@/features/inventory/components/MovementHistoryDrawer.js';
 import { LowStockBadge } from '@/features/inventory/components/LowStockBadge.js';
 import {
   useStockLevels,
@@ -153,6 +154,11 @@ export default function InventoryPage() {
   }, [setParams]);
 
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
+  // Le journal d'un produit s'ouvre en tiroir, PAS dans l'URL : c'est une
+  // consultation, pas un état de liste. Le partager par lien n'aurait pas de
+  // sens, et l'empiler dans l'historique casserait le retour arrière que le
+  // lot précédent vient de rendre fiable.
+  const [movementsFor, setMovementsFor] = useState<Row | undefined>(undefined);
 
   // Un paramètre d'URL est saisi par n'importe qui. `?bucket=lol` ne doit pas
   // produire une liste vide en silence — même défaut que le panier NULL gardé
@@ -310,6 +316,7 @@ export default function InventoryPage() {
           canAdjust={canAdjust}
           canWaste={canWaste}
           onView={(x) => { void navigate(`/backoffice/inventory/${x.product_id}`); }}
+          onMovements={(x) => setMovementsFor(x)}
           onAdjust={(x) => setModal({ kind: 'adjust', product: x })}
           onWaste={(x) => setModal({ kind: 'waste', product: x })}
         />
@@ -470,6 +477,10 @@ export default function InventoryPage() {
         open={modal.kind === 'waste'}
         {...(modal.kind === 'waste' && modal.product !== undefined ? { initialProduct: modal.product } : {})}
         onClose={closeModal}
+      />
+      <MovementHistoryDrawer
+        product={movementsFor}
+        onClose={() => { setMovementsFor(undefined); }}
       />
     </div>
   );

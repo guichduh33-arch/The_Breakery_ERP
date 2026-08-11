@@ -36,12 +36,15 @@ const MENU_ITEM =
   `block w-full text-left px-3 py-2 text-sm hover:bg-surface-4 focus:bg-surface-4 ${FOCUS_RING}`;
 
 export interface StockRowActionsProps {
-  row:        Row;
-  canAdjust:  boolean;
-  canWaste:   boolean;
-  onView:     (r: Row) => void;
-  onAdjust:   (r: Row) => void;
-  onWaste:    (r: Row) => void;
+  row:          Row;
+  canAdjust:    boolean;
+  canWaste:     boolean;
+  onView:       (r: Row) => void;
+  /** Ouvre le journal du produit SANS quitter la liste (principe produit nº 3 :
+   *  un chiffre doit pouvoir être remonté jusqu'à l'opération qui l'a produit). */
+  onMovements:  (r: Row) => void;
+  onAdjust:     (r: Row) => void;
+  onWaste:      (r: Row) => void;
 }
 
 interface MenuEntry {
@@ -52,7 +55,7 @@ interface MenuEntry {
 }
 
 export function StockRowActions({
-  row, canAdjust, canWaste, onView, onAdjust, onWaste,
+  row, canAdjust, canWaste, onView, onMovements, onAdjust, onWaste,
 }: StockRowActionsProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
   /** Index à focaliser à la prochaine ouverture — dernier si ouverture par Flèche haut. */
@@ -61,8 +64,12 @@ export function StockRowActions({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const itemRefs   = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Deux lectures d'abord, puis les écritures. « View movements » ouvre le
+  // journal en tiroir : on voit d'où vient le chiffre sans perdre sa place dans
+  // la liste, ni son filtre, ni sa page.
   const entries: MenuEntry[] = [
-    { key: 'view', label: 'View stock', activate: () => onView(row) },
+    { key: 'view',      label: 'View stock',     activate: () => onView(row) },
+    { key: 'movements', label: 'View movements', activate: () => onMovements(row) },
     ...(canAdjust ? [{ key: 'adjust', label: 'Adjust stock', activate: () => onAdjust(row) }] : []),
     ...(canWaste  ? [{ key: 'waste',  label: 'Record waste', danger: true, activate: () => onWaste(row) }] : []),
   ];
