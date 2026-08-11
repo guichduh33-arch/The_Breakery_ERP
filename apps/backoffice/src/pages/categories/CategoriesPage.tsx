@@ -97,7 +97,7 @@ export default function CategoriesPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Product categories</h1>
+          <h1 className="text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Product categories</h1>
           <p className="text-sm text-text-secondary italic">
             Drag rows to reorder ; rows in display order on the POS grid.
           </p>

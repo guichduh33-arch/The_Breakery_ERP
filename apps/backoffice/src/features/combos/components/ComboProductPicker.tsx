@@ -5,6 +5,7 @@
 // Searches finished products by name/SKU; excludes variant parents + combos.
 
 import { useState, type JSX } from 'react';
+import { Currency } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useFinishedProductsForCombo, type ComboOptionProduct } from '../hooks/useFinishedProductsForCombo.js';
 
@@ -86,9 +87,10 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
                   )}
                 </span>
                 <span className="text-xs text-text-muted font-mono shrink-0">{p.sku}</span>
-                <span className="text-xs text-text-secondary shrink-0">
-                  Rp {p.retail_price.toLocaleString('id-ID')}
-                </span>
+                <Currency
+                  amount={p.retail_price}
+                  className="text-xs text-text-secondary shrink-0"
+                />
               </button>
             </li>
           ))}

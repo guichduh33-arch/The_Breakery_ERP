@@ -65,7 +65,7 @@ export function CategorySortableRow({
       <td className="px-3 py-2">{category.name}</td>
       <td className="px-3 py-2 font-mono text-xs text-text-secondary">{category.slug}</td>
       <td className="px-3 py-2">
-        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
           {TYPE_META[category.category_type].label}
         </span>
       </td>

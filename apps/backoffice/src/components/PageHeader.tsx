@@ -48,7 +48,7 @@ export function PageHeader({
       <div className="min-w-0">
         <h1
           className={cn(
-            'text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary',
+            'text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary',
             titleClassName,
           )}
         >

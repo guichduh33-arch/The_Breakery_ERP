@@ -32,7 +32,10 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
   // par ailleurs six champs sous le contrat de 2 px de la direction.
   const inputCls =
     `w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`;
-  const labelCls = 'block text-[10px] uppercase tracking-wider text-text-secondary mb-1';
+  // Toute donnée qu'on lit pour décider rend en mono tabulaire — ici un montant
+  // en IDR à sept chiffres et un rang d'affichage.
+  const numCls = `${inputCls} font-mono tabular-nums`;
+  const labelCls = 'block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1';
 
   return (
     <section className="space-y-4" data-testid="general-info-section">
@@ -105,7 +108,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
             step={1000}
             value={draft.base_price}
             onChange={(e) => { onChange({ base_price: Math.max(0, Number(e.target.value)) }); }}
-            className={inputCls}
+            className={numCls}
             data-testid="combo-base-price"
             required
           />
@@ -121,7 +124,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
             min={0}
             value={draft.display_order}
             onChange={(e) => { onChange({ display_order: Math.max(0, Number(e.target.value)) }); }}
-            className={inputCls}
+            className={numCls}
             data-testid="combo-display-order"
           />
         </div>

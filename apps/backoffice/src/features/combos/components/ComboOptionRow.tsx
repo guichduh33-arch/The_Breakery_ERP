@@ -47,7 +47,7 @@ export function ComboOptionRow({
           step={1000}
           value={option.surcharge}
           onChange={(e) => { onSurchargeChange(Math.max(0, Number(e.target.value))); }}
-          className={`w-20 px-1.5 py-1 text-xs bg-bg-elevated border border-border-subtle rounded text-right ${FOCUS_RING}`}
+          className={`w-20 px-1.5 py-1 text-xs font-mono tabular-nums bg-bg-elevated border border-border-subtle rounded text-right ${FOCUS_RING}`}
           aria-label={`Surcharge for ${option.label}`}
           data-testid={`surcharge-input-${option.component_product_id}`}
         />
@@ -62,8 +62,8 @@ export function ComboOptionRow({
               // `text-bg-base` est le papier de page (#f0efec) : sur l'or il ne
               // vaut que 4,47:1. `text-gold-fg` est le premier plan prévu pour
               // un remplissage or et donne 5,06:1.
-              ? 'shrink-0 text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold text-gold-fg'
-              : 'shrink-0 text-[10px] uppercase tracking-widest rounded-full px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
+              ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold text-gold-fg'
+              : 'shrink-0 text-[0.625rem] uppercase tracking-widest rounded-full px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
           }`}
           aria-label={isDefault ? 'Default option' : `Set ${option.label} as default`}
           data-testid={`set-default-${option.component_product_id}`}
@@ -74,7 +74,7 @@ export function ComboOptionRow({
         <span
           className={
             isDefault
-              ? 'shrink-0 text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold-soft text-gold'
+              ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold-soft text-gold'
               : ''
           }
         >

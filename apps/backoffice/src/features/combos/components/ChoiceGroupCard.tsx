@@ -110,7 +110,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-name-${group.id}`}
-              className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1"
+              className="block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1"
             >
               Group Name
             </label>
@@ -127,7 +127,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-type-${group.id}`}
-              className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1"
+              className="block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1"
             >
               Type
             </label>
@@ -198,7 +198,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 max={group.max_select}
                 value={group.min_select}
                 onChange={(e) => { updateField('min_select', Math.max(0, Number(e.target.value))); }}
-                className={`w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
+                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-min-${group.id}`}
               />
             </div>
@@ -212,7 +212,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 min={1}
                 value={group.max_select}
                 onChange={(e) => { updateField('max_select', Math.max(1, Number(e.target.value))); }}
-                className={`w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
+                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-max-${group.id}`}
               />
             </div>
