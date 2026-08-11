@@ -4,8 +4,9 @@
 // Contains group metadata + list of ComboOptionRows + "Add Product" picker.
 // Note: @breakery/ui has no RadioGroup — uses native <select> (kept for form uniformity).
 
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { ComboOptionRow, type OptionDraft } from './ComboOptionRow.js';
 import { ComboProductPicker } from './ComboProductPicker.js';
 import type { ComboOptionProduct } from '../hooks/useFinishedProductsForCombo.js';
@@ -30,6 +31,25 @@ interface Props {
 export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Element {
   const [showPicker, setShowPicker] = useState(false);
 
+  // The picker replaces the "Add Product" button rather than layering over it,
+  // so closing it unmounts whatever held focus. Hand focus back to the button
+  // once it remounts, otherwise a keyboard user is dropped at the top of the
+  // document.
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreFocus = useRef(false);
+
+  function closePicker() {
+    shouldRestoreFocus.current = true;
+    setShowPicker(false);
+  }
+
+  useEffect(() => {
+    if (!showPicker && shouldRestoreFocus.current) {
+      shouldRestoreFocus.current = false;
+      addButtonRef.current?.focus();
+    }
+  }, [showPicker]);
+
   function updateField<K extends keyof GroupDraft>(key: K, value: GroupDraft[K]) {
     onChange({ ...group, [key]: value });
   }
@@ -39,7 +59,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
       (o) => o.component_product_id === product.id,
     );
     if (alreadyExists) {
-      setShowPicker(false);
+      closePicker();
       return;
     }
     const isFirstOption = group.options.length === 0;
@@ -51,7 +71,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
       sort_order: group.options.length,
     };
     onChange({ ...group, options: [...group.options, newOption] });
-    setShowPicker(false);
+    closePicker();
   }
 
   function handleSetDefault(idx: number) {
@@ -90,7 +110,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-name-${group.id}`}
-              className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1"
+              className="block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1"
             >
               Group Name
             </label>
@@ -99,7 +119,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
               value={group.name}
               onChange={(e) => { updateField('name', e.target.value); }}
               placeholder="e.g. Choose a drink"
-              className="w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
               data-testid={`group-name-${group.id}`}
             />
           </div>
@@ -107,7 +127,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-type-${group.id}`}
-              className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1"
+              className="block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1"
             >
               Type
             </label>
@@ -132,7 +152,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 }
                 onChange(next);
               }}
-              className="w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               data-testid={`group-type-${group.id}`}
             >
               <option value="single">Single choice</option>
@@ -144,7 +164,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 mt-5 text-text-muted hover:text-red transition-colors"
+          className={`shrink-0 mt-5 text-text-muted hover:text-red transition-colors ${FOCUS_RING}`}
           aria-label={`Remove group ${group.name}`}
           data-testid={`remove-group-${group.id}`}
         >
@@ -159,7 +179,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
             type="checkbox"
             checked={group.is_required}
             onChange={(e) => { updateField('is_required', e.target.checked); }}
-            className="accent-gold"
+            className={`accent-gold ${FOCUS_RING}`}
             data-testid={`group-required-${group.id}`}
           />
           <span className="text-xs text-text-secondary">Required</span>
@@ -168,25 +188,31 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
         {group.group_type === 'multi' && (
           <>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-text-secondary">Min</span>
+              <label htmlFor={`group-min-${group.id}`} className="text-xs text-text-secondary">
+                Min
+              </label>
               <input
+                id={`group-min-${group.id}`}
                 type="number"
                 min={0}
                 max={group.max_select}
                 value={group.min_select}
                 onChange={(e) => { updateField('min_select', Math.max(0, Number(e.target.value))); }}
-                className="w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center"
+                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-min-${group.id}`}
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-text-secondary">Max</span>
+              <label htmlFor={`group-max-${group.id}`} className="text-xs text-text-secondary">
+                Max
+              </label>
               <input
+                id={`group-max-${group.id}`}
                 type="number"
                 min={1}
                 value={group.max_select}
                 onChange={(e) => { updateField('max_select', Math.max(1, Number(e.target.value))); }}
-                className="w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center"
+                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-max-${group.id}`}
               />
             </div>
@@ -195,7 +221,11 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
       </div>
 
       {/* Options list */}
-      <div className="space-y-1.5">
+      <div
+        className="space-y-1.5"
+        role="group"
+        aria-label={group.name.trim() === '' ? 'Group options' : `Options for ${group.name}`}
+      >
         {group.options.map((opt, idx) => (
           <ComboOptionRow
             key={opt.component_product_id}
@@ -217,13 +247,14 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
         <ComboProductPicker
           excludeIds={existingIds}
           onPick={handlePickProduct}
-          onClose={() => { setShowPicker(false); }}
+          onClose={closePicker}
         />
       ) : (
         <button
+          ref={addButtonRef}
           type="button"
           onClick={() => { setShowPicker(true); }}
-          className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors"
+          className={`flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors ${FOCUS_RING}`}
           data-testid={`add-option-${group.id}`}
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />

@@ -5,6 +5,7 @@
 // (converting a lone field to the @breakery/ui Select primitive would break its internal rhythm).
 
 import type { JSX } from 'react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CategoryRow } from '@/features/categories/hooks/useAllCategories.js';
 
 export interface GeneralInfoDraft {
@@ -25,9 +26,16 @@ interface Props {
 }
 
 export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.Element {
+  // Le placeholder n'était pas tokenisé : il retombait sur le `gray-400` du
+  // Preflight Tailwind, à 2,21:1 sur le papier de page. `text-text-muted` vaut
+  // 4,83:1 sur ce même fond. L'anneau de focus fait maison, de 1 px, laissait
+  // par ailleurs six champs sous le contrat de 2 px de la direction.
   const inputCls =
-    'w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-gold';
-  const labelCls = 'block text-[10px] uppercase tracking-wider text-text-secondary mb-1';
+    `w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`;
+  // Toute donnée qu'on lit pour décider rend en mono tabulaire — ici un montant
+  // en IDR à sept chiffres et un rang d'affichage.
+  const numCls = `${inputCls} font-mono tabular-nums`;
+  const labelCls = 'block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1';
 
   return (
     <section className="space-y-4" data-testid="general-info-section">
@@ -100,7 +108,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
             step={1000}
             value={draft.base_price}
             onChange={(e) => { onChange({ base_price: Math.max(0, Number(e.target.value)) }); }}
-            className={inputCls}
+            className={numCls}
             data-testid="combo-base-price"
             required
           />
@@ -116,7 +124,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
             min={0}
             value={draft.display_order}
             onChange={(e) => { onChange({ display_order: Math.max(0, Number(e.target.value)) }); }}
-            className={inputCls}
+            className={numCls}
             data-testid="combo-display-order"
           />
         </div>
@@ -146,7 +154,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
               type="checkbox"
               checked={draft.is_active}
               onChange={(e) => { onChange({ is_active: e.target.checked }); }}
-              className="accent-gold"
+              className={`accent-gold ${FOCUS_RING}`}
               data-testid="combo-is-active"
             />
             <span className="text-sm text-text-secondary">Active</span>
@@ -156,7 +164,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
               type="checkbox"
               checked={draft.visible_on_pos}
               onChange={(e) => { onChange({ visible_on_pos: e.target.checked }); }}
-              className="accent-gold"
+              className={`accent-gold ${FOCUS_RING}`}
               data-testid="combo-visible-on-pos"
             />
             <span className="text-sm text-text-secondary">Show in POS</span>

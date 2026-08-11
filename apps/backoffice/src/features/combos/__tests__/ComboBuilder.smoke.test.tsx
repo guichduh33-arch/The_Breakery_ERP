@@ -139,8 +139,11 @@ describe('ComboBuilderPage', () => {
     const priceInput = screen.getByTestId('combo-base-price');
     fireEvent.change(priceInput, { target: { value: '75000' } });
     const preview = screen.getByTestId('price-preview');
-    // Indonesian locale: 75000 → "75.000"
-    expect(preview.textContent).toContain('75.000');
+    // Un seul formateur monétaire dans l'application : le helper `formatIdr`,
+    // câblé en `en-US`, donc « Rp 75,000 ». L'aperçu utilisait auparavant son
+    // propre `Intl` en `id-ID` et rendait « 75.000 » — troisième variante de
+    // séparateur pour la même devise sur la même page (audit du 2026-08-11).
+    expect(preview.textContent).toContain('75,000');
   });
 
   it('calls useUpsertCombo with assembled payload on valid save', async () => {
@@ -151,7 +154,7 @@ describe('ComboBuilderPage', () => {
 
     // Wait for category option to appear then select it
     await waitFor(() => {
-      const catSelect = screen.getByTestId('combo-category') as HTMLSelectElement;
+      const catSelect = screen.getByTestId<HTMLSelectElement>('combo-category');
       expect(catSelect.options.length).toBeGreaterThan(1);
     });
     fireEvent.change(screen.getByTestId('combo-category'), { target: { value: 'cat-1' } });
