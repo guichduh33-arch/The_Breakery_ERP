@@ -4,7 +4,7 @@
 // Pattern mirrors S39 features/orders/components/ProductPicker.tsx.
 // Searches finished products by name/SKU; excludes variant parents + combos.
 
-import { useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { Currency } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useFinishedProductsForCombo, type ComboOptionProduct } from '../hooks/useFinishedProductsForCombo.js';
@@ -16,16 +16,30 @@ interface Props {
   onClose: () => void;
 }
 
+// Le catalogue fini compte ~375 produits. Les rendre tous, c'est ~370 boutons
+// dans une boite de 192 px : 98 % hors ecran mais mis en page, et surtout 373
+// arrets de tabulation entre le champ de recherche et le controle suivant —
+// mesure de l'audit : les cibles focalisables de <main> passaient de 62 a 436 a
+// l'ouverture d'un seul selecteur. On borne la liste et on dit ce qu'on cache.
+const MAX_ROWS = 25;
+
 export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props): JSX.Element {
   const [search, setSearch] = useState('');
   const { data, isLoading, isError } = useFinishedProductsForCombo();
 
-  const query = search.toLowerCase();
-  const filtered = (data ?? []).filter(
-    (p) =>
-      !excludeIds.includes(p.id) &&
-      (p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)),
-  );
+  const excludeKey = excludeIds.join(',');
+  const { rows, matchCount } = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const excluded = new Set(excludeKey === '' ? [] : excludeKey.split(','));
+    const matches = (data ?? []).filter(
+      (p) =>
+        !excluded.has(p.id) &&
+        (p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)),
+    );
+    return { rows: matches.slice(0, MAX_ROWS), matchCount: matches.length };
+  }, [data, search, excludeKey]);
+
+  const hiddenCount = matchCount - rows.length;
 
   return (
     <div
@@ -67,13 +81,17 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
       {isError && (
         <p className="text-sm text-red py-2">Failed to load products.</p>
       )}
-      {!isLoading && !isError && filtered.length === 0 && (
-        <p className="text-sm text-text-muted py-2">No products match.</p>
+      {!isLoading && !isError && matchCount === 0 && (
+        <p className="text-sm text-text-muted py-2" role="status">No products match.</p>
       )}
-      {!isLoading && !isError && filtered.length > 0 && (
-        <ul className="overflow-auto max-h-48 divide-y divide-border-subtle border border-border-subtle rounded text-sm">
-          {filtered.map((p) => (
-            <li key={p.id}>
+      {!isLoading && !isError && matchCount > 0 && (
+        <ul
+          className="overflow-auto max-h-48 divide-y divide-border-subtle border border-border-subtle rounded text-sm"
+          role="listbox"
+          aria-label="Matching products"
+        >
+          {rows.map((p) => (
+            <li key={p.id} role="option" aria-selected={false}>
               <button
                 type="button"
                 onClick={() => { onPick(p); }}
@@ -95,6 +113,12 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
             </li>
           ))}
         </ul>
+      )}
+      {!isLoading && !isError && hiddenCount > 0 && (
+        <p className="text-xs text-text-muted" role="status" data-testid="combo-picker-overflow">
+          Showing {rows.length} of{' '}
+          <span className="font-mono tabular-nums">{matchCount}</span> matches — refine your search.
+        </p>
       )}
     </div>
   );

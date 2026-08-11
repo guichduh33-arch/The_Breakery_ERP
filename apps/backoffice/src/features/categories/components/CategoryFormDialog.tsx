@@ -4,7 +4,7 @@
 import { useState, type JSX } from 'react';
 import {
   Button,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
   selectClassName, cn,
 } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -104,12 +104,21 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
       <DialogContent className="max-w-md" data-testid="category-form-dialog">
         <DialogHeader>
           <DialogTitle>{mode === 'create' ? 'New category' : 'Edit category'}</DialogTitle>
+          <DialogDescription>
+            Categories group products for the POS grid and for inventory reporting.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        {/* Une vraie balise <form> : sans elle, la touche Entrée ne validait
+            rien et l'attribut `required` d'un champ ne se déclenchait jamais. */}
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+          className="space-y-3"
+          data-testid="category-form"
+        >
           <div>
             <label htmlFor="cat-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
-              Name
+              Name <span className="text-red" aria-hidden>*</span>
             </label>
             <input
               id="cat-name"
@@ -164,10 +173,13 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            {/* Choix mutuellement exclusif : `aria-pressed` annonce une
+                bascule, pas « un parmi trois » — ni le nombre d'options ni la
+                position n'étaient lisibles au lecteur d'écran. */}
+            <span id="cat-type-label" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Type
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+            </span>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="cat-type-label">
               {CATEGORY_TYPES.map((t) => {
                 const on = catType === t.value;
                 return (
@@ -175,7 +187,8 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                     key={t.value}
                     type="button"
                     onClick={() => setCatType(t.value)}
-                    aria-pressed={on}
+                    role="radio"
+                    aria-checked={on}
                     className={`rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
                       on
                         ? 'border-gold bg-gold-soft text-text-primary'
@@ -208,18 +221,18 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           </div>
 
           {error !== null && (
-            <div className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
+            <div role="alert" className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
           )}
-        </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isPending} data-testid="category-form-submit">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button type="submit" disabled={isPending} data-testid="category-form-submit">
             {isPending
               ? (mode === 'create' ? 'Creating…' : 'Saving…')
               : (mode === 'create' ? 'Create' : 'Save')}
           </Button>
         </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

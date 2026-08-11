@@ -14,11 +14,17 @@ import { ComboProductPicker } from '../components/ComboProductPicker.js';
 import { ChoiceGroupCard, type GroupDraft } from '../components/ChoiceGroupCard.js';
 import type { Combo } from '../types.js';
 
+const { products } = vi.hoisted(() => ({
+  products: {
+    current: [
+      { id: 'p-1', name: 'Americano', sku: 'BEV-001', retail_price: 35000, variant_label: null },
+    ] as { id: string; name: string; sku: string; retail_price: number; variant_label: string | null }[],
+  },
+}));
+
 vi.mock('../hooks/useFinishedProductsForCombo.js', () => ({
   useFinishedProductsForCombo: () => ({
-    data: [
-      { id: 'p-1', name: 'Americano', sku: 'BEV-001', retail_price: 35000, variant_label: null },
-    ],
+    data: products.current,
     isLoading: false,
     isError: false,
   }),
@@ -89,12 +95,37 @@ describe('ComboCard — keyboard access', () => {
   });
 });
 
-describe('ComboProductPicker — escape', () => {
+describe('ComboProductPicker — escape et bornage de la liste', () => {
   it('closes on Escape', () => {
     const onClose = vi.fn();
     render(<ComboProductPicker onPick={vi.fn()} onClose={onClose} />);
     fireEvent.keyDown(screen.getByTestId('combo-picker-search'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('borne la liste rendue et annonce ce qui est masqué', () => {
+    // Le catalogue réel compte ~375 produits finis. Tout rendre ajoutait autant
+    // d'arrêts de tabulation entre la recherche et le contrôle suivant.
+    products.current = Array.from({ length: 300 }, (_, i) => ({
+      id: `p-${i}`,
+      name: `Product ${i}`,
+      sku: `SKU-${i}`,
+      retail_price: 10000,
+      variant_label: null,
+    }));
+
+    try {
+      render(<ComboProductPicker onPick={vi.fn()} onClose={vi.fn()} />);
+
+      const rows = screen.getAllByTestId(/^combo-picker-row-/);
+      expect(rows.length).toBe(25);
+      expect(screen.getByRole('listbox', { name: 'Matching products' })).toBeInTheDocument();
+      expect(screen.getByTestId('combo-picker-overflow').textContent).toMatch(/25 of\s*300/);
+    } finally {
+      products.current = [
+        { id: 'p-1', name: 'Americano', sku: 'BEV-001', retail_price: 35000, variant_label: null },
+      ];
+    }
   });
 });
 

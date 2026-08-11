@@ -221,7 +221,11 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
       </div>
 
       {/* Options list */}
-      <div className="space-y-1.5">
+      <div
+        className="space-y-1.5"
+        role="group"
+        aria-label={group.name.trim() === '' ? 'Group options' : `Options for ${group.name}`}
+      >
         {group.options.map((opt, idx) => (
           <ComboOptionRow
             key={opt.component_product_id}

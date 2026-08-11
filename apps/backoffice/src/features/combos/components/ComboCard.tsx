@@ -50,7 +50,9 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
 
       <CardContent className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-xl font-semibold text-text-primary">
+          {/* h2 et non h3 : la page n'a que son h1, le saut de niveau cassait
+              la structure de titres (WCAG 1.3.1). */}
+          <h2 className="text-xl font-semibold text-text-primary">
             {onEdit === undefined ? (
               <Link to={`/backoffice/products/combos/${combo.id}/edit`} className={TITLE_LINK}>
                 {combo.name}
@@ -60,7 +62,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
                 {combo.name}
               </button>
             )}
-          </h3>
+          </h2>
           <span
             className={
               combo.is_active

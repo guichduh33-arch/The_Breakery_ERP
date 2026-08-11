@@ -53,6 +53,11 @@ export function ComboOptionRow({
         />
       </div>
 
+      {/* `aria-pressed` : l'état de l'option par défaut n'était porté que par le
+          libellé et la couleur — donc par la couleur seule pour qui ne lit pas
+          la nuance (WCAG 1.4.1). Un vrai `radiogroup` demanderait de sortir ces
+          boutons de leurs rangées, qui portent aussi une saisie et une
+          suppression ; ce n'est pas fait ici. */}
       {groupType === 'single' ? (
         <button
           type="button"
@@ -65,7 +70,8 @@ export function ComboOptionRow({
               ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold text-gold-fg'
               : 'shrink-0 text-[0.625rem] uppercase tracking-widest rounded-full px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
           }`}
-          aria-label={isDefault ? 'Default option' : `Set ${option.label} as default`}
+          aria-pressed={isDefault}
+          aria-label={isDefault ? `${option.label} is the default` : `Set ${option.label} as default`}
           data-testid={`set-default-${option.component_product_id}`}
         >
           {isDefault ? 'Default' : 'Set Default'}

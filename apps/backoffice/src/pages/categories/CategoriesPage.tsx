@@ -98,8 +98,9 @@ export default function CategoriesPage(): JSX.Element {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Product categories</h1>
-          <p className="text-sm text-text-secondary italic">
-            Drag rows to reorder ; rows in display order on the POS grid.
+          <p id="categories-order-hint" className="text-sm text-text-secondary italic">
+            Rows are in display order on the POS grid. Drag a row, or focus its handle and use the
+            arrow keys, to reorder.
           </p>
         </div>
         {canCreate && (
@@ -127,22 +128,33 @@ export default function CategoriesPage(): JSX.Element {
       )}
 
       {order.length > 0 && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
-          <table className="w-full text-sm" data-testid="categories-table">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="px-2 py-2 w-8" aria-label="Drag handle"></th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Slug</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Dispatch / KDS</th>
-                <th className="px-3 py-2 text-center">POS</th>
-                <th className="px-3 py-2 text-center">Active</th>
-                <th className="px-3 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={order.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+        // `DndContext` enveloppe la table et non son contenu : monté entre
+        // <thead> et <tbody>, dnd-kit y rendait sa région live en ligne, ce qui
+        // posait deux <div> enfants directs de <table> — DOM invalide, et une
+        // région live à l'intérieur d'une structure tabulaire.
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={order.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+            <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
+              <table
+                className="w-full text-sm"
+                data-testid="categories-table"
+                aria-describedby="categories-order-hint"
+              >
+                <caption className="sr-only">
+                  Product categories, in the order they appear on the POS grid.
+                </caption>
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
+                    <th scope="col" className="px-2 py-2 w-8"><span className="sr-only">Reorder</span></th>
+                    <th scope="col" className="px-3 py-2">Name</th>
+                    <th scope="col" className="px-3 py-2">Slug</th>
+                    <th scope="col" className="px-3 py-2">Type</th>
+                    <th scope="col" className="px-3 py-2">Dispatch / KDS</th>
+                    <th scope="col" className="px-3 py-2 text-center">POS</th>
+                    <th scope="col" className="px-3 py-2 text-center">Active</th>
+                    <th scope="col" className="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {order.map((c) => (
                     <CategorySortableRow
@@ -157,10 +169,10 @@ export default function CategoriesPage(): JSX.Element {
                     />
                   ))}
                 </tbody>
-              </SortableContext>
-            </DndContext>
-          </table>
-        </div>
+              </table>
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {showCreate && (
