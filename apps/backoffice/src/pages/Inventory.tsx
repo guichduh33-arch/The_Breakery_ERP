@@ -303,7 +303,9 @@ export default function InventoryPage() {
       {/* Sans annonce, cocher un compteur fait passer la table de 318 à 14
           lignes en silence pour un lecteur d'écran. */}
       <span className="sr-only" role="status" aria-live="polite">
-        {counters.isLoading ? 'Loading stock counts' : `${activeTotal} products in the current filter`}
+        {counters.isLoading
+          ? 'Loading stock counts'
+          : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
       </span>
 
       {list.error !== null ? (
