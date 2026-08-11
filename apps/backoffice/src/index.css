@@ -34,4 +34,185 @@
     background-size: var(--page-grid-size);
     background-position: var(--page-grid-position);
   }
+
+  /* Écran de connexion — l'unique surface « hors shell » du Backoffice : pas de
+   * barre de navigation, donc pas d'archétype. Deux moitiés refermées l'une sur
+   * l'autre par le filet or, le même geste qui ferme le bord bas de la barre de
+   * navigation. L'encre porte la marque et les repères de déploiement ; la
+   * lumière porte le geste (choix du compte + PIN, co-présents). */
+  .login {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 38% 1fr;
+    background: var(--bg-base);
+  }
+  .login-ink {
+    background: var(--ink-base);
+    border-right: 1px solid var(--border-gold);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 44px 44px 40px;
+  }
+  .login-brand { text-align: center; }
+  .login-logo {
+    display: block;
+    width: 210px;
+    max-width: 100%;
+    height: auto;
+    margin-inline: auto;
+  }
+  .login-surface {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--ink-fg-sub);
+    margin-top: 22px;
+  }
+  .login-markers { display: grid; gap: 11px; margin: 0; }
+  .login-marker {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    align-items: baseline;
+    gap: 12px;
+    border-top: 1px solid var(--ink-border);
+    padding-top: 9px;
+  }
+  .login-marker dt {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--ink-fg-sub);
+  }
+  .login-marker dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-fg-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Hors production seulement — l'absence de la ligne EST le signal « prod ». */
+  .login-marker dd.is-env { color: var(--ink-danger); }
+
+  .login-light { display: grid; place-items: center; padding: 44px; }
+  .login-panel {
+    display: grid;
+    grid-template-columns: 1fr 1px 300px;
+    gap: 34px;
+    align-items: start;
+    width: 100%;
+    max-width: 748px;
+  }
+  .login-rule { background: var(--border-subtle); align-self: stretch; }
+  .login-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+  }
+
+  .login-roster { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border-row); }
+  .login-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 44px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--border-row);
+    background: transparent;
+    text-align: left;
+  }
+  .login-row:hover { background: var(--surface-4); }
+  .login-row:focus-visible { outline: 2px solid var(--gold-base); outline-offset: -2px; }
+  .login-row[aria-pressed='true'] {
+    background: #fff;
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+  }
+  .login-name { font-size: 15px; color: var(--text-primary); }
+  .login-row[aria-pressed='true'] .login-name { font-weight: 600; }
+  .login-role {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+  }
+  .login-row[aria-pressed='true'] .login-role { color: var(--gold-base); }
+
+  /* Six cellules rendues sous UN SEUL <input> transparent : coller, remplissage
+   * automatique et lecteurs d'écran continuent de fonctionner, ce que six champs
+   * séparés cassent. */
+  .login-pin { position: relative; }
+  .login-pin-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+    cursor: text;
+  }
+  .login-cells { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .login-cell {
+    height: 56px;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 19px;
+    color: var(--text-primary);
+  }
+  .login-pin:focus-within .login-cell[data-active='true'] {
+    outline: 2px solid var(--gold-base);
+    outline-offset: 2px;
+    box-shadow: var(--shadow-focus);
+  }
+  .login-pin[data-disabled='true'] .login-cell { background: var(--surface-inert); }
+
+  .login-hint { margin: 14px 0 0; font-size: 13px; color: var(--text-secondary); }
+  .login-error { margin: 14px 0 0; font-size: 13px; color: var(--danger); }
+  .login-alt { margin: 26px 0 0; font-size: 13px; color: var(--text-muted); }
+  .login-retry {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--gold-base);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .login-retry:disabled { color: var(--text-disabled); text-decoration: none; }
+
+  /* Pas de cible tablette (PRODUCT.md) — mais une fenêtre réduite ne doit pas
+   * produire un écran cassé : l'encre bascule en bandeau haut. */
+  @media (max-width: 900px) {
+    .login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .login-ink {
+      border-right: 0;
+      border-bottom: 1px solid var(--border-gold);
+      flex-direction: row;
+      align-items: center;
+      gap: 26px;
+      padding: 16px 22px;
+    }
+    .login-brand { display: flex; align-items: center; gap: 16px; }
+    /* Contraint en HAUTEUR ici : dimensionné en largeur, le lockup dépasse le
+     * bandeau et vient se poser sur le papier. */
+    .login-logo { width: auto; height: 62px; }
+    .login-surface { margin-top: 0; }
+    .login-markers { grid-auto-flow: column; gap: 22px; }
+    .login-marker { grid-template-columns: 1fr; border-top: 0; padding-top: 0; gap: 4px; }
+    .login-panel { grid-template-columns: 1fr; gap: 28px; max-width: 420px; }
+    .login-rule { display: none; }
+  }
 }
