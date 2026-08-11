@@ -42,7 +42,7 @@ SELECT ok(
 
 -- 2: category 'kds' exposes all 3 keys at the defaults.
 SELECT is(
-  (get_settings_by_category_v9('kds')->'settings'),
+  (get_settings_by_category_v10('kds')->'settings'),
   jsonb_build_object(
     'kds_warning_threshold_minutes', 5,
     'kds_urgent_threshold_minutes',  10,
@@ -51,48 +51,48 @@ SELECT is(
 
 -- 3: happy path — set warning=3 (< urgent default 10).
 SELECT lives_ok(
-  $$SELECT set_setting_v12('kds_warning_threshold_minutes', '3'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_warning_threshold_minutes', '3'::jsonb, 'kds')$$,
   'set warning=3 (< urgent 10) succeeds');
 
 -- 4: warning=0 out of range [1,120] -> rejected.
 SELECT throws_ok(
-  $$SELECT set_setting_v12('kds_warning_threshold_minutes', '0'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_warning_threshold_minutes', '0'::jsonb, 'kds')$$,
   '22023', NULL, 'warning=0 rejected (out of [1,120])');
 
 -- 5: warning=200 out of range [1,120] -> rejected.
 SELECT throws_ok(
-  $$SELECT set_setting_v12('kds_warning_threshold_minutes', '200'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_warning_threshold_minutes', '200'::jsonb, 'kds')$$,
   '22023', NULL, 'warning=200 rejected (out of [1,120])');
 
 -- 6: warning=10 (>= urgent 10) -> rejected (warning must stay < urgent).
 SELECT throws_ok(
-  $$SELECT set_setting_v12('kds_warning_threshold_minutes', '10'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_warning_threshold_minutes', '10'::jsonb, 'kds')$$,
   '22023', NULL, 'warning=10 rejected (>= urgent 10)');
 
 -- 7: urgent=3 (<= current warning 3) -> rejected (urgent must stay > warning).
 SELECT throws_ok(
-  $$SELECT set_setting_v12('kds_urgent_threshold_minutes', '3'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_urgent_threshold_minutes', '3'::jsonb, 'kds')$$,
   '22023', NULL, 'urgent=3 rejected (<= warning 3)');
 
 -- 8: cross-order convergence — set urgent=15 first, then warning=12; both
 -- succeed because each branch re-validates against the OTHER key's current
 -- stored value regardless of which one is mutated first.
 SELECT lives_ok(
-  $$SELECT set_setting_v12('kds_urgent_threshold_minutes', '15'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_urgent_threshold_minutes', '15'::jsonb, 'kds')$$,
   'set urgent=15 succeeds (urgent-first ordering)');
 SELECT lives_ok(
-  $$SELECT set_setting_v12('kds_warning_threshold_minutes', '12'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_warning_threshold_minutes', '12'::jsonb, 'kds')$$,
   'set warning=12 succeeds after urgent=15 (12 < 15)');
 
 -- 9: auto-archive round-trip.
 SELECT lives_ok(
-  $$SELECT set_setting_v12('kds_auto_archive_minutes', '30'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_auto_archive_minutes', '30'::jsonb, 'kds')$$,
   'set auto_archive=30 succeeds');
 
 -- 10: final state matches the converged values (12 / 15 / 30) + audit row
 -- for the warning key carries key/old/new via the mutualized audit path.
 SELECT is(
-  (get_settings_by_category_v9('kds')->'settings'),
+  (get_settings_by_category_v10('kds')->'settings'),
   jsonb_build_object(
     'kds_warning_threshold_minutes', 12,
     'kds_urgent_threshold_minutes',  15,
@@ -119,7 +119,7 @@ SELECT ok(current_setting('breakery.t_audit_pass')::BOOLEAN,
 
 -- 11: unknown key rejected with setting_unknown (22023), not silently ignored.
 SELECT throws_ok(
-  $$SELECT set_setting_v12('kds_bogus', '5'::jsonb, 'kds')$$,
+  $$SELECT set_setting_v13('kds_bogus', '5'::jsonb, 'kds')$$,
   '22023', NULL, 'unknown key kds_bogus rejected (setting_unknown)');
 
 SELECT * FROM finish();

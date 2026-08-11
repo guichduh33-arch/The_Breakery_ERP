@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 5.C — General settings page. Surfaces the four
 // symbolic categories of business_config (business / localization / tax / pos)
-// in a single flat form. Each "Save" calls set_setting_v12 per dirty key so the
+// in a single flat form. Each "Save" calls set_setting_v13 per dirty key so the
 // audit trail captures one row per field change.
 //
 // S73 B4 — currency becomes an ISO-4217 <select> picker, tax_rate and the two
@@ -12,7 +12,7 @@
 //
 // ADR-019 (D3) — le fuseau horaire n'est plus proposé ici : c'est une constante
 // de déploiement, portée par le paramètre de session PostgreSQL, et la RPC
-// d'écriture (set_setting_v12) refuse la clé. Le changer suppose une migration.
+// d'écriture (set_setting_v13) refuse la clé. Le changer suppose une migration.
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -106,7 +106,7 @@ export default function SettingsGeneralPage() {
   const [savedAt, setSavedAt]         = useState<string | null>(null);
   // Lot 6b — the tax-mode switch is a money-path decision: it changes how
   // retail_price is interpreted (tax-inclusive vs tax-exclusive) WITHOUT
-  // converting any price, and the server (set_setting_v12) refuses it while
+  // converting any price, and the server (set_setting_v13) refuses it while
   // open orders exist. Saving a changed `tax_inclusive` goes through an
   // explicit confirmation dialog first.
   const [taxSwitchConfirmOpen, setTaxSwitchConfirmOpen] = useState(false);
@@ -216,7 +216,7 @@ export default function SettingsGeneralPage() {
       const msg = (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string')
         ? e.message
         : 'Failed to save settings';
-      // set_setting_v12 (Lot 6b) refuses the tax-mode switch while open orders
+      // set_setting_v13 (Lot 6b) refuses the tax-mode switch while open orders
       // exist — surface an actionable message instead of the raw error code.
       setServerError(msg === 'tax_mode_switch_blocked'
         ? 'Tax mode switch refused — some orders are still open (draft or pending payment). Settle or void them, then save again.'

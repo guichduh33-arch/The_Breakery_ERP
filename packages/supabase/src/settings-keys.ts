@@ -1,5 +1,5 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v12 / get_settings_by_category_v9,
+// symbolic categories (server truth: set_setting_v13 / get_settings_by_category_v10,
 // migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197
 // + 20260724000217 + 20260724000220 + 20260802000003). Add a key here ONLY
 // together with its RPC branch.
@@ -20,7 +20,7 @@ export const SETTING_KEYS = {
   // ADR-019 (D3) : `timezone` n'est plus une clé réglable — le fuseau métier est
   // une constante de déploiement portée par le paramètre de session PostgreSQL.
   // La colonne business_config.timezone reste lisible (D2), elle n'est plus
-  // écrivable : set_setting_v12 refuse la clé.
+  // écrivable : set_setting_v13 refuse la clé.
   localization:     ['currency'],
   tax:              ['tax_rate', 'tax_inclusive'],
   pos:              ['shift_variance_threshold_pct', 'shift_variance_threshold_abs',
@@ -34,7 +34,12 @@ export const SETTING_KEYS = {
   // client en mois, 0 = jamais (défaut). Migration 20260726000234.
   payments:         ['enabled_payment_methods', 'payment_method_fees',
                      'store_credit_expiry_months'],
-  customer_display: ['display_footer_message', 'display_slogan'],
+  // ADR-023 : la vitrine de l'écran client au repos — display_showcase_product_ids
+  // est une liste ORDONNÉE d'ids produit (12 au plus, jamais de prix : il est
+  // résolu depuis le catalogue à l'affichage) ; display_show_ready_orders rend
+  // la file de retrait à l'écran, éteint par défaut. Migration 20260811000002.
+  customer_display: ['display_footer_message', 'display_slogan',
+                     'display_showcase_product_ids', 'display_show_ready_orders'],
   // Chantier KOT copies (2026-07-18): paper kitchen-ticket copies per station
   // at fire time; 0 = no paper for that station (KDS screen still receives).
   printing:         ['pos_auto_print_receipt', 'pos_auto_open_drawer',

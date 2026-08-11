@@ -7577,7 +7577,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v9: {
+      get_settings_by_category_v10: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8479,7 +8479,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v12: {
+      set_setting_v13: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }

@@ -3,7 +3,7 @@
 -- tous les moyens de paiement sauf l'avoir :
 --   * business_config.offline_payments_enabled (ex offline_cash_enabled) ;
 --   * offline_max_hours SUPPRIMÉE (plus de fenêtre de blocage) ;
---   * set_setting_v12 / get_settings_by_category_v9 ;
+--   * set_setting_v13 / get_settings_by_category_v10 ;
 --   * pay_existing_order_v17 : p_payments multi-règlements + p_offline_replay,
 --     qui ne bypasse PAS le gate store_credit.
 --
@@ -49,35 +49,35 @@ SELECT ok(
 
 -- 4: la catégorie network expose EXACTEMENT une clé.
 SELECT is(
-  get_settings_by_category_v9('network')->'settings',
+  get_settings_by_category_v10('network')->'settings',
   jsonb_build_object('offline_payments_enabled', false),
   'network category returns exactly the single offline key at default');
 
 -- 5: activation explicite du hors-ligne.
 SELECT lives_ok(
-  $$SELECT set_setting_v12('offline_payments_enabled', 'true'::jsonb, 'network')$$,
+  $$SELECT set_setting_v13('offline_payments_enabled', 'true'::jsonb, 'network')$$,
   'set offline_payments_enabled=true succeeds');
 
 -- 6: mauvais type -> rejeté.
 SELECT throws_ok(
-  $$SELECT set_setting_v12('offline_payments_enabled', '"yes"'::jsonb, 'network')$$,
+  $$SELECT set_setting_v13('offline_payments_enabled', '"yes"'::jsonb, 'network')$$,
   '22023', NULL, 'offline_payments_enabled="yes" rejected (expects boolean)');
 
 -- 7: la clé supprimée est désormais INCONNUE (et non plus validée).
 SELECT throws_ok(
-  $$SELECT set_setting_v12('offline_max_hours', '8'::jsonb, 'network')$$,
+  $$SELECT set_setting_v13('offline_max_hours', '8'::jsonb, 'network')$$,
   '22023', NULL, 'offline_max_hours is now an unknown setting key');
 
 -- 8: round-trip — l'état final reflète l'écriture.
 SELECT is(
-  get_settings_by_category_v9('network')->'settings',
+  get_settings_by_category_v10('network')->'settings',
   jsonb_build_object('offline_payments_enabled', true),
   'final network settings reflect the round-trip (true)');
 
 -- 9: une branche SANS RAPPORT survit à la dérivation v10 -> v11 (garde-fou
 --    contre une découpe qui aurait emporté une partie du CASE).
 SELECT lives_ok(
-  $$SELECT set_setting_v12('allow_negative_stock', 'true'::jsonb, 'inventory')$$,
+  $$SELECT set_setting_v13('allow_negative_stock', 'true'::jsonb, 'inventory')$$,
   'an unrelated setting branch still works after the v11 derivation');
 
 -- 10: audit row (chemin mutualisé set_setting) avec key/old/new/category.
@@ -127,8 +127,8 @@ SELECT ok(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
-     AND p.proname IN ('set_setting_v12', 'get_settings_by_category_v9', 'pay_existing_order_v17')),
-  'anon has no EXECUTE on set_setting_v12 / get_settings_by_category_v9 / pay_existing_order_v17');
+     AND p.proname IN ('set_setting_v13', 'get_settings_by_category_v10', 'pay_existing_order_v17')),
+  'anon has no EXECUTE on set_setting_v13 / get_settings_by_category_v10 / pay_existing_order_v17');
 
 SELECT * FROM finish();
 ROLLBACK;
