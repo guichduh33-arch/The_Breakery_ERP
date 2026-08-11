@@ -142,17 +142,34 @@ describe('InventoryPage', () => {
     expect(screen.getByRole('button', { name: /Waste/i })).toBeInTheDocument();
   });
 
-  it('toggling "Low stock only" calls the rows RPC with p_bucket=low', async () => {
+  // ADR-024 déc. 1 — archétype LIST : les compteurs SONT les filtres. Un KPI se
+  // lit, un compteur se clique.
+  it('clicking the "Low stock" counter calls the rows RPC with p_bucket=low', async () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));
     mockRpc.mockClear();
 
-    fireEvent.click(screen.getByLabelText(/Low stock only/i));
+    fireEvent.click(screen.getByTestId('counter-low'));
     await waitFor(() => {
       const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
       expect(lastCall).toBeDefined();
       expect((lastCall as [string, { p_bucket?: string }])[1].p_bucket).toBe('low');
     });
+  });
+
+  it('marks the clicked counter as pressed and resets paging', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByTestId('counter-negative'));
+    await waitFor(() => {
+      expect(screen.getByTestId('counter-negative')).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'false');
+    });
+    const call = mockRpc.mock.calls.find(([fn, args]) =>
+      fn === 'get_stock_levels_v3' && (args as { p_bucket?: string }).p_bucket === 'negative');
+    expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
   });
 
   // ADR-024 déc. 2 — les compteurs n'appliquent JAMAIS le panier actif, sinon la
@@ -163,7 +180,7 @@ describe('InventoryPage', () => {
     await waitFor(() => screen.getByText('Americano'));
     mockRpc.mockClear();
 
-    fireEvent.click(screen.getByLabelText(/Low stock only/i));
+    fireEvent.click(screen.getByTestId('counter-low'));
     await waitFor(() => {
       expect(mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3')).toBeDefined();
     });
@@ -174,14 +191,21 @@ describe('InventoryPage', () => {
     }
   });
 
-  // ADR-024 déc. 1 — la tuile lit le compteur serveur, pas un comptage des
-  // lignes affichées. MOCK_COUNTERS.low_count vaut 7 alors que la page ne rend
-  // qu'une seule ligne sous seuil : si la tuile affichait 1, elle mentirait.
+  // ADR-024 déc. 1 — le compteur lit le serveur, pas les lignes affichées.
+  // MOCK_COUNTERS.low_count vaut 7 alors que la page ne rend qu'une seule ligne
+  // sous seuil : si le compteur affichait 1, il mentirait.
   it('shows the server-side low-stock count, not the count of rendered rows', async () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));
-    const tile = screen.getByText(/Critical alerts/i).closest('div')!.parentElement!;
-    expect(within(tile).getByText('7')).toBeInTheDocument();
+    expect(within(screen.getByTestId('counter-low')).getByText('7')).toBeInTheDocument();
+  });
+
+  // ADR-024 déc. 1 — le pied compte le panier affiché, jamais la page.
+  it('footer counts the active bucket, not the rendered page', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+    // 2 lignes rendues, 42 au total dans le panier « all ».
+    expect(screen.getByText('2 of 42')).toBeInTheDocument();
   });
 
   it('changing the search input forwards p_search to the RPC and resets paging', async () => {
