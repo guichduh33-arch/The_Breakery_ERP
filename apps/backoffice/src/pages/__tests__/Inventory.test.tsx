@@ -208,6 +208,33 @@ describe('InventoryPage', () => {
     expect(screen.getByText('2 of 42')).toBeInTheDocument();
   });
 
+  // La recherche partait au serveur À CHAQUE FRAPPE : « croissant » coûtait
+  // neuf allers-retours, et neuf retours à l'état de chargement.
+  it('debounces the search: three keystrokes produce one request', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+    mockRpc.mockClear();
+
+    const input = screen.getByPlaceholderText(/Search by SKU or product name/i);
+    fireEvent.change(input, { target: { value: 'a' } });
+    fireEvent.change(input, { target: { value: 'am' } });
+    fireEvent.change(input, { target: { value: 'ame' } });
+
+    await waitFor(() => {
+      const searched = mockRpc.mock.calls.filter(
+        ([fn, args]) => fn === 'get_stock_levels_v3' && (args as { p_search?: string }).p_search !== undefined,
+      );
+      expect(searched).toHaveLength(1);
+      expect((searched[0] as [string, { p_search: string }])[1].p_search).toBe('ame');
+    });
+
+    // Les états intermédiaires n'ont jamais quitté le navigateur.
+    const partiels = mockRpc.mock.calls.filter(
+      ([, args]) => ['a', 'am'].includes((args as { p_search?: string }).p_search ?? ''),
+    );
+    expect(partiels).toHaveLength(0);
+  });
+
   it('changing the search input forwards p_search to the RPC and resets paging', async () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));

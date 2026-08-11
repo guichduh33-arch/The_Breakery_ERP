@@ -12,7 +12,7 @@
 // Les paniers se RECOUVRENT : `low` inclut `zero` et `negative`. La somme des
 // compteurs n'est donc pas le total, et l'interface doit le dire.
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import { STOCK_LEVELS_QUERY_KEY } from './useStockLevels.js';
 
@@ -41,6 +41,10 @@ export function useStockCounters(filters: StockCountersFilters = {}) {
   return useQuery<StockCounters>({
     queryKey: [...STOCK_COUNTERS_QUERY_KEY, { ...filters }] as const,
     staleTime: 30_000,
+    // Les compteurs sont lus en permanence pendant que l'utilisateur tape :
+    // les laisser retomber à 0 entre deux réponses ferait clignoter cinq
+    // chiffres et le pied à chaque frappe.
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const args: { p_category_id?: string; p_search?: string } = {};
       if (filters.categoryId !== undefined && filters.categoryId !== '') {

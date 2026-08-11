@@ -21,7 +21,7 @@
 //     différentes dans la même rangée.
 
 import { Plus, Truck, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input, Select } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
@@ -44,6 +44,13 @@ import { useStockCounters } from '@/features/inventory/hooks/useStockCounters.js
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
 
 const PAGE_SIZE = 50;
+
+// Pas de hook de debounce partagé dans ce dépôt — l'idiome maison est une
+// minuterie référencée, portée par l'appelant (voir `AuditLogFilters`, et le
+// commentaire d'en-tête de `useIngredientSearch` : « debouncing is the caller's
+// concern »). 250 ms : au-dessus, la liste traîne derrière la frappe ; en
+// dessous, « croissant » coûte encore une requête par lettre.
+const SEARCH_DEBOUNCE_MS = 250;
 
 type ModalState =
   | { kind: 'none' }
@@ -69,21 +76,37 @@ export default function InventoryPage() {
   const canReceive = hasPermission('purchasing.po.create');
   const canWaste   = hasPermission('inventory.waste');
 
-  const [search,     setSearch    ] = useState<string>('');
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [bucket,     setBucket    ] = useState<StockBucket>('all');
-  const [page,       setPage      ] = useState<number>(0);
-  const [modal,      setModal     ] = useState<ModalState>({ kind: 'none' });
+  // `search` est ce que l'utilisateur voit dans le champ, à la frappe près.
+  // `appliedSearch` est ce qui part au serveur — un seul champ ici, donc pas
+  // de piège de fermeture obsolète comme sur les filtres d'audit.
+  const [search,        setSearch       ] = useState<string>('');
+  const [appliedSearch, setAppliedSearch] = useState<string>('');
+  const [categoryId,    setCategoryId   ] = useState<string>('');
+  const [bucket,        setBucket       ] = useState<StockBucket>('all');
+  const [page,          setPage         ] = useState<number>(0);
+  const [modal,         setModal        ] = useState<ModalState>({ kind: 'none' });
+
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+  }, []);
+
+  function onSearchChange(next: string): void {
+    setSearch(next);
+    setPage(0);
+    if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => { setAppliedSearch(next); }, SEARCH_DEBOUNCE_MS);
+  }
 
   const filters = useMemo<StockLevelsFilters>(
     () => ({
-      ...(search     !== '' ? { search }     : {}),
-      ...(categoryId !== '' ? { categoryId } : {}),
+      ...(appliedSearch !== '' ? { search: appliedSearch } : {}),
+      ...(categoryId    !== '' ? { categoryId }            : {}),
       bucket,
       limit:  PAGE_SIZE,
       offset: page * PAGE_SIZE,
     }),
-    [search, categoryId, bucket, page],
+    [appliedSearch, categoryId, bucket, page],
   );
 
   // ADR-024 déc. 2 — les compteurs suivent la recherche et la catégorie, JAMAIS
@@ -91,10 +114,10 @@ export default function InventoryPage() {
   // cesserait d'être un moyen d'en changer.
   const counterFilters = useMemo(
     () => ({
-      ...(search     !== '' ? { search }     : {}),
-      ...(categoryId !== '' ? { categoryId } : {}),
+      ...(appliedSearch !== '' ? { search: appliedSearch } : {}),
+      ...(categoryId    !== '' ? { categoryId }            : {}),
     }),
-    [search, categoryId],
+    [appliedSearch, categoryId],
   );
 
   const list     = useStockLevels(filters);
@@ -280,7 +303,7 @@ export default function InventoryPage() {
         <Input
           id="inv-search"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+          onChange={(e) => { onSearchChange(e.target.value); }}
           placeholder="Search by SKU or product name"
           maxLength={64}
           className="w-full max-w-xs"
@@ -321,10 +344,14 @@ export default function InventoryPage() {
           rows={pageRows}
           getRowKey={(r) => r.product_id}
           isLoading={list.isLoading}
+          // Les lignes précédentes restent à l'écran pendant qu'une nouvelle
+          // requête tourne (`keepPreviousData`) : on les estompe pour ne pas
+          // laisser croire que le clic n'a rien fait.
+          {...(list.isPlaceholderData ? { className: 'opacity-60 transition-opacity duration-fast' } : {})}
           density="compact"
           emptyTitle="No product here"
           emptyDescription={
-            search !== '' || categoryId !== '' || bucket !== 'all'
+            appliedSearch !== '' || categoryId !== '' || bucket !== 'all'
               ? 'Nothing matches this filter. Widen the search, or pick another counter above.'
               : 'No product carries a stock level yet.'
           }

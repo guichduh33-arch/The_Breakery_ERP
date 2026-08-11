@@ -9,7 +9,7 @@
 // d'exister dès que le filtre ne ramène aucune ligne : le pied ne pouvait alors
 // plus dire « 0 sur N », au moment précis où c'est utile.
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import type { Database } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
@@ -56,6 +56,12 @@ export function useStockLevels(filters: StockLevelsFilters = {}) {
   return useQuery<StockLevelRow[]>({
     queryKey: [...STOCK_LEVELS_QUERY_KEY, { ...filters, limit, offset, bucket }] as const,
     staleTime: 30_000,
+    // Sans ceci, chaque changement de clé — panier, page, recherche — repasse
+    // la requête en `isLoading`, la table est démontée au profit du squelette,
+    // et la page saute. Les lignes précédentes tiennent l'écran le temps que
+    // les nouvelles arrivent ; `isLoading` ne vaut plus que pour le tout
+    // premier chargement.
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const args: {
         p_category_id?:  string;
