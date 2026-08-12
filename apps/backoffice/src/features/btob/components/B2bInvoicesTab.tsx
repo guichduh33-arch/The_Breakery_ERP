@@ -12,12 +12,12 @@ import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
 import { CancelB2bOrderModal } from './CancelB2bOrderModal.js';
-
-function statusBadge(inv: B2bInvoiceRow): { label: string; cls: string } {
-  if (Number(inv.outstanding) === 0) return { label: 'paid',    cls: 'bg-success-soft text-success' };
-  if (Number(inv.amount_paid) > 0)   return { label: 'partial', cls: 'bg-warning-soft text-warning' };
-  return { label: 'unpaid', cls: 'bg-red-soft text-red' };
-}
+import {
+  B2B_SETTLEMENT_BADGE,
+  B2B_SETTLEMENT_LABEL,
+  B2B_SETTLEMENT_TONE,
+  settlementOf,
+} from '../paymentStatusMeta.js';
 
 export interface B2bInvoicesTabProps {
   search:    string;
@@ -38,15 +38,15 @@ interface InvoiceRowProps {
 // so an in-flight PDF never disables the other rows' buttons.
 function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRowProps): JSX.Element {
   const invoicePdf = useDownloadB2bInvoice();
-  const badge = statusBadge(inv);
+  const settlement = settlementOf(Number(inv.outstanding), Number(inv.amount_paid));
   const cancellable = inv.order_status === 'b2b_pending' && Number(inv.amount_paid) === 0;
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
       <div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
-            {badge.label}
+          <span className="font-data text-[12.5px] tabular-nums text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
+          <span className={`${B2B_SETTLEMENT_BADGE} ${B2B_SETTLEMENT_TONE[settlement]}`}>
+            {B2B_SETTLEMENT_LABEL[settlement]}
           </span>
         </div>
         <div className="text-xs text-text-secondary">
@@ -58,7 +58,7 @@ function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRo
       </div>
       <div className="flex items-center gap-4">
         <div className="text-right text-xs">
-          <div className="font-mono text-base text-text-primary">{formatIdr(Number(inv.outstanding))}</div>
+          <div className="font-data text-base tabular-nums text-text-primary">{formatIdr(Number(inv.outstanding))}</div>
           <div className="text-text-muted">
             of {formatIdr(Number(inv.invoice_total))} • paid {formatIdr(Number(inv.amount_paid))}
           </div>

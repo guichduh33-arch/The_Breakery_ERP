@@ -22,6 +22,7 @@ import {
 } from '../hooks/useRecordB2bPayment.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
+import { B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE } from '../paymentStatusMeta.js';
 
 export interface RecordB2bPaymentModalProps {
   open:    boolean;
@@ -183,7 +184,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   <span className="flex items-center gap-2">
                     <span className="font-mono">{formatIdr(a.amount_applied)}</span>
                     {a.fully_settled && (
-                      <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">settled</span>
+                      <span className={`${B2B_SETTLEMENT_BADGE} ${B2B_SETTLEMENT_TONE.paid}`}>settled</span>
                     )}
                   </span>
                 </li>

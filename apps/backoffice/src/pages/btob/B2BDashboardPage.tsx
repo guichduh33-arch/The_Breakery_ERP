@@ -8,8 +8,6 @@ import { Link } from 'react-router-dom';
 import { useState, type JSX } from 'react';
 import {
   AlertTriangle,
-  ArrowRight,
-  Building2,
   Calendar,
   ClipboardList,
   CreditCard,
@@ -37,12 +35,15 @@ import {
 } from '@/features/btob/hooks/useB2bDashboard.js';
 import { useB2bBalanceDrift } from '@/features/btob/hooks/useB2bBalanceDrift.js';
 import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
+import { AgingBucketsGrid } from '@/features/btob/components/AgingBucketsGrid.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
+// Rampe de GRAVITÉ uniquement — `cat-*` est réservé à l'identité d'une
+// catégorie de produit, jamais à une sévérité (DESIGN.md, Named Rules).
 const AGING_TONES: Record<string, string> = {
   Current:  'text-success',
   Overdue:  'text-warning',
-  Critical: 'text-cat-orange',
+  Critical: 'text-danger',
   Default:  'text-danger',
 };
 
@@ -69,6 +70,10 @@ export default function B2BDashboardPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span className="text-text-secondary">B2B</span>
+      </nav>
+
       <PageHeader
         title="B2B Dashboard"
         subtitle="Manage your wholesale customers and B2B orders."
@@ -174,12 +179,6 @@ export default function B2BDashboardPage(): JSX.Element {
 
       <AgingSummaryCard buckets={dash.data?.aging ?? []} loading={dash.isLoading} />
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <QuickLink to="/backoffice/customers" icon={Building2} title="B2B Clients" desc="Browse wholesale customers" />
-        <QuickLink to="/backoffice/b2b/payments" icon={CreditCard} title="Payments" desc="Track collections and balances" />
-        <QuickLink to="/backoffice/b2b/settings" icon={FileText} title="B2B Settings" desc="Payment terms & aging buckets" />
-      </div>
-
       <CreateB2bOrderModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
@@ -212,7 +211,7 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
                 <div className="text-xs text-text-secondary">{c.total_visits} orders</div>
               </div>
               <div className="text-right">
-                <div className="font-mono text-text-primary">{formatIdr(c.total_spent)}</div>
+                <div className="font-data tabular-nums text-text-primary">{formatIdr(c.total_spent)}</div>
                 {Number(c.b2b_current_balance) > 0 && (
                   <div className="text-xs text-warning">
                     {formatIdr(Number(c.b2b_current_balance))} outstanding
@@ -255,12 +254,12 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
           {rows.map((o) => (
             <li key={o.id} className="flex items-center justify-between py-2 text-sm">
               <div>
-                <div className="font-mono text-text-primary">{o.order_number}</div>
+                <div className="font-data tabular-nums text-text-primary">{o.order_number}</div>
                 <div className="text-xs text-text-secondary">
                   {new Date(o.created_at).toLocaleDateString()} • {o.status}
                 </div>
               </div>
-              <span className="font-mono text-text-primary">{formatIdr(o.total)}</span>
+              <span className="font-data tabular-nums text-text-primary">{formatIdr(o.total)}</span>
             </li>
           ))}
         </ul>
@@ -291,18 +290,7 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
       ) : totalCount === 0 ? (
         <EmptyState icon={Inbox} title="No outstanding receivables" size="sm" />
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          {buckets.map((b) => (
-            <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base p-3">
-              <div className={['text-xs font-semibold uppercase tracking-widest', AGING_TONES[b.label] ?? 'text-text-secondary'].join(' ')}>
-                {b.label}
-              </div>
-              <div className="mt-1 text-xs text-text-muted">{b.range}</div>
-              <div className="mt-2 font-mono text-lg text-text-primary">{formatIdr(b.total)}</div>
-              <div className="text-xs text-text-secondary">{b.count} clients</div>
-            </div>
-          ))}
-        </div>
+        <AgingBucketsGrid buckets={buckets} tones={AGING_TONES} />
       )}
     </Card>
   );
@@ -314,29 +302,5 @@ function Legend({ tone, label }: { tone: string; label: string }): JSX.Element {
       <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
       {label}
     </span>
-  );
-}
-
-function QuickLink({
-  to, icon: Icon, title, desc,
-}: { to: string; icon: typeof Building2; title: string; desc: string }): JSX.Element {
-  return (
-    <Link
-      to={to}
-      className="group block rounded-lg border border-border-subtle bg-bg-elevated p-4 transition-colors duration-fast hover:border-border-strong"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-soft text-gold" aria-hidden>
-            <Icon className="h-5 w-5" />
-          </span>
-          <div>
-            <div className="font-medium text-text-primary">{title}</div>
-            <div className="text-xs text-text-secondary">{desc}</div>
-          </div>
-        </div>
-        <ArrowRight className="h-4 w-4 text-text-muted transition-transform duration-fast group-hover:translate-x-0.5" aria-hidden />
-      </div>
-    </Link>
   );
 }

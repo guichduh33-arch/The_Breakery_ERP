@@ -12,13 +12,25 @@
 // répondre à « qu'est-ce qu'il y avait dedans ? ».
 
 import { useMemo, useState, type JSX } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Badge, DataTable, type DataTableColumn } from '@breakery/ui';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { cn, DataTable, type DataTableColumn } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import {
+  ORDER_STATUS_BADGE,
+  orderStatusBadgeTone,
+  orderStatusLabel,
+} from '@/features/orders/statusMeta.js';
+import {
+  B2B_SETTLEMENT_BADGE,
+  B2B_SETTLEMENT_TONE,
+} from '@/features/btob/paymentStatusMeta.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import { useB2bInvoices, type B2bInvoiceRow } from '@/features/btob/hooks/useB2bInvoices.js';
 import { B2bOrderItemsPanel } from '@/features/btob/components/B2bOrderItemsPanel.js';
+import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
 
 type PaymentFilter = 'all' | 'unpaid' | 'paid';
 
@@ -29,14 +41,17 @@ function orderDate(iso: string | null): string {
 /** Le statut de commande, et l'impayé qui le double quand il existe. */
 function statusBadges(row: B2bInvoiceRow): JSX.Element {
   const unpaid = Number(row.outstanding) > 0;
+  // L'annulation B2B pose `voided` (cancel_b2b_order) — « cancelled » n'existe
+  // pas dans l'enum ; on garde les deux gardes tant que la vue type en string.
+  const dead = row.order_status === 'voided' || row.order_status === 'cancelled';
   return (
     <div className="flex items-center gap-1.5">
-      <Badge variant={row.order_status === 'cancelled' ? 'destructive' : 'secondary'}>
-        {row.order_status}
-      </Badge>
-      {unpaid && row.order_status !== 'cancelled' && (
+      <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(row.order_status))}>
+        {orderStatusLabel(row.order_status)}
+      </span>
+      {unpaid && !dead && (
         <span
-          className="inline-flex rounded-sm bg-danger-soft px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest text-danger"
+          className={cn(B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE.unpaid)}
           title={`${formatIdr(row.outstanding)} still outstanding`}
         >
           unpaid
@@ -49,6 +64,8 @@ function statusBadges(row: B2bInvoiceRow): JSX.Element {
 export default function B2BOrdersPage(): JSX.Element {
   const [payment, setPayment] = useState<PaymentFilter>('all');
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [createOpen, setCreateOpen] = useState<boolean>(false);
+  const canCreate = useAuthStore((s) => s.hasPermission('pos.sale.create'));
 
   const { data, isLoading, error } = useB2bInvoices(undefined, false);
 
@@ -161,9 +178,25 @@ export default function B2BOrdersPage(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-[13px]">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>B2B</span>
+        <span className="text-text-inert" aria-hidden>›</span>
+        <span className="text-text-secondary">Orders</span>
+      </nav>
+
       <PageHeader
         title="B2B orders"
         subtitle="One row per wholesale order. Click a row to see what was in it. Orders are collected in store — there is no delivery run."
+        actions={
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
+            disabled={!canCreate}
+            onClick={() => { setCreateOpen(true); }}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New B2B Order
+          </button>
+        }
       />
 
       <ListCounterStrip
@@ -203,6 +236,8 @@ export default function B2BOrdersPage(): JSX.Element {
           }
         />
       )}
+
+      <CreateB2bOrderModal open={createOpen} onClose={() => { setCreateOpen(false); }} />
     </div>
   );
 }

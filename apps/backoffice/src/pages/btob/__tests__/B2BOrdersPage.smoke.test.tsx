@@ -115,6 +115,17 @@ describe('B2BOrdersPage', () => {
     expect(screen.getByText('unpaid')).toBeInTheDocument();
   });
 
+  it('lot 3 — breadcrumb, badge de statut unifié et action de création dans le bandeau', async () => {
+    render(wrap(<B2BOrdersPage />));
+    await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Orders');
+    // Le badge vient de statusMeta : libellé humain, plus la valeur brute.
+    expect(screen.getAllByText('Completed').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText('completed')).not.toBeInTheDocument();
+    // D3 acté : la liste porte l'action de création (désactivée sans la gate).
+    expect(screen.getByRole('button', { name: /new b2b order/i })).toBeInTheDocument();
+  });
+
   it('shows the pickup day, and says so when none was agreed', async () => {
     // La colonne est ouverte mais sa saisie n'est pas branchee : « not set » est
     // l'etat NORMAL aujourd'hui, pas une erreur. Il doit se lire comme tel.

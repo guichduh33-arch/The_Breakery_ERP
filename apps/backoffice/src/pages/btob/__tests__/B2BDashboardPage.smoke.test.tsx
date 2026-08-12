@@ -1,6 +1,7 @@
-// apps/backoffice/src/__tests__/btob-dashboard.smoke.test.tsx
+// apps/backoffice/src/pages/btob/__tests__/B2BDashboardPage.smoke.test.tsx
 //
 // Session 14 / Phase 5.B — smoke for B2BDashboardPage.
+// Lot 3 B2B — co-localisé (il vivait dans src/__tests__/), QuickLinks morts.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -111,18 +112,19 @@ function renderPage() {
 describe('B2BDashboardPage', () => {
   beforeEach(() => { mockState.mode = 'ok'; });
 
-  it('renders title, KPI tiles and quick links', async () => {
+  it('renders title, breadcrumb and KPI tiles — the QuickLink menu is dead', async () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: /b2b dashboard/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B');
     expect(screen.getByText(/active clients/i)).toBeInTheDocument();
     expect(screen.getByText(/monthly b2b revenue/i)).toBeInTheDocument();
     expect(screen.getByText(/outstanding ar/i)).toBeInTheDocument();
     expect(screen.getByText(/pending orders/i)).toBeInTheDocument();
     expect(screen.getByText(/total orders/i)).toBeInTheDocument();
-    // Quick links
-    expect(screen.getByRole('link', { name: /b2b clients/i })).toHaveAttribute('href', '/backoffice/customers');
-    expect(screen.getAllByRole('link', { name: /payments/i }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('link', { name: /b2b settings/i })).toHaveAttribute('href', '/backoffice/b2b/settings');
+    // Les QuickLinks dupliquaient la navigation : une tuile de hub sans valeur
+    // courante est un menu, et le menu existe déjà (DESIGN.md, archétype Hub).
+    expect(screen.queryByRole('link', { name: /b2b clients/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /b2b settings/i })).not.toBeInTheDocument();
   });
 
   it('lists top B2B clients from the joined data', async () => {
