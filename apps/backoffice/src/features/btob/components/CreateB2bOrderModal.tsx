@@ -26,6 +26,7 @@ import {
   DialogDescription,
   DialogTitle,
   Input,
+  Select,
 } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import {
@@ -244,11 +245,10 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             <label htmlFor={customerSelId} className="text-xs uppercase tracking-widest text-text-secondary">
               Customer
             </label>
-            <select
+            <Select
               id={customerSelId}
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              onChange={(e) => { setCustomerId(e.target.value); }}
               disabled={customers.isLoading}
             >
               <option value="">— Select a B2B customer —</option>
@@ -257,7 +257,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                   {c.b2b_company_name ?? c.name}
                 </option>
               ))}
-            </select>
+            </Select>
             {selectedCustomer !== null && (
               <p className="text-[10px] text-text-muted">
                 Outstanding: <span className="font-mono">{formatIdr(selectedCustomer.b2b_current_balance)}</span>
@@ -285,11 +285,11 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                 const overstock = product !== null && Number.isFinite(q) && q > product.current_stock;
                 return (
                   <div key={row.rowKey} className="grid grid-cols-12 gap-2 items-start">
-                    <select
+                    <Select
                       aria-label={`Product for line ${idx + 1}`}
                       value={row.productId}
-                      onChange={(e) => handleProductChange(row.rowKey, e.target.value)}
-                      className="col-span-6 h-9 rounded-md border border-border-subtle bg-bg-input px-2 text-sm text-text-primary"
+                      onChange={(e) => { handleProductChange(row.rowKey, e.target.value); }}
+                      className="col-span-6"
                       disabled={products.isLoading}
                     >
                       <option value="">— Product —</option>
@@ -298,7 +298,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                           {p.name} ({p.sku})
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <Input
                       type="number"
                       inputMode="decimal"
@@ -346,8 +346,11 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
+              {/* « Pickup » et non « Delivery » : la marchandise est retirée au
+                  magasin, il n'existe aucune tournée (décision produit actée —
+                  docs/product/DESCRIPTION.md). Le payload RPC ne bouge pas. */}
               <label htmlFor={deliveryId} className="text-xs uppercase tracking-widest text-text-secondary">
-                Delivery date
+                Pickup date
               </label>
               <Input
                 id={deliveryId}
@@ -374,7 +377,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary"
-              placeholder="Optional — PO reference, delivery instructions…"
+              placeholder="Optional — PO reference, pickup instructions…"
             />
           </div>
 

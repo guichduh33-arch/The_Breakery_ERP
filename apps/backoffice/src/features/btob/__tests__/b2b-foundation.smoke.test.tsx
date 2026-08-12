@@ -183,6 +183,14 @@ describe('B2B foundation (S24)', () => {
     expect(btn).toBeEnabled();
   });
 
+  it('T2b (lot 4) — le modal dit « Pickup date », jamais « Delivery » (pickup-only)', async () => {
+    renderDashboard();
+    const btn = await screen.findByRole('button', { name: /new b2b order/i });
+    fireEvent.click(btn);
+    expect(await screen.findByLabelText(/pickup date/i)).toBeInTheDocument();
+    expect(screen.queryByText(/delivery date/i)).not.toBeInTheDocument();
+  });
+
   it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v2', async () => {
     renderPaymentModal();
     // Wait for B2B customer option to appear.

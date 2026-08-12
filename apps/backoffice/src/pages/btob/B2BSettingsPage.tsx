@@ -15,19 +15,16 @@
 // Buckets carry a local `id` for React keys but the payload strips it.
 
 import { useState, useEffect, type JSX } from 'react';
-import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
-  ArrowLeft,
-  ChevronDown,
   Clock,
-  FileText,
   List,
   Plus,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button, Card, SectionLabel } from '@breakery/ui';
+import { Button, Card, SectionLabel, Select } from '@breakery/ui';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useB2bSettings } from '@/features/btob/hooks/useB2bSettings.js';
 import { useUpdateB2bSettings } from '@/features/btob/hooks/useUpdateB2bSettings.js';
@@ -138,23 +135,16 @@ export default function B2BSettingsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <Button asChild variant="ghost" size="sm" aria-label="Back to B2B dashboard">
-            <Link to="/backoffice/b2b">
-              <ArrowLeft className="h-4 w-4" aria-hidden />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary inline-flex items-center gap-2">
-              <FileText className="h-6 w-6 text-gold" aria-hidden /> B2B Settings
-            </h1>
-            <p className="mt-1 text-sm text-text-secondary">
-              Payment terms, overdue thresholds, and aging report configuration.
-            </p>
-          </div>
-        </div>
-      </header>
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>B2B</span>
+        <span className="text-text-inert" aria-hidden>›</span>
+        <span className="text-text-secondary">Settings</span>
+      </nav>
+
+      <PageHeader
+        title="B2B Settings"
+        subtitle="Payment terms, overdue thresholds, and aging report configuration."
+      />
 
       {isLoading && (
         <div role="status" aria-label="Loading settings" className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary">
@@ -167,19 +157,16 @@ export default function B2BSettingsPage(): JSX.Element {
           <span className="inline-flex items-center gap-2"><Clock className="h-3.5 w-3.5" aria-hidden /> Default payment terms</span>
         </SectionLabel>
         <p className="text-xs text-text-secondary">Default terms applied to new B2B orders.</p>
-        <label className="flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-bg-base px-3">
-          <select
-            value={defaultTerm}
-            onChange={(e) => setDefaultTerm(e.target.value)}
-            className="h-9 w-full bg-transparent text-sm text-text-primary outline-none"
-            aria-label="Default payment terms"
-          >
-            {DEFAULT_TERM_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <ChevronDown className="h-4 w-4 text-text-muted" aria-hidden />
-        </label>
+        <Select
+          value={defaultTerm}
+          onChange={(e) => { setDefaultTerm(e.target.value); }}
+          aria-label="Default payment terms"
+          className="w-full max-w-xs"
+        >
+          {DEFAULT_TERM_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
       </Card>
 
       <Card variant="default" padding="md" className="space-y-3">
@@ -191,7 +178,7 @@ export default function B2BSettingsPage(): JSX.Element {
           {availableTerms.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle bg-bg-base px-2 py-1 font-mono text-xs text-text-primary"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle bg-bg-base px-2 py-1 font-data text-xs text-text-primary"
             >
               {t}
               <button
@@ -234,7 +221,7 @@ export default function B2BSettingsPage(): JSX.Element {
               onChange={(e) => setThreshold(Number(e.target.value) || 0)}
               min={0}
               max={365}
-              className="h-9 w-20 rounded-md bg-transparent px-2 text-right font-mono text-sm text-text-primary outline-none"
+              className="h-9 w-20 rounded-md bg-transparent px-2 text-right font-data tabular-nums text-sm text-text-primary outline-none"
               aria-label="Critical overdue threshold (days)"
             />
             <span className="text-xs text-text-muted">days</span>
@@ -266,7 +253,7 @@ export default function B2BSettingsPage(): JSX.Element {
                 value={b.min}
                 onChange={(e) => updateBucket(b.id, { min: Number(e.target.value) || 0 })}
                 aria-label={`${b.id} min days`}
-                className="h-9 w-20 rounded-md bg-bg-input px-2 text-right font-mono text-sm text-text-primary outline-none"
+                className="h-9 w-20 rounded-md bg-bg-input px-2 text-right font-data tabular-nums text-sm text-text-primary outline-none"
               />
               <span className="text-xs text-text-muted">→</span>
               <input
@@ -275,7 +262,7 @@ export default function B2BSettingsPage(): JSX.Element {
                 onChange={(e) => updateBucket(b.id, { max: e.target.value === '' ? null : Number(e.target.value) })}
                 placeholder="Max"
                 aria-label={`${b.id} max days`}
-                className="h-9 w-20 rounded-md bg-bg-input px-2 text-right font-mono text-sm text-text-primary outline-none"
+                className="h-9 w-20 rounded-md bg-bg-input px-2 text-right font-data tabular-nums text-sm text-text-primary outline-none"
               />
               <button
                 type="button"

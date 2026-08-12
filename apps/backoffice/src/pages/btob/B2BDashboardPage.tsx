@@ -54,6 +54,11 @@ function kpiValue(v: number | undefined): number | string {
 
 export default function B2BDashboardPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  // Écart de gates ASSUMÉ ici, pas harmonisé : la route est gatée `b2b.read`
+  // (routes/index.tsx) mais la page re-vérifie `customers.read` (ses données
+  // viennent de la table customers) et la création exige `pos.sale.create`.
+  // Toute harmonisation est un changement de sémantique sécurité — hors du
+  // chantier de conformité visuelle (validation owner + tests négatifs).
   const canRead   = hasPermission('customers.read');
   const canCreate = hasPermission('pos.sale.create');
   const [createOpen, setCreateOpen] = useState<boolean>(false);

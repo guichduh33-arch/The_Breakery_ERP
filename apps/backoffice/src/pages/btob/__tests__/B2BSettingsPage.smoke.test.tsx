@@ -1,4 +1,4 @@
-// apps/backoffice/src/__tests__/btob-settings.smoke.test.tsx
+// apps/backoffice/src/pages/btob/__tests__/B2BSettingsPage.smoke.test.tsx
 //
 // Session 39 / Wave C2 — smoke tests for B2BSettingsPage wired to b2b_settings RPCs.
 //
@@ -7,7 +7,7 @@
 //     whose aging_buckets have NO local ids.
 // T3: the «Read-only preview» banner is absent.
 
-import { describe, it, expect, vi, type Mock } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -71,11 +71,11 @@ describe('B2BSettingsPage', () => {
 
     // Wait for data to populate the form
     await waitFor(() => {
-      expect((screen.getByLabelText(/default payment terms/i) as HTMLSelectElement).value).toBe('net_14');
+      expect(screen.getByLabelText<HTMLSelectElement>(/default payment terms/i).value).toBe('net_14');
     });
 
     // Threshold from server = 45, not the old hardcoded 30
-    expect((screen.getByLabelText(/critical overdue threshold/i) as HTMLInputElement).value).toBe('45');
+    expect(screen.getByLabelText<HTMLInputElement>(/critical overdue threshold/i).value).toBe('45');
 
     // Available terms from server
     expect(screen.getByText('net_14')).toBeInTheDocument();
@@ -97,17 +97,17 @@ describe('B2BSettingsPage', () => {
 
     // Wait for server data to populate
     await waitFor(() => {
-      expect((screen.getByLabelText(/critical overdue threshold/i) as HTMLInputElement).value).toBe('45');
+      expect(screen.getByLabelText<HTMLInputElement>(/critical overdue threshold/i).value).toBe('45');
     });
 
     // Edit threshold to 60
-    await act(async () => {
+    act(() => {
       fireEvent.change(screen.getByLabelText(/critical overdue threshold/i), { target: { value: '60' } });
     });
 
     // Save bar should appear with enabled Save button
     const saveBtn = await screen.findByRole('button', { name: /save changes/i });
-    await act(async () => {
+    act(() => {
       fireEvent.click(saveBtn);
     });
 
@@ -116,7 +116,7 @@ describe('B2BSettingsPage', () => {
     });
 
     // Verify the p_patch shape
-    const allCalls = (rpcMock as Mock).mock.calls as Array<[string, { p_patch: Record<string, unknown> }]>;
+    const allCalls = (rpcMock).mock.calls as [string, { p_patch: Record<string, unknown> }][];
     const call = allCalls.find((c) => c[0] === 'update_b2b_settings_v1');
     expect(call).toBeDefined();
     const patch = call![1].p_patch;
@@ -128,7 +128,7 @@ describe('B2BSettingsPage', () => {
     expect(patch).toHaveProperty('aging_buckets');
 
     // Buckets have no local `id`
-    const buckets = patch.aging_buckets as Array<Record<string, unknown>>;
+    const buckets = patch.aging_buckets as Record<string, unknown>[];
     expect(buckets.length).toBeGreaterThan(0);
     for (const bucket of buckets) {
       expect(bucket).not.toHaveProperty('id');
@@ -138,7 +138,14 @@ describe('B2BSettingsPage', () => {
     }
   });
 
-  it('T3: the «Read-only preview» banner is absent', async () => {
+  it('T4 (lot 4) : breadcrumb et PageHeader partagé remplacent l’en-tête artisanal', async () => {
+    renderPage();
+    expect(await screen.findByRole('heading', { name: /b2b settings/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Settings');
+    expect(screen.queryByLabelText(/back to b2b dashboard/i)).not.toBeInTheDocument();
+  });
+
+  it('T3: the «Read-only preview» banner is absent', () => {
     rpcMock.mockImplementation((name: string) => {
       if (name === 'get_b2b_settings_v1') {
         return Promise.resolve({ data: SERVER_SETTINGS, error: null });

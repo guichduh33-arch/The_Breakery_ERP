@@ -6,7 +6,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Download, FileText, XCircle } from 'lucide-react';
-import { Button, EmptyState } from '@breakery/ui';
+import { Button, EmptyState, Select } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
@@ -120,10 +120,10 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
   return (
     <div className="border-t border-border-subtle">
       <div className="flex flex-wrap items-center gap-3 p-4">
-        <select
+        <Select
           value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-          className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          onChange={(e) => { setCustomerId(e.target.value); }}
+          className="w-56"
           aria-label="Filter by customer"
           data-testid="inv-customer-filter"
         >
@@ -131,7 +131,7 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
           {customers.data?.map((c) => (
             <option key={c.id} value={c.id}>{c.b2b_company_name ?? c.name}</option>
           ))}
-        </select>
+        </Select>
         <label className="flex items-center gap-2 text-sm text-text-secondary">
           <input
             type="checkbox"

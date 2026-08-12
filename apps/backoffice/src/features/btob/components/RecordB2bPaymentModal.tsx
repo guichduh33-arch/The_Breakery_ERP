@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogTitle,
   Input,
+  Select,
 } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import {
@@ -206,11 +207,10 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
             <label htmlFor={customerId_} className="text-xs uppercase tracking-widest text-text-secondary">
               Customer
             </label>
-            <select
+            <Select
               id={customerId_}
               value={customerId}
               onChange={(e) => { setCustomerId(e.target.value); setSelectedIds([]); }}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
               disabled={customers.isLoading}
             >
               <option value="">— Select a B2B customer —</option>
@@ -219,7 +219,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   {c.b2b_company_name ?? c.name}
                 </option>
               ))}
-            </select>
+            </Select>
             {selectedCustomer !== null && (
               <p className="text-[10px] text-text-muted">
                 Outstanding: <span className="font-mono">{formatIdr(selectedCustomer.b2b_current_balance)}</span>
@@ -293,16 +293,15 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               <label htmlFor={methodId} className="text-xs uppercase tracking-widest text-text-secondary">
                 Method
               </label>
-              <select
+              <Select
                 id={methodId}
                 value={method}
-                onChange={(e) => setMethod(e.target.value as B2bPaymentMethod)}
-                className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+                onChange={(e) => { setMethod(e.target.value as B2bPaymentMethod); }}
               >
                 {METHODS.map((m) => (
                   <option key={m.value} value={m.value}>{m.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
