@@ -91,7 +91,8 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - Do what has been asked; nothing more, nothing less.
 - ALWAYS read a file before editing it.
 - NEVER commit secrets, credentials, or .env files.
-- Keep files under 500 lines.
+- Keep files under 500 lines — **hors fichiers générés** (`types.generated.ts` est
+  régénéré à chaque changement de schéma, la règle ne s'y applique pas).
 - Validate input at system boundaries.
 - Monorepo pnpm/turbo : code dans `apps/{pos,backoffice,print-bridge}/src`,
   `packages/{domain,supabase,ui,utils}/src`, `supabase/{functions,migrations,tests}`.
