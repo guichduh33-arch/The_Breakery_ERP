@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderDetailPage } from '../OrderDetailPage.js';
@@ -67,8 +67,8 @@ function renderAt(path: string) {
 describe('OrderDetailPage', () => {
   it('renders order header with number + status + customer drill', async () => {
     renderAt('/backoffice/orders/o-1');
-    await waitFor(() => expect(screen.getByText(/ORD-001/)).toBeInTheDocument());
-    expect(screen.getByText(/completed/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: /ORD-001/ })).toBeInTheDocument());
+    expect(screen.getAllByText(/completed/i).length).toBeGreaterThan(0);
     const custLink = screen.getByRole('link', { name: /Café Bali/ });
     expect(custLink.getAttribute('href')).toBe('/backoffice/customers/c-1');
   });
@@ -82,16 +82,20 @@ describe('OrderDetailPage', () => {
     expect(screen.getAllByText(/99\.000|99,000/).length).toBeGreaterThan(0);
   });
 
-  it('T3 (C4/BO-12) Back link points to /backoffice/orders, not /backoffice', async () => {
+  // Refonte Document (ADR-025) : le bouton « Back » cède au fil d'Ariane —
+  // l'invariant C4/BO-12 (retour vers /backoffice/orders, pas /backoffice)
+  // est désormais porté par le lien « Orders » du breadcrumb.
+  it('T3 (C4/BO-12) breadcrumb Orders link points to /backoffice/orders, not /backoffice', async () => {
     renderAt('/backoffice/orders/o-1');
-    await waitFor(() => expect(screen.getByText(/ORD-001/)).toBeInTheDocument());
-    const backLink = screen.getByRole('link', { name: /back/i });
-    expect(backLink.getAttribute('href')).toBe('/backoffice/orders');
+    await waitFor(() => expect(screen.getByRole('heading', { name: /ORD-001/ })).toBeInTheDocument());
+    const nav = screen.getByRole('navigation', { name: /breadcrumb/i });
+    const ordersLink = within(nav).getByRole('link', { name: 'Orders' });
+    expect(ordersLink.getAttribute('href')).toBe('/backoffice/orders');
   });
 
   it('renders a named promotion line between Discount and PB1', async () => {
     renderAt('/backoffice/orders/o-1');
-    await waitFor(() => expect(screen.getByText(/ORD-001/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /ORD-001/ })).toBeInTheDocument());
     expect(screen.getByText('Happy Hour −15%')).toBeInTheDocument();
     expect(screen.getAllByText(/15\.000|15,000/).length).toBeGreaterThan(0);
   });

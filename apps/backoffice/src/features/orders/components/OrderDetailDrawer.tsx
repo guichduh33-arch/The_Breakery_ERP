@@ -20,39 +20,32 @@ import {
   Hash,
   MapPin,
   PackageOpen,
-  Plus,
   ReceiptText,
-  Wallet,
 } from 'lucide-react';
+import { cn } from '@breakery/ui';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
+import {
+  ORDER_STATUS_BADGE,
+  ORDER_STATUS_BADGE_TONE,
+  ORDER_TYPE_LABEL,
+  orderStatusLabel,
+} from '@/features/orders/statusMeta.js';
 
 export interface OrderDetailDrawerProps {
   orderId: string | null;
   onClose: () => void;
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  dine_in: '🍽️ Dine In',
-  take_out: '🍱 Takeaway',
-  delivery: '🛵 Delivery',
-  b2b: '🏢 B2B',
-};
-
-const STATUS_TONE: Record<string, string> = {
-  completed: 'bg-success-soft text-success',
-  paid: 'bg-success-soft text-success',
-  voided: 'bg-danger-soft text-danger',
-  pending_payment: 'bg-warning-soft text-warning',
-  b2b_pending: 'bg-warning-soft text-warning',
-  draft: 'bg-surface-2 text-text-secondary',
-};
+const BUSINESS_TZ = 'Asia/Makassar';
 
 const KITCHEN_TONE: Record<string, string> = {
-  new: 'bg-info-soft text-info ring-info/30',
-  preparing: 'bg-warning-soft text-warning ring-warning/30',
-  ready: 'bg-success-soft text-success ring-success/30',
-  served: 'bg-surface-2 text-text-muted ring-border-subtle',
+  new: 'bg-info-soft text-info',
+  preparing: 'bg-warning-soft text-warning',
+  ready: 'bg-success-soft text-success',
+  served: 'bg-surface-4 text-text-muted',
 };
+
+const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
 
 function rp(n: number | null): string {
   return new Intl.NumberFormat('id-ID').format(Number(n ?? 0));
@@ -65,6 +58,7 @@ function fmtDateTime(iso: string): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: BUSINESS_TZ,
   });
 }
 
@@ -75,6 +69,7 @@ function fmtLogTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: BUSINESS_TZ,
   });
 }
 
@@ -88,8 +83,8 @@ function InfoCell({
   children: React.ReactNode;
 }): JSX.Element {
   return (
-    <div className="rounded-lg bg-bg-overlay/50 p-3">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-secondary">
+    <div className="rounded-md bg-surface-inert p-3">
+      <div className="flex items-center gap-1.5 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
         <Icon className="h-3 w-3" aria-hidden /> {label}
       </div>
       <div className="mt-1 text-sm text-text-primary">{children}</div>
@@ -101,14 +96,13 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
   const firstPayment = order.payments[0];
   const isPaid = order.payments.length > 0 || order.status === 'paid' || order.status === 'completed';
 
-  const activity: { key: string; title: string; at: string; tone: string; icon: typeof Plus; detail?: string }[] = [
-    { key: 'created', title: 'Order created', at: order.created_at, tone: 'text-info ring-info/30', icon: Plus },
+  const activity: { key: string; title: string; at: string; tone: string; detail?: string }[] = [
+    { key: 'created', title: 'Order created', at: order.created_at, tone: 'bg-info' },
     ...order.payments.map((p, i) => ({
       key: `pay-${p.id ?? i}`,
       title: 'Payment completed',
       at: p.paid_at,
-      tone: 'text-success ring-success/30',
-      icon: Wallet,
+      tone: 'bg-success',
       detail: `Method: ${p.method}`,
     })),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
@@ -121,7 +115,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
           <span className="font-mono text-xs">{order.id.slice(0, 8)} …</span>
         </InfoCell>
         <InfoCell icon={CalendarDays} label="Date & Time">{fmtDateTime(order.created_at)}</InfoCell>
-        <InfoCell icon={PackageOpen} label="Type">{TYPE_LABEL[order.order_type] ?? order.order_type}</InfoCell>
+        <InfoCell icon={PackageOpen} label="Type">{ORDER_TYPE_LABEL[order.order_type] ?? order.order_type}</InfoCell>
         {/* Fiche 02 D2.5 — table visible au BO ; l'historique des transferts se
             consulte dans le journal d'audit (action order.table_transfer). */}
         <InfoCell icon={MapPin} label="Table">
@@ -129,7 +123,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         </InfoCell>
         <InfoCell icon={ReceiptText} label="Payment Status">
           {isPaid ? (
-            <span className="font-medium text-success">✓ Paid</span>
+            <span className="font-medium text-success">Paid</span>
           ) : (
             <span className="font-medium text-warning">Unpaid</span>
           )}
@@ -143,24 +137,22 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
       </div>
 
       {/* Items */}
-      <div className="rounded-xl border border-border-subtle p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gold">
-          <PackageOpen className="h-4 w-4" aria-hidden /> Items ({order.items.length})
-        </div>
-        <ul className="divide-y divide-border-subtle">
+      <div className="rounded-md border border-border-subtle p-4">
+        <h3 className={SECTION_LABEL}>Items ({order.items.length})</h3>
+        <ul className="mt-2 divide-y divide-border-row">
           {order.items.map((it) => {
             const ks = (it.kitchen_status ?? '').toLowerCase();
-            const tone = KITCHEN_TONE[ks] ?? 'bg-surface-2 text-text-muted ring-border-subtle';
+            const tone = KITCHEN_TONE[ks] ?? 'bg-surface-4 text-text-muted';
             return (
               <li key={it.id} className={`flex items-center gap-3 py-2.5 ${it.is_cancelled ? 'opacity-50 line-through' : ''}`}>
-                <span className="font-mono text-sm text-gold">{it.quantity}x</span>
+                <span className="font-data text-sm tabular-nums text-text-secondary">{it.quantity}×</span>
                 <span className="flex-1 text-sm text-text-primary">{it.name_snapshot}</span>
                 {it.kitchen_status && (
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ring-1 ${tone}`}>
-                    <Clock className="h-2.5 w-2.5" aria-hidden /> {ks}
+                  <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${tone}`}>
+                    {ks}
                   </span>
                 )}
-                <span className="w-24 text-right font-mono text-sm text-text-primary">Rp {rp(it.line_total)}</span>
+                <span className="w-24 text-right font-data text-sm tabular-nums text-text-primary">Rp {rp(it.line_total)}</span>
               </li>
             );
           })}
@@ -168,17 +160,17 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
       </div>
 
       {/* Totals */}
-      <div className="rounded-xl border border-border-subtle p-4 text-sm">
+      <div className="rounded-md border border-border-subtle p-4 text-sm">
         <Row label="Subtotal" value={`Rp ${rp(order.subtotal)}`} muted />
         {order.discount_amount > 0 && <Row label="Discount" value={`− Rp ${rp(order.discount_amount)}`} muted />}
         {order.promotions.map((promo, i) => (
           <Row key={i} label={promo.description} value={`− Rp ${rp(promo.amount)}`} muted />
         ))}
-        <Row label="Tax (10%)" value={`Rp ${rp(order.tax_amount)}`} muted />
+        <Row label="PB1 (included)" value={`Rp ${rp(order.tax_amount)}`} muted />
         <div className="my-2 border-t border-border-subtle" />
         <div className="flex items-center justify-between">
-          <span className="text-base font-semibold text-gold">Total</span>
-          <span className="font-mono text-lg font-semibold text-gold">Rp {rp(order.total)}</span>
+          <span className="text-base font-semibold text-text-primary">Total</span>
+          <span className="font-data text-lg font-semibold tabular-nums text-gold">Rp {rp(order.total)}</span>
         </div>
         {firstPayment && (
           <>
@@ -189,28 +181,22 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
       </div>
 
       {/* Activity log */}
-      <div className="rounded-xl border border-border-subtle p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gold">
-          <Clock className="h-4 w-4" aria-hidden /> Activity Log
-        </div>
-        <ol className="space-y-3">
-          {activity.map((ev) => {
-            const Icon = ev.icon;
-            return (
-              <li key={ev.key} className="flex gap-3">
-                <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ring-2 ${ev.tone}`}>
-                  <Icon className="h-3 w-3" aria-hidden />
-                </span>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-text-primary">{ev.title}</div>
-                  {ev.detail && (
-                    <div className="mt-1 rounded-md border border-border-subtle px-2 py-1 text-xs text-text-secondary">{ev.detail}</div>
-                  )}
-                  <div className="mt-1 text-xs text-text-muted">{fmtLogTime(ev.at)}</div>
-                </div>
-              </li>
-            );
-          })}
+      <div className="rounded-md border border-border-subtle p-4">
+        <h3 className={SECTION_LABEL}>Activity</h3>
+        <ol className="mt-2 space-y-3">
+          {activity.map((ev) => (
+            <li key={ev.key} className="flex gap-3">
+              {/* Point d'état, pas une pastille décorative. */}
+              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${ev.tone}`} aria-hidden />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-text-primary">{ev.title}</div>
+                {ev.detail && (
+                  <div className="mt-0.5 text-xs text-text-secondary">{ev.detail}</div>
+                )}
+                <div className="mt-0.5 font-data text-xs tabular-nums text-text-muted">{fmtLogTime(ev.at)}</div>
+              </div>
+            </li>
+          ))}
         </ol>
       </div>
     </div>
@@ -233,12 +219,12 @@ export function OrderDetailDrawer({ orderId, onClose }: OrderDetailDrawerProps):
     <Sheet open={orderId !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-full max-w-md sm:max-w-lg" data-testid="order-detail-drawer">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2 font-serif">
+          <SheetTitle className="flex items-center gap-2">
             <Hash className="h-5 w-5 text-gold" aria-hidden />
             Order {data ? `#${data.order_number.replace(/^#+/, '')}` : ''}
             {data && (
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${STATUS_TONE[data.status] ?? 'bg-surface-2 text-text-secondary'}`}>
-                {data.status}
+              <span className={cn(ORDER_STATUS_BADGE, ORDER_STATUS_BADGE_TONE[data.status] ?? 'bg-surface-4 text-text-secondary')}>
+                {orderStatusLabel(data.status)}
               </span>
             )}
           </SheetTitle>
