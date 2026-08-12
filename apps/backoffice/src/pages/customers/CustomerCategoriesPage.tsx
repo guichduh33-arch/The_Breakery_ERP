@@ -1,34 +1,38 @@
 // apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx
 //
-// Session 14 / Phase 5.B — Customer Categories management page.
+// Catégories clients — instance de l'archétype LIST (table dense).
 //
-// Mirrors docs/Design/backoffice/customer category.jpg : a 4-up card grid,
-// each card shows the category icon (colored bubble), name, slug, pricing
-// type pill, optional description, and active state badge.
+// La grille de cartes 4-up cède à la table : une catégorie se lit en une
+// ligne (nom, slug, règle de prix, statut), se compare à ses voisines
+// colonne par colonne, et porte ses actions en bout de ligne. La bande de
+// compteurs filtre par état — jeu borné, comptage en mémoire légitime au
+// sens de l'ADR-024. Le serif et les bulles d'icônes décoratives meurent
+// avec la refonte ; la pastille de couleur reste : c'est l'identité de la
+// catégorie (famille cat-*), pas un ornement.
 //
-// S69 Volet A (Task 3) — CRUD activated: create_customer_category_v1 /
-// update_customer_category_v1 / delete_customer_category_v1 (migration
-// 20260710000135) close deviation D-W6-CUSTCAT-01. New/Edit open
-// CategoryFormModal; Delete confirms then mutates, surfacing
+// CRUD inchangé (S69 Volet A) : create/update/delete_customer_category via
+// CategoryFormModal + dialogue de confirmation, erreurs classées par
 // classifyCategoryError (esp. category_in_use).
 
-import { useState, type JSX } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState, type JSX } from 'react';
+import { Plus } from 'lucide-react';
+import { PenSquare, Trash2 } from 'lucide-react';
 import {
-  ArrowLeft,
-  Crown,
-  PenSquare,
-  Plus,
-  ShieldCheck,
-  Store,
-  Tag,
-  Trash2,
-  Users as UsersIcon,
-  Briefcase,
-  type LucideIcon,
-} from 'lucide-react';
-import { Button, Card, EmptyState, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@breakery/ui';
+  cn,
+  DataTable,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Button,
+  type DataTableColumn,
+} from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import {
   useCustomerCategories,
   type CustomerCategoryRow,
@@ -41,17 +45,6 @@ import {
   type CategoryInput,
 } from '@/features/customers/hooks/useCustomerCategoryMutations.js';
 import { CategoryFormModal } from '@/features/customers/components/CategoryFormModal.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
-
-const ICON_BY_SLUG: Record<string, LucideIcon> = {
-  retail:    UsersIcon,
-  general:   UsersIcon,
-  wholesale: Briefcase,
-  vip:       Crown,
-  staff:     ShieldCheck,
-  asap:      UsersIcon,
-  enak:      Store,
-};
 
 const TONE_BY_SLUG: Record<string, string> = {
   retail:    'bg-cat-blue',
@@ -63,17 +56,20 @@ const TONE_BY_SLUG: Record<string, string> = {
   enak:      'bg-cat-indigo',
 };
 
+const BADGE = 'inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest';
+
 function pricingLabel(cat: CustomerCategoryRow): string {
   switch (cat.price_modifier_type) {
-    case 'wholesale':           return 'Wholesale Price';
+    case 'wholesale':           return 'Wholesale price';
     case 'discount_percentage': return 'Discount %';
-    case 'custom':              return 'Custom Price';
+    case 'custom':              return 'Custom price';
     case 'retail':
-    default:                    return 'Standard Price';
+    default:                    return 'Standard price';
   }
 }
 
 type EditTarget = 'new' | CustomerCategoryRow;
+type StateBucket = 'all' | 'active' | 'inactive';
 
 export default function CustomerCategoriesPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -82,6 +78,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
   const canUpdate = hasPermission('customer_categories.update');
   const canDelete = hasPermission('customer_categories.delete');
 
+  const [bucket, setBucket] = useState<StateBucket>('all');
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomerCategoryRow | null>(null);
@@ -92,8 +89,111 @@ export default function CustomerCategoriesPage(): JSX.Element {
   const updateCat = useUpdateCustomerCategory();
   const deleteCat = useDeleteCustomerCategory();
 
+  const all = useMemo(() => cats.data ?? [], [cats.data]);
+  const rows = useMemo(() => {
+    if (bucket === 'active') return all.filter((c) => c.is_active);
+    if (bucket === 'inactive') return all.filter((c) => !c.is_active);
+    return all;
+  }, [all, bucket]);
+
+  const counters = useMemo<ListCounter[]>(() => [
+    { id: 'all', label: 'All categories', value: all.length, onSelect: () => setBucket('all') },
+    { id: 'active', label: 'Active', value: all.filter((c) => c.is_active).length, onSelect: () => setBucket('active') },
+    {
+      id: 'inactive',
+      label: 'Inactive',
+      value: all.filter((c) => !c.is_active).length,
+      title: 'Hidden from the POS category picker; existing customers keep their assignment.',
+      onSelect: () => setBucket('inactive'),
+    },
+  ], [all]);
+
+  const columns = useMemo<readonly DataTableColumn<CustomerCategoryRow>[]>(() => [
+    {
+      id: 'name', header: 'Category',
+      render: (cat) => (
+        <span className="flex items-center gap-2.5">
+          {/* Pastille d'identité de catégorie — famille cat-*. */}
+          <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full', TONE_BY_SLUG[cat.slug] ?? 'bg-text-subtle')} />
+          <span className="font-medium text-text-primary">{cat.name}</span>
+          {cat.is_default && (
+            <span className={cn(BADGE, 'bg-surface-4 text-text-muted')} title="Assigned to new customers by default — cannot be deleted.">
+              Default
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: 'slug', header: 'Slug', width: '8rem',
+      render: (cat) => <span className="font-data text-xs text-text-secondary">{cat.slug}</span>,
+    },
+    {
+      id: 'pricing', header: 'Pricing rule', width: '12rem',
+      render: (cat) => (
+        <span className="text-text-secondary">
+          {pricingLabel(cat)}
+          {cat.price_modifier_type === 'discount_percentage' && (
+            <span className="ml-1.5 font-data tabular-nums text-text-primary">−{cat.discount_percentage}%</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: 'loyalty', header: 'Loyalty', width: '7rem',
+      render: (cat) => (
+        cat.loyalty_enabled
+          ? <span className="font-data tabular-nums text-text-secondary">×{cat.points_multiplier}</span>
+          : <span className="text-text-subtle" aria-hidden>—</span>
+      ),
+    },
+    {
+      id: 'status', header: 'Status', width: '6.5rem',
+      render: (cat) => (
+        <span className={cn(BADGE, cat.is_active ? 'bg-success-soft text-success' : 'bg-surface-4 text-text-muted')}>
+          {cat.is_active ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '5rem',
+      render: (cat) => (
+        <span className="inline-flex items-center gap-0.5">
+          <button
+            type="button"
+            aria-label={`Edit ${cat.name}`}
+            title={`Edit ${cat.name}`}
+            disabled={!canUpdate}
+            onClick={() => { setFormError(null); setEditTarget(cat); }}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-subtle transition-colors hover:bg-surface-4 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <PenSquare className="h-3.5 w-3.5" aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete ${cat.name}`}
+            title={cat.is_default ? 'The default category cannot be deleted.' : `Delete ${cat.name}`}
+            disabled={!canDelete || cat.is_default}
+            onClick={() => { setDeleteError(null); setDeleteTarget(cat); }}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-subtle transition-colors hover:bg-red-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </span>
+      ),
+    },
+  ], [canUpdate, canDelete]);
+
   if (!canRead) {
-    return <div className="text-text-secondary">No access to customer categories.</div>;
+    return (
+      <div className="flex flex-col gap-[13px]">
+        <PageHeader title="Customer categories" />
+        <p role="status" className="rounded-md border border-border-subtle bg-bg-elevated p-4 text-sm text-text-secondary">
+          You do not have permission to view customer categories. Ask an administrator
+          for the <span className="font-data"> customer_categories.read </span> permission.
+        </p>
+      </div>
+    );
   }
 
   function handleSubmit(input: CategoryInput): void {
@@ -121,52 +221,62 @@ export default function CustomerCategoriesPage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <Button asChild variant="ghost" size="sm" aria-label="Back to customers">
-            <Link to="/backoffice/customers">
-              <ArrowLeft className="h-4 w-4" aria-hidden />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary inline-flex items-center gap-2">
-              <Tag className="h-6 w-6 text-gold" aria-hidden /> Customer Categories
-            </h1>
-            <p className="mt-1 text-sm text-text-secondary">Manage categories and their pricing</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          className={TOOLBAR_BTN_PRIMARY}
-          disabled={!canCreate}
-          onClick={() => { setFormError(null); setEditTarget('new'); }}
-        >
-          <Plus className="h-3.5 w-3.5" aria-hidden /> New Category
-        </button>
-      </header>
+    <div className="flex flex-col gap-[13px]">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Sales</span>
+        <span className="text-text-inert" aria-hidden>›</span>
+        <span className="text-text-secondary">Customer categories</span>
+      </nav>
 
-      {cats.isLoading ? (
-        <div className="text-sm text-text-secondary">Loading categories…</div>
-      ) : cats.error !== null && cats.error !== undefined ? (
-        <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
-          Failed: {String(cats.error)}
-        </div>
-      ) : (cats.data ?? []).length === 0 ? (
-        <EmptyState icon={Tag} title="No categories" description="Seed customer categories appear here." size="md" />
+      <PageHeader
+        title="Customer categories"
+        subtitle="Each category names a pricing rule the server applies — the POS never decides a price."
+        actions={
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
+            disabled={!canCreate}
+            onClick={() => { setFormError(null); setEditTarget('new'); }}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New Category
+          </button>
+        }
+      />
+
+      <ListCounterStrip
+        counters={counters}
+        activeId={bucket}
+        ariaLabel="Category state filters"
+        data-testid="categories-counters"
+      />
+
+      {cats.error !== null && cats.error !== undefined ? (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+          Categories could not be loaded.{' '}
+          <button type="button" className="underline" onClick={() => { void cats.refetch(); }}>
+            Try again
+          </button>
+        </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {(cats.data ?? []).map((cat) => (
-            <CategoryCard
-              key={cat.id}
-              cat={cat}
-              canUpdate={canUpdate}
-              canDelete={canDelete}
-              onEdit={() => { setFormError(null); setEditTarget(cat); }}
-              onDelete={() => { setDeleteError(null); setDeleteTarget(cat); }}
-            />
-          ))}
-        </div>
+        <DataTable
+          columns={columns}
+          rows={rows}
+          getRowKey={(c) => c.id}
+          isLoading={cats.isLoading}
+          density="compact"
+          emptyTitle="No category here"
+          emptyDescription={
+            bucket === 'all'
+              ? 'Seed customer categories appear here.'
+              : 'No category in this state. Pick another counter above.'
+          }
+          data-testid="categories-table"
+          footer={
+            <span className="font-data text-[11px] tabular-nums text-text-muted">
+              {rows.length} of {all.length}
+            </span>
+          }
+        />
       )}
 
       <CategoryFormModal
@@ -188,7 +298,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
             </DialogDescription>
           </DialogHeader>
           {deleteError !== null && (
-            <div role="alert" className="rounded-md border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger">
+            <div role="alert" className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
               {deleteError}
             </div>
           )}
@@ -206,75 +316,5 @@ export default function CustomerCategoriesPage(): JSX.Element {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function CategoryCard({
-  cat, canUpdate, canDelete, onEdit, onDelete,
-}: {
-  cat: CustomerCategoryRow;
-  canUpdate: boolean;
-  canDelete: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-}): JSX.Element {
-  const Icon = ICON_BY_SLUG[cat.slug] ?? UsersIcon;
-  const tone = TONE_BY_SLUG[cat.slug] ?? 'bg-text-secondary';
-  return (
-    <Card variant="default" padding="md" className="flex flex-col gap-3">
-      <div className="flex items-start justify-between">
-        <div
-          aria-hidden
-          className={['flex h-10 w-10 items-center justify-center rounded-md text-white', tone].join(' ')}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" disabled={!canUpdate} aria-label={`Edit ${cat.name}`} onClick={onEdit}>
-            <PenSquare className="h-3.5 w-3.5" aria-hidden />
-          </Button>
-          <Button
-            variant="ghost" size="sm"
-            disabled={!canDelete || cat.is_default}
-            aria-label={`Delete ${cat.name}`}
-            onClick={onDelete}
-          >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden />
-          </Button>
-        </div>
-      </div>
-
-      <div>
-        <div className="font-serif text-lg leading-tight text-text-primary">{cat.name}</div>
-        <span className="mt-1 inline-flex rounded bg-bg-overlay px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
-          {cat.slug}
-        </span>
-      </div>
-
-      <div className="rounded-md border border-border-subtle bg-bg-base/40 px-3 py-2 text-sm text-text-primary">
-        <div className="font-medium">{pricingLabel(cat)}</div>
-        {cat.price_modifier_type === 'discount_percentage' && (
-          <div className="mt-0.5 text-xs text-text-secondary">
-            <span className="font-mono">%</span> {cat.discount_percentage}% discount
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-text-muted">
-          {cat.is_default ? 'Default' : ' '}
-        </span>
-        <span
-          className={[
-            'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest',
-            cat.is_active
-              ? 'bg-success/15 text-success'
-              : 'bg-bg-overlay text-text-secondary',
-          ].join(' ')}
-        >
-          {cat.is_active ? 'Active' : 'Inactive'}
-        </span>
-      </div>
-    </Card>
   );
 }
