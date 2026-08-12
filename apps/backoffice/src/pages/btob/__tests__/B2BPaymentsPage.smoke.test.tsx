@@ -71,11 +71,11 @@ vi.mock('@/stores/authStore.js', () => ({
     sel({ hasPermission: () => true }),
 }));
 
-function renderPage() {
+function renderPage(initialEntry = '/backoffice/b2b/payments') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <B2BPaymentsPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -85,14 +85,41 @@ function renderPage() {
 describe('B2BPaymentsPage', () => {
   beforeEach(() => { mockState.mode = 'ok'; });
 
-  it('renders the header, the four tabs and the received payments', async () => {
+  it('renders the archetype header and the four tabs, Outstanding first', async () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: /b2b payments/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /received/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /outstanding/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /invoices/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /aging report/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('B2B');
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((t) => t.textContent)).toEqual([
+      expect.stringMatching(/outstanding/i),
+      expect.stringMatching(/aging report/i),
+      expect.stringMatching(/received/i),
+      expect.stringMatching(/invoices/i),
+    ]);
+    // L'onglet par défaut est le recouvrement (fiche B2B.md §9).
+    expect(screen.getByRole('tab', { name: /outstanding/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('PT Kuta')).toBeInTheDocument();
+  });
+
+  it('?tab=invoices still lands on the Invoices tab (JE drill-down deep-link)', async () => {
+    renderPage('/backoffice/b2b/payments?tab=invoices');
+    expect(await screen.findByRole('tab', { name: /invoices/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('invoices-tab-stub')).toBeInTheDocument();
+  });
+
+  it('scopes the filters to the tabs they act on', async () => {
+    renderPage('/backoffice/b2b/payments?tab=received');
+    // Received : recherche + méthode + période.
+    expect(await screen.findByLabelText(/payment method/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/period/i)).toBeInTheDocument();
     expect(screen.getByText('PAY-0001')).toBeInTheDocument();
+  });
+
+  it('renders no filter row on the Aging tab', async () => {
+    renderPage('/backoffice/b2b/payments?tab=aging');
+    expect(await screen.findByRole('tab', { name: /aging report/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByLabelText(/search payments/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/payment method/i)).not.toBeInTheDocument();
   });
 
   it('renders dashes, never zeros, in the KPI row while loading', async () => {
@@ -107,7 +134,7 @@ describe('B2BPaymentsPage', () => {
     mockState.mode = 'error';
     renderPage();
     expect(await screen.findByText(/receivables could not be loaded/i)).toBeInTheDocument();
-    expect(screen.getByText(/payments could not be loaded/i)).toBeInTheDocument();
+    expect(screen.getByText(/outstanding balances could not be loaded/i)).toBeInTheDocument();
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
   });
 });

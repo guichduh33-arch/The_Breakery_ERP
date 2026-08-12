@@ -5,13 +5,11 @@
 // ledger (S24 migration _010) and the page header gets a "+ Record Payment"
 // button wired to RecordB2bPaymentModal. Closes deviation D-W6-B2BPAY-01.
 
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState, type JSX } from 'react';
 import {
   AlertCircle,
-  ArrowLeft,
   CheckCircle2,
-  ChevronDown,
   Clock,
   CreditCard,
   FileText,
@@ -24,12 +22,15 @@ import {
   Card,
   EmptyState,
   KpiTile,
+  Select,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
+import { PageHeader } from '@/components/PageHeader.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useB2bDashboard, type B2bClientRow } from '@/features/btob/hooks/useB2bDashboard.js';
 import {
@@ -39,10 +40,20 @@ import {
 } from '@/features/btob/hooks/useB2bPaymentsReceived.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 import { B2bInvoicesTab } from '@/features/btob/components/B2bInvoicesTab.js';
+import { AgingBucketsGrid } from '@/features/btob/components/AgingBucketsGrid.js';
 
 type TabKey = 'received' | 'outstanding' | 'invoices' | 'aging';
 
-const TAB_KEYS: readonly TabKey[] = ['received', 'outstanding', 'invoices', 'aging'];
+// Ordre de la fiche B2B.md §9 — le recouvrement d'abord ; Invoices reste en
+// 4ᵉ : il porte le deep-link JE (?tab=invoices) et les actions par facture.
+const TAB_KEYS: readonly TabKey[] = ['outstanding', 'aging', 'received', 'invoices'];
+
+const PERIOD_LABEL: Record<B2bPaymentsPeriod, string> = {
+  all: 'All dates',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  mtd: 'Month to date',
+};
 
 export default function B2BPaymentsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -56,7 +67,7 @@ export default function B2BPaymentsPage(): JSX.Element {
   const initialTabParam = searchParams.get('tab');
   const initialTab: TabKey = TAB_KEYS.includes(initialTabParam as TabKey)
     ? (initialTabParam as TabKey)
-    : 'received';
+    : 'outstanding';
   const [tab,    setTab   ] = useState<TabKey>(initialTab);
   const [search, setSearch] = useState<string>('');
   const [method, setMethod] = useState<string>('all');
@@ -111,30 +122,26 @@ export default function B2BPaymentsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <Button asChild variant="ghost" size="sm" aria-label="Back to B2B dashboard">
-            <Link to="/backoffice/b2b">
-              <ArrowLeft className="h-4 w-4" aria-hidden />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary inline-flex items-center gap-2">
-              <CreditCard className="h-6 w-6 text-gold" aria-hidden /> B2B Payments
-            </h1>
-            <p className="mt-1 text-sm text-text-secondary">Manage payments and receivables tracking</p>
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="primary"
-          size="md"
-          disabled={!canRecord}
-          onClick={() => openRecord()}
-        >
-          <Plus className="h-4 w-4" aria-hidden /> Record Payment
-        </Button>
-      </header>
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>B2B</span>
+        <span className="text-text-inert" aria-hidden>›</span>
+        <span className="text-text-secondary">Payments</span>
+      </nav>
+
+      <PageHeader
+        title="B2B Payments"
+        subtitle="Manage payments and receivables tracking"
+        actions={
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
+            disabled={!canRecord}
+            onClick={() => openRecord()}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden /> Record Payment
+          </button>
+        }
+      />
 
       {/* Un échec ou un chargement rendent des tirets, jamais des zéros (ADR-025). */}
       {dash.error !== null && (
@@ -148,7 +155,7 @@ export default function B2BPaymentsPage(): JSX.Element {
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile icon={TrendingUp}  label="Total received"     value={payments.data === undefined ? '—' : totalReceived}        valueFormat="currency" />
+        <KpiTile icon={TrendingUp}  label="Total received"     value={payments.data === undefined ? '—' : totalReceived}        valueFormat="currency" footer={PERIOD_LABEL[period]} />
         <KpiTile icon={Clock}       label="Outstanding"        value={dash.data === undefined ? '—' : totalOutstanding}     valueFormat="currency" />
         <KpiTile icon={CheckCircle2} label="Payments received" value={payments.data === undefined ? '—' : filteredPayments.length} valueFormat="number" />
         <KpiTile icon={AlertCircle} label="Overdue"            value={dash.data === undefined ? '—' : overdueCount}         valueFormat="number" />
@@ -157,56 +164,65 @@ export default function B2BPaymentsPage(): JSX.Element {
       <Card variant="default" padding="none">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList className="border-b border-border-subtle px-3">
-            <TabsTrigger value="received">
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Received ({filteredPayments.length})
-            </TabsTrigger>
             <TabsTrigger value="outstanding">
               <Clock className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Outstanding ({filteredOutstanding.length})
-            </TabsTrigger>
-            <TabsTrigger value="invoices">
-              <FileText className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Invoices
             </TabsTrigger>
             <TabsTrigger value="aging">
               <AlertCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Aging report
             </TabsTrigger>
+            <TabsTrigger value="received">
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Received ({filteredPayments.length})
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <FileText className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Invoices
+            </TabsTrigger>
           </TabsList>
 
-          <div className="space-y-3 p-4">
-            <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3">
-              <Search className="h-4 w-4 text-text-secondary" aria-hidden />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search…"
-                className="h-9 w-full bg-transparent text-sm text-text-primary outline-none"
-                aria-label="Search payments"
-              />
+          {/* Chaque contrôle ne se rend que sur les onglets où il agit : la
+              recherche ne parle pas à Aging, méthode/période qu'à Received. */}
+          {tab !== 'aging' && (
+            <div className="space-y-3 p-4">
+              <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3">
+                <Search className="h-4 w-4 text-text-secondary" aria-hidden />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search…"
+                  className="h-9 w-full bg-transparent text-sm text-text-primary outline-none"
+                  aria-label="Search payments"
+                />
+              </div>
+              {tab === 'received' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <label htmlFor="b2b-payments-method" className="sr-only">Payment method</label>
+                  <Select
+                    id="b2b-payments-method"
+                    value={method}
+                    onChange={(e) => { setMethod(e.target.value); }}
+                    className="w-44"
+                  >
+                    <option value="all">All methods</option>
+                    <option value="cash">Cash</option>
+                    <option value="transfer">Bank transfer</option>
+                    <option value="qris">QRIS</option>
+                    <option value="card">Card</option>
+                  </Select>
+                  <label htmlFor="b2b-payments-period" className="sr-only">Period</label>
+                  <Select
+                    id="b2b-payments-period"
+                    value={period}
+                    onChange={(e) => { setPeriod(e.target.value as B2bPaymentsPeriod); }}
+                    className="w-44"
+                  >
+                    {Object.entries(PERIOD_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </Select>
+                </div>
+              )}
             </div>
-            <FilterRow
-              label="All methods"
-              value={method}
-              onChange={setMethod}
-              options={[
-                { value: 'all',      label: 'All methods' },
-                { value: 'cash',     label: 'Cash' },
-                { value: 'transfer', label: 'Bank transfer' },
-                { value: 'qris',     label: 'QRIS' },
-                { value: 'card',     label: 'Card' },
-              ]}
-            />
-            <FilterRow
-              label="All dates"
-              value={period}
-              onChange={(v) => setPeriod(v as B2bPaymentsPeriod)}
-              options={[
-                { value: 'all',  label: 'All dates' },
-                { value: '7d',   label: 'Last 7 days' },
-                { value: '30d',  label: 'Last 30 days' },
-                { value: 'mtd',  label: 'Month to date' },
-              ]}
-            />
-          </div>
+          )}
 
           <TabsContent value="received">
             <div className="border-t border-border-subtle">
@@ -231,7 +247,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                   {filteredPayments.map((p) => (
                     <li key={p.id} className="flex items-center justify-between px-4 py-3 text-sm">
                       <div>
-                        <div className="font-mono text-text-primary">{p.payment_number}</div>
+                        <div className="font-data text-[12.5px] tabular-nums text-text-primary">{p.payment_number}</div>
                         <div className="text-xs text-text-secondary">
                           {p.company_name ?? p.customer_name ?? 'Unknown'}
                           {' • '}
@@ -243,7 +259,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                           )}
                         </div>
                       </div>
-                      <span className="font-mono text-base text-text-primary">
+                      <span className="font-data text-base tabular-nums text-text-primary">
                         {formatIdr(p.amount)}
                       </span>
                     </li>
@@ -293,16 +309,7 @@ export default function B2BPaymentsPage(): JSX.Element {
               ) : aging.length === 0 ? (
                 <EmptyState icon={CheckCircle2} title="No outstanding receivables" size="md" />
               ) : (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                {aging.map((b) => (
-                  <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base p-3">
-                    <div className="text-xs font-semibold uppercase tracking-widest text-text-secondary">{b.label}</div>
-                    <div className="mt-1 text-xs text-text-muted">{b.range}</div>
-                    <div className="mt-2 font-mono text-lg text-text-primary">{formatIdr(b.total)}</div>
-                    <div className="text-xs text-text-secondary">{b.count} clients</div>
-                  </div>
-                ))}
-              </div>
+                <AgingBucketsGrid buckets={aging} />
               )}
             </div>
           </TabsContent>
@@ -331,7 +338,7 @@ function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow;
         </div>
       </div>
       <div className="text-right">
-        <div className={['font-mono text-base', overLimit ? 'text-danger' : 'text-warning'].join(' ')}>
+        <div className={['font-data text-base tabular-nums', overLimit ? 'text-danger' : 'text-warning'].join(' ')}>
           {formatIdr(Number(client.b2b_current_balance))}
         </div>
         {overLimit && <div className="text-[10px] uppercase tracking-widest text-danger">Over limit</div>}
@@ -342,31 +349,5 @@ function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow;
         )}
       </div>
     </li>
-  );
-}
-
-function FilterRow({
-  label, value, onChange, options,
-}: {
-  label: string;
-  value: string;
-  onChange: (next: string) => void;
-  options: readonly { value: string; label: string }[];
-}): JSX.Element {
-  return (
-    <label className="flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-bg-base px-3">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full bg-transparent text-sm text-text-primary outline-none"
-        aria-label={label}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      <ChevronDown className="h-4 w-4 text-text-muted" aria-hidden />
-    </label>
   );
 }
