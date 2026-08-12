@@ -71,10 +71,6 @@
 1	apps/backoffice/src/pages/btob/B2BPaymentsPage.tsx	bg-bg-base/40
 1	apps/backoffice/src/pages/btob/B2BSettingsPage.tsx	bg-bg-surface
 1	apps/backoffice/src/pages/customers/customer-detail/PricingTab.tsx	border-danger/40
-1	apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx	bg-bg-base/40
-1	apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx	bg-danger/5
-1	apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx	bg-success/15
-2	apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx	border-danger/40
 1	apps/backoffice/src/pages/Dashboard.tsx	border-gold/30
 1	apps/backoffice/src/pages/expenses/ExpenseDetailPage.tsx	bg-bg-base/40
 1	apps/backoffice/src/pages/expenses/ExpenseDetailPage.tsx	bg-danger/5
