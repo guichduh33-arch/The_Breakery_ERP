@@ -84,6 +84,34 @@ vi.mock('@/lib/supabase.js', () => {
             error: null,
           });
         }
+        // ADR-026 — les agrégats du dashboard viennent de la famille de
+        // compteurs ; le payload reflète les fixtures (3 factures, 2 clients).
+        if (fn === 'get_b2b_dashboard_counters_v1') {
+          if (mockState.mode === 'pending') return new Promise(() => { /* jamais */ });
+          if (mockState.mode === 'error') {
+            return Promise.resolve({ data: null, error: new Error('dashboard query failed') });
+          }
+          return Promise.resolve({
+            data: {
+              active_clients: 2,
+              monthly_revenue: 0,
+              prev_monthly_revenue: 0,
+              outstanding_ar: 250000,
+              pending_orders: 1,
+              total_orders: 3,
+              top_clients: [
+                { id: 'b1', name: 'Hotel Kuta', b2b_company_name: 'PT Kuta',
+                  b2b_current_balance: 250000, b2b_credit_limit: 1000000,
+                  total_spent: 850000, total_visits: 2, last_visit_at: '2026-05-12T08:00:00Z' },
+                { id: 'b2', name: 'Bali Organic', b2b_company_name: 'CV Bali',
+                  b2b_current_balance: 0, b2b_credit_limit: null,
+                  total_spent: 120000, total_visits: 1, last_visit_at: '2026-05-13T08:00:00Z' },
+              ],
+              aging: { current: { count: 1, total: 250000 } },
+            },
+            error: null,
+          });
+        }
         return Promise.resolve({ data: null, error: null });
       },
     },

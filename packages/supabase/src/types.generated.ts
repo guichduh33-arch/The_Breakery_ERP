@@ -7167,6 +7167,7 @@ export type Database = {
           metadata: Json
         }[]
       }
+      get_b2b_dashboard_counters_v1: { Args: never; Returns: Json }
       get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
