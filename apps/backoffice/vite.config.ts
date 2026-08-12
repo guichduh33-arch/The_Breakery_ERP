@@ -8,7 +8,9 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') }
   },
-  server: { port: 5174, host: true },
+  // Le port par défaut reste 5174 ; la variable PORT (posée par un harness de
+  // preview quand 5174 est occupé) le déroge sans toucher au workflow manuel.
+  server: { port: Number(process.env.PORT ?? 5174), host: true },
   build: {
     target: 'es2022',
     rollupOptions: {
