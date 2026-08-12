@@ -86,14 +86,17 @@ function renderPage() {
 describe('CustomersListPage', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('renders header, search, KPIs and rows', async () => {
+  it('renders header, search, counter strip and rows', async () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: /customers/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/search by name/i)).toBeInTheDocument();
-    expect(screen.getByText(/total customers/i)).toBeInTheDocument();
-    expect(screen.getByText(/active this month/i)).toBeInTheDocument();
-    expect(screen.getByText(/loyalty members/i)).toBeInTheDocument();
-    expect(screen.getByText(/outstanding b2b/i)).toBeInTheDocument();
+    // Refonte List : les KPI tiles cèdent à la bande de compteurs — les
+    // libellés vivent dans le strip, « Total customers » devient « Customers ».
+    const strip = screen.getByTestId('customers-counters');
+    expect(strip).toHaveTextContent(/customers/i);
+    expect(strip).toHaveTextContent(/active this month/i);
+    expect(strip).toHaveTextContent(/loyalty members/i);
+    expect(strip).toHaveTextContent(/outstanding b2b/i);
     await waitFor(() => expect(screen.getByText('Bali Organic Store')).toBeInTheDocument());
     expect(screen.getByText('Walk-in Customer')).toBeInTheDocument();
   });
