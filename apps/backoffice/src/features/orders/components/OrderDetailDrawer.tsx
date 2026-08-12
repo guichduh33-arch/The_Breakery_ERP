@@ -23,20 +23,22 @@ import {
   ReceiptText,
 } from 'lucide-react';
 import { cn } from '@breakery/ui';
+// Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas) —
+// le format id-ID local (« Rp 12.000 ») divergeait du reste de l'app.
+import { formatIdr, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
-  ORDER_STATUS_BADGE_TONE,
-  ORDER_TYPE_LABEL,
+  isSettledStatus,
+  orderStatusBadgeTone,
   orderStatusLabel,
+  orderTypeLabel,
 } from '@/features/orders/statusMeta.js';
 
 export interface OrderDetailDrawerProps {
   orderId: string | null;
   onClose: () => void;
 }
-
-const BUSINESS_TZ = 'Asia/Makassar';
 
 const KITCHEN_TONE: Record<string, string> = {
   new: 'bg-info-soft text-info',
@@ -48,30 +50,13 @@ const KITCHEN_TONE: Record<string, string> = {
 const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
 
 function rp(n: number | null): string {
-  return new Intl.NumberFormat('id-ID').format(Number(n ?? 0));
+  const s = formatIdr(Number(n ?? 0));
+  // Les cellules du tiroir préfixent déjà « Rp » : on garde le seul nombre.
+  return s.replace(/^Rp\s*/, '');
 }
 
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: BUSINESS_TZ,
-  });
-}
-
-function fmtLogTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZone: BUSINESS_TZ,
-  });
-}
+const fmtDateTime = formatDateTimeShortWita;
+const fmtLogTime = formatDateTimeWita;
 
 function InfoCell({
   icon: Icon,
@@ -94,7 +79,8 @@ function InfoCell({
 
 function Body({ order }: { order: OrderDetail }): JSX.Element {
   const firstPayment = order.payments[0];
-  const isPaid = order.payments.length > 0 || order.status === 'paid' || order.status === 'completed';
+  // RÉGLÉ : même helper que la liste et la page détail (review PR #367).
+  const isPaid = order.payments.length > 0 || isSettledStatus(order.status);
 
   const activity: { key: string; title: string; at: string; tone: string; detail?: string }[] = [
     { key: 'created', title: 'Order created', at: order.created_at, tone: 'bg-info' },
@@ -115,7 +101,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
           <span className="font-mono text-xs">{order.id.slice(0, 8)} …</span>
         </InfoCell>
         <InfoCell icon={CalendarDays} label="Date & Time">{fmtDateTime(order.created_at)}</InfoCell>
-        <InfoCell icon={PackageOpen} label="Type">{ORDER_TYPE_LABEL[order.order_type] ?? order.order_type}</InfoCell>
+        <InfoCell icon={PackageOpen} label="Type">{orderTypeLabel(order.order_type)}</InfoCell>
         {/* Fiche 02 D2.5 — table visible au BO ; l'historique des transferts se
             consulte dans le journal d'audit (action order.table_transfer). */}
         <InfoCell icon={MapPin} label="Table">
@@ -223,7 +209,7 @@ export function OrderDetailDrawer({ orderId, onClose }: OrderDetailDrawerProps):
             <Hash className="h-5 w-5 text-gold" aria-hidden />
             Order {data ? `#${data.order_number.replace(/^#+/, '')}` : ''}
             {data && (
-              <span className={cn(ORDER_STATUS_BADGE, ORDER_STATUS_BADGE_TONE[data.status] ?? 'bg-surface-4 text-text-secondary')}>
+              <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(data.status))}>
                 {orderStatusLabel(data.status)}
               </span>
             )}

@@ -14,25 +14,21 @@
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Card, cn } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+// formatDateTimeShortWita : le format de lecture des tables du BO (24 h, mois
+// en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
+import { formatIdr, formatDateTimeShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
-  ORDER_STATUS_BADGE_TONE,
-  ORDER_TYPE_LABEL,
+  isSettledStatus,
+  orderStatusBadgeTone,
   orderStatusLabel,
+  orderTypeLabel,
 } from '@/features/orders/statusMeta.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
-const BUSINESS_TZ = 'Asia/Makassar';
-
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: BUSINESS_TZ,
-  });
-}
+const fmtDateTime = formatDateTimeShortWita;
 
 function rp(n: number | null): string {
   return formatIdr(Number(n ?? 0));
@@ -41,22 +37,45 @@ function rp(n: number | null): string {
 const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
 const TH = 'px-3.5 py-2.5 text-left font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted';
 
+// Le fil d'Ariane porte l'invariant C4/BO-12 (retour vers /backoffice/orders) :
+// il se rend dans TOUS les états — l'erreur est celui où l'on en a le plus
+// besoin (review PR #367, un lien périmé ne doit pas être un cul-de-sac).
+function Crumbs({ leaf }: { leaf?: string }): JSX.Element {
+  return (
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+      <span>Sales</span>
+      <span className="text-text-inert" aria-hidden>›</span>
+      <Link to="/backoffice/orders" className="hover:text-text-primary">Orders</Link>
+      {leaf !== undefined && (
+        <>
+          <span className="text-text-inert" aria-hidden>›</span>
+          <span className="font-data text-text-secondary">{leaf}</span>
+        </>
+      )}
+    </nav>
+  );
+}
+
 export function OrderDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useOrderDetail(id);
 
   if (error) {
     return (
-      <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
-        This order could not be loaded. It may have been recorded on another
-        environment, or the link is stale.
-      </p>
+      <div className="flex flex-col gap-[13px]">
+        <Crumbs />
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+          This order could not be loaded. It may have been recorded on another
+          environment, or the link is stale.{' '}
+          <Link to="/backoffice/orders" className="underline">Back to orders</Link>
+        </p>
+      </div>
     );
   }
   if (isLoading || !data) {
     return (
       <div className="flex flex-col gap-[13px]" aria-busy="true">
-        <div className="h-4 w-48 animate-pulse rounded bg-surface-4 motion-reduce:animate-none" />
+        <Crumbs />
         <div className="h-8 w-72 animate-pulse rounded bg-surface-4 motion-reduce:animate-none" />
         <div className="h-64 animate-pulse rounded-md bg-surface-4 motion-reduce:animate-none" />
       </div>
@@ -66,31 +85,27 @@ export function OrderDetailPage(): JSX.Element {
   const refundTotal = data.refunds.reduce((s, r) => s + Number(r.total), 0);
   const refundState: 'none' | 'partial' | 'full' =
     refundTotal <= 0 ? 'none' : refundTotal >= data.total ? 'full' : 'partial';
-  const isPaid = data.payments.length > 0;
+  // RÉGLÉ : paiement enregistré OU statut porteur d'argent OU paid_at posé —
+  // les règlements B2B n'écrivent pas dans order_payments (review PR #367).
+  const isPaid = data.payments.length > 0 || isSettledStatus(data.status) || data.paid_at != null;
   const orderNo = data.order_number.replace(/^#+/, '');
 
   return (
     <div className="flex flex-col gap-[13px]">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
-        <span>Sales</span>
-        <span className="text-text-inert" aria-hidden>›</span>
-        <Link to="/backoffice/orders" className="hover:text-text-primary">Orders</Link>
-        <span className="text-text-inert" aria-hidden>›</span>
-        <span className="font-data text-text-secondary">#{orderNo}</span>
-      </nav>
+      <Crumbs leaf={`#${orderNo}`} />
 
       <PageHeader
         title={`Order #${orderNo}`}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             {/* Statuts indépendants : cycle de vie, encaissement, remboursement. */}
-            <span className={cn(ORDER_STATUS_BADGE, ORDER_STATUS_BADGE_TONE[data.status] ?? 'bg-surface-4 text-text-secondary')}>
+            <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(data.status))}>
               {orderStatusLabel(data.status)}
             </span>
             {/* Le badge d'encaissement ne se montre que s'il ajoute une
                 information : « paid »/« completed » disent déjà l'argent. */}
             {isPaid
-              ? data.status !== 'paid' && data.status !== 'completed' && (
+              ? !isSettledStatus(data.status) && (
                   <span className={cn(ORDER_STATUS_BADGE, 'bg-success-soft text-success')}>Paid</span>
                 )
               : data.status !== 'voided' && (
@@ -102,7 +117,7 @@ export function OrderDetailPage(): JSX.Element {
               </span>
             )}
             <span>
-              {ORDER_TYPE_LABEL[data.order_type] ?? data.order_type}
+              {orderTypeLabel(data.order_type)}
               {data.table_number != null && ` · Table ${data.table_number}`}
               {' · '}
               <span className="font-data tabular-nums">{fmtDateTime(data.created_at)}</span>
@@ -128,7 +143,7 @@ export function OrderDetailPage(): JSX.Element {
                   : <span className="text-text-subtle" aria-hidden>—</span>}
               </MetaPair>
               <MetaPair label="Type">
-                {ORDER_TYPE_LABEL[data.order_type] ?? data.order_type}
+                {orderTypeLabel(data.order_type)}
                 {data.table_number != null && ` — table ${data.table_number}`}
               </MetaPair>
               <MetaPair label="Created">
@@ -210,7 +225,11 @@ export function OrderDetailPage(): JSX.Element {
             <h2 className={SECTION_LABEL}>Payments</h2>
             {data.payments.length === 0 ? (
               <p className="mt-3 text-sm text-text-secondary">
-                {data.status === 'voided' ? 'Voided before payment.' : 'Not paid yet.'}
+                {data.status === 'voided'
+                  ? 'Voided before payment.'
+                  : isPaid
+                    ? 'Settled without a POS payment row — B2B settlements are recorded in the AR ledger.'
+                    : 'Not paid yet.'}
               </p>
             ) : (
               <ul className="mt-3 space-y-2.5">
@@ -300,17 +319,22 @@ function Timeline({
   isPaid: boolean;
   refundState: 'none' | 'partial' | 'full';
 }): JSX.Element {
+  // Les paiements sont triés chronologiquement par le hook ; l'horodatage du
+  // règlement préfère paid_at (serveur), puis le premier paiement. Un ordre
+  // réglé PAR STATUT sans ligne de paiement (B2B) marque l'étape accomplie,
+  // avec ou sans date (review PR #367).
   const firstPayment = data.payments[0];
+  const paidAt = data.paid_at ?? firstPayment?.paid_at;
   const steps: { key: string; label: string; at?: string; done: boolean; tone?: 'danger' }[] = [
     { key: 'created', label: 'Created', at: data.created_at, done: true },
   ];
   if (data.status === 'voided') {
-    if (isPaid && firstPayment) steps.push({ key: 'paid', label: 'Paid', at: firstPayment.paid_at, done: true });
+    if (isPaid) steps.push({ key: 'paid', label: 'Paid', ...(paidAt !== undefined ? { at: paidAt } : {}), done: true });
     steps.push({ key: 'voided', label: 'Voided', done: true, tone: 'danger' });
   } else {
     steps.push(
-      isPaid && firstPayment
-        ? { key: 'paid', label: 'Paid', at: data.paid_at ?? firstPayment.paid_at, done: true }
+      isPaid
+        ? { key: 'paid', label: 'Paid', ...(paidAt !== undefined ? { at: paidAt } : {}), done: true }
         : { key: 'paid', label: 'Paid', done: false },
     );
     steps.push({ key: 'completed', label: 'Completed', done: data.status === 'completed' });

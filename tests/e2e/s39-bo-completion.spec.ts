@@ -243,7 +243,9 @@ test('T3: Costing panel — KPIs render, cost correction + restore via dialog', 
 
 test('T4: orders list — ProductPicker filters and stages a pending add', async () => {
   await page.goto('/backoffice/orders');
-  await expect(page.getByTestId('status-pills')).toBeVisible({ timeout: 20_000 });
+  // Refonte List (ADR-025) : les pilules de statut sont mortes, la bande de
+  // compteurs `orders-counters` est le nouvel ancrage de la page chargée.
+  await expect(page.getByTestId('orders-counters')).toBeVisible({ timeout: 20_000 });
 
   // Surface editable orders (edit action exists only on draft/pending_payment).
   // Try the unfiltered list first; the row-edit testid is status-gated.

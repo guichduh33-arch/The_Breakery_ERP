@@ -7360,13 +7360,14 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_orders_counters_v1: {
+      get_orders_counters_v2: {
         Args: { p_end: string; p_filters?: Json; p_start: string }
         Returns: Json
       }
-      get_orders_list_v2: {
+      get_orders_list_v3: {
         Args: {
           p_cursor?: string
+          p_cursor_id?: string
           p_end: string
           p_filters?: Json
           p_limit?: number

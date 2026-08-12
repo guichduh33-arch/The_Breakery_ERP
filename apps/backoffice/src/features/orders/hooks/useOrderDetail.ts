@@ -128,8 +128,16 @@ export function useOrderDetail(id: string | undefined) {
         tax_amount: Number(row.tax_amount ?? 0),
         total: Number(row.total ?? 0),
         items: row.order_items ?? [],
-        payments: row.order_payments ?? [],
-        refunds: row.refunds ?? [],
+        // Review PR #367 : un embed PostgREST sans clause order est dans un
+        // ordre NON SPÉCIFIÉ (l'index (order_id, created_at DESC) le rend même
+        // vraisemblablement antichronologique). La frise et les cartes lisent
+        // « premier »/« dernier » — on trie ici, une fois, pour tout le monde.
+        payments: [...(row.order_payments ?? [])].sort(
+          (a, b) => new Date(a.paid_at).getTime() - new Date(b.paid_at).getTime(),
+        ),
+        refunds: [...(row.refunds ?? [])].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        ),
         promotions: (row.promotion_applications ?? []).map((pa) => ({
           description: pa.description,
           name: pa.promotions?.name ?? null,
