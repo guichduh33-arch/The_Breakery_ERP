@@ -35,7 +35,7 @@ export function OrdersTab({
         <span className="tabular-nums">{rp(totalShown)}</span>
       </div>
       <table className="w-full border-collapse text-sm">
-        <thead className="border-y border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
+        <thead className="border-y border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
           <tr>
             <th className="px-4 py-2.5 text-left font-medium">Date</th>
             <th className="px-4 py-2.5 text-left font-medium">Order #</th>
@@ -47,9 +47,9 @@ export function OrdersTab({
         </thead>
         <tbody>
           {recent_orders.map((o) => (
-            <tr key={o.id} className="border-t border-border-subtle hover:bg-bg-overlay/40">
+            <tr key={o.id} className="border-t border-border-subtle hover:bg-surface-4">
               <td className="px-4 py-3 text-text-secondary">{new Date(o.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-              <td className="px-4 py-3 font-mono text-text-primary">
+              <td className="px-4 py-3 font-data text-text-primary">
                 <Link to={`/backoffice/orders/${o.id}`} className="hover:text-gold">{o.order_number}</Link>
               </td>
               <td className="px-4 py-3 text-text-secondary">{ORDER_TYPE_LABEL[o.order_type] ?? o.order_type}</td>
