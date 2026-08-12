@@ -89,7 +89,7 @@ export function AdjustB2bBalanceModal({
           className="space-y-4"
         >
           {adjust.error && (
-            <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red-as-text">
               {adjust.error.message}
             </div>
           )}

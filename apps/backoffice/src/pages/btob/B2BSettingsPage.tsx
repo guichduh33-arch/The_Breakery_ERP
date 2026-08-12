@@ -292,7 +292,7 @@ export default function B2BSettingsPage(): JSX.Element {
 
       {/* Save bar — visible only when canUpdate */}
       {canUpdate && (
-        <div className="sticky bottom-0 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-surface px-4 py-3 shadow-sm">
+        <div className="sticky bottom-0 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-elevated px-4 py-3 shadow-sm">
           {saveError !== null && (
             <p role="alert" className="text-xs text-danger">{saveError}</p>
           )}

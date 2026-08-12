@@ -2,11 +2,15 @@
 //
 // Session 14 / Phase 5.B — smoke for B2BDashboardPage.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import B2BDashboardPage from '@/pages/btob/B2BDashboardPage.js';
+
+// Commutateur du mock : 'ok' répond les fixtures, 'error' fait échouer la
+// requête (le hook jette), 'pending' ne résout jamais (chargement figé).
+const mockState = vi.hoisted((): { mode: 'ok' | 'error' | 'pending' } => ({ mode: 'ok' }));
 
 vi.mock('@/lib/supabase.js', () => {
   const clients = [
@@ -48,8 +52,14 @@ vi.mock('@/lib/supabase.js', () => {
       in:     () => builder,
       order:  () => builder,
       limit:  (n: number) => { current = current.slice(0, n); return builder; },
-      then:   (resolve: Resolver) =>
-        resolve({ data: headOnly ? null : current, error: null, count: current.length }),
+      then:   (resolve: Resolver) => {
+        if (mockState.mode === 'pending') return;
+        if (mockState.mode === 'error') {
+          resolve({ data: null, error: new Error('dashboard query failed'), count: null });
+          return;
+        }
+        resolve({ data: headOnly ? null : current, error: null, count: current.length });
+      },
     };
     return builder;
   };
@@ -99,6 +109,8 @@ function renderPage() {
 }
 
 describe('B2BDashboardPage', () => {
+  beforeEach(() => { mockState.mode = 'ok'; });
+
   it('renders title, KPI tiles and quick links', async () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: /b2b dashboard/i })).toBeInTheDocument();
@@ -131,5 +143,21 @@ describe('B2BDashboardPage', () => {
     expect(screen.getByTestId('b2b-drift-banner')).toHaveTextContent('Hotel Kuta');
     // le client sans drift n'apparaît pas dans le bandeau
     expect(screen.getByTestId('b2b-drift-banner')).not.toHaveTextContent('Bali Organic');
+  });
+
+  it('renders dashes, never zeros, while the dashboard is loading', async () => {
+    mockState.mode = 'pending';
+    renderPage();
+    await screen.findByText(/active clients/i);
+    // 5 tuiles KPI en vol → 5 tirets ; aucun zéro fabriqué.
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(5);
+    expect(screen.queryByText('Rp 0')).not.toBeInTheDocument();
+  });
+
+  it('renders an alert and dashes when the dashboard query fails', async () => {
+    mockState.mode = 'error';
+    renderPage();
+    expect(await screen.findByText(/could not be loaded/i)).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(5);
   });
 });

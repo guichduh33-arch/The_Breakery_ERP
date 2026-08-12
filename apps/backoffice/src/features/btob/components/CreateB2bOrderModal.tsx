@@ -222,7 +222,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
-            <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red-as-text">
               {formError}
             </div>
           )}

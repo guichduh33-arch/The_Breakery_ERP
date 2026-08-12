@@ -46,6 +46,11 @@ const AGING_TONES: Record<string, string> = {
   Default:  'text-danger',
 };
 
+/** Un échec ou un chargement rendent des tirets, jamais des zéros (ADR-025). */
+function kpiValue(v: number | undefined): number | string {
+  return v ?? '—';
+}
+
 export default function B2BDashboardPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('customers.read');
@@ -90,7 +95,7 @@ export default function B2BDashboardPage(): JSX.Element {
         <div
           data-testid="b2b-drift-banner"
           role="alert"
-          className="rounded-lg border border-warning/40 bg-warning/10 p-4 space-y-1"
+          className="rounded-lg border border-warning bg-warning-soft p-4 space-y-1"
         >
           <div className="flex items-center gap-2 font-medium text-warning">
             <AlertTriangle className="h-4 w-4" aria-hidden />
@@ -107,46 +112,56 @@ export default function B2BDashboardPage(): JSX.Element {
         </div>
       ) : null}
 
+      {dash.error !== null && (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+          The B2B dashboard could not be loaded — the tiles below show dashes rather
+          than numbers that would be wrong.{' '}
+          <button type="button" className="underline" onClick={() => { void dash.refetch(); }}>
+            Try again
+          </button>
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile
           icon={UsersIcon}
           label="Active clients"
-          value={dash.data?.activeClients ?? 0}
+          value={kpiValue(dash.data?.activeClients)}
           valueFormat="number"
           footer="With at least one order"
         />
         <KpiTile
           icon={TrendingUp}
           label="Monthly B2B revenue"
-          value={dash.data?.monthlyRevenue ?? 0}
+          value={kpiValue(dash.data?.monthlyRevenue)}
           valueFormat="currency"
-          delta={
-            dash.data !== undefined
-              ? {
+          {...(dash.data !== undefined
+            ? {
+                delta: {
                   value: `${dash.data.monthlyDeltaPct >= 0 ? '+' : ''}${dash.data.monthlyDeltaPct}%`,
-                  direction: dash.data.monthlyDeltaPct >= 0 ? 'up' : 'down',
-                }
-              : { value: '0%', direction: 'neutral' }
-          }
+                  direction: dash.data.monthlyDeltaPct >= 0 ? ('up' as const) : ('down' as const),
+                },
+              }
+            : {})}
         />
         <KpiTile
           icon={FileText}
           label="Outstanding AR"
-          value={dash.data?.outstandingAr ?? 0}
+          value={kpiValue(dash.data?.outstandingAr)}
           valueFormat="currency"
           footer="Across all wholesale clients"
         />
         <KpiTile
           icon={ClipboardList}
           label="Pending orders"
-          value={dash.data?.pendingOrders ?? 0}
+          value={kpiValue(dash.data?.pendingOrders)}
           valueFormat="number"
           footer="Processing"
         />
         <KpiTile
           icon={Calendar}
           label="Total orders"
-          value={dash.data?.totalOrders ?? 0}
+          value={kpiValue(dash.data?.totalOrders)}
           valueFormat="number"
           footer="All time"
         />
@@ -278,7 +293,7 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           {buckets.map((b) => (
-            <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base/40 p-3">
+            <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base p-3">
               <div className={['text-xs font-semibold uppercase tracking-widest', AGING_TONES[b.label] ?? 'text-text-secondary'].join(' ')}>
                 {b.label}
               </div>
@@ -308,7 +323,7 @@ function QuickLink({
   return (
     <Link
       to={to}
-      className="group block rounded-lg border border-border-subtle bg-bg-elevated p-4 transition-colors duration-fast hover:border-gold/40"
+      className="group block rounded-lg border border-border-subtle bg-bg-elevated p-4 transition-colors duration-fast hover:border-border-strong"
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">

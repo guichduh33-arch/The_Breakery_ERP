@@ -136,11 +136,22 @@ export default function B2BPaymentsPage(): JSX.Element {
         </Button>
       </header>
 
+      {/* Un échec ou un chargement rendent des tirets, jamais des zéros (ADR-025). */}
+      {dash.error !== null && (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+          Receivables could not be loaded — Outstanding and Aging show dashes rather
+          than numbers that would be wrong.{' '}
+          <button type="button" className="underline" onClick={() => { void dash.refetch(); }}>
+            Try again
+          </button>
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile icon={TrendingUp}  label="Total received"     value={totalReceived}        valueFormat="currency" />
-        <KpiTile icon={Clock}       label="Outstanding"        value={totalOutstanding}     valueFormat="currency" />
-        <KpiTile icon={CheckCircle2} label="Payments received" value={filteredPayments.length} valueFormat="number" />
-        <KpiTile icon={AlertCircle} label="Overdue"            value={overdueCount}         valueFormat="number" />
+        <KpiTile icon={TrendingUp}  label="Total received"     value={payments.data === undefined ? '—' : totalReceived}        valueFormat="currency" />
+        <KpiTile icon={Clock}       label="Outstanding"        value={dash.data === undefined ? '—' : totalOutstanding}     valueFormat="currency" />
+        <KpiTile icon={CheckCircle2} label="Payments received" value={payments.data === undefined ? '—' : filteredPayments.length} valueFormat="number" />
+        <KpiTile icon={AlertCircle} label="Overdue"            value={dash.data === undefined ? '—' : overdueCount}         valueFormat="number" />
       </div>
 
       <Card variant="default" padding="none">
@@ -199,7 +210,14 @@ export default function B2BPaymentsPage(): JSX.Element {
 
           <TabsContent value="received">
             <div className="border-t border-border-subtle">
-              {payments.isLoading ? (
+              {payments.error !== null ? (
+                <p role="alert" className="m-4 rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+                  Payments could not be loaded.{' '}
+                  <button type="button" className="underline" onClick={() => { void payments.refetch(); }}>
+                    Try again
+                  </button>
+                </p>
+              ) : payments.isLoading ? (
                 <div className="p-6 text-sm text-text-secondary">Loading…</div>
               ) : filteredPayments.length === 0 ? (
                 <EmptyState
@@ -237,7 +255,13 @@ export default function B2BPaymentsPage(): JSX.Element {
 
           <TabsContent value="outstanding">
             <div className="border-t border-border-subtle">
-              {filteredOutstanding.length === 0 ? (
+              {dash.isLoading ? (
+                <div className="p-6 text-sm text-text-secondary">Loading…</div>
+              ) : dash.error !== null ? (
+                <div className="p-6 text-sm text-text-secondary" role="alert">
+                  Outstanding balances could not be loaded.
+                </div>
+              ) : filteredOutstanding.length === 0 ? (
                 <EmptyState icon={CheckCircle2} title="No outstanding balances" size="md" />
               ) : (
                 <ul className="divide-y divide-border-subtle">
@@ -260,9 +284,18 @@ export default function B2BPaymentsPage(): JSX.Element {
 
           <TabsContent value="aging">
             <div className="border-t border-border-subtle p-4">
+              {dash.isLoading ? (
+                <div className="p-2 text-sm text-text-secondary">Loading…</div>
+              ) : dash.error !== null ? (
+                <div className="p-2 text-sm text-text-secondary" role="alert">
+                  The aging report could not be loaded.
+                </div>
+              ) : aging.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="No outstanding receivables" size="md" />
+              ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 {aging.map((b) => (
-                  <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base/40 p-3">
+                  <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base p-3">
                     <div className="text-xs font-semibold uppercase tracking-widest text-text-secondary">{b.label}</div>
                     <div className="mt-1 text-xs text-text-muted">{b.range}</div>
                     <div className="mt-2 font-mono text-lg text-text-primary">{formatIdr(b.total)}</div>
@@ -270,6 +303,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

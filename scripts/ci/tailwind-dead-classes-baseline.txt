@@ -15,9 +15,6 @@
 # Dernier resserrement : 2026-08-12
 1	apps/backoffice/src/features/accounting/components/AnnualCloseModal.tsx	border-warning/30
 1	apps/backoffice/src/features/accounting/components/FiscalPeriodModal.tsx	border-warning/30
-1	apps/backoffice/src/features/btob/components/AdjustB2bBalanceModal.tsx	bg-red/5
-1	apps/backoffice/src/features/btob/components/CreateB2bOrderModal.tsx	bg-red/5
-1	apps/backoffice/src/features/btob/components/RecordB2bPaymentModal.tsx	bg-red/5
 1	apps/backoffice/src/features/customers/components/CategoryFormModal.tsx	border-danger/40
 1	apps/backoffice/src/features/customers/components/NegotiatedPricesSection.tsx	bg-bg-base/40
 1	apps/backoffice/src/features/customers/components/NegotiatedPricesSection.tsx	border-danger/40
@@ -64,12 +61,6 @@
 1	apps/backoffice/src/pages/accounting/MappingsPage.tsx	bg-green-soft
 1	apps/backoffice/src/pages/accounting/MappingsPage.tsx	border-amber-warn/30
 1	apps/backoffice/src/pages/accounting/MappingsPage.tsx	border-green/30
-1	apps/backoffice/src/pages/btob/B2BDashboardPage.tsx	bg-bg-base/40
-1	apps/backoffice/src/pages/btob/B2BDashboardPage.tsx	bg-warning/10
-1	apps/backoffice/src/pages/btob/B2BDashboardPage.tsx	border-gold/40
-1	apps/backoffice/src/pages/btob/B2BDashboardPage.tsx	border-warning/40
-1	apps/backoffice/src/pages/btob/B2BPaymentsPage.tsx	bg-bg-base/40
-1	apps/backoffice/src/pages/btob/B2BSettingsPage.tsx	bg-bg-surface
 1	apps/backoffice/src/pages/customers/customer-detail/PricingTab.tsx	border-danger/40
 1	apps/backoffice/src/pages/Dashboard.tsx	border-gold/30
 1	apps/backoffice/src/pages/expenses/ExpenseDetailPage.tsx	bg-bg-base/40

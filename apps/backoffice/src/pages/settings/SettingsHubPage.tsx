@@ -87,7 +87,7 @@ const SECTIONS: SettingSection[] = [
     tiles: [
       { to: '/backoffice/settings/accounting', title: 'Financial / Accounting', blurb: 'Fiscal periods, year-end close.', icon: Calculator, permission: 'accounting.period.close' },
       { to: '/backoffice/settings/expense-thresholds', title: 'Expense Thresholds', blurb: 'Approval thresholds + SOD.', icon: FileText, permission: 'expenses.thresholds.read' },
-      { to: '/backoffice/b2b/settings', title: 'B2B Settings', blurb: 'Wholesale pricing, payment terms, credit limits.', icon: Briefcase },
+      { to: '/backoffice/b2b/settings', title: 'B2B Settings', blurb: 'Wholesale pricing, payment terms, credit limits.', icon: Briefcase, permission: 'settings.read' },
     ],
   },
   {
