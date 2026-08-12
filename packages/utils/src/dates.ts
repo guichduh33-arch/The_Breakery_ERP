@@ -32,6 +32,13 @@ export function formatTimeWita(d: Date | string): string {
   return formatInTimeZone(date, TIMEZONE, 'HH:mm');
 }
 
+// Le jour seul, court, pour la seconde ligne d'une cellule de liste
+// (« 12 Aug ») — même discipline anti-ambiguïté que le format de table.
+export function formatDateShortWita(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return formatInTimeZone(date, TIMEZONE, 'dd MMM');
+}
+
 export function formatDateLong(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return format(date, 'MMMM d, yyyy');

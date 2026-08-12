@@ -4,13 +4,22 @@
     {
       "name": "backoffice",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@breakery/app-backoffice", "dev"],
-      "port": 5174
+      "runtimeArgs": [
+        "--filter",
+        "@breakery/app-backoffice",
+        "dev"
+      ],
+      "port": 5174,
+      "autoPort": true
     },
     {
       "name": "pos",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@breakery/app-pos", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@breakery/app-pos",
+        "dev"
+      ],
       "port": 5173
     }
   ]

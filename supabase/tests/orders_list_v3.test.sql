@@ -1,5 +1,5 @@
--- supabase/tests/orders_list_v2.test.sql
--- Session 33 / Wave 4.1 — server-side filter coverage for get_orders_list_v2.
+-- supabase/tests/orders_list_v3.test.sql
+-- Session 33 / Wave 4.1 — server-side filter coverage for get_orders_list_v3.
 -- Runs via MCP execute_sql with BEGIN ... ROLLBACK envelope.
 --
 -- Coverage (10 cases) :
@@ -30,17 +30,24 @@ DECLARE
   v_cashier_id UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='CASHIER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_no_raise';
 BEGIN
+  -- Review PR #367 : le lookup NULL faisait passer T1 pour la mauvaise raison
+  -- (set_config(NULL) = reset → « Authentication required », même SQLSTATE).
+  IF v_cashier_id IS NULL THEN
+    PERFORM set_config('breakery.t1_pass', 'fail_no_cashier_seed', false);
+    RETURN;
+  END IF;
   PERFORM set_config('request.jwt.claim.sub', v_cashier_id::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31', '{}'::jsonb, 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31', '{}'::jsonb, 50, NULL, NULL);
   EXCEPTION WHEN SQLSTATE '42501' THEN
-    v_status := 'pass';
+    v_status := CASE WHEN SQLERRM LIKE 'Permission denied%'
+                     THEN 'pass' ELSE 'fail_wrong_42501: ' || SQLERRM END;
   END;
   PERFORM set_config('breakery.t1_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t1_pass') = 'pass',
-  'T1: CASHIER without orders.read raises 42501'
+  COALESCE(current_setting('breakery.t1_pass', true), 'missing') = 'pass',
+  'T1: CASHIER without orders.read raises Permission denied (not an auth fallback)'
 );
 
 -- Establish MANAGER context for T2..T10
@@ -58,8 +65,8 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
-      jsonb_build_object('refund_status', 'none'), 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+      jsonb_build_object('refund_status', 'none'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
     v_status := 'fail_' || SQLSTATE;
@@ -67,7 +74,7 @@ BEGIN
   PERFORM set_config('breakery.t2_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t2_pass') = 'pass',
+  COALESCE(current_setting('breakery.t2_pass', true), 'missing') = 'pass',
   'T2: refund_status=none server-side filter runs'
 );
 
@@ -79,8 +86,8 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
-      jsonb_build_object('refund_status', 'partial'), 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+      jsonb_build_object('refund_status', 'partial'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
     v_status := 'fail_' || SQLSTATE;
@@ -88,7 +95,7 @@ BEGIN
   PERFORM set_config('breakery.t3_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t3_pass') = 'pass',
+  COALESCE(current_setting('breakery.t3_pass', true), 'missing') = 'pass',
   'T3: refund_status=partial server-side filter runs'
 );
 
@@ -100,8 +107,8 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
-      jsonb_build_object('refund_status', 'full'), 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+      jsonb_build_object('refund_status', 'full'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
     v_status := 'fail_' || SQLSTATE;
@@ -109,7 +116,7 @@ BEGIN
   PERFORM set_config('breakery.t4_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t4_pass') = 'pass',
+  COALESCE(current_setting('breakery.t4_pass', true), 'missing') = 'pass',
   'T4: refund_status=full server-side filter runs'
 );
 
@@ -121,8 +128,8 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
-      jsonb_build_object('hour', 14), 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+      jsonb_build_object('hour', 14), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
     v_status := 'fail_' || SQLSTATE;
@@ -130,7 +137,7 @@ BEGIN
   PERFORM set_config('breakery.t5_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t5_pass') = 'pass',
+  COALESCE(current_setting('breakery.t5_pass', true), 'missing') = 'pass',
   'T5: hour filter runs without error (EXTRACT HOUR AT TIME ZONE Asia/Makassar)'
 );
 
@@ -143,8 +150,8 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
-      jsonb_build_object('terminal_id', v_terminal::text), 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+      jsonb_build_object('terminal_id', v_terminal::text), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
     v_status := 'fail_' || SQLSTATE;
@@ -152,7 +159,7 @@ BEGIN
   PERFORM set_config('breakery.t6_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t6_pass') = 'pass',
+  COALESCE(current_setting('breakery.t6_pass', true), 'missing') = 'pass',
   'T6: terminal_id filter JOINs pos_sessions correctly'
 );
 
@@ -164,7 +171,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
       jsonb_build_object('refund_status', 'none', 'hour', 12, 'status', 'completed'),
       50, NULL);
     v_status := 'pass';
@@ -174,7 +181,7 @@ BEGIN
   PERFORM set_config('breakery.t7_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t7_pass') = 'pass',
+  COALESCE(current_setting('breakery.t7_pass', true), 'missing') = 'pass',
   'T7: combo refund_status + hour + status runs'
 );
 
@@ -186,14 +193,14 @@ DECLARE
   v_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2026-01-01', '2026-12-31', '{}'::jsonb, 500, NULL) INTO v_result;
+  SELECT get_orders_list_v3('2026-01-01', '2026-12-31', '{}'::jsonb, 500, NULL, NULL) INTO v_result;
   v_count := jsonb_array_length(v_result->'lines');
   PERFORM set_config('breakery.t8_pass',
     CASE WHEN v_count <= 200 THEN 'pass' ELSE 'fail_unclamped' END,
     false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t8_pass') = 'pass',
+  COALESCE(current_setting('breakery.t8_pass', true), 'missing') = 'pass',
   'T8: limit=500 clamped to ≤ 200'
 );
 
@@ -207,7 +214,7 @@ DECLARE
   v_status TEXT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2026-01-01', '2026-12-31', '{}'::jsonb, 1, NULL) INTO v_result;
+  SELECT get_orders_list_v3('2026-01-01', '2026-12-31', '{}'::jsonb, 1, NULL, NULL) INTO v_result;
   v_count := jsonb_array_length(v_result->'lines');
   IF v_count = 0 THEN
     v_status := 'pass_empty';
@@ -218,7 +225,7 @@ BEGIN
   PERFORM set_config('breakery.t9_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t9_pass') IN ('pass', 'pass_empty'),
+  COALESCE(current_setting('breakery.t9_pass', true), 'missing') IN ('pass', 'pass_empty'),
   'T9: output line includes terminal_id key (or no rows in DB)'
 );
 
@@ -230,8 +237,8 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2026-05-01', '2026-05-31',
-      jsonb_build_object('foo_unknown', 'bar'), 50, NULL);
+    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+      jsonb_build_object('foo_unknown', 'bar'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
     v_status := 'fail_' || SQLSTATE;
@@ -239,7 +246,7 @@ BEGIN
   PERFORM set_config('breakery.t10_pass', v_status, false);
 END $$;
 SELECT ok(
-  current_setting('breakery.t10_pass') = 'pass',
+  COALESCE(current_setting('breakery.t10_pass', true), 'missing') = 'pass',
   'T10: unknown filter key silently ignored'
 );
 
