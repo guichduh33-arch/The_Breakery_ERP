@@ -4,7 +4,7 @@
 // Asserts:
 //   - authenticated users CANNOT INSERT/UPDATE/DELETE stock_movements directly
 //   - authenticated users CAN SELECT stock_movements only via inventory.read
-//   - CASHIER (no inventory.read) gets zero rows from get_stock_levels_v2 (forbidden)
+//   - CASHIER (no inventory.read) gets zero rows from get_stock_levels_v3 (forbidden)
 //   - MANAGER (inventory.read/receive/waste) is allowed reads + receive/waste
 //   - MANAGER is denied adjust_stock_v1 (ADMIN-only)
 //   - ADMIN passes the full matrix
@@ -122,10 +122,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
     expect(error).not.toBeNull();
   });
 
-  it('CASHIER: get_stock_levels_v2 → forbidden', async () => {
+  it('CASHIER: get_stock_levels_v3 → forbidden', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('get_stock_levels_v2', {
-      p_low_stock_only: false, p_limit: 1, p_offset: 0,
+    const { error } = await sb.rpc('get_stock_levels_v3', {
+      p_bucket: 'all', p_limit: 1, p_offset: 0,
     });
     expect(error?.message ?? '').toMatch(/forbidden/);
   });
@@ -162,13 +162,30 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
     expect(error?.message ?? '').toMatch(/forbidden/);
   });
 
-  it('MANAGER: get_stock_levels_v2 → succeeds', async () => {
+  it('MANAGER: get_stock_levels_v3 → succeeds', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await sb.rpc('get_stock_levels_v2', {
-      p_low_stock_only: false, p_limit: 5, p_offset: 0,
+    const { data, error } = await sb.rpc('get_stock_levels_v3', {
+      p_bucket: 'all', p_limit: 5, p_offset: 0,
     });
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
+  });
+
+  // ADR-021 déc. 6 — la fonction de compteurs est neuve, donc elle porte les
+  // DEUX moitiés : le refus et le cas passant.
+  it('CASHIER: get_stock_counters_v1 → forbidden', async () => {
+    const sb = jwtClient(cashierToken);
+    const { error } = await sb.rpc('get_stock_counters_v1', {});
+    expect(error?.message ?? '').toMatch(/forbidden/);
+  });
+
+  it('MANAGER: get_stock_counters_v1 → one row of aggregates', async () => {
+    const sb = jwtClient(managerToken);
+    const { data, error } = await sb.rpc('get_stock_counters_v1', {});
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect(data?.[0]).toHaveProperty('total_count');
+    expect(data?.[0]).toHaveProperty('negative_count');
   });
 
   it('anon (no JWT) CANNOT read stock_movements', async () => {
@@ -183,10 +200,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
 
   it('anon CANNOT invoke any inventory RPC', async () => {
     const sb = createClient(SUPABASE_URL, ANON);
-    for (const fn of ['get_stock_levels_v2', 'adjust_stock_v1', 'record_incoming_stock_v1', 'waste_stock_v1']) {
-      const args = fn === 'get_stock_levels_v2'
-        ? { p_low_stock_only: false, p_limit: 1, p_offset: 0 }
-        : { p_product_id: productId, p_quantity: 1, p_reason: 'anon should fail', p_new_qty: 1, p_supplier_id: supplierId };
+    for (const fn of ['get_stock_levels_v3', 'get_stock_counters_v1', 'adjust_stock_v1', 'record_incoming_stock_v1', 'waste_stock_v1']) {
+      const args =
+        fn === 'get_stock_levels_v3'   ? { p_bucket: 'all', p_limit: 1, p_offset: 0 } :
+        fn === 'get_stock_counters_v1' ? {} :
+        { p_product_id: productId, p_quantity: 1, p_reason: 'anon should fail', p_new_qty: 1, p_supplier_id: supplierId };
       const { error } = await sb.rpc(fn, args);
       expect(error, `${fn} must reject anon`).not.toBeNull();
     }

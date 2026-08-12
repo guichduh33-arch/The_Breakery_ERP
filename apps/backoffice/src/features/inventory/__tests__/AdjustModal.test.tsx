@@ -42,6 +42,13 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
+// `vi.hoisted` : cette fabrique renvoie son objet immédiatement, contrairement
+// au mock de supabase qui ne référence sa fonction qu'à l'appel.
+const mockToast = vi.hoisted(() => ({
+  success: vi.fn(), info: vi.fn(), warning: vi.fn(), error: vi.fn(),
+}));
+vi.mock('sonner', () => ({ toast: mockToast }));
+
 // crypto.randomUUID is invoked at mount for the idempotency key.
 if (typeof crypto.randomUUID !== 'function') {
   // jsdom in CI may miss crypto.randomUUID — polyfill.
@@ -71,8 +78,10 @@ const STOCK_ROW = {
   category_name: null,
   current_stock: 10,
   min_stock_threshold: 0,
+  track_inventory: true,
+  unit: 'pcs',
+  stock_value: 0,
   last_movement_at: null,
-  total_count: 1,
 };
 
 describe('AdjustModal', () => {
@@ -144,6 +153,23 @@ describe('AdjustModal', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/no longer have permission/i);
     });
+  });
+
+  it('states the irreversibility and confirms the new on-hand', async () => {
+    mockToast.success.mockReset();
+    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 22 }, error: null });
+    renderModal(STOCK_ROW);
+
+    // Le registre est append-only : l'écran doit le dire avant le bouton.
+    expect(screen.getByText(/permanent movement in your name/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '22' } });
+    fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),
+      { target: { value: 'Manual recount after closing' } });
+    fireEvent.click(screen.getByRole('button', { name: /Apply/i }));
+
+    await waitFor(() => { expect(mockToast.success).toHaveBeenCalledTimes(1); });
+    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/Adjust Sample is now 22/);
   });
 
   it('rejects reason < 3 chars (Apply disabled)', () => {

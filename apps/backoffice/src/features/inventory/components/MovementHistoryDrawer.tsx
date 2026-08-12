@@ -133,7 +133,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
 
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {q.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
-          {q.error && <div className="text-red py-12 text-center">{q.error.message}</div>}
+          {q.error && <div className="text-red-as-text py-12 text-center">{q.error.message}</div>}
           {q.data?.length === 0 && page === 0 && (
             <div className="text-text-secondary py-12 text-center">No movements recorded yet.</div>
           )}
@@ -156,7 +156,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                       const qtyClass =
                         cls.direction === 'IN' ? 'text-green' :
                         row.quantity === 0    ? 'text-text-muted' :
-                                                'text-red';
+                                                'text-red-as-text';
                       return (
                         <tr key={row.id} className="border-t border-border-subtle">
                           <td className="px-2 py-1 text-text-secondary">

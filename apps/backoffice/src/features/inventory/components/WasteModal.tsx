@@ -7,6 +7,7 @@
 
 import { useEffect, useId, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input, Select } from '@breakery/ui';
 import { validateWaste } from '@breakery/domain';
 import { useWasteStock, WasteStockError } from '../hooks/useWasteStock.js';
@@ -97,12 +98,23 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
 
     setFormError(null);
     try {
-      await wasteMut.mutateAsync({
+      const res = await wasteMut.mutateAsync({
         productId:      product.id,
         quantity:       numericQty,
         reason:         finalReason,
         idempotencyKey,
       });
+      // La modale se refermait EN SILENCE sur un geste irréversible : rien ne
+      // confirmait que la perte était enregistrée, ni ce qu'il restait. Mains
+      // occupées, session interrompue, l'utilisateur ressaisissait — et la clé
+      // d'idempotence ne l'en protège pas, une réouverture en régénérant une neuve.
+      if (res.idempotent_replay === true) {
+        toast.info(`Already recorded — ${product.name} was not decremented twice.`);
+      } else {
+        toast.success(
+          `Waste recorded — ${numericQty.toLocaleString()} × ${product.name}. On hand: ${res.new_current_stock.toLocaleString()}.`,
+        );
+      }
       handleClose();
     } catch (err) {
       if (err instanceof WasteStockError) {
@@ -144,7 +156,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
 
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
-            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
+            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red-as-text">
               {formError}
             </div>
           )}
@@ -166,10 +178,9 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           {product !== null && (
             <div className="text-sm text-text-secondary">
               Current stock:{' '}
-              <span className="text-text-primary font-mono">
+              <span className="font-mono text-text-primary">
                 {product.current_stock.toLocaleString()}
-              </span>{' '}
-              <span className="text-text-muted">(max: {product.current_stock.toLocaleString()})</span>
+              </span>
             </div>
           )}
 
@@ -191,14 +202,27 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
               disabled={product === null}
             />
             {qty !== '' && !isQtyPositive && (
-              <p id={qtyErrId} className="text-red text-xs">Quantity must be &gt; 0.</p>
+              <p id={qtyErrId} className="text-red-as-text text-xs">Quantity must be &gt; 0.</p>
             )}
             {qty !== '' && isQtyPositive && product !== null && !isQtyWithinStock && (
-              <p id={qtyErrId} className="text-red text-xs">
+              <p id={qtyErrId} className="text-red-as-text text-xs">
                 Cannot exceed current stock ({product.current_stock.toLocaleString()}).
               </p>
             )}
           </div>
+
+          {/* Aperçu de la CONSÉQUENCE, symétrique de celui de l'ajustement.
+              L'écran disait auparavant deux fois le stock actuel — « 40 (max:
+              40) » — sans jamais dire ce qu'il resterait après le geste. */}
+          {product !== null && isQtyValid && (
+            <div className="text-sm text-text-secondary">
+              After this:{' '}
+              <span className="font-mono text-text-primary">
+                {product.current_stock.toLocaleString()} → {(product.current_stock - numericQty).toLocaleString()}
+              </span>{' '}
+              <span className="font-mono text-red-as-text">(−{numericQty.toLocaleString()})</span>
+            </div>
+          )}
 
           <div className="space-y-1">
             <label htmlFor={presetId} className="text-xs uppercase tracking-widest text-text-secondary">
@@ -236,6 +260,15 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
               </p>
             </div>
           )}
+
+          {/* Le registre est append-only : l'interface ne propose jamais de
+              corriger un mouvement, elle propose d'en émettre un autre. Le dire
+              AVANT le bouton qui produit l'écriture, pas après — c'est un geste
+              comptable nominatif qui touche l'argent. */}
+          <p className="rounded-md border border-border-subtle bg-surface-inert p-2 text-xs text-text-secondary">
+            Recorded as a permanent movement in your name. Corrections are made by a new
+            movement, never by editing this one.
+          </p>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>

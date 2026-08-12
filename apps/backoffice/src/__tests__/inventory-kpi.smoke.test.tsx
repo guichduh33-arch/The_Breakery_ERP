@@ -1,10 +1,17 @@
 // apps/backoffice/src/__tests__/inventory-kpi.smoke.test.tsx
-// Session 14 / Phase 6.A — verifies the KPI strip + matching screenshot
-// title rebuild. Mocks the data hook directly so we only exercise the page
-// shell (no Supabase, no MSW).
+//
+// Coquille de la page de stock — ADR-024, archétype LIST.
+//
+// Ce fichier vérifiait la bande de tuiles KPI. Elle n'existe plus : trois des
+// quatre tuiles ne répondaient à aucune question et la quatrième ne comptait
+// que la page affichée. Il vérifie désormais ce qui les remplace — des
+// compteurs cliquables — et la propriété qui a motivé toute la décision : le
+// pied reste lisible quand la liste ne ramène rien.
+//
+// Les hooks de données sont mockés : on n'exerce que la coquille, sans Supabase.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, cleanup, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -13,26 +20,37 @@ vi.mock('@/stores/authStore.js', () => ({
     sel({ hasPermission: () => true }),
 }));
 
+// Préfixe `mock` obligatoire : vitest hisse vi.mock au-dessus des déclarations,
+// et seules les variables ainsi nommées sont accessibles depuis la fabrique.
+let mockRows: unknown[] = [
+  {
+    product_id: 'p-1', sku: 'BEV-AMER', name: 'Americano',
+    category_id: null, category_name: null,
+    current_stock: 5, min_stock_threshold: 10, track_inventory: true,
+    unit: 'pcs', stock_value: 25_000,
+    last_movement_at: null,
+  },
+  {
+    product_id: 'p-2', sku: 'PAS-CROI', name: 'Croissant',
+    category_id: null, category_name: null,
+    current_stock: 50, min_stock_threshold: 0, track_inventory: true,
+    unit: 'pcs', stock_value: 500_000,
+    last_movement_at: null,
+  },
+];
+
 vi.mock('@/features/inventory/hooks/useStockLevels.js', () => ({
-  useStockLevels: () => ({
-    data: [
-      {
-        product_id: 'p-1', sku: 'BEV-AMER', name: 'Americano',
-        category_id: null, category_name: null,
-        current_stock: 5, min_stock_threshold: 10,
-        last_movement_at: null, total_count: 12,
-      },
-      {
-        product_id: 'p-2', sku: 'PAS-CROI', name: 'Croissant',
-        category_id: null, category_name: null,
-        current_stock: 50, min_stock_threshold: 0,
-        last_movement_at: null, total_count: 12,
-      },
-    ],
+  useStockLevels: () => ({ data: mockRows, isLoading: false, error: null, refetch: vi.fn() }),
+  STOCK_LEVELS_QUERY_KEY: ['stock-levels'],
+}));
+
+vi.mock('@/features/inventory/hooks/useStockCounters.js', () => ({
+  useStockCounters: () => ({
+    data: { total_count: 318, low_count: 14, zero_count: 3, negative_count: 1, untracked_count: 20 },
     isLoading: false,
     error: null,
   }),
-  STOCK_LEVELS_QUERY_KEY: ['stock-levels'],
+  STOCK_COUNTERS_QUERY_KEY: ['stock-levels', 'counters'],
 }));
 
 vi.mock('@/features/inventory/hooks/useInventoryReferenceData.js', () => ({
@@ -43,13 +61,12 @@ vi.mock('@/features/inventory/hooks/useInventoryReferenceData.js', () => ({
   }),
 }));
 
-// Stub the modals so we don't pull their (heavier) dependency trees.
-vi.mock('@/features/inventory/components/AdjustModal.js',  () => ({ AdjustModal:  () => null }));
-vi.mock('@/features/inventory/components/ReceiveModal.js', () => ({ ReceiveModal: () => null }));
-vi.mock('@/features/inventory/components/WasteModal.js',   () => ({ WasteModal:   () => null }));
-vi.mock('@/features/inventory/components/MovementHistoryDrawer.js', () => ({
-  MovementHistoryDrawer: () => null,
-}));
+// Les modales sont stubbées pour ne pas tirer leur arbre de dépendances.
+// `ReceiveModal` n'est plus stubbé : le module a été retiré à l'audit du
+// 2026-07-27 (la réception passe par /inventory/incoming). Le stub survivait à
+// vide et laissait croire à une couverture qui n'existait plus.
+vi.mock('@/features/inventory/components/AdjustModal.js', () => ({ AdjustModal: () => null }));
+vi.mock('@/features/inventory/components/WasteModal.js',  () => ({ WasteModal:  () => null }));
 
 function renderPage(Component: React.ComponentType) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -60,21 +77,52 @@ function renderPage(Component: React.ComponentType) {
   );
 }
 
-describe('Inventory page (KPI rebuild)', () => {
-  beforeEach(() => { cleanup(); });
-
-  it('renders the new "Stock & Inventory" title from the screenshot', { timeout: 30_000 }, async () => {
-    const InventoryPage = (await import('@/pages/Inventory.js')).default;
-    renderPage(InventoryPage);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Stock\s*&\s*Inventory/i);
+// Les requêtes portent sur le conteneur rendu et non sur `screen`, qui
+// interroge tout le document : ce fichier tombait en « Found multiple
+// elements » dès qu'un autre fichier de la suite laissait une page montée,
+// `cleanup()` ne démontant que ce que CE module a rendu.
+describe('Inventory page shell (LIST archetype)', () => {
+  beforeEach(() => {
+    cleanup();
+    mockRows = [
+      {
+        product_id: 'p-1', sku: 'BEV-AMER', name: 'Americano',
+        category_id: null, category_name: null,
+        current_stock: 5, min_stock_threshold: 10, track_inventory: true,
+        unit: 'pcs', stock_value: 25_000,
+        last_movement_at: null,
+      },
+    ];
   });
 
-  it('renders all 4 KPI tile labels in the header strip', { timeout: 15_000 }, async () => {
+  it('renders the page title through the shared PageHeader', { timeout: 30_000 }, async () => {
     const InventoryPage = (await import('@/pages/Inventory.js')).default;
-    renderPage(InventoryPage);
-    expect(screen.getByText(/Total products/i)).toBeInTheDocument();
-    expect(screen.getByText(/In current page/i)).toBeInTheDocument();
-    expect(screen.getByText(/Active filters/i)).toBeInTheDocument();
-    expect(screen.getByText(/Critical alerts/i)).toBeInTheDocument();
+    const w = within(renderPage(InventoryPage).container);
+    expect(w.getByRole('heading', { level: 1 })).toHaveTextContent(/Stock\s*&\s*Inventory/i);
+  });
+
+  it('renders the five stock buckets as clickable counters', { timeout: 15_000 }, async () => {
+    const InventoryPage = (await import('@/pages/Inventory.js')).default;
+    const w = within(renderPage(InventoryPage).container);
+    for (const [id, label] of [
+      ['all', 'All products'], ['low', 'Low stock'], ['zero', 'At zero'],
+      ['negative', 'Negative'], ['untracked', 'Not tracked'],
+    ] as const) {
+      const counter = w.getByTestId(`counter-${id}`);
+      expect(counter).toHaveTextContent(new RegExp(label, 'i'));
+      // Un compteur d'archétype LIST se clique — sinon c'est un KPI déguisé.
+      expect(counter.tagName).toBe('BUTTON');
+    }
+  });
+
+  // Le cœur de l'ADR-024 : avec l'ancien contrat, le total voyageait sur les
+  // lignes et disparaissait donc avec elles. Le pied disait « 0 of 0 », ou ne
+  // se rendait pas du tout — au moment précis où l'utilisateur a besoin de
+  // savoir que son filtre est trop étroit, et non que l'écran est cassé.
+  it('still counts when the list comes back empty', { timeout: 15_000 }, async () => {
+    mockRows = [];
+    const InventoryPage = (await import('@/pages/Inventory.js')).default;
+    const w = within(renderPage(InventoryPage).container);
+    expect(w.getByText('0 of 318')).toBeInTheDocument();
   });
 });

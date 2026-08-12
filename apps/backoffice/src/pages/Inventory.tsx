@@ -1,35 +1,125 @@
 // apps/backoffice/src/pages/Inventory.tsx
 //
-// Backoffice inventory page — Stock & Inventory hub matching screenshot
-// `09-stock-list.jpg`. KPI strip (Total / Raw / Finished / Critical alerts)
-// plus the filterable stock-level list + 2 modals (Adjust / Waste) + movement
-// history drawer. RLS handles auth at the DB layer; toolbar buttons are gated
-// UX-only. Session 14 / Phase 6.A — closeout rebuild. Q3 audit 2026-07-27 :
-// le bouton Receive navigue vers l'achat direct compté (/inventory/incoming),
-// receive_stock_v1 et son modal free-form sont retirés.
+// Liste de stock du back-office — instance de l'archétype LIST (ADR-024).
+//
+// Ce que la refonte change, et pourquoi :
+//   · La bande de tuiles KPI disparaît. Trois des quatre tuiles ne répondaient
+//     à aucune question — le nombre de lignes affichées se compte à l'œil, le
+//     nombre de filtres actifs redit ce que l'utilisateur vient de faire — et
+//     la quatrième ne comptait que la page courante. Elles cèdent la place à
+//     des compteurs qui SONT les filtres (`ListCounterStrip`).
+//   · Le bloc « Filters » carté disparaît : une carte bordée, un intertitre et
+//     ~88 px de hauteur pour trois contrôles. Recherche et catégorie tiennent
+//     dans une ligne, et le troisième contrôle — « low stock only » — est
+//     devenu un compteur.
+//   · La table à la main cède au `DataTable` partagé, qui apporte `scope="col"`,
+//     `aria-sort`, le squelette de chargement, l'état vide et un pied TOUJOURS
+//     rendu — « 0 of 318 » est une information, un pied absent n'en est pas une.
+//   · Le titre passe par `PageHeader`, source unique du bandeau de titre.
+//   · Les trois actions du bandeau prennent les classes de bouton de barre
+//     (32 px). Elles mélangeaient auparavant deux familles de hauteurs
+//     différentes dans la même rangée.
 
-import { Plus, Truck, Trash2, Boxes, Package, Coffee, AlertTriangle } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, KpiTile, SectionLabel } from '@breakery/ui';
+import { Plus, Truck, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Input, Select } from '@breakery/ui';
+import { formatIdr, businessDateIso, todayIsoDate } from '@breakery/utils';
+import { DataTable, type DataTableColumn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
 import { WasteModal } from '@/features/inventory/components/WasteModal.js';
-import { StockLevelRow } from '@/features/inventory/components/StockLevelRow.js';
+import { StockRowActions } from '@/features/inventory/components/StockRowActions.js';
+import { MovementHistoryDrawer } from '@/features/inventory/components/MovementHistoryDrawer.js';
+import { LowStockBadge } from '@/features/inventory/components/LowStockBadge.js';
 import {
   useStockLevels,
+  type StockBucket,
   type StockLevelRow as Row,
   type StockLevelsFilters,
 } from '@/features/inventory/hooks/useStockLevels.js';
+import { useStockCounters, type StockCounters } from '@/features/inventory/hooks/useStockCounters.js';
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const PAGE_SIZE = 50;
+
+// Pas de hook de debounce partagé dans ce dépôt — l'idiome maison est une
+// minuterie référencée, portée par l'appelant (voir `AuditLogFilters`, et le
+// commentaire d'en-tête de `useIngredientSearch` : « debouncing is the caller's
+// concern »). 250 ms : au-dessus, la liste traîne derrière la frappe ; en
+// dessous, « croissant » coûte encore une requête par lettre.
+const SEARCH_DEBOUNCE_MS = 250;
 
 type ModalState =
   | { kind: 'none' }
   | { kind: 'adjust';  product?: Row }
   | { kind: 'waste';   product?: Row };
+
+interface BucketSpec {
+  label:  string;
+  tone?:  'warning' | 'danger';
+  title?: string;
+  count:  (c: StockCounters) => number;
+}
+
+// `Record<StockBucket, …>` et non un tableau de littéraux : le type vient de
+// l'enum Postgres via la régénération de types, donc ajouter un panier en base
+// CASSE LE BUILD ici tant que l'interface ne le traite pas. Un tableau écrit à
+// la main aurait laissé passer l'oubli en silence — c'est exactement la classe
+// de dérive que la règle d'énumération du projet vise.
+const BUCKETS: Record<StockBucket, BucketSpec> = {
+  all: {
+    label: 'All products',
+    count: (c) => c.total_count,
+  },
+  low: {
+    label: 'Low stock',
+    tone:  'warning',
+    title: 'Below the configured minimum. Includes products at zero or negative — this is the full reorder list, so the counters do not add up to the total.',
+    count: (c) => c.low_count,
+  },
+  zero: {
+    label: 'At zero',
+    tone:  'danger',
+    title: 'Out of stock right now. A product with no minimum configured never shows under Low stock, so this is the only place it surfaces.',
+    count: (c) => c.zero_count,
+  },
+  negative: {
+    label: 'Negative',
+    tone:  'danger',
+    title: 'Stock below zero — a sale was recorded before its receipt. Investigate rather than adjust blindly.',
+    count: (c) => c.negative_count,
+  },
+  untracked: {
+    label: 'Not tracked',
+    title: 'Products sold without stock deduction. They have no stock level and never appear in the other buckets.',
+    count: (c) => c.untracked_count,
+  },
+};
+
+/** Ordre d'affichage — celui de la déclaration ci-dessus, jamais recopié. */
+const BUCKET_ORDER = Object.keys(BUCKETS) as StockBucket[];
+
+// Comparaison en JOURS DE CALENDRIER métier, pas en tranches glissantes de
+// 24 h. L'ancien calcul dérivait « today » d'un delta de millisecondes : un
+// mouvement d'hier 23 h s'affichait « today » tant qu'on regardait avant 23 h
+// le lendemain. Ce n'était pas un défaut de fuseau — c'était une confusion
+// entre 24 heures écoulées et un changement de journée de travail, sur un ERP
+// dont le jour métier est une constante de déploiement (ADR-019).
+function formatLastMovement(iso: string | null): string {
+  if (iso === null) return '—';
+  // Deux dates de calendrier lues à minuit UTC : la différence est exacte, sans
+  // heure d'été ni arrondi.
+  const movedMs = Date.parse(`${businessDateIso(iso)}T00:00:00Z`);
+  const todayMs = Date.parse(`${todayIsoDate()}T00:00:00Z`);
+  const days = Math.round((todayMs - movedMs) / 86_400_000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  return `${days} days ago`;
+}
 
 export default function InventoryPage() {
   const navigate = useNavigate();
@@ -41,194 +131,343 @@ export default function InventoryPage() {
   const canReceive = hasPermission('purchasing.po.create');
   const canWaste   = hasPermission('inventory.waste');
 
-  const [search,        setSearch       ] = useState<string>('');
-  const [categoryId,    setCategoryId   ] = useState<string>('');
-  const [lowStockOnly,  setLowStockOnly ] = useState<boolean>(false);
-  const [page,          setPage         ] = useState<number>(0);
-  const [modal,         setModal        ] = useState<ModalState>({ kind: 'none' });
+  // TOUT l'état de liste vit dans l'URL : un filtre se partage par lien, survit
+  // à un rechargement, et le retour arrière depuis une fiche produit ramène la
+  // liste telle qu'on l'avait laissée. Il vivait en `useState`, donc revenir en
+  // arrière rendait la page 1 non filtrée.
+  //
+  // Les écritures passent par `patchParams` et non par plusieurs `useUrlState` :
+  // `setSearchParams` reçoit les paramètres COURANTS, donc deux appels dans le
+  // même geste s'écrasent l'un l'autre — et changer un filtre doit écrire le
+  // filtre ET remettre la page à zéro d'un seul mouvement. Même motif que
+  // `Products.tsx`, qui documente le défaut.
+  const [params, setParams] = useSearchParams();
+  const patchParams = useCallback((patch: Record<string, string | null>): void => {
+    setParams((prev) => {
+      const p = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null || v === '') p.delete(k);
+        else p.set(k, v);
+      }
+      return p;
+    }, { replace: true });
+  }, [setParams]);
+
+  const [modal, setModal] = useState<ModalState>({ kind: 'none' });
+  // Le journal d'un produit s'ouvre en tiroir, PAS dans l'URL : c'est une
+  // consultation, pas un état de liste. Le partager par lien n'aurait pas de
+  // sens, et l'empiler dans l'historique casserait le retour arrière que le
+  // lot précédent vient de rendre fiable.
+  const [movementsFor, setMovementsFor] = useState<Row | undefined>(undefined);
+
+  // Un paramètre d'URL est saisi par n'importe qui. `?bucket=lol` ne doit pas
+  // produire une liste vide en silence — même défaut que le panier NULL gardé
+  // côté SQL. On retombe sur le défaut, sans rien casser.
+  const bucketParam   = params.get('bucket') ?? 'all';
+  const bucket: StockBucket = Object.hasOwn(BUCKETS, bucketParam)
+    ? (bucketParam as StockBucket)
+    : 'all';
+  const appliedSearch = params.get('q') ?? '';
+  const categoryId    = params.get('category') ?? '';
+  const parsedPage    = Number.parseInt(params.get('page') ?? '0', 10);
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 0;
+
+  function setCategoryId(next: string): void { patchParams({ category: next, page: null }); }
+
+  // `search` est ce que l'utilisateur voit dans le champ, à la frappe près ;
+  // `appliedSearch` est ce qui part au serveur et dans l'URL.
+  const [search, setSearch] = useState<string>(appliedSearch);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+  }, []);
+
+  // Suit l'URL quand elle change SANS passer par le champ : retour arrière,
+  // lien collé, rechargement. Quand c'est la frappe qui a poussé la valeur,
+  // les deux sont déjà égales et l'effet ne fait rien.
+  useEffect(() => { setSearch(appliedSearch); }, [appliedSearch]);
+
+  function setPage(next: number): void {
+    patchParams({ page: next <= 0 ? null : String(next) });
+  }
+
+  function onSearchChange(next: string): void {
+    setSearch(next);
+    if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+    // La recherche et la remise à zéro de la page partent ENSEMBLE, au bout du
+    // debounce : les écrire séparément les ferait s'écraser.
+    searchTimer.current = setTimeout(() => { patchParams({ q: next, page: null }); }, SEARCH_DEBOUNCE_MS);
+  }
 
   const filters = useMemo<StockLevelsFilters>(
     () => ({
-      ...(search       !== ''   ? { search }     : {}),
-      ...(categoryId   !== ''   ? { categoryId } : {}),
-      ...(lowStockOnly === true ? { lowStockOnly: true } : {}),
+      ...(appliedSearch !== '' ? { search: appliedSearch } : {}),
+      ...(categoryId    !== '' ? { categoryId }            : {}),
+      bucket,
       limit:  PAGE_SIZE,
       offset: page * PAGE_SIZE,
     }),
-    [search, categoryId, lowStockOnly, page],
+    [appliedSearch, categoryId, bucket, page],
   );
 
-  const list    = useStockLevels(filters);
-  const refData = useInventoryReferenceData();
-
-  const totalCount = list.data?.[0]?.total_count ?? 0;
-  const pageRows = list.data ?? [];
-  const lowStockInPage = useMemo(
-    () => pageRows.filter((r) => r.min_stock_threshold > 0 && r.current_stock < r.min_stock_threshold).length,
-    [pageRows],
+  // ADR-024 déc. 2 — les compteurs suivent la recherche et la catégorie, JAMAIS
+  // le panier actif : sinon la bande n'annoncerait que le panier sélectionné et
+  // cesserait d'être un moyen d'en changer.
+  const counterFilters = useMemo(
+    () => ({
+      ...(appliedSearch !== '' ? { search: appliedSearch } : {}),
+      ...(categoryId    !== '' ? { categoryId }            : {}),
+    }),
+    [appliedSearch, categoryId],
   );
 
-  if (!canRead) {
-    return <div className="text-text-secondary">You do not have permission to view inventory.</div>;
+  const list     = useStockLevels(filters);
+  const counters = useStockCounters(counterFilters);
+  const refData  = useInventoryReferenceData();
+
+  const c = counters.data;
+  const pageRows = useMemo(() => list.data ?? [], [list.data]);
+
+  /** Total du panier affiché — c'est lui que le pied et la pagination comptent. */
+  const activeTotal = c === undefined ? 0 : BUCKETS[bucket].count(c);
+
+  function pick(next: StockBucket): void {
+    patchParams({ bucket: next === 'all' ? null : next, page: null });
   }
 
-  const hasMore   = (page + 1) * PAGE_SIZE < totalCount;
-  const hasPrev   = page > 0;
+  const counterItems = useMemo<ListCounter[]>(
+    () => BUCKET_ORDER.map((id) => {
+      const spec = BUCKETS[id];
+      const value = c === undefined ? 0 : spec.count(c);
+      return {
+        id,
+        label: spec.label,
+        value,
+        ...(spec.tone !== undefined && value > 0 ? { tone: spec.tone } : {}),
+        ...(spec.title !== undefined ? { title: spec.title } : {}),
+        onSelect: () => { pick(id); },
+      };
+    }),
+    // `pick` est stable en pratique (setters d'URL mémoïsés) ; la bande ne
+    // dépend que des compteurs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [c],
+  );
 
-  function resetPage(): void { setPage(0); }
+  const columns = useMemo<readonly DataTableColumn<Row>[]>(() => [
+    {
+      id: 'sku', header: 'SKU', width: '7rem',
+      render: (r) => <span className="font-data text-xs text-text-secondary">{r.sku}</span>,
+    },
+    {
+      id: 'name', header: 'Product',
+      // Un vrai lien, et non un `<td role="button">` : celui-ci écrasait la
+      // sémantique de cellule (chaque ligne annonçait une colonne de moins) et
+      // interdisait l'ouverture dans un nouvel onglet.
+      render: (r) => (
+        <span className="flex items-center">
+          <a
+            href={`/backoffice/inventory/${r.product_id}`}
+            onClick={(e) => { e.preventDefault(); void navigate(`/backoffice/inventory/${r.product_id}`); }}
+            className="text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            {r.name}
+          </a>
+          {r.track_inventory && (
+            <LowStockBadge currentStock={r.current_stock} minStockThreshold={r.min_stock_threshold} />
+          )}
+        </span>
+      ),
+    },
+    {
+      id: 'category', header: 'Category', width: '9rem',
+      render: (r) => <span className="text-text-secondary">{r.category_name ?? '—'}</span>,
+    },
+    {
+      id: 'onhand', header: 'On hand', align: 'right', width: '9rem',
+      render: (r) => (
+        r.track_inventory
+          ? (
+            <span className="font-data tabular-nums">
+              {r.current_stock.toLocaleString()}
+              <span className="ml-1 text-text-muted">{r.unit}</span>
+            </span>
+          )
+          : <span className="text-text-muted">Not tracked</span>
+      ),
+    },
+    {
+      id: 'value', header: 'Value at cost', align: 'right', width: '10rem',
+      render: (r) => (
+        r.track_inventory
+          ? <span className="font-data tabular-nums">{formatIdr(r.stock_value)}</span>
+          : <span className="text-text-muted">—</span>
+      ),
+    },
+    {
+      id: 'moved', header: 'Last movement', width: '9rem',
+      render: (r) => <span className="text-text-secondary">{formatLastMovement(r.last_movement_at)}</span>,
+    },
+    {
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '4rem',
+      render: (r) => (
+        <StockRowActions
+          row={r}
+          canAdjust={canAdjust}
+          canWaste={canWaste}
+          onView={(x) => { void navigate(`/backoffice/inventory/${x.product_id}`); }}
+          onMovements={(x) => setMovementsFor(x)}
+          onAdjust={(x) => setModal({ kind: 'adjust', product: x })}
+          onWaste={(x) => setModal({ kind: 'waste', product: x })}
+        />
+      ),
+    },
+  ], [canAdjust, canWaste, navigate]);
+
+  if (!canRead) {
+    return (
+      <div className="flex flex-col gap-[13px]">
+        <PageHeader title="Stock &amp; Inventory" />
+        <p role="status" className="rounded-md border border-border-subtle bg-bg-elevated p-4 text-sm text-text-secondary">
+          You do not have permission to view inventory. Ask an administrator for the
+          <span className="font-data"> inventory.read </span> permission.
+        </p>
+      </div>
+    );
+  }
+
+  const hasMore = (page + 1) * PAGE_SIZE < activeTotal;
+  const hasPrev = page > 0;
+
   function closeModal(): void { setModal({ kind: 'none' }); }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock &amp; Inventory</h1>
-          <p className="text-text-secondary text-sm mt-1">
-            Manage stock, track movements, and monitor inventory.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {canAdjust && (
-            <Button type="button" variant="secondary" onClick={() => setModal({ kind: 'adjust' })}>
-              <Plus className="h-4 w-4" aria-hidden /> Adjust
-            </Button>
-          )}
-          {canReceive && (
-            <button type="button" onClick={() => { void navigate('/backoffice/inventory/incoming'); }} className={TOOLBAR_BTN_PRIMARY}>
-              <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
-            </button>
-          )}
-          {canWaste && (
-            <Button type="button" variant="ghostDestructive" onClick={() => setModal({ kind: 'waste' })}>
-              <Trash2 className="h-4 w-4" aria-hidden /> Waste
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* KPI strip — matches `09-stock-list.jpg` */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiTile label="Total products"   value={totalCount}      icon={Boxes}   footer="In stock catalog" />
-        <KpiTile label="In current page"  value={pageRows.length} icon={Package} footer="Filtered rows on this page" />
-        <KpiTile label="Active filters"   value={
-          (search !== '' ? 1 : 0) +
-          (categoryId !== '' ? 1 : 0) +
-          (lowStockOnly ? 1 : 0)
-        } icon={Coffee} footer="Search · category · low-stock toggle" />
-        <KpiTile label="Critical alerts"  value={lowStockInPage}  icon={AlertTriangle} footer="Below min threshold (page)" />
-      </div>
-
-      {/* Filters */}
-      <div className="space-y-2">
-        <SectionLabel as="h2">Filters</SectionLabel>
-        <div className="flex flex-wrap gap-3 items-end bg-bg-elevated border border-border-subtle rounded-lg p-4">
-          <div className="space-y-1 flex-1 min-w-[12rem]">
-            <label htmlFor="inv-search" className="text-xs uppercase tracking-widest text-text-secondary">Search</label>
-            <input
-              id="inv-search"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-              placeholder="SKU or product name"
-              maxLength={64}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="inv-category" className="text-xs uppercase tracking-widest text-text-secondary">Category</label>
-            <select
-              id="inv-category"
-              value={categoryId}
-              onChange={(e) => { setCategoryId(e.target.value); resetPage(); }}
-              className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[10rem]"
-              disabled={refData.isLoading}
-            >
-              <option value="">All categories</option>
-              {refData.data?.categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs uppercase tracking-widest text-text-secondary block">Status</span>
-            <label className="flex items-center gap-2 h-9 text-sm text-text-primary">
-              <input
-                type="checkbox"
-                checked={lowStockOnly}
-                onChange={(e) => { setLowStockOnly(e.target.checked); resetPage(); }}
-              />
-              Low stock only
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      {list.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
-      {list.error && <div className="text-red py-12 text-center">Failed to load: {list.error.message}</div>}
-      {list.data?.length === 0 && (
-        <div className="text-text-secondary py-12 text-center">
-          {search !== '' || categoryId !== '' || lowStockOnly
-            ? 'No products match the current filters.'
-            : 'No products with stock activity.'}
-        </div>
-      )}
-      {list.data !== undefined && list.data.length > 0 && (
-        <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-surface-inert text-xs uppercase tracking-wide text-text-secondary">
-              <tr>
-                <th className="text-left px-3 py-2 w-24">SKU</th>
-                <th className="text-left px-3 py-2">Name</th>
-                <th className="text-left px-3 py-2 w-32">Category</th>
-                <th className="text-right px-3 py-2 w-24">On hand</th>
-                <th className="text-left px-3 py-2 w-32">Last movement</th>
-                <th className="text-right px-3 py-2 w-16" />
-              </tr>
-            </thead>
-            <tbody>
-              {list.data.map((row) => (
-                <StockLevelRow
-                  key={row.product_id}
-                  row={row}
-                  canAdjust={canAdjust}
-                  canWaste={canWaste}
-                  onView={(r) => { void navigate(`/backoffice/inventory/${r.product_id}`); }}
-                  onAdjust={(r) => setModal({ kind: 'adjust', product: r })}
-                  onWaste={(r) => setModal({ kind: 'waste', product: r })}
-                />
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex items-center justify-between px-3 py-2 text-xs border-t border-border-subtle">
-            <span className="text-text-secondary">
-              Page {page + 1} · {totalCount.toLocaleString()} total
-            </span>
-            <div className="flex gap-2">
-              <Button
+    <div className="flex flex-col gap-[13px]">
+      <PageHeader
+        title="Stock &amp; Inventory"
+        subtitle="Every product that carries a stock level, worst first. Corrections are recorded as new movements — nothing here is edited in place."
+        actions={
+          <>
+            {canAdjust && (
+              <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setModal({ kind: 'adjust' })}>
+                <Plus className="h-3.5 w-3.5" aria-hidden /> Adjust
+              </button>
+            )}
+            {canWaste && (
+              <button type="button" className={`${TOOLBAR_BTN_SECONDARY} text-red-as-text`} onClick={() => setModal({ kind: 'waste' })}>
+                <Trash2 className="h-3.5 w-3.5" aria-hidden /> Waste
+              </button>
+            )}
+            {canReceive && (
+              <button
                 type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={!hasPrev}
+                className={TOOLBAR_BTN_PRIMARY}
+                onClick={() => { void navigate('/backoffice/inventory/incoming'); }}
               >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!hasMore}
-              >
-                Next
-              </Button>
+                <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
+              </button>
+            )}
+          </>
+        }
+      />
+
+      <ListCounterStrip
+        counters={counterItems}
+        activeId={bucket}
+        ariaLabel="Stock filters"
+        data-testid="stock-counters"
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="inv-search" className="sr-only">Search</label>
+        <Input
+          id="inv-search"
+          value={search}
+          onChange={(e) => { onSearchChange(e.target.value); }}
+          placeholder="Search by SKU or product name"
+          maxLength={64}
+          className="w-full max-w-xs"
+        />
+        <label htmlFor="inv-category" className="sr-only">Category</label>
+        <Select
+          id="inv-category"
+          value={categoryId}
+          // `setCategoryId` remet DÉJÀ la page à zéro dans le même patch.
+          // Rappeler `resetPage()` ici émettait un second patch construit sur
+          // les paramètres d'AVANT, qui effaçait la catégorie qu'on venait
+          // d'écrire — le défaut exact que `patchParams` existe pour éviter.
+          onChange={(e) => { setCategoryId(e.target.value); }}
+          disabled={refData.isLoading}
+          className="w-48"
+        >
+          <option value="">All categories</option>
+          {refData.data?.categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </Select>
+      </div>
+
+      {/* Sans annonce, cocher un compteur fait passer la table de 318 à 14
+          lignes en silence pour un lecteur d'écran. */}
+      <span className="sr-only" role="status" aria-live="polite">
+        {counters.isLoading
+          ? 'Loading stock counts'
+          : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
+      </span>
+
+      {list.error !== null ? (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+          Stock levels could not be loaded. The list may be out of date.{' '}
+          <button type="button" className="underline" onClick={() => { void list.refetch(); }}>
+            Try again
+          </button>
+        </p>
+      ) : (
+        <DataTable<Row>
+          columns={columns}
+          rows={pageRows}
+          getRowKey={(r) => r.product_id}
+          isLoading={list.isLoading}
+          // Les lignes précédentes restent à l'écran pendant qu'une nouvelle
+          // requête tourne (`keepPreviousData`) : on les estompe pour ne pas
+          // laisser croire que le clic n'a rien fait.
+          {...(list.isPlaceholderData ? { className: 'opacity-60 transition-opacity duration-fast' } : {})}
+          density="compact"
+          emptyTitle="No product here"
+          emptyDescription={
+            appliedSearch !== '' || categoryId !== '' || bucket !== 'all'
+              ? 'Nothing matches this filter. Widen the search, or pick another counter above.'
+              : 'No product carries a stock level yet.'
+          }
+          data-testid="stock-levels-table"
+          footer={
+            <div className="flex items-center justify-between">
+              <span className="font-data text-[11px] tabular-nums text-text-muted">
+                {pageRows.length} of {activeTotal.toLocaleString()}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={TOOLBAR_BTN_SECONDARY}
+                  onClick={() => { setPage(page - 1); }}
+                  disabled={!hasPrev}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className={TOOLBAR_BTN_SECONDARY}
+                  onClick={() => { setPage(page + 1); }}
+                  disabled={!hasMore}
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
+          }
+        />
       )}
 
-      {/* Modals */}
       <AdjustModal
         open={modal.kind === 'adjust'}
         {...(modal.kind === 'adjust' && modal.product !== undefined ? { initialProduct: modal.product } : {})}
@@ -238,6 +477,10 @@ export default function InventoryPage() {
         open={modal.kind === 'waste'}
         {...(modal.kind === 'waste' && modal.product !== undefined ? { initialProduct: modal.product } : {})}
         onClose={closeModal}
+      />
+      <MovementHistoryDrawer
+        product={movementsFor}
+        onClose={() => { setMovementsFor(undefined); }}
       />
     </div>
   );

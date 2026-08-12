@@ -1,8 +1,17 @@
 // apps/backoffice/src/features/inventory/hooks/useInventoryReferenceData.ts
 //
-// Lookup queries used by the inventory page filters + modals (categories +
-// active suppliers). Bundled so the page renders both selects without two
-// network round-trips and without flashing empty option lists.
+// Listes de référence du domaine stock : catégories et fournisseurs actifs.
+//
+// Les deux partent ensemble parce que les FORMULAIRES DE RÉCEPTION
+// (`IncomingStockForm`, `DirectPurchaseForm`) affichent les deux selects d'un
+// coup, et qu'un chargement séparé les faisait clignoter vides.
+//
+// La liste de stock, elle, n'utilise plus que les catégories : son modal de
+// réception a été retiré à l'audit du 2026-07-27, la réception valorisée
+// passant par /inventory/incoming. Elle paie donc une requête `suppliers`
+// qu'elle n'affiche pas. C'est assumé : la table est minuscule, le résultat est
+// partagé entre les trois écrans sous la même clé et retenu 5 minutes, et
+// scinder le hook coûterait plus en surface qu'il ne gagne en octets.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
