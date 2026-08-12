@@ -7,6 +7,7 @@
 // Session 13 / Phase 6.B.
 
 import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import type { PromoRoi } from '../hooks/usePromoRoi.js';
 
 export interface PromoRoiSummaryProps {
@@ -54,11 +55,15 @@ export function PromoRoiSummary({ data }: PromoRoiSummaryProps) {
       <CardContent className="space-y-1">
         <StatRow label="Redemptions" value={data.redemptions} hint="Promotion-application rows" />
         <StatRow label="Orders touched" value={data.incremental_orders} />
-        <StatRow label="Total discount given" value={data.total_discount_given} hint="IDR" />
-        <StatRow label="Revenue on flagged orders" value={data.total_revenue} hint="IDR" />
+        {/* Audit UX/UI 2026-08-13 (lot 1) : les trois lignes MONÉTAIRES passent
+            par `formatCurrency` au call-site. `StatRow` sert aussi des COMPTES
+            (redemptions, orders touched) — préfixer « Rp » dans son rendu
+            générique aurait libellé 1 234 commandes en roupies. */}
+        <StatRow label="Total discount given" value={formatCurrency(data.total_discount_given)} />
+        <StatRow label="Revenue on flagged orders" value={formatCurrency(data.total_revenue)} />
         <StatRow
           label="Net revenue (proxy)"
-          value={data.incremental_revenue}
+          value={formatCurrency(data.incremental_revenue)}
           hint="Revenue minus discount"
           emphasis
         />

@@ -20,6 +20,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, Layers, Sigma, X } from 'lucide-react';
 import { Button, EmptyState, KpiTile } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDetail.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
@@ -112,7 +113,7 @@ export default function OpnameDetailPage(): JSX.Element {
         {revealed ? (
           <KpiTile
             label="Total |variance|"
-            value={Number(stats.varianceTotal.toFixed(3))}
+            value={formatQuantity(stats.varianceTotal, null)}
             icon={Sigma}
             footer="Sum of absolute deltas"
           />

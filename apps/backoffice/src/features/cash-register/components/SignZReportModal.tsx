@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
   Button,
 } from '@breakery/ui';
+import { formatCurrency, roundIdr } from '@breakery/utils';
 import { Loader2 } from 'lucide-react';
 import { useZReport } from '../hooks/useZReport.js';
 import { useSignZReport } from '../hooks/useSignZReport.js';
@@ -20,10 +21,13 @@ export interface SignZReportModalProps {
   onSuccess?:   () => void;
 }
 
+// Le Z-report s'arrondit à la centaine de roupies AVANT d'être rendu : c'est
+// la coupure de caisse réelle, pas un arrondi d'affichage. `roundIdr` porte
+// cette règle métier ; `formatCurrency` ne fait que l'écrire (préfixe « Rp »
+// compris) — audit UX/UI 2026-08-13, lot 1.
 function formatIDR(v: number | null | undefined): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return '—';
-  return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-    .format(Math.round(v / 100) * 100);
+  return formatCurrency(roundIdr(v));
 }
 
 export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: SignZReportModalProps): JSX.Element {
@@ -104,22 +108,22 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
             </div>
             <div>
               <span className="text-text-secondary">Sales total: </span>
-              Rp {formatIDR(sales)}
+              {formatIDR(sales)}
             </div>
             <div>
               <span className="text-text-secondary">Cash variance: </span>
-              Rp {formatIDR(variance)}
+              {formatIDR(variance)}
             </div>
             {reconciliation?.qris?.counted != null && (
               <div data-testid="sign-qris-variance">
                 <span className="text-text-secondary">QRIS variance: </span>
-                Rp {formatIDR(reconciliation.qris.variance)}
+                {formatIDR(reconciliation.qris.variance)}
               </div>
             )}
             {reconciliation?.card?.counted != null && (
               <div data-testid="sign-card-variance">
                 <span className="text-text-secondary">Card+EDC variance: </span>
-                Rp {formatIDR(reconciliation.card.variance)}
+                {formatIDR(reconciliation.card.variance)}
               </div>
             )}
             <DialogFooter className="pt-4">

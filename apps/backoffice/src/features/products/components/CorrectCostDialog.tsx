@@ -11,6 +11,7 @@ import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useCorrectCostPrice } from '../hooks/useCorrectCostPrice.js';
 
 export interface CorrectCostDialogProps {
@@ -21,11 +22,6 @@ export interface CorrectCostDialogProps {
   idempotencyKey: string;
   /** Called after a successful correction so the parent can regenerate the key. */
   onSuccess:      () => void;
-}
-
-function formatIdr(n: number): string {
-  // Whole rupiah only — IDR has no circulating sub-unit (no decimals).
-  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 export function CorrectCostDialog({
@@ -75,7 +71,7 @@ export function CorrectCostDialog({
         idempotencyKey,
       });
       toast.success(
-        `Cost updated: Rp ${formatIdr(result.old_cost)} → Rp ${formatIdr(result.new_cost)}`,
+        `Cost updated: ${formatCurrency(result.old_cost)} → ${formatCurrency(result.new_cost)}`,
       );
       resetForm();
       onSuccess();
@@ -91,7 +87,7 @@ export function CorrectCostDialog({
         <DialogHeader>
           <DialogTitle>Correct cost price</DialogTitle>
           <DialogDescription>
-            Current WAC cost: <span className="font-mono font-semibold">Rp {formatIdr(currentCost)}</span>.
+            Current WAC cost: <span className="font-mono font-semibold">{formatCurrency(currentCost)}</span>.
             Enter the corrected cost and a reason for the audit trail.
           </DialogDescription>
         </DialogHeader>

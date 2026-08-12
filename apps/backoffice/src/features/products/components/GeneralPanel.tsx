@@ -24,6 +24,7 @@ import {
   ProductPerformanceRestricted,
 } from './ProductPerformanceCard.js';
 import { useSetProductTestFlag } from '../hooks/useSetProductTestFlag.js';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   product: ProductRow;
@@ -185,7 +186,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               <SectionLabel as="div" size="xs">Recipe cost / {draft.unit}</SectionLabel>
               <div className="mt-1.5 rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono">
                 {draft.cost_price > 0
-                  ? <Currency amount={draft.cost_price} emphasis="gold" />
+                  ? <Currency format={formatCurrency} amount={draft.cost_price} emphasis="gold" />
                   : <span className="text-text-muted">—</span>}
               </div>
             </div>

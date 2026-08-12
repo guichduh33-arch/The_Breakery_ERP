@@ -8,6 +8,7 @@
 
 import { useState, type JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { useReorderSuggestions, type ReorderSuggestion } from '../hooks/useReorderSuggestions.js';
 import { ProductCell } from './ProductCell.js';
 
@@ -32,16 +33,20 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     header: 'On hand',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px]">
-        {Number(r.current_stock)} <span className="text-text-muted">{r.unit}</span>
-      </span>
+      <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(r.current_stock, r.unit)}</span>
     ),
   },
   {
     id: 'avg_daily',
     header: 'Daily use',
     align: 'right',
-    render: (r) => <span className="font-data text-[12.5px]">{Number(r.avg_daily_usage).toFixed(2)}</span>,
+    // Une consommation par jour n'est pas un stock : elle se mesure en
+    // unités/jour et vaut souvent moins de un. On la passe donc SANS unité,
+    // pour garder ses décimales — arrondie à l'entier comme le serait un stock
+    // en pièces, une conso de 0,4 pcs/jour se lirait « 0 » ou « 1 ».
+    render: (r) => (
+      <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(r.avg_daily_usage, null)}</span>
+    ),
   },
   {
     id: 'coverage',
@@ -58,8 +63,8 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     header: 'Order qty',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold">
-        {Number(r.suggested_order_qty).toFixed(2)} <span className="font-normal text-text-muted">{r.unit}</span>
+      <span className="font-data text-[12.5px] font-semibold tabular-nums">
+        {formatQuantity(r.suggested_order_qty, r.unit)}
       </span>
     ),
   },

@@ -86,7 +86,7 @@ export function RevenueShareCard({
                 <li key={p.method} className="flex items-baseline gap-2 text-[12.5px]">
                   <span className="min-w-0 flex-1 truncate text-text-primary">{paymentMethodLabel(p.method)}</span>
                   <span className="shrink-0 font-data tabular-nums text-text-muted">{formatPct(p.share_pct)}</span>
-                  <span className="shrink-0 font-data tabular-nums text-text-primary">{formatIdrShort(p.amount)}</span>
+                  <span className="shrink-0 font-data tabular-nums text-text-primary" title={formatIdr(p.amount)}>{formatIdrShort(p.amount)}</span>
                 </li>
               ))}
             </ul>
@@ -94,7 +94,10 @@ export function RevenueShareCard({
           <div className="mt-3 space-y-1 border-t border-border-muted pt-2.5 text-[12.5px]">
             <div className="flex items-baseline justify-between">
               <span className="font-medium text-text-primary">Total collected</span>
-              <span className="font-data font-semibold tabular-nums text-text-primary">
+              <span
+                className="font-data font-semibold tabular-nums text-text-primary"
+                title={formatIdr(payments.total)}
+              >
                 {formatIdrShort(payments.total)}
               </span>
             </div>

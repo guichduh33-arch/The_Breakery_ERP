@@ -6,6 +6,11 @@
 // version: green (added), red (removed), amber (qty/unit changed).
 
 import { useMemo, type JSX } from 'react';
+import { formatQuantity } from '@breakery/utils';
+// Coûts de recette : la précision sous-roupie porte du sens (coût au gramme) —
+// formatCurrency (0 décimale) doublerait un « Rp 0,50 » arrondi. On consomme
+// l'exception documentée du module reports.
+import { formatIdrPrecise } from '@/features/reports/utils/chartColors.js';
 import { useRecipeVersions, type RecipeVersionRow, type RecipeVersionSnapshotRow } from '../hooks/useRecipeVersions.js';
 
 export interface RecipeVersionHistoryProps {
@@ -149,9 +154,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
               className="text-xs font-mono text-text-secondary"
               data-testid={`version-cost-${row.version_number}`}
             >
-              cost {row.productCostAtVersion.toLocaleString('en-US', {
-                minimumFractionDigits: 2, maximumFractionDigits: 2,
-              })}
+              cost {formatIdrPrecise(row.productCostAtVersion)}
             </span>
           ) : (
             <span
@@ -202,15 +205,15 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
                 <span className="font-mono text-xs whitespace-nowrap flex items-center gap-2">
                   {d.kind === 'changed' && d.prev_quantity !== undefined && (
                     <span className="text-text-secondary line-through">
-                      {d.prev_quantity.toLocaleString()} {d.prev_unit}
+                      {formatQuantity(d.prev_quantity, d.prev_unit)}
                     </span>
                   )}
                   <span>
-                    {d.quantity.toLocaleString()} {d.unit}
+                    {formatQuantity(d.quantity, d.unit)}
                   </span>
                   {matSubtotal !== null && (
                     <span className="text-text-muted">
-                      = {matSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      = {formatIdrPrecise(matSubtotal)}
                     </span>
                   )}
                 </span>

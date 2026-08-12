@@ -19,21 +19,23 @@ import { Lock } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
 import { Card, Currency } from '@breakery/ui';
 import { useProductPerformance } from '../hooks/useProductPerformance.js';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 
 const TITLE_CLASS = 'mb-4 text-sm font-bold uppercase tracking-widest text-text-muted';
 
-// Un seul séparateur de milliers dans la carte, et c'est celui du produit : la
-// virgule (`Rp 4,850,000`), qu'impose déjà `Currency` sur la valeur principale.
-// Formater la note en `id-ID` rendait « Counter 50.000 » deux lignes sous
+// Un seul séparateur de milliers dans la carte, et c'est celui du back-office :
+// le point (`Rp 4.850.000`), qu'impose `formatCurrency` — passé en prop à
+// `Currency` pour la valeur principale (audit UX/UI 2026-08-13, lot 1). Deux
+// formateurs dans une même carte rendaient « Counter 50.000 » deux lignes sous
 // « Rp 300,000 » — un montant qui se lit cinquante.
 
-/** Quantités : entières le plus souvent (pcs), décimales pour un produit au poids. */
-function formatQty(n: number): string {
-  return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
-}
-
+// Le compteur de commandes suivait le montant : il écrivait « 1,145 » en
+// `en-US` sous un « Rp 3.000.000 » en id-ID, deux séparateurs de milliers
+// contraires dans une carte de six lignes. Il rejoint donc la locale métier
+// (audit UX/UI 2026-08-13). Un nombre de COMMANDES n'est pas une quantité de
+// stock : pas d'unité inventée, juste des milliers séparés.
 function formatCount(n: number): string {
-  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 export function ProductPerformanceCard({
@@ -87,18 +89,21 @@ export function ProductPerformanceCard({
       <div className="space-y-3.5" data-testid="product-performance">
         <Metric
           label="Units sold"
-          value={formatQty(total.units_sold)}
+          // `get_product_performance_v1` ne renvoie pas l'unité du produit : la
+          // quantité vendue se formate donc sans suffixe — le libellé « Units
+          // sold » dit déjà ce qu'on compte.
+          value={formatQuantity(total.units_sold, null)}
           note={hasB2b
-            ? `Counter ${formatQty(counter.units_sold)} · B2B ${formatQty(b2b.units_sold)}`
+            ? `Counter ${formatQuantity(counter.units_sold, null)} · B2B ${formatQuantity(b2b.units_sold, null)}`
             : null}
         />
         <Metric
           label="Revenue"
-          value={total.revenue > 0 ? <Currency amount={total.revenue} /> : '—'}
+          value={total.revenue > 0 ? <Currency format={formatCurrency} amount={total.revenue} /> : '—'}
           // La note passe par `Currency` comme la valeur : un montant et son
           // détail ne peuvent pas se lire dans deux notations.
           note={hasB2b && total.revenue > 0
-            ? <>Counter <Currency amount={counter.revenue} /> · B2B <Currency amount={b2b.revenue} /></>
+            ? <>Counter <Currency format={formatCurrency} amount={counter.revenue} /> · B2B <Currency format={formatCurrency} amount={b2b.revenue} /></>
             : null}
         />
         <Metric

@@ -4,6 +4,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Button, Input } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { Plus } from 'lucide-react';
 import {
   useJournalEntries,
@@ -13,9 +14,7 @@ import { JournalEntryDetailDrawer } from '@/features/accounting/components/Journ
 import { CreateManualJEModal } from '@/features/accounting/components/CreateManualJEModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 
 function defaultPeriodStart(): string {
   const d = new Date();

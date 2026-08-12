@@ -24,6 +24,7 @@
 import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, DataTable, cn, type DataTableColumn } from '@breakery/ui';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
   classifyProduct, productMarginPct,
@@ -43,9 +44,12 @@ const MONO = 'font-data tabular-nums';
 const DASH = <span className="text-text-subtle">—</span>;
 const EMPTY_SELECTION: ReadonlySet<string> = new Set();
 
-function num(v: number): string {
-  return Math.round(v).toLocaleString('id-ID');
-}
+// Le helper `num` unique est mort (audit UX/UI 2026-08-13) : il rendait un
+// stock et un prix de la même façon, si bien que « 5.000 » sur la ligne Cost et
+// « 5.000 » sur la ligne Stock ne se distinguaient pas — et qu'aucun des deux
+// ne disait s'il s'agissait de roupies. Les trois colonnes de prix passent à
+// `formatCurrency` (préfixe `Rp`), la colonne Stock à `formatQuantity` (unité
+// en suffixe, arrondi entier pour les unités de comptage).
 
 interface Props {
   rows: readonly ProductRow[];
@@ -172,7 +176,7 @@ export function ProductsTable({
               ? { title: 'Display-case product — the POS sells off the vitrine counter, not this global stock.' }
               : {})}
           >
-            {num(qty)} {r.unit}
+            {formatQuantity(qty, r.unit)}
           </span>
         );
       },
@@ -186,7 +190,7 @@ export function ProductsTable({
       // price », et la cause d'une marge qu'on ne peut pas calculer.
       render: (r: ProductRow) =>
         r.cost_price > 0
-          ? <span className={cn(MONO, 'text-text-secondary')}>{num(r.cost_price)}</span>
+          ? <span className={cn(MONO, 'text-text-secondary')}>{formatCurrency(r.cost_price)}</span>
           : <span className={cn(MONO, 'font-semibold text-danger')}>—</span>,
     }] : []),
     ...(shown('retail') ? [{
@@ -196,7 +200,7 @@ export function ProductsTable({
       width: '8.3%',
       render: (r: ProductRow) =>
         r.retail_price > 0
-          ? <span className={cn(MONO, 'font-semibold text-gold')}>{num(r.retail_price)}</span>
+          ? <span className={cn(MONO, 'font-semibold text-gold')}>{formatCurrency(r.retail_price)}</span>
           : DASH,
     }] : []),
     ...(shown('wholesale') ? [{
@@ -206,7 +210,7 @@ export function ProductsTable({
       width: '8.8%',
       render: (r: ProductRow) =>
         r.wholesale_price !== null && r.wholesale_price > 0
-          ? <span className={cn(MONO, 'text-text-secondary')}>{num(r.wholesale_price)}</span>
+          ? <span className={cn(MONO, 'text-text-secondary')}>{formatCurrency(r.wholesale_price)}</span>
           : DASH,
     }] : []),
     ...(shown('margin') ? [{

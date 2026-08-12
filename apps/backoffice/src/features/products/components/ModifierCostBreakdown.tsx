@@ -10,6 +10,7 @@
 
 import { useMemo, type JSX } from 'react';
 import { Card } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import {
   modifierOptionMaterialCost,
   type ModifierCostMaterial,
@@ -22,10 +23,6 @@ export interface ModifierCostBreakdownProps {
   productId: string;
   /** Base product cost (WAC / recipe roll-up), excludes modifiers. */
   baseCost: number;
-}
-
-function formatIdr(n: number): string {
-  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 function groupTypeLabel(g: EditableModifierGroup): string {
@@ -60,7 +57,7 @@ export function ModifierCostBreakdown({
       <div className="mb-1">
         <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Cost with modifiers</h2>
         <p className="text-xs italic text-text-secondary">
-          Total cost = base cost (Rp {formatIdr(baseCost)}) + the option&apos;s ingredient cost
+          Total cost = base cost ({formatCurrency(baseCost)}) + the option&apos;s ingredient cost
         </p>
       </div>
 
@@ -101,7 +98,7 @@ export function ModifierCostBreakdown({
                           )}
                         </td>
                         <td className="py-1.5 pr-4 text-right font-mono text-text-secondary tabular-nums whitespace-nowrap">
-                          {mat.total > 0 ? `+ Rp ${formatIdr(mat.total)}` : '—'}
+                          {mat.total > 0 ? `+ ${formatCurrency(mat.total)}` : '—'}
                           {!mat.complete && (
                             <span className="text-text-muted" title="Some ingredients have no cost price yet">
                               {' '}+ ?
@@ -109,7 +106,7 @@ export function ModifierCostBreakdown({
                           )}
                         </td>
                         <td className="py-1.5 text-right font-mono font-semibold text-text-primary tabular-nums whitespace-nowrap">
-                          Rp {formatIdr(total)}
+                          {formatCurrency(total)}
                         </td>
                       </tr>
                     );

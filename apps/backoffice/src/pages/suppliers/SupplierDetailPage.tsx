@@ -49,7 +49,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSupplierDetail } from '@/features/suppliers/hooks/useSupplierDetail.js';
 import {
@@ -95,8 +95,8 @@ function PaymentBadge({ row }: { row: SupplierPOListRow }): JSX.Element {
 }
 
 function fmtIdrPrefixed(amount: number): string {
-  // formatIdr already prefixes "Rp ".
-  return formatIdr(amount);
+  // formatCurrency already prefixes "Rp ".
+  return formatCurrency(amount);
 }
 
 function fmtDays(days: number): string {

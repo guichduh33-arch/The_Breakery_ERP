@@ -8,6 +8,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { Currency } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useFinishedProductsForCombo, type ComboOptionProduct } from '../hooks/useFinishedProductsForCombo.js';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   /** Already-picked product IDs in this group (to avoid duplicates). */
@@ -105,7 +106,7 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
                   )}
                 </span>
                 <span className="text-xs text-text-muted font-mono shrink-0">{p.sku}</span>
-                <Currency
+                <Currency format={formatCurrency}
                   amount={p.retail_price}
                   className="text-xs text-text-secondary shrink-0"
                 />

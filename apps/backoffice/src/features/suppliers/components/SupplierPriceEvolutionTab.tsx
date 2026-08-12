@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
 import { TrendingUp } from 'lucide-react';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE, CATEGORICAL_SERIES, CHART_SERIES_OFF } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
@@ -124,8 +124,8 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 12 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} />
-              <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={56} tickFormatter={(v) => `${formatIdr(Number(v))}`} />
-              <Tooltip formatter={(v: number, name: string) => [`${formatIdr(v)}`, products.find((p) => p.id === name)?.name ?? name]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={56} tickFormatter={(v) => `${formatCurrency(Number(v))}`} />
+              <Tooltip formatter={(v: number, name: string) => [`${formatCurrency(v)}`, products.find((p) => p.id === name)?.name ?? name]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               <Legend formatter={(value: string) => products.find((p) => p.id === value)?.name ?? value} />
               {products.filter((p) => selected.has(p.id)).map((p) => (
                 <Line
@@ -164,8 +164,8 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
                 <td className="px-4 py-3 font-mono text-text-primary">{it.po_number}</td>
                 <td className="px-4 py-3">{it.product_name}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{it.quantity} {it.unit}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{formatIdr(it.unit_cost)}</td>
-                <td className="px-4 py-3 text-right font-medium tabular-nums">{formatIdr(it.subtotal)}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(it.unit_cost)}</td>
+                <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCurrency(it.subtotal)}</td>
               </tr>
             ))}
           </tbody>

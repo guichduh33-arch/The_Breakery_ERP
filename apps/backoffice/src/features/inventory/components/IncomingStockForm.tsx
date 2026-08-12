@@ -17,6 +17,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type JSX } from 're
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Input, Select } from '@breakery/ui';
 import { validateReceive } from '@breakery/domain';
+import { formatQuantity } from '@breakery/utils';
 import {
   useRecordIncomingStock,
   RecordIncomingStockError,
@@ -182,7 +183,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         />
         {product !== null && (
           <p className="text-text-muted text-[10px]">
-            Current stock: <span className="font-mono">{product.current_stock.toLocaleString()}</span>
+            Current stock: <span className="font-mono tabular-nums">{formatQuantity(product.current_stock, null)}</span>
           </p>
         )}
       </div>

@@ -14,6 +14,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input } from '@breakery/ui';
 import { validateAdjust } from '@breakery/domain';
+// Comme dans WasteModal : `ProductTypeaheadRow` ne transporte pas l'unité, les
+// quantités se formatent donc sans suffixe plutôt qu'avec une unité supposée.
+import { formatQuantity } from '@breakery/utils';
 import { useAdjustStock, AdjustStockError } from '../hooks/useAdjustStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
@@ -108,10 +111,10 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
       if (res.idempotent_replay === true) {
         toast.info(`Already recorded — ${product.name} was not adjusted twice.`);
       } else if (res.noop === true) {
-        toast.info(`${product.name} was already at ${numericNewQty.toLocaleString()} — no movement recorded.`);
+        toast.info(`${product.name} was already at ${formatQuantity(numericNewQty, null)} — no movement recorded.`);
       } else {
         toast.success(
-          `Stock adjusted — ${product.name} is now ${res.new_current_stock.toLocaleString()}.`,
+          `Stock adjusted — ${product.name} is now ${formatQuantity(res.new_current_stock, null)}.`,
         );
       }
       handleClose();
@@ -176,8 +179,8 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
           {product !== null && (
             <div className="text-sm text-text-secondary">
               Current stock:{' '}
-              <span className="text-text-primary font-mono">
-                {product.current_stock.toLocaleString()}
+              <span className="text-text-primary font-mono tabular-nums">
+                {formatQuantity(product.current_stock, null)}
               </span>{' '}
               <span className="text-text-muted">({product.sku})</span>
             </div>
@@ -209,8 +212,8 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
           {delta !== null && product !== null && (
             <div className="text-sm text-text-secondary">
               Preview:{' '}
-              <span className="text-text-primary font-mono">
-                {product.current_stock.toLocaleString()} → {numericNewQty.toLocaleString()}
+              <span className="text-text-primary font-mono tabular-nums">
+                {formatQuantity(product.current_stock, null)} → {formatQuantity(numericNewQty, null)}
               </span>{' '}
               <span className={delta === 0 ? 'text-text-muted' : delta > 0 ? 'text-green' : 'text-red-as-text'}>
                 (Δ {delta > 0 ? '+' : ''}{delta})

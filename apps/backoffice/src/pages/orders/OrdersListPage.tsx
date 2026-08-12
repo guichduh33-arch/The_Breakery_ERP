@@ -12,7 +12,7 @@ import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DataTable, Input, Select, cn, type DataTableColumn } from '@breakery/ui';
-import { formatIdr, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
@@ -199,27 +199,27 @@ export default function OrdersListPage(): JSX.Element {
     {
       id: 'amount-total',
       label: 'Window total',
-      value: countersDown ? '—' : formatIdr(c?.total.amount ?? 0),
+      value: countersDown ? '—' : formatCurrency(c?.total.amount ?? 0),
       title: `Sum of order totals between ${start} and ${end}, current filters applied — voided included.`,
     },
     {
       id: 'amount-paid',
       label: 'Settled',
-      value: countersDown ? '—' : formatIdr(c?.paid.amount ?? 0),
+      value: countersDown ? '—' : formatCurrency(c?.paid.amount ?? 0),
       ...((c?.paid.count ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
       title: `${(c?.paid.count ?? 0).toLocaleString()} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
     },
     {
       id: 'amount-unpaid',
       label: 'Unpaid',
-      value: countersDown ? '—' : formatIdr(c?.unpaid.amount ?? 0),
+      value: countersDown ? '—' : formatCurrency(c?.unpaid.amount ?? 0),
       ...((c?.unpaid.count ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
       title: `${(c?.unpaid.count ?? 0).toLocaleString()} orders not settled yet, voided excluded.`,
     },
     {
       id: 'amount-refunded',
       label: 'Refunded',
-      value: countersDown ? '—' : `− ${formatIdr(c?.refunded.amount ?? 0)}`,
+      value: countersDown ? '—' : `− ${formatCurrency(c?.refunded.amount ?? 0)}`,
       ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
       title: `${(c?.refunded.count ?? 0).toLocaleString()} orders carry a refund in this window.`,
     },
@@ -295,7 +295,7 @@ export default function OrdersListPage(): JSX.Element {
     },
     {
       id: 'amount', header: 'Amount', align: 'right', width: '8.5rem',
-      render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatIdr(o.total)}</span>,
+      render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(o.total)}</span>,
     },
     {
       id: 'status', header: 'Status', width: '9.5rem',

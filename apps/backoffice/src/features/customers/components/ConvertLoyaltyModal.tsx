@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import {
   Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import {
   useConvertLoyaltyToStoreCredit, ConvertStoreCreditError, type ConvertErrorCode,
 } from '../hooks/useConvertLoyaltyToStoreCredit.js';
@@ -60,8 +60,8 @@ export function ConvertLoyaltyModal({
     try {
       const result = await m.mutateAsync({ customerId, points, idempotencyKey: idem.current });
       toast.success(
-        `${result.points_converted.toLocaleString()} points converted to ${formatIdr(result.amount)} store credit`
-        + ` — new balance ${formatIdr(result.balance_after)}`,
+        `${result.points_converted.toLocaleString()} points converted to ${formatCurrency(result.amount)} store credit`
+        + ` — new balance ${formatCurrency(result.balance_after)}`,
       );
       handleClose();
     } catch (err) {
@@ -99,7 +99,7 @@ export function ConvertLoyaltyModal({
           )}
           {pointsOk && (
             <p className="text-xs text-text-secondary mt-1" data-testid="convert-preview">
-              = {formatIdr(points * RP_PER_POINT)} store credit
+              = {formatCurrency(points * RP_PER_POINT)} store credit
             </p>
           )}
         </div>

@@ -41,13 +41,19 @@ const VALUE_HERO = 'font-data text-[26px] font-semibold leading-tight tracking-[
 const NOTE_HERO = 'font-data text-[10px] leading-tight text-ink-fg-sub';
 
 function Tile({
-  label, value, children, testId, hero = false,
+  label, value, children, testId, hero = false, valueTitle,
 }: {
   label: string;
   value: string;
   children?: ReactNode;
   testId: string;
   hero?: boolean;
+  /**
+   * Montant EXACT posé en infobulle quand `value` est en notation compacte
+   * (« Rp 8,42 jt »). Un compact tronque : sans lui, le chiffre précis de la
+   * journée n'est lisible nulle part sur la page — audit UX/UI 2026-08-13.
+   */
+  valueTitle?: string;
 }): JSX.Element {
   return (
     <Card
@@ -57,7 +63,7 @@ function Tile({
       data-testid={testId}
     >
       <SectionLabel as="h3" className={hero ? LABEL_HERO : LABEL}>{label}</SectionLabel>
-      <span className={hero ? VALUE_HERO : VALUE}>{value}</span>
+      <span className={hero ? VALUE_HERO : VALUE} title={valueTitle}>{value}</span>
       <div className="flex min-h-[16px] flex-wrap items-baseline gap-x-3 gap-y-0.5">
         {children}
       </div>
@@ -138,7 +144,13 @@ export function DashboardKpiStrip({
 
   return (
     <div className={grid} data-testid="dashboard-kpi-row">
-      <Tile label="Net revenue" value={formatIdrShort(kpis.net_revenue.value)} testId="kpi-net-revenue" hero>
+      <Tile
+        label="Net revenue"
+        value={formatIdrShort(kpis.net_revenue.value)}
+        valueTitle={formatIdr(kpis.net_revenue.value)}
+        testId="kpi-net-revenue"
+        hero
+      >
         <Delta value={kpis.net_revenue.vs_yesterday} period="yest" onInk />
         <Delta value={kpis.net_revenue.vs_d7} period="D-7" onInk />
       </Tile>
@@ -173,11 +185,19 @@ export function DashboardKpiStrip({
         <Delta value={margin.vs_d7_pt} unit="pt" period="D-7" />
       </Tile>
 
-      <Tile label="Cash on hand" value={cash.restricted === true ? '—' : formatIdrShort(cash.value)} testId="kpi-cash-on-hand">
+      <Tile
+        label="Cash on hand"
+        value={cash.restricted === true ? '—' : formatIdrShort(cash.value)}
+        {...(cash.restricted === true ? {} : { valueTitle: formatIdr(cash.value) })}
+        testId="kpi-cash-on-hand"
+      >
         {cash.restricted === true ? (
           <span className={NOTE}>restricted — cash permission required</span>
         ) : (
-          <span className={NOTE} title="Drawer is derived from open POS sessions, not a dedicated ledger account.">
+          <span
+            className={NOTE}
+            title={`drawer ${formatIdr(cash.drawer)} · safe ${formatIdr(cash.safe)} — drawer is derived from open POS sessions, not a dedicated ledger account.`}
+          >
             drawer {formatIdrShort(cash.drawer)} · safe {formatIdrShort(cash.safe)}
             {cash.is_derived === true && ' (derived)'}
           </span>

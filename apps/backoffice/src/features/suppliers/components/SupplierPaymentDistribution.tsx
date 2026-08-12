@@ -4,7 +4,7 @@
 
 import type { JSX } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const PAID = 'var(--success)';
@@ -38,7 +38,7 @@ export function SupplierPaymentDistribution({
                 <Pie isAnimationActive={!reduced} data={data} dataKey="value" nameKey="name" innerRadius={48} outerRadius={72} paddingAngle={2} stroke="none">
                   {data.map((d) => <Cell key={d.name} fill={d.color} />)}
                 </Pie>
-                <Tooltip formatter={(v: number, n: string) => [formatIdr(v), n]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Tooltip formatter={(v: number, n: string) => [formatCurrency(v), n]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
             </ResponsiveContainer>
           </div>

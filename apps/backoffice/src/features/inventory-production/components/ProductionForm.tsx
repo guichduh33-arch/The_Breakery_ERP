@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input, Select } from '@breakery/ui';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { checkFeasibility } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
@@ -164,7 +165,7 @@ export default function ProductionForm(): JSX.Element {
       const wasteExpense = result.waste_expense ?? 0;
       setSuccessMsg(
         `Recorded ${result.production_number} (${result.movements_count} movements, ${result.je_count} JEs)`
-        + (wasteExpense > 0 ? ` — waste expensed: ${wasteExpense.toLocaleString()}` : ''),
+        + (wasteExpense > 0 ? ` — waste expensed: ${formatCurrency(wasteExpense)}` : ''),
       );
       setExpectedQty(''); setActualQty(''); setWaste('0'); setWasteReason(''); setBatchNumber(''); setNotes('');
       setPendingReason(null);
@@ -279,7 +280,7 @@ export default function ProductionForm(): JSX.Element {
                   className="inline-flex items-center rounded bg-bg-input px-1.5 py-0.5 text-[10px] font-mono text-text-secondary"
                   data-testid="expected-badge"
                 >
-                  exp {numericExpected.toLocaleString()}
+                  exp {formatQuantity(numericExpected, null)}
                 </span>
               )}
             </label>

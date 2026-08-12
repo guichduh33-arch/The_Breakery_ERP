@@ -28,7 +28,7 @@ import {
   type DataTableColumn,
 } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
@@ -144,7 +144,7 @@ export default function CustomersListPage(): JSX.Element {
       {
         id: 'b2b-outstanding',
         label: 'Outstanding B2B',
-        value: formatIdr(s?.outstandingB2b ?? 0),
+        value: formatCurrency(s?.outstandingB2b ?? 0),
         ...((s?.outstandingB2b ?? 0) > 0 ? { tone: 'warning' as const } : {}),
         title: `${(s?.outstandingCount ?? 0).toLocaleString()} account customers carry an unpaid balance.`,
       },
@@ -192,7 +192,7 @@ export default function CustomersListPage(): JSX.Element {
       render: (row) =>
         row.customer_type === 'b2b' && row.b2b_current_balance > 0 ? (
           <span className="whitespace-nowrap font-data tabular-nums text-warning">
-            {formatIdr(row.b2b_current_balance)}
+            {formatCurrency(row.b2b_current_balance)}
           </span>
         ) : (
           <span className="text-text-subtle" aria-hidden>—</span>
@@ -213,7 +213,7 @@ export default function CustomersListPage(): JSX.Element {
       align:  'right',
       width:  '8.5rem',
       render: (row) => (
-        <span className="whitespace-nowrap font-data tabular-nums">{formatIdr(row.total_spent)}</span>
+        <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(row.total_spent)}</span>
       ),
     },
     {

@@ -24,7 +24,7 @@ import { Plus, Truck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Input, Select } from '@breakery/ui';
-import { formatIdr, businessDateIso, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatQuantity, businessDateIso, todayIsoDate } from '@breakery/utils';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -288,10 +288,7 @@ export default function InventoryPage() {
       render: (r) => (
         r.track_inventory
           ? (
-            <span className="font-data tabular-nums">
-              {r.current_stock.toLocaleString()}
-              <span className="ml-1 text-text-muted">{r.unit}</span>
-            </span>
+            <span className="font-data tabular-nums">{formatQuantity(r.current_stock, r.unit)}</span>
           )
           : <span className="text-text-muted">Not tracked</span>
       ),
@@ -300,7 +297,7 @@ export default function InventoryPage() {
       id: 'value', header: 'Value at cost', align: 'right', width: '10rem',
       render: (r) => (
         r.track_inventory
-          ? <span className="font-data tabular-nums">{formatIdr(r.stock_value)}</span>
+          ? <span className="font-data tabular-nums">{formatCurrency(r.stock_value)}</span>
           : <span className="text-text-muted">—</span>
       ),
     },

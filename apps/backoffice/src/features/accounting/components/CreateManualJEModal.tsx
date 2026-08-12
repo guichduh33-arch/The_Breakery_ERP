@@ -8,6 +8,7 @@ import {
   Button, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { Plus, Trash2 } from 'lucide-react';
 import { usePostableAccounts } from '../hooks/usePostableAccounts.js';
 import { useCreateManualJournalEntry, type ManualJELine } from '../hooks/useCreateManualJournalEntry.js';
@@ -30,9 +31,7 @@ function newDraftLine(): DraftLine {
   };
 }
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 
 export interface CreateManualJEModalProps {
   onClose: () => void;

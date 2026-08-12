@@ -6,7 +6,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { ChevronRight, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { formatIdr, formatDateTimeShortWita } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import type { StockLedgerRow } from '../stockLedgerColumns.js';
 
 type SortKey = 'date' | 'type' | 'product';
@@ -28,7 +28,7 @@ const qtyFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 function fmtQty(n: number): string    { return qtyFmt.format(n); }
 // `price` et `movement_amount` sont de l'argent : ils prennent la source unique,
 // qui porte la devise et refuse les décimales — le rupiah n'en a pas.
-function fmtAmt(n: number): string    { return formatIdr(n); }
+function fmtAmt(n: number): string    { return formatCurrency(n); }
 // L'ISO était tronquée à la main, donc rendue en UTC. Le jour et l'heure métier
 // sont ceux d'Asia/Makassar.
 function fmtTime(iso: string): string { return formatDateTimeShortWita(iso); }

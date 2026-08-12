@@ -10,7 +10,7 @@
 
 import { type JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatDateTimeShortWita } from '@breakery/utils';
+import { formatDateTimeShortWita, formatQuantity } from '@breakery/utils';
 import {
   useDisplayStock,
   type DisplayStockRow,
@@ -37,9 +37,7 @@ const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
     align: 'right',
     width: '140px',
     render: (r) => (
-      <span className="font-mono text-text-primary">
-        {r.quantity} <span className="text-text-muted">{r.unit}</span>
-      </span>
+      <span className="font-mono tabular-nums text-text-primary">{formatQuantity(r.quantity, r.unit)}</span>
     ),
   },
   {
@@ -88,8 +86,9 @@ const MOVEMENT_COLUMNS: readonly DataTableColumn<DisplayMovementRow>[] = [
     render: (r) => {
       const positive = r.quantity > 0;
       return (
-        <span className={`font-mono ${positive ? 'text-success' : 'text-danger'}`}>
-          {positive ? '+' : ''}{r.quantity}
+        // Le ledger vitrine ne transporte pas l'unité du produit : sans suffixe.
+        <span className={`font-mono tabular-nums ${positive ? 'text-success' : 'text-danger'}`}>
+          {positive ? '+' : ''}{formatQuantity(r.quantity, null)}
         </span>
       );
     },

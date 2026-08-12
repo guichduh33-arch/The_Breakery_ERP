@@ -44,7 +44,13 @@ export function OpenOrdersCard({
       subtitle={
         panel === null
           ? undefined
-          : `${panel.open_count} open · ${formatIdrShort(panel.open_total)} in the room`
+          : (
+              <>
+                {panel.open_count} open ·{' '}
+                <span title={formatIdr(panel.open_total)}>{formatIdrShort(panel.open_total)}</span>
+                {' '}in the room
+              </>
+            )
       }
       isLoading={isLoading}
       isRestricted={isRestricted}

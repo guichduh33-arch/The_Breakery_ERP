@@ -7,7 +7,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Download, FileText, XCircle } from 'lucide-react';
 import { Button, EmptyState, Select } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
@@ -58,9 +58,9 @@ function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRo
       </div>
       <div className="flex items-center gap-4">
         <div className="text-right text-xs">
-          <div className="font-data text-base tabular-nums text-text-primary">{formatIdr(Number(inv.outstanding))}</div>
+          <div className="font-data text-base tabular-nums text-text-primary">{formatCurrency(Number(inv.outstanding))}</div>
           <div className="text-text-muted">
-            of {formatIdr(Number(inv.invoice_total))} • paid {formatIdr(Number(inv.amount_paid))}
+            of {formatCurrency(Number(inv.invoice_total))} • paid {formatCurrency(Number(inv.amount_paid))}
           </div>
         </div>
         <div className="flex items-center gap-1">

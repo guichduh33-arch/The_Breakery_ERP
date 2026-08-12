@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { Input } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProductsForInventory,
@@ -139,8 +140,10 @@ export function ProductTypeahead({
                   produits au nom proche. */}
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate">{p.name}</span>
-                <span className="shrink-0 font-mono text-xs text-text-secondary">
-                  {p.sku} · {p.current_stock.toLocaleString()}
+                {/* La requête du typeahead ne sélectionne pas `unit` : stock
+                    sans suffixe, séparateurs de milliers id-ID compris. */}
+                <span className="shrink-0 font-mono tabular-nums text-xs text-text-secondary">
+                  {p.sku} · {formatQuantity(p.current_stock, null)}
                 </span>
               </div>
             </div>

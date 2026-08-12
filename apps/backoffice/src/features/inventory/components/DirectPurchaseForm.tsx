@@ -11,7 +11,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
 import { Button, Input, Select } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
@@ -259,9 +259,9 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       {/* Computed total + base-unit conversion */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-inert px-3 py-2 text-sm">
         <span className="text-text-secondary">
-          {isQtyValid && product !== null ? <>= <span className="font-mono text-text-primary">{baseQty.toLocaleString()} {product.unit}</span> in base unit</> : 'Enter quantity & price'}
+          {isQtyValid && product !== null ? <>= <span className="font-mono text-text-primary">{formatQuantity(baseQty, product.unit)}</span> in base unit</> : 'Enter quantity & price'}
         </span>
-        <span className="font-semibold text-text-primary">Total: <span className="font-mono">{formatIdr(total)}</span></span>
+        <span className="font-semibold text-text-primary">Total: <span className="font-mono">{formatCurrency(total)}</span></span>
       </div>
 
       {/* Supplier (required) · landing section */}

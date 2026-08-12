@@ -6,6 +6,7 @@
 import { useMemo, useState, useEffect, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Input } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
   useGeneralLedger,
@@ -14,9 +15,7 @@ import {
 import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSourceEntity.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 function defaultPeriodStart(): string {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);

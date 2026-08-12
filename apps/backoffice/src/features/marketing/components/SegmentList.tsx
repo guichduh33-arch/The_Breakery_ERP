@@ -5,6 +5,7 @@
 //
 // Session 13 / Phase 6.B.
 
+import { formatCurrency } from '@breakery/utils';
 import type { SegmentBucket } from '../hooks/useCustomerSegments.js';
 
 export interface SegmentListProps {
@@ -76,7 +77,7 @@ export function SegmentList({ segments }: SegmentListProps) {
                 {s.customer_count.toLocaleString()}
               </td>
               <td className="px-3 py-3 text-right font-mono tabular-nums">
-                {s.total_spent.toLocaleString()}
+                {formatCurrency(s.total_spent)}
               </td>
               <td className="px-3 py-3 text-right font-mono tabular-nums">
                 {s.avg_orders.toFixed(2)}

@@ -16,7 +16,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Card, cn } from '@breakery/ui';
 // formatDateTimeShortWita : le format de lecture des tables du BO (24 h, mois
 // en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
-import { formatIdr, formatDateTimeShortWita } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
@@ -31,7 +31,7 @@ import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 const fmtDateTime = formatDateTimeShortWita;
 
 function rp(n: number | null): string {
-  return formatIdr(Number(n ?? 0));
+  return formatCurrency(Number(n ?? 0));
 }
 
 const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';

@@ -5,6 +5,7 @@
 // the global stylesheet hide chrome.
 
 import type { JSX } from 'react';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 
 export interface POPrintViewProps {
@@ -12,7 +13,13 @@ export interface POPrintViewProps {
 }
 
 function fmt(amount: number | string | null): string {
-  return Number(amount ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+  return formatCurrency(amount ?? 0);
+}
+
+// La colonne « Unit » est voisine de la colonne « Qty » : l'unité ne se répète
+// donc pas dans la quantité elle-même.
+function fmtQty(quantity: number | string | null): string {
+  return formatQuantity(quantity ?? 0, null);
 }
 
 export function POPrintView({ po }: POPrintViewProps): JSX.Element {
@@ -48,7 +55,7 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
             {po.purchase_order_items.map((it) => (
               <tr key={it.id} className="border-b">
                 <td className="py-1">{it.products?.name ?? '?'}{' '}<span className="text-text-muted">({it.products?.sku ?? '—'})</span></td>
-                <td className="py-1 text-right tabular-nums">{fmt(it.quantity)}</td>
+                <td className="py-1 text-right tabular-nums">{fmtQty(it.quantity)}</td>
                 <td className="py-1">{it.unit}</td>
                 <td className="py-1 text-right tabular-nums">{fmt(it.unit_cost)}</td>
                 <td className="py-1 text-right tabular-nums">{fmt(it.subtotal)}</td>

@@ -20,7 +20,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { FileDown, FileText, Loader2, Signature, XOctagon } from 'lucide-react';
 import { Badge, DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
@@ -38,7 +38,7 @@ function formatDateTime(iso: string | null | undefined): string {
 
 /** Un montant absent n'est pas un montant nul — il se rend en tiret. */
 function money(value: number | null): string {
-  return value === null ? '—' : formatIdr(value);
+  return value === null ? '—' : formatCurrency(value);
 }
 
 function statusBadgeVariant(status: ZReportStatus): 'default' | 'secondary' | 'destructive' {
@@ -57,7 +57,7 @@ function varianceTone(value: number | null): string {
 function signedVariance(value: number | null): string {
   if (value === null) return '—';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${formatIdr(value)}`;
+  return `${sign}${formatCurrency(value)}`;
 }
 
 type StatusFilter = ZReportStatus | 'all';

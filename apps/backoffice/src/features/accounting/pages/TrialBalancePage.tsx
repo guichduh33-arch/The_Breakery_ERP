@@ -3,6 +3,7 @@
 
 import { useState, type JSX } from 'react';
 import { Button, Input } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { Download } from 'lucide-react';
 import {
   useTrialBalance,
@@ -13,9 +14,7 @@ const CLASS_LABELS: Record<number, string> = {
   1: 'Asset', 2: 'Liability', 3: 'Equity', 4: 'Revenue', 5: 'COGS', 6: 'Expense',
 };
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 function defaultPeriodStart(): string {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);

@@ -10,6 +10,7 @@ import type { JSX } from 'react';
 import { Card, CardContent, Currency } from '@breakery/ui';
 import { savingsPct } from '@breakery/domain';
 import type { Combo } from '../types.js';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   combo: Combo;
@@ -97,7 +98,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
                       {opt.label}
                       {opt.surcharge > 0 && (
                         <span className="ml-1 text-[0.625rem] text-gold">
-                          +<Currency amount={opt.surcharge} />
+                          +<Currency format={formatCurrency} amount={opt.surcharge} />
                         </span>
                       )}
                     </span>
@@ -117,7 +118,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
           <div>
             <div className="text-xs uppercase tracking-widest text-text-secondary">Value Price</div>
             {combo.value_price !== null && combo.value_price > 0 ? (
-              <Currency
+              <Currency format={formatCurrency}
                 amount={Math.round(combo.value_price)}
                 className="block text-xs text-text-muted line-through"
               />
@@ -127,18 +128,20 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
             <div className="mt-1 text-xs uppercase tracking-widest text-text-secondary">
               Bundle Set Price
             </div>
-            {/* Les deux branches passent par <Currency> : `toLocaleString('id-ID')`
-                rendait `Rp 100.000` tandis que formatIdr rend `Rp 100,000`, si
-                bien qu'une meme carte affichait les deux separateurs de milliers
-                pour la meme devise (audit du 2026-08-11). */}
+            {/* Les deux branches passent par <Currency> : une carte a deja
+                affiche les deux separateurs de milliers pour la meme devise
+                (audit du 2026-08-11). Le formateur du back-office est
+                `formatCurrency` (id-ID, « Rp 100.000 ») depuis l'audit UX/UI
+                du 2026-08-13 ; il est passe en prop pour que le POS garde le
+                sien. */}
             <div className="text-2xl text-gold">
               {combo.price_min === combo.price_max ? (
-                <Currency amount={combo.price_min} emphasis="gold" />
+                <Currency format={formatCurrency} amount={combo.price_min} emphasis="gold" />
               ) : (
                 <span className="font-mono tabular-nums">
-                  <Currency amount={combo.price_min} emphasis="gold" />
+                  <Currency format={formatCurrency} amount={combo.price_min} emphasis="gold" />
                   {' – '}
-                  <Currency amount={combo.price_max} emphasis="gold" />
+                  <Currency format={formatCurrency} amount={combo.price_max} emphasis="gold" />
                 </span>
               )}
             </div>

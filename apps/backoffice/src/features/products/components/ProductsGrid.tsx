@@ -20,6 +20,7 @@ import {
   pageSlice,
 } from './ProductsPagination.js';
 import { classifyProduct, type ProductRow } from '../types.js';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   rows: readonly ProductRow[];
@@ -87,7 +88,7 @@ export function ProductsGrid({
           <CardContent className="space-y-2 p-4">
             <div className="flex items-start justify-between gap-2">
               <h3 className="line-clamp-1 text-base font-semibold text-text-primary">{r.name}</h3>
-              <Currency amount={r.retail_price} emphasis="gold" />
+              <Currency format={formatCurrency} amount={r.retail_price} emphasis="gold" />
             </div>
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="font-mono text-text-muted">{r.sku}</span>

@@ -14,7 +14,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { cn, DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
@@ -52,7 +52,7 @@ function statusBadges(row: B2bInvoiceRow): JSX.Element {
       {unpaid && !dead && (
         <span
           className={cn(B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE.unpaid)}
-          title={`${formatIdr(row.outstanding)} still outstanding`}
+          title={`${formatCurrency(row.outstanding)} still outstanding`}
         >
           unpaid
         </span>
@@ -105,7 +105,7 @@ export default function B2BOrdersPage(): JSX.Element {
       {
         id: 'outstanding',
         label: 'Outstanding',
-        value: formatIdr(outstanding),
+        value: formatCurrency(outstanding),
         tone: outstanding > 0 ? 'danger' : 'neutral',
         title: 'Total still owed across every unpaid order.',
       },
@@ -167,7 +167,7 @@ export default function B2BOrdersPage(): JSX.Element {
       id: 'amount',
       header: 'Amount',
       align: 'right',
-      render: (r) => <span className="font-data text-[12.5px]">{formatIdr(r.invoice_total)}</span>,
+      render: (r) => <span className="font-data text-[12.5px]">{formatCurrency(r.invoice_total)}</span>,
     },
     {
       id: 'status',

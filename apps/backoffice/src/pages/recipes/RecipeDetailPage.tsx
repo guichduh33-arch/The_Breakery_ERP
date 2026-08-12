@@ -7,12 +7,12 @@ import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Card, Button, Badge } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useRecipeDetail } from '@/features/recipes/hooks/useRecipeDetail.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 function fmtIdr(amount: number | null): string {
-  return `Rp ${formatIdr(Number(amount ?? 0))}`;
+  return formatCurrency(Number(amount ?? 0));
 }
 
 export function RecipeDetailPage(): JSX.Element {

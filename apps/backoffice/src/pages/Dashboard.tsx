@@ -50,7 +50,7 @@ import { CostMtdCard } from '@/features/dashboard/components/CostMtdCard.js';
 import { DisplayStockCard } from '@/features/dashboard/components/DisplayStockCard.js';
 import { RevenueShareCard } from '@/features/dashboard/components/RevenueShareCard.js';
 import { Delta } from '@/features/dashboard/components/Delta.js';
-import { formatClock, formatHourRange, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
+import { formatClock, formatHourRange, formatIdr, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
 import { exportDashboardCsv } from '@/features/dashboard/utils/dashboardCsv.js';
 import { useTodayHours } from '@/features/dashboard/hooks/useTodayHours.js';
 import {
@@ -223,7 +223,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 </SectionLabel>
                 {summary !== null && (
                   <span className="text-[13px] text-text-secondary">
-                    {formatIdrShort(summary.total)} total{' '}
+                    <span title={formatIdr(summary.total)}>{formatIdrShort(summary.total)}</span> total{' '}
                     <Delta value={summary.delta_pct} period="vs previous 30 d" />
                   </span>
                 )}

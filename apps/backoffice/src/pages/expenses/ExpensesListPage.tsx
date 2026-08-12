@@ -34,7 +34,7 @@ import {
   TabsTrigger,
   type DataTableColumn,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
 import {
@@ -150,7 +150,7 @@ export default function ExpensesListPage(): JSX.Element {
       header: 'Amount',
       width: '140px',
       align: 'right',
-      render: (r) => <span className="tabular-nums">Rp {formatIdr(Number(r.amount ?? 0))}</span>,
+      render: (r) => <span className="tabular-nums">{formatCurrency(Number(r.amount ?? 0))}</span>,
     },
     {
       id:    'method',
@@ -207,7 +207,7 @@ export default function ExpensesListPage(): JSX.Element {
           >
             <KpiTile
               label="Total Expenses"
-              value={kpi.totalAmount}
+              value={formatCurrency(kpi.totalAmount)}
               valueFormat="currency"
               icon={Coins}
               footer="Approved + paid"
@@ -226,7 +226,7 @@ export default function ExpensesListPage(): JSX.Element {
             />
             <KpiTile
               label="Avg Expense"
-              value={kpi.avgAmount}
+              value={formatCurrency(kpi.avgAmount)}
               valueFormat="currency"
               icon={Calculator}
               footer="Per transaction"

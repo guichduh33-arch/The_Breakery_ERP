@@ -28,7 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -155,8 +155,8 @@ export default function B2BPaymentsPage(): JSX.Element {
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile icon={TrendingUp}  label="Total received"     value={payments.data === undefined ? '—' : totalReceived}        valueFormat="currency" footer={PERIOD_LABEL[period]} />
-        <KpiTile icon={Clock}       label="Outstanding"        value={dash.data === undefined ? '—' : totalOutstanding}     valueFormat="currency" />
+        <KpiTile icon={TrendingUp}  label="Total received"     value={payments.data === undefined ? '—' : formatCurrency(totalReceived)}     valueFormat="currency" footer={PERIOD_LABEL[period]} />
+        <KpiTile icon={Clock}       label="Outstanding"        value={dash.data === undefined ? '—' : formatCurrency(totalOutstanding)}  valueFormat="currency" />
         <KpiTile icon={CheckCircle2} label="Payments received" value={payments.data === undefined ? '—' : filteredPayments.length} valueFormat="number" />
         <KpiTile icon={AlertCircle} label="Overdue"            value={dash.data === undefined ? '—' : overdueCount}         valueFormat="number" />
       </div>
@@ -260,7 +260,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                         </div>
                       </div>
                       <span className="font-data text-base tabular-nums text-text-primary">
-                        {formatIdr(p.amount)}
+                        {formatCurrency(p.amount)}
                       </span>
                     </li>
                   ))}
@@ -334,12 +334,12 @@ function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow;
       <div>
         <div className="font-medium text-text-primary">{client.b2b_company_name ?? client.name}</div>
         <div className="text-xs text-text-secondary">
-          Limit: {client.b2b_credit_limit === null ? 'unlimited' : formatIdr(Number(client.b2b_credit_limit))}
+          Limit: {client.b2b_credit_limit === null ? 'unlimited' : formatCurrency(Number(client.b2b_credit_limit))}
         </div>
       </div>
       <div className="text-right">
         <div className={['font-data text-base tabular-nums', overLimit ? 'text-danger' : 'text-warning'].join(' ')}>
-          {formatIdr(Number(client.b2b_current_balance))}
+          {formatCurrency(Number(client.b2b_current_balance))}
         </div>
         {overLimit && <div className="text-[10px] uppercase tracking-widest text-danger">Over limit</div>}
         {canRecord && (

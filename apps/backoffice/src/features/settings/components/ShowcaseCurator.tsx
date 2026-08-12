@@ -19,6 +19,7 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useShowcaseCandidates } from '../hooks/useShowcaseCandidates.js';
 import { ShowcaseProductPicker } from './ShowcaseProductPicker.js';
+import { formatCurrency } from '@breakery/utils';
 
 /** Trois par page — la présentation de l'écran client. */
 export const SHOWCASE_PAGE_SIZE = 3;
@@ -117,7 +118,7 @@ export function ShowcaseCurator({ value, onChange, disabled = false }: Props): J
                         </span>
 
                         {product && (
-                          <Currency
+                          <Currency format={formatCurrency}
                             amount={product.retail_price}
                             className="text-xs text-text-secondary shrink-0"
                           />

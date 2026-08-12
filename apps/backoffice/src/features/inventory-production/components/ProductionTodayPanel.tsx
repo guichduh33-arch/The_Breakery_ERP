@@ -8,6 +8,9 @@
 import { Clock } from 'lucide-react';
 import { useMemo, type JSX } from 'react';
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
+// `production_records` ne porte pas l'unité du produit fabriqué : les quatre
+// quantités de ce panneau se formatent sans suffixe (audit UX/UI 2026-08-13).
+import { formatQuantity } from '@breakery/utils';
 import {
   useProductionRecords,
   type ProductionRecordSummary,
@@ -56,13 +59,13 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
         <Card padding="md" className="border-success bg-success-soft text-center">
           <SectionLabel as="div" size="xs" className="text-success">Produced</SectionLabel>
           <div className="mt-2 font-data text-3xl font-semibold text-success" data-testid="kpi-produced">
-            {produced.toLocaleString()}
+            {formatQuantity(produced, null)}
           </div>
         </Card>
         <Card padding="md" className="border-red bg-red-soft text-center">
           <SectionLabel as="div" size="xs" className="text-red">Waste</SectionLabel>
           <div className="mt-2 font-data text-3xl font-semibold text-red" data-testid="kpi-waste">
-            {waste.toLocaleString()}
+            {formatQuantity(waste, null)}
           </div>
         </Card>
       </div>
@@ -96,10 +99,10 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
                     {r.reverted_at !== null && ' · reverted'}
                   </div>
                 </div>
-                <div className="shrink-0 text-right font-mono">
-                  <div className="text-text-primary">{r.quantity_produced.toLocaleString()}</div>
+                <div className="shrink-0 text-right font-mono tabular-nums">
+                  <div className="text-text-primary">{formatQuantity(r.quantity_produced, null)}</div>
                   {r.quantity_waste > 0 && (
-                    <div className="text-[10px] text-red">−{r.quantity_waste.toLocaleString()} waste</div>
+                    <div className="text-[10px] text-red">−{formatQuantity(r.quantity_waste, null)} waste</div>
                   )}
                 </div>
               </li>

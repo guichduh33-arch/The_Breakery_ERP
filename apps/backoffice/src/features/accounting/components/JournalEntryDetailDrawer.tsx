@@ -5,6 +5,7 @@ import type { JSX } from 'react';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useJournalEntryLines } from '../hooks/useJournalEntryLines.js';
 import type { JournalEntryRow } from '../hooks/useJournalEntries.js';
 import { resolveJeSourceEntity } from '../utils/resolveJeSourceEntity.js';
@@ -15,9 +16,7 @@ export interface JournalEntryDetailDrawerProps {
   onClose: () => void;
 }
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 
 export function JournalEntryDetailDrawer({
   entry,

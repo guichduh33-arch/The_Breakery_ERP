@@ -23,7 +23,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Button, Card, EmptyState, SectionLabel } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useExpenseDetail } from '@/features/expenses/hooks/useExpenseDetail.js';
 import { useSubmitExpense } from '@/features/expenses/hooks/useExpenseActions.js';
@@ -40,7 +40,7 @@ import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function fmtIdr(amount: number | string | null): string {
-  return `Rp ${formatIdr(Number(amount ?? 0))}`;
+  return formatCurrency(Number(amount ?? 0));
 }
 
 export default function ExpenseDetailPage(): JSX.Element {

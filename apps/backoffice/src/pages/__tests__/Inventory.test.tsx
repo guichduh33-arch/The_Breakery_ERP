@@ -129,9 +129,13 @@ describe('InventoryPage', () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));
     const americanoRow = screen.getByText('Americano').closest('tr')!;
-    // LowStockBadge renders "Low" / a label inside the row when threshold > current_stock.
-    // We use the data-presence assertion: at least one element within the row should reflect low-stock.
-    expect(within(americanoRow).getByText('5')).toBeInTheDocument();
+    // Deux choses distinctes, et l'assertion d'origine n'en tenait qu'une :
+    // le BADGE, qui dit que la ligne est sous son seuil, et la QUANTITÉ, qui
+    // dit de combien. La quantité s'écrit désormais avec son unité en suffixe
+    // (`formatQuantity`, audit UX/UI 2026-08-13), en un seul nœud de texte —
+    // « 5 » nu ne la retrouve plus, et ne la retrouvait déjà que par accident.
+    expect(within(americanoRow).getByText(/low stock/i)).toBeInTheDocument();
+    expect(within(americanoRow).getByText('5 pcs')).toBeInTheDocument();
   });
 
   it('renders Adjust / Receive / Waste toolbar buttons when perms granted', async () => {

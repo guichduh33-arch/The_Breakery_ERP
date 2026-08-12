@@ -37,7 +37,7 @@ import { ImportEntityModal } from '@/features/data-import/components/ImportEntit
 import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
 import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
 import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   usePurchaseOrdersList,
@@ -169,7 +169,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       header: 'Total',
       width: '160px',
       align: 'right',
-      render: (r) => <span className="tabular-nums">Rp {formatIdr(Number(r.total_amount ?? 0))}</span>,
+      render: (r) => <span className="tabular-nums">{formatCurrency(Number(r.total_amount ?? 0))}</span>,
     },
   ], []);
 

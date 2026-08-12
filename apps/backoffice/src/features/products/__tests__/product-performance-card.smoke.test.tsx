@@ -58,7 +58,7 @@ describe('ProductPerformanceCard', () => {
     expect(card).toHaveTextContent('10.31%');
     // Le dénominateur accompagne le taux : 10 % sur 8 commandes et 10 % sur
     // 1 145 ne disent pas la même chose.
-    expect(card).toHaveTextContent(/118 of 1[.,]145 orders/);
+    expect(card).toHaveTextContent(/118 of 1\.145 orders/);
   });
 
   it('shows the counter / B2B split when the product sells in both channels', async () => {
@@ -70,18 +70,25 @@ describe('ProductPerformanceCard', () => {
   });
 
   // Régression vue en vrai dans le navigateur, invisible pour les tests
-  // précédents : la note du revenu était formatée en `id-ID` (point) sous une
-  // valeur formatée par Currency (virgule). « Counter 50.000 » deux lignes sous
-  // « Rp 300,000 » se lit cinquante. Le détail d'un montant passe par le même
-  // rendu que le montant.
+  // précédents : la note du revenu et la valeur au-dessus d'elle ne passaient
+  // pas par le même formateur, si bien qu'un même montant changeait de
+  // séparateur d'une ligne à l'autre et se lisait mille fois trop petit.
+  // Ce que le test verrouille est l'UNICITÉ du rendu, pas un séparateur
+  // particulier : depuis l'audit UX/UI du 2026-08-13 le back-office écrit en
+  // `id-ID` (« Rp 3.000.000 »), c'est donc la VIRGULE qui est désormais
+  // l'intruse.
   it('renders the revenue split through Currency, like the value above it', async () => {
     rpcMock.mockResolvedValue({ data: envelope(), error: null });
     renderCard();
 
     const card = await screen.findByTestId('product-performance');
-    expect(card).toHaveTextContent(/Counter\s*Rp\s*3,000,000\s*·\s*B2B\s*Rp\s*550,000/);
-    // Aucun point en séparateur de milliers nulle part dans la carte.
-    expect(card.textContent ?? '').not.toMatch(/\d\.\d{3}(\D|$)/);
+    expect(card).toHaveTextContent(/Counter\s*Rp\s*3\.000\.000\s*·\s*B2B\s*Rp\s*550\.000/);
+    // La garde porte désormais sur la carte ENTIÈRE, et non plus sur les seuls
+    // montants : depuis la passe quantités de l'audit, le compteur de commandes
+    // suit la même locale que les montants (« 1.145 orders », plus « 1,145 »).
+    // Aucun groupement de milliers par virgule ne doit donc subsister nulle
+    // part — c'était la dernière poche d'`en-US` du composant.
+    expect(card.textContent ?? '').not.toMatch(/\d,\d{3}/);
   });
 
   it('hides the split when there is no B2B sale — a "· B2B 0" teaches nothing', async () => {

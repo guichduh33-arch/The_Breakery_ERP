@@ -24,7 +24,7 @@ import {
   KpiTile,
   SectionLabel,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
@@ -114,8 +114,8 @@ export default function B2BDashboardPage(): JSX.Element {
           <ul className="text-sm text-text-secondary">
             {drifted.map((r) => (
               <li key={r.customer_id}>
-                {r.customer_name} : cached {formatIdr(r.cached_balance)} vs derived{' '}
-                {formatIdr(r.derived_balance)} (drift {formatIdr(r.drift)})
+                {r.customer_name} : cached {formatCurrency(r.cached_balance)} vs derived{' '}
+                {formatCurrency(r.derived_balance)} (drift {formatCurrency(r.drift)})
               </li>
             ))}
           </ul>
@@ -143,7 +143,7 @@ export default function B2BDashboardPage(): JSX.Element {
         <KpiTile
           icon={TrendingUp}
           label="Monthly B2B revenue"
-          value={kpiValue(dash.data?.monthlyRevenue)}
+          value={formatCurrency(dash.data?.monthlyRevenue)}
           valueFormat="currency"
           {...(dash.data !== undefined
             ? {
@@ -157,7 +157,7 @@ export default function B2BDashboardPage(): JSX.Element {
         <KpiTile
           icon={FileText}
           label="Outstanding AR"
-          value={kpiValue(dash.data?.outstandingAr)}
+          value={formatCurrency(dash.data?.outstandingAr)}
           valueFormat="currency"
           footer="Across all wholesale clients"
         />
@@ -216,10 +216,10 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
                 <div className="text-xs text-text-secondary">{c.total_visits} orders</div>
               </div>
               <div className="text-right">
-                <div className="font-data tabular-nums text-text-primary">{formatIdr(c.total_spent)}</div>
+                <div className="font-data tabular-nums text-text-primary">{formatCurrency(c.total_spent)}</div>
                 {Number(c.b2b_current_balance) > 0 && (
                   <div className="text-xs text-warning">
-                    {formatIdr(Number(c.b2b_current_balance))} outstanding
+                    {formatCurrency(Number(c.b2b_current_balance))} outstanding
                   </div>
                 )}
               </div>
@@ -264,7 +264,7 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
                   {new Date(o.created_at).toLocaleDateString()} • {o.status}
                 </div>
               </div>
-              <span className="font-data tabular-nums text-text-primary">{formatIdr(o.total)}</span>
+              <span className="font-data tabular-nums text-text-primary">{formatCurrency(o.total)}</span>
             </li>
           ))}
         </ul>

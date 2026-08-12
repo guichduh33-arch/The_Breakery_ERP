@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
-import { formatIdr, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useMarginAlerts,
@@ -51,9 +51,9 @@ function fmtPct(n: number): string {
 
 // `Intl.NumberFormat('en-US', …)` rendait « 4850000 » sans devise ni séparateur
 // de milliers cohérent avec le reste du back-office, et laissait deux décimales
-// à une monnaie qui n'en a pas. `formatIdr` est la source unique — elle rend
-// « Rp 4,850,000 ».
-const fmtMoney = formatIdr;
+// à une monnaie qui n'en a pas. `formatCurrency` est la source unique — elle rend
+// « Rp 4.850.000 ».
+const fmtMoney = formatCurrency;
 
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);

@@ -2,7 +2,7 @@
 // Session 13 / Phase 2.D — per-section stock breakdown card.
 
 import type { ProductDashboardData } from '../hooks/useProductDashboard.js';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 
 export function StockBySectionList({ rows }: { rows: ProductDashboardData['stock_by_section'] }) {
   const total = rows.reduce((s, r) => s + Number(r.quantity), 0);
@@ -35,16 +35,17 @@ export function StockBySectionList({ rows }: { rows: ProductDashboardData['stock
             {rows.map((r) => (
               <tr key={r.section_id} className="border-t border-border-subtle">
                 <td className="py-2 px-3">{r.section_name}</td>
-                <td className="py-2 px-3 text-right font-mono">{Number(r.quantity)} {r.unit}</td>
-                <td className="py-2 px-3 text-right font-mono">{formatIdr(Number(r.value_at_cost))}</td>
+                <td className="py-2 px-3 text-right font-mono tabular-nums">{formatQuantity(r.quantity, r.unit)}</td>
+                <td className="py-2 px-3 text-right font-mono">{formatCurrency(Number(r.value_at_cost))}</td>
               </tr>
             ))}
           </tbody>
           <tfoot className="bg-surface-inert">
             <tr>
               <td className="py-2 px-3 font-medium">Total</td>
-              <td className="py-2 px-3 text-right font-mono font-medium">{total.toFixed(3)}</td>
-              <td className="py-2 px-3 text-right font-mono font-medium">{formatIdr(totalValue)}</td>
+              {/* Le total croise les unités des sections : sans unité, donc. */}
+              <td className="py-2 px-3 text-right font-mono font-medium tabular-nums">{formatQuantity(total, null)}</td>
+              <td className="py-2 px-3 text-right font-mono font-medium">{formatCurrency(totalValue)}</td>
             </tr>
           </tfoot>
         </table>

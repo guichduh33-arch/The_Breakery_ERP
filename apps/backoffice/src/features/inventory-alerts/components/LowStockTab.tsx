@@ -7,16 +7,18 @@
 
 import type { JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { useLowStock, type LowStockRow } from '../hooks/useLowStock.js';
 import { ProductCell } from './ProductCell.js';
 
-/** Une quantité de stock se lit en mono tabulaire, unité comprise. */
+// Une quantité de stock se lit en mono tabulaire, unité comprise. Le rendu
+// passe par `formatQuantity` (audit UX/UI 2026-08-13) : un seuil de 1 000 000
+// s'écrivait sans aucun séparateur, et un manque de 5 pièces se lisait
+// « 5.000 » — soit cinq mille pour un œil habitué au point indonésien.
+// `formatQuantity` porte l'unité elle-même, d'où la disparition du second
+// span : la répéter en afficherait deux.
 function qty(value: number, unit: string): JSX.Element {
-  return (
-    <span className="font-data text-[12.5px]">
-      {Number(value)} <span className="text-text-muted">{unit}</span>
-    </span>
-  );
+  return <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(value, unit)}</span>;
 }
 
 const COLUMNS: DataTableColumn<LowStockRow>[] = [
@@ -49,8 +51,8 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
     header: 'Shortfall',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold">
-        {Number(r.shortfall).toFixed(3)} <span className="font-normal text-text-muted">{r.unit}</span>
+      <span className="font-data text-[12.5px] font-semibold tabular-nums">
+        {formatQuantity(r.shortfall, r.unit)}
       </span>
     ),
   },

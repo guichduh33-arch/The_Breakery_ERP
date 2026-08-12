@@ -34,7 +34,7 @@ import {
   EmptyState,
   SectionLabel,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePurchaseOrderDetail } from '@/features/purchasing/hooks/usePurchaseOrderDetail.js';
 import { useReceivePurchaseOrder } from '@/features/purchasing/hooks/useReceivePurchaseOrder.js';
@@ -68,11 +68,15 @@ import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function fmtIdr(amount: number | string | null): string {
-  return `Rp ${formatIdr(Number(amount ?? 0))}`;
+  return formatCurrency(Number(amount ?? 0));
 }
 
-function fmtNum(amount: number | string | null): string {
-  return Number(amount ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+// Quantités commandées / reçues. L'unité occupe sa PROPRE colonne dans la
+// table des lignes : `formatQuantity` la reçoit donc à `null`, sinon chaque
+// ligne l'écrirait deux fois. Le `?? 0` est conservé — une ligne sans réception
+// vaut zéro reçu, ce n'est pas une valeur inconnue.
+function fmtQty(quantity: number | string | null): string {
+  return formatQuantity(quantity ?? 0, null);
 }
 
 export default function PurchaseOrderDetailPage(): JSX.Element {
@@ -386,8 +390,8 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
                         <span className="text-text-primary">{it.products?.name ?? '?'}</span>{' '}
                         <span className="text-text-secondary text-xs">({it.products?.sku ?? '—'})</span>
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(it.quantity)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(it.received_quantity)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtQty(it.quantity)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtQty(it.received_quantity)}</td>
                       <td className="px-3 py-2 text-text-secondary">{it.unit}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(it.unit_cost)}</td>
                       <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtIdr(it.subtotal)}</td>

@@ -19,6 +19,7 @@ import {
   ArrowLeft, CalendarRange, Coins, Package, Settings2, TrendingUp,
 } from 'lucide-react';
 import { KpiTile, cn } from '@breakery/ui';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
 import {
@@ -118,19 +119,24 @@ export default function ProductStockPage(): JSX.Element {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
         <KpiTile
           label="Current stock"
-          value={p.track_inventory || p.is_display_item ? `${Number(p.current_stock)} ${p.unit}` : 'Not tracked'}
+          value={p.track_inventory || p.is_display_item ? formatQuantity(p.current_stock, p.unit) : 'Not tracked'}
           icon={Package}
         />
-        <KpiTile label="Value at cost" value={valueAtCost} valueFormat="currency" icon={Coins} />
+        <KpiTile label="Value at cost" value={formatCurrency(valueAtCost)} valueFormat="currency" icon={Coins} />
+        {/* Les deux tuiles de vente passent une CHAÎNE déjà formatée : le
+            `valueFormat="number"` par défaut de KpiTile fait un
+            `toLocaleString()` sans locale, dont le séparateur dépend du
+            navigateur — soit, à côté de la tuile de stock ci-dessus, deux
+            notations de milliers sur une même rangée. */}
         <KpiTile
           label="Units sold"
-          value={d ? Number(d.summary.units_sold) : 0}
+          value={d ? formatQuantity(d.summary.units_sold, null) : '—'}
           icon={TrendingUp}
           footer={`${days}-day window`}
         />
         <KpiTile
           label="Avg per day"
-          value={d ? Number(Number(d.summary.avg_daily_units).toFixed(2)) : 0}
+          value={d ? formatQuantity(d.summary.avg_daily_units, null) : '—'}
           icon={CalendarRange}
         />
       </section>

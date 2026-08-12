@@ -23,9 +23,10 @@ import {
   ReceiptText,
 } from 'lucide-react';
 import { cn } from '@breakery/ui';
-// Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas) —
-// le format id-ID local (« Rp 12.000 ») divergeait du reste de l'app.
-import { formatIdr, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
+// Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas).
+// Les montants passent par `formatCurrency`, qui pose lui-même le préfixe
+// « Rp » — audit UX/UI 2026-08-13, lot 1.
+import { formatCurrency, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
@@ -48,12 +49,6 @@ const KITCHEN_TONE: Record<string, string> = {
 };
 
 const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
-
-function rp(n: number | null): string {
-  const s = formatIdr(Number(n ?? 0));
-  // Les cellules du tiroir préfixent déjà « Rp » : on garde le seul nombre.
-  return s.replace(/^Rp\s*/, '');
-}
 
 const fmtDateTime = formatDateTimeShortWita;
 const fmtLogTime = formatDateTimeWita;
@@ -138,7 +133,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
                     {ks}
                   </span>
                 )}
-                <span className="w-24 text-right font-data text-sm tabular-nums text-text-primary">Rp {rp(it.line_total)}</span>
+                <span className="w-24 text-right font-data text-sm tabular-nums text-text-primary">{formatCurrency(it.line_total)}</span>
               </li>
             );
           })}
@@ -147,21 +142,21 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
 
       {/* Totals */}
       <div className="rounded-md border border-border-subtle p-4 text-sm">
-        <Row label="Subtotal" value={`Rp ${rp(order.subtotal)}`} muted />
-        {order.discount_amount > 0 && <Row label="Discount" value={`− Rp ${rp(order.discount_amount)}`} muted />}
+        <Row label="Subtotal" value={formatCurrency(order.subtotal)} muted />
+        {order.discount_amount > 0 && <Row label="Discount" value={`− ${formatCurrency(order.discount_amount)}`} muted />}
         {order.promotions.map((promo, i) => (
-          <Row key={i} label={promo.description} value={`− Rp ${rp(promo.amount)}`} muted />
+          <Row key={i} label={promo.description} value={`− ${formatCurrency(promo.amount)}`} muted />
         ))}
-        <Row label="PB1 (included)" value={`Rp ${rp(order.tax_amount)}`} muted />
+        <Row label="PB1 (included)" value={formatCurrency(order.tax_amount)} muted />
         <div className="my-2 border-t border-border-subtle" />
         <div className="flex items-center justify-between">
           <span className="text-base font-semibold text-text-primary">Total</span>
-          <span className="font-data text-lg font-semibold tabular-nums text-gold">Rp {rp(order.total)}</span>
+          <span className="font-data text-lg font-semibold tabular-nums text-gold">{formatCurrency(order.total)}</span>
         </div>
         {firstPayment && (
           <>
-            <Row label="Cash Received" value={`Rp ${rp(firstPayment.cash_received)}`} muted />
-            <Row label="Change" value={`Rp ${rp(firstPayment.change_given)}`} muted />
+            <Row label="Cash Received" value={formatCurrency(firstPayment.cash_received)} muted />
+            <Row label="Change" value={formatCurrency(firstPayment.change_given)} muted />
           </>
         )}
       </div>

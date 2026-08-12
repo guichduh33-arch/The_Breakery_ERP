@@ -10,6 +10,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input, Select } from '@breakery/ui';
 import { validateWaste } from '@breakery/domain';
+// `ProductTypeaheadRow` ne porte PAS l'unité du produit (la conversion depuis
+// `StockLevelRow` la laisse tomber) : toutes les quantités de cette modale
+// passent donc `null` — on ne suppose pas « pcs » sur un produit au poids.
+import { formatQuantity } from '@breakery/utils';
 import { useWasteStock, WasteStockError } from '../hooks/useWasteStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
@@ -112,7 +116,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
         toast.info(`Already recorded — ${product.name} was not decremented twice.`);
       } else {
         toast.success(
-          `Waste recorded — ${numericQty.toLocaleString()} × ${product.name}. On hand: ${res.new_current_stock.toLocaleString()}.`,
+          `Waste recorded — ${formatQuantity(numericQty, null)} × ${product.name}. On hand: ${formatQuantity(res.new_current_stock, null)}.`,
         );
       }
       handleClose();
@@ -126,7 +130,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             setFormError('Quantity must be greater than zero.');
             break;
           case 'insufficient_stock':
-            setFormError(`Only ${product.current_stock.toLocaleString()} in stock — stock changed elsewhere. Refresh and retry.`);
+            setFormError(`Only ${formatQuantity(product.current_stock, null)} in stock — stock changed elsewhere. Refresh and retry.`);
             void qc.invalidateQueries({ queryKey: STOCK_LEVELS_QUERY_KEY });
             break;
           case 'product_not_found':
@@ -178,8 +182,8 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           {product !== null && (
             <div className="text-sm text-text-secondary">
               Current stock:{' '}
-              <span className="font-mono text-text-primary">
-                {product.current_stock.toLocaleString()}
+              <span className="font-mono tabular-nums text-text-primary">
+                {formatQuantity(product.current_stock, null)}
               </span>
             </div>
           )}
@@ -206,7 +210,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             )}
             {qty !== '' && isQtyPositive && product !== null && !isQtyWithinStock && (
               <p id={qtyErrId} className="text-red-as-text text-xs">
-                Cannot exceed current stock ({product.current_stock.toLocaleString()}).
+                Cannot exceed current stock ({formatQuantity(product.current_stock, null)}).
               </p>
             )}
           </div>
@@ -217,10 +221,10 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           {product !== null && isQtyValid && (
             <div className="text-sm text-text-secondary">
               After this:{' '}
-              <span className="font-mono text-text-primary">
-                {product.current_stock.toLocaleString()} → {(product.current_stock - numericQty).toLocaleString()}
+              <span className="font-mono tabular-nums text-text-primary">
+                {formatQuantity(product.current_stock, null)} → {formatQuantity(product.current_stock - numericQty, null)}
               </span>{' '}
-              <span className="font-mono text-red-as-text">(−{numericQty.toLocaleString()})</span>
+              <span className="font-mono tabular-nums text-red-as-text">(−{formatQuantity(numericQty, null)})</span>
             </div>
           )}
 
