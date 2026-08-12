@@ -1,8 +1,7 @@
 name: Deploy to Staging
 
 # Triggers:
-#   - push to any swarm/session-13* branch → request approval, then deploy
-#   - manual workflow_dispatch with branch input
+#   - manual workflow_dispatch only (see the provisioning block below)
 #
 # Targets the V3 dev Supabase project: ikcyvlovptebroadgtvd (see MEMORY.md).
 #
@@ -20,7 +19,7 @@ name: Deploy to Staging
 
 # Staging environment provisioning status: NOT SET UP
 # ────────────────────────────────────────────────────────────────────────────
-# Automatic triggers (push to master + swarm/session-*) are DISABLED because:
+# Automatic triggers (push) are DISABLED because:
 #  1. GitHub environment 'staging' does not exist
 #  2. Required secrets (SUPABASE_*_STAGING, VERCEL_*) are not provisioned
 #
@@ -28,7 +27,8 @@ name: Deploy to Staging
 #  1. Follow the provisioning checklist in .github/workflows/STAGING_SETUP.md
 #  2. Create the GitHub environment 'staging' and set required reviewers
 #  3. Restore the 'push' trigger below
-#  4. Restore the default 'master' + 'swarm/session-**' branch filters
+#  4. Choose the branch filter to restore (the 'swarm/' prefix is abolished —
+#     see CLAUDE.md § Git ; feat/ | fix/ | chore/ are the live prefixes)
 #
 # Until then, workflow_dispatch (manual trigger) remains enabled for testing.
 # ────────────────────────────────────────────────────────────────────────────
@@ -39,7 +39,6 @@ on:
       ref:
         description: 'Git ref (branch or commit SHA) to deploy'
         required: true
-        default: 'swarm/session-21'
 
 concurrency:
   # Only one staging deploy in flight at a time.
