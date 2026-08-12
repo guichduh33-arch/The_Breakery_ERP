@@ -47,13 +47,16 @@ function renderPage() {
 }
 
 describe('CustomerCategoriesPage', () => {
-  it('renders title and three category cards', async () => {
+  // Refonte List (archétype table) : la grille de cartes cède à la table —
+  // le détail de remise se lit « −15% » dans la colonne Pricing rule.
+  it('renders title and three category rows', async () => {
     renderPage();
-    expect(await screen.findByText(/customer categories/i)).toBeInTheDocument();
+    // Le libellé vit aussi dans le fil d'Ariane : cibler le seul <h1>.
+    expect(await screen.findByRole('heading', { name: /customer categories/i, level: 1 })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument());
     expect(screen.getByText('Wholesale')).toBeInTheDocument();
     expect(screen.getByText('VIP')).toBeInTheDocument();
-    expect(screen.getByText(/15% discount/i)).toBeInTheDocument();
+    expect(screen.getByText('−15%')).toBeInTheDocument();
   });
 
   it('renders New Category button as disabled (RPC missing)', async () => {
