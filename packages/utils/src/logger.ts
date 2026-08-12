@@ -26,8 +26,11 @@ export function setBreadcrumbHook(hook: BreadcrumbHook | null): void {
 }
 
 function emit(level: LogLevel, message: string, data?: Record<string, unknown>): void {
+  // .bind(console) : détacher une méthode de console sans lier `this` est
+  // l'erreur unbound-method — masquée jusqu'ici par un cache turbo qui
+  // rejouait un lint vert antérieur au durcissement (CI PR #368/#369).
   // eslint-disable-next-line no-console
-  const fn = console[METHOD_BY_LEVEL[level]];
+  const fn = console[METHOD_BY_LEVEL[level]].bind(console);
   if (data !== undefined) {
     fn(`[${level}]`, message, data);
   } else {
