@@ -86,17 +86,27 @@ permission (ADR-021, déc. 6).
 
 ### Décision 5 — Les indicateurs d'argent restent, et deviennent vrais
 
-Les tuiles d'argent de la liste — montant total, payé, impayé — sont
-conservées, mais leurs sommes sont servies par la même famille de compteurs,
-côté serveur, sur la même fenêtre et les mêmes filtres que les comptes
-(décision 2). Plus aucun chiffre de l'écran n'est calculé sur l'échantillon
-chargé.
+*(Sémantiques corrigées le 2026-08-12, avant merge, sur relevé de review : la
+première rédaction définissait « payé » par la seule existence d'une ligne
+`order_payments`, ce qui classait impayée toute facture B2B réglée — les
+règlements B2B posent le statut sans ligne de paiement, défaut déjà corrigé
+une fois dans la famille `get_pos_b2b_debts`. La rédaction affirmait aussi à
+tort reprendre « les règles que l'écran appliquait déjà ».)*
 
-Les sémantiques sont fixées ici pour ne pas dériver : **payé** = la commande a
-au moins un paiement enregistré ; **impayé** = aucun paiement et la commande
-n'est pas annulée. Ce sont les règles que l'écran appliquait déjà, désormais
-appliquées à la population entière. Le taux de complétion se dérive des
-comptes ; il n'a pas besoin d'être servi.
+Les tuiles d'argent de la liste — montant total, réglé, impayé, remboursé —
+sont conservées, mais leurs valeurs sont servies par la même famille de
+compteurs, côté serveur, sur la même fenêtre et les mêmes filtres que les
+comptes (décision 2). Plus aucun chiffre de l'écran n'est calculé sur
+l'échantillon chargé.
+
+Les sémantiques sont fixées ici pour ne pas dériver : **réglé** = la commande
+a au moins un paiement enregistré **ou** porte un statut qui dit l'argent
+(payé, complété) — la règle que l'écran appliquait avant la refonte ;
+**impayé** = ni réglée ni annulée ; les commandes **annulées** ne sont dans
+aucun des deux paniers d'argent. Les sommes réglé/impayé sont des **totaux de
+commandes**, pas des encaissements nets : le **remboursé** de la fenêtre
+s'affiche dans sa propre tuile au lieu d'être soustrait en silence. Le taux
+de complétion se dérive des comptes ; il n'a pas besoin d'être servi.
 
 ## 2. Conséquences
 
@@ -105,10 +115,13 @@ comptes ; il n'a pas besoin d'être servi.
    GRANT explicite `authenticated`. Aucun appelant existant ne casse.
 2. **Types régénérés** après la migration (`types.generated.ts`).
 3. **Preuves exigibles** (ADR-021, déc. 6) : parité compteur/lignes par panier
-   sur jeu semé ; parité des sommes payé/impayé avec les lignes correspondantes ;
-   refus au rôle sans `orders.read` ; un filtre qui ne ramène rien affiche un
-   pied qui compte ; l'interface ne contient plus aucun libellé
-   « New / Preparing / Ready ».
+   sur jeu semé ; sommes réglé/impayé/remboursé exactes sur le même jeu, cas
+   « réglée par statut sans ligne de paiement » compris ; refus au rôle sans
+   `orders.read` ; un filtre qui ne ramène rien affiche un pied qui compte ;
+   **la bande de statut de la liste** ne porte plus aucun libellé
+   « New / Preparing / Ready » — les badges de statut cuisine du détail
+   (`preparing`, `ready`), qui disent le KDS et non le cycle de vie, sont hors
+   de cette preuve.
 4. **L'invalidation temps réel rafraîchit les deux lectures** : un événement
    realtime qui invalide les lignes invalide les compteurs, par imbrication des
    clés de requête (même mécanique que la liste de stock).

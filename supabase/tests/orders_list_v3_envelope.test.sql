@@ -1,6 +1,9 @@
--- Session 32 / Wave 1.I : pgTAP for get_orders_list_v2 (9 cases)
--- S58 repair: repointed get_orders_list_v1 → get_orders_list_v2 (v1 dropped;
--- identical signature: p_start text, p_end text, p_filters jsonb, p_limit int, p_cursor timestamptz).
+-- supabase/tests/orders_list_v3_envelope.test.sql
+-- Session 32 / Wave 1.I — enveloppe et formes de la famille get_orders_list
+-- (9 cases). S58 : repointé v1→v2. Review PR #367 : repointé v2→v3 (curseur
+-- keyset — T6 threade le couple next_cursor/next_cursor_id) et RENOMMÉ, le
+-- nom v1 mentait depuis S58. Complémentaire d'orders_list_v3.test.sql
+-- (couverture filtres serveur) et d'orders_counters_v2.test.sql (parité).
 -- T1 perm gate CASHIER → 42501
 -- T2 MANAGER happy basic envelope shape
 -- T3 status filter applied
@@ -26,7 +29,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_id::text, true);
   BEGIN
-    PERFORM get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 5, NULL);
+    PERFORM get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 5, NULL, NULL);
   EXCEPTION WHEN SQLSTATE '42501' THEN
     v_status := 'pass';
   END;
@@ -44,7 +47,7 @@ DECLARE
   v_result JSONB;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 5, NULL) INTO v_result;
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 5, NULL, NULL) INTO v_result;
   PERFORM set_config('breakery.t2_pass',
     CASE WHEN (v_result ? 'lines') AND (v_result ? 'next_cursor')
          THEN 'pass' ELSE 'fail_shape' END,
@@ -64,7 +67,7 @@ DECLARE
   v_all_completed BOOLEAN := true;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31',
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31',
     jsonb_build_object('status', 'completed'), 100, NULL) INTO v_result;
   FOR v_line IN SELECT jsonb_array_elements(v_result->'lines')
   LOOP
@@ -89,7 +92,7 @@ DECLARE
   v_count INT := 0;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31',
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31',
     jsonb_build_object('payment_method', 'cash'), 100, NULL) INTO v_result;
   FOR v_line IN SELECT jsonb_array_elements(v_result->'lines')
   LOOP
@@ -125,7 +128,7 @@ BEGIN
     v_status := 'skipped_no_customer_order';
   ELSE
     PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-    SELECT get_orders_list_v2('2020-01-01', '2030-12-31',
+    SELECT get_orders_list_v3('2020-01-01', '2030-12-31',
       jsonb_build_object('customer_id', v_some_customer::text), 100, NULL) INTO v_result;
     FOR v_line IN SELECT jsonb_array_elements(v_result->'lines')
     LOOP
@@ -147,18 +150,21 @@ DECLARE
   v_p1 JSONB;
   v_p2 JSONB;
   v_cursor TEXT;
+  v_cursor_id TEXT;
   v_p1_ids TEXT[];
   v_p2_ids TEXT[];
   v_overlap BOOLEAN := false;
   v_status TEXT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 2, NULL) INTO v_p1;
-  v_cursor := v_p1->>'next_cursor';
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 2, NULL, NULL) INTO v_p1;
+  -- v3 : le curseur est le COUPLE (created_at, id) de la dernière ligne rendue.
+  v_cursor    := v_p1->>'next_cursor';
+  v_cursor_id := v_p1->>'next_cursor_id';
   IF v_cursor IS NULL THEN
     v_status := 'skipped_too_few_orders';
   ELSE
-    SELECT get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 2, v_cursor::timestamptz) INTO v_p2;
+    SELECT get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 2, v_cursor::timestamptz, v_cursor_id::uuid) INTO v_p2;
     SELECT array_agg(line->>'id') INTO v_p1_ids FROM jsonb_array_elements(v_p1->'lines') AS line;
     SELECT array_agg(line->>'id') INTO v_p2_ids FROM jsonb_array_elements(v_p2->'lines') AS line;
     v_overlap := v_p1_ids && v_p2_ids;
@@ -179,7 +185,7 @@ DECLARE
   v_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 500, NULL) INTO v_result;
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 500, NULL, NULL) INTO v_result;
   v_count := jsonb_array_length(v_result->'lines');
   PERFORM set_config('breakery.t7_pass',
     CASE WHEN v_count <= 200 THEN 'pass' ELSE 'fail_unclamped' END,
@@ -199,7 +205,7 @@ DECLARE
   v_valid BOOLEAN := true;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 50, NULL) INTO v_result;
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 50, NULL, NULL) INTO v_result;
   FOR v_line IN SELECT jsonb_array_elements(v_result->'lines')
   LOOP
     IF (v_line->>'refund_status') NOT IN ('none', 'partial', 'full') THEN v_valid := false; END IF;
@@ -222,7 +228,7 @@ DECLARE
   v_valid BOOLEAN := true;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v2('2020-01-01', '2030-12-31', '{}'::jsonb, 50, NULL) INTO v_result;
+  SELECT get_orders_list_v3('2020-01-01', '2030-12-31', '{}'::jsonb, 50, NULL, NULL) INTO v_result;
   FOR v_line IN SELECT jsonb_array_elements(v_result->'lines')
   LOOP
     IF jsonb_typeof(v_line->'has_modifiers') <> 'boolean' THEN v_valid := false; END IF;

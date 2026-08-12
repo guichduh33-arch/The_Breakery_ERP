@@ -1,32 +1,18 @@
 // apps/backoffice/src/pages/orders/OrdersListPage.tsx
 //
-// Liste des commandes — instance de l'archétype LIST (ADR-025).
-//
-// Ce que la refonte change, et pourquoi :
-//   · Les tuiles KPI et les pilules de statut disparaissent. Les tuiles
-//     comptaient les lignes chargées d'une liste paginée en les présentant
-//     comme la période ; les pilules « New / Preparing / Ready » projetaient
-//     des étapes de cuisine sur des statuts qui ne les portent pas (ADR-009).
-//     À la place : des compteurs serveur qui SONT les filtres
-//     (`ListCounterStrip` + `get_orders_counters`), nommés par les statuts
-//     réels, et une bande d'argent servie par la même fonction (ADR-025 D5).
-//   · Le bloc de filtres carté cède à une rangée de contrôles plats ; l'état
-//     de liste vit dans l'URL (`patchParams`, même motif que Products.tsx) —
-//     les liens de drill-down (?customer_id=…, ?refund_status=…) continuent
-//     de porter tous les filtres serveur S32/S33.
-//   · La table à la main cède au `DataTable` partagé : `aria-sort`, squelette,
-//     état vide, et un pied TOUJOURS rendu qui lit le compteur du panier actif
-//     — « 0 of 240 » est une information, un pied absent n'en est pas une.
-//   · La recherche libre reste un filtre CLIENT sur les lignes chargées (la
-//     famille get_orders_list n'a pas de filtre texte) ; le pied distingue ce
-//     qui est montré de ce que la fenêtre contient pour ne jamais mentir.
+// Liste des commandes — instance de l'archétype LIST (ADR-025, amendée après
+// review PR #367) : compteurs et sommes servis par `get_orders_counters`
+// (statuts réels — « New/Preparing/Ready » sont morts, ADR-009) ; RÉGLÉ =
+// paiement OU statut paid/completed (B2B sans ligne order_payments) ; un
+// échec des compteurs rend des tirets, jamais des zéros ; état de liste dans
+// l'URL avec `pick` mémoïsé (closure figée = filtres écrasés) ; dates
+// commises en débounce ; export CSV gaté `reports.export` via buildCsv.
 
-import { type JSX, useCallback, useMemo, useState } from 'react';
+import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DataTable, Input, Select, cn, type DataTableColumn } from '@breakery/ui';
-import { formatIdr, todayIsoDate } from '@breakery/utils';
+import { formatIdr, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
@@ -43,12 +29,19 @@ import {
   ORDER_STATUS,
   ORDER_STATUS_ORDER,
   ORDER_STATUS_BADGE,
-  ORDER_STATUS_BADGE_TONE,
+  ORDER_TYPES,
   ORDER_TYPE_LABEL,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABEL,
+  isSettledStatus,
+  orderStatusBadgeTone,
   orderStatusLabel,
+  orderTypeLabel,
   type OrderStatus,
 } from '@/features/orders/statusMeta.js';
 import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js';
+import { exportOrdersCsv } from '@/features/orders/exportOrdersCsv.js';
+import { RowActionButton } from '@/features/orders/components/RowActionButton.js';
 import { VoidOrderModal } from '@/features/orders/components/VoidOrderModal.js';
 import { EditOrderItemsModal } from '@/features/orders/components/EditOrderItemsModal.js';
 import { OrderDetailDrawer } from '@/features/orders/components/OrderDetailDrawer.js';
@@ -57,8 +50,6 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
 import { toast } from 'sonner';
 
-const BUSINESS_TZ = 'Asia/Makassar';
-
 /** Fenêtre par défaut : 60 jours glissants, en jours métier. */
 function defaultStart(): string {
   return new Date(Date.parse(`${todayIsoDate()}T00:00:00Z`) - 60 * 86_400_000)
@@ -66,33 +57,27 @@ function defaultStart(): string {
     .slice(0, 10);
 }
 
-const ORDER_TYPES = ['', 'dine_in', 'take_out', 'delivery', 'b2b'] as const;
-const PAYMENT_METHODS = ['', 'cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'] as const;
+const DATE_COMMIT_MS = 400;
 
 function statusCell(c: OrdersCounters | undefined, s: OrderStatus): number {
   return c?.by_status[s]?.count ?? 0;
 }
 
-function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit', timeZone: BUSINESS_TZ,
-  });
-}
-function fmtDay(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    day: '2-digit', month: 'short', timeZone: BUSINESS_TZ,
-  });
+/** Une URL peut porter n'importe quoi : NaN ne part jamais au serveur. */
+function numParam(raw: string | null): number | undefined {
+  if (raw === null || raw === '') return undefined;
+  const n = Number(raw);
+  return Number.isNaN(n) ? undefined : n;
 }
 
 export default function OrdersListPage(): JSX.Element {
   const { isConnected } = useOrdersRealtime();
   const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
   const hasVoid     = useAuthStore((s) => s.hasPermission('orders.void'));
+  // Le CSV sort des données nominatives : même gate que tous les exports
+  // (« le SEUL point de contrôle possible pour le CSV », audit reports).
+  const canExport   = useAuthStore((s) => s.hasPermission('reports.export'));
 
-  // TOUT l'état de liste vit dans l'URL — un filtre se partage par lien et le
-  // retour arrière ramène la liste telle qu'on l'avait laissée. Les écritures
-  // passent par `patchParams` (updater fonctionnel) : deux écritures du même
-  // geste ne s'écrasent pas (motif documenté dans Products.tsx).
   const [params, setParams] = useSearchParams();
   const patchParams = useCallback((patch: Record<string, string | null>): void => {
     setParams((prev) => {
@@ -108,8 +93,24 @@ export default function OrdersListPage(): JSX.Element {
   const start = params.get('start') ?? defaultStart();
   const end   = params.get('end')   ?? todayIsoDate();
 
-  // `?status=lol` ne doit pas produire une liste vide en silence : hors enum,
-  // on retombe sur « tous ».
+  // Les inputs date écrivent en local et COMMETTENT en débounce : scruber une
+  // année émettait un couple de RPC pleine fenêtre par valeur intermédiaire.
+  const [startDraft, setStartDraft] = useState(start);
+  const [endDraft, setEndDraft]     = useState(end);
+  useEffect(() => { setStartDraft(start); }, [start]);
+  useEffect(() => { setEndDraft(end); }, [end]);
+  const dateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (dateTimer.current !== null) clearTimeout(dateTimer.current);
+  }, []);
+  const commitDates = useCallback((s: string, e: string, immediate = false): void => {
+    if (dateTimer.current !== null) clearTimeout(dateTimer.current);
+    const write = (): void => { patchParams({ start: s, end: e }); };
+    if (immediate) write();
+    else dateTimer.current = setTimeout(write, DATE_COMMIT_MS);
+  }, [patchParams]);
+
+  // `?status=lol` ne doit pas produire une liste vide en silence.
   const statusParam = params.get('status') ?? '';
   const status: OrderStatus | '' = Object.hasOwn(ORDER_STATUS, statusParam)
     ? (statusParam as OrderStatus)
@@ -117,8 +118,7 @@ export default function OrdersListPage(): JSX.Element {
 
   const [quickFind, setQuickFind] = useState('');
 
-  // Filtres serveur S32/S33 — tous honorés depuis l'URL pour que les liens de
-  // drill-down continuent de fonctionner.
+  // Filtres serveur S32/S33 — tous honorés depuis l'URL (drill-downs).
   const serverFilters = useMemo<Omit<OrdersListFilters, 'status'>>(() => {
     const f: Omit<OrdersListFilters, 'status'> = {};
     const ot = params.get('order_type');     if (ot) f.order_type = ot;
@@ -127,12 +127,11 @@ export default function OrdersListPage(): JSX.Element {
     const sb = params.get('served_by');      if (sb) f.served_by = sb;
     const ct = params.get('customer_type');
     if (ct === 'retail' || ct === 'b2b') f.customer_type = ct;
-    const tmin = params.get('total_min');    if (tmin) f.total_min = Number(tmin);
-    const tmax = params.get('total_max');    if (tmax) f.total_max = Number(tmax);
+    const tmin = numParam(params.get('total_min')); if (tmin !== undefined) f.total_min = tmin;
+    const tmax = numParam(params.get('total_max')); if (tmax !== undefined) f.total_max = tmax;
     const rs = params.get('refund_status');
     if (rs === 'none' || rs === 'partial' || rs === 'full') f.refund_status = rs;
-    const hr = params.get('hour');
-    if (hr !== null && hr !== '' && !Number.isNaN(Number(hr))) f.hour = Number(hr);
+    const hr = numParam(params.get('hour')); if (hr !== undefined) f.hour = hr;
     const ti = params.get('terminal_id');    if (ti) f.terminal_id = ti;
     return f;
   }, [params]);
@@ -144,10 +143,10 @@ export default function OrdersListPage(): JSX.Element {
 
   const query = useOrdersList({ start, end, filters: listFilters });
   // ADR-025 D2 — les compteurs suivent la fenêtre et les filtres, JAMAIS le
-  // statut actif : sinon la bande n'annoncerait que le panier sélectionné et
-  // cesserait d'être un moyen d'en changer.
+  // statut actif.
   const counters = useOrdersCounters({ start, end, filters: serverFilters });
   const c = counters.data;
+  const countersDown = counters.isError;
 
   const loadedLines: OrdersListLine[] = useMemo(
     () => (query.data?.pages ?? []).flatMap((p) => p.lines),
@@ -166,15 +165,18 @@ export default function OrdersListPage(): JSX.Element {
   /** Total du panier affiché — c'est lui que le pied compte (ADR-025 D1). */
   const activeTotal = status === '' ? (c?.total.count ?? 0) : statusCell(c, status);
 
-  function pick(next: OrderStatus | ''): void {
+  // `pick` mémoïsé et PRÉSENT dans les deps du memo : figé sur [c] seul, il
+  // capturait un setSearchParams clos sur une URL périmée et un clic de
+  // compteur pendant un refetch écrasait les filtres (review PR #367).
+  const pick = useCallback((next: OrderStatus | ''): void => {
     patchParams({ status: next === '' ? null : next });
-  }
+  }, [patchParams]);
 
   const counterItems = useMemo<ListCounter[]>(() => [
     {
       id: 'all',
       label: 'All orders',
-      value: c?.total.count ?? 0,
+      value: countersDown ? '—' : (c?.total.count ?? 0),
       onSelect: () => { pick(''); },
     },
     ...ORDER_STATUS_ORDER.map((s): ListCounter => {
@@ -183,64 +185,45 @@ export default function OrdersListPage(): JSX.Element {
       return {
         id: s,
         label: spec.label,
-        value,
-        ...(spec.tone !== undefined && spec.tone !== 'success' && value > 0
-          ? { tone: spec.tone }
-          : {}),
+        value: countersDown ? '—' : value,
+        ...(spec.tone !== undefined && value > 0 && !countersDown ? { tone: spec.tone } : {}),
         onSelect: () => { pick(s); },
       };
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [c]);
+  ], [c, countersDown, pick]);
 
-  // Bande d'argent (ADR-025 D5) — informative, donc non cliquable : un
-  // compteur sans `onSelect` ne se présente pas comme un contrôle.
+  // Bande d'argent (ADR-025 D5 amendée) — informative, non cliquable. Les
+  // sommes sont des TOTAUX DE COMMANDES réglées/non réglées ; le remboursé
+  // s'affiche à côté au lieu d'être soustrait en silence.
   const moneyItems = useMemo<ListCounter[]>(() => [
     {
       id: 'amount-total',
       label: 'Window total',
-      value: formatIdr(c?.total.amount ?? 0),
-      title: `${(c?.total.count ?? 0).toLocaleString()} orders between ${start} and ${end}, current filters applied.`,
+      value: countersDown ? '—' : formatIdr(c?.total.amount ?? 0),
+      title: `Sum of order totals between ${start} and ${end}, current filters applied — voided included.`,
     },
     {
       id: 'amount-paid',
-      label: 'Paid',
-      value: formatIdr(c?.paid.amount ?? 0),
-      tone: 'success',
-      title: `${(c?.paid.count ?? 0).toLocaleString()} orders with at least one recorded payment.`,
+      label: 'Settled',
+      value: countersDown ? '—' : formatIdr(c?.paid.amount ?? 0),
+      ...((c?.paid.count ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
+      title: `${(c?.paid.count ?? 0).toLocaleString()} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
     },
     {
       id: 'amount-unpaid',
       label: 'Unpaid',
-      value: formatIdr(c?.unpaid.amount ?? 0),
-      ...((c?.unpaid.count ?? 0) > 0 ? { tone: 'warning' as const } : {}),
-      title: `${(c?.unpaid.count ?? 0).toLocaleString()} orders with no payment yet, voided excluded.`,
+      value: countersDown ? '—' : formatIdr(c?.unpaid.amount ?? 0),
+      ...((c?.unpaid.count ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
+      title: `${(c?.unpaid.count ?? 0).toLocaleString()} orders not settled yet, voided excluded.`,
     },
-  ], [c, start, end]);
-
-  function exportCsv(): void {
-    const header = ['Order #', 'Time', 'Type', 'Customer', 'Items', 'Amount', 'Status', 'Payment'];
-    const rows = lines.map((o) => [
-      o.order_number,
-      new Date(o.created_at).toLocaleString('en-US', { timeZone: BUSINESS_TZ }),
-      o.order_type,
-      o.customer_name ?? '',
-      String(o.items_count),
-      String(o.total),
-      o.status,
-      o.payment_method_primary ?? '',
-    ]);
-    const csv = [header, ...rows]
-      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `orders-${start}_${end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+    {
+      id: 'amount-refunded',
+      label: 'Refunded',
+      value: countersDown ? '—' : `− ${formatIdr(c?.refunded.amount ?? 0)}`,
+      ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
+      title: `${(c?.refunded.count ?? 0).toLocaleString()} orders carry a refund in this window.`,
+    },
+  ], [c, countersDown, start, end]);
 
   // Actions de ligne — modales et tiroir de détail.
   const [detailId, setDetailId]     = useState<string | null>(null);
@@ -289,14 +272,14 @@ export default function OrdersListPage(): JSX.Element {
       id: 'time', header: 'Time', width: '7rem',
       render: (o) => (
         <span className="block whitespace-nowrap font-data text-xs leading-tight tabular-nums">
-          {fmtTime(o.created_at)}
-          <span className="block text-text-muted">{fmtDay(o.created_at)}</span>
+          {formatTimeWita(o.created_at)}
+          <span className="block text-text-muted">{formatDateShortWita(o.created_at)}</span>
         </span>
       ),
     },
     {
       id: 'type', header: 'Type', width: '6.5rem',
-      render: (o) => <span className="text-text-secondary">{ORDER_TYPE_LABEL[o.order_type] ?? o.order_type}</span>,
+      render: (o) => <span className="text-text-secondary">{orderTypeLabel(o.order_type)}</span>,
     },
     {
       id: 'customer', header: 'Customer',
@@ -317,24 +300,24 @@ export default function OrdersListPage(): JSX.Element {
     {
       id: 'status', header: 'Status', width: '9.5rem',
       render: (o) => (
-        <span
-          className={cn(
-            ORDER_STATUS_BADGE,
-            ORDER_STATUS_BADGE_TONE[o.status] ?? 'bg-surface-4 text-text-secondary',
-          )}
-        >
+        <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(o.status))}>
           {orderStatusLabel(o.status)}
         </span>
       ),
     },
     {
       id: 'payment', header: 'Payment', width: '7.5rem',
+      // RÉGLÉ = méthode enregistrée OU statut porteur d'argent : une facture
+      // B2B encaissée (statut paid, zéro ligne order_payments) lit « Paid »,
+      // plus « Unpaid » à côté d'un badge Paid (review PR #367).
       render: (o) => (
         o.payment_method_primary !== null
-          ? <span className="text-text-secondary capitalize">{o.payment_method_primary}</span>
-          : o.status === 'voided'
-            ? <span className="text-text-subtle" aria-hidden>—</span>
-            : <span className="text-warning">Unpaid</span>
+          ? <span className="text-text-secondary">{(PAYMENT_METHOD_LABEL as Record<string, string>)[o.payment_method_primary] ?? o.payment_method_primary}</span>
+          : isSettledStatus(o.status)
+            ? <span className="text-success">Paid</span>
+            : o.status === 'voided'
+              ? <span className="text-text-subtle" aria-hidden>—</span>
+              : <span className="text-warning">Unpaid</span>
       ),
     },
     {
@@ -342,31 +325,31 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => (
         <span className="inline-flex items-center gap-0.5">
           {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
-            <RowAction
+            <RowActionButton
               label={`Edit items of ${o.order_number}`}
               testId={`row-edit-${o.id}`}
               onClick={() => { void loadItemsAndOpenEdit(o); }}
             >
               <Edit3 className="h-3.5 w-3.5" aria-hidden />
-            </RowAction>
+            </RowActionButton>
           )}
           {hasVoid && (o.status === 'paid' || o.status === 'completed') && (
-            <RowAction
+            <RowActionButton
               label={`Void ${o.order_number}`}
               testId={`row-void-${o.id}`}
               destructive
               onClick={() => { setVoidTarget({ id: o.id, number: o.order_number }); }}
             >
               <XCircle className="h-3.5 w-3.5" aria-hidden />
-            </RowAction>
+            </RowActionButton>
           )}
-          <RowAction
+          <RowActionButton
             label={`Details of ${o.order_number}`}
             testId={`row-details-${o.id}`}
             onClick={() => { setDetailId(o.id); }}
           >
             <Eye className="h-3.5 w-3.5" aria-hidden />
-          </RowAction>
+          </RowActionButton>
         </span>
       ),
     },
@@ -403,17 +386,29 @@ export default function OrdersListPage(): JSX.Element {
               <RefreshCw className={cn('h-3.5 w-3.5 text-text-muted', query.isFetching && 'animate-spin motion-reduce:animate-none')} aria-hidden />
               Refresh
             </button>
-            <button
-              type="button"
-              className={TOOLBAR_BTN_SECONDARY}
-              onClick={exportCsv}
-              disabled={lines.length === 0}
-            >
-              <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Export
-            </button>
+            {canExport && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
+                onClick={() => { exportOrdersCsv(lines, start, end); }}
+                disabled={lines.length === 0}
+              >
+                <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Export
+              </button>
+            )}
           </>
         }
       />
+
+      {countersDown && (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+          Order counts could not be loaded — the strip shows dashes rather than
+          numbers that would be wrong.{' '}
+          <button type="button" className="underline" onClick={() => { void counters.refetch(); }}>
+            Try again
+          </button>
+        </p>
+      )}
 
       <ListCounterStrip
         counters={counterItems}
@@ -445,16 +440,18 @@ export default function OrdersListPage(): JSX.Element {
         <Input
           id="orders-start"
           type="date"
-          value={start}
-          onChange={(e) => { patchParams({ start: e.target.value }); }}
+          value={startDraft}
+          onChange={(e) => { setStartDraft(e.target.value); commitDates(e.target.value, endDraft); }}
+          onBlur={() => { commitDates(startDraft, endDraft, true); }}
           className="w-40"
         />
         <label htmlFor="orders-end" className="sr-only">End date</label>
         <Input
           id="orders-end"
           type="date"
-          value={end}
-          onChange={(e) => { patchParams({ end: e.target.value }); }}
+          value={endDraft}
+          onChange={(e) => { setEndDraft(e.target.value); commitDates(startDraft, e.target.value); }}
+          onBlur={() => { commitDates(startDraft, endDraft, true); }}
           className="w-40"
         />
         <label htmlFor="orders-type" className="sr-only">Order type</label>
@@ -464,8 +461,9 @@ export default function OrdersListPage(): JSX.Element {
           onChange={(e) => { patchParams({ order_type: e.target.value || null }); }}
           className="w-40"
         >
+          <option value="">All types</option>
           {ORDER_TYPES.map((t) => (
-            <option key={t} value={t}>{t === '' ? 'All types' : ORDER_TYPE_LABEL[t]}</option>
+            <option key={t} value={t}>{ORDER_TYPE_LABEL[t]}</option>
           ))}
         </Select>
         <label htmlFor="orders-payment" className="sr-only">Payment method</label>
@@ -473,30 +471,35 @@ export default function OrdersListPage(): JSX.Element {
           id="orders-payment"
           value={params.get('payment_method') ?? ''}
           onChange={(e) => { patchParams({ payment_method: e.target.value || null }); }}
-          className="w-44 capitalize"
+          className="w-44"
         >
+          <option value="">All payments</option>
           {PAYMENT_METHODS.map((m) => (
-            <option key={m} value={m}>{m === '' ? 'All payments' : m.replace('_', ' ')}</option>
+            <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>
           ))}
         </Select>
       </div>
 
-      {/* Sans annonce, cliquer un compteur change la table en silence pour un
-          lecteur d'écran. */}
       <span className="sr-only" role="status" aria-live="polite">
-        {counters.isLoading
-          ? 'Loading order counts'
-          : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'order' : 'orders'} in the current filter`}
+        {countersDown
+          ? 'Order counts unavailable'
+          : counters.isLoading
+            ? 'Loading order counts'
+            : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'order' : 'orders'} in the current filter`}
       </span>
 
-      {query.error !== null ? (
+      {/* L'erreur SURPLOMBE la table : un refetch raté ne doit pas effacer les
+          lignes que l'opérateur lisait (review PR #367). */}
+      {query.error !== null && (
         <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
-          Orders could not be loaded. The list may be out of date.{' '}
+          Orders could not be refreshed — the rows below may be out of date.
+          <span className="ml-1 font-data text-xs">{query.error.message}</span>{' '}
           <button type="button" className="underline" onClick={() => { void query.refetch(); }}>
             Try again
           </button>
         </p>
-      ) : (
+      )}
+      {(query.error === null || loadedLines.length > 0) && (
         <DataTable<OrdersListLine>
           columns={columns}
           rows={lines}
@@ -513,9 +516,11 @@ export default function OrdersListPage(): JSX.Element {
           footer={
             <div className="flex items-center justify-between">
               <span className="font-data text-[11px] tabular-nums text-text-muted">
-                {quickFind.trim() !== ''
-                  ? `${lines.length} match · ${activeTotal.toLocaleString()} in window`
-                  : `${lines.length} of ${activeTotal.toLocaleString()}`}
+                {countersDown
+                  ? `${lines.length} loaded`
+                  : quickFind.trim() !== ''
+                    ? `${lines.length} match · ${activeTotal.toLocaleString()} in window`
+                    : `${lines.length} of ${activeTotal.toLocaleString()}`}
               </span>
               {query.hasNextPage && (
                 <button
@@ -540,34 +545,5 @@ export default function OrdersListPage(): JSX.Element {
         <EditOrderItemsModal open orderId={editTarget.id} orderNumber={editTarget.number} currentItems={editTarget.items} onClose={() => setEditTarget(null)} />
       )}
     </div>
-  );
-}
-
-/* ------------------------------------------------------- row action button */
-
-function RowAction({
-  label, onClick, destructive = false, testId, children,
-}: {
-  label: string;
-  onClick: () => void;
-  destructive?: boolean;
-  testId?: string;
-  children: React.ReactNode;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      data-testid={testId}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-subtle transition-colors',
-        destructive ? 'hover:bg-red-soft hover:text-danger' : 'hover:bg-surface-4 hover:text-text-primary',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-      )}
-    >
-      {children}
-    </button>
   );
 }
