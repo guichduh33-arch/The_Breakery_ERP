@@ -18,7 +18,7 @@ import OrdersListPage from '../OrdersListPage.js';
 
 // ── sonner mock ────────────────────────────────────────────────────────────
 const toastErrorSpy = vi.fn();
-vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastErrorSpy(...a) } }));
+vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]): void => { toastErrorSpy(...a); } } }));
 
 // ── supabase mock ──────────────────────────────────────────────────────────
 const rpcMock = vi.fn();
@@ -30,10 +30,10 @@ const channelMock = {
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc:           (...args: unknown[]) => rpcMock(...args),
+    rpc:           (...args: unknown[]): unknown => rpcMock(...args) as unknown,
     channel:       vi.fn(() => channelMock),
     removeChannel: vi.fn(),
-    from:          (...args: unknown[]) => fromMock(...args),
+    from:          (...args: unknown[]): unknown => fromMock(...args) as unknown,
   },
 }));
 
@@ -149,5 +149,37 @@ describe('OrdersListPage smoke', () => {
     await waitFor(() => expect(toastErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('db_error_42501'),
     ));
+  });
+
+  // ── ADR-025 : preuves UI de la refonte List ──────────────────────────────
+  it('T5 (ADR-025 D2) counters RPC is called WITHOUT the active status filter', async () => {
+    renderRoute('/backoffice/orders?status=completed&payment_method=cash');
+    await screen.findByText(/ORD-001/);
+    // Les lignes reçoivent le statut…
+    const listFiltersMatcher: unknown = expect.objectContaining({ status: 'completed', payment_method: 'cash' });
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
+      p_filters: listFiltersMatcher,
+    }));
+    // …les compteurs jamais : ils mesurent la fenêtre, pas le panier actif.
+    const countersCalls = rpcMock.mock.calls.filter((c) => c[0] === 'get_orders_counters_v1');
+    expect(countersCalls.length).toBeGreaterThan(0);
+    for (const call of countersCalls) {
+      const args = call[1] as unknown as { p_filters: Record<string, unknown> };
+      expect(args.p_filters).not.toHaveProperty('status');
+      expect(args.p_filters).toMatchObject({ payment_method: 'cash' });
+    }
+  });
+
+  it('T6 (ADR-025 D3) the strip names real statuses — the fantasy labels are dead', async () => {
+    renderRoute('/backoffice/orders');
+    await screen.findByText(/ORD-001/);
+    const strip = screen.getByTestId('orders-counters');
+    expect(strip).toHaveTextContent('Pending payment');
+    expect(strip).toHaveTextContent('B2B pending');
+    expect(strip).toHaveTextContent('Voided');
+    // « New / Preparing / Ready » projetaient des étapes cuisine sur des
+    // statuts qui ne les portent pas (ADR-009) — morts avec la refonte.
+    expect(screen.queryByText('Preparing')).toBeNull();
+    expect(screen.queryByText('Ready')).toBeNull();
   });
 });
