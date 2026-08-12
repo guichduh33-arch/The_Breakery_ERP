@@ -18,7 +18,7 @@ import OrdersListPage from '../OrdersListPage.js';
 
 // ── sonner mock ────────────────────────────────────────────────────────────
 const toastErrorSpy = vi.fn();
-vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastErrorSpy(...a) } }));
+vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]): void => { toastErrorSpy(...a); } } }));
 
 // ── supabase mock ──────────────────────────────────────────────────────────
 const rpcMock = vi.fn();
@@ -30,10 +30,10 @@ const channelMock = {
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc:           (...args: unknown[]) => rpcMock(...args),
+    rpc:           (...args: unknown[]): unknown => rpcMock(...args) as unknown,
     channel:       vi.fn(() => channelMock),
     removeChannel: vi.fn(),
-    from:          (...args: unknown[]) => fromMock(...args),
+    from:          (...args: unknown[]): unknown => fromMock(...args) as unknown,
   },
 }));
 
@@ -98,6 +98,14 @@ const SAMPLE_ROW = {
   items_count: 3,
 };
 
+const SAMPLE_COUNTERS = {
+  total:    { count: 1, amount: 100_000 },
+  paid:     { count: 0, amount: 0 },
+  unpaid:   { count: 1, amount: 100_000 },
+  refunded: { count: 0, amount: 0 },
+  by_status: { draft: { count: 1, amount: 100_000 } },
+};
+
 describe('OrdersListPage smoke', () => {
   beforeEach(() => {
     rpcMock.mockReset();
@@ -111,18 +119,18 @@ describe('OrdersListPage smoke', () => {
     fromMock.mockReturnValue(makeFromChain());
   });
 
-  it('T1 default mount calls RPC v2 with default range and empty filters', async () => {
+  it('T1 default mount calls RPC v3 with default range and empty filters', async () => {
     renderRoute('/backoffice/orders');
     await screen.findByText(/ORD-001/);
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
       p_filters: {},
     }));
   });
 
-  it('T2 URL params propagate to RPC v2 filters', async () => {
+  it('T2 URL params propagate to RPC v3 filters', async () => {
     renderRoute('/backoffice/orders?payment_method=cash&customer_id=c-1&start=2026-05-01&end=2026-05-26');
     await screen.findByText(/ORD-001/);
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
       p_start: '2026-05-01',
       p_end: '2026-05-26',
       p_filters: { payment_method: 'cash', customer_id: 'c-1' },
@@ -149,5 +157,76 @@ describe('OrdersListPage smoke', () => {
     await waitFor(() => expect(toastErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('db_error_42501'),
     ));
+  });
+
+  // ── ADR-025 : preuves UI de la refonte List ──────────────────────────────
+  it('T5 (ADR-025 D2) counters RPC is called WITHOUT the active status filter', async () => {
+    renderRoute('/backoffice/orders?status=completed&payment_method=cash');
+    await screen.findByText(/ORD-001/);
+    // Les lignes reçoivent le statut…
+    const listFiltersMatcher: unknown = expect.objectContaining({ status: 'completed', payment_method: 'cash' });
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
+      p_filters: listFiltersMatcher,
+    }));
+    // …les compteurs jamais : ils mesurent la fenêtre, pas le panier actif.
+    const countersCalls = rpcMock.mock.calls.filter((c) => c[0] === 'get_orders_counters_v2');
+    expect(countersCalls.length).toBeGreaterThan(0);
+    for (const call of countersCalls) {
+      const args = call[1] as unknown as { p_filters: Record<string, unknown> };
+      expect(args.p_filters).not.toHaveProperty('status');
+      expect(args.p_filters).toMatchObject({ payment_method: 'cash' });
+    }
+  });
+
+  it('T6 (ADR-025 D3) the strip names real statuses — the fantasy labels are dead', async () => {
+    renderRoute('/backoffice/orders');
+    await screen.findByText(/ORD-001/);
+    const strip = screen.getByTestId('orders-counters');
+    expect(strip).toHaveTextContent('Pending payment');
+    expect(strip).toHaveTextContent('B2B pending');
+    expect(strip).toHaveTextContent('Voided');
+    // « New / Preparing / Ready » projetaient des étapes cuisine sur des
+    // statuts qui ne les portent pas (ADR-009) — morts avec la refonte.
+    expect(screen.queryByText('Preparing')).toBeNull();
+    expect(screen.queryByText('Ready')).toBeNull();
+  });
+
+  // Review PR #367 (finding 5) : un échec des compteurs ne doit JAMAIS rendre
+  // des zéros présentés comme des faits.
+  it('T7 counters failure renders dashes and an alert, never zeros', async () => {
+    rpcMock.mockImplementation((name: unknown) =>
+      Promise.resolve(
+        name === 'get_orders_counters_v2'
+          ? { data: null, error: { message: 'counters down' } }
+          : { data: { lines: [SAMPLE_ROW], next_cursor: null, next_cursor_id: null }, error: null },
+      ),
+    );
+    renderRoute('/backoffice/orders');
+    await screen.findByText(/ORD-001/);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/order counts could not be loaded/i);
+    const strip = screen.getByTestId('orders-counters');
+    expect(strip).toHaveTextContent('—');
+    // La bande ne montre aucun « 0 » inventé pour le total.
+    expect(strip).not.toHaveTextContent(/All orders0/);
+  });
+
+  // Review PR #367 (finding 1) : une commande réglée PAR STATUT sans ligne
+  // order_payments (règlement B2B) lit « Paid », pas « Unpaid ».
+  it('T8 settled-by-status row shows Paid in the payment cell', async () => {
+    const b2bRow = { ...SAMPLE_ROW, id: 'o-2', order_number: 'B2B-001', status: 'paid', payment_method_primary: null };
+    rpcMock.mockImplementation((name: unknown) =>
+      Promise.resolve(
+        name === 'get_orders_counters_v2'
+          ? { data: SAMPLE_COUNTERS, error: null }
+          : { data: { lines: [b2bRow], next_cursor: null, next_cursor_id: null }, error: null },
+      ),
+    );
+    renderRoute('/backoffice/orders');
+    const row = await screen.findByText(/B2B-001/);
+    expect(row).toBeInTheDocument();
+    const table = screen.getByTestId('orders-table');
+    expect(table).toHaveTextContent('Paid');
+    expect(table).not.toHaveTextContent('Unpaid');
   });
 });

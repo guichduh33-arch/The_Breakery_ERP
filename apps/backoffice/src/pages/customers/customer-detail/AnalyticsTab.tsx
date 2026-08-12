@@ -60,8 +60,10 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
                   <span className="text-text-primary">{t.label}</span>
                   <span className="tabular-nums text-text-secondary">{t.orders} · {rp(t.total)}</span>
                 </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-bg-base">
-                  <div className="h-full rounded-full bg-gold" style={{ width: `${typeTotal > 0 ? (t.orders / typeTotal) * 100 : 0}%` }} />
+                {/* Barre de part = série de données : rampe chart, jamais l'or
+                    (l'or ne remplit rien dans le back-office). */}
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-sm bg-surface-4">
+                  <div className="h-full bg-chart-1" style={{ width: `${typeTotal > 0 ? (t.orders / typeTotal) * 100 : 0}%` }} />
                 </div>
               </div>
             ))}

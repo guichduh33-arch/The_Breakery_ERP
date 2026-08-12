@@ -1,36 +1,47 @@
 // apps/backoffice/src/pages/orders/OrdersListPage.tsx
 //
-// "Live Orders" — operations view of recent orders. Rebuilt on the design
-// system to match the reference: header (Refresh / Export), KPI cards, a
-// compact filter row, status pill tabs, a styled table and a per-row Details
-// button that opens the rich OrderDetailDrawer.
-//
-// URL state stays the source of truth for the date range + filters (S32/S33).
-// KPIs are computed over the currently-loaded orders. Server-side filters
-// (status / order_type / payment_method) flow through get_orders_list_v2;
-// the free-text search + status pills are applied over loaded rows.
+// Liste des commandes — instance de l'archétype LIST (ADR-025, amendée après
+// review PR #367) : compteurs et sommes servis par `get_orders_counters`
+// (statuts réels — « New/Preparing/Ready » sont morts, ADR-009) ; RÉGLÉ =
+// paiement OU statut paid/completed (B2B sans ligne order_payments) ; un
+// échec des compteurs rend des tirets, jamais des zéros ; état de liste dans
+// l'URL avec `pick` mémoïsé (closure figée = filtres écrasés) ; dates
+// commises en débounce ; export CSV gaté `reports.export` via buildCsv.
 
-import { type JSX, useMemo, useState } from 'react';
-import {
-  CheckCircle2,
-  Clock3,
-  Download,
-  DollarSign,
-  Edit3,
-  Eye,
-  RefreshCw,
-  Search,
-  ShoppingBag,
-  XCircle,
-} from 'lucide-react';
-import { Button, Card, EmptyState } from '@breakery/ui';
-import { useSearchParams } from 'react-router-dom';
+import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { DataTable, Input, Select, cn, type DataTableColumn } from '@breakery/ui';
+import { formatIdr, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
+import { PageHeader } from '@/components/PageHeader.js';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import {
   useOrdersList,
   type OrdersListFilters,
   type OrdersListLine,
 } from '@/features/orders/hooks/useOrdersList.js';
+import {
+  useOrdersCounters,
+  type OrdersCounters,
+} from '@/features/orders/hooks/useOrdersCounters.js';
+import {
+  ORDER_STATUS,
+  ORDER_STATUS_ORDER,
+  ORDER_STATUS_BADGE,
+  ORDER_TYPES,
+  ORDER_TYPE_LABEL,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABEL,
+  isSettledStatus,
+  orderStatusBadgeTone,
+  orderStatusLabel,
+  orderTypeLabel,
+  type OrderStatus,
+} from '@/features/orders/statusMeta.js';
 import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js';
+import { exportOrdersCsv } from '@/features/orders/exportOrdersCsv.js';
+import { RowActionButton } from '@/features/orders/components/RowActionButton.js';
 import { VoidOrderModal } from '@/features/orders/components/VoidOrderModal.js';
 import { EditOrderItemsModal } from '@/features/orders/components/EditOrderItemsModal.js';
 import { OrderDetailDrawer } from '@/features/orders/components/OrderDetailDrawer.js';
@@ -39,148 +50,183 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
 import { toast } from 'sonner';
 
+/** Fenêtre par défaut : 60 jours glissants, en jours métier. */
 function defaultStart(): string {
-  return new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10);
-}
-function defaultEnd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-function fmtIdr(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
+  return new Date(Date.parse(`${todayIsoDate()}T00:00:00Z`) - 60 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  dine_in: '🍽️ Dine In',
-  take_out: '🍱 Takeaway',
-  delivery: '🛵 Delivery',
-  b2b: '🏢 B2B',
-};
+const DATE_COMMIT_MS = 400;
 
-const STATUS_TONE: Record<string, string> = {
-  completed: 'bg-success-soft text-success',
-  paid: 'bg-success-soft text-success',
-  voided: 'bg-danger-soft text-danger',
-  pending_payment: 'bg-warning-soft text-warning',
-  b2b_pending: 'bg-warning-soft text-warning',
-  draft: 'bg-surface-2 text-text-secondary',
-};
+function statusCell(c: OrdersCounters | undefined, s: OrderStatus): number {
+  return c?.by_status[s]?.count ?? 0;
+}
 
-// Fulfillment-style tabs mapped onto the real order_status enum
-// (draft | paid | voided | pending_payment | completed | b2b_pending).
-const STATUS_TABS: readonly { id: string; label: string; status?: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'new', label: 'New', status: 'pending_payment' },
-  { id: 'preparing', label: 'Preparing', status: 'draft' },
-  { id: 'ready', label: 'Ready', status: 'paid' },
-  { id: 'completed', label: 'Completed', status: 'completed' },
-  { id: 'cancelled', label: 'Cancelled', status: 'voided' },
-];
-
-const ORDER_TYPES = ['', 'dine_in', 'take_out', 'delivery', 'b2b'] as const;
-const PAYMENT_METHODS = ['', 'cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'] as const;
-
-function isPaidLine(o: OrdersListLine): boolean {
-  return o.status === 'completed' || o.status === 'paid' || o.payment_method_primary !== null;
+/** Une URL peut porter n'importe quoi : NaN ne part jamais au serveur. */
+function numParam(raw: string | null): number | undefined {
+  if (raw === null || raw === '') return undefined;
+  const n = Number(raw);
+  return Number.isNaN(n) ? undefined : n;
 }
 
 export default function OrdersListPage(): JSX.Element {
-  const [searchParams, setSearchParams] = useSearchParams();
   const { isConnected } = useOrdersRealtime();
   const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
   const hasVoid     = useAuthStore((s) => s.hasPermission('orders.void'));
+  // Le CSV sort des données nominatives : même gate que tous les exports
+  // (« le SEUL point de contrôle possible pour le CSV », audit reports).
+  const canExport   = useAuthStore((s) => s.hasPermission('reports.export'));
 
-  const start = searchParams.get('start') ?? defaultStart();
-  const end   = searchParams.get('end')   ?? defaultEnd();
-  const [text, setText] = useState('');
+  const [params, setParams] = useSearchParams();
+  const patchParams = useCallback((patch: Record<string, string | null>): void => {
+    setParams((prev) => {
+      const p = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null || v === '') p.delete(k);
+        else p.set(k, v);
+      }
+      return p;
+    }, { replace: true });
+  }, [setParams]);
 
-  // Visible controls drive status / order_type / payment_method, but every
-  // S32/S33 server-side filter is still honoured from the URL so drill-down
-  // links (e.g. ?customer_id=…&refund_status=…) keep working.
-  const filters: OrdersListFilters = useMemo(() => {
-    const f: OrdersListFilters = {};
-    const s  = searchParams.get('status');         if (s)  f.status = s;
-    const ot = searchParams.get('order_type');     if (ot) f.order_type = ot;
-    const pm = searchParams.get('payment_method'); if (pm) f.payment_method = pm;
-    const ci = searchParams.get('customer_id');    if (ci) f.customer_id = ci;
-    const sb = searchParams.get('served_by');      if (sb) f.served_by = sb;
-    const ct = searchParams.get('customer_type');
+  const start = params.get('start') ?? defaultStart();
+  const end   = params.get('end')   ?? todayIsoDate();
+
+  // Les inputs date écrivent en local et COMMETTENT en débounce : scruber une
+  // année émettait un couple de RPC pleine fenêtre par valeur intermédiaire.
+  const [startDraft, setStartDraft] = useState(start);
+  const [endDraft, setEndDraft]     = useState(end);
+  useEffect(() => { setStartDraft(start); }, [start]);
+  useEffect(() => { setEndDraft(end); }, [end]);
+  const dateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (dateTimer.current !== null) clearTimeout(dateTimer.current);
+  }, []);
+  const commitDates = useCallback((s: string, e: string, immediate = false): void => {
+    if (dateTimer.current !== null) clearTimeout(dateTimer.current);
+    const write = (): void => { patchParams({ start: s, end: e }); };
+    if (immediate) write();
+    else dateTimer.current = setTimeout(write, DATE_COMMIT_MS);
+  }, [patchParams]);
+
+  // `?status=lol` ne doit pas produire une liste vide en silence.
+  const statusParam = params.get('status') ?? '';
+  const status: OrderStatus | '' = Object.hasOwn(ORDER_STATUS, statusParam)
+    ? (statusParam as OrderStatus)
+    : '';
+
+  const [quickFind, setQuickFind] = useState('');
+
+  // Filtres serveur S32/S33 — tous honorés depuis l'URL (drill-downs).
+  const serverFilters = useMemo<Omit<OrdersListFilters, 'status'>>(() => {
+    const f: Omit<OrdersListFilters, 'status'> = {};
+    const ot = params.get('order_type');     if (ot) f.order_type = ot;
+    const pm = params.get('payment_method'); if (pm) f.payment_method = pm;
+    const ci = params.get('customer_id');    if (ci) f.customer_id = ci;
+    const sb = params.get('served_by');      if (sb) f.served_by = sb;
+    const ct = params.get('customer_type');
     if (ct === 'retail' || ct === 'b2b') f.customer_type = ct;
-    const tmin = searchParams.get('total_min');    if (tmin) f.total_min = Number(tmin);
-    const tmax = searchParams.get('total_max');    if (tmax) f.total_max = Number(tmax);
-    const rs = searchParams.get('refund_status');
+    const tmin = numParam(params.get('total_min')); if (tmin !== undefined) f.total_min = tmin;
+    const tmax = numParam(params.get('total_max')); if (tmax !== undefined) f.total_max = tmax;
+    const rs = params.get('refund_status');
     if (rs === 'none' || rs === 'partial' || rs === 'full') f.refund_status = rs;
-    const hr = searchParams.get('hour');
-    if (hr !== null && hr !== '' && !Number.isNaN(Number(hr))) f.hour = Number(hr);
-    const ti = searchParams.get('terminal_id');    if (ti) f.terminal_id = ti;
+    const hr = numParam(params.get('hour')); if (hr !== undefined) f.hour = hr;
+    const ti = params.get('terminal_id');    if (ti) f.terminal_id = ti;
     return f;
-  }, [searchParams]);
+  }, [params]);
 
-  const query = useOrdersList({ start, end, filters });
+  const listFilters = useMemo<OrdersListFilters>(
+    () => (status === '' ? serverFilters : { ...serverFilters, status }),
+    [serverFilters, status],
+  );
 
-  const allLines: OrdersListLine[] = (query.data?.pages ?? []).flatMap((p) => p.lines);
+  const query = useOrdersList({ start, end, filters: listFilters });
+  // ADR-025 D2 — les compteurs suivent la fenêtre et les filtres, JAMAIS le
+  // statut actif.
+  const counters = useOrdersCounters({ start, end, filters: serverFilters });
+  const c = counters.data;
+  const countersDown = counters.isError;
+
+  const loadedLines: OrdersListLine[] = useMemo(
+    () => (query.data?.pages ?? []).flatMap((p) => p.lines),
+    [query.data],
+  );
   const lines = useMemo(() => {
-    const q = text.trim().toLowerCase();
-    if (!q) return allLines;
-    return allLines.filter(
+    const q = quickFind.trim().toLowerCase();
+    if (!q) return loadedLines;
+    return loadedLines.filter(
       (o) =>
         o.order_number.toLowerCase().includes(q) ||
         (o.customer_name ?? '').toLowerCase().includes(q),
     );
-  }, [allLines, text]);
+  }, [loadedLines, quickFind]);
 
-  // KPIs over loaded + text-filtered rows.
-  const kpis = useMemo(() => {
-    const totalAmount = lines.reduce((s, o) => s + o.total, 0);
-    const completed = lines.filter((o) => o.status === 'completed').length;
-    const paidLines = lines.filter(isPaidLine);
-    const unpaidLines = lines.filter((o) => !isPaidLine(o) && o.status !== 'voided');
-    return {
-      total: lines.length,
-      totalAmount,
-      completion: lines.length > 0 ? Math.round((completed / lines.length) * 100) : 0,
-      paidCount: paidLines.length,
-      paidAmount: paidLines.reduce((s, o) => s + o.total, 0),
-      unpaidCount: unpaidLines.length,
-      unpaidAmount: unpaidLines.reduce((s, o) => s + o.total, 0),
-    };
-  }, [lines]);
+  /** Total du panier affiché — c'est lui que le pied compte (ADR-025 D1). */
+  const activeTotal = status === '' ? (c?.total.count ?? 0) : statusCell(c, status);
 
-  const activeStatus = searchParams.get('status') ?? '';
-  const activeTab = STATUS_TABS.find((t) => (t.status ?? '') === activeStatus)?.id ?? 'all';
+  // `pick` mémoïsé et PRÉSENT dans les deps du memo : figé sur [c] seul, il
+  // capturait un setSearchParams clos sur une URL périmée et un clic de
+  // compteur pendant un refetch écrasait les filtres (review PR #367).
+  const pick = useCallback((next: OrderStatus | ''): void => {
+    patchParams({ status: next === '' ? null : next });
+  }, [patchParams]);
 
-  function setParam(key: string, value: string | undefined): void {
-    const next = new URLSearchParams(searchParams);
-    if (value === undefined || value === '') next.delete(key);
-    else next.set(key, value);
-    setSearchParams(next, { replace: true });
-  }
+  const counterItems = useMemo<ListCounter[]>(() => [
+    {
+      id: 'all',
+      label: 'All orders',
+      value: countersDown ? '—' : (c?.total.count ?? 0),
+      onSelect: () => { pick(''); },
+    },
+    ...ORDER_STATUS_ORDER.map((s): ListCounter => {
+      const spec = ORDER_STATUS[s];
+      const value = statusCell(c, s);
+      return {
+        id: s,
+        label: spec.label,
+        value: countersDown ? '—' : value,
+        ...(spec.tone !== undefined && value > 0 && !countersDown ? { tone: spec.tone } : {}),
+        onSelect: () => { pick(s); },
+      };
+    }),
+  ], [c, countersDown, pick]);
 
-  function exportCsv(): void {
-    const header = ['Order #', 'Time', 'Type', 'Customer', 'Items', 'Amount', 'Status', 'Payment'];
-    const rows = lines.map((o) => [
-      o.order_number,
-      new Date(o.created_at).toLocaleString('id-ID'),
-      o.order_type,
-      o.customer_name ?? '',
-      String(o.items_count),
-      String(o.total),
-      o.status,
-      o.payment_method_primary ?? '',
-    ]);
-    const csv = [header, ...rows]
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `orders-${start}_${end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  // Bande d'argent (ADR-025 D5 amendée) — informative, non cliquable. Les
+  // sommes sont des TOTAUX DE COMMANDES réglées/non réglées ; le remboursé
+  // s'affiche à côté au lieu d'être soustrait en silence.
+  const moneyItems = useMemo<ListCounter[]>(() => [
+    {
+      id: 'amount-total',
+      label: 'Window total',
+      value: countersDown ? '—' : formatIdr(c?.total.amount ?? 0),
+      title: `Sum of order totals between ${start} and ${end}, current filters applied — voided included.`,
+    },
+    {
+      id: 'amount-paid',
+      label: 'Settled',
+      value: countersDown ? '—' : formatIdr(c?.paid.amount ?? 0),
+      ...((c?.paid.count ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
+      title: `${(c?.paid.count ?? 0).toLocaleString()} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
+    },
+    {
+      id: 'amount-unpaid',
+      label: 'Unpaid',
+      value: countersDown ? '—' : formatIdr(c?.unpaid.amount ?? 0),
+      ...((c?.unpaid.count ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
+      title: `${(c?.unpaid.count ?? 0).toLocaleString()} orders not settled yet, voided excluded.`,
+    },
+    {
+      id: 'amount-refunded',
+      label: 'Refunded',
+      value: countersDown ? '—' : `− ${formatIdr(c?.refunded.amount ?? 0)}`,
+      ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
+      title: `${(c?.refunded.count ?? 0).toLocaleString()} orders carry a refund in this window.`,
+    },
+  ], [c, countersDown, start, end]);
 
-  // Row action modal state
-  const [detailId, setDetailId]   = useState<string | null>(null);
+  // Actions de ligne — modales et tiroir de détail.
+  const [detailId, setDetailId]     = useState<string | null>(null);
   const [voidTarget, setVoidTarget] = useState<{ id: string; number: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; number: string; items: OrderItemEdit[] } | null>(null);
 
@@ -210,237 +256,294 @@ export default function OrdersListPage(): JSX.Element {
     setEditTarget({ id: row.id, number: row.order_number, items });
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <ShoppingBag className="h-7 w-7 text-gold" aria-hidden />
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Live Orders</h1>
-          <span className="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="realtime-indicator">
-            <span className={`inline-block h-2 w-2 rounded-full ${isConnected ? 'bg-success' : 'bg-text-muted'}`} />
-            {isConnected ? 'Live' : 'Offline'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="md" onClick={() => { void query.refetch(); }} disabled={query.isFetching}>
-            <RefreshCw className={`h-4 w-4 ${query.isFetching ? 'animate-spin' : ''}`} aria-hidden /> Refresh
-          </Button>
-          <Button variant="secondary" size="md" onClick={exportCsv} disabled={lines.length === 0}>
-            <Download className="h-4 w-4" aria-hidden /> Export
-          </Button>
-        </div>
-      </header>
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KpiCard icon={ShoppingBag} label="Total orders" value={String(kpis.total)} />
-        <KpiCard icon={DollarSign} label="Total amount" value={`Rp ${fmtIdr(kpis.totalAmount)}`} />
-        <KpiCard icon={CheckCircle2} label="Completion" value={`${kpis.completion}%`} accent="text-info" />
-        <KpiCard
-          icon={CheckCircle2}
-          label="Paid"
-          value={String(kpis.paidCount)}
-          footer={`Rp ${fmtIdr(kpis.paidAmount)}`}
-          accent="text-success"
-        />
-        <KpiCard
-          icon={Clock3}
-          label="Unpaid"
-          value={String(kpis.unpaidCount)}
-          footer={`Rp ${fmtIdr(kpis.unpaidAmount)}`}
-          accent="text-danger"
-        />
-      </div>
-
-      {/* Filters row */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <Card variant="default" padding="sm">
-          <div className="flex items-center gap-2 text-text-secondary">
-            <Search className="h-4 w-4" aria-hidden />
-            <input
-              type="search"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Order #, customer…"
-              className="h-8 w-full bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
-              aria-label="Search orders"
-            />
-          </div>
-        </Card>
-        <FilterField label="Start date">
-          <input type="date" value={start} onChange={(e) => setParam('start', e.target.value)} className="h-8 w-full bg-transparent text-sm text-text-primary outline-none" />
-        </FilterField>
-        <FilterField label="End date">
-          <input type="date" value={end} onChange={(e) => setParam('end', e.target.value)} className="h-8 w-full bg-transparent text-sm text-text-primary outline-none" />
-        </FilterField>
-        <FilterField label="Type">
-          <select value={searchParams.get('order_type') ?? ''} onChange={(e) => setParam('order_type', e.target.value || undefined)} className="h-8 w-full bg-transparent text-sm text-text-primary outline-none">
-            {ORDER_TYPES.map((t) => <option key={t} value={t}>{t === '' ? 'All' : TYPE_LABEL[t]}</option>)}
-          </select>
-        </FilterField>
-        <FilterField label="Payment">
-          <select value={searchParams.get('payment_method') ?? ''} onChange={(e) => setParam('payment_method', e.target.value || undefined)} className="h-8 w-full bg-transparent text-sm capitalize text-text-primary outline-none">
-            {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m === '' ? 'All' : m}</option>)}
-          </select>
-        </FilterField>
-      </div>
-
-      {/* Status pills */}
-      <div className="flex flex-wrap gap-2" data-testid="status-pills">
-        {STATUS_TABS.map((t) => {
-          const active = activeTab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setParam('status', t.status)}
-              className={[
-                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                active
-                  ? 'bg-gold text-white'
-                  : 'border border-border-subtle text-text-secondary hover:bg-bg-overlay',
-              ].join(' ')}
+  const columns = useMemo<readonly DataTableColumn<OrdersListLine>[]>(() => [
+    {
+      id: 'number', header: 'Order #', width: '7.5rem',
+      render: (o) => (
+        <Link
+          to={`/backoffice/orders/${o.id}`}
+          className="font-data text-xs text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        >
+          #{o.order_number.replace(/^#+/, '')}
+        </Link>
+      ),
+    },
+    {
+      id: 'time', header: 'Time', width: '7rem',
+      render: (o) => (
+        <span className="block whitespace-nowrap font-data text-xs leading-tight tabular-nums">
+          {formatTimeWita(o.created_at)}
+          <span className="block text-text-muted">{formatDateShortWita(o.created_at)}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'type', header: 'Type', width: '6.5rem',
+      render: (o) => <span className="text-text-secondary">{orderTypeLabel(o.order_type)}</span>,
+    },
+    {
+      id: 'customer', header: 'Customer',
+      render: (o) => (
+        o.customer_name !== null
+          ? <span className="text-text-primary">{o.customer_name}</span>
+          : <span className="text-text-subtle" aria-hidden>—</span>
+      ),
+    },
+    {
+      id: 'items', header: 'Items', align: 'right', width: '4.5rem',
+      render: (o) => <span className="font-data tabular-nums">{o.items_count}</span>,
+    },
+    {
+      id: 'amount', header: 'Amount', align: 'right', width: '8.5rem',
+      render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatIdr(o.total)}</span>,
+    },
+    {
+      id: 'status', header: 'Status', width: '9.5rem',
+      render: (o) => (
+        <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(o.status))}>
+          {orderStatusLabel(o.status)}
+        </span>
+      ),
+    },
+    {
+      id: 'payment', header: 'Payment', width: '7.5rem',
+      // RÉGLÉ = méthode enregistrée OU statut porteur d'argent : une facture
+      // B2B encaissée (statut paid, zéro ligne order_payments) lit « Paid »,
+      // plus « Unpaid » à côté d'un badge Paid (review PR #367).
+      render: (o) => (
+        o.payment_method_primary !== null
+          ? <span className="text-text-secondary">{(PAYMENT_METHOD_LABEL as Record<string, string>)[o.payment_method_primary] ?? o.payment_method_primary}</span>
+          : isSettledStatus(o.status)
+            ? <span className="text-success">Paid</span>
+            : o.status === 'voided'
+              ? <span className="text-text-subtle" aria-hidden>—</span>
+              : <span className="text-warning">Unpaid</span>
+      ),
+    },
+    {
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '6rem',
+      render: (o) => (
+        <span className="inline-flex items-center gap-0.5">
+          {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
+            <RowActionButton
+              label={`Edit items of ${o.order_number}`}
+              testId={`row-edit-${o.id}`}
+              onClick={() => { void loadItemsAndOpenEdit(o); }}
             >
-              {t.label}
+              <Edit3 className="h-3.5 w-3.5" aria-hidden />
+            </RowActionButton>
+          )}
+          {hasVoid && (o.status === 'paid' || o.status === 'completed') && (
+            <RowActionButton
+              label={`Void ${o.order_number}`}
+              testId={`row-void-${o.id}`}
+              destructive
+              onClick={() => { setVoidTarget({ id: o.id, number: o.order_number }); }}
+            >
+              <XCircle className="h-3.5 w-3.5" aria-hidden />
+            </RowActionButton>
+          )}
+          <RowActionButton
+            label={`Details of ${o.order_number}`}
+            testId={`row-details-${o.id}`}
+            onClick={() => { setDetailId(o.id); }}
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden />
+          </RowActionButton>
+        </span>
+      ),
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [hasEditOpen, hasVoid]);
+
+  return (
+    <div className="flex flex-col gap-[13px]">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Sales</span>
+        <span className="text-text-inert" aria-hidden>›</span>
+        <span className="text-text-secondary">Orders</span>
+      </nav>
+
+      <PageHeader
+        title="Orders"
+        subtitle={
+          <span className="inline-flex items-center gap-1.5" data-testid="realtime-indicator">
+            <span
+              className={cn('inline-block h-1.5 w-1.5 rounded-full', isConnected ? 'bg-success' : 'bg-text-muted')}
+              aria-hidden
+            />
+            {isConnected ? 'Live — new orders appear as they are recorded.' : 'Offline — showing the last loaded state.'}
+          </span>
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className={TOOLBAR_BTN_SECONDARY}
+              onClick={() => { void query.refetch(); void counters.refetch(); }}
+              disabled={query.isFetching}
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5 text-text-muted', query.isFetching && 'animate-spin motion-reduce:animate-none')} aria-hidden />
+              Refresh
             </button>
-          );
-        })}
+            {canExport && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
+                onClick={() => { exportOrdersCsv(lines, start, end); }}
+                disabled={lines.length === 0}
+              >
+                <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Export
+              </button>
+            )}
+          </>
+        }
+      />
+
+      {countersDown && (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+          Order counts could not be loaded — the strip shows dashes rather than
+          numbers that would be wrong.{' '}
+          <button type="button" className="underline" onClick={() => { void counters.refetch(); }}>
+            Try again
+          </button>
+        </p>
+      )}
+
+      <ListCounterStrip
+        counters={counterItems}
+        activeId={status === '' ? 'all' : status}
+        ariaLabel="Order status filters"
+        data-testid="orders-counters"
+      />
+
+      <div className="flex">
+        <ListCounterStrip
+          counters={moneyItems}
+          ariaLabel="Window totals"
+          data-testid="orders-money"
+        />
       </div>
 
-      {query.error && <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">Error: {query.error.message}</div>}
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="orders-find" className="sr-only">Find in results</label>
+        <Input
+          id="orders-find"
+          type="search"
+          value={quickFind}
+          onChange={(e) => { setQuickFind(e.target.value); }}
+          placeholder="Find order # or customer in results"
+          maxLength={64}
+          className="w-full max-w-xs"
+        />
+        <label htmlFor="orders-start" className="sr-only">Start date</label>
+        <Input
+          id="orders-start"
+          type="date"
+          value={startDraft}
+          onChange={(e) => { setStartDraft(e.target.value); commitDates(e.target.value, endDraft); }}
+          onBlur={() => { commitDates(startDraft, endDraft, true); }}
+          className="w-40"
+        />
+        <label htmlFor="orders-end" className="sr-only">End date</label>
+        <Input
+          id="orders-end"
+          type="date"
+          value={endDraft}
+          onChange={(e) => { setEndDraft(e.target.value); commitDates(startDraft, e.target.value); }}
+          onBlur={() => { commitDates(startDraft, endDraft, true); }}
+          className="w-40"
+        />
+        <label htmlFor="orders-type" className="sr-only">Order type</label>
+        <Select
+          id="orders-type"
+          value={params.get('order_type') ?? ''}
+          onChange={(e) => { patchParams({ order_type: e.target.value || null }); }}
+          className="w-40"
+        >
+          <option value="">All types</option>
+          {ORDER_TYPES.map((t) => (
+            <option key={t} value={t}>{ORDER_TYPE_LABEL[t]}</option>
+          ))}
+        </Select>
+        <label htmlFor="orders-payment" className="sr-only">Payment method</label>
+        <Select
+          id="orders-payment"
+          value={params.get('payment_method') ?? ''}
+          onChange={(e) => { patchParams({ payment_method: e.target.value || null }); }}
+          className="w-44"
+        >
+          <option value="">All payments</option>
+          {PAYMENT_METHODS.map((m) => (
+            <option key={m} value={m}>{PAYMENT_METHOD_LABEL[m]}</option>
+          ))}
+        </Select>
+      </div>
 
-      {/* Table */}
-      <Card variant="default" padding="none" className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead className="border-b border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">Order #</th>
-              <th className="px-4 py-3 text-left font-medium">Time</th>
-              <th className="px-4 py-3 text-left font-medium">Type</th>
-              <th className="px-4 py-3 text-left font-medium">Customer</th>
-              <th className="px-4 py-3 text-right font-medium">Items</th>
-              <th className="px-4 py-3 text-right font-medium">Amount</th>
-              <th className="px-4 py-3 text-left font-medium">Status</th>
-              <th className="px-4 py-3 text-left font-medium">Payment</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((o) => {
-              const paid = isPaidLine(o);
-              return (
-                <tr key={o.id} className="border-t border-border-subtle hover:bg-bg-overlay/40">
-                  <td className="px-4 py-3 font-mono text-text-primary">#{o.order_number.replace(/^#+/, '')}</td>
-                  <td className="px-4 py-3">
-                    <div className="text-text-primary">{new Date(o.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-                    <div className="text-xs text-text-muted">{new Date(o.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}</div>
-                  </td>
-                  <td className="px-4 py-3">{TYPE_LABEL[o.order_type] ?? o.order_type}</td>
-                  <td className="px-4 py-3 text-text-secondary">{o.customer_name ?? '—'}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{o.items_count} items</td>
-                  <td className="px-4 py-3 text-right font-mono font-medium">Rp {fmtIdr(o.total)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${STATUS_TONE[o.status] ?? 'bg-surface-2 text-text-secondary'}`}>{o.status}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {paid ? (
-                      <div className="leading-tight">
-                        <div className="flex items-center gap-1 text-xs font-medium text-success">✓ Paid</div>
-                        {o.payment_method_primary && <div className="text-xs capitalize text-text-muted">{o.payment_method_primary}</div>}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-warning">Unpaid</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
-                      <button type="button" title="Edit items" onClick={() => void loadItemsAndOpenEdit(o)} data-testid={`row-edit-${o.id}`} className="mr-1 text-info hover:text-info/80" aria-label={`Edit items of ${o.order_number}`}>
-                        <Edit3 size={16} />
-                      </button>
-                    )}
-                    {hasVoid && (o.status === 'paid' || o.status === 'completed') && (
-                      <button type="button" title="Void" onClick={() => setVoidTarget({ id: o.id, number: o.order_number })} data-testid={`row-void-${o.id}`} className="mr-1 text-danger hover:text-danger/80" aria-label={`Void ${o.order_number}`}>
-                        <XCircle size={16} />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setDetailId(o.id)}
-                      data-testid={`row-details-${o.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-overlay"
-                      aria-label={`Details of ${o.order_number}`}
-                    >
-                      <Eye size={14} /> Details
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <span className="sr-only" role="status" aria-live="polite">
+        {countersDown
+          ? 'Order counts unavailable'
+          : counters.isLoading
+            ? 'Loading order counts'
+            : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'order' : 'orders'} in the current filter`}
+      </span>
 
-        {query.isLoading && <div className="py-12 text-center text-text-secondary">Loading…</div>}
-        {!query.isLoading && lines.length === 0 && (
-          <EmptyState
-            size="sm"
-            icon={ShoppingBag}
-            title="No orders"
-            description="No orders matching these filters."
-          />
-        )}
+      {/* L'erreur SURPLOMBE la table : un refetch raté ne doit pas effacer les
+          lignes que l'opérateur lisait (review PR #367). */}
+      {query.error !== null && (
+        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+          Orders could not be refreshed — the rows below may be out of date.
+          <span className="ml-1 font-data text-xs">{query.error.message}</span>{' '}
+          <button type="button" className="underline" onClick={() => { void query.refetch(); }}>
+            Try again
+          </button>
+        </p>
+      )}
+      {(query.error === null || loadedLines.length > 0) && (
+        <DataTable<OrdersListLine>
+          columns={columns}
+          rows={lines}
+          getRowKey={(o) => o.id}
+          isLoading={query.isLoading}
+          density="compact"
+          emptyTitle="No orders here"
+          emptyDescription={
+            status !== '' || quickFind.trim() !== '' || Object.keys(serverFilters).length > 0
+              ? 'Nothing matches this filter. Widen the dates, or pick another counter above.'
+              : 'No orders were recorded in this window.'
+          }
+          data-testid="orders-table"
+          footer={
+            <div className="flex items-center justify-between">
+              <span className="font-data text-[11px] tabular-nums text-text-muted">
+                {countersDown
+                  ? `${lines.length} loaded`
+                  : quickFind.trim() !== ''
+                    ? `${lines.length} match · ${activeTotal.toLocaleString()} in window`
+                    : `${lines.length} of ${activeTotal.toLocaleString()}`}
+              </span>
+              {query.hasNextPage && (
+                <button
+                  type="button"
+                  className={TOOLBAR_BTN_SECONDARY}
+                  onClick={() => { void query.fetchNextPage(); }}
+                  disabled={query.isFetchingNextPage}
+                >
+                  {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                </button>
+              )}
+            </div>
+          }
+        />
+      )}
 
-        <div className="flex items-center justify-between border-t border-border-subtle px-4 py-3 text-sm text-text-secondary">
-          <span>Showing {lines.length} order{lines.length === 1 ? '' : 's'}</span>
-          {query.hasNextPage && (
-            <Button variant="ghost" size="sm" onClick={() => { void query.fetchNextPage(); }} disabled={query.isFetchingNextPage}>
-              {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
-            </Button>
-          )}
-        </div>
-      </Card>
-
-      {/* Drawer + modals */}
       <OrderDetailDrawer orderId={detailId} onClose={() => setDetailId(null)} />
-      {voidTarget && (
+      {voidTarget !== null && (
         <VoidOrderModal open orderId={voidTarget.id} orderNumber={voidTarget.number} onClose={() => setVoidTarget(null)} />
       )}
-      {editTarget && (
+      {editTarget !== null && (
         <EditOrderItemsModal open orderId={editTarget.id} orderNumber={editTarget.number} currentItems={editTarget.items} onClose={() => setEditTarget(null)} />
       )}
     </div>
-  );
-}
-
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  footer,
-  accent,
-}: {
-  icon: typeof ShoppingBag;
-  label: string;
-  value: string;
-  footer?: string;
-  accent?: string;
-}): JSX.Element {
-  return (
-    <Card variant="default" padding="md">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-text-secondary">
-        <Icon className="h-3.5 w-3.5" aria-hidden /> {label}
-      </div>
-      <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${accent ?? 'text-text-primary'}`}>{value}</div>
-      {footer && <div className="mt-0.5 text-xs text-text-muted tabular-nums">{footer}</div>}
-    </Card>
-  );
-}
-
-function FilterField({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
-  return (
-    <Card variant="default" padding="sm">
-      <div className="text-xs font-semibold uppercase tracking-widest text-text-secondary">{label}</div>
-      <div className="mt-0.5">{children}</div>
-    </Card>
   );
 }

@@ -7,7 +7,7 @@ import { useOrdersList } from '../useOrdersList.js';
 const rpcMock = vi.fn();
 
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => rpcMock(...args) },
+  supabase: { rpc: (...args: unknown[]): unknown => rpcMock(...args) as unknown },
 }));
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -18,7 +18,7 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('useOrdersList', () => {
   beforeEach(() => {
     rpcMock.mockReset();
-    rpcMock.mockResolvedValue({ data: { lines: [], next_cursor: null }, error: null });
+    rpcMock.mockResolvedValue({ data: { lines: [], next_cursor: null, next_cursor_id: null }, error: null });
   });
 
   it('T1 maps params to RPC args correctly', async () => {
@@ -33,12 +33,13 @@ describe('useOrdersList', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', {
+    // v3 : la première page part SANS curseur (spread conditionnel) — le
+    // couple (p_cursor, p_cursor_id) n'apparaît qu'à partir de la page 2.
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', {
       p_start:   '2026-05-01',
       p_end:     '2026-05-26',
       p_filters: { status: 'completed', payment_method: 'cash' },
       p_limit:   25,
-      p_cursor:  null,
     });
   });
 
@@ -53,7 +54,7 @@ describe('useOrdersList', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
       p_filters: { payment_method: 'qris' },
     }));
   });
@@ -69,8 +70,9 @@ describe('useOrdersList', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
-      p_filters: expect.objectContaining({ refund_status: 'partial' }),
+    const refundMatcher: unknown = expect.objectContaining({ refund_status: 'partial' });
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
+      p_filters: refundMatcher,
     }));
   });
 
@@ -85,8 +87,9 @@ describe('useOrdersList', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
-      p_filters: expect.objectContaining({ terminal_id: '8b55bce3-e1d2-4593-b3a9-ffc774f077c5' }),
+    const terminalMatcher: unknown = expect.objectContaining({ terminal_id: '8b55bce3-e1d2-4593-b3a9-ffc774f077c5' });
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
+      p_filters: terminalMatcher,
     }));
   });
 });

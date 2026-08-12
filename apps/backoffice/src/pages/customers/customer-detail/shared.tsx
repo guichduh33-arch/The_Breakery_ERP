@@ -11,6 +11,8 @@ export function rp(amount: number | string | null): string {
   return formatIdr(Number(amount ?? 0));
 }
 
+// Badge carré (coins 3 px), label mono capitales — la pilule arrondie lisait
+// « application grand public », pas « instrument ».
 export function StatusPill({ status }: { status: string }): JSX.Element {
   const tone =
     status === 'completed' || status === 'paid'
@@ -19,10 +21,10 @@ export function StatusPill({ status }: { status: string }): JSX.Element {
         ? 'bg-danger-soft text-danger'
         : status === 'pending_payment' || status === 'b2b_pending'
           ? 'bg-warning-soft text-warning'
-          : 'bg-bg-overlay text-text-muted';
+          : 'bg-surface-4 text-text-muted';
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${tone}`}>
-      {status}
+    <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${tone}`}>
+      {status.replace('_', ' ')}
     </span>
   );
 }

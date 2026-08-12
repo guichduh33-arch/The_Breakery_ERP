@@ -20,10 +20,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   BarChart3,
-  Calendar,
-  CreditCard,
   Crown,
   DollarSign,
   Gift,
@@ -31,11 +28,10 @@ import {
   ShoppingBag,
   SquarePen,
   Star,
-  TrendingUp,
   User as UserIcon,
   Wallet,
 } from 'lucide-react';
-import { Button, Card, LoyaltyBadge } from '@breakery/ui';
+import { Card, LoyaltyBadge } from '@breakery/ui';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
@@ -54,7 +50,7 @@ import { LoyaltyTab } from './customer-detail/LoyaltyTab.js';
 import { StoreCreditTab } from './customer-detail/StoreCreditTab.js';
 import { AnalyticsTab } from './customer-detail/AnalyticsTab.js';
 import { PricingTab } from './customer-detail/PricingTab.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 
 type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
 
@@ -139,18 +135,17 @@ export function CustomerDetailPage(): JSX.Element {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-text-secondary" aria-label="Breadcrumb">
+      <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
+        <span>Sales</span>
+        <span className="text-text-inert" aria-hidden>›</span>
         <Link to="/backoffice/customers" className="hover:text-text-primary">Customers</Link>
-        <span aria-hidden>›</span>
-        <span className="text-text-primary">{customer.name}</span>
+        <span className="text-text-inert" aria-hidden>›</span>
+        <span className="text-text-secondary">{customer.name}</span>
       </nav>
 
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild aria-label="Back to customers">
-            <Link to="/backoffice/customers"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
           <CustomerAvatar name={customer.name} />
           <div className="leading-tight">
             <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{customer.name}</h1>
@@ -161,8 +156,8 @@ export function CustomerDetailPage(): JSX.Element {
               />
               <LoyaltyBadge tier={tier} points={customer.loyalty_points} />
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  isActive ? 'bg-success-soft text-success' : 'bg-bg-overlay text-text-muted'
+                className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${
+                  isActive ? 'bg-success-soft text-success' : 'bg-surface-4 text-text-muted'
                 }`}
               >
                 {isActive ? 'Active' : 'Inactive'}
@@ -177,96 +172,97 @@ export function CustomerDetailPage(): JSX.Element {
         )}
       </header>
 
-      {/* Loyalty hero */}
-      <Card variant="default" padding="lg" className="bg-bg-overlay/40">
-        <div className="flex items-center gap-2 text-text-secondary">
-          <Crown className="h-5 w-5" aria-hidden />
-          <span className="text-sm font-semibold uppercase tracking-widest">{tierMeta.label}</span>
+      {/* Loyalty hero — les valeurs sont des mesures : mono display, pas de
+          serif (Playfair est réservé au monogramme). L'or ne remplit rien :
+          il porte le montant d'avoir, la jauge se remplit d'encre. */}
+      <Card variant="default" padding="lg" className="shadow-none">
+        <div className="flex items-center gap-2">
+          <Crown className="h-4 w-4 text-text-subtle" aria-hidden />
+          <span className="font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted">{tierMeta.label}</span>
         </div>
 
         <div className="mt-4 flex flex-wrap items-end gap-10">
           <div>
-            <div className="font-serif text-4xl text-text-primary tabular-nums">
+            <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-text-primary tabular-nums">
               {customer.loyalty_points.toLocaleString()}
             </div>
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Available points</div>
+            <div className="mt-1 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">Available points</div>
           </div>
           <div>
-            <div className="font-serif text-4xl text-text-primary tabular-nums">
+            <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-text-primary tabular-nums">
               {customer.lifetime_points.toLocaleString()}
             </div>
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Lifetime points</div>
+            <div className="mt-1 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">Lifetime points</div>
           </div>
           <div>
-            <div className="font-serif text-4xl text-gold tabular-nums" data-testid="store-credit-balance">
+            <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-gold tabular-nums" data-testid="store-credit-balance">
               {rp(customer.store_credit_balance)}
             </div>
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Store credit</div>
+            <div className="mt-1 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">Store credit</div>
           </div>
         </div>
 
         <div className="mt-5">
           <div className="flex items-center justify-between text-xs text-text-secondary">
             <span>{nextTier ? `Next tier: ${nextTier.label}` : 'Top tier reached'}</span>
-            {nextTier && <span className="tabular-nums">{pointsToNext.toLocaleString()} pts remaining</span>}
+            {nextTier && <span className="font-data tabular-nums">{pointsToNext.toLocaleString()} pts remaining</span>}
           </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-bg-base">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-sm bg-surface-4">
             <div
-              className="h-full rounded-full bg-gold transition-all"
+              className="h-full bg-ink transition-all motion-reduce:transition-none"
               style={{ width: `${tierProgress}%` }}
             />
           </div>
         </div>
 
         {(canAdjust || canGrant || canConvert) && (
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="mt-5 flex flex-wrap items-center gap-2">
             {canAdjust && (
               <>
-                <Button variant="secondary" size="lg" onClick={() => setAdjusting(true)}>
-                  <Plus className="h-4 w-4" aria-hidden /> Add points
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="lg"
+                <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setAdjusting(true)}>
+                  <Plus className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Add points
+                </button>
+                <button
+                  type="button"
+                  className={TOOLBAR_BTN_SECONDARY}
                   disabled={customer.loyalty_points <= 0}
                   onClick={() => setAdjusting(true)}
                 >
-                  <Gift className="h-4 w-4" aria-hidden /> Redeem points
-                </Button>
+                  <Gift className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Redeem points
+                </button>
               </>
             )}
             {canGrant && (
-              <Button
-                variant="secondary"
-                size="lg"
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
                 onClick={() => setGranting(true)}
                 data-testid="grant-store-credit"
               >
-                <Wallet className="h-4 w-4" aria-hidden /> Grant store credit
-              </Button>
+                <Wallet className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Grant store credit
+              </button>
             )}
             {canConvert && (
-              <Button
-                variant="ghost"
-                size="lg"
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
                 disabled={customer.loyalty_points < 100}
                 onClick={() => setConverting(true)}
                 data-testid="convert-store-credit"
               >
-                <Star className="h-4 w-4" aria-hidden /> Convert points to credit
-              </Button>
+                <Star className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Convert points to credit
+              </button>
             )}
           </div>
         )}
       </Card>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={ShoppingBag} label="Visits" value={customer.total_visits.toLocaleString()} />
-        <KpiCard icon={TrendingUp} label="Total spent" value={rp(customer.total_spent)} />
-        <KpiCard icon={CreditCard} label="Average basket" value={rp(avgBasket)} />
+      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+        <KpiCard label="Visits" value={customer.total_visits.toLocaleString()} />
+        <KpiCard label="Total spent" value={rp(customer.total_spent)} />
+        <KpiCard label="Average basket" value={rp(avgBasket)} />
         <KpiCard
-          icon={Calendar}
           label="Last visit"
           value={
             customer.last_visit_at
@@ -354,26 +350,19 @@ export function CustomerDetailPage(): JSX.Element {
 
 /* ------------------------------------------------------------------ KPI card */
 
+// Sans pastille d'icône — même décision que la bande de KPI du dashboard :
+// une frise d'icônes décoratives détourne l'œil du chiffre.
 function KpiCard({
-  icon: Icon,
   label,
   value,
 }: {
-  icon: typeof UserIcon;
   label: string;
   value: string;
 }): JSX.Element {
   return (
-    <Card variant="default" padding="md">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-bg-overlay text-gold">
-          <Icon className="h-5 w-5" aria-hidden />
-        </span>
-        <div className="leading-tight">
-          <div className="text-lg font-semibold text-text-primary tabular-nums">{value}</div>
-          <div className="text-xs uppercase tracking-widest text-text-secondary">{label}</div>
-        </div>
-      </div>
+    <Card variant="default" padding="none" className="flex flex-col gap-[5px] px-[15px] py-[13px] shadow-none">
+      <div className="font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</div>
+      <div className="font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">{value}</div>
     </Card>
   );
 }
