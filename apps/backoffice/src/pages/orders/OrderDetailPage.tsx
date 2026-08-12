@@ -196,7 +196,7 @@ export function OrderDetailPage(): JSX.Element {
               <MoneyRow label="PB1 (included)" value={rp(data.tax_amount)} muted />
               <div className="flex items-baseline justify-between border-t border-border-subtle pt-2">
                 <dt className="text-sm font-semibold text-text-primary">Total</dt>
-                <dd className="font-data text-[17px] font-semibold tabular-nums text-text-primary">
+                <dd className="font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">
                   {rp(data.total)}
                 </dd>
               </div>
