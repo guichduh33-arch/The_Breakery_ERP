@@ -22,14 +22,34 @@ SELECT 't1_colonnes_et_defauts', (
            AND column_default = 'false'))
 );
 
--- T2: la ligne vivante part bien éteinte, sélection vide (ADR-023 déc. 1 et 3 —
--- un interrupteur neuf allumé laisserait croire la décision appliquée).
-INSERT INTO _r
-SELECT 't2_ligne_vivante_eteinte', (
-  SELECT display_show_ready_orders = false
-     AND display_showcase_product_ids = '[]'::jsonb
-    FROM business_config WHERE id = 1
-);
+-- T2: le DÉFAUT est éteint — sélection vide, annonce coupée (ADR-023 déc. 1 et
+-- 3 : un interrupteur neuf allumé laisserait croire la décision appliquée). On
+-- l'éprouve en SALISSANT la ligne puis en la ramenant à DEFAULT, jamais en
+-- lisant son état courant : la base dev est partagée et mutable, une curation de
+-- vitrine y rendait rouge un socle intact. T1 lit la forme TEXTUELLE du défaut
+-- au catalogue ; celui-ci en évalue la VALEUR.
+DO $$
+DECLARE v_ids JSONB; v_annonce BOOLEAN;
+BEGIN
+  UPDATE business_config
+     SET display_showcase_product_ids = '["sale-1","sale-2"]'::jsonb,
+         display_show_ready_orders     = true
+   WHERE id = 1;
+
+  UPDATE business_config
+     SET display_showcase_product_ids = DEFAULT,
+         display_show_ready_orders     = DEFAULT
+   WHERE id = 1;
+
+  SELECT display_showcase_product_ids, display_show_ready_orders
+    INTO v_ids, v_annonce
+    FROM business_config WHERE id = 1;
+
+  INSERT INTO _r VALUES ('t2_defaut_eteint',
+    v_ids = '[]'::jsonb AND v_annonce = false);
+EXCEPTION WHEN OTHERS THEN
+  INSERT INTO _r VALUES ('t2_defaut_eteint', false);
+END $$;
 
 -- T3: une liste de chaînes est acceptée, et l'ORDRE est conservé tel quel —
 -- l'ordre est un choix commercial (déc. 2), pas un détail de stockage.
