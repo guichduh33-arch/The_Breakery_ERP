@@ -10,7 +10,11 @@
 2. docs/adr/                      ← ce qui DOIT ÊTRE. Décisions de Mamat, immuables.
 3. docs/objectifs/                ← ce qui est VOULU. Écrit par Mamat.
 4. docs/product/, docs/runbooks/  ← opérationnel.
-5. docs/_quarantine/              ← MORT. N'existe pas. Interdiction de lire/citer/grep.
+5. quarantaine (hors dépôt)       ← MORTE. Sortie de l'arbre (lot Q) : elle vit dans
+                                     le tag `quarantine/2026-07-27`, pas dans docs/.
+                                     Interdiction de lire/citer/grep. La garde CI
+                                     `scripts/ci/quarantined-paths.mjs` refuse toute
+                                     référence neuve (baseline = plafond, jamais plancher).
 ```
 
 Si un document contredit le code, le document a tort : **signale-le, ne corrige rien**.
@@ -132,6 +136,8 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
   DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
   (`scripts/ci/`) rendent leur verdict en secondes, avant le build.
+  `vitest-live.yml` = dispatch MANUEL du seul job vitest live-RPC ; ne jamais le
+  dispatcher pendant les crons (19:00/22:00 UTC) — même base dev partagée.
 - Env : Vite lit `.env` à la RACINE du repo ; vitest lit `apps/<app>/.env.local`
   (copier les deux dans un worktree).
 
@@ -164,6 +170,9 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - **Audit-trail = table `audit_logs` UNIQUEMENT** (la vue `audit_log` singulier est
   droppée). `metadata` (contexte) et `payload` (diff) sont deux colonnes distinctes —
   ne pas fusionner. Jamais d'INSERT direct depuis le code app.
+  **`actor_id` attend un `user_profiles.id`, JAMAIS `auth.uid()`** — tout compte créé
+  par le back-office a `id <> auth_user_id`. Résoudre le profil
+  (`WHERE auth_user_id = auth.uid() AND deleted_at IS NULL`) avant d'écrire.
 - **`stock_movements` = ledger append-only.** RLS révoque UPDATE/DELETE. Écritures
   via RPCs SECURITY DEFINER seulement. `unit` NOT NULL (auto-résolu par
   `record_stock_movement_v1` si NULL). `unit_cost` en unité de BASE (qty ×factor,
@@ -206,6 +215,11 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   Header dédié type `x-manager-pin`, hard cutover dans le même commit.
 - **Enums : source unique = Postgres.** Aucun string littéral dérivé côté TS
   (`take_away` vs `take_out` = la classe de bug à tuer).
+- **Pas d'alpha sur un token de couleur `var()` nu** (`bg-danger/15`, `bg-gold/5`) :
+  Tailwind supprime la déclaration EN SILENCE, la couleur n'apparaît jamais. Seule la
+  famille `cat-*` est déclarée `rgb(var(--x) / <alpha-value>)`. La vérité est dans
+  `packages/ui/tailwind-preset.ts` — un nom hors famille (`bg-bg-card`) meurt pareil.
+  Garde CI n°3 (`tailwind-dead-classes.mjs`).
 - **Fuseau métier = paramètre de session PostgreSQL**, posé pour toute la base
   (`Asia/Makassar`) par `20260503000000_init_extensions_enums.sql`. Un cast
   `::date` sur un `timestamptz` rend donc DÉJÀ le bon jour métier : ne jamais
