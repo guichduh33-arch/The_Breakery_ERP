@@ -44,7 +44,7 @@ describe('TabletProductGrid — load error (C-D1)', () => {
     expect(screen.getByText(/unable to load products/i)).toBeInTheDocument();
     expect(screen.queryByText(/no products yet/i)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /réessayer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

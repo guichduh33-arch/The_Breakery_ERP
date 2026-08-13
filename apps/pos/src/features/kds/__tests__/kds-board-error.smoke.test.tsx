@@ -48,8 +48,8 @@ describe('KdsBoard — load error (C-D1)', () => {
 
     // The Retry button label itself comes from the shared ErrorState
     // component (apps/pos/src/components/ErrorState.tsx), out of the KDS
-    // feature's scope — its French default ("Réessayer") is untouched here.
-    fireEvent.click(screen.getByRole('button', { name: /réessayer/i }));
+    // feature's scope — its default label ("Retry") comes from that component.
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });
