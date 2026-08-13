@@ -22,10 +22,11 @@ import {
   Monitor, Briefcase, Printer, Bell, ShieldCheck, FileText, Mail, Wifi,
   History, Map, Calculator, CalendarClock, type LucideIcon,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle, SectionLabel, Skeleton } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useSettingsHubSummary, summaryLineFor } from '@/features/settings/hooks/useSettingsHubSummary.js';
 
 interface SettingTile {
   to?:         string;         // omitted + planned=false → should no longer exist
@@ -114,6 +115,8 @@ export default function SettingsHubPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const roleCode = useAuthStore((s) => s.user?.role_code);
   const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
+  // Lot 5 chantier 1 — « chaque tuile porte sa valeur courante » (archétype 5).
+  const summary = useSettingsHubSummary();
 
   return (
     <div className="space-y-8">
@@ -130,6 +133,9 @@ export default function SettingsHubPage() {
               if (t.permission !== undefined && !hasPermission(t.permission)) return null;
               if (t.adminOnly === true && !isAdmin) return null;
               const Icon = t.icon;
+              // Valeur courante : undefined = tuile sans valeur (blurb) ;
+              // null = section absente/vide (tiret honnête, lien intact).
+              const line = summaryLineFor(t.to, summary.data);
               const cardInner = (
                 <Card className={`h-full ${t.to !== undefined ? 'hover:bg-bg-overlay transition-colors' : 'opacity-60'}`}>
                   <CardHeader>
@@ -139,7 +145,15 @@ export default function SettingsHubPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-text-secondary">{t.blurb}</p>
+                    {line === undefined ? (
+                      <p className="text-sm text-text-secondary">{t.blurb}</p>
+                    ) : summary.isLoading ? (
+                      <Skeleton width="9rem" />
+                    ) : (
+                      <p className="font-data text-sm tabular-nums text-text-primary">
+                        {line ?? '—'}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               );
