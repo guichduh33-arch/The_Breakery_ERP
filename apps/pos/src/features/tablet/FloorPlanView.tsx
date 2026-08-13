@@ -143,7 +143,7 @@ export function FloorPlanView({
           <Users className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="font-display text-2xl tracking-wide text-text-primary">FLOOR PLAN</h1>
+          <h1 className="font-sans font-semibold text-2xl tracking-wide text-text-primary">FLOOR PLAN</h1>
           <p className="text-text-secondary text-sm mt-1">
             {subtitle ??
               (onAppendSelect !== undefined
@@ -265,9 +265,9 @@ function Legend({
         aria-hidden
         className={cn(
           'h-3 w-3 rounded-full ring-2 ring-offset-1 ring-offset-bg-elevated',
-          tone === 'available' && 'bg-green ring-green/40',
-          tone === 'occupied' && 'bg-amber-warn ring-amber-warn/40',
-          tone === 'reserved' && 'bg-text-muted ring-text-muted/40',
+          tone === 'available' && 'bg-green ring-green',
+          tone === 'occupied' && 'bg-amber-warn ring-amber-warn',
+          tone === 'reserved' && 'bg-text-muted ring-text-muted',
         )}
       />
       <span className="text-text-secondary">{label}</span>

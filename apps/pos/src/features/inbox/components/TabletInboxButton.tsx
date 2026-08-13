@@ -32,7 +32,7 @@ export function TabletInboxButton({ className }: TabletInboxButtonProps = {}): J
         <span>Tablet orders</span>
         {count > 0 && (
           <span
-            className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
+            className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
             aria-label={`${count} pending tablet order${count === 1 ? '' : 's'}`}
           >
             {count}

@@ -89,7 +89,7 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
           <ShoppingBag className="h-6 w-6" aria-hidden />
           {countBadge}
           {!isEmpty && (
-            <Currency amount={preview.total} className="text-[11px] tabular-nums text-center leading-tight" />
+            <Currency amount={preview.total} className="text-xs tabular-nums text-center leading-tight" />
           )}
         </button>
       )}
@@ -129,7 +129,7 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
           ) : (
             <ul className="p-3 space-y-3">
               {items.map((item) => (
-                <li key={item.id} className="flex flex-col gap-2 rounded-md bg-bg-input/40 p-2.5 text-sm">
+                <li key={item.id} className="flex flex-col gap-2 rounded-md bg-bg-overlay p-2.5 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="text-text-primary truncate">{item.name}</div>
