@@ -22,7 +22,7 @@
 
 import { useCallback, useMemo, useState, type JSX } from 'react';
 import { ArrowLeft, Users, X } from 'lucide-react';
-import { Button, cn } from '@breakery/ui';
+import { BrandMark, Button, cn } from '@breakery/ui';
 import type { CartItem, Tender } from '@breakery/domain';
 import { splitEqualAmounts } from '@breakery/domain';
 import { ModeSelectStep } from './ModeSelectStep';
@@ -288,7 +288,7 @@ export function SplitPaymentFlow({
       {/* Header */}
       <header className="h-14 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
-          <span className="font-display text-base text-text-primary">The Breakery</span>
+          <BrandMark size="sm" />
           <span className="text-text-secondary text-xs uppercase tracking-widest">Terminal</span>
           <span className="h-4 w-px bg-border-subtle" aria-hidden />
           <span className={cn(

@@ -174,7 +174,7 @@ export function CartLineRow({
       className={cn(
         'flex items-center gap-2.5 py-2 pl-2.5 pr-1.5 rounded-md bg-bg-overlay border border-border-subtle',
         'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-2 motion-safe:duration-300 motion-safe:ease-out',
-        locked && 'relative pl-3.5 before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:bg-gold/60 before:rounded-r',
+        locked && 'relative pl-3.5 before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:bg-gold before:rounded-r',
         cancelled && 'opacity-60',
       )}
       data-promo-gift={isGift ? 'true' : undefined}
@@ -195,7 +195,7 @@ export function CartLineRow({
         >
           <span className="font-mono tabular-nums text-base font-bold leading-none">
             {item.quantity}
-            <span className="text-text-muted font-medium text-[13px]">×</span>
+            <span className="text-text-muted font-medium text-sm">×</span>
           </span>
         </button>
       ) : (
@@ -205,7 +205,7 @@ export function CartLineRow({
         >
           <span className="font-mono tabular-nums text-base font-bold leading-none text-text-secondary">
             {item.quantity}
-            <span className="text-text-muted font-medium text-[13px]">×</span>
+            <span className="text-text-muted font-medium text-sm">×</span>
           </span>
         </div>
       )}
@@ -223,7 +223,7 @@ export function CartLineRow({
           </span>
           {isGift && (
             <span
-              className="mt-0.5 shrink-0 inline-flex items-center rounded-full border border-gold/30 bg-gold-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold"
+              className="mt-0.5 shrink-0 inline-flex items-center rounded-full border border-gold bg-gold-soft px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-gold"
               aria-label="Free gift from promotion"
             >
               Promo
@@ -231,7 +231,7 @@ export function CartLineRow({
           )}
           {cancelled && (
             <span
-              className="mt-0.5 shrink-0 inline-flex items-center rounded-full border border-red/40 bg-red-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red"
+              className="mt-0.5 shrink-0 inline-flex items-center rounded-full border border-red bg-red-soft px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red"
               aria-label="Cancelled"
             >
               Cancelled
@@ -245,7 +245,7 @@ export function CartLineRow({
               <span
                 className={cn(
                   'italic truncate',
-                  cancelled ? 'line-through text-text-muted' : 'text-gold/80',
+                  cancelled ? 'line-through text-text-muted' : 'text-gold',
                 )}
               >
                 {item.modifiers.map((m) => m.option_label).join(' · ')}
@@ -271,9 +271,9 @@ export function CartLineRow({
           onClick={() => onApplyLineDiscount(item)}
           aria-label={item.discount ? `Edit discount on ${item.name}` : `Apply discount on ${item.name}`}
           className={cn(
-            'h-8 w-8 shrink-0 grid place-items-center rounded-md transition-colors',
+            'h-11 w-11 shrink-0 grid place-items-center rounded-md transition-colors',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-            item.discount ? 'text-gold border border-gold/40' : 'text-text-muted border border-border-subtle hover:text-text-primary hover:bg-bg-input',
+            item.discount ? 'text-gold border border-gold' : 'text-text-muted border border-border-subtle hover:text-text-primary hover:bg-bg-input',
           )}
         >
           <Tag className="h-4 w-4" aria-hidden />
@@ -291,7 +291,7 @@ export function CartLineRow({
           )}
         />
         {item.discount && !cancelled && (
-          <div className="text-[11px] text-red-as-text font-mono tabular-nums">
+          <div className="text-xs text-red-as-text font-mono tabular-nums">
             {item.discount.type === 'percentage' ? (
               `-${item.discount.value}%`
             ) : (
@@ -322,7 +322,7 @@ export function CartLineRow({
           'h-11 w-11 shrink-0 grid place-items-center rounded-md transition-colors',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           locked
-            ? 'text-gold/70'
+            ? 'text-gold'
             : 'text-text-muted hover:text-red-as-text hover:bg-red-soft',
           cancelled && 'opacity-50 pointer-events-none',
         )}

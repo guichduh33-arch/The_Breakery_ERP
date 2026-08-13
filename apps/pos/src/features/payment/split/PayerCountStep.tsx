@@ -29,7 +29,7 @@ export function PayerCountStep({ value, onPick }: PayerCountStepProps): JSX.Elem
         <Users className="h-12 w-12 mx-auto text-text-secondary" aria-hidden />
 
         <div className="space-y-2">
-          <h2 className="font-display text-2xl tracking-wide text-text-primary">
+          <h2 className="font-bold text-2xl tracking-wide text-text-primary">
             HOW MANY PAYERS?
           </h2>
           <p className="text-text-secondary text-sm">
@@ -52,11 +52,11 @@ export function PayerCountStep({ value, onPick }: PayerCountStepProps): JSX.Elem
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                   selected
                     ? 'border-gold bg-gold-soft text-text-primary'
-                    : 'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold/60',
+                    : 'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold',
                 )}
               >
-                <span className="font-display text-3xl">{n}</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                <span className="font-bold text-3xl">{n}</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-text-muted">
                   guests
                 </span>
               </button>

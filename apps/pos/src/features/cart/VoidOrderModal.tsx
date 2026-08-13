@@ -63,11 +63,11 @@ export function VoidOrderModal({
         aria-label="Void order"
         className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
       >
-        <div className="w-full max-w-md space-y-6 rounded-lg border border-red-as-text/30 bg-bg-elevated p-8">
+        <div className="w-full max-w-md space-y-6 rounded-lg border border-red-as-text bg-bg-elevated p-8">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-widest text-red-as-text">Void order</div>
-              <div className="font-serif text-xl text-text-primary mt-1">
+              <div className="font-bold text-xl text-text-primary mt-1">
                 Cancel the entire order?
               </div>
             </div>
@@ -95,7 +95,7 @@ export function VoidOrderModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. customer left, wrong order, duplicate…"
-              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text/30')}
+              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text')}
               disabled={isPending}
               aria-label="Void reason"
               data-vkp="qwerty"

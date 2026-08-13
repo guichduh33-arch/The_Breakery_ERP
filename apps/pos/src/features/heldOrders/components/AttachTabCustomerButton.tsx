@@ -84,7 +84,7 @@ export function AttachTabCustomerButton({ orderId }: { orderId: string }): JSX.E
         aria-label="Attach a named customer to this tab"
         className={cn(
           'h-11 px-3 inline-flex items-center justify-center gap-2 rounded-md',
-          'text-blue-info border border-blue-info/30 bg-blue-info/10 hover:bg-blue-info/20',
+          'text-blue-info border border-info bg-info-soft hover:border-blue-info',
           'transition-colors duration-fast motion-reduce:transition-none',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           'disabled:opacity-50 disabled:pointer-events-none',

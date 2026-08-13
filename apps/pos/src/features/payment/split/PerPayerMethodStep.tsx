@@ -114,7 +114,7 @@ export function PerPayerMethodStep({
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                     isActive
                       ? cn(colors.bg, colors.border, 'border-2')
-                      : 'bg-bg-elevated border-border-subtle hover:border-gold/60',
+                      : 'bg-bg-elevated border-border-subtle hover:border-gold',
                   )}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -124,7 +124,7 @@ export function PerPayerMethodStep({
                         {p.label}
                       </span>
                       {p.confirmed && (
-                        <span className="text-[10px] uppercase tracking-widest text-success">paid</span>
+                        <span className="text-xs uppercase tracking-widest text-success">paid</span>
                       )}
                     </div>
                     <Currency amount={sub} className={cn('font-mono text-sm', colors.text)} />
@@ -171,7 +171,7 @@ export function PerPayerMethodStep({
           </span>
           <Currency amount={activeTotal} className={cn('text-3xl block', activeColors.text)} />
           {activePayer.assignedAmount === undefined && (
-            <div className="text-[11px] uppercase tracking-widest text-text-muted">
+            <div className="text-xs uppercase tracking-widest text-text-muted">
               {activePayer.items.reduce((s, a) => s + a.quantity, 0)} items
             </div>
           )}
@@ -201,7 +201,7 @@ export function PerPayerMethodStep({
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
                   selected
                     ? 'border-gold bg-gold-soft text-gold'
-                    : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold/60',
+                    : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold',
                 )}
               >
                 <Icon className="h-4 w-4" aria-hidden />

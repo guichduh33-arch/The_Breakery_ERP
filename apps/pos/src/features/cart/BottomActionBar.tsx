@@ -62,7 +62,7 @@ import { VoidOrderModal } from './VoidOrderModal';
 /** Shared "ghost" management-button styling (left group). */
 const GHOST_BTN =
   'flex items-center gap-2 h-11 px-3.5 rounded-md bg-bg-overlay border border-border-subtle ' +
-  'text-text-primary text-[13px] font-semibold hover:bg-bg-input ' +
+  'text-text-primary text-sm font-semibold hover:bg-bg-input ' +
   'transition-[color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:opacity-50 disabled:pointer-events-none';
@@ -228,7 +228,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           <span>Held Orders</span>
           {heldCount > 0 && (
             <span
-              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
+              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
               aria-label={`${heldCount} held order${heldCount === 1 ? '' : 's'}`}
             >
               {heldCount}
@@ -284,7 +284,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             <span>More</span>
             {pendingTablet > 0 && (
               <span
-                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
+                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
                 aria-label={`${pendingTablet} pending tablet order${pendingTablet === 1 ? '' : 's'}`}
               >
                 {pendingTablet}
@@ -360,7 +360,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       <div className="flex items-center gap-2 max-md:w-full max-md:flex-col max-md:items-stretch">
         <SendToKitchenButton
           variant="outlineGold"
-          className="h-12 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
+          className="h-12 px-4 rounded-md text-sm font-bold uppercase tracking-wide"
         />
 
         {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):

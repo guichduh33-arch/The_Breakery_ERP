@@ -80,7 +80,7 @@ export function PerPayerCashStep({
                   onClick={() => onSetActivePayer(p.id)}
                   className={cn(
                     'w-full rounded-md border p-3 text-left transition-colors',
-                    isActive ? cn(colors.bg, colors.border, 'border-2') : 'bg-bg-elevated border-border-subtle hover:border-gold/60',
+                    isActive ? cn(colors.bg, colors.border, 'border-2') : 'bg-bg-elevated border-border-subtle hover:border-gold',
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -88,7 +88,7 @@ export function PerPayerCashStep({
                       <span className={cn('h-2 w-2 rounded-full', colors.dot)} aria-hidden />
                       <span className={cn('text-sm font-semibold', colors.text)}>{p.label}</span>
                       {p.confirmed && (
-                        <span className="text-[10px] uppercase tracking-widest text-success">paid</span>
+                        <span className="text-xs uppercase tracking-widest text-success">paid</span>
                       )}
                     </div>
                     <Currency amount={sub} className={cn('font-mono text-sm', colors.text)} />
@@ -131,7 +131,7 @@ export function PerPayerCashStep({
             {activePayer.label}
           </span>
           <Currency amount={total} className={cn('text-2xl block mt-1', activeColors.text)} />
-          <div className="text-[11px] uppercase tracking-widest text-text-muted">
+          <div className="text-xs uppercase tracking-widest text-text-muted">
             {activePayer.items.reduce((s, a) => s + a.quantity, 0)} items
           </div>
         </div>

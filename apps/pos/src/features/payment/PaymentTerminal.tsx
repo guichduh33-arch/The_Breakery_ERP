@@ -12,7 +12,7 @@
 
 import { ArrowLeft, CheckCircle2, X } from 'lucide-react';
 import {
-  Button, Currency, FullScreenModal,
+  BrandMark, Button, Currency, FullScreenModal,
   SectionLabel, TenderListBuilder, cn,
 } from '@breakery/ui';
 import {
@@ -83,7 +83,7 @@ export function PaymentTerminal() {
     <FullScreenModal open={isOpen} onOpenChange={close} accessibleTitle="Payment terminal">
       <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
-          <span className="font-serif text-lg">The Breakery</span>
+          <BrandMark size="sm" />
           <span className="text-text-secondary text-xs uppercase tracking-widest">Terminal</span>
         </div>
         <div className="flex items-center gap-3">
@@ -115,13 +115,13 @@ export function PaymentTerminal() {
               className={cn(
                 'mb-4 rounded-md border px-4 py-3 text-sm',
                 offlineGate.paymentsAllowed
-                  ? 'border-gold/60 bg-gold-soft text-gold'
-                  : 'border-red-as-text/60 bg-red-as-text/10 text-red-as-text',
+                  ? 'border-gold bg-gold-soft text-gold'
+                  : 'border-red-as-text bg-danger-soft text-red-as-text',
               )}
             >
               {offlineGate.paymentsAllowed
-                ? 'Mode hors-ligne — encaissement possible (avoir exclu), resynchronisé au retour du cloud'
-                : 'Encaissement hors-ligne désactivé — activer offline_payments_enabled (Settings → Network)'}
+                ? 'Offline mode — payments accepted (store credit excluded), will resync once the cloud is back'
+                : 'Offline payments disabled — enable offline_payments_enabled (Settings → Network)'}
             </div>
           )}
           <div className="space-y-1 mb-4">

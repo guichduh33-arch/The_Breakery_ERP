@@ -43,11 +43,17 @@ type TabKey = 'search' | 'favorites' | 'qr' | 'new';
 
 const SR_ONLY = 'absolute -m-px h-px w-px overflow-hidden whitespace-nowrap border-0 p-0';
 
+// Alpha modifiers on bare `var()` color tokens generate no CSS (Tailwind
+// drops the rule silently) — only the `-soft` tokens or the full-strength
+// color are usable here. `warning`/`info` share the same underlying color as
+// `amber-warn`/`blue-info` (see packages/ui/src/tokens/colors.css) so their
+// `-soft` variants are a faithful swap; `silver` has no soft token for
+// `text-secondary` so it falls back to the full-strength color (deviation).
 const TIER_PILL: Record<LoyaltyTier, string> = {
-  bronze: 'bg-amber-warn/15 text-amber-warn border-amber-warn/30',
-  silver: 'bg-text-secondary/15 text-text-secondary border-text-secondary/30',
-  gold: 'bg-gold-soft text-gold border-gold/40',
-  platinum: 'bg-blue-info/15 text-blue-info border-blue-info/30',
+  bronze: 'bg-warning-soft text-amber-warn border-warning',
+  silver: 'bg-surface-2 text-text-secondary border-text-secondary',
+  gold: 'bg-gold-soft text-gold border-gold',
+  platinum: 'bg-info-soft text-blue-info border-info',
 };
 
 const TIER_LABEL: Record<LoyaltyTier, string> = {
@@ -83,7 +89,7 @@ function CustomerRow({
       className={cn(
         'w-full text-left rounded-xl border border-border-subtle bg-bg-elevated px-4 py-3',
         'flex items-center gap-3',
-        'hover:bg-bg-overlay/60 active:scale-[0.99]',
+        'hover:bg-surface-4 active:scale-[0.99]',
         'transition-colors duration-fast motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
       )}
@@ -115,7 +121,7 @@ function CustomerRow({
         )}
         <span
           className={cn(
-            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest',
+            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest',
             TIER_PILL[tier],
           )}
         >
@@ -225,7 +231,7 @@ function TabButton({
         isPrimary
           ? active
             ? 'bg-success text-green-fg'
-            : 'bg-success/15 text-success hover:bg-success/25'
+            : 'bg-success-soft text-success hover:bg-success hover:text-green-fg'
           : active
             ? 'bg-gold-soft text-gold border border-gold'
             : 'bg-bg-overlay text-text-secondary border border-border-subtle hover:text-text-primary',
@@ -329,7 +335,7 @@ export function CustomerAttachModal({
         <header className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-2 min-w-0">
             <UserPlus className="h-5 w-5 text-gold" aria-hidden />
-            <h2 className="font-display italic text-lg text-text-primary">
+            <h2 className="font-bold text-lg text-text-primary">
               Select a Customer
             </h2>
           </div>
@@ -428,7 +434,7 @@ export function CustomerAttachModal({
           {tab === 'favorites' && (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <Heart className="h-10 w-10 text-text-muted opacity-40" aria-hidden />
-              <p className="font-display italic text-base text-text-primary">
+              <p className="font-semibold text-base text-text-primary">
                 Favorites coming soon
               </p>
               <p className="text-xs text-text-muted max-w-sm">
@@ -441,7 +447,7 @@ export function CustomerAttachModal({
           {tab === 'qr' && (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <QrCode className="h-10 w-10 text-text-muted opacity-40" aria-hidden />
-              <p className="font-display italic text-base text-text-primary">
+              <p className="font-semibold text-base text-text-primary">
                 QR scan coming soon
               </p>
               <p className="text-xs text-text-muted max-w-sm">

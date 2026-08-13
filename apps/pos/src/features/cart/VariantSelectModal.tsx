@@ -92,8 +92,8 @@ export function VariantSelectModal({
                 }}
                 className={`rounded-lg border p-3 text-left transition-colors ${
                   disabled
-                    ? 'cursor-not-allowed border-border-subtle bg-bg-muted opacity-50'
-                    : 'border-gold/40 bg-gold/5 hover:bg-gold/10'
+                    ? 'cursor-not-allowed border-border-subtle bg-bg-input opacity-50'
+                    : 'border-gold bg-gold-soft hover:border-gold-strong'
                 }`}
               >
                 <div className="text-base font-semibold">{v.variant_label}</div>

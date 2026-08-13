@@ -36,7 +36,7 @@ export function OrderDetailDrawer({
     >
       <header className="p-4 border-b border-border-subtle">
         <div className="flex items-baseline justify-between">
-          <span className="font-serif text-2xl">{order.order_number}</span>
+          <span className="font-bold text-2xl">{order.order_number}</span>
           <span className={cn(
             'text-xs uppercase tracking-widest font-semibold',
             isVoided ? 'text-danger' : 'text-success',
@@ -53,7 +53,7 @@ export function OrderDetailDrawer({
           </div>
         )}
         {isVoided && order.void_reason && (
-          <div className="mt-2 rounded-md border border-danger/30 bg-danger-soft px-2 py-1 text-xs text-danger">
+          <div className="mt-2 rounded-md border border-danger bg-danger-soft px-2 py-1 text-xs text-danger">
             Void reason: {order.void_reason}
           </div>
         )}

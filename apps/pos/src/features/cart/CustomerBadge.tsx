@@ -89,7 +89,7 @@ export function CustomerBadge({ customer, onDetach }: CustomerBadgeProps): JSX.E
         </p>
         <p
           className={cn(
-            'text-[10px] font-bold uppercase tracking-widest',
+            'text-xs font-bold uppercase tracking-widest',
             TIER_TEXT[tier],
           )}
         >
@@ -104,10 +104,10 @@ export function CustomerBadge({ customer, onDetach }: CustomerBadgeProps): JSX.E
             optionnel : absent des snapshots persistés pré-v4). */}
         {(customer.store_credit_balance ?? 0) > 0 && (
           <p
-            className="text-[10px] font-bold uppercase tracking-widest text-gold"
+            className="text-xs font-bold uppercase tracking-widest text-gold"
             data-testid="customer-store-credit"
           >
-            Avoir
+            Store Credit
             <span className="ml-2 font-mono text-text-muted normal-case tracking-normal">
               {formatIdr(customer.store_credit_balance ?? 0)}
             </span>

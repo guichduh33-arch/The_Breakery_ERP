@@ -169,7 +169,7 @@ export function RefundOrderModal({
       >
         <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
           <div className="flex items-baseline gap-3">
-            <span className="font-serif text-lg">Refund lines</span>
+            <span className="font-bold text-lg">Refund lines</span>
             <span className="text-text-secondary text-sm">on {order.order_number}</span>
           </div>
           <button type="button" aria-label="Close" onClick={handleClose} className="text-text-secondary hover:text-text-primary">
@@ -233,7 +233,7 @@ export function RefundOrderModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. spilled latte, customer return…"
-              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text/30')}
+              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text')}
               disabled={isPending}
             />
             {reason.length > 0 && reason.trim().length < 3 && (

@@ -145,7 +145,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                 <Receipt className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-display text-xl">Transaction History</h2>
+                <h2 className="font-bold text-xl">Transaction History</h2>
                 <p className="text-text-secondary text-xs">
                   {stats.count} transaction{stats.count !== 1 ? 's' : ''} this shift
                 </p>
@@ -212,7 +212,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                               <span className="text-green">Paid</span>
                             )}
                             {row.order_type && (
-                              <span className="px-1.5 h-5 inline-flex items-center rounded-md bg-bg-overlay text-text-secondary text-[10px] uppercase tracking-widest">
+                              <span className="px-1.5 h-5 inline-flex items-center rounded-md bg-bg-overlay text-text-secondary text-xs uppercase tracking-widest">
                                 {orderTypeLabel(row.order_type)}
                               </span>
                             )}
@@ -247,7 +247,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                   onRefundClick={() => setRefundOpen(true)}
                 />
               ) : (
-                <div className="h-full grid place-items-center text-text-muted text-sm border-l border-border-subtle bg-bg-elevated/40">
+                <div className="h-full grid place-items-center text-text-muted text-sm border-l border-border-subtle bg-bg-elevated">
                   Select an order
                 </div>
               )}

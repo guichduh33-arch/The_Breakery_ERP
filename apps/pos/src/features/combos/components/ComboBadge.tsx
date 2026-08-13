@@ -9,7 +9,7 @@ export function ComboBadge({ className }: ComboBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+        'inline-flex items-center rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide',
         'bg-cat-violet/20 text-cat-violet',
         className,
       )}
