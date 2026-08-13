@@ -3,7 +3,9 @@
 
 import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
+import { Skeleton } from '@breakery/ui';
 import { formatDateTime } from '@breakery/utils';
+import { roleLabel } from '@/lib/roleLabels.js';
 import type { UserRow } from '../hooks/useUsersList.js';
 
 export interface UsersTableProps {
@@ -22,7 +24,21 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
 
 export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Element {
   if (loading === true) {
-    return <div className="text-sm text-text-secondary">Loading users…</div>;
+    // Silhouette de la table plutôt qu'un « Loading users… » nu (audit UX/UI
+    // 2026-08-13, lot 8) : quelques lignes fantômes qui gardent la forme de ce
+    // qui arrive.
+    return (
+      <div
+        className="flex flex-col gap-2 py-1"
+        aria-busy="true"
+        aria-live="polite"
+        aria-label="Loading users"
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} height="2.25rem" />
+        ))}
+      </div>
+    );
   }
   if (error != null) {
     return <div className="text-sm text-danger">Failed to load users: {error.message}</div>;
@@ -54,7 +70,7 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
                     ROLE_BADGE_CLASS[u.role_code] ?? 'bg-bg-overlay text-text-secondary'
                   }`}
                 >
-                  {u.role_code}
+                  {roleLabel(u.role_code)}
                 </span>
               </td>
               <td className="py-2 px-3 text-xs">

@@ -259,7 +259,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
                 className="w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 placeholder="At least 3 characters; appears in the audit trail."
               />
-              <p id={reasonHintId} className="text-text-secondary text-[10px]">
+              <p id={reasonHintId} className="text-text-secondary text-xs">
                 {otherReason.trim().length}/{MAX_REASON}
               </p>
             </div>

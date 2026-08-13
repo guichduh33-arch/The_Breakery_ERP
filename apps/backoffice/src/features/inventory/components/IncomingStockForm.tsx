@@ -182,7 +182,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
           disabled={recordMut.isPending}
         />
         {product !== null && (
-          <p className="text-text-muted text-[10px]">
+          <p className="text-text-muted text-xs">
             Current stock: <span className="font-mono tabular-nums">{formatQuantity(product.current_stock, null)}</span>
           </p>
         )}

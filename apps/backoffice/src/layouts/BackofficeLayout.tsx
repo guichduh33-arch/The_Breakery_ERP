@@ -13,6 +13,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { Skeleton } from '@breakery/ui';
 import { CommandPalette } from './CommandPalette.js';
 import { TopBar } from './TopBar.js';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary.js';
@@ -23,18 +24,28 @@ const DEAD_SIDEBAR_KEYS = [
   'bo:sidebar:subgroups',
 ];
 
-/** Shown while a route-split page chunk is being fetched (React.lazy). */
+/** Shown while a route-split page chunk is being fetched (React.lazy).
+ *  Une SILHOUETTE de page — bande de titre puis quelques blocs — plutôt qu'un
+ *  spinner centré : l'œil garde la forme de ce qui arrive au lieu de fixer un
+ *  disque qui tourne (audit UX/UI 2026-08-13, lot 8). */
 function RouteFallback() {
   return (
     <div
-      className="grid h-full place-items-center text-text-secondary"
+      className="mx-auto flex max-w-6xl flex-col gap-5"
       aria-busy="true"
       aria-live="polite"
+      aria-label="Loading page"
     >
-      <div
-        className="h-6 w-6 animate-spin rounded-full border-2 border-border-subtle border-t-gold"
-        aria-hidden
-      />
+      <div className="flex flex-col gap-2">
+        <Skeleton width="16rem" height="1.75rem" />
+        <Skeleton width="24rem" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} variant="block" height="5.5rem" />
+        ))}
+      </div>
+      <Skeleton variant="block" height="18rem" />
     </div>
   );
 }

@@ -40,8 +40,8 @@ function rp(n: number | null): string {
   return formatCurrency(Number(n ?? 0));
 }
 
-const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
-const TH = 'px-3.5 py-2.5 text-left font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted';
+const SECTION_LABEL = 'font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
+const TH = 'px-3.5 py-2.5 text-left font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
 
 // Le fil d'Ariane porte l'invariant C4/BO-12 (retour vers /backoffice/orders) :
 // il se rend dans TOUS les états — l'erreur est celui où l'on en a le plus
@@ -211,7 +211,7 @@ export function OrderDetailPage(): JSX.Element {
               </tbody>
               <tfoot className="bg-surface-inert">
                 <tr>
-                  <td colSpan={4} className="px-3.5 py-2.5 font-data text-[11px] tabular-nums text-text-muted">
+                  <td colSpan={4} className="px-3.5 py-2.5 font-data text-xs tabular-nums text-text-muted">
                     {data.items.length} {data.items.length === 1 ? 'item' : 'items'}
                     {data.items.some((it) => it.is_cancelled) &&
                       ` · ${data.items.filter((it) => it.is_cancelled).length} cancelled`}
@@ -319,7 +319,7 @@ export function OrderDetailPage(): JSX.Element {
 function MetaPair({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
   return (
     <div>
-      <dt className="font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</dt>
+      <dt className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</dt>
       <dd className="mt-0.5 text-sm text-text-primary">{children}</dd>
     </div>
   );

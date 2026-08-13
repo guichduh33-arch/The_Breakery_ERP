@@ -27,7 +27,7 @@ const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
     render: (r) => (
       <div className="space-y-0.5">
         <div className="font-medium text-text-primary">{r.product_name}</div>
-        <div className="font-mono text-[11px] text-text-muted">{r.sku}</div>
+        <div className="font-mono text-xs text-text-muted">{r.sku}</div>
       </div>
     ),
   },
@@ -73,7 +73,7 @@ const MOVEMENT_COLUMNS: readonly DataTableColumn<DisplayMovementRow>[] = [
     header: 'Type',
     width: '160px',
     render: (r) => (
-      <span className="inline-flex items-center rounded-md border border-border-subtle bg-bg-base px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-text-secondary">
+      <span className="inline-flex items-center rounded-md border border-border-subtle bg-bg-base px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-text-secondary">
         {r.movement_type.replace(/_/g, ' ')}
       </span>
     ),
@@ -112,7 +112,7 @@ export default function DisplayStockPage(): JSX.Element {
         <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Display Stock (Vitrine)</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Read-only view of the POS display-case counter. These quantities live on a
-          separate ledger (display_stock) ; selling a display item draws from the
+          separate ledger (display_stock); selling a display item draws from the
           vitrine, not the global BO inventory. Mutations happen from the POS side.
         </p>
       </header>

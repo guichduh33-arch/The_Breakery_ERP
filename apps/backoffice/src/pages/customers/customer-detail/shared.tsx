@@ -23,7 +23,7 @@ export function StatusPill({ status }: { status: string }): JSX.Element {
           ? 'bg-warning-soft text-warning'
           : 'bg-surface-4 text-text-muted';
   return (
-    <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${tone}`}>
+    <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${tone}`}>
       {status.replace('_', ' ')}
     </span>
   );

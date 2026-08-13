@@ -56,7 +56,7 @@ const TONE_BY_SLUG: Record<string, string> = {
   enak:      'bg-cat-indigo',
 };
 
-const BADGE = 'inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest';
+const BADGE = 'inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest';
 
 function pricingLabel(cat: CustomerCategoryRow): string {
   switch (cat.price_modifier_type) {
@@ -272,7 +272,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
           }
           data-testid="categories-table"
           footer={
-            <span className="font-data text-[11px] tabular-nums text-text-muted">
+            <span className="font-data text-xs tabular-nums text-text-muted">
               {rows.length} of {all.length}
             </span>
           }

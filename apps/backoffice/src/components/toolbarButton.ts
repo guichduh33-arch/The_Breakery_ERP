@@ -13,7 +13,7 @@
 // crée quelque chose.
 
 export const TOOLBAR_BTN =
-  'inline-flex h-8 items-center gap-1.5 rounded-sm px-3 text-[12.5px] font-medium ' +
+  'inline-flex h-8 items-center gap-1.5 rounded-sm px-3 text-sm font-medium ' +
   'transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 

@@ -28,7 +28,7 @@ export function CustomerCategoryChip({ name, slug }: CustomerCategoryChipProps):
   return (
     <span
       className={[
-        'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest',
+        'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-widest',
         tone,
       ].join(' ')}
     >

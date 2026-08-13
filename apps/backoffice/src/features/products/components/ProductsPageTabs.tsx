@@ -29,7 +29,7 @@ export function ProductsPageTabs(): JSX.Element {
             end={t.end}
             className={({ isActive }) =>
               cn(
-                'relative -mb-px pb-2.5 text-[12.5px] transition-colors duration-fast',
+                'relative -mb-px pb-2.5 text-sm transition-colors duration-fast',
                 i === 0 ? 'px-0.5' : 'px-3',
                 isActive
                   ? 'font-semibold text-text-primary shadow-[inset_0_-2px_0_var(--gold-base)]'

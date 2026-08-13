@@ -131,26 +131,26 @@ export default function ZReportsListPage(): JSX.Element {
     {
       id: 'generated_at',
       header: 'Generated',
-      render: (r) => <span className="font-data text-[12.5px] tabular-nums">{formatDateTime(r.generated_at)}</span>,
+      render: (r) => <span className="font-data text-xs tabular-nums">{formatDateTime(r.generated_at)}</span>,
     },
     {
       id: 'expected_cash',
       header: 'Declared',
       align: 'right',
-      render: (r) => <span className="font-data text-[12.5px]">{money(r.expected_cash)}</span>,
+      render: (r) => <span className="font-data text-xs">{money(r.expected_cash)}</span>,
     },
     {
       id: 'counted_cash',
       header: 'Counted',
       align: 'right',
-      render: (r) => <span className="font-data text-[12.5px]">{money(r.counted_cash)}</span>,
+      render: (r) => <span className="font-data text-xs">{money(r.counted_cash)}</span>,
     },
     {
       id: 'variance_total',
       header: 'Variance',
       align: 'right',
       render: (r) => (
-        <span className={`font-data text-[12.5px] font-semibold ${varianceTone(r.variance_total)}`}>
+        <span className={`font-data text-xs font-semibold ${varianceTone(r.variance_total)}`}>
           {signedVariance(r.variance_total)}
         </span>
       ),
@@ -164,10 +164,10 @@ export default function ZReportsListPage(): JSX.Element {
       id: 'signed',
       header: 'Signed',
       render: (r) => (
-        <span className="text-[12.5px] text-text-secondary">
+        <span className="text-xs text-text-secondary">
           {r.signed_by_name ?? '—'}
           {r.signed_at !== null && (
-            <span className="ml-2 font-data text-[11px] text-text-muted tabular-nums">
+            <span className="ml-2 font-data text-xs text-text-muted tabular-nums">
               {formatDateTime(r.signed_at)}
             </span>
           )}
@@ -263,7 +263,7 @@ export default function ZReportsListPage(): JSX.Element {
           }
           data-testid="zreports-table"
           footer={
-            <span className="font-data text-[11px] text-text-muted tabular-nums">
+            <span className="font-data text-xs text-text-muted tabular-nums">
               {rows.length} of {allRows.length}
               {status !== 'all' && ` · ${status}`}
             </span>

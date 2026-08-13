@@ -75,7 +75,7 @@ function compareRows(a: StockLedgerRow, b: StockLedgerRow, key: SortKey): number
 function DetailField({ label, value }: { label: string; value: string }): JSX.Element {
   return (
     <div className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-wide text-text-muted">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-text-muted">{label}</span>
       <span className="text-xs text-text-primary">{value || '—'}</span>
     </div>
   );
@@ -119,7 +119,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
       )}
       <div className="overflow-x-auto rounded-md border border-border-subtle">
         <table className="w-full text-xs" data-testid="stock-ledger-table">
-          <thead className="sticky top-0 bg-surface-inert text-[11px] uppercase tracking-wide text-text-secondary">
+          <thead className="sticky top-0 bg-surface-inert text-xs uppercase tracking-wide text-text-secondary">
             <tr className="border-b border-border-subtle">
               <th className="w-8 px-2 py-2" aria-label="Expand" />
               {HEADERS.map((h) => {
@@ -182,7 +182,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5 text-text-secondary">{r.movement_date}</td>
                   <td className="whitespace-nowrap px-2 py-1.5">
-                    <span className="rounded border border-border-subtle bg-bg-base px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
+                    <span className="rounded border border-border-subtle bg-bg-base px-1.5 py-0.5 font-mono text-xs text-text-secondary">
                       {r.type_label}
                     </span>
                   </td>

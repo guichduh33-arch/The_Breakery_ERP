@@ -222,7 +222,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         <div>
           <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Purchase Orders</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Track open and historical POs ; receive goods to post inventory + accounting entries.
+            Track open and historical POs; receive goods to post inventory + accounting entries.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

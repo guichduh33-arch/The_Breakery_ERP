@@ -36,7 +36,7 @@ export function OrdersTab({
         <span className="tabular-nums">{rp(totalShown)}</span>
       </div>
       <table className="w-full border-collapse text-sm">
-        <thead className="border-y border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <thead className="border-y border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
             <th className="px-4 py-2.5 text-left font-medium">Date</th>
             <th className="px-4 py-2.5 text-left font-medium">Order #</th>

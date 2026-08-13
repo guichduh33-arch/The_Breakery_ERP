@@ -161,7 +161,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
             </span>
           )}
           {previous === null && (
-            <span className="text-[10px] uppercase tracking-widest text-success bg-success-soft rounded px-2 py-0.5">
+            <span className="text-xs uppercase tracking-widest text-success bg-success-soft rounded px-2 py-0.5">
               Initial
             </span>
           )}
@@ -192,7 +192,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
                 <span className="truncate">
                   {d.material_name}
                   {kindLabel(d.kind) !== '' && (
-                    <span className="ml-2 text-[10px] uppercase tracking-widest opacity-70">
+                    <span className="ml-2 text-xs uppercase tracking-widest opacity-70">
                       {kindLabel(d.kind)}
                     </span>
                   )}

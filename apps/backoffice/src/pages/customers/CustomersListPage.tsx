@@ -224,6 +224,7 @@ export default function CustomersListPage(): JSX.Element {
     {
       id:     'credit',
       header: 'B2B balance',
+      headerClassName: 'whitespace-nowrap',
       align:  'right',
       width:  '8.5rem',
       render: (row) =>
@@ -420,7 +421,7 @@ export default function CustomersListPage(): JSX.Element {
               onPage={setPage}
               onPageSize={(next) => { setPageSize(next); setPage(1); }}
               leading={
-                <span className="font-data text-[11px] tabular-nums text-text-muted">
+                <span className="font-data text-xs tabular-nums text-text-muted">
                   {rows.length} of {total.toLocaleString('id-ID')}
                 </span>
               }

@@ -222,7 +222,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
         <Panel
           title="Purchase Price Trend"
           right={
-            <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest">
+            <div className="flex items-center gap-3 text-xs uppercase tracking-widest">
               <span className="flex items-center gap-1 text-success"><span className="h-2 w-2 rounded-full bg-success" />Lower</span>
               <span className="flex items-center gap-1 text-red"><span className="h-2 w-2 rounded-full bg-red" />Higher</span>
             </div>
@@ -324,7 +324,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <div className="max-h-72 overflow-y-auto">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-bg-elevated text-[10px] uppercase tracking-widest text-text-muted">
+                  <thead className="sticky top-0 bg-bg-elevated text-xs uppercase tracking-widest text-text-muted">
                     <tr>
                       <th className="px-4 py-2 text-left">Product</th>
                       <th className="px-3 py-2 text-left">Type</th>

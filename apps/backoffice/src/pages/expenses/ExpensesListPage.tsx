@@ -389,7 +389,7 @@ function CategoriesTab(): JSX.Element {
           ))}
         </tbody>
       </table>
-      <div className="border-t border-border-subtle px-4 py-2 text-[11px] text-text-muted">
+      <div className="border-t border-border-subtle px-4 py-2 text-xs text-text-muted">
         Categories are read-only — no expense_category CRUD RPC ships in this session.
       </div>
     </div>

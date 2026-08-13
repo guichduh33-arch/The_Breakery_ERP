@@ -15,7 +15,7 @@ export function LowStockBadge({ currentStock, minStockThreshold }: LowStockBadge
   if (minStockThreshold <= 0)            return null;
   if (currentStock >= minStockThreshold) return null;
   return (
-    <Badge variant="destructive" className="ml-2 text-[10px] uppercase tracking-widest">
+    <Badge variant="destructive" className="ml-2 text-xs uppercase tracking-widest">
       Low stock
     </Badge>
   );

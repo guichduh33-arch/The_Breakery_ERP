@@ -82,7 +82,7 @@ const KITCHEN_TONE: Record<string, string> = {
   served: 'bg-surface-4 text-text-muted',
 };
 
-const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
+const SECTION_LABEL = 'font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
 
 const fmtDateTime = formatDateTimeShortWita;
 const fmtLogTime = formatDateTimeWita;
@@ -98,7 +98,7 @@ function InfoCell({
 }): JSX.Element {
   return (
     <div className="rounded-md bg-surface-inert p-3">
-      <div className="flex items-center gap-1.5 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+      <div className="flex items-center gap-1.5 font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
         <Icon className="h-3 w-3" aria-hidden /> {label}
       </div>
       <div className="mt-1 text-sm text-text-primary">{children}</div>
@@ -171,7 +171,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
                     l'encaissement — et il ne se rend pas du tout si la
                     commande n'est jamais passée en cuisine. */}
                 {wentToKitchen && it.kitchen_status && (
-                  <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${tone}`}>
+                  <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${tone}`}>
                     Kitchen: {ks}
                   </span>
                 )}

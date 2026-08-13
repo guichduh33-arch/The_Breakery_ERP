@@ -74,14 +74,14 @@ export function ListPagination({
     <div className="flex flex-wrap items-center gap-3.5">
       {leading}
       <div className="ml-auto flex items-center gap-2">
-        <label className="flex items-center gap-1.5 text-[11.5px] text-text-muted">
+        <label className="flex items-center gap-1.5 text-xs text-text-muted">
           <span>Rows</span>
           <Select
             value={String(pageSize)}
             onChange={(e) => { onPageSize?.(coercePageSize(e.target.value)); }}
             aria-label="Rows per page"
             data-testid="list-page-size"
-            className="h-6 w-auto rounded-sm px-1.5 py-0 font-data text-[11.5px]"
+            className="h-6 w-auto rounded-sm px-1.5 py-0 font-data text-xs"
           >
             {LIST_PAGE_SIZES.map((n) => (
               <option key={n} value={n}>{n}</option>
@@ -89,7 +89,7 @@ export function ListPagination({
           </Select>
         </label>
         <span
-          className="font-data text-[11.5px] tabular-nums text-text-muted"
+          className="font-data text-xs tabular-nums text-text-muted"
           data-testid="list-page-range"
         >
           {from}–{to} of {total.toLocaleString('id-ID')}

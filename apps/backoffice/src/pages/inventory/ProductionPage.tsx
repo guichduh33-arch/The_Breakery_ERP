@@ -109,7 +109,7 @@ export default function ProductionPage(): JSX.Element {
             <div className="text-xs font-semibold uppercase tracking-widest text-gold">
               {isSameDay(selectedDate, today) ? 'Today' : selectedDate.toLocaleDateString('en-US', { weekday: 'short' })}
             </div>
-            <div className="text-[11px] text-text-muted" data-testid="production-selected-date">
+            <div className="text-xs text-text-muted" data-testid="production-selected-date">
               {formatDay(selectedDate)}
             </div>
           </div>

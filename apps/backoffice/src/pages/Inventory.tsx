@@ -348,7 +348,7 @@ export default function InventoryPage() {
       ),
     },
     {
-      id: 'moved', header: 'Last movement', width: '9rem', sortable: true,
+      id: 'moved', header: 'Last movement', headerClassName: 'whitespace-nowrap', width: '9rem', sortable: true,
       render: (r) => <span className="text-text-secondary">{formatLastMovement(r.last_movement_at)}</span>,
     },
     {
@@ -497,7 +497,7 @@ export default function InventoryPage() {
                 // théorique. Les deux divergent quand la liste revient vide sur
                 // un panier que les compteurs disent peuplé — et c'est
                 // précisément là qu'un pied qui annoncerait « 1–50 » mentirait.
-                <span className="font-data text-[11px] tabular-nums text-text-muted">
+                <span className="font-data text-xs tabular-nums text-text-muted">
                   {pageRows.length} of {activeTotal.toLocaleString('id-ID')}
                 </span>
               }

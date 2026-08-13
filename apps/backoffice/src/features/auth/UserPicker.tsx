@@ -62,7 +62,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
           data-testid={`user-picker-${u.id}`}
         >
           {u.display_name}
-          <span className="ml-2 text-[10px] uppercase tracking-widest text-text-muted">{u.role}</span>
+          <span className="ml-2 text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
         </Button>
       ))}
     </div>

@@ -163,7 +163,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                             {formatDateTimeShortWita(row.created_at)}
                           </td>
                           <td className="px-2 py-1">
-                            <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-[10px]">
+                            <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-xs">
                               {TYPE_LABEL[row.movement_type]}
                             </Badge>
                           </td>

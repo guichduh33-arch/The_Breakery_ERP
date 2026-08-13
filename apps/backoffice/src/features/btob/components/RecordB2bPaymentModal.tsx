@@ -221,7 +221,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               ))}
             </Select>
             {selectedCustomer !== null && (
-              <p className="text-[10px] text-text-muted">
+              <p className="text-xs text-text-muted">
                 Outstanding: <span className="font-mono">{formatCurrency(selectedCustomer.b2b_current_balance)}</span>
               </p>
             )}
@@ -262,7 +262,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   .filter((r) => selectedIds.includes(r.invoice_id))
                   .reduce((acc, r) => acc + Number(r.outstanding), 0);
                 return numericAmount > sum ? (
-                  <p className="text-[10px] text-warning">
+                  <p className="text-xs text-warning">
                     Amount exceeds the selected invoices — the excess will be allocated FIFO across the remaining ones.
                   </p>
                 ) : null;
@@ -286,7 +286,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                 aria-invalid={(amount !== '' && !amountValid) || overpaying}
               />
               {overpaying && (
-                <p className="text-[10px] text-red">Cannot exceed outstanding balance.</p>
+                <p className="text-xs text-red">Cannot exceed outstanding balance.</p>
               )}
             </div>
             <div className="space-y-1">

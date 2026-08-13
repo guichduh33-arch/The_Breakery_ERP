@@ -38,7 +38,7 @@ export const ORDER_STATUS_ORDER = Object.keys(ORDER_STATUS) as readonly OrderSta
 
 /** Classes du badge de statut en cellule — coins 3 px, label mono capitales. */
 export const ORDER_STATUS_BADGE =
-  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest';
+  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest';
 
 export const ORDER_STATUS_BADGE_TONE: Record<OrderStatus, string> = {
   pending_payment: 'bg-warning-soft text-warning',

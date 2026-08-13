@@ -38,7 +38,7 @@ function AlertsLinkCount() {
   const { total } = useAlertsCount();
   if (total === 0) return null;
   return (
-    <span className="font-data text-[10.5px] font-bold text-danger tabular-nums" aria-hidden>
+    <span className="font-data text-xs font-bold text-danger tabular-nums" aria-hidden>
       {total > 99 ? '99+' : total}
     </span>
   );
@@ -50,7 +50,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
 
   return (
     <div className="min-w-0">
-      <p className="mb-2.5 font-data text-[10px] uppercase tracking-widest text-text-muted">
+      <p className="mb-2.5 font-data text-xs uppercase tracking-widest text-text-muted">
         {column.label}
       </p>
       <ul className="flex flex-col gap-[7px]">
@@ -62,7 +62,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center justify-between gap-2 rounded-sm text-[13px] leading-tight transition-colors',
+                  'flex items-center justify-between gap-2 rounded-sm text-sm leading-tight transition-colors',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                   isActive
                     ? 'font-medium text-gold'

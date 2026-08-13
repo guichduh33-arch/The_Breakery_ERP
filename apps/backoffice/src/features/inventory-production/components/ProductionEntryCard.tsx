@@ -296,7 +296,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                     className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
                   >
                     <span className="min-w-0 truncate text-text-primary">{p.name}</span>
-                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-text-muted">{p.sku}</span>
+                    <span className="shrink-0 font-mono text-xs uppercase tracking-widest text-text-muted">{p.sku}</span>
                   </li>
                 ))
               )}
@@ -365,7 +365,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                 <tr key={r.rowId} className="border-t border-border-subtle" data-testid={`entry-row-${r.product.sku}`}>
                   <td className="px-4 py-3">
                     <div className="text-text-primary">{r.product.name}</div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-text-muted">{r.product.sku}</div>
+                    <div className="font-mono text-xs uppercase tracking-widest text-text-muted">{r.product.sku}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

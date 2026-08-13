@@ -528,7 +528,7 @@ export default function OrdersListPage(): JSX.Element {
           data-testid="orders-table"
           footer={
             <div className="flex items-center justify-between">
-              <span className="font-data text-[11px] tabular-nums text-text-muted">
+              <span className="font-data text-xs tabular-nums text-text-muted">
                 {/* La recherche texte ne voit que les lignes chargées : on
                     compte les correspondances SUR le chargé, jamais sur la
                     fenêtre serveur — d'où « X of the Y loaded », sans compteur

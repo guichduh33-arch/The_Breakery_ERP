@@ -39,7 +39,7 @@ export function HourlySalesChart({
   if (error !== null) {
     return (
       <div className="flex h-44 items-center justify-center px-6 text-center">
-        <p className="text-[12.5px] text-text-muted">
+        <p className="text-xs text-text-muted">
           Hourly profile unavailable — today&apos;s sales could not be read.
         </p>
       </div>

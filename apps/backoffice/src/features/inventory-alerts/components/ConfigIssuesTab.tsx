@@ -67,11 +67,11 @@ const COLUMNS: DataTableColumn<StockConfigIssueRow>[] = [
       return (
         <div className="max-w-md">
           <span
-            className={`inline-flex rounded-sm px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${severityClass(r.severity)}`}
+            className={`inline-flex rounded-sm px-2 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${severityClass(r.severity)}`}
           >
             {label.title}
           </span>
-          <p className="mt-1 text-[12px] text-text-muted">{label.hint}</p>
+          <p className="mt-1 text-xs text-text-muted">{label.hint}</p>
         </div>
       );
     },
@@ -80,7 +80,7 @@ const COLUMNS: DataTableColumn<StockConfigIssueRow>[] = [
     id: 'config',
     header: 'Config',
     render: (r) => (
-      <span className="font-data text-[11.5px]">
+      <span className="font-data text-xs">
         {flag('track', r.track_inventory)}
         <span className="text-text-inert"> · </span>
         {flag('deduct', r.deduct_stock)}
@@ -91,14 +91,14 @@ const COLUMNS: DataTableColumn<StockConfigIssueRow>[] = [
     id: 'recipe_lines',
     header: 'Recipe',
     align: 'right',
-    render: (r) => <span className="font-data text-[12.5px]">{r.recipe_lines}</span>,
+    render: (r) => <span className="font-data text-xs">{r.recipe_lines}</span>,
   },
   {
     id: 'stock',
     header: 'Stock',
     align: 'right',
     render: (r) => (
-      <span className={`font-data text-[12.5px] ${Number(r.current_stock) < 0 ? 'font-semibold text-danger' : ''}`}>
+      <span className={`font-data text-xs ${Number(r.current_stock) < 0 ? 'font-semibold text-danger' : ''}`}>
         {Number(r.current_stock)}
       </span>
     ),
@@ -125,7 +125,7 @@ export function ConfigIssuesTab(): JSX.Element {
       emptyDescription="Stock tracking, deduction and recipes agree everywhere."
       data-testid="config-issues-table"
       footer={
-        <span className="font-data text-[11px] text-text-muted tabular-nums">
+        <span className="font-data text-xs text-text-muted tabular-nums">
           {rows.length} {rows.length === 1 ? 'product' : 'products'}
         </span>
       }

@@ -18,7 +18,7 @@ import { ProductCell } from './ProductCell.js';
 // `formatQuantity` porte l'unité elle-même, d'où la disparition du second
 // span : la répéter en afficherait deux.
 function qty(value: number, unit: string): JSX.Element {
-  return <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(value, unit)}</span>;
+  return <span className="font-data text-xs tabular-nums">{formatQuantity(value, unit)}</span>;
 }
 
 const COLUMNS: DataTableColumn<LowStockRow>[] = [
@@ -30,7 +30,7 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
   {
     id: 'section',
     header: 'Location',
-    render: (r) => <span className="text-[12.5px] text-text-secondary">{r.section_name ?? '—'}</span>,
+    render: (r) => <span className="text-xs text-text-secondary">{r.section_name ?? '—'}</span>,
   },
   {
     id: 'current',
@@ -51,7 +51,7 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
     header: 'Shortfall',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold tabular-nums">
+      <span className="font-data text-xs font-semibold tabular-nums">
         {formatQuantity(r.shortfall, r.unit)}
       </span>
     ),
@@ -78,7 +78,7 @@ export function LowStockTab(): JSX.Element {
       emptyDescription="Every tracked product sits at or above its minimum."
       data-testid="low-stock-table"
       footer={
-        <span className="font-data text-[11px] text-text-muted tabular-nums">
+        <span className="font-data text-xs text-text-muted tabular-nums">
           {rows.length} {rows.length === 1 ? 'product' : 'products'}
         </span>
       }

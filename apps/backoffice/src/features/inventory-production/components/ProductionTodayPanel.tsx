@@ -94,7 +94,7 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
               >
                 <div className="min-w-0">
                   <div className="truncate text-text-primary">{r.product_name ?? r.product_id.slice(0, 8)}</div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
+                  <div className="font-mono text-xs uppercase tracking-widest text-text-muted">
                     {r.production_number}
                     {r.reverted_at !== null && ' · reverted'}
                   </div>
@@ -102,7 +102,7 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
                 <div className="shrink-0 text-right font-mono tabular-nums">
                   <div className="text-text-primary">{formatQuantity(r.quantity_produced, null)}</div>
                   {r.quantity_waste > 0 && (
-                    <div className="text-[10px] text-red">−{formatQuantity(r.quantity_waste, null)} waste</div>
+                    <div className="text-xs text-red">−{formatQuantity(r.quantity_waste, null)} waste</div>
                   )}
                 </div>
               </li>

@@ -165,7 +165,7 @@ export default function MarginWatchPage(): JSX.Element {
       <section data-testid="margin-watch-table" className="rounded-md border border-border-subtle bg-bg-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-surface-inert text-[11px] uppercase tracking-widest text-text-secondary">
+            <thead className="bg-surface-inert text-xs uppercase tracking-widest text-text-secondary">
               <tr>
                 <th className="px-3 py-2 text-left">Product</th>
                 <th className="px-3 py-2 text-right">Target</th>

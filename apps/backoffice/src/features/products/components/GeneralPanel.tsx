@@ -134,7 +134,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
         <Card padding="md">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Visual Asset</h2>
-            <span className="rounded-sm border border-gold px-3 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-gold">
+            <span className="rounded-sm border border-gold px-3 py-0.5 text-xs font-semibold uppercase tracking-widest text-gold">
               High Resolution
             </span>
           </div>
@@ -256,7 +256,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
         {/* Spec B-1 Ph2 — override multi-station de dispatch par produit. */}
         <Card padding="md">
           <h2 className="mb-1 text-sm font-bold uppercase tracking-widest text-text-muted">Dispatch Routing</h2>
-          <p className="mb-3 text-[11px] italic text-text-secondary">
+          <p className="mb-3 text-xs italic text-text-secondary">
             Stations qui reçoivent le KOT pour ce produit. Vide = hériter de la catégorie.
           </p>
           <div className="space-y-2" data-testid="dispatch-stations-picker">
@@ -285,7 +285,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           {(draft.dispatch_stations === null || draft.dispatch_stations.length === 0) && (
             <p
               data-testid="dispatch-inherit-label"
-              className="mt-2 text-[11px] italic text-text-muted"
+              className="mt-2 text-xs italic text-text-muted"
             >
               Hérite le dispatch de la catégorie.
             </p>
@@ -296,7 +296,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <SectionLabel as="h3" size="xs">Inventory levels</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-text-secondary">Current stock</div>
+              <div className="text-xs uppercase tracking-widest text-text-secondary">Current stock</div>
               <Input
                 value={draft.current_stock}
                 disabled
@@ -304,7 +304,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               />
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-text-secondary">Alert threshold</div>
+              <div className="text-xs uppercase tracking-widest text-text-secondary">Alert threshold</div>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -371,7 +371,7 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
     >
       <div>
         <div className="text-xs font-semibold uppercase tracking-widest text-text-primary">{label}</div>
-        <div className="text-[11px] italic text-text-secondary">{sub}</div>
+        <div className="text-xs italic text-text-secondary">{sub}</div>
       </div>
       {/* Harden — l'état ÉTEINT était `bg-bg-input`, c'est-à-dire #ffffff, avec un
           curseur #ffffff, sur une carte #ffffff : contraste 1,00:1, l'état ne se

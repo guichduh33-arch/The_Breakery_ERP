@@ -277,7 +277,7 @@ export default function ProductionForm(): JSX.Element {
               <span>Actual yield</span>
               {hasValidExpected && (
                 <span
-                  className="inline-flex items-center rounded bg-bg-input px-1.5 py-0.5 text-[10px] font-mono text-text-secondary"
+                  className="inline-flex items-center rounded bg-bg-input px-1.5 py-0.5 text-xs font-mono text-text-secondary"
                   data-testid="expected-badge"
                 >
                   exp {formatQuantity(numericExpected, null)}
@@ -290,7 +290,7 @@ export default function ProductionForm(): JSX.Element {
             {variancePct !== null && (
               <div
                 data-testid="variance-display"
-                className={`text-[11px] font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
+                className={`text-xs font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
               >
                 variance {variancePct > 0 ? '+' : ''}{variancePct.toFixed(1)}%
                 {exceedsThreshold && <> (over ±{thresholdPct.toFixed(1)}%)</>}
@@ -322,7 +322,7 @@ export default function ProductionForm(): JSX.Element {
               ))}
             </Select>
             {wasteNeedsReason && (
-              <p className="text-[11px] text-danger">Required when waste is greater than zero.</p>
+              <p className="text-xs text-danger">Required when waste is greater than zero.</p>
             )}
           </div>
 

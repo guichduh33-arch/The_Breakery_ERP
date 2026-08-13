@@ -39,7 +39,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'On hand',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(r.current_stock, null)}</span>
+      <span className="font-data text-xs tabular-nums">{formatQuantity(r.current_stock, null)}</span>
     ),
   },
   {
@@ -47,7 +47,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'Daily sales',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(r.avg_daily_sales, null)}</span>
+      <span className="font-data text-xs tabular-nums">{formatQuantity(r.avg_daily_sales, null)}</span>
     ),
   },
   {
@@ -55,7 +55,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'Coverage',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px]">
+      <span className="font-data text-xs">
         {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
       </span>
     ),
@@ -65,7 +65,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'Produce',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold tabular-nums">
+      <span className="font-data text-xs font-semibold tabular-nums">
         {formatQuantity(r.suggested_quantity, null)}
       </span>
     ),
@@ -75,7 +75,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'Priority',
     render: (r) => (
       <span
-        className={`inline-flex rounded-sm px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${
+        className={`inline-flex rounded-sm px-2 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${
           PRIORITY_CLASS[r.priority] ?? PRIORITY_CLASS.low
         }`}
       >
@@ -100,7 +100,7 @@ export function ProductionAlertsTab(): JSX.Element {
       emptyDescription="Either nothing needs production today, or the production module is not deployed."
       data-testid="production-alerts-table"
       footer={
-        <span className="font-data text-[11px] text-text-muted tabular-nums">
+        <span className="font-data text-xs text-text-muted tabular-nums">
           {rows.length} {rows.length === 1 ? 'suggestion' : 'suggestions'}
         </span>
       }

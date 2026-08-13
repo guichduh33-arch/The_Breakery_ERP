@@ -66,7 +66,7 @@ export function ModifierCostBreakdown({
           <div key={g.group_name} data-testid={`modifier-cost-group-${g.group_name}`}>
             <div className="mb-1 flex items-baseline gap-2">
               <span className="text-sm font-semibold text-text-primary">{g.group_name}</span>
-              <span className="text-[11px] uppercase tracking-wider text-text-secondary">
+              <span className="text-xs uppercase tracking-wider text-text-secondary">
                 {groupTypeLabel(g)}
               </span>
             </div>
@@ -92,7 +92,7 @@ export function ModifierCostBreakdown({
                         <td className="py-1.5 pr-4 text-text-primary">
                           {o.option_label}
                           {o.is_default && (
-                            <span className="ml-2 text-[10px] uppercase tracking-wider text-gold">
+                            <span className="ml-2 text-xs uppercase tracking-wider text-gold">
                               default
                             </span>
                           )}

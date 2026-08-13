@@ -53,7 +53,7 @@ export function ProductPerformanceCard({
   if (error !== null) {
     return (
       <Shell days={days}>
-        <div className="py-1 text-[12.5px]" role="alert">
+        <div className="py-1 text-xs" role="alert">
           <p className="text-text-primary">Sales data is unavailable.</p>
           <p className="mt-0.5 text-text-muted">
             Nothing here is a zero — it is unknown. ({error.message})
@@ -123,7 +123,7 @@ export function ProductPerformanceRestricted({ days = 30 }: { days?: number }): 
   return (
     <Shell days={days}>
       <div
-        className="flex items-center gap-2 py-1 text-[12.5px] text-text-muted"
+        className="flex items-center gap-2 py-1 text-xs text-text-muted"
         data-testid="product-performance-restricted"
       >
         <Lock className="h-3.5 w-3.5" aria-hidden />
@@ -161,10 +161,10 @@ function Metric({
 }): JSX.Element {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <span className="text-[10px] uppercase tracking-widest text-text-secondary">{label}</span>
+      <span className="text-xs uppercase tracking-widest text-text-secondary">{label}</span>
       <div className="text-right">
         <div className="font-mono text-xl tabular-nums text-text-primary">{value}</div>
-        {note !== null && <div className="mt-0.5 text-[11px] text-text-muted">{note}</div>}
+        {note !== null && <div className="mt-0.5 text-xs text-text-muted">{note}</div>}
       </div>
     </div>
   );

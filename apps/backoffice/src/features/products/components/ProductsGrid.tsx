@@ -80,7 +80,7 @@ export function ProductsGrid({
               />
             )}
             {!r.is_active && (
-              <span className="absolute left-2 top-2 rounded-sm bg-red-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red">
+              <span className="absolute left-2 top-2 rounded-sm bg-red-soft px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-red">
                 Inactive
               </span>
             )}

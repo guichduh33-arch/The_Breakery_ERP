@@ -37,7 +37,7 @@ export function StoreCreditTab({ customerId }: { customerId: string | null }): J
   return (
     <Card variant="default" padding="none" className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
-        <thead className="border-b border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <thead className="border-b border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
             <th className="px-4 py-2.5 text-left font-medium">Date</th>
             <th className="px-4 py-2.5 text-left font-medium">Source</th>

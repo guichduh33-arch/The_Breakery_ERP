@@ -145,7 +145,7 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
         <div>
           <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — HTML (raw markup)</div>
           {/*
-            For safety we do NOT inject HTML into the DOM here ; we render the
+            For safety we do NOT inject HTML into the DOM here; we render the
             escaped markup so admins can audit the template body. A future
             iteration may add a sandboxed iframe preview.
           */}

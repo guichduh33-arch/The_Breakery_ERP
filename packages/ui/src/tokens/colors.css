@@ -28,7 +28,9 @@
  * Nouvelle règle : les deux thèmes partagent la teinte (axe ~40°), l'accent
  * (l'or), la typographie, l'échelle et le vocabulaire d'état. SEULE la lumière
  * change. L'exigence de contraste de juin est conservée — l'or clair est une
- * ENCRE (#8a6820, 5,1:1 sur le fond), pas le doré délavé d'origine.
+ * ENCRE (#7a5c1c, ≥4,5:1 sur les quatre fonds du thème — assombri au lot 8
+ * d'audit UX/UI, l'ancien #8a6820 tombait à 4,47:1 sur le papier de page),
+ * pas le doré délavé d'origine.
  *
  * La rampe --surface-N se lit désormais comme une DISTANCE À L'ŒIL, identique
  * dans les deux thèmes : N croissant = plus proche.
@@ -218,7 +220,7 @@
   --border-muted:  #eceae5;    /* filet interne */
   --border-row:    #f3f1ec;    /* séparateur de ligne de tableau */
   --border-focus:  var(--gold-base);
-  --border-gold:   rgba(138, 104, 32, 0.35);
+  --border-gold:   rgba(122, 92, 28, 0.35);
 
   /* Text. */
   /* Les ratios sont mesurés sur le fond le PLUS CLAIR que le token peut avoir
@@ -272,11 +274,15 @@
   /* Accent — encre dorée. Les tokens gardent les noms --gold-* : text-gold /
    * bg-gold-soft / border-gold fonctionnent sans toucher aux composants, et
    * produisent enfin la même FAMILLE de couleur que le POS. */
-  --gold-soft:   rgba(138, 104, 32, 0.12);
-  --gold-base:   #8a6820;                    /* ~5,1:1 sur --surface-2 */
-  --gold-hover:  #745719;
-  --gold-pressed:#5e4614;
-  --gold-strong: #5e4614;
+  --gold-soft:   rgba(122, 92, 28, 0.12);
+  /* Assombri (audit UX/UI 2026-08-13, lot 8). L'ancien #8a6820 valait 4,47:1 sur
+   * le papier de page (#f0efec) et 4,16:1 sur l'état pressé (#e9e7e2) : sous le
+   * seuil AA 4,5:1. #7a5c1c clôt AA sur les QUATRE fonds du thème —
+   * papier 5,41:1, feuille blanche 6,22:1, en-tête inerte 5,95:1, pressé 5,03:1. */
+  --gold-base:   #7a5c1c;
+  --gold-hover:  #684d18;
+  --gold-pressed:#574112;
+  --gold-strong: #574112;
   --gold-fg:     #fffdf9;                    /* texte sur remplissage or */
 
   /* Semantic — assombris pour AA sur les surfaces claires. */

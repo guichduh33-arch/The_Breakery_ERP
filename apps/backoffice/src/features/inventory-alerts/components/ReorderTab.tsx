@@ -13,7 +13,7 @@ import { useReorderSuggestions, type ReorderSuggestion } from '../hooks/useReord
 import { ProductCell } from './ProductCell.js';
 
 const FIELD =
-  'h-8 w-20 rounded-sm border border-border-strong bg-bg-elevated px-2 font-data text-[12.5px] text-text-primary ' +
+  'h-8 w-20 rounded-sm border border-border-strong bg-bg-elevated px-2 font-data text-xs text-text-primary ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
 
 /** Sous 3 jours de couverture, la ligne cesse d'être une suggestion. */
@@ -33,7 +33,7 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     header: 'On hand',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(r.current_stock, r.unit)}</span>
+      <span className="font-data text-xs tabular-nums">{formatQuantity(r.current_stock, r.unit)}</span>
     ),
   },
   {
@@ -45,7 +45,7 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     // pour garder ses décimales — arrondie à l'entier comme le serait un stock
     // en pièces, une conso de 0,4 pcs/jour se lirait « 0 » ou « 1 ».
     render: (r) => (
-      <span className="font-data text-[12.5px] tabular-nums">{formatQuantity(r.avg_daily_usage, null)}</span>
+      <span className="font-data text-xs tabular-nums">{formatQuantity(r.avg_daily_usage, null)}</span>
     ),
   },
   {
@@ -53,7 +53,7 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     header: 'Coverage',
     align: 'right',
     render: (r) => (
-      <span className={`font-data text-[12.5px] ${coverageTone(r.days_of_stock)}`}>
+      <span className={`font-data text-xs ${coverageTone(r.days_of_stock)}`}>
         {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
       </span>
     ),
@@ -63,7 +63,7 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     header: 'Order qty',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold tabular-nums">
+      <span className="font-data text-xs font-semibold tabular-nums">
         {formatQuantity(r.suggested_order_qty, r.unit)}
       </span>
     ),
@@ -73,9 +73,9 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     header: 'Last supplier',
     render: (r) => (
       <div className="min-w-0">
-        <span className="text-[12.5px] text-text-secondary">{r.supplier_name ?? '—'}</span>
+        <span className="text-xs text-text-secondary">{r.supplier_name ?? '—'}</span>
         {r.last_purchase_at !== null && (
-          <div className="font-data text-[10.5px] text-text-muted tabular-nums">
+          <div className="font-data text-xs text-text-muted tabular-nums">
             {r.last_purchase_at.slice(0, 10)}
           </div>
         )}
@@ -95,7 +95,7 @@ export function ReorderTab(): JSX.Element {
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex flex-col gap-1">
-          <label htmlFor="reorder-lookback" className="font-data text-[10px] uppercase tracking-widest text-text-muted">
+          <label htmlFor="reorder-lookback" className="font-data text-xs uppercase tracking-widest text-text-muted">
             Lookback (days)
           </label>
           <input
@@ -108,7 +108,7 @@ export function ReorderTab(): JSX.Element {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="reorder-buffer" className="font-data text-[10px] uppercase tracking-widest text-text-muted">
+          <label htmlFor="reorder-buffer" className="font-data text-xs uppercase tracking-widest text-text-muted">
             Buffer (days)
           </label>
           <input
@@ -120,7 +120,7 @@ export function ReorderTab(): JSX.Element {
             className={FIELD}
           />
         </div>
-        <p className="pb-1 font-data text-[10.5px] text-text-muted">
+        <p className="pb-1 font-data text-xs text-text-muted">
           order qty = max(0, daily use × buffer − on hand)
         </p>
       </div>
@@ -138,7 +138,7 @@ export function ReorderTab(): JSX.Element {
           emptyDescription="No product runs out within the buffer window."
           data-testid="reorder-table"
           footer={
-            <span className="font-data text-[11px] text-text-muted tabular-nums">
+            <span className="font-data text-xs text-text-muted tabular-nums">
               {rows.length} {rows.length === 1 ? 'suggestion' : 'suggestions'} · {lookback} d lookback · {buffer} d buffer
             </span>
           }

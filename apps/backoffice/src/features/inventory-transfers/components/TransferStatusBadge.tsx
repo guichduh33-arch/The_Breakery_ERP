@@ -6,7 +6,7 @@
 // Delegates to the shared Badge primitive: the semantic tonal variants
 // (success/warning/info/neutral/destructive) exist precisely so screens stop
 // re-inventing pills. The former hand-rolled <span> carried an off-scale
-// text-[10px] and its own uppercase, which rendered CANCELLED here and
+// text-xs and its own uppercase, which rendered CANCELLED here and
 // "Cancelled" on the opname list for the same label — see OpnameStatusBadge.
 
 import type { JSX } from 'react';

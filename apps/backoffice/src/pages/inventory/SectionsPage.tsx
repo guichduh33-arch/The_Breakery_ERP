@@ -53,7 +53,7 @@ export default function SectionsPage(): JSX.Element {
 
   function handleDelete(id: string): void {
     // eslint-disable-next-line no-alert
-    if (!confirm('Soft-delete this section? Existing references stay intact ; the section just stops appearing in pickers.')) return;
+    if (!confirm('Soft-delete this section? Existing references stay intact; the section just stops appearing in pickers.')) return;
     softDelete.mutate({ id });
   }
 

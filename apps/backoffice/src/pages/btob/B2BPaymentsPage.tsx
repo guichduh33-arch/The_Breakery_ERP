@@ -247,7 +247,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                   {filteredPayments.map((p) => (
                     <li key={p.id} className="flex items-center justify-between px-4 py-3 text-sm">
                       <div>
-                        <div className="font-data text-[12.5px] tabular-nums text-text-primary">{p.payment_number}</div>
+                        <div className="font-data text-xs tabular-nums text-text-primary">{p.payment_number}</div>
                         <div className="text-xs text-text-secondary">
                           {p.company_name ?? p.customer_name ?? 'Unknown'}
                           {' • '}
@@ -341,7 +341,7 @@ function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow;
         <div className={['font-data text-base tabular-nums', overLimit ? 'text-danger' : 'text-warning'].join(' ')}>
           {formatCurrency(Number(client.b2b_current_balance))}
         </div>
-        {overLimit && <div className="text-[10px] uppercase tracking-widest text-danger">Over limit</div>}
+        {overLimit && <div className="text-xs uppercase tracking-widest text-danger">Over limit</div>}
         {canRecord && (
           <Button variant="ghost" size="sm" onClick={() => onRecord(client.id)} data-testid={`out-record-${client.id}`}>
             Record payment

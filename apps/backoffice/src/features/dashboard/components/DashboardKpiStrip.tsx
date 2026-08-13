@@ -25,9 +25,9 @@ import {
 import type { DashboardKpis } from '../hooks/useDashboardOverview.js';
 
 const CARD = 'flex flex-col gap-[5px] px-[15px] py-[13px] shadow-none';
-const LABEL = 'font-data text-[10px] font-semibold text-text-muted';
+const LABEL = 'font-data text-xs font-semibold text-text-muted';
 const VALUE = 'font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary';
-const NOTE = 'font-data text-[10px] leading-tight text-text-muted';
+const NOTE = 'font-data text-xs leading-tight text-text-muted';
 
 // Tuile HÉRO — direction « Instrument » (maquette 3a). La première tuile est
 // remplie d'encre et sa valeur monte de 23 à 26 px. Ce n'est pas un ornement :
@@ -36,9 +36,9 @@ const NOTE = 'font-data text-[10px] leading-tight text-text-muted';
 // toujours la même — combien a-t-on fait aujourd'hui. Une seule tuile est
 // traitée ainsi ; une deuxième détruirait la hiérarchie qu'elle installe.
 const CARD_HERO = `${CARD} border-ink bg-ink`;
-const LABEL_HERO = 'font-data text-[10px] font-semibold text-ink-fg-sub';
+const LABEL_HERO = 'font-data text-xs font-semibold text-ink-fg-sub';
 const VALUE_HERO = 'font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] tabular-nums text-ink-fg';
-const NOTE_HERO = 'font-data text-[10px] leading-tight text-ink-fg-sub';
+const NOTE_HERO = 'font-data text-xs leading-tight text-ink-fg-sub';
 
 function Tile({
   label, value, children, testId, hero = false, valueTitle,

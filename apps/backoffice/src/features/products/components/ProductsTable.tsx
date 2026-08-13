@@ -132,26 +132,40 @@ export function ProductsTable({
     {
       id: 'product',
       header: 'Product',
-      width: '20.3%',
+      width: '18%',
       sortable: true,
-      render: (r) => (
-        <div className={cn('flex items-center gap-2', r.parent_product_id !== null && 'pl-4')}>
-          <span className="truncate font-medium text-text-primary">{r.name}</span>
-          {r.parent_product_id !== null && (
-            <Badge variant="outline" data-testid="badge-variant">Variant</Badge>
-          )}
-          {parentIds !== undefined && parentIds.has(r.id) && (
-            <Badge variant="outline" data-testid="badge-parent">Parent</Badge>
-          )}
-        </div>
-      ),
+      // Les badges Variant/Parent passent SOUS le nom : inline, ils poussaient un
+      // nom long à la ligne, si bien qu'un produit à trois mots occupait deux
+      // lignes juste pour loger une pastille d'une syllabe.
+      render: (r) => {
+        const isVariant = r.parent_product_id !== null;
+        const isParent = parentIds !== undefined && parentIds.has(r.id);
+        return (
+          <div className={cn('flex flex-col gap-0.5', isVariant && 'pl-4')}>
+            <span className="truncate font-medium text-text-primary">{r.name}</span>
+            {(isVariant || isParent) && (
+              <div className="flex items-center gap-1">
+                {isVariant && (
+                  <Badge variant="outline" data-testid="badge-variant">Variant</Badge>
+                )}
+                {isParent && (
+                  <Badge variant="outline" data-testid="badge-parent">Parent</Badge>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: 'sku',
       header: 'SKU',
-      width: '9.9%',
+      width: '12.2%',
       sortable: true,
-      render: (r) => <span className="font-data text-[11.5px] text-text-muted">{r.sku}</span>,
+      // `whitespace-nowrap` : un SKU alphanumérique long se cassait sur trois
+      // lignes dans une colonne trop étroite. Il reste sur une ligne, la colonne
+      // est élargie pour l'accueillir.
+      render: (r) => <span className="whitespace-nowrap font-data text-xs text-text-muted">{r.sku}</span>,
     },
     ...(shown('type') ? [{
       id: 'type',
@@ -167,7 +181,7 @@ export function ProductsTable({
       // La pilule de catégorie tombe en vue liste : quinze pilules colorées
       // empilées font un vitrail où la couleur ne distingue plus rien.
       render: (r: ProductRow) =>
-        r.category_name === null ? DASH : <span className="text-[12.5px] text-text-secondary">{r.category_name}</span>,
+        r.category_name === null ? DASH : <span className="text-xs text-text-secondary">{r.category_name}</span>,
     }] : []),
     ...(shown('stock') ? [{
       id: 'stock',
@@ -258,7 +272,7 @@ export function ProductsTable({
       align: 'center' as const,
       width: '7.1%',
       render: (r: ProductRow) => (
-        <span className={cn('text-[11.5px] font-semibold', r.is_active ? 'text-success' : 'text-text-muted')}>
+        <span className={cn('text-xs font-semibold', r.is_active ? 'text-success' : 'text-text-muted')}>
           {r.is_active ? 'Active' : 'Inactive'}
         </span>
       ),
@@ -302,7 +316,7 @@ export function ProductsTable({
       {...(onPageSize !== undefined ? { onPageSize } : {})}
       leading={
         <>
-          <span className="text-[12.5px] text-text-secondary">
+          <span className="text-xs text-text-secondary">
             {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
           </span>
           <BulkAction label="Change prices" disabled={selected.size === 0} />
@@ -330,7 +344,7 @@ export function ProductsTable({
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
         <Package className="h-10 w-10 text-text-subtle" aria-hidden />
         <h3 className="text-base font-semibold text-text-primary">No products match these filters</h3>
-        <p className="max-w-prose text-[13px] text-text-secondary">
+        <p className="max-w-prose text-sm text-text-secondary">
           Clear a counter or widen the search to see the catalogue again.
         </p>
       </div>
@@ -348,7 +362,7 @@ function BulkAction({ label, disabled }: { label: string; disabled: boolean }): 
       disabled
       title="Bulk actions need dedicated gated RPCs — not wired yet."
       className={cn(
-        'text-[12.5px] font-medium text-gold',
+        'text-xs font-medium text-gold',
         'cursor-not-allowed opacity-50',
         disabled && 'opacity-30',
       )}

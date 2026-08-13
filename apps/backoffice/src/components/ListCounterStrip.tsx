@@ -48,7 +48,7 @@ const TONE: Record<CounterTone, string> = {
   success: 'text-success',
 };
 
-const LABEL = 'font-data text-[10px] uppercase tracking-widest text-text-muted';
+const LABEL = 'font-data text-xs uppercase tracking-widest text-text-muted';
 const VALUE = 'font-data text-[20px] font-semibold leading-tight tabular-nums';
 
 export interface ListCounterStripProps {

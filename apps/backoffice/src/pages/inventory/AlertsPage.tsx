@@ -44,7 +44,7 @@ function TabCount({ value, tone }: { value: number; tone: 'danger' | 'warning' |
   return (
     <span
       className={cn(
-        'ml-1.5 font-data text-[10.5px] font-bold tabular-nums',
+        'ml-1.5 font-data text-xs font-bold tabular-nums',
         tone === 'danger' && 'text-danger',
         tone === 'warning' && 'text-warning',
         tone === 'neutral' && 'text-text-muted',

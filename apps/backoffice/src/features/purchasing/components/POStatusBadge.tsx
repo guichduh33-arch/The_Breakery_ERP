@@ -25,7 +25,7 @@ export function POStatusBadge({ status }: { status: POStatus }): JSX.Element {
   return (
     <span
       data-status={status}
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest ${STYLES[status]}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs uppercase tracking-widest ${STYLES[status]}`}
     >
       {LABELS[status]}
     </span>

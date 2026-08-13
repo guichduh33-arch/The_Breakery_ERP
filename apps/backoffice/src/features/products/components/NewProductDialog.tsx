@@ -207,7 +207,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
                tient. */
             <p
               data-testid="new-product-display-item-note"
-              className="rounded border border-gold bg-gold-soft px-2 py-1.5 text-[11px] text-text-secondary"
+              className="rounded border border-gold bg-gold-soft px-2 py-1.5 text-xs text-text-secondary"
             >
               <span className="font-semibold text-gold">Display-case counter starts at 0.</span>{' '}
               Stock the display case from the POS («&nbsp;Mettre en vitrine&nbsp;») before selling,

@@ -83,7 +83,7 @@ export function MobileNavDrawer({ domains, activeId }: MobileNavDrawerProps): JS
                             onClick={closeAnd}
                             className={({ isActive }) =>
                               cn(
-                                'flex items-center rounded-sm px-2 py-1.5 text-[13px] leading-tight transition-colors',
+                                'flex items-center rounded-sm px-2 py-1.5 text-sm leading-tight transition-colors',
                                 isActive
                                   ? 'font-medium text-gold'
                                   : 'text-text-primary hover:text-gold',

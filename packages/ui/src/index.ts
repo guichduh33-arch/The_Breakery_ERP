@@ -20,6 +20,7 @@ export {
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/Tabs.js';
 export { ScrollArea, ScrollBar } from './primitives/ScrollArea.js';
 export { Separator } from './primitives/Separator.js';
+export { Skeleton, type SkeletonProps, type SkeletonVariant } from './primitives/Skeleton.js';
 export { Badge, badgeVariants, type BadgeProps } from './primitives/Badge.js';
 export {
   Card,

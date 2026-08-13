@@ -259,7 +259,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               ))}
             </Select>
             {selectedCustomer !== null && (
-              <p className="text-[10px] text-text-muted">
+              <p className="text-xs text-text-muted">
                 Outstanding: <span className="font-mono">{formatCurrency(selectedCustomer.b2b_current_balance)}</span>
                 {selectedCustomer.b2b_credit_limit !== null && (
                   <> • Limit: <span className="font-mono">{formatCurrency(selectedCustomer.b2b_credit_limit)}</span></>
@@ -275,7 +275,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add line
               </Button>
             </div>
-            <p className="text-[10px] text-text-muted">
+            <p className="text-xs text-text-muted">
               Final price is set by the server from negotiated/category pricing.
             </p>
             <div className="space-y-2">
@@ -334,7 +334,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
                     </Button>
                     {overstock && product !== null && (
-                      <p className="col-span-12 text-[10px] text-red">
+                      <p className="col-span-12 text-xs text-red">
                         Only {formatQuantity(product.current_stock, null)} in stock for {product.name}.
                       </p>
                     )}

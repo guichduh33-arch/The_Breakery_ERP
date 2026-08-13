@@ -133,7 +133,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
                       className="h-4 w-4 accent-gold disabled:cursor-not-allowed disabled:opacity-50"
                     />
                     <span className="text-sm text-text-primary">{s.name}</span>
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
+                    <span className="font-mono text-xs uppercase tracking-widest text-text-muted">
                       {s.code}
                     </span>
                   </label>
@@ -147,7 +147,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
                     aria-pressed={isPrimary}
                     title={isPrimary ? 'Primary station' : 'Set as primary'}
                     className={
-                      'inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-40 ' +
+                      'inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-40 ' +
                       (isPrimary
                         ? 'bg-gold-soft text-gold'
                         : 'text-text-muted hover:enabled:text-text-primary')

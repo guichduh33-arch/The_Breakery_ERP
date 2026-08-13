@@ -203,7 +203,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
 
         {/* Lignes à rembourser */}
         <div>
-          <div className="font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted">
+          <div className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
             Lines to refund
           </div>
           <ul className="mt-2 max-h-56 divide-y divide-border-row overflow-y-auto rounded-md border border-border-subtle">
@@ -217,12 +217,12 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                 <li key={it.order_item_id} className="flex items-center gap-3 px-3 py-2.5 text-sm">
                   <span className="flex-1 truncate text-text-primary">{full?.name_snapshot ?? it.order_item_id}</span>
                   {it.qty_already_refunded > 0 && (
-                    <span className="font-data text-[10px] text-text-muted">
+                    <span className="font-data text-xs text-text-muted">
                       {it.qty_already_refunded}/{it.quantity} refunded
                     </span>
                   )}
                   {exhausted ? (
-                    <span className="font-data text-[10px] uppercase tracking-widest text-text-muted">Fully refunded</span>
+                    <span className="font-data text-xs uppercase tracking-widest text-text-muted">Fully refunded</span>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <button
@@ -257,7 +257,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
 
         {/* Destination du remboursement */}
         <div>
-          <label htmlFor="refund-method-bo" className="block font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted">
+          <label htmlFor="refund-method-bo" className="block font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
             Refund destination
           </label>
           <select

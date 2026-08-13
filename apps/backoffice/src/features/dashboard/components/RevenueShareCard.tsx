@@ -52,7 +52,7 @@ export function RevenueShareCard({
       testId="card-revenue-share"
     >
       {segments.length === 0 ? (
-        <p className="py-2 text-[12.5px] text-text-muted">No sale recorded today.</p>
+        <p className="py-2 text-xs text-text-muted">No sale recorded today.</p>
       ) : (
         <>
           <div className="flex h-2.5 overflow-hidden rounded-[5px] bg-surface-4" role="img" aria-label="Revenue share by order type">
@@ -62,7 +62,7 @@ export function RevenueShareCard({
           </div>
           <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
             {segments.map((s) => (
-              <li key={s.order_type} className="flex items-center gap-1.5 text-[11.5px] text-text-secondary">
+              <li key={s.order_type} className="flex items-center gap-1.5 text-xs text-text-secondary">
                 <span className="h-2 w-2 rounded-[2px]" style={{ background: s.color }} aria-hidden />
                 {orderTypeLabel(s.order_type)}
                 <span className="font-data tabular-nums text-text-muted">{formatPct(s.share_pct)}</span>
@@ -75,15 +75,15 @@ export function RevenueShareCard({
       {payments !== null && (
         <>
           <div className="my-3 h-px bg-border-muted" />
-          <p className="font-data text-[11px] font-semibold uppercase tracking-widest text-text-primary">
+          <p className="font-data text-xs font-semibold uppercase tracking-widest text-text-primary">
             Payments collected
           </p>
           {payments.lines.length === 0 ? (
-            <p className="mt-2 text-[12.5px] text-text-muted">No payment collected yet.</p>
+            <p className="mt-2 text-xs text-text-muted">No payment collected yet.</p>
           ) : (
             <ul className="mt-2 space-y-1.5">
               {payments.lines.map((p) => (
-                <li key={p.method} className="flex items-baseline gap-2 text-[12.5px]">
+                <li key={p.method} className="flex items-baseline gap-2 text-xs">
                   <span className="min-w-0 flex-1 truncate text-text-primary">{paymentMethodLabel(p.method)}</span>
                   <span className="shrink-0 font-data tabular-nums text-text-muted">{formatPct(p.share_pct)}</span>
                   <span className="shrink-0 font-data tabular-nums text-text-primary" title={formatIdr(p.amount)}>{formatIdrShort(p.amount)}</span>
@@ -91,7 +91,7 @@ export function RevenueShareCard({
               ))}
             </ul>
           )}
-          <div className="mt-3 space-y-1 border-t border-border-muted pt-2.5 text-[12.5px]">
+          <div className="mt-3 space-y-1 border-t border-border-muted pt-2.5 text-xs">
             <div className="flex items-baseline justify-between">
               <span className="font-medium text-text-primary">Total collected</span>
               <span

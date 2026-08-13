@@ -44,7 +44,7 @@ function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRo
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
       <div>
         <div className="flex items-center gap-2">
-          <span className="font-data text-[12.5px] tabular-nums text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
+          <span className="font-data text-xs tabular-nums text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
           <span className={`${B2B_SETTLEMENT_BADGE} ${B2B_SETTLEMENT_TONE[settlement]}`}>
             {B2B_SETTLEMENT_LABEL[settlement]}
           </span>
