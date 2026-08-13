@@ -43,9 +43,12 @@ describe('KdsBoard — load error (C-D1)', () => {
     render(wrap(<KdsBoard />));
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/connexion au kds perdue/i)).toBeInTheDocument();
+    expect(screen.getByText(/kds connection lost/i)).toBeInTheDocument();
     expect(screen.queryByText(/no active tickets/i)).toBeNull();
 
+    // The Retry button label itself comes from the shared ErrorState
+    // component (apps/pos/src/components/ErrorState.tsx), out of the KDS
+    // feature's scope — its French default ("Réessayer") is untouched here.
     fireEvent.click(screen.getByRole('button', { name: /réessayer/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });

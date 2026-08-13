@@ -72,7 +72,9 @@ function formatAge(ms: number): string {
 function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
   if (ageMs >= cfg.urgentMs) {
     return {
-      border: 'border-red animate-pulse',
+      // motion-safe: the "Late" text badge below is the non-colour signal
+      // that stays fully legible under reduced-motion; the pulse is a bonus.
+      border: 'border-red motion-safe:animate-pulse',
       timer: 'text-red-as-text font-bold',
       bandLabel: 'urgent',
     };
@@ -128,7 +130,12 @@ function ItemCta({ item }: { item: KdsItemRow }) {
       <Button
         variant="secondary"
         size="md"
-        className="border-green text-green hover:bg-green/10"
+        // `green` is a bare `var()` token (not the `rgb(var()/<alpha-value>)`
+        // form the `cat-*` family uses) — `hover:bg-green/10` is a dead
+        // Tailwind class (silently dropped, S25-style token trap). Swap for
+        // the `success-soft` semantic alias, which IS a standalone colour
+        // token and matches the intent (soft positive-action highlight).
+        className="border-green text-green hover:bg-success-soft"
         onClick={() => serve.mutate(item.id)}
         disabled={serve.isPending}
       >

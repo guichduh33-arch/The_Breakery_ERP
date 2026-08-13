@@ -22,7 +22,9 @@ export function KdsEmptyState({ message }: KdsEmptyStateProps) {
     >
       <div className="text-center space-y-5">
         <ChefHat className="h-24 w-24 mx-auto opacity-40" aria-hidden />
-        <p className="font-display text-3xl md:text-4xl text-text-secondary">
+        {/* Mamat decision — Playfair (font-display/font-serif) is out of
+            functional titles. Sans + bold keeps the same visual weight. */}
+        <p className="font-bold text-3xl md:text-4xl text-text-secondary">
           {message}
         </p>
         <p className="text-lg uppercase tracking-[0.3em] text-text-muted">
