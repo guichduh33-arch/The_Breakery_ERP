@@ -215,7 +215,7 @@ describe('Happy Hour smoke — cart panel render with applied promo', () => {
     // ActiveOrderPanel render + react-query effects can take >1s. The default
     // testTimeout of 5s applies; we raise to 10s explicitly via the third arg.
     expect(await screen.findByText('Happy Hour Beverage', undefined, { timeout: 10000 })).toBeInTheDocument();
-    // Promo line shows -Rp 3,500 (the percentage of 35000).
-    expect(screen.getAllByText(/Rp\s*3,500/).length).toBeGreaterThan(0);
+    // Promo line shows -Rp 3.500 (the percentage of 35000).
+    expect(screen.getAllByText(/Rp\s*3.500/).length).toBeGreaterThan(0);
   }, 15000);
 });

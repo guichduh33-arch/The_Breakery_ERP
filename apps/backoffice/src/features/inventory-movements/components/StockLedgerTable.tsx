@@ -114,7 +114,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
     <div className="space-y-3">
       {truncated && (
         <div role="alert" className="rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">
-          Showing the first {rowCap.toLocaleString()} rows. Narrow the date range or filters to see the rest.
+          Showing the first {rowCap.toLocaleString('id-ID')} rows. Narrow the date range or filters to see the rest.
         </div>
       )}
       <div className="overflow-x-auto rounded-md border border-border-subtle">

@@ -15,8 +15,8 @@
 //                  - 2-column grid of pill-style buttons. Selected = gold
 //                    border + inner fill ; modifier with +Rp shows the
 //                    delta below the label.
-//   Footer     : "Total price:  Rp 35,000" row + gold gradient "ADD TO
-//                CART · Rp 35,000" CTA.
+//   Footer     : "Total price:  Rp 35.000" row + gold gradient "ADD TO
+//                CART · Rp 35.000" CTA.
 //
 // v2 (session 6) multi-select groups remain supported — selected options
 // get the gold border treatment identical to single-select selected state.

@@ -92,7 +92,7 @@ describe('ActiveOrderPanel smoke', () => {
     });
     render(wrapper(<ActiveOrderPanel />));
     expect(screen.getAllByText(/total/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Rp 80,000/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Rp 80.000/).length).toBeGreaterThan(0);
   });
 });
 
@@ -128,7 +128,7 @@ describe('Session 2 golden path — modifiers + send to kitchen', () => {
     render(wrapper(<ActiveOrderPanel />));
     expect(screen.getByText('Americano')).toBeInTheDocument();
     expect(screen.getByText(/Hot · Oat milk/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Rp 40,000/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Rp 40.000/).length).toBeGreaterThan(0);
   });
 
   it('locked item shows lock icon and greys quantity stepper', () => {

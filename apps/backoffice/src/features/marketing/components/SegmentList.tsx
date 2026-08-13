@@ -74,7 +74,7 @@ export function SegmentList({ segments }: SegmentListProps) {
                 {SEGMENT_HINTS[s.segment]}
               </td>
               <td className="px-3 py-3 text-right font-mono tabular-nums">
-                {s.customer_count.toLocaleString()}
+                {s.customer_count.toLocaleString('id-ID')}
               </td>
               <td className="px-3 py-3 text-right font-mono tabular-nums">
                 {formatCurrency(s.total_spent)}

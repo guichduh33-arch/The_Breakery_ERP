@@ -10,10 +10,10 @@
 //   │ [icon] LIVE SESSIONS    2 active   [⟳] [X]          │
 //   ├───────────────────────────────────────────────────────┤
 //   │ ● TERM-MOJM2MV7                          Rp 0        │
-//   │   🕓 11m   💳 Opening: Rp 200,000   0 TRANSACTIONS  │
+//   │   🕓 11m   💳 Opening: Rp 200.000   0 TRANSACTIONS  │
 //   ├───────────────────────────────────────────────────────┤
 //   │ ● TERM-MN5PIGRM                          Rp 0        │
-//   │   🕓 368h 29m  💳 Opening: Rp 100,000   0 TRANS…   │
+//   │   🕓 368h 29m  💳 Opening: Rp 100.000   0 TRANS…   │
 //   └───────────────────────────────────────────────────────┘
 //
 // Triggered from SideMenuDrawer "Live Sessions". Auto-refreshes every 30s.

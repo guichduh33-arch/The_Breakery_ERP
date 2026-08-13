@@ -177,7 +177,7 @@ function ProductRow({ row }: { row: POSReportsMarginProductRow }): JSX.Element {
     <li className="px-4 py-2.5" data-testid={`margin-product-${row.productId}`}>
       <MarginLine
         title={row.productName}
-        subtitle={`${row.categoryName} · ${row.qty.toLocaleString()} sold`}
+        subtitle={`${row.categoryName} · ${row.qty.toLocaleString('id-ID')} sold`}
         revenueHt={row.revenueHt}
         cogs={row.cogs}
         margin={row.margin}
@@ -195,7 +195,7 @@ function CategoryRow({ row }: { row: POSReportsMarginCategoryRow }): JSX.Element
     >
       <MarginLine
         title={row.categoryName}
-        subtitle={`${row.qty.toLocaleString()} sold`}
+        subtitle={`${row.qty.toLocaleString('id-ID')} sold`}
         revenueHt={row.revenueHt}
         cogs={row.cogs}
         margin={row.margin}

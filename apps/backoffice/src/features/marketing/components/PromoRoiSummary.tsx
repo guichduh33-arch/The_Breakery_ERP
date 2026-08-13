@@ -31,7 +31,7 @@ function StatRow({ label, value, hint, emphasis = false }: StatRowProps) {
         {hint !== undefined && <div className="text-xs text-text-secondary mt-0.5">{hint}</div>}
       </div>
       <div className={`font-mono tabular-nums ${emphasis ? 'text-base text-text-primary font-semibold' : 'text-sm text-text-primary'}`}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
+        {typeof value === 'number' ? value.toLocaleString('id-ID') : value}
       </div>
     </div>
   );

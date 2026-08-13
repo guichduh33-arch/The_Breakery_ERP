@@ -120,7 +120,7 @@ describe('CartLineRow — a combo line shows its OWN selection, not the defaults
     render(
       <CartLineRow item={makeComboItem()} locked={false} onChangeQty={vi.fn()} onRemove={vi.fn()} />,
     );
-    expect(screen.getByText(/Rp\s*68,000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*68\.000/)).toBeInTheDocument();
   });
 
   it('keeps rendering nothing below the combo when the line has no composition (legacy line)', () => {

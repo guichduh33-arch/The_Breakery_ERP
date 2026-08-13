@@ -60,7 +60,7 @@ export function ConvertLoyaltyModal({
     try {
       const result = await m.mutateAsync({ customerId, points, idempotencyKey: idem.current });
       toast.success(
-        `${result.points_converted.toLocaleString()} points converted to ${formatCurrency(result.amount)} store credit`
+        `${result.points_converted.toLocaleString('id-ID')} points converted to ${formatCurrency(result.amount)} store credit`
         + ` — new balance ${formatCurrency(result.balance_after)}`,
       );
       handleClose();
@@ -78,7 +78,7 @@ export function ConvertLoyaltyModal({
           Converts loyalty points into store credit (multiples of 100 points).
         </DialogDescription>
         <p className="text-sm text-text-secondary">
-          Available: <span className="font-medium tabular-nums">{loyaltyPoints.toLocaleString()}</span> points
+          Available: <span className="font-medium tabular-nums">{loyaltyPoints.toLocaleString('id-ID')}</span> points
         </p>
         <div>
           <label className="block text-sm font-medium">Points to convert</label>
@@ -94,7 +94,7 @@ export function ConvertLoyaltyModal({
           />
           {!pointsOk && pointsStr.length > 0 && (
             <p className="text-xs text-danger mt-1">
-              Positive multiple of 100, up to {loyaltyPoints.toLocaleString()} points
+              Positive multiple of 100, up to {loyaltyPoints.toLocaleString('id-ID')} points
             </p>
           )}
           {pointsOk && (

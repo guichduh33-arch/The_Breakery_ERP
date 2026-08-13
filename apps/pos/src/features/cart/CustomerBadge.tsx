@@ -96,7 +96,7 @@ export function CustomerBadge({ customer, onDetach }: CustomerBadgeProps): JSX.E
           {TIER_LABEL[tier]}
           {customer.loyalty_points > 0 && (
             <span className="ml-2 font-mono text-text-muted normal-case tracking-normal">
-              {customer.loyalty_points.toLocaleString()} pts
+              {customer.loyalty_points.toLocaleString('id-ID')} pts
             </span>
           )}
         </p>

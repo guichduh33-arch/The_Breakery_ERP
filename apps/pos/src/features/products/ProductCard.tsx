@@ -15,7 +15,7 @@
 //   │  LOW STOCK · 2 LEFT           │ ← optional ribbon overlay at image bottom
 //   └───────────────────────────────┘
 //   │ Product name                  │ ← Inter sm
-//   │ Rp 70,000                     │ ← JetBrains Mono gold
+//   │ Rp 70.000                     │ ← JetBrains Mono gold
 //   └───────────────────────────────┘
 //
 // "Out of stock" state (refs 03/06): faded image overlay + tilted "SOLD OUT"

@@ -143,7 +143,7 @@ function buildDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
 
 function remainingRow(): HTMLElement {
   const label = screen.getByText('Remaining');
-  return label.parentElement as HTMLElement;
+  return label.parentElement!;
 }
 
 describe('OrderDetailDrawer — Remaining shows the balance due (P1-3)', () => {
@@ -169,6 +169,6 @@ describe('OrderDetailDrawer — Remaining shows the balance due (P1-3)', () => {
         <OrderDetailDrawer order={order} onVoidClick={vi.fn()} onRefundClick={vi.fn()} />
       </Wrapper>,
     );
-    expect(within(remainingRow()).getByText('Rp 30,000')).toBeInTheDocument();
+    expect(within(remainingRow()).getByText('Rp 30.000')).toBeInTheDocument();
   });
 });

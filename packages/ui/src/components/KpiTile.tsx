@@ -61,8 +61,8 @@ export interface KpiTileProps {
 function formatValue(value: number | string, format: KpiValueFormat): string {
   if (typeof value === 'string') return value;
   if (format === 'currency') return formatIdr(value);
-  if (format === 'percent') return `${value.toLocaleString()}%`;
-  return value.toLocaleString();
+  if (format === 'percent') return `${value.toLocaleString('id-ID')}%`;
+  return value.toLocaleString('id-ID');
 }
 
 function DeltaPill({ delta }: { delta: KpiDelta }): JSX.Element {
@@ -78,7 +78,7 @@ function DeltaPill({ delta }: { delta: KpiDelta }): JSX.Element {
       )}
     >
       <Icon className="h-3 w-3" aria-hidden />
-      <span>{typeof delta.value === 'number' ? delta.value.toLocaleString() : delta.value}</span>
+      <span>{typeof delta.value === 'number' ? delta.value.toLocaleString('id-ID') : delta.value}</span>
       {delta.hint !== undefined && (
         <span className="text-text-muted">{delta.hint}</span>
       )}

@@ -54,9 +54,9 @@ export function LoyaltyAdjustForm({
   );
 
   const amountError = wouldOverflow
-    ? `Amount must be ≤ ${MAX_DELTA.toLocaleString()}.`
+    ? `Amount must be ≤ ${MAX_DELTA.toLocaleString('id-ID')}.`
     : wouldGoNegative
-    ? `Customer only has ${currentBalance.toLocaleString()} points.`
+    ? `Customer only has ${currentBalance.toLocaleString('id-ID')} points.`
     : null;
 
   function handleSubmit(e: FormEvent): void {
@@ -68,7 +68,7 @@ export function LoyaltyAdjustForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="text-sm text-text-secondary">
-        Current balance: <span className="text-text-primary font-mono">{currentBalance.toLocaleString()}</span> pts
+        Current balance: <span className="text-text-primary font-mono">{currentBalance.toLocaleString('id-ID')}</span> pts
       </div>
 
       <div className="space-y-1">
@@ -123,7 +123,7 @@ export function LoyaltyAdjustForm({
 
       {isAmountValid && !wouldGoNegative && (
         <div className="text-sm text-text-secondary">
-          New balance after apply: <span className="text-text-primary font-mono">{projectedBalance.toLocaleString()}</span> pts
+          New balance after apply: <span className="text-text-primary font-mono">{projectedBalance.toLocaleString('id-ID')}</span> pts
         </div>
       )}
 

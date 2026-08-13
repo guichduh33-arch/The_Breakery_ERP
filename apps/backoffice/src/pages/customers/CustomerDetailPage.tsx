@@ -185,13 +185,13 @@ export function CustomerDetailPage(): JSX.Element {
         <div className="mt-4 flex flex-wrap items-end gap-10">
           <div>
             <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-text-primary tabular-nums">
-              {customer.loyalty_points.toLocaleString()}
+              {customer.loyalty_points.toLocaleString('id-ID')}
             </div>
             <div className="mt-1 font-data text-xs font-semibold uppercase tracking-widest text-text-muted">Available points</div>
           </div>
           <div>
             <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-text-primary tabular-nums">
-              {customer.lifetime_points.toLocaleString()}
+              {customer.lifetime_points.toLocaleString('id-ID')}
             </div>
             <div className="mt-1 font-data text-xs font-semibold uppercase tracking-widest text-text-muted">Lifetime points</div>
           </div>
@@ -206,7 +206,7 @@ export function CustomerDetailPage(): JSX.Element {
         <div className="mt-5">
           <div className="flex items-center justify-between text-xs text-text-secondary">
             <span>{nextTier ? `Next tier: ${nextTier.label}` : 'Top tier reached'}</span>
-            {nextTier && <span className="font-data tabular-nums">{pointsToNext.toLocaleString()} pts remaining</span>}
+            {nextTier && <span className="font-data tabular-nums">{pointsToNext.toLocaleString('id-ID')} pts remaining</span>}
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-sm bg-surface-4">
             <div
@@ -260,7 +260,7 @@ export function CustomerDetailPage(): JSX.Element {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
-        <KpiCard label="Visits" value={customer.total_visits.toLocaleString()} />
+        <KpiCard label="Visits" value={customer.total_visits.toLocaleString('id-ID')} />
         <KpiCard label="Total spent" value={rp(customer.total_spent)} />
         <KpiCard label="Average basket" value={rp(avgBasket)} />
         <KpiCard

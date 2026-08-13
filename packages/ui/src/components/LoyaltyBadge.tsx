@@ -33,7 +33,7 @@ export function LoyaltyBadge({ tier, points }: LoyaltyBadgeProps): JSX.Element {
       )}
     >
       <span>{TIER_LABELS[tier]}</span>
-      <span className="font-mono">{points.toLocaleString()} pts</span>
+      <span className="font-mono">{points.toLocaleString('id-ID')} pts</span>
     </span>
   );
 }

@@ -245,8 +245,8 @@ export default function SettingsGeneralPage() {
                 </p>
                 <p>
                   Listed prices are <strong>not converted</strong> — this setting only changes
-                  how every price is interpreted. A product listed at Rp 35,000 will charge the
-                  customer {taxSwitchTargetInclusive ? 'Rp 35,000 (tax included)' : 'Rp 35,000 + PB1'}.
+                  how every price is interpreted. A product listed at Rp 35.000 will charge the
+                  customer {taxSwitchTargetInclusive ? 'Rp 35.000 (tax included)' : 'Rp 35.000 + PB1'}.
                 </p>
                 <p>
                   The switch is refused while open orders exist (draft or pending payment) —

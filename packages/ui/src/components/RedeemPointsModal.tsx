@@ -64,7 +64,7 @@ export function RedeemPointsModal({
         <div>
           <h2 className="font-serif text-xl">Redeem points</h2>
           <p className="text-xs text-text-secondary">
-            Balance: <span className="font-mono font-semibold">{customerBalance.toLocaleString()} pts</span>
+            Balance: <span className="font-mono font-semibold">{customerBalance.toLocaleString('id-ID')} pts</span>
           </p>
         </div>
       </header>
@@ -73,7 +73,7 @@ export function RedeemPointsModal({
         <div className="text-center">
           <p className="text-xs uppercase tracking-widest text-text-secondary mb-1">Points to redeem</p>
           <p className="font-mono text-4xl font-bold text-text-primary" aria-live="polite">
-            {points > 0 ? points.toLocaleString() : '—'}
+            {points > 0 ? points.toLocaleString('id-ID') : '—'}
           </p>
           <p className="text-sm text-text-secondary mt-1" aria-live="polite">
             = {value > 0 ? formatIDR(value) : '0 IDR'}

@@ -38,7 +38,7 @@ export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProp
       if (err instanceof AdjustError) {
         switch (err.code) {
           case 'forbidden':            setFormError('You no longer have permission to adjust points. Please refresh.'); break;
-          case 'insufficient_balance': setFormError(`Customer only has ${customer.loyalty_points.toLocaleString()} points.`); break;
+          case 'insufficient_balance': setFormError(`Customer only has ${customer.loyalty_points.toLocaleString('id-ID')} points.`); break;
           case 'customer_deleted':
             setFormError('This customer was deleted in another session. The list is being refreshed.');
             // Invalidate so the stale row disappears from the table.
