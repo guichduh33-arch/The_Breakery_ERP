@@ -150,7 +150,7 @@ vi.mock('@/features/combos/hooks/useComboConfig', () => ({
 // module transform/resolve cost per test and pushed T2 (5 sequential clicks +
 // Radix re-renders) past the timeout under the combined sweep (13–20s/test).
 // A static import mirrors product-tap-combo.smoke (which runs ~1.3s).
-import { ComboConfigModal } from '../ComboConfigModal';
+import { ComboConfigModal, type ComboConfigModalProps } from '../ComboConfigModal';
 
 // ---------------------------------------------------------------------------
 // Wrapper
@@ -181,7 +181,7 @@ describe('ComboConfigModal', () => {
   // 20s timeout: this is the first test in a heavy module graph (collect ~20s);
   // under the combined POS sweep the cold-start pushes it just past the 15s
   // global default (passes ~14s in isolation). DEV-S47-D3-02.
-  it('T2: multi group — 3rd option disabled when max_select (2) reached; Confirm disabled when below min', async () => {
+  it('T2: multi group — 3rd option disabled when max_select (2) reached; Confirm disabled when below min', () => {
     const Wrapper = makeWrapper();
     render(
       <Wrapper>
@@ -217,7 +217,7 @@ describe('ComboConfigModal', () => {
     expect(confirmBtn).toBeDisabled();
   }, 20000);
 
-  it('T3: defaults pre-selected on open', async () => {
+  it('T3: defaults pre-selected on open', () => {
     const Wrapper = makeWrapper();
     render(
       <Wrapper>
@@ -243,7 +243,7 @@ describe('ComboConfigModal', () => {
     expect(latteRadio).not.toBeChecked();
   });
 
-  it('T4: price summary shows base + surcharge of chosen options', async () => {
+  it('T4: price summary shows base + surcharge of chosen options', () => {
     const Wrapper = makeWrapper();
     render(
       <Wrapper>
@@ -257,18 +257,18 @@ describe('ComboConfigModal', () => {
     );
 
     // Initial: Americano (surcharge 0) + Cookie (surcharge 3000) → total = 50000 + 0 + 3000 = 53000
-    expect(screen.getByText(/rp 53,000/i)).toBeInTheDocument();
+    expect(screen.getByText(/rp 53\.000/i)).toBeInTheDocument();
 
     // Pick Latte instead of Americano (surcharge 5000)
     const latteRadio = screen.getByRole('radio', { name: /latte/i });
     fireEvent.click(latteRadio);
 
     // total = 50000 + 5000 + 3000 = 58000
-    expect(screen.getByText(/rp 58,000/i)).toBeInTheDocument();
+    expect(screen.getByText(/rp 58\.000/i)).toBeInTheDocument();
   });
 
-  it('T5: Confirm emits exact {components, modifiers, unitPrice} shape', async () => {
-    const onConfirm = vi.fn();
+  it('T5: Confirm emits exact {components, modifiers, unitPrice} shape', () => {
+    const onConfirm = vi.fn<ComboConfigModalProps['onConfirm']>();
     const onClose = vi.fn();
     const Wrapper = makeWrapper();
     render(
@@ -315,7 +315,7 @@ describe('ComboConfigModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('T1: Confirm disabled when required single group has no selection', async () => {
+  it('T1: Confirm disabled when required single group has no selection', () => {
     // This test uses a fixture with no defaults so the required single group
     // starts with 0 selections, making validateSelection fail → Confirm disabled.
     // Placed last to avoid cold-start timeout on Windows jsdom.
