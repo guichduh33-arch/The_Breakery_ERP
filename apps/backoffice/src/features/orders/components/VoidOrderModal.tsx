@@ -55,21 +55,30 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
         <p className="rounded bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
           This action cannot be undone. Inventory will be restored to stock.
         </p>
+        {/* Critique /impeccable 2026-08-13 (P1) — un lecteur d'écran entendait
+            « edit text » deux fois sans savoir laquelle était le PIN : labels
+            sans htmlFor, champs sans id, erreur jamais rattachée au champ. */}
         <div>
-          <label className="block text-sm font-medium">Reason for voiding</label>
+          <label htmlFor="void-reason-input" className="block text-sm font-medium">Reason for voiding</label>
           <textarea
+            id="void-reason-input"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             className="mt-1 w-full border rounded p-2 text-sm"
             placeholder="Min. 10 characters…"
+            aria-invalid={reason.length > 0 && !reasonOk}
+            aria-describedby={reason.length > 0 && !reasonOk ? 'void-reason-error' : undefined}
             data-testid="void-reason"
           />
-          {!reasonOk && reason.length > 0 && <p className="text-xs text-danger mt-1">Min. 10 characters</p>}
+          {!reasonOk && reason.length > 0 && (
+            <p id="void-reason-error" className="text-xs text-danger mt-1">Min. 10 characters</p>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium">Manager PIN</label>
+          <label htmlFor="void-pin-input" className="block text-sm font-medium">Manager PIN</label>
           <input
+            id="void-pin-input"
             type="password"
             inputMode="numeric"
             maxLength={6}
@@ -79,7 +88,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             data-testid="void-pin"
           />
         </div>
-        {m.error && <p className="text-sm text-danger" data-testid="void-error">{m.error.message}</p>}
+        {m.error && <p role="alert" className="text-sm text-danger" data-testid="void-error">{m.error.message}</p>}
         <div className="flex justify-end gap-2">
           <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="void-cancel">Cancel</button>
           <button
