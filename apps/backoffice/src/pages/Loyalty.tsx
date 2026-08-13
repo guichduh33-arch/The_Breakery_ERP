@@ -49,6 +49,7 @@ import {
 } from '@/features/loyalty/hooks/useLoyaltyCustomersList.js';
 import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const TIER_OPTIONS: readonly { value: TierFilter; label: string }[] = [
   { value: 'all',      label: 'Tier: All' },
@@ -216,7 +217,7 @@ export default function LoyaltyPage(): JSX.Element {
               placeholder="Search by name or phone…"
               maxLength={64}
               aria-label="Search members"
-              className="h-9 w-full bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+              className={`h-9 w-full rounded-md bg-transparent text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
             />
           </label>
           <label className="flex items-center gap-2">

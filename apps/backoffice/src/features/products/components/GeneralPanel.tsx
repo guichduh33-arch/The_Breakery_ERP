@@ -25,6 +25,7 @@ import {
 } from './ProductPerformanceCard.js';
 import { useSetProductTestFlag } from '../hooks/useSetProductTestFlag.js';
 import { formatCurrency } from '@breakery/utils';
+import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 
 interface Props {
   product: ProductRow;
@@ -169,7 +170,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <div className="space-y-4">
             <div>
               <SectionLabel as="div" size="xs">Retail price (IDR)</SectionLabel>
-              <div className="mt-1.5 flex items-center gap-2 rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm">
+              <div className={`mt-1.5 flex items-center gap-2 rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm ${FOCUS_WITHIN_RING}`}>
                 <span className="text-gold">Rp</span>
                 <input
                   type="number"
@@ -178,7 +179,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                   value={draft.retail_price}
                   disabled={readOnly}
                   onChange={(e) => update('retail_price', Number(e.target.value) || 0)}
-                  className="w-full bg-transparent text-text-primary outline-none disabled:cursor-not-allowed"
+                  className="w-full bg-transparent text-text-primary focus-visible:outline-none disabled:cursor-not-allowed"
                 />
               </div>
             </div>

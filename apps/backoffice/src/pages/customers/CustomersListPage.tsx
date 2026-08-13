@@ -33,6 +33,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { ListPagination, pageSlice } from '@/components/ListPagination.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
@@ -192,11 +193,22 @@ export default function CustomersListPage(): JSX.Element {
       id:     'customer',
       header: 'Customer',
       sortable: true,
+      // La navigation vers la fiche est portée par un vrai lien — le clic-ligne
+      // du `DataTable` ne se prend ni au Tab ni à Entrée, et la fiche client
+      // était donc inatteignable au clavier depuis cette liste (WCAG 2.1.1).
+      // Même motif que la colonne « PO Number » des bons de commande :
+      // `stopPropagation` empêche la ligne de naviguer une seconde fois.
       render: (row) => (
         <div className="flex items-center gap-3">
           <CustomerAvatar name={row.name} />
           <div className="leading-tight">
-            <div className="font-medium text-text-primary">{row.name}</div>
+            <Link
+              to={`/backoffice/customers/${row.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className={`rounded-sm font-medium text-text-primary hover:text-gold hover:underline ${FOCUS_RING}`}
+            >
+              {row.name}
+            </Link>
             {row.phone !== null && (
               <div className="font-data text-xs tabular-nums text-text-muted">{row.phone}</div>
             )}

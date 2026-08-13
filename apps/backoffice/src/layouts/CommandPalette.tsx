@@ -26,6 +26,9 @@ const SEARCH_DEBOUNCE_MS = 250;
 /** Plafond par section — pages et actions suivent la même règle que les entités. */
 const SECTION_LIMIT = 5;
 
+/** Identifiant d'une option, indexé comme `highlight` — cible d'`aria-activedescendant`. */
+const optionId = (index: number): string => `command-palette-option-${String(index)}`;
+
 interface PaletteEntry {
   to: string;
   label: string;
@@ -188,6 +191,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   let lastGroup: string | null = null;
 
+  // Le focus ne quitte JAMAIS le champ — les flèches ne déplacent qu'un
+  // surlignage visuel. Sans `aria-activedescendant`, un lecteur d'écran
+  // n'annonce donc rien : l'utilisateur descend dans une liste dont il
+  // n'entend aucune ligne (WCAG 4.1.2). L'identifiant suit `highlight`.
+  const activeOptionId =
+    results[highlight] === undefined ? undefined : optionId(highlight);
+
   return (
     // CenterModal (Radix) plutôt qu'un overlay maison : piège à focus, Échap et
     // aria-modal viennent avec, et la règle lint `no-raw-modal-overlay` du repo
@@ -210,6 +220,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             placeholder="Search orders, products, customers… or jump to a page"
             aria-label="Search orders, products, customers, suppliers, pages and actions"
             aria-controls="command-palette-results"
+            aria-activedescendant={activeOptionId}
             className="min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted"
           />
           <kbd className="shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-data text-xs text-text-muted">
@@ -250,7 +261,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             lastGroup = entry.group;
             const highlighted = i === highlight;
             return (
-              <li key={`${entry.group}:${entry.to}`}>
+              // Le `<li>` n'est qu'un support de mise en page : il porte le
+              // titre de section et le bouton. C'est le bouton qui est
+              // l'option ; laisser le `<li>` compter comme enfant du `listbox`
+              // y insérerait un élément sans rôle attendu.
+              <li key={`${entry.group}:${entry.to}`} role="presentation">
                 {groupHeader !== null && (
                   <p className="px-4 pb-1 pt-2 font-data text-xs uppercase tracking-widest text-text-muted">
                     {groupHeader}
@@ -258,6 +273,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 )}
                 <button
                   type="button"
+                  id={optionId(i)}
                   role="option"
                   aria-selected={highlighted}
                   data-highlighted={highlighted}

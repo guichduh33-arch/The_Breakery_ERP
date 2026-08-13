@@ -61,6 +61,17 @@ describe('Loyalty BO page', () => {
     expect(within(greta).getByText('Gold')).toBeInTheDocument();
   });
 
+  it('donne un anneau de focus VIVANT à la cellule du nom', async () => {
+    // `focus-visible:ring-accent-primary` ne résolvait à aucune couleur du
+    // preset : la cellule était atteignable au clavier et sans indicateur
+    // (WCAG 2.4.7). L'anneau maison est la seule forme admise.
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Bronze Bob')).toBeInTheDocument());
+    const cell = screen.getByRole('button', { name: /view loyalty history for Bronze Bob/i });
+    expect(cell.className).toContain('focus-visible:outline-gold');
+    expect(cell.className).not.toContain('accent-primary');
+  });
+
   it('shows action buttons gated by permission', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('Bronze Bob')).toBeInTheDocument());

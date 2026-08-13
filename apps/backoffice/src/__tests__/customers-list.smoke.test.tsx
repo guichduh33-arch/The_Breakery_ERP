@@ -109,6 +109,17 @@ describe('CustomersListPage', () => {
     );
   });
 
+  it('carries the navigation on a real link, not only on the row click', async () => {
+    // Le clic-ligne du DataTable ne se prend ni au Tab ni à Entrée : la fiche
+    // client était inatteignable au clavier depuis la liste (WCAG 2.1.1).
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Bali Organic Store')).toBeInTheDocument());
+    const link = screen.getByRole('link', { name: 'Bali Organic Store' });
+    expect(link).toHaveAttribute('href', '/backoffice/customers/c1');
+    expect(screen.getByRole('link', { name: 'Walk-in Customer' }))
+      .toHaveAttribute('href', '/backoffice/customers/c2');
+  });
+
   it('renders category chips for the retail and B2B customers', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('Walk-in Customer')).toBeInTheDocument());

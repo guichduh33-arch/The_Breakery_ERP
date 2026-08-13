@@ -165,6 +165,40 @@ describe('CommandPalette', () => {
     expect(screen.getAllByRole('option')[0]).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('annonce la ligne surlignée — aria-activedescendant suit la flèche bas', () => {
+    setAuthState(ALL_PERMS);
+    renderPalette();
+    // Le focus ne quitte jamais le champ : sans ce pointeur, un lecteur
+    // d'écran ne dit rien de ce que les flèches parcourent (WCAG 4.1.2).
+    const first = screen.getAllByRole('option')[0]!;
+    expect(first.id).not.toBe('');
+    expect(input()).toHaveAttribute('aria-activedescendant', first.id);
+
+    fireEvent.keyDown(input(), { key: 'ArrowDown' });
+    const second = screen.getAllByRole('option')[1]!;
+    expect(second.id).not.toBe(first.id);
+    expect(input()).toHaveAttribute('aria-activedescendant', second.id);
+
+    fireEvent.keyDown(input(), { key: 'ArrowUp' });
+    expect(input()).toHaveAttribute('aria-activedescendant', first.id);
+  });
+
+  it('ne fait pas compter les <li> comme options du listbox', () => {
+    setAuthState(ALL_PERMS);
+    renderPalette();
+    const option = screen.getAllByRole('option')[0]!;
+    expect(option.tagName).toBe('BUTTON');
+    expect(option.closest('li')).toHaveAttribute('role', 'presentation');
+  });
+
+  it('ne pointe vers rien quand aucune ligne ne correspond', () => {
+    setAuthState(ALL_PERMS);
+    renderPalette();
+    fireEvent.change(input(), { target: { value: 'zzzzzz' } });
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    expect(input()).not.toHaveAttribute('aria-activedescendant');
+  });
+
   it('se ferme sur Échap', () => {
     setAuthState(ALL_PERMS);
     const onClose = vi.fn();

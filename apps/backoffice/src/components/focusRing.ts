@@ -11,3 +11,12 @@
 // 3:1 des objets graphiques (WCAG 1.4.11 / 2.4.11). Audit du 2026-08-11.
 export const FOCUS_RING =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
+
+// Même anneau, porté par le CONTENEUR. À réserver aux champs dont la boîte
+// visible n'est pas le contrôle lui-même — un `<input>`/`<select>` transparent
+// posé dans une boîte bordée qui porte aussi une icône. Un anneau sur le
+// contrôle seul se dessinerait alors À L'INTÉRIEUR de la bordure, chevauchant
+// le liseré au lieu de désigner le champ. Le contrôle renonce à son anneau
+// natif (`focus-visible:outline-none`) pour ne pas en afficher deux.
+export const FOCUS_WITHIN_RING =
+  'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold';
