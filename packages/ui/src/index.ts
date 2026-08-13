@@ -52,6 +52,7 @@ export {
   type EmptyStateAction,
   type EmptyStateSize,
 } from './primitives/EmptyState.js';
+export { FormField, type FormFieldProps } from './primitives/FormField.js';
 
 // app shell components
 export { SkipToContent, type SkipToContentProps } from './components/SkipToContent.js';

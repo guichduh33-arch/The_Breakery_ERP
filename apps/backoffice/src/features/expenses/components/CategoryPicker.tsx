@@ -7,9 +7,16 @@ export interface CategoryPickerProps {
   onChange: (id: string) => void;
   disabled?: boolean;
   id?: string;
+  /* Forwardés au <Select> pour que FormField puisse câbler le champ. */
+  required?: boolean;
+  'aria-invalid'?: boolean;
+  'aria-describedby'?: string;
 }
 
-export function CategoryPicker({ value, onChange, disabled, id }: CategoryPickerProps): JSX.Element {
+export function CategoryPicker({
+  value, onChange, disabled, id,
+  required, 'aria-invalid': ariaInvalid, 'aria-describedby': ariaDescribedby,
+}: CategoryPickerProps): JSX.Element {
   const { data, isLoading, error } = useExpenseCategories();
 
   if (isLoading === true) {
@@ -23,6 +30,9 @@ export function CategoryPicker({ value, onChange, disabled, id }: CategoryPicker
       id={id}
       value={value}
       disabled={disabled === true}
+      required={required}
+      aria-invalid={ariaInvalid}
+      aria-describedby={ariaDescribedby}
       onChange={(e) => onChange(e.target.value)}
       className="w-full"
     >
