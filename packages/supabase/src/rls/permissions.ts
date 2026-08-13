@@ -154,6 +154,9 @@ export type PermissionCode =
   // Session 33 / Wave 1.8 — Orders BO control (edit open + void)
   | 'orders.edit_open'
   | 'orders.void'
+  // Lot 6b money-path — cross-shift refund + reprint from BO (seeded by 20260813000004)
+  | 'orders.refund'
+  | 'orders.reprint_receipt'
   // Session 22 — Cost price correction (seeded by 20260526000012)
   | 'inventory.cost_correction'
   // Session 46 — Purchasing: traceable payments + editable PO (seeded by 20260701000017)
