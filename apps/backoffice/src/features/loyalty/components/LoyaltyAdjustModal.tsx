@@ -61,7 +61,7 @@ export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProp
         <DialogDescription className="sr-only">Manually credit or debit a customer's loyalty balance.</DialogDescription>
         {customer && (
           <>
-            {formError !== null && <div className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">{formError}</div>}
+            {formError !== null && <div className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">{formError}</div>}
             <LoyaltyAdjustForm
               currentBalance={customer.loyalty_points}
               onSubmit={handleSubmit}

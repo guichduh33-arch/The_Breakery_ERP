@@ -165,7 +165,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       {todayHoliday !== null && (
         <div
           data-testid="holiday-banner"
-          className="flex items-center gap-2 rounded-md border border-gold/30 bg-gold-soft px-4 py-2.5 text-sm text-text-primary"
+          className="flex items-center gap-2 rounded-md border border-border-gold bg-gold-soft px-4 py-2.5 text-sm text-text-primary"
         >
           <CalendarHeart className="h-4 w-4 text-gold" aria-hidden />
           <span>

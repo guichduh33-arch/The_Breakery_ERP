@@ -46,7 +46,7 @@ export function CustomerDeleteConfirm({ customer, onClose }: CustomerDeleteConfi
           Type <span className="font-mono">{customer?.name}</span> to confirm. This soft-deletes the customer; their loyalty ledger is preserved.
         </DialogDescription>
         {formError !== null && (
-          <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+          <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
             {formError}
           </div>
         )}

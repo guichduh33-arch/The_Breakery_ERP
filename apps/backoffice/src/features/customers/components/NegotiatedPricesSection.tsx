@@ -62,14 +62,14 @@ export function NegotiatedPricesSection({ customerId }: NegotiatedPricesSectionP
         {isLoading ? 'Loading negotiated prices…' : `${prices?.length ?? 0} negotiated price(s)`}
       </div>
       {error !== null && (
-        <div role="alert" className="mx-4 mb-3 rounded-md border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger">
+        <div role="alert" className="mx-4 mb-3 rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </div>
       )}
       {prices && prices.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
-            <thead className="border-y border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
+            <thead className="border-y border-border-subtle bg-surface-inert text-xs uppercase tracking-widest text-text-secondary">
               <tr>
                 <th className="px-4 py-2.5 text-left font-medium">Product</th>
                 <th className="px-4 py-2.5 text-right font-medium">Retail</th>

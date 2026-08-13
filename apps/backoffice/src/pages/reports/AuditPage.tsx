@@ -120,7 +120,7 @@ export default function AuditPage(): JSX.Element {
                   return (
                     <Fragment key={r.id}>
                       <tr
-                        className="border-b border-border-subtle cursor-pointer hover:bg-bg-base/40"
+                        className="border-b border-border-subtle cursor-pointer hover:bg-surface-4"
                         onClick={() => setExpandedId(expanded ? null : r.id)}
                         data-testid={`audit-row-${r.id}`}
                       >
@@ -153,7 +153,7 @@ export default function AuditPage(): JSX.Element {
                         </td>
                       </tr>
                       {expanded && (
-                        <tr className="border-b border-border-subtle bg-bg-base/20" data-testid={`audit-detail-${r.id}`}>
+                        <tr className="border-b border-border-subtle bg-surface-inert" data-testid={`audit-detail-${r.id}`}>
                           <td></td>
                           <td colSpan={4} className="py-2">
                             <div className="text-xs uppercase tracking-widest text-text-secondary">

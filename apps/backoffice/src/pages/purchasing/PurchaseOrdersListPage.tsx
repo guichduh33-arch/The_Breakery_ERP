@@ -280,7 +280,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       </div>
 
       {list.error !== null && list.error !== undefined ? (
-        <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
           Failed to load purchase orders: {list.error.message}
         </div>
       ) : (

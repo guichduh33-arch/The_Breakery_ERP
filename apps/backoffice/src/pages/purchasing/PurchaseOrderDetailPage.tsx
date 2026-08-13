@@ -361,7 +361,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <SectionLabel as="h2" size="sm" className="text-gold">Ordered Items</SectionLabel>
             <div className="overflow-x-auto rounded-md border border-border-subtle">
               <table className="w-full text-sm">
-                <thead className="bg-bg-base/40">
+                <thead className="bg-surface-inert">
                   <tr>
                     <th className="px-3 py-2 text-left">
                       <SectionLabel as="span" size="xs">Product</SectionLabel>
@@ -413,7 +413,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             ) : (
               <div className="overflow-x-auto rounded-md border border-border-subtle">
                 <table className="w-full text-sm">
-                  <thead className="bg-bg-base/40">
+                  <thead className="bg-surface-inert">
                     <tr>
                       <th className="px-3 py-2 text-left">
                         <SectionLabel as="span" size="xs">GRN</SectionLabel>
@@ -559,17 +559,17 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
 function PaymentStatusBadge({ status }: { status: PoPaymentStatus }): JSX.Element {
   if (status === 'paid') {
-    return <Badge variant="outline" className="border-success/40 text-success">PAID</Badge>;
+    return <Badge variant="outline" className="border-success text-success">PAID</Badge>;
   }
   if (status === 'partial') {
-    return <Badge variant="outline" className="border-gold/40 text-gold">PARTIAL</Badge>;
+    return <Badge variant="outline" className="border-border-gold text-gold">PARTIAL</Badge>;
   }
-  return <Badge variant="outline" className="border-danger/40 text-danger">UNPAID</Badge>;
+  return <Badge variant="outline" className="border-danger text-danger">UNPAID</Badge>;
 }
 
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }): JSX.Element {
   return (
-    <div className="rounded-md bg-bg-base/40 px-3 py-2">
+    <div className="rounded-md bg-surface-inert px-3 py-2">
       <SectionLabel as="div" size="xs">{label}</SectionLabel>
       <div className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono' : ''}`}>{value}</div>
     </div>

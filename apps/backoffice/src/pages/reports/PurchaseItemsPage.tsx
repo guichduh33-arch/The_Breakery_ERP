@@ -159,7 +159,7 @@ export default function PurchaseItemsPage() {
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+        <p className="mb-3 rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">
           First 1000 rows shown — narrow the date range to see all results.
         </p>
       )}

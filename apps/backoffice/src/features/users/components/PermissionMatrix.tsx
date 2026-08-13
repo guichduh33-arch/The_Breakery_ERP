@@ -91,7 +91,7 @@ export function PermissionMatrix(): JSX.Element {
                         {granted ? (
                           <Check className="h-4 w-4 text-success inline" aria-label="granted" />
                         ) : (
-                          <XIcon className="h-3.5 w-3.5 text-text-secondary/40 inline" aria-label="denied" />
+                          <XIcon className="h-3.5 w-3.5 text-text-disabled inline" aria-label="denied" />
                         )}
                       </td>
                     );

@@ -123,7 +123,7 @@ export function FiscalPeriodModal({
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="rounded border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+            <div className="rounded border border-warning bg-warning-soft px-3 py-2 text-xs text-warning">
               You are about to <strong>{lock ? 'LOCK' : 'CLOSE'}</strong> period{' '}
               <strong>{selectedPeriod?.period_start} → {selectedPeriod?.period_end}</strong>.
               This action is audit-logged and cannot be undone via UI.

@@ -15,7 +15,7 @@ interface Props {
 const PALETTE = [
   'bg-gold-soft text-gold',
   'bg-red-soft text-red',
-  'bg-green-soft text-green',
+  'bg-success-soft text-success',
   'bg-bg-overlay text-text-primary',
 ] as const;
 

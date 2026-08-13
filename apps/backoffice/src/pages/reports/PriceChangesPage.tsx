@@ -65,7 +65,7 @@ function deltaBadge(pct: number | null): JSX.Element {
     ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-danger-soft text-danger'
     : pct < 0
       ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-success-soft text-success'
-      : 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-surface-raised text-text-secondary';
+      : 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-surface-4 text-text-secondary';
   return <span className={cls}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)}%</span>;
 }
 
@@ -133,7 +133,7 @@ export default function PriceChangesPage() {
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
+        <p className="mb-3 rounded border border-warning bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
           First 500 rows shown — narrow the date range to see all changes.
         </p>
       )}

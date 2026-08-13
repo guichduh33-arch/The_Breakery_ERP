@@ -99,7 +99,7 @@ export default function PurchaseByDatePage() {
               { label: 'Received',  value: String(data.summary.received_count) },
               { label: 'Pending',   value: String(data.summary.pending_count) },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-border-subtle bg-surface-raised p-4">
+              <div key={label} className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
                 <p className="text-xs text-text-secondary uppercase tracking-wide">{label}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
               </div>

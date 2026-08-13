@@ -109,7 +109,7 @@ export default function NewExpensePage(): JSX.Element {
       />
 
       {create.error !== null && create.error !== undefined && (
-        <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
           Failed to save: {create.error.message}
         </div>
       )}

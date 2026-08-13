@@ -7,10 +7,10 @@ import type { POStatus } from '../hooks/usePurchaseOrdersList.js';
 
 const STYLES: Record<POStatus, string> = {
   draft:     'bg-bg-overlay text-text-secondary border-border-subtle',
-  pending:   'bg-warning-soft text-warning border-warning/30',
-  partial:   'bg-info-soft text-info border-info/30',
-  received:  'bg-success-soft text-success border-success/30',
-  cancelled: 'bg-danger-soft text-danger border-danger/30',
+  pending:   'bg-warning-soft text-warning border-warning',
+  partial:   'bg-info-soft text-info border-info',
+  received:  'bg-success-soft text-success border-success',
+  cancelled: 'bg-danger-soft text-danger border-danger',
 };
 
 const LABELS: Record<POStatus, string> = {

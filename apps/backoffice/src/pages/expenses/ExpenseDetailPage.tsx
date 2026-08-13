@@ -267,7 +267,7 @@ export default function ExpenseDetailPage(): JSX.Element {
           </Button>
 
           {submit.error !== null && submit.error !== undefined && (
-            <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+            <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
               {submit.error.message}
             </div>
           )}
@@ -301,7 +301,7 @@ function DetailRow({
   mono?: boolean;
 }): JSX.Element {
   return (
-    <div className="rounded-md bg-bg-base/40 px-3 py-2">
+    <div className="rounded-md bg-surface-inert px-3 py-2">
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-text-muted" aria-hidden />
         <SectionLabel as="div" size="xs">{label}</SectionLabel>

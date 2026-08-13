@@ -42,7 +42,7 @@ export default function SettingsReceiptTemplatesPage() {
                   <p className="text-xs text-text-secondary">{tpl.paper_size}</p>
                 </div>
                 {tpl.is_default && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-gold-soft text-gold border-gold/30">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-gold-soft text-gold border-border-gold">
                     Default
                   </span>
                 )}

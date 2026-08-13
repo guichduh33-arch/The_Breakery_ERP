@@ -52,7 +52,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
         <DialogDescription className="sr-only">
           Voids the order, restoring inventory to stock. This action cannot be undone.
         </DialogDescription>
-        <p className="rounded bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
+        <p className="rounded bg-danger-soft border border-danger p-3 text-sm text-danger">
           This action cannot be undone. Inventory will be restored to stock.
         </p>
         {/* Critique /impeccable 2026-08-13 (P1) — un lecteur d'écran entendait
