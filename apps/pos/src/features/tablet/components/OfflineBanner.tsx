@@ -43,7 +43,7 @@ export function OfflineBanner({ isOnline, lastSync }: OfflineBannerProps): JSX.E
       role="status"
       aria-live="polite"
       data-testid="tablet-offline-banner"
-      className="flex items-center gap-3 border-b border-warning/30 bg-warning-soft px-4 py-2 text-sm text-warning"
+      className="flex items-center gap-3 border-b border-warning bg-warning-soft px-4 py-2 text-sm text-warning"
     >
       <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
       <span className="font-semibold uppercase tracking-widest text-xs">Offline</span>

@@ -62,6 +62,9 @@ function Tile({
 
 export function TabletCategorySidebar({ selectedSlug, onSelect }: TabletCategorySidebarProps): JSX.Element {
   const { data: categories = [] } = useCategories();
+  // Contract: iPad ≥ 768px only — no phone-width fallback is planned. The
+  // tablet surface is documented iPad-first (PRODUCT.md); this fixed rail
+  // width is intentional, not an oversight.
   return (
     <aside className="w-[104px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col items-stretch p-2 gap-1 overflow-y-auto">
       <Tile

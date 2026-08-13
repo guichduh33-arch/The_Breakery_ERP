@@ -172,13 +172,13 @@ export function TabletOrderPage({
       // Spec 006x lot 4 — envoi parti par le bus LAN : pas de commande cloud
       // à afficher dans la liste, on reste sur la prise de commande.
       if (offlineLocalNumber !== null) {
-        toast.success(`Commande ${offlineLocalNumber} envoyée en cuisine (hors-ligne)`);
+        toast.success(`Order ${offlineLocalNumber} sent to kitchen (offline)`);
         return;
       }
       if (appendedTo !== null) {
         // On reste sur la prise de commande : la serveuse enchaîne souvent une
         // autre table, et la commande complétée vit déjà dans son historique.
-        toast.success(`Ajouté à la commande ${appendedTo}`);
+        toast.success(`Added to order ${appendedTo}`);
         return;
       }
       toast.success('Order sent to kitchen');
@@ -187,7 +187,7 @@ export function TabletOrderPage({
       const raw = err instanceof Error ? err.message : 'Failed to send order';
       toast.error(
         raw === 'append_unavailable_offline'
-          ? 'Ajout indisponible hors ligne — prends une commande neuve'
+          ? 'Append unavailable offline — start a new order'
           : raw === 'table_required_for_dine_in'
             ? 'Select a table for a dine-in order'
             : raw,
@@ -277,12 +277,12 @@ export function TabletOrderPage({
           commande neuve, et la serveuse enverrait un doublon à la table. */}
       {isAppendMode && (
         <div
-          className="px-6 py-2 flex items-center justify-between gap-4 bg-gold-soft text-gold border-b border-gold/30"
+          className="px-6 py-2 flex items-center justify-between gap-4 bg-gold-soft text-gold border-b border-gold"
           role="status"
           data-testid="tablet-append-banner"
         >
           <span className="text-sm font-semibold">
-            Ajout à la commande {appendToOrderNumber}
+            Adding to order {appendToOrderNumber}
             {tableNumber ? ` · Table ${tableNumber}` : ''}
           </span>
           <Button
@@ -292,7 +292,7 @@ export function TabletOrderPage({
             onClick={() => setAppendTarget(null)}
             data-testid="tablet-append-cancel"
           >
-            Annuler l’ajout
+            Cancel
           </Button>
         </div>
       )}
@@ -320,7 +320,7 @@ export function TabletOrderPage({
               {isSending
                 ? 'Sending…'
                 : isAppendMode
-                  ? 'Ajouter à la commande'
+                  ? 'Add to order'
                   : 'Send to Kitchen'}
             </Button>
           }

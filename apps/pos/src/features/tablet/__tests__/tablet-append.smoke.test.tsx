@@ -206,7 +206,7 @@ describe('ajout à une commande de salle existante', () => {
 
     const { toast } = await import('sonner');
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/hors ligne/i));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/unavailable offline/i));
     });
     // Le point critique : rien en file, donc aucun drain à bloquer au retour.
     expect(enqueueIntentMock).not.toHaveBeenCalled();

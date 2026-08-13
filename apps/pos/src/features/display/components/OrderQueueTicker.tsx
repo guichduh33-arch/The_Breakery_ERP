@@ -77,7 +77,7 @@ export function OrderQueueTicker({
             {readyRows.map((order) => (
               <li
                 key={order.order_id}
-                className="flex items-center justify-between rounded-2xl bg-success-soft border border-success/30 px-8 py-5 transition-base"
+                className="flex items-center justify-between rounded-2xl bg-success-soft border border-success px-8 py-5 transition-base"
                 data-testid="display-ready-row"
               >
                 <span className="text-4xl font-serif text-text-primary">

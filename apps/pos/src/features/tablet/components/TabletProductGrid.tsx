@@ -116,8 +116,8 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
       <div className="flex-1 overflow-y-auto p-5">
         {isError ? (
           <ErrorState
-            title="Impossible de charger les produits"
-            description="Le menu n'a pas pu être récupéré. Vérifiez la connexion et réessayez."
+            title="Unable to load products"
+            description="The menu could not be retrieved. Check your connection and try again."
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (

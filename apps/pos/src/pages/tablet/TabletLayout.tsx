@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
-import { MapPin, Wifi, WifiOff } from 'lucide-react';
+import { MapPin, Wifi, WifiOff, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
@@ -48,7 +48,7 @@ export default function TabletLayout(): JSX.Element {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-bg-base">
       <header className="h-14 px-4 border-b border-border-subtle flex items-center justify-between gap-3 bg-bg-elevated shrink-0">
-        <span className="font-serif text-xl truncate">{user?.full_name ?? 'Waiter'}</span>
+        <span className="font-semibold text-xl truncate">{user?.full_name ?? 'Waiter'}</span>
 
         <div className="flex items-center gap-2">
           {/* Active table */}
@@ -89,11 +89,12 @@ export default function TabletLayout(): JSX.Element {
         <NavLink
           to="/tablet/order"
           className={({ isActive }) =>
-            `flex-1 flex items-center justify-center text-sm font-semibold uppercase tracking-widest ${
+            `flex-1 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-widest ${
               isActive ? 'text-gold' : 'text-text-secondary hover:text-text-primary'
             }`
           }
         >
+          <ClipboardList className="h-4 w-4 shrink-0" aria-hidden />
           Order
         </NavLink>
         <NavLink
@@ -104,10 +105,11 @@ export default function TabletLayout(): JSX.Element {
             }`
           }
         >
+          <History className="h-4 w-4 shrink-0" aria-hidden />
           Orders
           {orderCount > 0 && (
             <span
-              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
+              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
               aria-label={`${orderCount} order${orderCount === 1 ? '' : 's'}`}
             >
               {orderCount}
