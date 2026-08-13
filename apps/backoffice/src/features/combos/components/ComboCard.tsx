@@ -148,7 +148,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
           </div>
           {savings !== null && savings > 0 && (
             <span className="inline-flex flex-col items-center justify-center rounded-full bg-gold-soft px-3 py-2 text-gold">
-              <span className="text-[0.5625rem] font-semibold uppercase tracking-widest">Save</span>
+              <span className="text-[0.625rem] font-semibold uppercase tracking-widest">Save</span>
               <span className="font-mono text-sm font-bold tabular-nums">{savings}%</span>
             </span>
           )}
