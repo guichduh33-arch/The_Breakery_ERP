@@ -1079,6 +1079,10 @@ export function AppRoutes() {
             DANS la coquille (sidebar + topbar), pas une page nue. */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
+      {/* L'origine nue n'est PAS une URL fautive : c'est l'entrée d'un favori
+          ou d'un domaine tapé à la main. Elle rejoint le tableau de bord — la
+          garde <Protected> renvoie vers /login si nécessaire. */}
+      <Route path="/" element={<Navigate to="/backoffice" replace />} />
       {/* Catch-all racine : plus de redirection silencieuse vers le tableau de
           bord — une URL fautive affiche une vraie 404. */}
       <Route path="*" element={<NotFoundPage />} />
