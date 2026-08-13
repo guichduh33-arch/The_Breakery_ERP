@@ -113,24 +113,24 @@ describe('OrdersListPage smoke', () => {
     toastErrorSpy.mockReset();
     // default: rpc returns 1 row; from() returns empty data (no order_items loaded)
     rpcMock.mockResolvedValue({
-      data: { lines: [SAMPLE_ROW], next_cursor: null },
+      data: { lines: [SAMPLE_ROW], next_cursor_val: null },
       error: null,
     });
     fromMock.mockReturnValue(makeFromChain());
   });
 
-  it('T1 default mount calls RPC v3 with default range and empty filters', async () => {
+  it('T1 default mount calls RPC v4 with default range and empty filters', async () => {
     renderRoute('/backoffice/orders');
     await screen.findByText(/ORD-001/);
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v4', expect.objectContaining({
       p_filters: {},
     }));
   });
 
-  it('T2 URL params propagate to RPC v3 filters', async () => {
+  it('T2 URL params propagate to RPC v4 filters', async () => {
     renderRoute('/backoffice/orders?payment_method=cash&customer_id=c-1&start=2026-05-01&end=2026-05-26');
     await screen.findByText(/ORD-001/);
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v4', expect.objectContaining({
       p_start: '2026-05-01',
       p_end: '2026-05-26',
       p_filters: { payment_method: 'cash', customer_id: 'c-1' },
@@ -165,7 +165,7 @@ describe('OrdersListPage smoke', () => {
     await screen.findByText(/ORD-001/);
     // Les lignes reçoivent le statut…
     const listFiltersMatcher: unknown = expect.objectContaining({ status: 'completed', payment_method: 'cash' });
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v3', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v4', expect.objectContaining({
       p_filters: listFiltersMatcher,
     }));
     // …les compteurs jamais : ils mesurent la fenêtre, pas le panier actif.
@@ -198,7 +198,7 @@ describe('OrdersListPage smoke', () => {
       Promise.resolve(
         name === 'get_orders_counters_v2'
           ? { data: null, error: { message: 'counters down' } }
-          : { data: { lines: [SAMPLE_ROW], next_cursor: null, next_cursor_id: null }, error: null },
+          : { data: { lines: [SAMPLE_ROW], next_cursor_val: null, next_cursor_id: null }, error: null },
       ),
     );
     renderRoute('/backoffice/orders');
@@ -219,7 +219,7 @@ describe('OrdersListPage smoke', () => {
       Promise.resolve(
         name === 'get_orders_counters_v2'
           ? { data: SAMPLE_COUNTERS, error: null }
-          : { data: { lines: [b2bRow], next_cursor: null, next_cursor_id: null }, error: null },
+          : { data: { lines: [b2bRow], next_cursor_val: null, next_cursor_id: null }, error: null },
       ),
     );
     renderRoute('/backoffice/orders');

@@ -1,5 +1,5 @@
 -- supabase/tests/orders_list_v3.test.sql
--- Session 33 / Wave 4.1 — server-side filter coverage for get_orders_list_v3.
+-- Session 33 / Wave 4.1 — server-side filter coverage for get_orders_list_v4.
 -- Runs via MCP execute_sql with BEGIN ... ROLLBACK envelope.
 --
 -- Coverage (10 cases) :
@@ -38,7 +38,7 @@ BEGIN
   END IF;
   PERFORM set_config('request.jwt.claim.sub', v_cashier_id::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31', '{}'::jsonb, 50, NULL, NULL);
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31', '{}'::jsonb, 50, NULL, NULL);
   EXCEPTION WHEN SQLSTATE '42501' THEN
     v_status := CASE WHEN SQLERRM LIKE 'Permission denied%'
                      THEN 'pass' ELSE 'fail_wrong_42501: ' || SQLERRM END;
@@ -65,7 +65,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('refund_status', 'none'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
@@ -86,7 +86,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('refund_status', 'partial'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
@@ -107,7 +107,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('refund_status', 'full'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
@@ -128,7 +128,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('hour', 14), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
@@ -150,7 +150,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('terminal_id', v_terminal::text), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN
@@ -171,7 +171,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('refund_status', 'none', 'hour', 12, 'status', 'completed'),
       50, NULL);
     v_status := 'pass';
@@ -193,7 +193,7 @@ DECLARE
   v_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v3('2026-01-01', '2026-12-31', '{}'::jsonb, 500, NULL, NULL) INTO v_result;
+  SELECT get_orders_list_v4('2026-01-01', '2026-12-31', '{}'::jsonb, 500, NULL, NULL) INTO v_result;
   v_count := jsonb_array_length(v_result->'lines');
   PERFORM set_config('breakery.t8_pass',
     CASE WHEN v_count <= 200 THEN 'pass' ELSE 'fail_unclamped' END,
@@ -214,7 +214,7 @@ DECLARE
   v_status TEXT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
-  SELECT get_orders_list_v3('2026-01-01', '2026-12-31', '{}'::jsonb, 1, NULL, NULL) INTO v_result;
+  SELECT get_orders_list_v4('2026-01-01', '2026-12-31', '{}'::jsonb, 1, NULL, NULL) INTO v_result;
   v_count := jsonb_array_length(v_result->'lines');
   IF v_count = 0 THEN
     v_status := 'pass_empty';
@@ -237,7 +237,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   BEGIN
-    PERFORM get_orders_list_v3('2026-05-01', '2026-05-31',
+    PERFORM get_orders_list_v4('2026-05-01', '2026-05-31',
       jsonb_build_object('foo_unknown', 'bar'), 50, NULL, NULL);
     v_status := 'pass';
   EXCEPTION WHEN OTHERS THEN

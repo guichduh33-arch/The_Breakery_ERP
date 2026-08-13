@@ -145,7 +145,7 @@ DECLARE
 BEGIN
   SELECT get_orders_counters_v2('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_c;
   FOR v_s IN SELECT unnest(enum_range(NULL::order_status))::text LOOP
-    SELECT get_orders_list_v3('2024-01-15', '2024-01-15',
+    SELECT get_orders_list_v4('2024-01-15', '2024-01-15',
       jsonb_build_object('status', v_s), 200, NULL, NULL) INTO v_page;
     v_lines := jsonb_array_length(v_page->'lines');
     v_counter := COALESCE((v_c->'by_status'->v_s->>'count')::int, 0);
@@ -162,15 +162,16 @@ SELECT ok(COALESCE(current_setting('breakery.t7_pass', true), 'missing') = 'pass
 -- ===== T8 : keyset v3 — pagination limit 2, tie de created_at, zéro perte =====
 DO $$
 DECLARE
-  v_page JSONB; v_cursor TIMESTAMPTZ := NULL; v_cursor_id UUID := NULL;
+  v_page JSONB; v_cursor TEXT := NULL; v_cursor_id UUID := NULL;
   v_ids TEXT[] := '{}'; v_guard INT := 0; l JSONB;
 BEGIN
   LOOP
-    SELECT get_orders_list_v3('2024-01-15', '2024-01-15', '{}'::jsonb, 2, v_cursor, v_cursor_id) INTO v_page;
+    -- v4 : positions 5-6 = p_sort/p_dir ; le curseur (texte, id) suit.
+    SELECT get_orders_list_v4('2024-01-15', '2024-01-15', '{}'::jsonb, 2, 'created_at', 'desc', v_cursor, v_cursor_id) INTO v_page;
     FOR l IN SELECT * FROM jsonb_array_elements(v_page->'lines') LOOP
       v_ids := v_ids || (l->>'id');
     END LOOP;
-    v_cursor    := (v_page->>'next_cursor')::timestamptz;
+    v_cursor    := v_page->>'next_cursor_val';
     v_cursor_id := (v_page->>'next_cursor_id')::uuid;
     v_guard := v_guard + 1;
     EXIT WHEN v_cursor IS NULL OR v_guard > 20;
