@@ -7,6 +7,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { toLocalDateStr } from '@breakery/domain';
+import type { PermissionCode } from '@breakery/supabase';
 
 import DashboardPage from '@/pages/Dashboard.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -86,6 +88,18 @@ function overviewFixture(over: Partial<DashboardOverview> = {}): DashboardOvervi
     ...over,
   };
 }
+
+/**
+ * Le rôle de test n'a AUCUNE permission par défaut (`beforeEach`) : les tuiles
+ * sortent donc inertes tant qu'on n'accorde rien, ce qui est aussi le
+ * comportement attendu d'un rôle sans droit sur l'écran visé.
+ */
+function grant(...codes: PermissionCode[]): void {
+  useAuthStore.setState({ permissions: codes });
+}
+
+/** Jour métier du poste — la même source que celle lue par la bande KPI. */
+const TODAY = toLocalDateStr(new Date());
 
 function renderWith(o: DashboardOverview | null, extra: Partial<{ isLoading: boolean; error: Error | null; refetch: () => void }> = {}) {
   return wrap(
@@ -252,5 +266,145 @@ describe('DashboardPage — écran 1c', () => {
     expect(screen.getByText(/No sales today yet/i)).toBeInTheDocument();
     expect(screen.getByText(/No sale recorded today/i)).toBeInTheDocument();
     expect(screen.getByText(/No peak yet today/i)).toBeInTheDocument();
+  });
+});
+
+// Le défaut que ce bloc verrouille : sept chiffres exacts et aucun moyen de les
+// vérifier. Un gérant qui doute d'un CA doit pouvoir remonter à la page qui le
+// porte — et y retrouver LA MÊME journée, sinon le lien ne prouve rien.
+describe('DashboardPage — un chiffre remonte à son origine', () => {
+  function href(testId: string): string | null {
+    return screen.getByTestId(testId).getAttribute('href');
+  }
+
+  it('sends each wired tile to the page that carries its measure, on its own window', () => {
+    grant('reports.sales.read', 'orders.read', 'accounting.cash.read');
+    renderWith(overviewFixture());
+
+    expect(href('kpi-net-revenue'))
+      .toBe(`/backoffice/reports/daily-sales?start=${TODAY}&end=${TODAY}`);
+    expect(href('kpi-orders')).toBe(`/backoffice/orders?start=${TODAY}&end=${TODAY}`);
+    expect(href('kpi-items-sold'))
+      .toBe(`/backoffice/reports/sales-by-category?start=${TODAY}&end=${TODAY}`);
+    expect(href('kpi-avg-basket'))
+      .toBe(`/backoffice/reports/daily-sales?start=${TODAY}&end=${TODAY}`);
+    // Un solde, pas un flux : aucune fenêtre à transmettre.
+    expect(href('kpi-cash-on-hand')).toBe('/backoffice/accounting/cash');
+  });
+
+  // Les deux tuiles sans cible FIDÈLE restent muettes. « Customers » compte les
+  // acheteurs distincts d'une journée, qu'aucun écran ne liste ; « Gross margin »
+  // est calculée au coût courant quand le rapport l'est au COGS/WAC — cliquer
+  // 61,8 % pour atterrir sur un autre nombre serait pire que ne rien offrir.
+  it('leaves a tile inert rather than pointing it at a different number', () => {
+    grant('reports.sales.read', 'orders.read', 'accounting.cash.read');
+    renderWith(overviewFixture());
+
+    expect(screen.getByTestId('kpi-customers').tagName).not.toBe('A');
+    expect(screen.getByTestId('kpi-gross-margin').tagName).not.toBe('A');
+  });
+
+  // Sans ce filtre, la tuile mènerait à un `PermissionGate` qui renvoie sur
+  // /backoffice : un aller-retour qui ressemble à une panne.
+  it('does not offer a link the role cannot open', () => {
+    grant('orders.read');
+    renderWith(overviewFixture());
+
+    expect(screen.getByTestId('kpi-orders').tagName).toBe('A');
+    expect(screen.getByTestId('kpi-net-revenue').tagName).not.toBe('A');
+    expect(screen.getByTestId('kpi-cash-on-hand').tagName).not.toBe('A');
+  });
+
+  // Le bloc trésorerie restreint rend déjà « — » : un lien sur un tiret
+  // promettrait un détail qu'on n'a pas le droit de lire.
+  it('keeps the cash tile inert when the cash block is gated', () => {
+    grant('accounting.cash.read');
+    const o = overviewFixture();
+    o.kpis.cash_on_hand = { value: null, restricted: true, wallets: [] };
+    renderWith(o);
+
+    expect(screen.getByTestId('kpi-cash-on-hand').tagName).not.toBe('A');
+  });
+
+  it('names its destination for a screen reader without hiding the figure', () => {
+    grant('reports.sales.read');
+    renderWith(overviewFixture());
+
+    const tile = screen.getByTestId('kpi-net-revenue');
+    expect(tile).toHaveTextContent(/Open Daily Sales for today/i);
+    expect(tile).toHaveTextContent('Net revenue');
+    expect(tile.getAttribute('aria-label')).toBeNull();
+  });
+
+  // La fenêtre du lien vient des dates DÉJÀ tracées, pas d'un intervalle
+  // recalculé côté client qui pourrait diverger de la courbe affichée.
+  it('sends the 30-day chart to the same window it plots', () => {
+    grant('reports.sales.read');
+    renderWith(overviewFixture());
+
+    expect(screen.getByTestId('revenue-30d-link').getAttribute('href'))
+      .toBe('/backoffice/reports/daily-sales?start=2026-07-01&end=2026-07-30');
+  });
+});
+
+// Le défaut que ce bloc verrouille : à 07:10, la bande affichait sept
+// « ▼ down 100,0% versus yest ». Arithmétiquement exact, métier faux — la
+// journée n'a pas chuté, elle n'a pas commencé. Un gérant qui ouvre la page à
+// l'aube lit un mur rouge et cherche une panne qui n'existe pas.
+describe('DashboardPage — la journée n\'a pas commencé', () => {
+  function freshDay(): DashboardOverview {
+    const o = overviewFixture();
+    o.kpis.net_revenue = { value: 0, vs_yesterday: -100, vs_d7: -100 };
+    o.kpis.orders      = { value: 0, vs_yesterday: -100, vs_d7: -100 };
+    o.kpis.customers   = { value: 0, vs_yesterday: -100, vs_d7: -100 };
+    o.kpis.items_sold  = { value: 0, vs_yesterday: -100, vs_d7: -100 };
+    o.kpis.avg_basket  = { value: null, vs_yesterday: null, vs_d7: null };
+    o.kpis.gross_margin = {
+      value: null, vs_yesterday_pt: null, vs_d7_pt: null,
+      basis: 'current_cost_price', cost_coverage_pct: null,
+    };
+    return o;
+  }
+
+  it('drops the comparisons instead of painting a wall of -100%', () => {
+    renderWith(freshDay());
+
+    const strip = screen.getByTestId('dashboard-kpi-row');
+    expect(strip).not.toHaveTextContent('100,0%');
+    expect(strip).not.toHaveTextContent('yest');
+    expect(strip).not.toHaveTextContent('D-7');
+  });
+
+  it('says why, once, instead of leaving seven blanks to guess', () => {
+    renderWith(freshDay());
+
+    const note = screen.getByTestId('no-sales-yet');
+    expect(note).toHaveTextContent(/No sales recorded yet today/i);
+    expect(note).toHaveTextContent(/comparisons resume with the first sale/i);
+  });
+
+  it('still shows the figures — the tiles go quiet, not empty', () => {
+    renderWith(freshDay());
+
+    expect(screen.getByTestId('kpi-orders')).toHaveTextContent('0');
+    // La trésorerie est un solde : elle survit à une journée sans vente.
+    expect(screen.getByTestId('kpi-cash-on-hand')).toHaveTextContent(/drawer/i);
+  });
+
+  it('says nothing on a day that has sales', () => {
+    renderWith(overviewFixture());
+
+    expect(screen.queryByTestId('no-sales-yet')).not.toBeInTheDocument();
+    expect(screen.getByTestId('kpi-orders')).toHaveTextContent('yest');
+  });
+
+  // `null` veut dire « on ne sait pas », jamais « zéro » : confondre les deux
+  // rendrait une panne de la RPC indiscernable du petit matin.
+  it('does not mistake an unknown order count for an empty day', () => {
+    const o = overviewFixture();
+    o.kpis.orders = { value: null, vs_yesterday: null, vs_d7: null };
+    renderWith(o);
+
+    expect(screen.queryByTestId('no-sales-yet')).not.toBeInTheDocument();
   });
 });
