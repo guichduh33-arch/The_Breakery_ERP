@@ -2,8 +2,11 @@
 //
 // Écran 2a — les règles de lecture du catalogue, celles qui changent une
 // décision : ce que compte la bande de compteurs, la distinction entre « marge
-// nulle » et « marge inconnue », les seuils de la colonne Stock, et le fait que
-// les actions groupées sont posées mais inertes.
+// nulle » et « marge inconnue », et les seuils de la colonne Stock.
+//
+// La sélection multiple et les actions groupées ont été retirées (audit UX/UI
+// 2026-08-13) : le test qui les couvrait devient un test d'ABSENCE, pour qu'une
+// case à cocher ne revienne pas sans les RPC de masse qui la justifient.
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
@@ -180,7 +183,7 @@ describe('ProductsTable — colonnes Stock et Margin', () => {
   });
 });
 
-describe('ProductsTable — pagination et sélection', () => {
+describe('ProductsTable — pagination', () => {
   const many = Array.from({ length: 40 }, (_, i) =>
     row({ id: `p-${i}`, name: `Product ${i}`, sku: `SKU-${i}` }));
 
@@ -203,20 +206,14 @@ describe('ProductsTable — pagination et sélection', () => {
     expect(screen.getByLabelText('Previous page')).toBeDisabled();
   });
 
-  it('selects every row of the CURRENT page, not the whole result set', () => {
-    const onToggleAll = vi.fn();
-    renderTable(many, { page: 1, onToggleAll });
-    fireEvent.click(screen.getByLabelText('Select all products on this page'));
-    const [ids, allSelected] = onToggleAll.mock.calls[0] as [string[], boolean];
-    expect(ids).toHaveLength(PRODUCTS_PAGE_SIZE);
-    expect(allSelected).toBe(false);
-  });
-
-  it('keeps the bulk actions visible but inert — the gated RPCs do not exist yet', () => {
-    renderTable(many, { page: 1, selected: new Set(['p-0']) });
+  it('offers neither row selection nor bulk actions — the gated RPCs do not exist', () => {
+    renderTable(many, { page: 1 });
+    expect(screen.queryByLabelText('Select all products on this page')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Select Product 0')).not.toBeInTheDocument();
+    expect(document.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
     for (const label of ['Change prices', 'Move category', 'Deactivate']) {
-      expect(screen.getByRole('button', { name: label })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
     }
-    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
   });
 });

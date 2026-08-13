@@ -15,11 +15,11 @@
 // « marge inconnue » ne sont pas la même information, et les confondre ferait
 // passer pour vendu à prix coûtant un produit dont on ignore le coût.
 //
-// La sélection et le pied d'actions groupées sont posés, mais les trois actions
-// sont INERTES : elles réclament des RPC de masse gatées et auditées qui
-// n'existent pas encore (arbitrage Mamat 2026-08-06). Elles sont visibles et
-// désactivées plutôt qu'absentes, parce que la sélection multiple n'aurait
-// aucun sens sans elles.
+// La sélection multiple et le pied d'actions groupées sont RETIRÉS (audit UX/UI
+// 2026-08-13). Les trois actions étaient inertes — elles réclament des RPC de
+// masse gatées et auditées qui n'existent pas — et une case à cocher qui
+// n'ouvre sur rien promet une capacité que l'écran n'a pas. Les cases
+// reviendront avec les RPC, pas avant.
 
 import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
@@ -42,7 +42,6 @@ export const PRODUCTS_PAGE_SIZE = LIST_PAGE_SIZE_DEFAULT;
 
 const MONO = 'font-data tabular-nums';
 const DASH = <span className="text-text-subtle">—</span>;
-const EMPTY_SELECTION: ReadonlySet<string> = new Set();
 
 // Le helper `num` unique est mort (audit UX/UI 2026-08-13) : il rendait un
 // stock et un prix de la même façon, si bien que « 5.000 » sur la ligne Cost et
@@ -69,9 +68,6 @@ interface Props {
    */
   sort?: DataTableSort | null;
   onSortChange?: (next: DataTableSort) => void;
-  selected?: ReadonlySet<string>;
-  onToggleRow?: (id: string) => void;
-  onToggleAll?: (ids: readonly string[], allSelected: boolean) => void;
   onRowClick?: (row: ProductRow) => void;
   onView?:     (row: ProductRow) => void;
   onPricing?:  (row: ProductRow) => void;
@@ -89,9 +85,6 @@ export function ProductsTable({
   onPageSize,
   sort = null,
   onSortChange,
-  selected = EMPTY_SELECTION,
-  onToggleRow,
-  onToggleAll,
   onRowClick,
   onView,
   onPricing,
@@ -99,36 +92,10 @@ export function ProductsTable({
 }: Props): JSX.Element {
   const total = rows.length;
   const { pageRows } = pageSlice(rows, page, pageSize);
-  const pageIds = pageRows.map((r) => r.id);
-  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
 
   const shown = (id: ProductColumnId): boolean => hiddenColumns?.has(id) !== true;
 
   const columns: DataTableColumn<ProductRow>[] = [
-    {
-      id: 'select',
-      width: '28px',
-      header: (
-        <input
-          type="checkbox"
-          aria-label="Select all products on this page"
-          checked={allOnPageSelected}
-          onChange={() => { onToggleAll?.(pageIds, allOnPageSelected); }}
-          onClick={(e) => { e.stopPropagation(); }}
-          className="h-3.5 w-3.5 accent-gold"
-        />
-      ),
-      render: (r) => (
-        <input
-          type="checkbox"
-          aria-label={`Select ${r.name}`}
-          checked={selected.has(r.id)}
-          onChange={() => { onToggleRow?.(r.id); }}
-          onClick={(e) => { e.stopPropagation(); }}
-          className="h-3.5 w-3.5 accent-gold"
-        />
-      ),
-    },
     {
       id: 'product',
       header: 'Product',
@@ -314,16 +281,6 @@ export function ProductsTable({
       pageSize={pageSize}
       {...(onPage !== undefined ? { onPage } : {})}
       {...(onPageSize !== undefined ? { onPageSize } : {})}
-      leading={
-        <>
-          <span className="text-xs text-text-secondary">
-            {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
-          </span>
-          <BulkAction label="Change prices" disabled={selected.size === 0} />
-          <BulkAction label="Move category" disabled={selected.size === 0} />
-          <BulkAction label="Deactivate" disabled={selected.size === 0} />
-        </>
-      }
     />
   );
 
@@ -338,7 +295,6 @@ export function ProductsTable({
     density: 'compact',
     sort,
     footer,
-    rowClassName: (r) => (selected.has(r.id) ? 'bg-surface-inert' : undefined),
     emptyTitle: 'No products match these filters',
     emptyState: (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
@@ -353,23 +309,6 @@ export function ProductsTable({
   if (onRowClick !== undefined) tableProps.onRowClick = onRowClick;
   if (onSortChange !== undefined) tableProps.onSortChange = onSortChange;
   return <DataTable {...tableProps} />;
-}
-
-function BulkAction({ label, disabled }: { label: string; disabled: boolean }): JSX.Element {
-  return (
-    <button
-      type="button"
-      disabled
-      title="Bulk actions need dedicated gated RPCs — not wired yet."
-      className={cn(
-        'text-xs font-medium text-gold',
-        'cursor-not-allowed opacity-50',
-        disabled && 'opacity-30',
-      )}
-    >
-      {label}
-    </button>
-  );
 }
 
 interface RowActionProps {
