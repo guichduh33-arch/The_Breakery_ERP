@@ -99,7 +99,7 @@ function PaymentsBreakdown({ period }: { period: ReportsPeriod }): JSX.Element {
         <div className="flex items-baseline justify-between">
           <SectionLabel size="xs" as="h2">By payment method</SectionLabel>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-text-muted">{data.timezone}</span>
+            <span className="text-xs text-text-muted">{data.timezone}</span>
             <Button
               variant="ghost"
               size="sm"

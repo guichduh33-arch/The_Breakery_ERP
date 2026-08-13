@@ -142,7 +142,7 @@ function SessionsReport({ period }: { period: ReportsPeriod }): JSX.Element {
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-text-muted">{data.timezone}</span>
+        <span className="text-xs text-text-muted">{data.timezone}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -202,14 +202,14 @@ function SessionRow({ session: s }: { session: POSReportsSession }): JSX.Element
         <span
           data-testid="session-status-badge"
           className={cn(
-            'inline-flex items-center px-2 h-6 rounded-full text-[10px] font-bold uppercase tracking-wider',
-            isOpen ? 'bg-blue-info/15 text-blue-info' : 'bg-text-muted/15 text-text-muted',
+            'inline-flex items-center px-2 h-6 rounded-full text-xs font-bold uppercase tracking-wider',
+            isOpen ? 'bg-info-soft text-info' : 'bg-bg-overlay text-text-muted',
           )}
         >
           {s.status}
         </span>
         {s.varianceApproved ? (
-          <span className="ml-1 inline-flex items-center px-1.5 h-6 rounded-full text-[10px] font-bold uppercase bg-gold-soft text-gold">
+          <span className="ml-1 inline-flex items-center px-1.5 h-6 rounded-full text-xs font-bold uppercase bg-gold-soft text-gold">
             PIN
           </span>
         ) : null}
@@ -217,7 +217,7 @@ function SessionRow({ session: s }: { session: POSReportsSession }): JSX.Element
       <td className="px-3 py-2">
         <div className="text-text-primary">{s.cashierName}</div>
         {s.closedByName && s.closedByName !== s.cashierName ? (
-          <div className="text-[10px] text-text-muted">closed by {s.closedByName}</div>
+          <div className="text-xs text-text-muted">closed by {s.closedByName}</div>
         ) : null}
       </td>
       <td className="px-3 py-2 text-text-secondary whitespace-nowrap">

@@ -149,7 +149,7 @@ export function SideMenuDrawer({
         <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-border-subtle">
           <div
             aria-hidden
-            className="h-10 w-10 rounded-md bg-gold/80 inline-flex items-center justify-center font-display italic text-gold-fg text-lg"
+            className="h-10 w-10 rounded-md bg-gold inline-flex items-center justify-center font-semibold text-gold-fg text-lg"
           >
             {initial}
           </div>
@@ -158,7 +158,7 @@ export function SideMenuDrawer({
               {userName ?? 'Unknown user'}
             </div>
             {userRole && (
-              <div className="text-[10px] uppercase tracking-widest text-text-muted">
+              <div className="text-xs uppercase tracking-widest text-text-muted">
                 {userRole}
               </div>
             )}

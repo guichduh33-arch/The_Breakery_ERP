@@ -12,14 +12,16 @@ export interface ErrorStateProps {
   title?: string;
   description?: string;
   onRetry?: () => void;
+  retryLabel?: string;
   secondaryAction?: { label: string; onClick: () => void };
   fullScreen?: boolean;
 }
 
 export function ErrorState({
-  title = 'Une erreur est survenue',
-  description = 'Impossible de charger les données. Vérifiez votre connexion et réessayez.',
+  title = 'Something went wrong',
+  description = 'Unable to load data. Check your connection and try again.',
   onRetry,
+  retryLabel = 'Retry',
   secondaryAction,
   fullScreen = false,
 }: ErrorStateProps) {
@@ -35,14 +37,14 @@ export function ErrorState({
       <div className="max-w-sm text-center space-y-4">
         <AlertTriangle className="h-10 w-10 text-red mx-auto" aria-hidden />
         <div className="space-y-1">
-          <h2 className="font-serif text-xl text-text-primary">{title}</h2>
+          <h2 className="font-sans text-xl font-semibold text-text-primary">{title}</h2>
           <p className="text-text-secondary text-sm">{description}</p>
         </div>
         {(onRetry || secondaryAction) && (
           <div className="flex items-center justify-center gap-3 pt-2">
             {onRetry && (
               <Button onClick={onRetry} variant="primary">
-                Réessayer
+                {retryLabel}
               </Button>
             )}
             {secondaryAction && (

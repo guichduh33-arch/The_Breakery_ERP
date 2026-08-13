@@ -125,7 +125,7 @@ function VoidsBreakdown({ period }: { period: ReportsPeriod }): JSX.Element {
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-text-muted">{data.timezone}</span>
+        <span className="text-xs text-text-muted">{data.timezone}</span>
         <Button
           variant="ghost"
           size="sm"
