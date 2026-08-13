@@ -24,8 +24,10 @@ export interface ShiftClosedStateProps {
   open: boolean;
   /** Called when the cashier dismisses the alert. */
   onCancel: () => void;
-  /** Called when the cashier opts to recover the last closed shift. */
-  onRecover: () => void;
+  /** Called when the cashier opts to recover the last closed shift. Optional —
+   * the Recover button is hidden entirely when omitted (lot 6: recover_session_v1
+   * is unimplemented, so the current call-site's handler is a dead-end toast). */
+  onRecover?: () => void;
   /** Called when the cashier opts to open a fresh shift (-> OpenShiftModal). */
   onOpenShift: () => void;
 }
@@ -57,9 +59,11 @@ export function ShiftClosedState({
           <Button variant="secondary" size="md" onClick={onCancel} data-testid="shift-closed-cancel">
             Cancel
           </Button>
-          <Button variant="secondary" size="md" onClick={onRecover} data-testid="shift-closed-recover">
-            Recover my shift
-          </Button>
+          {onRecover && (
+            <Button variant="secondary" size="md" onClick={onRecover} data-testid="shift-closed-recover">
+              Recover my shift
+            </Button>
+          )}
           <Button variant="gold" size="md" onClick={onOpenShift} data-testid="shift-closed-open">
             Open a Shift
           </Button>
