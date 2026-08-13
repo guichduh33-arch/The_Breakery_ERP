@@ -56,10 +56,16 @@ export function CostDonut({
 
   return (
     <div>
-      <div className="relative w-full" style={{ height }}>
-        {/* Audit R-16 — un donut sans equivalent textuel est invisible au
-            lecteur d ecran : on annonce le libelle central et le nombre de
-            parts. */}
+      {/* Audit R-16 — un donut sans equivalent textuel est invisible au
+          lecteur d ecran : on annonce le libelle central et le nombre de
+          parts. Le total central est DANS le libelle : role="img" fait de ce
+          conteneur une feuille, son texte n'est plus lu separement. */}
+      <div
+        className="relative w-full"
+        style={{ height }}
+        role="img"
+        aria-label={`Donut chart of ${centerLabel ?? 'total cost'}, ${formatIdrCompact(total)} across ${rows.length} categories.`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

@@ -57,7 +57,11 @@ export function RevenueTrendChart({
   }
 
   return (
-    <div className="h-44">
+    <div
+      className="h-44"
+      role="img"
+      aria-label={`Line chart of net revenue over the last ${data.length} days, compared with the previous ${data.length} days.`}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid stroke={CHART_GRID_STROKE} vertical={false} />

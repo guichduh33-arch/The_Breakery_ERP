@@ -77,6 +77,10 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
     return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }, [items, selected]);
 
+  // Le nombre de séries RÉELLEMENT tracées : `selected` peut retenir un id
+  // disparu du jeu de produits entre deux chargements.
+  const shownCount = products.filter((p) => selected.has(p.id)).length;
+
   function toggle(id: string): void {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -125,7 +129,11 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
 
       <Card variant="default" padding="md">
         <h3 className="mb-3 font-display text-base text-text-primary">Unit Price Over Time</h3>
-        <div className="h-72 w-full">
+        <div
+          className="h-72 w-full"
+          role="img"
+          aria-label={`Line chart of unit price over time for ${shownCount} selected products, across ${chartData.length} purchase dates.`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 12 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />

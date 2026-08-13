@@ -55,7 +55,11 @@ export function HourlySalesChart({
   }
 
   return (
-    <div className="h-44">
+    <div
+      className="h-44"
+      role="img"
+      aria-label={`Bar chart of revenue per hour today versus the same weekday last week, ${data.length} hourly buckets.`}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
           <CartesianGrid stroke={CHART_GRID_STROKE} vertical={false} />

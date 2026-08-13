@@ -95,15 +95,23 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
           <h3 className="mb-3 font-display text-base text-text-primary">Monthly Purchase Volume</h3>
           <div className="h-64 w-full">
             {hasData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
-                  <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={28} allowDecimals={false} />
-                  <Tooltip formatter={(v: number) => [v, 'Qty']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Bar isAnimationActive={!reduced} dataKey="volume" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              // Le nom accessible est porte par la branche PLEINE : sur le
+              // conteneur commun, il aurait aussi nomme l'etat vide.
+              <div
+                className="h-full w-full"
+                role="img"
+                aria-label={`Bar chart of quantity purchased per month over the last ${monthly.length} months.`}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
+                    <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={28} allowDecimals={false} />
+                    <Tooltip formatter={(v: number) => [v, 'Qty']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                    <Bar isAnimationActive={!reduced} dataKey="volume" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
               <EmptyChart />
             )}
@@ -114,21 +122,27 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
           <h3 className="mb-3 font-display text-base text-text-primary">Monthly Spend (IDR)</h3>
           <div className="h-64 w-full">
             {hasData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
-                  <defs>
-                    <linearGradient id="supplierSpend" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={familyColor('cogs', 4)} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={familyColor('cogs', 4)} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
-                  <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={42} tickFormatter={(v) => formatCurrency(Number(v), { compact: true })} />
-                  <Tooltip formatter={(v: number) => [formatCurrency(v), 'Spend']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Area isAnimationActive={!reduced} type="monotone" dataKey="spend" stroke={familyColor('cogs', 4)} strokeWidth={2} fill="url(#supplierSpend)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div
+                className="h-full w-full"
+                role="img"
+                aria-label={`Area chart of purchase spend in IDR per month over the last ${monthly.length} months.`}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
+                    <defs>
+                      <linearGradient id="supplierSpend" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={familyColor('cogs', 4)} stopOpacity={0.35} />
+                        <stop offset="100%" stopColor={familyColor('cogs', 4)} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
+                    <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={42} tickFormatter={(v) => formatCurrency(Number(v), { compact: true })} />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v), 'Spend']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                    <Area isAnimationActive={!reduced} type="monotone" dataKey="spend" stroke={familyColor('cogs', 4)} strokeWidth={2} fill="url(#supplierSpend)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
               <EmptyChart />
             )}

@@ -32,7 +32,11 @@ export function SupplierPaymentDistribution({
         <p className="py-8 text-center text-sm text-text-muted">No payment data.</p>
       ) : (
         <>
-          <div className="h-44 w-full">
+          <div
+            className="h-44 w-full"
+            role="img"
+            aria-label={`Donut chart of supplier payment distribution, ${formatCurrency(paidAmount)} paid versus ${formatCurrency(overdueAmount)} overdue.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie isAnimationActive={!reduced} data={data} dataKey="value" nameKey="name" innerRadius={48} outerRadius={72} paddingAngle={2} stroke="none">

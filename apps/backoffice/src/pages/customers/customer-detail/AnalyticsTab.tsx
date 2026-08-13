@@ -34,7 +34,11 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
     <div className="space-y-4">
       <Card variant="default" padding="md">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-text-secondary">Spend — last 12 months</h2>
-        <div className="h-64 w-full">
+        <div
+          className="h-64 w-full"
+          role="img"
+          aria-label={`Bar chart of this customer's spend per month over the last ${data.monthly.length} months.`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />

@@ -156,7 +156,11 @@ export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel title="Stock Level Timeline">
           {hasMovement(data.stock_timeline) ? (
-            <div className="h-64 p-2">
+            <div
+              className="h-64 p-2"
+              role="img"
+              aria-label={`Area chart of stock balance for ${data.product.name} in ${data.kpis.unit}, over the last ${data.window_days} days.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data.stock_timeline.map((p) => ({ label: fmtDate(p.day), balance: Number(p.balance) }))}>
                   <defs>
@@ -229,7 +233,11 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
           }
         >
           {data.purchase_price_trend.length >= 2 ? (
-            <div className="h-56 p-2">
+            <div
+              className="h-56 p-2"
+              role="img"
+              aria-label={`Line chart of purchase unit price for ${data.product.name} across ${data.purchase_price_trend.length} purchase orders.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={[...data.purchase_price_trend].reverse().map((p) => ({ label: fmtDate(p.date), cost: Number(p.unit_cost) }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
@@ -247,7 +255,11 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
 
         <Panel title="Purchase Pattern" subtitle="Monthly quantity purchased & order frequency">
           {data.purchase_pattern.length > 0 ? (
-            <div className="h-56 p-2">
+            <div
+              className="h-56 p-2"
+              role="img"
+              aria-label={`Bar chart of quantity purchased per month for ${data.product.name}, ${data.purchase_pattern.length} months.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.purchase_pattern.map((p) => ({ label: fmtDate(p.month), qty: Number(p.qty), orders: Number(p.order_count) }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
@@ -301,7 +313,11 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel title="Weekly Consumption" right={<TrendChip trend={data.consumption_trend} />}>
           {data.weekly_consumption.some((w) => Number(w.units) > 0) ? (
-            <div className="h-56 p-2">
+            <div
+              className="h-56 p-2"
+              role="img"
+              aria-label={`Bar chart of weekly consumption for ${data.product.name} in ${data.kpis.unit}, ${data.weekly_consumption.length} weeks.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.weekly_consumption.map((w) => ({ label: fmtDate(w.week_start), units: Number(w.units) }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
