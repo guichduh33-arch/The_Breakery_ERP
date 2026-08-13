@@ -9,15 +9,31 @@
 // surface area without being able to navigate to a 404. Permission gating
 // stays at the route level — clicking through still routes through the
 // PermissionGate.
+//
+// Audit UX/UI 2026-08-13, lot 5 — trente tuiles réparties sur sept sections se
+// balayaient à l'œil, section par section. Deux ajouts pour ramener le hub à
+// une lecture de quatre-vingt-dix secondes :
+//   · un champ de recherche qui filtre titre ET blurb (casse et accents
+//     indifférents) ; une section dont plus aucune tuile ne correspond
+//     disparaît, et un cul-de-sac se dit avec un état vide, pas avec du blanc ;
+//   · une bande « Recently viewed » en tête, alimentée au clic sur une tuile et
+//     persistée par poste (`bo:reports:recent`).
+// Les tuiles ne portent PAS de valeur : le hub-à-valeurs de la direction est
+// Settings, pas Reports.
 
+import { useCallback, useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, FileSpreadsheet, ListChecks, Receipt, ShoppingCart, Truck,
   AlertTriangle, TrendingUp, GitCommitHorizontal,
-  LineChart, Sparkles, Megaphone, Cake, type LucideIcon,
+  LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
+import {
+  Card, CardContent, CardHeader, CardTitle, EmptyState, Input, SectionLabel,
+} from '@breakery/ui';
+import { PageHeader } from '@/components/PageHeader.js';
+import { useRecentReports } from './recentReports.js';
 
 interface ReportCard {
   to?:    string;          // omitted when the report isn't built yet
@@ -111,56 +127,175 @@ const SECTIONS: ReportSection[] = [
   },
 ];
 
+/** Toutes les tuiles construites, indexées par cible — résolution des récents. */
+const CARDS_BY_TARGET: ReadonlyMap<string, ReportCard> = new Map(
+  SECTIONS.flatMap((s) => s.cards)
+    .filter((c): c is ReportCard & { to: string } => c.to !== undefined)
+    .map((c) => [c.to, c]),
+);
+
+const TOTAL_CARDS = SECTIONS.reduce((n, s) => n + s.cards.length, 0);
+
+/**
+ * Repli de comparaison : minuscules, diacritiques retirés, espaces normalisés.
+ * « Wastage & Spoilage » se trouve avec « spoilage », et « pérennité » avec
+ * « perennite » — le back-office est en anglais mais les postes ne le sont pas.
+ */
+/** Marques combinatoires isolées par la décomposition NFD (`é` → `e` + U+0301). */
+const COMBINING_MARKS = /\p{M}/gu;
+
+function fold(s: string): string {
+  return s.normalize('NFD').replace(COMBINING_MARKS, '').toLowerCase().trim();
+}
+
+const GRID_CLASS =
+  'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+
+function ReportTile({
+  card,
+  onOpen,
+}: {
+  card: ReportCard;
+  onOpen: (to: string) => void;
+}): JSX.Element {
+  const Icon = card.icon;
+  const inner = (
+    <Card
+      className={`h-full ${card.to !== undefined ? 'hover:bg-bg-overlay transition-colors' : 'opacity-60'}`}
+    >
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Icon className="h-4 w-4 text-gold" aria-hidden />
+          {card.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-text-secondary">{card.blurb}</p>
+      </CardContent>
+    </Card>
+  );
+
+  if (card.to === undefined) {
+    return (
+      <div className="block rounded-lg cursor-not-allowed" aria-disabled="true">
+        {inner}
+      </div>
+    );
+  }
+
+  const to = card.to;
+  return (
+    <Link
+      to={to}
+      onClick={() => { onOpen(to); }}
+      className="block focus:outline-none focus:ring-2 focus:ring-gold rounded-lg"
+    >
+      {inner}
+    </Link>
+  );
+}
+
 export default function ReportsIndexPage() {
+  const [query, setQuery] = useState('');
+  const { recent, record } = useRecentReports();
+
+  const needle = fold(query);
+
+  const matches = useCallback(
+    (c: ReportCard): boolean =>
+      needle === '' || fold(`${c.title} ${c.blurb}`).includes(needle),
+    [needle],
+  );
+
+  // Une section vide disparaît : sept en-têtes sans contenu sous une recherche
+  // coûtent plus à lire que la liste elle-même.
+  const sections = useMemo(
+    () =>
+      SECTIONS.map((s) => ({ ...s, cards: s.cards.filter(matches) })).filter(
+        (s) => s.cards.length > 0,
+      ),
+    [matches],
+  );
+
+  // Les récents suivent la même règle de filtrage que le reste, et une entrée
+  // dont la route n'existe plus se résout à rien — donc s'efface.
+  const recentCards = useMemo(
+    () =>
+      recent
+        .map((to) => CARDS_BY_TARGET.get(to))
+        .filter((c): c is ReportCard => c !== undefined)
+        .filter(matches),
+    [recent, matches],
+  );
+
+  const shownCount = sections.reduce((n, s) => n + s.cards.length, 0);
+  const searching = needle !== '';
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Reports &amp; Analytics</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Pick a report. Filters and exports are per-report.
-        </p>
-      </div>
+      <PageHeader
+        title="Reports & Analytics"
+        subtitle="Pick a report. Filters and exports are per-report."
+        actions={
+          <div className="w-full sm:w-72">
+            <label htmlFor="reports-find" className="sr-only">
+              Find a report
+            </label>
+            <Input
+              id="reports-find"
+              type="search"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); }}
+              placeholder="Find a report"
+              maxLength={64}
+              autoComplete="off"
+            />
+          </div>
+        }
+      />
 
-      {SECTIONS.map((section) => (
+      {/* Compte annoncé aux lecteurs d'écran — le filtrage est autrement muet. */}
+      <p className="sr-only" role="status">
+        {searching
+          ? `${String(shownCount)} of ${String(TOTAL_CARDS)} reports match "${query.trim()}".`
+          : `${String(TOTAL_CARDS)} reports.`}
+      </p>
+
+      {recentCards.length > 0 && (
+        <section className="space-y-3">
+          <SectionLabel as="h2" size="sm">
+            <span className="inline-flex items-center gap-1.5">
+              <History className="h-3.5 w-3.5" aria-hidden />
+              Recently viewed
+            </span>
+          </SectionLabel>
+          <div className={GRID_CLASS}>
+            {recentCards.map((c) => (
+              <ReportTile key={`recent-${c.title}`} card={c} onOpen={record} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {sections.map((section) => (
         <section key={section.id} className="space-y-3">
           <SectionLabel as="h2" size="sm">{section.title}</SectionLabel>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {section.cards.map((c) => {
-              const Icon = c.icon;
-              const cardInner = (
-                <Card className={`h-full ${c.to !== undefined ? 'hover:bg-bg-overlay transition-colors' : 'opacity-60'}`}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Icon className="h-4 w-4 text-gold" aria-hidden />
-                      {c.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-text-secondary">{c.blurb}</p>
-                  </CardContent>
-                </Card>
-              );
-              return c.to !== undefined ? (
-                <Link
-                  key={`${section.id}-${c.title}`}
-                  to={c.to}
-                  className="block focus:outline-none focus:ring-2 focus:ring-gold rounded-lg"
-                >
-                  {cardInner}
-                </Link>
-              ) : (
-                <div
-                  key={`${section.id}-${c.title}`}
-                  className="block rounded-lg cursor-not-allowed"
-                  aria-disabled="true"
-                >
-                  {cardInner}
-                </div>
-              );
-            })}
+          <div className={GRID_CLASS}>
+            {section.cards.map((c) => (
+              <ReportTile key={`${section.id}-${c.title}`} card={c} onOpen={record} />
+            ))}
           </div>
         </section>
       ))}
+
+      {sections.length === 0 && (
+        <EmptyState
+          icon={SearchX}
+          title="No report matches"
+          description={`Nothing here answers "${query.trim()}". Try a shorter word, or clear the search to see all ${String(TOTAL_CARDS)} reports.`}
+          action={{ label: 'Clear search', onClick: () => { setQuery(''); } }}
+        />
+      )}
     </div>
   );
 }
