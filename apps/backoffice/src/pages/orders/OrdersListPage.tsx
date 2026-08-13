@@ -264,7 +264,7 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => (
         <Link
           to={`/backoffice/orders/${o.id}`}
-          className="font-data text-xs text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          className="font-data text-xs text-info underline [text-decoration-color:color-mix(in_srgb,transparent,var(--info)_70%)] underline-offset-[3px] hover:[text-decoration-color:var(--info)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           #{o.order_number.replace(/^#+/, '')}
         </Link>
@@ -284,10 +284,14 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => <span className="text-text-secondary">{orderTypeLabel(o.order_type)}</span>,
     },
     {
-      id: 'customer', header: 'Customer',
+      id: 'customer', header: 'Customer', width: '13rem',
       render: (o) => (
         o.customer_name !== null
-          ? <span className="text-text-primary">{o.customer_name}</span>
+          ? (
+            <span className="block max-w-[13rem] truncate text-text-primary" title={o.customer_name}>
+              {o.customer_name}
+            </span>
+          )
           : <span className="text-text-subtle" aria-hidden>—</span>
       ),
     },
@@ -369,12 +373,18 @@ export default function OrdersListPage(): JSX.Element {
       <PageHeader
         title="Orders"
         subtitle={
-          <span className="inline-flex items-center gap-1.5" data-testid="realtime-indicator">
+          <span
+            className="inline-flex items-center gap-1.5"
+            data-testid="realtime-indicator"
+            title={isConnected
+              ? 'New orders appear as they are recorded.'
+              : 'Realtime is disconnected — the list shows the last loaded state.'}
+          >
             <span
               className={cn('inline-block h-1.5 w-1.5 rounded-full', isConnected ? 'bg-success' : 'bg-text-muted')}
               aria-hidden
             />
-            {isConnected ? 'Live — new orders appear as they are recorded.' : 'Offline — showing the last loaded state.'}
+            {isConnected ? 'Live' : 'Offline — last loaded state'}
           </span>
         }
         actions={

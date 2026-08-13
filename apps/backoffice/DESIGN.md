@@ -586,9 +586,9 @@ règle pour un constat :
 Les trois sont des chantiers de propagation, pas des exceptions au système.
 
 **État du corpus.** La planche de référence couvre quinze écrans pour neuf
-archétypes. Deux sont construits — Today (shell + landing) et Products (List).
-Les treize autres sont dessinés et validés, non implémentés : Stock alerts et
-B2B orders (List), Daily sales et Trial balance (Report), Purchase order
+archétypes. Trois sont construits — Today (shell + landing), Products (List) et
+B2B orders (List). Les douze autres sont dessinés et validés, non implémentés :
+Stock alerts (List), Daily sales et Trial balance (Report), Purchase order
 (Document), New expense (Form), Settings (Hub), Stock count (Bulk entry), Roles
 & permissions (Matrix), Recipe (Cascade), Production log (Append-only log),
 Z-reports (List) et Login (hors shell).

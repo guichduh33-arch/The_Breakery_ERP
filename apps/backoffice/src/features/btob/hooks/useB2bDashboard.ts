@@ -1,23 +1,18 @@
 // apps/backoffice/src/features/btob/hooks/useB2bDashboard.ts
 //
-// Session 24 / Phase 2.A.2 — aggregates for the B2B Dashboard page.
+// ADR-026 — les agrégats du dashboard B2B quittent le client. Le hook lisait
+// `view_b2b_invoices` EN ENTIER (sans pagination) et agrégeait en mémoire le
+// revenu mensuel, la variation, le top clients et les clients actifs — la
+// classe de défaut ADR-024 : un échantillon présenté comme un total, et des
+// bornes de mois découpées dans le fuseau du navigateur.
 //
-// Aging KPI now consumes the `view_ar_aging` view (S24 migration _012) which
-// buckets unpaid B2B invoices on real invoice_date (created_at) rather than
-// the previous `last_visit_at` proxy. Closes TASK-09-001 / TASK-09-006 and
-// removes deviation D-W6-B2B-aging-bug.
+// Tout agrégat vient désormais de la famille `get_b2b_dashboard_counters`
+// (gate b2b.read, bornes de mois en fuseau métier, top clients bornés et triés
+// serveur). Seule lecture de lignes restante : les 5 commandes récentes —
+// bornée par construction, hors du principe.
 //
-// Order-side KPIs read `view_b2b_invoices` — the canonical B2B order surface
-// (b2b customers, non-deleted, order_type='b2b', not voided). They used to be
-// derived from a 50-row slice of `customers` ordered by `total_spent`: since
-// that column is never maintained, the slice was arbitrary and every order
-// outside it was invisible, so "Total orders" under-reported and
-// "Active clients" was pinned at 0.
-//
-// Counts that must never under-report (`totalOrders`, `pendingOrders`) are
-// server-side exact counts (`head: true`) — they transfer no rows, so no
-// row cap can silently truncate them. Per-client rollups read one narrow
-// projection and are aggregated here.
+// La réponse RPC est typée `Json` : on VALIDE la forme avant de s'en servir
+// (un cast aveugle rend une page blanche, pas une erreur — leçon ~110 sites).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -63,46 +58,43 @@ export interface B2bDashboardData {
 
 export const B2B_DASHBOARD_QUERY_KEY = ['b2b-dashboard'] as const;
 
-const CLIENT_COLS = [
-  'id', 'name', 'b2b_company_name', 'b2b_current_balance', 'b2b_credit_limit',
-].join(', ');
-
-/** Narrow projection over `view_b2b_invoices` — one row per B2B invoice. */
-const INVOICE_ROLLUP_COLS = 'customer_id, invoice_total, invoice_date';
-
 const RECENT_ORDER_COLS =
   'invoice_id, order_number, invoice_total, order_status, invoice_date, customer_id';
 
-interface InvoiceRollupRow {
-  customer_id:   string | null;
-  invoice_total: number | null;
-  invoice_date:  string;
-}
-
-interface ClientRollup {
-  orders:    number;
-  spent:     number;
-  lastOrder: string | null;
-}
-
-function startOfMonth(): Date {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), 1);
-}
-
-function startOfPrevMonth(): Date {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth() - 1, 1);
-}
-
 type AgingBucketKey = 'current' | '31-60' | '61-90' | '90+';
 
-interface ArAgingRow {
-  customer_id:       string | null;
-  bucket:            string | null;
-  invoice_count:     number | null;
-  total_outstanding: number | null;
-  max_age_days:      number | null;
+interface CountersPayload {
+  active_clients:        number;
+  monthly_revenue:       number;
+  prev_monthly_revenue:  number;
+  outstanding_ar:        number;
+  pending_orders:        number;
+  total_orders:          number;
+  top_clients:           {
+    id: string; name: string; b2b_company_name: string | null;
+    b2b_current_balance: number; b2b_credit_limit: number | null;
+    total_spent: number; total_visits: number; last_visit_at: string | null;
+  }[];
+  aging: Partial<Record<AgingBucketKey, { count: number; total: number }>>;
+}
+
+/** Garde de forme — jamais un cast aveugle sur une réponse `Json`. */
+function assertCountersPayload(raw: unknown): CountersPayload {
+  const p = raw as Partial<CountersPayload> | null;
+  if (
+    p === null || typeof p !== 'object' ||
+    typeof p.active_clients !== 'number' ||
+    typeof p.monthly_revenue !== 'number' ||
+    typeof p.prev_monthly_revenue !== 'number' ||
+    typeof p.outstanding_ar !== 'number' ||
+    typeof p.pending_orders !== 'number' ||
+    typeof p.total_orders !== 'number' ||
+    !Array.isArray(p.top_clients) ||
+    p.aging === null || typeof p.aging !== 'object'
+  ) {
+    throw new Error('get_b2b_dashboard_counters: unexpected payload shape');
+  }
+  return p as CountersPayload;
 }
 
 export function useB2bDashboard() {
@@ -110,58 +102,10 @@ export function useB2bDashboard() {
     queryKey: B2B_DASHBOARD_QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      // Every B2B client — no ranking slice, so no client can fall out of the
-      // aggregates. Ordered by name only to make the payload deterministic.
-      const { data: clients, error: cErr } = await supabase
-        .from('customers')
-        .select(CLIENT_COLS)
-        .is('deleted_at', null)
-        .eq('customer_type', 'b2b')
-        .order('name', { ascending: true });
+      const { data: countersRaw, error: cErr } = await supabase
+        .rpc('get_b2b_dashboard_counters_v1');
       if (cErr) throw cErr;
-      const clientRows = (clients ?? []) as unknown as
-        Omit<B2bClientRow, 'total_spent' | 'total_visits' | 'last_visit_at'>[];
-
-      // Exact server-side counts — head:true transfers no rows.
-      const { count: totalOrdersCount, error: tErr } = await supabase
-        .from('view_b2b_invoices')
-        .select('*', { count: 'exact', head: true });
-      if (tErr) throw tErr;
-
-      const { count: pendingCount, error: pErr } = await supabase
-        .from('view_b2b_invoices')
-        .select('*', { count: 'exact', head: true })
-        .is('paid_at', null);
-      if (pErr) throw pErr;
-
-      const { data: rollupData, error: rErr } = await supabase
-        .from('view_b2b_invoices')
-        .select(INVOICE_ROLLUP_COLS);
-      if (rErr) throw rErr;
-      const rollupRows = (rollupData ?? []) as unknown as InvoiceRollupRow[];
-
-      const monthStart = startOfMonth();
-      const prevStart  = startOfPrevMonth();
-      const perClient  = new Map<string, ClientRollup>();
-      let monthly     = 0;
-      let prevMonthly = 0;
-
-      for (const row of rollupRows) {
-        const total = Number(row.invoice_total ?? 0);
-        const dated = new Date(row.invoice_date);
-        if (dated >= monthStart) monthly += total;
-        else if (dated >= prevStart && dated < monthStart) prevMonthly += total;
-
-        if (row.customer_id === null) continue;
-        const acc = perClient.get(row.customer_id)
-          ?? { orders: 0, spent: 0, lastOrder: null };
-        acc.orders += 1;
-        acc.spent  += total;
-        if (acc.lastOrder === null || row.invoice_date > acc.lastOrder) {
-          acc.lastOrder = row.invoice_date;
-        }
-        perClient.set(row.customer_id, acc);
-      }
+      const counters = assertCountersPayload(countersRaw);
 
       const { data: recentData, error: oErr } = await supabase
         .from('view_b2b_invoices')
@@ -181,70 +125,41 @@ export function useB2bDashboard() {
         customer_id:  o.customer_id,
       }));
 
-      const pending    = pendingCount ?? 0;
-      const totalCount = totalOrdersCount ?? 0;
-
+      const monthly     = counters.monthly_revenue;
+      const prevMonthly = counters.prev_monthly_revenue;
       const monthlyDeltaPct = prevMonthly === 0
         ? (monthly === 0 ? 0 : 100)
         : Math.round(((monthly - prevMonthly) / prevMonthly) * 100);
 
-      // Aging buckets — S24 : consume view_ar_aging (real invoice_date).
-      const { data: agingRows, error: aErr } = await supabase
-        .from('view_ar_aging')
-        .select('customer_id, bucket, invoice_count, total_outstanding, max_age_days');
-      if (aErr) throw aErr;
-
-      const buckets: Record<AgingBucketKey, { count: number; total: number }> = {
-        'current': { count: 0, total: 0 },
-        '31-60':   { count: 0, total: 0 },
-        '61-90':   { count: 0, total: 0 },
-        '90+':     { count: 0, total: 0 },
-      };
-      let outstandingAr = 0;
-      for (const row of (agingRows ?? []) as ArAgingRow[]) {
-        const key = row.bucket as AgingBucketKey | null;
-        if (key === null || !(key in buckets)) continue;
-        const count = Number(row.invoice_count ?? 0);
-        const total = Number(row.total_outstanding ?? 0);
-        buckets[key].count += count;
-        buckets[key].total += total;
-        outstandingAr      += total;
-      }
-
+      const bucket = (key: AgingBucketKey): { count: number; total: number } =>
+        counters.aging[key] ?? { count: 0, total: 0 };
       const aging: B2bAgingBucket[] = [
-        { label: 'Current', range: '0-30 days',   count: buckets.current.count,   total: buckets.current.total   },
-        { label: 'Overdue', range: '31-60 days',  count: buckets['31-60'].count,  total: buckets['31-60'].total  },
-        { label: 'Critical',range: '61-90 days',  count: buckets['61-90'].count,  total: buckets['61-90'].total  },
-        { label: 'Default', range: '90+ days',    count: buckets['90+'].count,    total: buckets['90+'].total    },
+        { label: 'Current',  range: '0-30 days',  ...bucket('current') },
+        { label: 'Overdue',  range: '31-60 days', ...bucket('31-60')   },
+        { label: 'Critical', range: '61-90 days', ...bucket('61-90')   },
+        { label: 'Default',  range: '90+ days',   ...bucket('90+')     },
       ];
 
-      // "With at least one order" — counted on the orders themselves, not on
-      // the `total_spent` cache, which no write path maintains.
-      const activeClients = perClient.size;
-
-      const enrichedClients: B2bClientRow[] = clientRows.map((c) => {
-        const roll = perClient.get(c.id);
-        return {
-          ...c,
-          total_spent:   roll?.spent     ?? 0,
-          total_visits:  roll?.orders    ?? 0,
-          last_visit_at: roll?.lastOrder ?? null,
-        };
-      });
-      const topClients = enrichedClients
-        .filter((c) => c.total_visits > 0)
-        .sort((a, b) => b.total_spent - a.total_spent)
-        .slice(0, 5);
+      const topClients: B2bClientRow[] = counters.top_clients.map((c) => ({
+        id:                  c.id,
+        name:                c.name,
+        b2b_company_name:    c.b2b_company_name,
+        b2b_current_balance: Number(c.b2b_current_balance),
+        b2b_credit_limit:    c.b2b_credit_limit === null ? null : Number(c.b2b_credit_limit),
+        total_spent:         Number(c.total_spent),
+        total_visits:        Number(c.total_visits),
+        last_visit_at:       c.last_visit_at,
+      }));
 
       return {
-        activeClients,
+        activeClients:  counters.active_clients,
         monthlyRevenue: monthly,
         monthlyDeltaPct,
-        outstandingAr,
-        pendingOrders: pending,
-        totalOrders: totalCount,
+        outstandingAr:  counters.outstanding_ar,
+        pendingOrders:  counters.pending_orders,
+        totalOrders:    counters.total_orders,
         topClients,
-        recentOrders: recent,
+        recentOrders:   recent,
         aging,
       };
     },

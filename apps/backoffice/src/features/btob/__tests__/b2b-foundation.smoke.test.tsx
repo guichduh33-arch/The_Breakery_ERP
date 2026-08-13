@@ -45,6 +45,27 @@ const PRODUCTS = [
   { id: 'p1', sku: 'BREAD-01', name: 'Sourdough Loaf', price: 25000, current_stock: 40, unit: 'pcs' },
 ];
 
+// ADR-026 — les agrégats viennent de get_b2b_dashboard_counters ; le payload
+// reflète EXACTEMENT les fixtures ci-dessus (3 factures, 2 clients, 1 impayée,
+// aging 750k + 120k).
+const B2B_COUNTERS = {
+  active_clients: 2,
+  monthly_revenue: 0,
+  prev_monthly_revenue: 0,
+  outstanding_ar: 870000,
+  pending_orders: 1,
+  total_orders: 3,
+  top_clients: [
+    { id: 'b1', name: 'Hotel Kuta', b2b_company_name: 'PT Kuta',
+      b2b_current_balance: 250000, b2b_credit_limit: 1000000,
+      total_spent: 420000, total_visits: 2, last_visit_at: '2026-04-05T00:00:00Z' },
+    { id: 'b2', name: 'Villa Sanur', b2b_company_name: 'PT Sanur',
+      b2b_current_balance: 0, b2b_credit_limit: null,
+      total_spent: 90000, total_visits: 1, last_visit_at: '2026-04-06T00:00:00Z' },
+  ],
+  aging: { '31-60': { count: 2, total: 750000 }, '90+': { count: 1, total: 120000 } },
+};
+
 interface RpcResult { data: unknown; error: { message: string } | null }
 
 vi.mock('@/lib/supabase.js', () => {
@@ -86,6 +107,9 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: unknown) => {
+        if (fn === 'get_b2b_dashboard_counters_v1') {
+          return Promise.resolve({ data: B2B_COUNTERS, error: null });
+        }
         const out = mockRpc(fn, args) as RpcResult | undefined;
         return Promise.resolve(out ?? {
           data: {

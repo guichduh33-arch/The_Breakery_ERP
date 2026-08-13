@@ -4,7 +4,7 @@
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module B2B sert à faire au quotidien** pour The Breakery,
 >
-> **Révision** : 2026-08-09 · **Statut** : Partiel
+> **Révision** : 2026-08-13 · **Statut** : Partiel
 > **ADR applicables** : ADR-005 (taxe de sortie 10 % détaillée sur la facture), ADR-022 déc. 6 (la garde de vendabilité durcie sur les portes de vente POS laisse la création de commande B2B hors périmètre : sujet ouvert, à décider pour lui-même)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
@@ -17,11 +17,11 @@
 
 Le module B2B est le **canal wholesale** de The Breakery. Il répond à une question simple mais stratégique pour une boulangerie qui ne veut pas vivre uniquement de ses tickets de comptoir :
 
-> *"Comment je vends 200 baguettes par semaine à un hôtel, 50 viennoiseries par jour à un café, et 500 cookies en livraison à un événement d'entreprise — avec un prix négocié, une livraison planifiée, une facture officielle et un paiement à 30 jours ?"*
+> *"Comment je vends 200 baguettes par semaine à un hôtel, 50 viennoiseries par jour à un café, et 500 cookies pour un événement d'entreprise — avec un prix négocié, un retrait planifié, une facture officielle et un paiement à 30 jours ?"*
 
-C'est le module qui transforme **un commerçant de quartier en fournisseur** d'hôtels, restaurants, cafés, traiteurs et revendeurs. Sans lui, chaque commande professionnelle se gérait à la main (carnet papier, facture Word, paiement perdu de vue) ; avec lui, chaque relation B2B devient un **flux structuré** : devis → confirmation → préparation → livraison(s) → facturation → encaissement échelonné.
+C'est le module qui transforme **un commerçant de quartier en fournisseur** d'hôtels, restaurants, cafés, traiteurs et revendeurs. Sans lui, chaque commande professionnelle se gérait à la main (carnet papier, facture Word, paiement perdu de vue) ; avec lui, chaque relation B2B devient un **flux structuré** : devis → confirmation → préparation → remise(s) → facturation → encaissement échelonné.
 
-Le module est **complémentaire de la caisse**, pas concurrent. Le POS gère la vente immédiate au comptoir ; le B2B gère la commande différée, livrée et payée plus tard.
+Le module est **complémentaire de la caisse**, pas concurrent. Le POS gère la vente immédiate au comptoir ; le B2B gère la commande différée, retirée et payée plus tard.
 
 ---
 
@@ -31,9 +31,9 @@ Le module est **complémentaire de la caisse**, pas concurrent. Le POS gère la 
 |---|---|---|
 | **Dashboard B2B** | Vue d'ensemble : top clients, KPI, commandes récentes, aging | `/b2b` |
 | **Liste des commandes** | Tracker toutes les commandes B2B avec leur statut | `/b2b/orders` |
-| **Création / édition commande** | Formulaire 4 sections : client, items, livraison, notes | `/b2b/orders/new` |
-| **Détail commande** | 4 onglets : Items, Deliveries, Payments, History | `/b2b/orders/:id` |
-| **Paiements B2B** | 3 onglets : Outstanding, Aging, Received | `/b2b/payments` |
+| **Création / édition commande** | Formulaire 4 sections : client, items, retrait, notes | `/b2b/orders/new` |
+| **Détail commande** | 4 onglets : Items, Remises, Payments, History | `/b2b/orders/:id` |
+| **Paiements B2B** | 4 onglets : Outstanding, Aging, Received, Invoices | `/b2b/payments` |
 | **Fiche client B2B** | Vue 360° d'un client : commandes, paiements, encours | `/b2b/clients/:id` |
 
 Le tout est complété par la **configuration B2B** (`/settings/b2b`) qui définit les règles transverses (conditions de paiement par défaut, numérotation facture, workflow d'approbation).
@@ -45,8 +45,8 @@ Le tout est complété par la **configuration B2B** (`/settings/b2b`) qui défin
 Quelle que soit la vue consultée, l'utilisateur retrouve toujours les mêmes mécaniques — c'est ce qui rend le module robuste :
 
 1. **Un client B2B est un client de la base partagée**. Pas de doublon avec le module Customers — c'est le flag `customer_type = 'b2b'` qui active la logique wholesale (pricing, crédit, conditions).
-2. **Une commande est un cycle complet**. Le module suit la commande de sa création à sa livraison complète et à son paiement intégral — pas juste l'encaissement.
-3. **Paiement et livraison sont découplés**. On peut livrer en plusieurs fois, payer en plusieurs fois, et les deux flux sont indépendants. Une facture peut être livrée à 80% et payée à 100% — c'est normal.
+2. **Une commande est un cycle complet**. Le module suit la commande de sa création à sa remise complète et à son paiement intégral — pas juste l'encaissement.
+3. **Paiement et remise sont découplés**. On peut remettre la marchandise en plusieurs fois, payer en plusieurs fois, et les deux flux sont indépendants. Une facture peut être remise à 80% et payée à 100% — c'est normal.
 4. **Numérotation séquentielle officielle**. Chaque commande et chaque facture ont un numéro séquentiel non réutilisable, pour traçabilité légale.
 5. **Tout est tracé dans l'historique commande**. Création, confirmation, modification de quantité, ajout de paiement, génération de facture — chaque événement est daté et signé.
 
@@ -93,14 +93,14 @@ Donner à l'équipe **la liste complète** de toutes les commandes B2B, avec ce 
 
 ### 5.1 Affichage
 
-Chaque ligne : numéro de commande, client, date commande, date de livraison prévue, montant total, statut, statut paiement, montant restant dû.
+Chaque ligne : numéro de commande, client, date commande, date de retrait prévue, montant total, statut, statut paiement, montant restant dû.
 
 ### 5.2 Filtres
 
 - Par statut (draft, confirmed, processing, ready, partially_delivered, delivered, completed, cancelled).
 - Par statut paiement (unpaid, partial, paid).
 - Par client.
-- Par période (date de commande, date de livraison).
+- Par période (date de commande, date de retrait).
 - Par tag (commande prioritaire, événement, récurrente…).
 
 ### 5.3 Recherche
@@ -113,7 +113,7 @@ Par numéro de commande, nom de client, raison sociale.
 - **Cloner une commande existante** (utile pour les commandes récurrentes : "même chose que la semaine dernière").
 - **Imprimer** un bon de préparation ou une facture.
 
-Bénéfice métier : **éviter qu'une commande soit oubliée**. Tous les statuts pending sont visibles d'un coup ; chaque commande à livrer demain remonte en haut de la pile.
+Bénéfice métier : **éviter qu'une commande soit oubliée**. Tous les statuts pending sont visibles d'un coup ; chaque commande à remettre demain remonte en haut de la pile.
 
 ---
 
@@ -135,12 +135,13 @@ C'est l'écran le plus utilisé du module. Il est structuré en **4 sections** +
 - Possibilité d'override manuel du prix avec trace dans l'historique.
 - Calcul total commande en temps réel (subtotal + tax PB1 10% inclus).
 
-### 6.3 Section Delivery
+### 6.3 Section Pickup (retrait)
 
-- Adresse de livraison (par défaut celle du client, modifiable).
-- Date et créneau de livraison prévue.
-- Mode de livraison (livraison en propre, transporteur, retrait sur place).
-- Instructions spéciales (étage, code, contact à prévenir).
+- Date et créneau de retrait prévus.
+- Instructions spéciales (contact à prévenir, référence de commande du client).
+
+La marchandise est retirée sur place : il n'existe ni tournée ni transporteur
+(décision produit — abandon de la livraison motorisée B2B).
 
 ### 6.4 Section Notes
 
@@ -168,17 +169,17 @@ Une fois la commande créée, son détail s'affiche avec **4 onglets** correspon
 ### 7.1 Onglet **Items**
 
 - Récap complet des lignes de la commande.
-- Quantités commandées vs livrées (utile pour les livraisons partielles).
+- Quantités commandées vs remises (utile pour les remises partielles).
 - Possibilité d'ajouter / retirer un item tant que la commande n'est pas `delivered` (avec PIN manager si déjà confirmée).
 - Bouton "Imprimer bon de préparation" pour la cuisine / le pâtissier.
 
-### 7.2 Onglet **Deliveries**
+### 7.2 Onglet **Remises**
 
-- Liste des livraisons effectuées pour cette commande.
-- Pour chaque livraison : date, items livrés, quantités, statut.
-- Bouton "Enregistrer une livraison" — saisir les items réellement remis avec leur quantité.
-- Lors d'une livraison, le stock est automatiquement déduit (flag `stock_deducted`).
-- Une commande passe à `partially_delivered` après la première livraison incomplète, à `delivered` quand tout est sorti.
+- Liste des remises de marchandise effectuées pour cette commande.
+- Pour chaque remise : date, items remis, quantités, statut.
+- Bouton "Enregistrer une remise" — saisir les items réellement remis avec leur quantité.
+- Lors d'une remise, le stock est automatiquement déduit (flag `stock_deducted`).
+- Une commande passe à `partially_delivered` après la première remise incomplète, à `delivered` quand tout est sorti.
 
 ### 7.3 Onglet **Payments**
 
@@ -194,7 +195,7 @@ Une fois la commande créée, son détail s'affiche avec **4 onglets** correspon
 - Chaque ligne : timestamp, utilisateur, type d'événement (created, confirmed, item_added, item_removed, delivery_recorded, payment_received, invoice_generated, status_changed, cancelled), description.
 - Toujours visible, jamais éditable.
 
-Bénéfice métier : **tout savoir d'une commande en un seul écran**, sans avoir à fouiller dans des tableaux séparés. Pour un litige client ("vous m'avez livré quoi le 12 ?", "j'ai bien réglé le 25 ?"), la réponse est dans les onglets en 10 secondes.
+Bénéfice métier : **tout savoir d'une commande en un seul écran**, sans avoir à fouiller dans des tableaux séparés. Pour un litige client ("vous m'avez remis quoi le 12 ?", "j'ai bien réglé le 25 ?"), la réponse est dans les onglets en 10 secondes.
 
 ---
 
@@ -221,11 +222,17 @@ cancelled
 
 Bénéfice métier : **chaque commande sait où elle est** dans son cycle, sans qu'on doive le chercher. Le staff cuisine ne voit que les commandes `confirmed` ou `processing` ; la compta ne voit que les commandes `delivered` non `completed`.
 
+> **Note (2026-08-13)** : le vocabulaire de cette machine à états
+> (`partially_delivered`, `delivered`) reste celui de la vision d'origine ; il
+> sera revisité au chantier du détail de commande (vues du §2 non construites),
+> à la lumière de la décision produit retrait-sur-place. Les statuts vivants de
+> la V3 sont ceux du type énuméré Postgres, qui fait foi.
+
 ---
 
 ## 9. Vue **Paiements B2B** — Le pilotage du recouvrement
 
-Cette page est l'outil **du gérant ou du comptable** qui veille à l'encaissement. Elle est structurée en **3 onglets** :
+Cette page est l'outil **du gérant ou du comptable** qui veille à l'encaissement. Elle est structurée en **4 onglets** :
 
 ### 9.1 Onglet **Outstanding** — Les impayés courants
 
@@ -250,6 +257,12 @@ Bénéfice : **identifier les clients toxiques** dont la créance dérape avant 
 - Filtre par client, par méthode, par période.
 - Récap : total encaissé, répartition par méthode, par jour.
 - Réconciliation : croiser avec les relevés bancaires.
+
+### 9.4 Onglet **Invoices** — La surface par facture
+
+- Une ligne par facture : numéro, client, montant, réglé / restant dû, âge, état de règlement.
+- Actions par facture : télécharger le PDF officiel ; enregistrer un règlement pré-imputé sur cette facture ; annuler une facture en attente sans aucun règlement (raison obligatoire).
+- C'est la cible du renvoi comptable : une écriture de source B2B ouvre cette page directement sur cet onglet.
 
 Bénéfice métier : **arrêter de courir après l'argent à l'aveugle**. Le module sait toujours qui doit quoi, depuis quand, et prioritise les relances par âge et par enjeu.
 
@@ -329,7 +342,7 @@ Le client B2B est un enregistrement de la table `customers` avec `customer_type 
 
 ### 14.2 Avec Inventory
 
-À chaque livraison enregistrée, le module B2B **déduit le stock** des items livrés via les mouvements de stock standards. Pas de double comptage : le `stock_deducted` flag verrouille l'opération.
+À chaque remise enregistrée, le module B2B **déduit le stock** des items remis via les mouvements de stock standards. Pas de double comptage : le `stock_deducted` flag verrouille l'opération.
 
 ### 14.3 Avec Accounting
 
@@ -365,8 +378,8 @@ Les valeurs par défaut (conditions de paiement, numérotation facture, plafond 
 | 🟠 | **Commandes récurrentes / abonnements** | Définir une commande type qui se duplique automatiquement chaque lundi pour un hôtel. |
 | 🟠 | **Relances automatiques** | Envoi automatique d'un rappel à J-3 de l'échéance, J+0, J+7, J+15. |
 | 🟠 | **Devis (quote) avant commande** | Étape `quote` en amont de `draft` — envoyer un PDF de devis, le client confirme par retour. |
-| 🟡 | **Avoirs / credit notes** | Générer une note de crédit officielle pour un retour client ou une casse à la livraison. |
-| 🟡 | **Multi-livraisons planifiées d'avance** | Planifier une commande 500 baguettes en 5 livraisons sur la semaine, dès la confirmation. |
+| 🟡 | **Avoirs / credit notes** | Générer une note de crédit officielle pour un retour client ou une casse à la remise. |
+| 🟡 | **Multi-remises planifiées d'avance** | Planifier une commande 500 baguettes en 5 remises sur la semaine, dès la confirmation. |
 | 🟡 | **Portal client B2B** | Donner un accès web au client pour consulter ses commandes / factures / encours en self-service. |
 | 🟢 | **Tarification par volume** | Prix dégressif automatique selon quantité commandée (baguettes < 50 = prix A, ≥ 50 = prix B). |
 | 🟢 | **Intégration comptable export** | Export direct des factures dans le format attendu par le comptable externe (Accurate, MYOB). |
