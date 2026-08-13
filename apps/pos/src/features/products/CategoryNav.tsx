@@ -2,7 +2,10 @@
 //
 // POS category rail. Each category renders as a square-ish tile with its own
 // translucent tint (fill + border) and accent (icon + label + active bar),
-// driven by `categoryStyle()` and the `.cat-btn` component class in index.css.
+// driven by `categoryStyle()` resolving a `cat-*` design-system token and
+// `CAT_TOKEN_CLASSES` supplying the literal Tailwind classes for it (see
+// categoryTints.ts — the `cat-*` family is the only token set where alpha
+// modifiers work).
 //
 // - Width 104px, hidden scrollbar (`scrollbar-none`).
 // - Active tile: stronger tint + a left accent bar (`aria-current="page"`).
@@ -10,10 +13,10 @@
 //   (ordered by sort_order via `useCategories`).
 
 import { Settings } from 'lucide-react';
-import type { CSSProperties, JSX } from 'react';
+import type { JSX } from 'react';
 import { cn } from '@breakery/ui';
 import { useCategories } from './hooks/useCategories';
-import { categoryStyle, categoryMonogram } from './categoryTints';
+import { categoryStyle, categoryMonogram, CAT_TOKEN_CLASSES } from './categoryTints';
 
 export interface CategoryNavProps {
   selectedSlug: string | null;
@@ -84,10 +87,7 @@ interface CategoryItemProps {
 function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX.Element {
   const style = categoryStyle(slug, label);
   const Icon = style.Icon;
-  const cssVars = {
-    '--cat-tint': style.tint,
-    '--cat-accent': style.accent,
-  } as CSSProperties;
+  const tone = CAT_TOKEN_CLASSES[style.token];
 
   return (
     <button
@@ -95,12 +95,15 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
       onClick={() => onSelect(slug)}
       aria-current={active ? 'page' : undefined}
       data-testid={`category-nav-item-${slug}`}
-      style={cssVars}
       className={cn(
-        'cat-btn relative w-full mb-1.5 py-2.5 px-1 rounded-lg',
+        'relative w-full mb-1.5 py-2.5 px-1 rounded-lg border',
         'max-md:w-[92px] max-md:shrink-0 max-md:mb-0',
         'flex flex-col items-center justify-center gap-1',
-        'text-[11px] uppercase tracking-wide font-semibold leading-[1.15]',
+        'text-xs uppercase tracking-wide font-semibold leading-[1.15]',
+        tone.text,
+        // Hover only applies while the tile is inactive (matches the former
+        // `.cat-btn:hover:not([aria-current='page'])` rule).
+        active ? tone.active : cn(tone.idle, tone.hover),
         'transition-all duration-fast ease-motion-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-[-2px]',
       )}
@@ -108,8 +111,7 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
       {active && (
         <span
           aria-hidden
-          className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r"
-          style={{ backgroundColor: style.accent }}
+          className={cn('absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r', tone.accentBar)}
         />
       )}
       {/* Matched category → its glyph. Unmatched → a coloured monogram (the
@@ -120,8 +122,7 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
       ) : (
         <span
           aria-hidden
-          className="h-6 w-6 grid place-items-center rounded-md text-[15px] font-bold leading-none"
-          style={{ color: style.accent, backgroundColor: `rgba(${style.tint},0.16)` }}
+          className={cn('h-6 w-6 grid place-items-center rounded-md text-sm font-bold leading-none', tone.text, tone.monogramBg)}
         >
           {categoryMonogram(label)}
         </span>

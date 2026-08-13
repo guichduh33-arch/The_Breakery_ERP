@@ -28,7 +28,7 @@
 // expose `promoLabel` for richer text.
 
 import { Star } from 'lucide-react';
-import { useState, type JSX, type ReactNode } from 'react';
+import { memo, useState, type JSX, type ReactNode } from 'react';
 import { Currency, BrandMark, cn } from '@breakery/ui';
 import type { Product } from '@breakery/domain';
 
@@ -50,7 +50,7 @@ export interface ProductCardProps {
   topLeftSlot?: ReactNode;
 }
 
-export function ProductCard({
+function ProductCardImpl({
   product,
   disabled = false,
   overlayLabel = null,
@@ -73,13 +73,19 @@ export function ProductCard({
       data-testid={`product-card-${product.id}`}
       aria-label={`${product.name} — ${disabled && overlayLabel ? overlayLabel : 'tap to add'}`}
       className={cn(
-        'group relative bg-bg-elevated rounded-lg overflow-hidden border text-left will-change-transform',
+        'group relative bg-bg-elevated rounded-lg overflow-hidden border text-left',
+        // Perf (P2) — no permanent `will-change`, it pins a compositor layer
+        // for every idle tile in the grid. Promote only while the browser is
+        // actually about to animate the transform (hover/active).
+        'hover:will-change-transform active:will-change-transform',
         'transition-[transform,box-shadow,border-color,background-color] duration-fast ease-motion-out',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2',
         // In-cart signal (#9): a gold ring so the cashier sees at a glance the
-        // item is already on the ticket — cuts the rush double-add.
-        inCart ? 'border-gold ring-1 ring-gold/50' : 'border-border-subtle',
+        // item is already on the ticket — cuts the rush double-add. `gold` is
+        // a bare token (no alpha support outside the cat-* family) so the
+        // ring is drawn at full strength rather than a dead `/50` alpha.
+        inCart ? 'border-gold ring-1 ring-gold' : 'border-border-subtle',
         disabled
           ? 'opacity-50 cursor-not-allowed'
           : 'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:bg-bg-overlay hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
@@ -125,7 +131,10 @@ export function ProductCard({
         {product.is_favorite && !overlayLabel && (
           <span
             aria-label="Favourite"
-            className="absolute top-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-full bg-bg-base/55 backdrop-blur-sm z-10"
+            // `bg-bg-base` is a bare token (no alpha outside cat-*); `--backdrop`
+            // is the design system's own pre-baked translucent dark scrim,
+            // exactly this "dim overlay on a photo" use case.
+            className="absolute top-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-full bg-backdrop backdrop-blur-sm z-10"
           >
             <Star className="h-4 w-4 fill-gold text-gold" aria-hidden />
           </span>
@@ -133,8 +142,8 @@ export function ProductCard({
 
         {/* Out-of-stock / disabled overlay — explicit and unmistakable. */}
         {overlayLabel && (
-          <div className="absolute inset-0 grid place-items-center bg-bg-base/72 z-20">
-            <span className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red-as-text/60 shadow-lg">
+          <div className="absolute inset-0 grid place-items-center bg-backdrop z-20">
+            <span className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red-as-text shadow-lg">
               {overlayLabel}
             </span>
           </div>
@@ -142,7 +151,7 @@ export function ProductCard({
 
         {/* Low-stock ribbon at image bottom */}
         {!disabled && lowStockLabel && (
-          <div className="absolute inset-x-0 bottom-0 bg-bg-base/70 px-2 py-1 text-[10px] uppercase tracking-widest text-amber-warn font-semibold z-10 text-center">
+          <div className="absolute inset-x-0 bottom-0 bg-backdrop px-2 py-1 text-xs uppercase tracking-widest text-amber-warn font-semibold z-10 text-center">
             {lowStockLabel}
           </div>
         )}
@@ -150,7 +159,7 @@ export function ProductCard({
 
       <div className="px-2.5 py-2 space-y-0.5">
         <div
-          className="text-[13px] leading-tight font-medium text-text-primary line-clamp-2 min-h-[2.4em]"
+          className="text-sm leading-tight font-medium text-text-primary line-clamp-2 min-h-[2.4em]"
           title={product.name}
         >
           {product.name}
@@ -161,7 +170,7 @@ export function ProductCard({
           <Currency
             amount={product.retail_price}
             emphasis="gold"
-            className="text-[15px] font-mono font-bold tabular-nums"
+            className="text-base font-mono font-bold tabular-nums"
           />
         )}
       </div>
@@ -169,11 +178,24 @@ export function ProductCard({
   );
 }
 
+/**
+ * Wrapped in `React.memo` (P2 perf finding) — `ProductGrid` recomputes
+ * `filtered`/`qtyByProduct` on every cart or search-query change, which
+ * would otherwise re-render every tile in the grid on each keystroke/tap.
+ * Default shallow prop comparison is sufficient as long as callers keep
+ * `product`/`onSelect`/`topLeftSlot` referentially stable across renders
+ * (ProductGrid memoizes the combo badge element for this reason).
+ */
+export const ProductCard = memo(ProductCardImpl);
+
 function PromoBadge(): JSX.Element {
   return (
     <span
       data-testid="product-card-promo-badge"
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-gold-soft text-gold border border-gold/30"
+      // `gold` has no alpha variant outside cat-* — `border-gold-soft` is the
+      // project's established "muted border" pattern (see Login.tsx,
+      // CurrentOrderCard.tsx) instead of a dead `border-gold/30`.
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-widest bg-gold-soft text-gold border border-gold-soft"
     >
       <span aria-hidden>%</span>
       Promo

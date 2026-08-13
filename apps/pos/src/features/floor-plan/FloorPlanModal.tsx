@@ -197,7 +197,11 @@ export function FloorPlanModal({
             <Users className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="font-display text-xl tracking-wide">FLOOR PLAN</h2>
+            {/* Functional modal title, not the brand monogram — DESIGN.md
+                "La Règle de la Serif Réservée" keeps Playfair off everything
+                but the login screen. Inter semibold matches the ProductGrid
+                title fix (#11) at the same "card/modal title" tier (24px). */}
+            <h2 className="font-semibold text-xl">FLOOR PLAN</h2>
             <p className="text-text-secondary text-sm mt-0.5">
               {transferSource && sourceOrder
                 ? `Moving order ${sourceOrder.order_number} from table ${transferSource} — tap a free destination table.`
@@ -232,7 +236,9 @@ export function FloorPlanModal({
       >
         <div
           className={cn(
-            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated/40 p-6',
+            // `bg-elevated` is a bare token — no alpha outside cat-*, the /40
+            // was silently dropped (dead class). Solid `bg-bg-elevated`.
+            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-6',
             'bg-[radial-gradient(circle,_rgba(201,165,87,0.08)_1px,_transparent_1px)] [background-size:18px_18px]',
           )}
         >
@@ -377,10 +383,12 @@ function Legend({
       <span
         aria-hidden
         className={cn(
+          // `green`/`amber-warn`/`text-muted` have no alpha outside cat-* —
+          // solid rings (the /40 was a dead class, silently dropped).
           'h-2.5 w-2.5 rounded-full ring-2 ring-offset-1 ring-offset-bg-elevated',
-          tone === 'available' && 'bg-green ring-green/40',
-          tone === 'occupied' && 'bg-amber-warn ring-amber-warn/40',
-          tone === 'reserved' && 'bg-text-muted ring-text-muted/40',
+          tone === 'available' && 'bg-green ring-green',
+          tone === 'occupied' && 'bg-amber-warn ring-amber-warn',
+          tone === 'reserved' && 'bg-text-muted ring-text-muted',
         )}
       />
       <span className="text-text-secondary">{label}</span>

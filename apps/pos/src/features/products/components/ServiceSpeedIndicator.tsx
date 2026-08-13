@@ -25,11 +25,15 @@ interface ToneMeta {
   className: string;
 }
 
+// `success`/`warning`/`danger` are bare tokens — no alpha outside the cat-*
+// family (CLAUDE.md). `border-{tone}-soft` is the project's established
+// muted-border pattern (see Login.tsx, TabletOrderConfirmation.tsx) in place
+// of a dead `border-{tone}/40`.
 const TONES: Record<Tone, ToneMeta> = {
   idle: { label: 'Idle',  className: 'bg-bg-input text-text-secondary border-border-subtle' },
-  good: { label: 'Good',  className: 'bg-success-soft text-success border-success/40' },
-  busy: { label: 'Busy',  className: 'bg-warning-soft text-warning border-warning/40' },
-  slow: { label: 'Slow',  className: 'bg-danger-soft  text-danger  border-danger/40'  },
+  good: { label: 'Good',  className: 'bg-success-soft text-success border-success-soft' },
+  busy: { label: 'Busy',  className: 'bg-warning-soft text-warning border-warning-soft' },
+  slow: { label: 'Slow',  className: 'bg-danger-soft  text-danger  border-danger-soft'  },
 };
 
 function toneFor(orderCount: number, avgSec: number | null): Tone {
@@ -73,7 +77,7 @@ export function ServiceSpeedIndicator(): JSX.Element | null {
   if (speed.isError || !speed.data) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-danger/40 bg-danger-soft text-danger text-xs"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-danger-soft bg-danger-soft text-danger text-xs"
         data-testid="service-speed-indicator"
         data-tone="error"
         title={speed.error instanceof Error ? speed.error.message : 'unknown'}

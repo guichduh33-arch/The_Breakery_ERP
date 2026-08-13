@@ -41,10 +41,12 @@ export function POSStockCard({
   const entry = useStockQuickEntry(product, { onReceive, onReturnToKitchen, onWaste, onAdjust });
   const { isOut, isLow, qty, increments } = entry;
 
+  // `red`/`amber-warn` are bare tokens — no alpha outside cat-*; the outer
+  // card border is the primary alert signal so it stays solid ("plein").
   const borderTone = isOut
-    ? 'border-red/40'
+    ? 'border-red'
     : isLow
-      ? 'border-amber-warn/40'
+      ? 'border-amber-warn'
       : 'border-border-subtle';
 
   const stockTextTone = isOut ? 'text-red' : isLow ? 'text-amber-warn' : 'text-text-primary';
@@ -56,7 +58,7 @@ export function POSStockCard({
       data-testid={`pos-stock-card-${product.sku}`}
       data-state={isOut ? 'out' : isLow ? 'low' : 'ok'}
       className={cn(
-        'flex flex-col gap-3 rounded-lg border-2 bg-bg-elevated/60 p-4',
+        'flex flex-col gap-3 rounded-lg border-2 bg-bg-elevated p-4',
         borderTone,
       )}
     >
@@ -76,7 +78,7 @@ export function POSStockCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-text-primary truncate">{product.name}</div>
-          <div className="text-[10px] uppercase tracking-widest text-text-muted">{product.sku}</div>
+          <div className="text-xs uppercase tracking-widest text-text-muted">{product.sku}</div>
         </div>
         <div className={cn('font-mono text-2xl font-bold tabular-nums', stockTextTone)}>
           {product.display_stock}
@@ -93,12 +95,12 @@ export function POSStockCard({
 
       {/* Status banner */}
       {isOut && (
-        <div className="rounded-md border border-red/30 bg-red-soft px-2 py-1.5 text-xs text-red text-center inline-flex items-center justify-center gap-1">
+        <div className="rounded-md border border-red-soft bg-red-soft px-2 py-1.5 text-xs text-red text-center inline-flex items-center justify-center gap-1">
           <Bell className="h-3 w-3" aria-hidden /> OUT OF STOCK — sales blocked
         </div>
       )}
       {isLow && (
-        <div className="rounded-md border border-amber-warn/30 bg-amber-warn/10 px-2 py-1.5 text-xs text-amber-warn text-center inline-flex items-center justify-center gap-1">
+        <div className="rounded-md border border-warning-soft bg-warning-soft px-2 py-1.5 text-xs text-amber-warn text-center inline-flex items-center justify-center gap-1">
           <Bell className="h-3 w-3" aria-hidden /> Low stock — restock needed (alert: {product.min_stock_threshold})
         </div>
       )}

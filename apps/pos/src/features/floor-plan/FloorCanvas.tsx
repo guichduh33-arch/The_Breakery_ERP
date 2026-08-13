@@ -64,7 +64,7 @@ export function FloorCanvas({ tables, renderTable, gapClass }: FloorCanvasProps)
 
       {unplaced.length > 0 && (
         <div data-testid="floor-unplaced" className="border-t border-dashed border-border-subtle pt-4">
-          <p className="mb-3 text-[10px] uppercase tracking-widest text-text-muted">
+          <p className="mb-3 text-xs uppercase tracking-widest text-text-muted">
             Unplaced tables
           </p>
           <div className={cn('flex flex-wrap justify-center items-center', gapClass)}>
