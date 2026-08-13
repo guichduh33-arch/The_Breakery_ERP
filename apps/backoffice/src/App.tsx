@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { SkipToContent, Toaster, useIdleTimeout, IdleWarningToast, BrandMark } from '@breakery/ui';
 import { queryClient } from './lib/queryClient.js';
 import { AppRoutes } from './routes/index.js';
+import { AppErrorBoundary } from './components/AppErrorBoundary.js';
 import { ErrorState } from './components/ErrorState.js';
 import { useAuthStore } from './stores/authStore.js';
 
@@ -19,7 +20,7 @@ import { useAuthStore } from './stores/authStore.js';
 function IdleTimeoutMount() {
   const timeoutMinutes = useAuthStore((s) => (s.isAuthenticated ? s.sessionTimeoutMinutes ?? 0 : 0));
   const logout = useAuthStore((s) => s.logout);
-  useIdleTimeout({ timeoutMinutes, onTimeout: logout });
+  useIdleTimeout({ timeoutMinutes, onTimeout: () => { void logout(); } });
   return null;
 }
 
@@ -72,15 +73,23 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        {/* a11y: keyboard users tab here first to jump past nav chrome. */}
-        <SkipToContent />
-        <IdleTimeoutMount />
-        {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
-        <IdleWarningToast />
-        <BootGate>
-          <AppRoutes />
-        </BootGate>
-        <Toaster />
+        <AppErrorBoundary>
+          {/* a11y: keyboard users tab here first to jump past nav chrome. */}
+          <SkipToContent />
+          <IdleTimeoutMount />
+          {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
+          <IdleWarningToast />
+          <BootGate>
+            {/* Les routes hors coquille (catch-all racine) sont elles aussi
+                lazy : sans frontière ici, leur suspension au premier rendu
+                démonte l'arbre (« component suspended while responding to
+                synchronous input ») — l'écran blanc du premier chargement. */}
+            <Suspense fallback={<BootLoading />}>
+              <AppRoutes />
+            </Suspense>
+          </BootGate>
+          <Toaster />
+        </AppErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   );
