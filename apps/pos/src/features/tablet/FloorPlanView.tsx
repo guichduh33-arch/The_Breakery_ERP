@@ -143,7 +143,7 @@ export function FloorPlanView({
           <Users className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="font-display text-2xl tracking-wide text-text-primary">FLOOR PLAN</h1>
+          <h1 className="font-sans font-semibold text-2xl tracking-wide text-text-primary">FLOOR PLAN</h1>
           <p className="text-text-secondary text-sm mt-1">
             {subtitle ??
               (onAppendSelect !== undefined

@@ -18,7 +18,7 @@ export function TabletInboxModal({ open, onClose }: TabletInboxModalProps): JSX.
   return (
     <FullScreenModal open={open} onOpenChange={(v) => !v && onClose()}>
       <div className="m-auto bg-bg-overlay rounded-xl p-6 max-w-2xl w-full shadow-modal max-h-[80vh] flex flex-col">
-        <h2 className="font-serif text-2xl mb-4">Tablet Orders</h2>
+        <h2 className="font-sans font-semibold text-2xl mb-4">Tablet Orders</h2>
         {isLoading && (
           <p className="text-text-secondary text-sm">Loading…</p>
         )}

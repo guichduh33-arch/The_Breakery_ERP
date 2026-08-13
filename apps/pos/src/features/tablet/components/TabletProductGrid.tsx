@@ -95,7 +95,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="px-5 py-3 flex items-center justify-between gap-4 border-b border-border-subtle">
-        <h1 className="font-display text-xl text-text-primary capitalize">{title}</h1>
+        <h1 className="font-sans font-semibold text-xl text-text-primary capitalize">{title}</h1>
         <div className="relative w-64">
           <Search
             aria-hidden
