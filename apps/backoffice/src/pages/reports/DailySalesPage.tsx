@@ -149,7 +149,7 @@ export default function DailySalesPage() {
                         <span
                           title={r.holiday}
                           data-testid={`holiday-badge-${r.date}`}
-                          className="ml-2 inline-flex items-center rounded-full border border-gold/30 bg-gold-soft px-2 py-0.5 text-xs text-gold"
+                          className="ml-2 inline-flex items-center rounded-full border border-border-gold bg-gold-soft px-2 py-0.5 text-xs text-gold"
                         >
                           {r.holiday}
                         </span>

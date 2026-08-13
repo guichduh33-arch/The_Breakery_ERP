@@ -67,7 +67,7 @@ import type { SupplierRow } from '@/features/suppliers/hooks/useSuppliersList.js
 
 function StatusBadge({ active }: { active: boolean }): JSX.Element {
   return active ? (
-    <Badge variant="default" className="border-success/40 bg-success/10 text-success">Active</Badge>
+    <Badge variant="default" className="border-success bg-success-soft text-success">Active</Badge>
   ) : (
     <Badge variant="outline" className="text-text-muted">Inactive</Badge>
   );
@@ -75,10 +75,10 @@ function StatusBadge({ active }: { active: boolean }): JSX.Element {
 
 function PoStatusBadge({ status }: { status: string }): JSX.Element {
   const tone =
-    status === 'received'  ? 'border-success/40 bg-success/10 text-success' :
-    status === 'partial'   ? 'border-warning/40 bg-warning/10 text-warning' :
-    status === 'cancelled' ? 'border-danger/40  bg-danger/10  text-danger'  :
-                             'border-info/40    bg-info/10    text-info';
+    status === 'received'  ? 'border-success bg-success-soft text-success' :
+    status === 'partial'   ? 'border-warning bg-warning-soft text-warning' :
+    status === 'cancelled' ? 'border-danger  bg-danger-soft  text-danger'  :
+                             'border-info    bg-info-soft    text-info';
   return <Badge variant="default" className={tone}>{status}</Badge>;
 }
 
@@ -88,9 +88,9 @@ function PaymentBadge({ row }: { row: SupplierPOListRow }): JSX.Element {
     row.payment_terms === 'credit' &&
     (row.received_date === null || row.status === 'pending' || row.status === 'partial');
   return isUnpaid ? (
-    <Badge variant="outline" className="border-danger/40 text-danger">unpaid</Badge>
+    <Badge variant="outline" className="border-danger text-danger">unpaid</Badge>
   ) : (
-    <Badge variant="outline" className="border-success/40 text-success">paid</Badge>
+    <Badge variant="outline" className="border-success text-success">paid</Badge>
   );
 }
 
@@ -127,7 +127,7 @@ function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoadin
   return (
     <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
       <table className="w-full text-sm">
-        <thead className="border-b border-border-subtle bg-bg-base/40">
+        <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
             <th className="px-4 py-3 text-left">
               <SectionLabel as="span" size="xs">Date</SectionLabel>
@@ -151,7 +151,7 @@ function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoadin
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className="border-t border-border-subtle hover:bg-bg-overlay/40">
+            <tr key={r.id} className="border-t border-border-subtle hover:bg-surface-4">
               <td className="px-4 py-3 text-text-secondary tabular-nums">{r.order_date ?? '—'}</td>
               <td className="px-4 py-3">
                 <Link to={`/backoffice/purchasing/purchase-orders/${r.id}`} className="text-gold hover:underline">
@@ -310,7 +310,7 @@ export default function SupplierDetailPage(): JSX.Element {
 
         <TabsContent value="purchases" className="mt-4">
           {purchases.error !== null && purchases.error !== undefined ? (
-            <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+            <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
               Failed to load purchases: {purchases.error.message}
             </div>
           ) : (
@@ -415,7 +415,7 @@ function PaymentsSection({
           </Card>
           <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
           <table className="w-full text-sm">
-            <thead className="border-b border-border-subtle bg-bg-base/40">
+            <thead className="border-b border-border-subtle bg-surface-inert">
               <tr>
                 <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
                 <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>

@@ -305,7 +305,7 @@ export default function ExpensesListPage(): JSX.Element {
           </div>
 
           {list.error !== null && list.error !== undefined ? (
-            <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+            <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
               Failed to load expenses: {list.error.message}
             </div>
           ) : (
@@ -364,7 +364,7 @@ function CategoriesTab(): JSX.Element {
   return (
     <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
       <table className="w-full text-sm">
-        <thead className="border-b border-border-subtle bg-bg-base/40">
+        <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
             <th className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Code</th>
             <th className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Name</th>

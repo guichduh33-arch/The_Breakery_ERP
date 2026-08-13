@@ -150,8 +150,8 @@ export default function BalanceSheetPage() {
           <div
             className={
               data.balanced
-                ? 'rounded-md bg-success-soft border border-success/30 text-success px-4 py-2 text-sm'
-                : 'rounded-md bg-danger-soft border border-danger/30 text-danger px-4 py-2 text-sm'
+                ? 'rounded-md bg-success-soft border border-success text-success px-4 py-2 text-sm'
+                : 'rounded-md bg-danger-soft border border-danger text-danger px-4 py-2 text-sm'
             }
             role={data.balanced ? 'status' : 'alert'}
             aria-label="Balanced indicator"

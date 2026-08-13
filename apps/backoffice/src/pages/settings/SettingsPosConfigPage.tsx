@@ -48,7 +48,7 @@ function NumberListEditor({ title, helper, values, canEdit, isPending, onSave }:
               {canEdit && (
                 <button type="button" aria-label={`Remove ${formatCurrency(v)}`} disabled={isPending}
                   onClick={() => { const next = values.filter((_, j) => j !== i); if (next.length > 0) onSave(next); }}
-                  className="text-red/80 hover:text-red disabled:opacity-30 p-0.5">
+                  className="text-red-as-text opacity-80 hover:opacity-100 disabled:opacity-30 p-0.5">
                   <Trash2 className="h-3 w-3" aria-hidden />
                 </button>
               )}
@@ -117,7 +117,7 @@ export default function SettingsPosConfigPage() {
                 {canEdit && (
                   <button type="button" aria-label={`Remove ${d.name}`} disabled={setSetting.isPending}
                     onClick={() => { const next = discounts.filter((_, j) => j !== i); if (next.length > 0) save('pos_discount_presets', next); }}
-                    className="text-red/80 hover:text-red disabled:opacity-30 p-1">
+                    className="text-red-as-text opacity-80 hover:opacity-100 disabled:opacity-30 p-1">
                     <Trash2 className="h-3 w-3" aria-hidden />
                   </button>
                 )}

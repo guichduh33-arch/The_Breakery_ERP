@@ -32,7 +32,7 @@ function TableChip({ table, canUpdate }: { table: RestaurantTable; canUpdate: bo
       }}
       className={cn(
         'flex h-full w-full select-none flex-col items-center justify-center rounded-md border text-center leading-tight',
-        'border-gold/50 bg-bg-elevated text-text-primary',
+        'border-border-gold bg-bg-elevated text-text-primary',
         !table.is_active && 'opacity-40',
         canUpdate && 'cursor-grab',
       )}
@@ -87,8 +87,8 @@ export function SectionGridEditor({ tables, canUpdate, pending, onMove }: Sectio
           onDragLeave={() => { setDragOver((prev) => (prev === key ? null : prev)); }}
           onDrop={(e) => { handleDrop(e, x, y); }}
           className={cn(
-            'rounded border border-dashed border-border-subtle/60 p-0.5',
-            dragOver === key && 'border-gold bg-gold/10',
+            'rounded border border-dashed border-border-subtle p-0.5',
+            dragOver === key && 'border-gold bg-gold-soft',
           )}
         >
           {occupant !== undefined && <TableChip table={occupant} canUpdate={canUpdate} />}

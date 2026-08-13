@@ -144,7 +144,7 @@ export default function SettingsHistoryPage(): JSX.Element {
             <Card variant="default" padding="none">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-border-subtle bg-bg-base/40">
+                  <thead className="border-b border-border-subtle bg-surface-inert">
                     <tr>
                       <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">When</SectionLabel></th>
                       <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Setting</SectionLabel></th>

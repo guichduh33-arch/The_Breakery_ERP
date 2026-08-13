@@ -157,7 +157,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                   <button
                     type="button"
                     onClick={() => removeStep(idx)}
-                    className="flex-shrink-0 p-1 rounded hover:bg-bg-hover text-text-secondary"
+                    className="flex-shrink-0 p-1 rounded hover:bg-surface-4 text-text-secondary"
                     aria-label={`Remove step ${idx + 1}`}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -172,7 +172,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                       className={`px-2 py-1 text-xs rounded transition-colors ${
                         step.role_codes.includes(role)
                           ? 'bg-primary text-primary-foreground'
-                          : 'bg-bg-muted text-text-secondary hover:bg-bg-hover'
+                          : 'bg-surface-inert text-text-secondary hover:bg-surface-4'
                       }`}
                     >
                       {role}

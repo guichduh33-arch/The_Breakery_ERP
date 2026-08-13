@@ -81,7 +81,7 @@ export function BirthdayList({ upcoming, log }: BirthdayListProps) {
                 <span
                   className={
                     row.status === 'sent'
-                      ? 'text-xs px-2 py-0.5 rounded-md bg-info/20 text-info'
+                      ? 'text-xs px-2 py-0.5 rounded-md bg-info-soft text-info'
                       : row.status === 'queued' || row.status === 'retry'
                       ? 'text-xs px-2 py-0.5 rounded-md bg-warn/20 text-warn'
                       : 'text-xs px-2 py-0.5 rounded-md bg-bg-overlay text-text-secondary'

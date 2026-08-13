@@ -57,7 +57,7 @@ export function CustomerFormModal({ open, mode, initial, onClose }: CustomerForm
           Customer details (name, phone, email).
         </DialogDescription>
         {formError !== null && (
-          <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+          <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
             {formError}
           </div>
         )}

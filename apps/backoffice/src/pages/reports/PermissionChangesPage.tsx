@@ -34,7 +34,7 @@ function actionBadge(action: string): JSX.Element {
   } else if (lower.includes('revoked') || lower === 'revoke') {
     cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-danger-soft text-danger';
   } else {
-    cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-surface-raised text-text-secondary';
+    cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-surface-4 text-text-secondary';
   }
   return <span className={cls}>{action}</span>;
 }
@@ -79,7 +79,7 @@ export default function PermissionChangesPage() {
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
+        <p className="mb-3 rounded border border-warning bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
           First 500 rows shown — narrow the date range to see all changes.
         </p>
       )}
@@ -106,7 +106,7 @@ export default function PermissionChangesPage() {
                   <td className="py-2 text-text-secondary">{r.permission_code ?? '—'}</td>
                   <td className="py-2">
                     {r.detail !== null && r.detail !== undefined ? (
-                      <code className="rounded bg-surface-raised px-1 py-0.5 text-xs text-text-secondary break-all">
+                      <code className="rounded bg-surface-4 px-1 py-0.5 text-xs text-text-secondary break-all">
                         {JSON.stringify(r.detail)}
                       </code>
                     ) : (

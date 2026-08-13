@@ -26,7 +26,7 @@ function typeBadgeClass(t: string): string {
   switch (t) {
     case 'national':  return 'bg-cat-blue/15 text-cat-blue border-cat-blue/30';
     case 'religious': return 'bg-cat-amber/15 text-cat-amber border-cat-amber/30';
-    case 'company':   return 'bg-gold-soft text-gold border-gold/30';
+    case 'company':   return 'bg-gold-soft text-gold border-border-gold';
     default: return 'bg-bg-overlay text-text-secondary border-border-subtle';
   }
 }

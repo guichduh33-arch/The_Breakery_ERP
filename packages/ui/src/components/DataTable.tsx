@@ -238,10 +238,14 @@ export function DataTable<TRow>({
                       className={cn(
                         'border-t border-border-row',
                         striped && index % 2 === 1 && 'bg-surface-0',
-                        onRowClick !== undefined && 'cursor-pointer hover:bg-surface-4/60 transition-colors duration-fast',
+                        // `surface-4` est le cran « survol / pressé » des DEUX
+                        // thèmes (POS #2e2924, Backoffice #e9e7e2) : c'est le
+                        // token vivant le plus proche de l'intention de
+                        // l'ancien `/60`, que Tailwind supprimait en silence.
+                        onRowClick !== undefined && 'cursor-pointer hover:bg-surface-4 transition-colors duration-fast',
                         // Une ligne dépliée et son détail forment un seul bloc :
                         // la ligne perd donc sa zébrure, qui les couperait en deux.
-                        isExpanded && 'bg-surface-4/60',
+                        isExpanded && 'bg-surface-4',
                         rowClassName?.(row, index),
                       )}
                     >

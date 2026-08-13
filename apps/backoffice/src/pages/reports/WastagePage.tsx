@@ -79,7 +79,7 @@ export default function WastagePage() {
       )}
       {data?.truncated && (
         <p
-          className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning"
+          className="mb-3 rounded border border-warning bg-warning-soft px-3 py-2 text-sm text-warning"
           role="status"
           data-testid="wastage-truncated-banner"
         >

@@ -31,7 +31,7 @@ export function SupplierCard({
 }: SupplierCardProps): JSX.Element {
   const navigate = useNavigate();
   function open(): void {
-    navigate(`/backoffice/suppliers/${row.id}`);
+    void navigate(`/backoffice/suppliers/${row.id}`);
   }
   function stop(e: MouseEvent): void {
     e.stopPropagation();
@@ -40,7 +40,7 @@ export function SupplierCard({
     <Card
       variant="default"
       padding="md"
-      className="group flex cursor-pointer flex-col gap-3 transition-colors hover:border-gold/40 hover:bg-bg-overlay/40"
+      className="group flex cursor-pointer flex-col gap-3 transition-colors hover:border-border-gold hover:bg-surface-4"
       onClick={open}
       role="button"
       tabIndex={0}

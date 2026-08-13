@@ -139,7 +139,7 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
         )}
 
         {busy && (
-          <div className="absolute inset-0 flex items-center justify-center bg-bg-overlay/70">
+          <div className="absolute inset-0 flex items-center justify-center bg-backdrop">
             <Loader2 className="h-8 w-8 animate-spin text-gold" aria-label="Uploading" />
           </div>
         )}

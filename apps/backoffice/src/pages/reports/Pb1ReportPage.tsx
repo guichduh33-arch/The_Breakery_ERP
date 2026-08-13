@@ -83,7 +83,7 @@ export default function Pb1ReportPage() {
             <span>Year</span>
             <input
               type="number"
-              className="h-9 w-24 rounded-md border border-border-subtle bg-surface px-2 text-sm text-text-primary"
+              className="h-9 w-24 rounded-md border border-border-subtle bg-bg-input px-2 text-sm text-text-primary"
               value={year}
               min={2020}
               max={2099}
@@ -120,13 +120,13 @@ export default function Pb1ReportPage() {
               { label: 'Taxable base',    value:formatIdrFull(data.taxable_base) },
               { label: 'PB1 collected',   value:formatIdrFull(data.pb1_collected) },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-border-subtle bg-surface-raised p-4">
+              <div key={label} className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
                 <p className="text-xs text-text-secondary uppercase tracking-wide">{label}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
               </div>
             ))}
             {/* PB1 payable card — drillable to GL account 2110 */}
-            <div className="rounded-lg border border-border-subtle bg-surface-raised p-4" data-testid="pb1-payable-card">
+            <div className="rounded-lg border border-border-subtle bg-bg-elevated p-4" data-testid="pb1-payable-card">
               <p className="text-xs text-text-secondary uppercase tracking-wide">PB1 payable</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">
                 <DrilldownLink

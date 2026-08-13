@@ -111,7 +111,7 @@ export function PricingTab({ customer }: { customer: CustomerDetailRow }): JSX.E
             These prices apply to every customer in this category.
           </p>
           {error !== null && (
-            <div role="alert" className="mx-4 mb-3 rounded-md border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger">
+            <div role="alert" className="mx-4 mb-3 rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
               {error}
             </div>
           )}

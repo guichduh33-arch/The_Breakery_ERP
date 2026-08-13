@@ -64,7 +64,7 @@ export default function MappingsPage() {
                   </td>
                   <td className="px-4 py-3">
                     {row.is_active ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-soft text-green border border-green/30 text-xs">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success-soft text-success border border-success text-xs">
                         Active
                       </span>
                     ) : (
@@ -73,7 +73,7 @@ export default function MappingsPage() {
                       </span>
                     )}
                     {row.account_is_postable === false && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-amber-soft text-amber-warn border border-amber-warn/30 text-xs">
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-warning-soft text-warning border border-warning text-xs">
                         Not postable!
                       </span>
                     )}

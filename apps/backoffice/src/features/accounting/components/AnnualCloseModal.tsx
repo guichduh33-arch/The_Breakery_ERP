@@ -138,7 +138,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
 
         {result === null && step === 2 && (
           <div className="space-y-4">
-            <div className="rounded border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+            <div className="rounded border border-warning bg-warning-soft px-3 py-2 text-xs text-warning">
               You are about to <strong>CLOSE fiscal year {year}</strong>. This posts a
               year-close journal entry and cannot be undone via UI.
             </div>

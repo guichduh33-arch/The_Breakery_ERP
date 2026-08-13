@@ -342,7 +342,7 @@ export function RecipeBuilder({
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border-subtle">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-border-subtle bg-bg-base/40">
+                  <thead className="border-b border-border-subtle bg-surface-inert">
                     <tr>
                       {!readOnly && <th className="w-8 px-2 py-3" />}
                       <th className="px-4 py-3 text-left">
