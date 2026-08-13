@@ -109,6 +109,31 @@ describe('B2BOrdersPage', () => {
     expect(cancelled.className).toMatch(/line-through/);
   });
 
+  it('opens an order from the keyboard — the chevron is a button, not an ornament', async () => {
+    // Le clic-ligne du DataTable ne se prend ni au Tab ni à Entrée : sans ce
+    // bouton, le détail d'une commande était inatteignable au clavier
+    // (WCAG 2.1.1). Un <button> natif est dans l'ordre de tabulation et
+    // Entrée / Espace y émettent un clic — c'est ce clic qu'on rejoue ici.
+    render(wrap(<B2BOrdersPage />));
+    await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
+
+    const toggle = screen.getByRole('button', { name: /show the lines of order B2B-0001/i });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => expect(screen.getByTestId('b2b-items-panel')).toBeInTheDocument());
+    const opened = screen.getByRole('button', { name: /hide the lines of order B2B-0001/i });
+    expect(opened).toHaveAttribute('aria-expanded', 'true');
+
+    // Le bouton ne bascule qu'UNE fois : son clic ne doit pas remonter jusqu'à
+    // la ligne, qui refermerait aussitôt ce qu'il vient d'ouvrir.
+    fireEvent.click(opened);
+    await waitFor(() => expect(screen.queryByTestId('b2b-items-panel')).not.toBeInTheDocument());
+  });
+
   it('marks an order with an outstanding balance as unpaid', async () => {
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());

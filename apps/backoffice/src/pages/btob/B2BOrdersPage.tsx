@@ -18,6 +18,7 @@ import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   ORDER_STATUS_BADGE,
   orderStatusBadgeTone,
@@ -125,14 +126,30 @@ export default function B2BOrdersPage(): JSX.Element {
     {
       id: 'order_number',
       header: 'Order no.',
-      render: (r) => (
-        <span className="flex items-center gap-1.5">
-          {expanded.has(r.invoice_id)
-            ? <ChevronDown className="h-3.5 w-3.5 text-text-inert" aria-hidden />
-            : <ChevronRight className="h-3.5 w-3.5 text-text-inert" aria-hidden />}
-          <span className="font-data text-xs text-text-primary">{r.order_number}</span>
-        </span>
-      ),
+      // Le chevron est un BOUTON, pas un ornement. Le clic-ligne reste le
+      // raccourci souris, mais il ne se prend ni au Tab ni à Entrée : sans ce
+      // bouton, le détail d'une commande était inatteignable au clavier
+      // (WCAG 2.1.1). `stopPropagation` évite le double basculement quand le
+      // clic sur le chevron remonte jusqu'à la ligne.
+      render: (r) => {
+        const isOpen = expanded.has(r.invoice_id);
+        return (
+          <span className="flex items-center gap-1.5">
+            <button
+              type="button"
+              aria-expanded={isOpen}
+              aria-label={`${isOpen ? 'Hide' : 'Show'} the lines of order ${r.order_number}`}
+              onClick={(e) => { e.stopPropagation(); toggle(r.invoice_id); }}
+              className={`rounded-sm text-text-inert transition-colors duration-fast hover:text-text-primary ${FOCUS_RING}`}
+            >
+              {isOpen
+                ? <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
+            </button>
+            <span className="font-data text-xs text-text-primary">{r.order_number}</span>
+          </span>
+        );
+      },
     },
     {
       id: 'invoice_date',

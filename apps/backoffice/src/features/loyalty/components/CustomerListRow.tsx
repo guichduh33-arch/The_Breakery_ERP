@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react
 import { MoreHorizontal } from 'lucide-react';
 import { LoyaltyBadge, Button } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CustomerListRow as Row } from '../hooks/useLoyaltyCustomersList.js';
 
 export interface CustomerListRowProps {
@@ -78,7 +79,10 @@ export function CustomerListRow({
   return (
     <tr className="border-b border-border-subtle hover:bg-bg-overlay">
       <td
-        className="px-3 py-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+        // `focus-visible:ring-accent-primary` ne résolvait à AUCUNE couleur —
+        // `accent-primary` n'existe dans aucune famille du preset — donc la
+        // cellule, atteignable au clavier, n'avait aucun indicateur (WCAG 2.4.7).
+        className={`px-3 py-2 cursor-pointer ${FOCUS_RING}`}
         role="button"
         tabIndex={0}
         onClick={() => onView(row)}

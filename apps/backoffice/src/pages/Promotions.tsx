@@ -40,6 +40,7 @@ import {
   type PromotionsListFilters,
 } from '@/features/promotions/hooks/usePromotionsList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 
 type TypeFilter = 'all' | 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
 type ActiveFilter = 'all' | 'active' | 'inactive';
@@ -307,13 +308,13 @@ interface FilterFieldProps {
 
 function FilterField({ id, label, value, options, onChange }: FilterFieldProps): JSX.Element {
   return (
-    <label htmlFor={id} className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3">
+    <label htmlFor={id} className={`flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3 ${FOCUS_WITHIN_RING}`}>
       <span className="sr-only">{label}</span>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full bg-transparent text-sm text-text-primary outline-none"
+        className="h-9 w-full bg-transparent text-sm text-text-primary focus-visible:outline-none"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>

@@ -31,6 +31,7 @@ import {
 import { formatCurrency, formatDateTime } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useB2bDashboard, type B2bClientRow } from '@/features/btob/hooks/useB2bDashboard.js';
 import {
@@ -182,14 +183,14 @@ export default function B2BPaymentsPage(): JSX.Element {
               recherche ne parle pas à Aging, méthode/période qu'à Received. */}
           {tab !== 'aging' && (
             <div className="space-y-3 p-4">
-              <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3">
+              <div className={`flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3 ${FOCUS_WITHIN_RING}`}>
                 <Search className="h-4 w-4 text-text-secondary" aria-hidden />
                 <input
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search…"
-                  className="h-9 w-full bg-transparent text-sm text-text-primary outline-none"
+                  className="h-9 w-full bg-transparent text-sm text-text-primary focus-visible:outline-none"
                   aria-label="Search payments"
                 />
               </div>
