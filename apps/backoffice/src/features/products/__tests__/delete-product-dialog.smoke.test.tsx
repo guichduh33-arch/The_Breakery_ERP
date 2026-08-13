@@ -153,7 +153,7 @@ describe('DeleteProductDialog [S45 W-B]', () => {
     const cancelBtn  = screen.getByTestId('delete-product-cancel');
     expect(confirmBtn).toBeDisabled();
     expect(cancelBtn).toBeDisabled();
-    expect(confirmBtn).toHaveTextContent('Désactivation…');
+    expect(confirmBtn).toHaveTextContent('Deactivating…');
   });
 
   it('calls toast.success and onClose after successful mutation', async () => {

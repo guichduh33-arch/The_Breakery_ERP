@@ -10,9 +10,10 @@
 // contenter de mesurer un stock de lignes.
 //
 // Écritures inchangées : S27 update, S27b create + catégories, S27c variantes,
-// S45 soft-delete (delete_product_v1, gate products.delete). Les actions
-// GROUPÉES du pied de table restent inertes — elles réclament des RPC de masse
-// gatées et auditées qui n'existent pas.
+// S45 soft-delete (delete_product_v1, gate products.delete). La sélection
+// multiple et les actions GROUPÉES du pied de table sont retirées (audit UX/UI
+// 2026-08-13) : elles réclament des RPC de masse gatées et auditées qui
+// n'existent pas, et une case à cocher sans action est une promesse fausse.
 
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -142,7 +143,6 @@ export default function ProductsPage(): JSX.Element {
   };
 
   const [hiddenColumns, setHiddenColumns] = useState<ReadonlySet<ProductColumnId>>(new Set());
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
 
@@ -233,24 +233,6 @@ export default function ProductsPage(): JSX.Element {
     });
   }
 
-  function toggleRow(id: string): void {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll(ids: readonly string[], allSelected: boolean): void {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      for (const id of ids) {
-        if (allSelected) next.delete(id); else next.add(id);
-      }
-      return next;
-    });
-  }
-
   function openProduct(row: ProductRow): void {
     void navigate(`/backoffice/products/${row.id}`);
   }
@@ -329,9 +311,6 @@ export default function ProductsPage(): JSX.Element {
           onPageSize={setPageSize}
           sort={sortCol === null ? null : { columnId: sortCol, direction: sortDir }}
           onSortChange={(next) => { setSort(next.columnId, next.direction); }}
-          selected={selected}
-          onToggleRow={toggleRow}
-          onToggleAll={toggleAll}
           onRowClick={openProduct}
           onView={openProduct}
           {...(canEditPricing ? { onPricing: openPricing } : {})}

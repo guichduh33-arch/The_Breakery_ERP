@@ -11,7 +11,7 @@ export default function ComingSoonPage({ module }: ComingSoonProps) {
       <div className="text-center space-y-3">
         <Construction className="h-12 w-12 mx-auto opacity-50" aria-hidden />
         <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{module}</h1>
-        <p className="text-sm">Coming soon — module en cours d'implémentation.</p>
+        <p className="text-sm">Coming soon — this module is not built yet.</p>
       </div>
     </div>
   );

@@ -9,6 +9,10 @@
 // Calls useDeleteProduct internally and surfaces errors via toast + inline message.
 //
 // Pattern mirrors DissolveParentDialog + CorrectCostDialog (S27c / S39 W-B2).
+//
+// Copy is in ENGLISH like the rest of the back-office (audit UX/UI 2026-08-13) —
+// and it says DEACTIVATE, not delete: the row action is destructive-looking, the
+// effect is reversible from the product detail page.
 
 import { useState, type JSX } from 'react';
 import { toast } from 'sonner';
@@ -36,10 +40,10 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
     setError(null);
     try {
       await mutation.mutateAsync({ productId: product.id });
-      toast.success(`"${product.name}" a été désactivé.`);
+      toast.success(`"${product.name}" has been deactivated.`);
       onClose();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Suppression échouée.';
+      const msg = e instanceof Error ? e.message : 'Deactivation failed.';
       setError(msg);
       toast.error(msg);
     }
@@ -56,20 +60,20 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md" data-testid="delete-product-dialog">
         <DialogHeader>
-          <DialogTitle>Désactiver "{product?.name ?? ''}"</DialogTitle>
+          <DialogTitle>Deactivate "{product?.name ?? ''}"</DialogTitle>
           <DialogDescription>
-            Le produit sera masqué du catalogue et du POS (soft-delete). Les commandes
-            historiques sont conservées. SKU : <code className="font-mono text-xs">{product?.sku ?? ''}</code>
+            The product will be hidden from the catalogue and the POS (soft delete). Past
+            orders are preserved. SKU: <code className="font-mono text-xs">{product?.sku ?? ''}</code>
           </DialogDescription>
         </DialogHeader>
 
         <div
           className="rounded bg-red-soft border border-red px-3 py-2 text-sm text-red"
           role="note"
-          aria-label="Avertissement"
+          aria-label="Warning"
         >
-          Cette action désactive le produit de façon permanente. Vous pourrez le réactiver
-          manuellement depuis la page de détail.
+          The product stays deactivated until someone reactivates it by hand from the
+          product detail page.
         </div>
 
         {error !== null && (
@@ -88,7 +92,7 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
             disabled={mutation.isPending}
             data-testid="delete-product-cancel"
           >
-            Annuler
+            Cancel
           </Button>
           <Button
             variant="ink"
@@ -97,7 +101,7 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
             disabled={mutation.isPending}
             className="bg-danger text-danger-fg hover:opacity-90"
           >
-            {mutation.isPending ? 'Désactivation…' : 'Désactiver le produit'}
+            {mutation.isPending ? 'Deactivating…' : 'Deactivate product'}
           </Button>
         </DialogFooter>
       </DialogContent>
