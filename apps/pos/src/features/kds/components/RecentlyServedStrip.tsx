@@ -19,7 +19,7 @@ export function RecentlyServedStrip({ orders }: RecentlyServedStripProps) {
 
   return (
     <div
-      className="flex items-center gap-2 overflow-x-auto px-6 py-2 border-b border-border-subtle bg-bg-elevated/50"
+      className="flex items-center gap-2 overflow-x-auto px-6 py-2 border-b border-border-subtle bg-bg-elevated"
       role="group"
       aria-label="Recently served orders"
     >

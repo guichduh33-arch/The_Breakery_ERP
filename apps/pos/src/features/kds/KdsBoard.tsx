@@ -162,7 +162,7 @@ export function KdsBoard({
           role="status"
           aria-live="polite"
           data-testid="kds-offline-banner"
-          className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-amber-warn/40"
+          className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-warning"
         >
           <WifiOff className="h-6 w-6" aria-hidden />
           <span className="text-lg font-bold uppercase tracking-widest">
@@ -183,7 +183,7 @@ export function KdsBoard({
           role="status"
           aria-live="polite"
           data-testid="kds-reconnecting-banner"
-          className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-amber-warn/40"
+          className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-warning"
         >
           <WifiOff className="h-6 w-6 motion-safe:animate-pulse" aria-hidden />
           <span className="text-lg font-bold uppercase tracking-widest">

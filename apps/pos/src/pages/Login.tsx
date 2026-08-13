@@ -17,9 +17,14 @@
 //
 // Notes:
 //  - Dots indicator is purely visual ; auto-submit fires when length ===
-//    PIN_LENGTH.
+//    PIN_LENGTH. There is no Sign In button : it could never be pressed
+//    (auto-submit always fired first), so a status line replaces it.
 //  - SWITCH chip opens the picker without losing already-typed digits ;
 //    selecting another user resets the PIN buffer for safety.
+//  - Critique 2026-08-14 P2 — no arbitrary default user : preselecting
+//    users[0] + auto-submit let a reflex-typed PIN lock a colleague's account
+//    (15 min). The picker opens until a user is chosen ; the last successful
+//    login on this terminal is remembered and preselected instead.
 //  - We intentionally do NOT use `NumpadVirtual` here because the screenshot
 //    shows a custom layout (no "C" / "Cancel" buttons, only backspace) and
 //    the auto-submit-on-length-6 ergonomic. Re-using NumpadVirtual would
@@ -33,6 +38,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLoginUsers, type LoginUser } from '@/features/auth/hooks/useLoginUsers';
 
 const PIN_MAX = 6;
+/** Dernier utilisateur connecté avec succès sur CE terminal (localStorage). */
+const LAST_USER_KEY = 'pos:last_login_user';
 
 function initialOf(displayName: string): string {
   return displayName.trim().charAt(0).toUpperCase() || '?';
@@ -65,12 +72,15 @@ export default function LoginPage(): JSX.Element {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pin, setPin] = useState('');
 
-  // Default to the first returned user once the list loads (mirrors the
-  // old SEED_USERS[0] synchronous default, now async).
+  // Preselect ONLY the last user who signed in on this terminal — never an
+  // arbitrary users[0] (a reflex-typed PIN would auto-submit on a colleague's
+  // account and can lock it for 15 min). No memory → the picker stays open.
   useEffect(() => {
-    if (selectedUser === null && users && users.length > 0) {
-      setSelectedUser(users[0]!);
-    }
+    if (selectedUser !== null || !users || users.length === 0) return;
+    let lastId: string | null = null;
+    try { lastId = localStorage.getItem(LAST_USER_KEY); } catch { /* storage unavailable */ }
+    const last = lastId ? users.find((u) => u.id === lastId) : undefined;
+    if (last) setSelectedUser(last);
   }, [users, selectedUser]);
 
   const submitPin = useCallback(
@@ -79,9 +89,10 @@ export default function LoginPage(): JSX.Element {
       setError(null);
       void login(selectedUser.id, rawPin)
         .then(() => {
+          try { localStorage.setItem(LAST_USER_KEY, selectedUser.id); } catch { /* storage unavailable */ }
           const { user } = useAuthStore.getState();
           const dest = user?.role_code === 'waiter' ? '/tablet/order' : '/pos';
-          navigate(dest, { replace: true });
+          void navigate(dest, { replace: true });
         })
         .catch(() => { /* error surfaced via authStore.error */ });
     },
@@ -108,7 +119,6 @@ export default function LoginPage(): JSX.Element {
     if (error) setPin('');
   }, [error]);
 
-  const canSubmit = pin.length === PIN_MAX && !isLoading && selectedUser !== null;
   const errorCopy = error ? friendlyError(error) : null;
 
   const switchUser = useCallback((u: LoginUser) => {
@@ -158,9 +168,9 @@ export default function LoginPage(): JSX.Element {
           </div>
         ) : !users || users.length === 0 ? (
           <p className="text-text-secondary text-sm" data-testid="login-users-empty">No active staff found.</p>
-        ) : pickerOpen ? (
+        ) : pickerOpen || !selectedUser ? (
           <div className="w-full space-y-2 rounded-md border border-border-subtle bg-bg-input p-3">
-            <SectionLabel as="div">Switch user</SectionLabel>
+            <SectionLabel as="div">{selectedUser ? 'Switch user' : 'Who is signing in?'}</SectionLabel>
             {users.map((u) => (
               <button
                 key={u.id}
@@ -182,15 +192,17 @@ export default function LoginPage(): JSX.Element {
                 <span className="text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setPickerOpen(false)}
-              className="w-full text-xs uppercase tracking-widest text-text-muted py-1 hover:text-text-primary"
-            >
-              Cancel
-            </button>
+            {selectedUser && (
+              <button
+                type="button"
+                onClick={() => setPickerOpen(false)}
+                className="w-full text-xs uppercase tracking-widest text-text-muted py-1 hover:text-text-primary"
+              >
+                Cancel
+              </button>
+            )}
           </div>
-        ) : selectedUser ? (
+        ) : (
           <div className="flex flex-col items-center gap-2">
             <div
               aria-hidden
@@ -211,7 +223,7 @@ export default function LoginPage(): JSX.Element {
               </button>
             </div>
           </div>
-        ) : null}
+        )}
 
         {/* PIN dots */}
         <div className="flex justify-center gap-3" aria-label="PIN dots" role="status">
@@ -236,14 +248,16 @@ export default function LoginPage(): JSX.Element {
           </p>
         )}
 
-        {/* Numpad — no Cancel/Verify buttons inline ; uses SIGN IN below */}
+        {/* Numpad — auto-submit at 6 digits is the only submit path. Digits are
+            inert until a user is chosen : typing into nobody's account is the
+            reflex-lockout trap this screen used to invite. */}
         <div className="grid grid-cols-3 gap-3 w-full" role="group" aria-label="PIN numpad">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => handleDigit(d)}
-              disabled={isLoading}
+              disabled={isLoading || !selectedUser}
               className="h-14 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
               aria-label={d}
             >
@@ -254,7 +268,7 @@ export default function LoginPage(): JSX.Element {
           <button
             type="button"
             onClick={() => handleDigit('0')}
-            disabled={isLoading}
+            disabled={isLoading || !selectedUser}
             className="h-14 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
             aria-label="0"
           >
@@ -271,17 +285,16 @@ export default function LoginPage(): JSX.Element {
           </button>
         </div>
 
-        {/* SIGN IN */}
-        <Button
-          variant="gold"
-          size="lg"
-          className="w-full uppercase tracking-widest font-semibold"
-          disabled={!canSubmit}
-          onClick={() => submitPin(pin)}
-          data-testid="login-sign-in-btn"
+        {/* Signing-in status — replaces the former gold SIGN IN button, which
+            could never be pressed : auto-submit at 6 digits always fired first,
+            leaving a permanently disabled CTA (critique 2026-08-14 P2). */}
+        <p
+          aria-live="polite"
+          data-testid="login-signing-in-status"
+          className="h-5 text-sm text-text-secondary"
         >
-          {isLoading ? 'Signing in…' : 'Sign In'}
-        </Button>
+          {isLoading ? 'Signing in…' : ' '}
+        </p>
 
         {/* Email-login entry point removed (lot 4, audit P3): /login/email has no
             route in routes/index.tsx, so the link was a dead end. Re-add once that

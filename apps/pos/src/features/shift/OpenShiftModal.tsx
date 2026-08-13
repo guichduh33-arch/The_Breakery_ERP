@@ -331,6 +331,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add notes..."
+                data-vkp="qwerty"
               />
             </section>
 

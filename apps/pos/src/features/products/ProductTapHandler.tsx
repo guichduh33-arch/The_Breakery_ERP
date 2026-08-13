@@ -65,11 +65,11 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   // fenêtre que la décision 2 assume déjà entre saisie et paiement.
   function assertSellable(product: Product): boolean {
     if (!product.is_active) {
-      toast.error(`${product.name} est désactivé — il ne peut pas être vendu`);
+      toast.error(`${product.name} is disabled — it cannot be sold`);
       return false;
     }
     if (product.has_variants) {
-      toast.error(`${product.name} est un groupe de variantes — choisissez une variante`);
+      toast.error(`${product.name} is a variant group — pick a variant`);
       return false;
     }
     return true;

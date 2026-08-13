@@ -115,6 +115,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search..."
             aria-label="Search products"
+            data-vkp="qwerty"
             className="pl-9 h-11 bg-bg-base border-border-subtle rounded-md text-sm"
           />
         </div>
@@ -123,8 +124,8 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
       <div className="flex-1 overflow-y-auto p-6">
         {isError ? (
           <ErrorState
-            title="Impossible de charger les produits"
-            description="Le catalogue n'a pas pu être récupéré. Vérifiez la connexion et réessayez."
+            title="Cannot load products"
+            description="The catalog could not be fetched. Check the connection and try again."
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (

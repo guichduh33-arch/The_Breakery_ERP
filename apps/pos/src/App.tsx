@@ -19,7 +19,7 @@ function BootLoading() {
       <div className="flex flex-col items-center gap-4 text-text-secondary">
         <BrandMark size="md" />
         <div className="h-6 w-6 rounded-full border-2 border-border-subtle border-t-gold animate-spin" aria-hidden />
-        <span className="text-sm uppercase tracking-widest">Chargement…</span>
+        <span className="text-sm uppercase tracking-widest">Loading…</span>
       </div>
     </div>
   );
@@ -46,10 +46,10 @@ function BootGate({ children }: { children: React.ReactNode }) {
     return (
       <ErrorState
         fullScreen
-        title="Connexion au serveur impossible"
-        description="Impossible de restaurer votre session. Vérifiez votre connexion réseau puis réessayez."
+        title="Cannot reach the server"
+        description="Your session could not be restored. Check the network connection and try again."
         onRetry={() => void bootstrap()}
-        secondaryAction={{ label: 'Se déconnecter', onClick: () => void logout() }}
+        secondaryAction={{ label: 'Sign out', onClick: () => void logout() }}
       />
     );
   }

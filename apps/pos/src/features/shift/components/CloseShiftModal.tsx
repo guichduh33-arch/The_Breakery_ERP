@@ -121,7 +121,7 @@ export function CloseShiftModal({
       return;
     }
     if (nonCashIncomplete) {
-      toast.error('Enter every counted volet (0 is allowed).');
+      toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
     setStep('review');
@@ -133,7 +133,7 @@ export function CloseShiftModal({
       return;
     }
     if (nonCashIncomplete) {
-      toast.error('Enter every counted volet (0 is allowed).');
+      toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
     try {
@@ -232,7 +232,7 @@ export function CloseShiftModal({
                       ? 'font-mono tabular-nums text-text-primary'
                       : variance > 0
                         ? 'font-mono tabular-nums text-green'
-                        : 'font-mono tabular-nums text-red'
+                        : 'font-mono tabular-nums text-red-as-text'
                   }
                 >
                   {variance > 0 ? '+' : ''}{variance.toLocaleString('id-ID')}
@@ -260,7 +260,7 @@ export function CloseShiftModal({
 
         {step === 'review' && (qrisVisible || cardVisible) && (
           <p className="text-xs text-text-secondary">
-            Non-cash volets are reconciled server-side at close; any large variance
+            Non-cash tenders are reconciled server-side at close; any large variance
             will ask for a note or manager approval.
           </p>
         )}
@@ -281,6 +281,7 @@ export function CloseShiftModal({
             <input
               id="counted_qris"
               data-testid="counted-qris-input"
+              data-vkp="numeric"
               type="text"
               inputMode="numeric"
               placeholder="0"
@@ -298,6 +299,7 @@ export function CloseShiftModal({
             <input
               id="counted_card"
               data-testid="counted-card-input"
+              data-vkp="numeric"
               type="text"
               inputMode="numeric"
               placeholder="0"
@@ -317,6 +319,7 @@ export function CloseShiftModal({
             </label>
             <textarea
               id="close_notes"
+              data-vkp="qwerty"
               className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
               rows={2}
               value={notes}
@@ -354,6 +357,7 @@ export function CloseShiftModal({
             </select>
             <input
               id="approver_pin"
+              data-vkp="numeric"
               type="password"
               inputMode="numeric"
               autoComplete="one-time-code"
