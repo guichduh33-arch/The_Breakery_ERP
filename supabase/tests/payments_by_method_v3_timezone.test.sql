@@ -39,10 +39,17 @@ DECLARE
   v_t1       boolean;
   v_t2       boolean;
 BEGIN
+  -- Un profil SANS session ouverte : la base dev est partagée, et une session
+  -- POS vivante pour le profil choisi ferait claquer one_open_session_per_user
+  -- à l'insertion de la fixture (le test avorterait sans rien évaluer).
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
     AND has_permission(up.auth_user_id, 'reports.sales.read')
     AND has_permission(up.auth_user_id, 'reports.financial.read')
+    AND NOT EXISTS (
+      SELECT 1 FROM pos_sessions ps
+      WHERE ps.opened_by = up.id AND ps.status = 'open'
+    )
   LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT COALESCE(MAX(timezone), 'Asia/Makassar') INTO v_tz FROM business_config WHERE id = 1;
