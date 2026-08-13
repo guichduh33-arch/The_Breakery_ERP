@@ -124,7 +124,7 @@ function formatElapsed(iso: string): string {
 function LiveSessionRow({ session }: { session: LiveSession }): JSX.Element {
   return (
     <li
-      className="rounded-lg border border-border-subtle bg-bg-base/40 p-4"
+      className="rounded-lg border border-border-subtle bg-bg-input p-4"
       data-testid={`live-session-${session.id}`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -151,7 +151,7 @@ function LiveSessionRow({ session }: { session: LiveSession }): JSX.Element {
             <Currency amount={session.opening_cash} className="font-mono" />
           </span>
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+        <span className="text-xs uppercase tracking-widest text-text-muted font-semibold">
           {session.order_count} transactions
         </span>
       </div>

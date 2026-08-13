@@ -187,7 +187,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                   <Lock className="h-5 w-5 text-gold" aria-hidden />
                 </span>
                 <div>
-                  <h2 className="font-display text-xl text-text-primary">Open a Shift</h2>
+                  <h2 className="font-semibold text-xl text-text-primary">Open a Shift</h2>
                   <p className="text-text-secondary text-xs">Enter your PIN to open your shift</p>
                 </div>
               </>
@@ -255,7 +255,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
               <div
                 className={cn(
                   'bg-bg-input border-2 rounded-md px-4 py-3 flex items-center justify-between gap-3 transition-colors',
-                  amount > 0 ? 'border-gold' : 'border-gold/60',
+                  amount > 0 ? 'border-gold' : 'border-gold-soft',
                 )}
               >
                 <span className="text-text-secondary text-sm font-mono">Rp</span>

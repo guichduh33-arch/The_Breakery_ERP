@@ -47,7 +47,7 @@ export function ShiftClosedState({
         </div>
 
         <div className="space-y-1">
-          <h2 className="font-display text-2xl text-text-primary">No shift open</h2>
+          <h2 className="font-semibold text-2xl text-text-primary">No shift open</h2>
           <p className="text-text-secondary text-sm">
             You must open a shift to perform this action.
           </p>

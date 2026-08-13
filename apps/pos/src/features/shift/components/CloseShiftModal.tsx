@@ -187,7 +187,7 @@ export function CloseShiftModal({
           inatteignable (constaté à l'audit POS 2026-06-12). */}
       <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6 max-h-[92vh] overflow-y-auto">
         <header className="flex items-center justify-between">
-          <h2 className="font-serif text-2xl">Close Shift</h2>
+          <h2 className="font-semibold text-2xl">Close Shift</h2>
           {/* Variance badge is part of the reveal — never shown during the
               blind count step. */}
           {step === 'review' && (
@@ -259,7 +259,7 @@ export function CloseShiftModal({
         </section>
 
         {step === 'review' && (qrisVisible || cardVisible) && (
-          <p className="text-[11px] text-text-secondary">
+          <p className="text-xs text-text-secondary">
             Non-cash volets are reconciled server-side at close; any large variance
             will ask for a note or manager approval.
           </p>
