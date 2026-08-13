@@ -129,7 +129,7 @@ export function RecordCashMovementModal({
             Date
             <input
               className={inputCls}
-              type="date"
+              type="date" lang="id-ID"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -150,7 +150,7 @@ export function RecordCashMovementModal({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={submit} disabled={!valid || mut.isPending}>
+            <Button variant="ink" onClick={submit} disabled={!valid || mut.isPending}>
               {mut.isPending ? 'Saving…' : 'Record'}
             </Button>
           </div>

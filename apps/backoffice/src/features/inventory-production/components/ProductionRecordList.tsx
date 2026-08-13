@@ -7,7 +7,7 @@ import { useState, type JSX } from 'react';
 import { Button } from '@breakery/ui';
 import { useProductionRecords } from '../hooks/useProductionRecords.js';
 import { RevertProductionDialog } from './RevertProductionDialog.js';
-import { formatDateTimeShortWita } from '@breakery/utils';
+import { formatDateTimeShortWita, formatQuantity } from '@breakery/utils';
 
 export default function ProductionRecordList(): JSX.Element {
   const { data, isLoading, isError } = useProductionRecords();
@@ -43,8 +43,9 @@ export default function ProductionRecordList(): JSX.Element {
               >
                 <td className="px-3 py-2 font-mono">{r.production_number}</td>
                 <td className="px-3 py-2">{r.product_name ?? r.product_id.slice(0, 8)}</td>
-                <td className="px-3 py-2 text-right font-mono">{r.quantity_produced.toLocaleString()}</td>
-                <td className="px-3 py-2 text-right font-mono">{r.quantity_waste.toLocaleString()}</td>
+                {/* Pas d'unité dans `production_records` : sans suffixe. */}
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{formatQuantity(r.quantity_produced, null)}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{formatQuantity(r.quantity_waste, null)}</td>
                 <td className="px-3 py-2">{formatDateTimeShortWita(r.production_date)}</td>
                 <td className="px-3 py-2">
                   {r.reverted_at !== null

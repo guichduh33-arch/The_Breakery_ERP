@@ -118,7 +118,7 @@ export function PricingTab({ customer }: { customer: CustomerDetailRow }): JSX.E
           {overrides && overrides.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
-                <thead className="border-y border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                <thead className="border-y border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
                   <tr>
                     <th className="px-4 py-2.5 text-left font-medium">Product</th>
                     <th className="px-4 py-2.5 text-right font-medium">Retail</th>

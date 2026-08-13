@@ -11,7 +11,7 @@
 import { useState, type ChangeEvent, type JSX } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button, Card, Input, Select } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductsForOrderEdit } from '@/features/orders/hooks/useProductsForOrderEdit.js';
 import {
@@ -128,7 +128,7 @@ function NegotiatedPriceRow({
         {price.product_name}
         {price.product_sku && <span className="ml-2 text-xs text-text-muted">{price.product_sku}</span>}
       </td>
-      <td className="px-4 py-3 text-right tabular-nums text-text-muted line-through">{formatIdr(price.retail_price)}</td>
+      <td className="px-4 py-3 text-right tabular-nums text-text-muted line-through">{formatCurrency(price.retail_price)}</td>
       <td className="px-4 py-3 text-right tabular-nums font-medium text-text-primary">
         {canEdit ? (
           <div className="flex items-center justify-end gap-2">
@@ -153,7 +153,7 @@ function NegotiatedPriceRow({
             )}
           </div>
         ) : (
-          formatIdr(price.negotiated_price)
+          formatCurrency(price.negotiated_price)
         )}
       </td>
       {canEdit && (

@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatTimeWita } from '@breakery/utils';
 
 const DAYS = [
   { key: 'mon', label: 'Monday' },
@@ -112,7 +113,7 @@ export default function SettingsBusinessHoursPage() {
     setSetting.mutate(
       { key: 'business_hours', value: hoursFromDraft(draft), category: 'business' },
       {
-        onSuccess: () => { setSaved(new Date().toLocaleTimeString()); },
+        onSuccess: () => { setSaved(formatTimeWita(new Date())); },
         onError:   (e) => { setError(e.message); },
       },
     );

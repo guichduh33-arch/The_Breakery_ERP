@@ -14,7 +14,7 @@ export interface SectionFormModalProps {
   onClose:  () => void;
 }
 
-const KINDS: Array<{ value: 'warehouse' | 'production' | 'sales'; label: string }> = [
+const KINDS: { value: 'warehouse' | 'production' | 'sales'; label: string }[] = [
   { value: 'warehouse',  label: 'Warehouse' },
   { value: 'production', label: 'Production' },
   { value: 'sales',      label: 'Sales' },
@@ -133,7 +133,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={upsert.isPending}>
+          <Button variant="ink" onClick={handleSubmit} disabled={upsert.isPending}>
             {upsert.isPending ? 'Saving…' : (isEdit ? 'Save' : 'Create')}
           </Button>
         </DialogFooter>

@@ -6,6 +6,7 @@
 import { useState, type JSX } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { Card } from '@breakery/ui';
+import { formatDate } from '@breakery/utils';
 import type { CustomerDetailRow } from '@/features/customers/hooks/useCustomerDetail.js';
 import { useUpdateRetailCreditLimit } from '@/features/customers/hooks/useUpdateRetailCreditLimit.js';
 import { RetailCreditLimitSection } from '@/features/customers/components/RetailCreditLimitSection.js';
@@ -37,8 +38,8 @@ export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; ca
           <p className="text-sm text-text-muted">No contact on file.</p>
         )}
         <div className="pt-2 text-xs text-text-muted">
-          Customer since {new Date(customer.created_at).toLocaleDateString('id-ID')}
-          {customer.birth_date && ` · Birthday ${new Date(customer.birth_date).toLocaleDateString('id-ID')}`}
+          Customer since {formatDate(customer.created_at)}
+          {customer.birth_date && ` · Birthday ${formatDate(customer.birth_date)}`}
         </div>
       </Card>
 

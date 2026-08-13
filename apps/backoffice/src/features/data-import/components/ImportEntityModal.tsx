@@ -90,7 +90,7 @@ export function ImportEntityModal({ open, onClose, def, title, description }: Pr
   const importTotal =
     stage.step === 'previewed'
       ? Object.values(stage.report.summary).reduce(
-          (sum, section) => sum + (section['create'] ?? 0) + (section['update'] ?? 0), 0)
+          (sum, section) => sum + (section.create ?? 0) + (section.update ?? 0), 0)
       : 0;
 
   return (
@@ -137,7 +137,7 @@ export function ImportEntityModal({ open, onClose, def, title, description }: Pr
                 <ImportErrorsTable errors={toExcelRows(stage.report.errors, stage.rowMap)} />
               )}
               <div className="flex items-center gap-3">
-                <Button data-testid="confirm-import" onClick={() => void handleConfirm()}
+                <Button variant="ink" data-testid="confirm-import" onClick={() => void handleConfirm()}
                   disabled={!stage.report.valid || importMutation.isPending}>
                   {importMutation.isPending ? 'Importing…'
                     : importTotal > 0 ? `Import ${importTotal} row${importTotal !== 1 ? 's' : ''}` : 'Import'}
@@ -156,7 +156,7 @@ export function ImportEntityModal({ open, onClose, def, title, description }: Pr
               <EntitySummaryGrid summary={stage.report.summary} />
               <div className="flex items-center gap-3">
                 <Button variant="secondary" onClick={reset}>Import another file</Button>
-                <Button variant="primary" onClick={handleClose}>Done</Button>
+                <Button variant="ink" onClick={handleClose}>Done</Button>
               </div>
             </div>
           )}

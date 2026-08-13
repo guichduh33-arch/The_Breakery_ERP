@@ -21,7 +21,7 @@ import {
 const EMPTY_HIDDEN: ReadonlySet<ProductColumnId> = new Set();
 
 const CONTROL =
-  'h-[34px] rounded-sm border border-border-strong bg-bg-elevated text-[13px] text-text-primary ' +
+  'h-[34px] rounded-sm border border-border-strong bg-bg-elevated text-sm text-text-primary ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
 
 interface Props {
@@ -69,7 +69,7 @@ export function ProductsFilters({
         className={cn(CONTROL, 'px-2.5')}
       >
         <option value="all">All categories</option>
-        {categories.map((c) => (
+        {categories.filter((c) => c.is_active).map((c) => (
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
       </select>
@@ -150,7 +150,7 @@ function ColumnsMenu({
           {PRODUCT_COLUMNS.map((c) => (
             <label
               key={c.id}
-              className="flex cursor-pointer items-center gap-2.5 px-3.5 py-1.5 text-[13px] text-text-primary hover:bg-surface-4"
+              className="flex cursor-pointer items-center gap-2.5 px-3.5 py-1.5 text-sm text-text-primary hover:bg-surface-4"
             >
               <input
                 type="checkbox"

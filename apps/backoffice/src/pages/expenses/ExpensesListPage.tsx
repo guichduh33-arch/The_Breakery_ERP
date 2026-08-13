@@ -1,22 +1,29 @@
 // apps/backoffice/src/pages/expenses/ExpensesListPage.tsx
 //
-// Session 14 / Phase 5.A — rewrite of the Expenses list to match the
-// `expenses.jpg` reference (Fraunces title, four KPI tiles, pill filters,
-// dense table). Tabs (Expenses / Categories) sit above the title to mirror
-// the screenshot, but Categories is intentionally a placeholder
-// EmptyState — there's no expense category CRUD RPC in supabase/migrations
-// today, so the surface stays read-only.
+// Liste des dépenses — instance de l'archétype LIST.
 //
-// All write paths still flow through the existing
-// useCreateExpense / useExpenseActions hooks.
+// Ce que l'audit UX/UI change ici, et pourquoi :
+//   · Le titre passe AVANT les onglets. Les onglets étaient au-dessus du `<h1>`
+//     — on choisissait la sous-vue d'une page qu'on n'avait pas encore nommée,
+//     et le fil de lecture démarrait par un contrôle.
+//   · Les quatre tuiles de KPI et les six pastilles dorées disaient deux fois
+//     la même chose : « Pending 3 » au-dessus, un bouton « Submitted » en
+//     dessous. Les deux cèdent à une seule bande de compteurs
+//     (`ListCounterStrip`), où le compteur EST le filtre de statut.
+//   · Les compteurs suivent catégorie / méthode / dates / recherche, mais
+//     JAMAIS le statut actif : un compteur qui se recalcule sur son propre
+//     filtre ne compte plus que lui-même (même règle que la liste des
+//     commandes, ADR-025 D2).
+//   · Le montant par statut passe en infobulle : la bande répond à « combien
+//     de lignes vais-je voir », l'argent s'y lit au survol.
+//
+// Categories reste une sous-vue en lecture seule — aucune RPC de CRUD de
+// catégorie de dépense n'existe. Les écritures passent toujours par
+// useCreateExpense / useExpenseActions.
 
 import { useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Calculator,
-  Calendar,
-  Clock,
-  Coins,
   Download,
   Plus,
   Receipt,
@@ -27,14 +34,14 @@ import {
   Button,
   DataTable,
   EmptyState,
-  KpiTile,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
   type DataTableColumn,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
 import {
@@ -46,37 +53,45 @@ import {
 } from '@/features/expenses/hooks/useExpensesList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
-interface ExpensesKpi {
-  totalAmount: number;
-  pendingCount: number;
-  monthlyCount: number;
-  avgAmount: number;
-}
+type ExpenseFilterKey = ExpenseStatus | 'all';
 
-function aggregate(rows: readonly ExpenseRow[]): ExpensesKpi {
-  const acc: ExpensesKpi = { totalAmount: 0, pendingCount: 0, monthlyCount: 0, avgAmount: 0 };
-  if (rows.length === 0) return acc;
-  const monthStart = new Date();
-  monthStart.setUTCDate(1);
-  monthStart.setUTCHours(0, 0, 0, 0);
-  const ms = monthStart.getTime();
+interface ExpenseBucket { count: number; amount: number }
+type ExpenseBuckets = Record<ExpenseFilterKey, ExpenseBucket>;
+
+function aggregate(rows: readonly ExpenseRow[]): ExpenseBuckets {
+  const acc: ExpenseBuckets = {
+    all:       { count: rows.length, amount: 0 },
+    draft:     { count: 0, amount: 0 },
+    submitted: { count: 0, amount: 0 },
+    approved:  { count: 0, amount: 0 },
+    rejected:  { count: 0, amount: 0 },
+    paid:      { count: 0, amount: 0 },
+  };
   for (const r of rows) {
     const amt = Number(r.amount ?? 0);
-    if (r.status === 'approved' || r.status === 'paid') acc.totalAmount += amt;
-    if (r.status === 'submitted')                       acc.pendingCount += 1;
-    const t = Date.parse(r.expense_date);
-    if (Number.isFinite(t) && t >= ms) acc.monthlyCount += 1;
+    acc.all.amount += amt;
+    const bucket = acc[r.status as ExpenseFilterKey] as ExpenseBucket | undefined;
+    if (bucket === undefined) continue;
+    bucket.count  += 1;
+    bucket.amount += amt;
   }
-  acc.avgAmount = rows.length === 0 ? 0 : acc.totalAmount / Math.max(1, rows.length);
   return acc;
 }
 
-const STATUS_FILTERS: { value: ExpenseStatus | 'all'; label: string }[] = [
-  { value: 'all',       label: 'All' },
+// Les six entrées de la bande — mêmes valeurs de filtre que les pastilles
+// qu'elle remplace. Seuls deux statuts portent un ton : « Submitted » désigne
+// du travail qui attend une décision, « Rejected » un refus qu'il faut traiter.
+// Les autres ne sont pas graves, ils sont l'état normal d'une dépense.
+const EXPENSE_COUNTERS: readonly {
+  value: ExpenseFilterKey;
+  label: string;
+  tone?: 'warning' | 'danger';
+}[] = [
+  { value: 'all',       label: 'All expenses' },
   { value: 'draft',     label: 'Draft' },
-  { value: 'submitted', label: 'Submitted' },
+  { value: 'submitted', label: 'Submitted', tone: 'warning' },
   { value: 'approved',  label: 'Approved' },
-  { value: 'rejected',  label: 'Rejected' },
+  { value: 'rejected',  label: 'Rejected',  tone: 'danger' },
   { value: 'paid',      label: 'Paid' },
 ];
 
@@ -86,38 +101,63 @@ export default function ExpensesListPage(): JSX.Element {
   const canCreate = hasPermission('expenses.create');
 
   const [tab, setTab]                     = useState<'expenses' | 'categories'>('expenses');
-  const [status, setStatus]               = useState<ExpenseStatus | 'all'>('all');
+  const [status, setStatus]               = useState<ExpenseFilterKey>('all');
   const [categoryId, setCategoryId]       = useState<string>('all');
   const [paymentMethod, setPaymentMethod] = useState<'all' | 'cash' | 'transfer' | 'card' | 'credit'>('all');
   const [dateFrom, setDateFrom]           = useState<string>('');
   const [dateTo, setDateTo]               = useState<string>('');
   const [search, setSearch]               = useState<string>('');
 
-  const filters = useMemo<ExpensesListFilters>(
+  // Les filtres HORS statut : ce sur quoi les compteurs se calculent. Le statut
+  // ne s'ajoute que pour la table — sans quoi chaque compteur ne compterait que
+  // les lignes que son propre filtre a déjà retenues.
+  const counterFilters = useMemo<ExpensesListFilters>(
     () => ({
-      status,
+      status: 'all',
       categoryId,
       paymentMethod,
       ...(dateFrom !== '' ? { dateFrom } : {}),
       ...(dateTo   !== '' ? { dateTo }   : {}),
       ...(search.trim() !== '' ? { search } : {}),
     }),
-    [status, categoryId, paymentMethod, dateFrom, dateTo, search],
+    [categoryId, paymentMethod, dateFrom, dateTo, search],
+  );
+
+  const filters = useMemo<ExpensesListFilters>(
+    () => ({ ...counterFilters, status }),
+    [counterFilters, status],
   );
 
   const list    = useExpensesList(filters);
-  const allList = useExpensesList({ status: 'all' });
+  const allList = useExpensesList(counterFilters);
   const cats    = useExpenseCategories();
 
-  const rows = list.data ?? [];
-  const kpi  = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
+  const rows    = list.data ?? [];
+  const buckets = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
+  const countersDown = allList.isError;
+
+  const counters = useMemo<ListCounter[]>(() => EXPENSE_COUNTERS.map((c) => {
+    const bucket = buckets[c.value];
+    return {
+      id:    c.value,
+      label: c.label,
+      // Un échec de chargement rend un tiret, jamais un zéro : « aucune dépense
+      // en attente » et « je n'ai pas pu compter » ne se ressemblent pas.
+      value: countersDown ? '—' : bucket.count,
+      ...(c.tone !== undefined && bucket.count > 0 && !countersDown ? { tone: c.tone } : {}),
+      ...(countersDown ? {} : {
+        title: `${formatCurrency(bucket.amount)} across ${String(bucket.count)} expense(s). Counted over the 200 most recent expenses matching the category / method / date / search filters.`,
+      }),
+      onSelect: () => { setStatus(c.value); },
+    };
+  }), [buckets, countersDown]);
 
   const columns: readonly DataTableColumn<ExpenseRow>[] = useMemo(() => [
     {
       id:    'date',
       header: 'Date',
       width: '120px',
-      render: (r) => <span className="tabular-nums text-text-secondary">{r.expense_date}</span>,
+      render: (r) => <span className="tabular-nums text-text-secondary">{formatDate(r.expense_date)}</span>,
     },
     {
       id:    'number',
@@ -150,7 +190,7 @@ export default function ExpensesListPage(): JSX.Element {
       header: 'Amount',
       width: '140px',
       align: 'right',
-      render: (r) => <span className="tabular-nums">Rp {formatIdr(Number(r.amount ?? 0))}</span>,
+      render: (r) => <span className="tabular-nums">{formatCurrency(Number(r.amount ?? 0))}</span>,
     },
     {
       id:    'method',
@@ -173,6 +213,23 @@ export default function ExpensesListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expenses</h1>
+          <p className="mt-1 text-sm text-text-secondary">Manage and track your bakery&apos;s expenditure.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" disabled aria-label="Export (coming soon)">
+            <Download className="h-4 w-4" aria-hidden /> Export
+          </Button>
+          {canCreate && (
+            <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
+            </Link>
+          )}
+        </div>
+      </header>
+
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList>
           <TabsTrigger value="expenses">
@@ -184,54 +241,12 @@ export default function ExpensesListPage(): JSX.Element {
         </TabsList>
 
         <TabsContent value="expenses" className="mt-4 space-y-6">
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expenses</h1>
-              <p className="mt-1 text-sm text-text-secondary">Manage and track your bakery&apos;s expenditure.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="ghost" size="sm" disabled aria-label="Export (coming soon)">
-                <Download className="h-4 w-4" aria-hidden /> Export
-              </Button>
-              {canCreate && (
-                <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
-                  <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
-                </Link>
-              )}
-            </div>
-          </header>
-
-          <section
-            className="grid grid-cols-1 gap-4 md:grid-cols-4"
-            aria-label="Expense totals"
-          >
-            <KpiTile
-              label="Total Expenses"
-              value={kpi.totalAmount}
-              valueFormat="currency"
-              icon={Coins}
-              footer="Approved + paid"
-            />
-            <KpiTile
-              label="Pending"
-              value={kpi.pendingCount}
-              icon={Clock}
-              footer="Awaiting approval"
-            />
-            <KpiTile
-              label="Monthly Count"
-              value={kpi.monthlyCount}
-              icon={Calendar}
-              footer="This month"
-            />
-            <KpiTile
-              label="Avg Expense"
-              value={kpi.avgAmount}
-              valueFormat="currency"
-              icon={Calculator}
-              footer="Per transaction"
-            />
-          </section>
+          <ListCounterStrip
+            counters={counters}
+            activeId={status}
+            ariaLabel="Expense status filter"
+            data-testid="expenses-counters"
+          />
 
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3">
             <div className="relative flex-1 min-w-[16rem]">
@@ -273,7 +288,7 @@ export default function ExpensesListPage(): JSX.Element {
             </select>
             <input
               id="exp-from"
-              type="date"
+              type="date" lang="id-ID"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               aria-label="From date"
@@ -281,31 +296,12 @@ export default function ExpensesListPage(): JSX.Element {
             />
             <input
               id="exp-to"
-              type="date"
+              type="date" lang="id-ID"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               aria-label="To date"
               className="h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
             />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Status filter">
-            {STATUS_FILTERS.map((q) => {
-              const isActive = status === q.value;
-              return (
-                <Button
-                  key={q.value}
-                  type="button"
-                  variant={isActive ? 'gold' : 'ghost'}
-                  size="sm"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setStatus(q.value)}
-                >
-                  {q.label}
-                </Button>
-              );
-            })}
           </div>
 
           {list.error !== null && list.error !== undefined ? (
@@ -393,7 +389,7 @@ function CategoriesTab(): JSX.Element {
           ))}
         </tbody>
       </table>
-      <div className="border-t border-border-subtle px-4 py-2 text-[11px] text-text-muted">
+      <div className="border-t border-border-subtle px-4 py-2 text-xs text-text-muted">
         Categories are read-only — no expense_category CRUD RPC ships in this session.
       </div>
     </div>

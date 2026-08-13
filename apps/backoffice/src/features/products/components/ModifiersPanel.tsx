@@ -113,7 +113,7 @@ export function ModifiersPanel({ product }: ModifiersPanelProps): JSX.Element {
                 Unsaved changes — this view stops refreshing until you save.
               </span>
             )}
-            <Button type="button" onClick={save} disabled={upsert.isPending}>
+            <Button variant="ink" type="button" onClick={save} disabled={upsert.isPending}>
               {upsert.isPending ? 'Saving…' : 'Save modifiers'}
             </Button>
           </div>

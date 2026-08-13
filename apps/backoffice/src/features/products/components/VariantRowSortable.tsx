@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import type { VariantRow } from '../hooks/useProductVariants.js';
 
 export interface VariantRowSortableProps {
@@ -31,10 +32,10 @@ export function VariantRowSortable({
     backgroundColor: isDragging ? 'var(--bg-overlay, rgba(0,0,0,0.04))' : undefined,
   };
 
-  const retail = `Rp ${Math.round(variant.retail_price).toLocaleString()}`;
+  const retail = formatCurrency(variant.retail_price);
   const cost   = variant.cost_price === 0
     ? '—'
-    : `Rp ${Math.round(variant.cost_price).toLocaleString()}`;
+    : formatCurrency(variant.cost_price);
 
   return (
     <tr

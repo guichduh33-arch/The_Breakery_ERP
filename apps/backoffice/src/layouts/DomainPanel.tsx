@@ -3,7 +3,7 @@
 // Refonte shell 2026-08-05 — le drop-panel d'un domaine de la top bar.
 //
 // Panneau plat, ancré sous son onglet, à LARGEUR VARIABLE : une colonne par
-// groupe déclaré dans `nav.ts` (3 pour Stock, 5 pour Reports, 7 pour Admin).
+// groupe déclaré dans `nav.ts` (3 pour Stock, 5 pour Reports, 4 pour Admin).
 // La largeur est calculée puis BORNÉE à la fenêtre, et le panneau se recale
 // vers la gauche s'il déborderait à droite — sinon Admin sortirait de l'écran
 // sur un 1440.
@@ -20,8 +20,10 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useAlertsCount } from '@/features/inventory-alerts/hooks/useAlertsCount.js';
 import type { NavColumn, NavDomain } from './nav.js';
 
-/** Largeur cible d'une colonne, gouttière comprise. */
+/** Largeur cible d'une colonne — CONTENU seul, gouttières à part. */
 const COLUMN_WIDTH = 172;
+/** Gouttière entre colonnes (columnGap de la grille). */
+const COLUMN_GAP = 22;
 /** Padding horizontal du panneau (18px 20px dans le handoff). */
 const PANEL_PADDING_X = 40;
 /** Gouttière de page — le panneau ne colle jamais au bord de la fenêtre. */
@@ -36,7 +38,7 @@ function AlertsLinkCount() {
   const { total } = useAlertsCount();
   if (total === 0) return null;
   return (
-    <span className="font-data text-[10.5px] font-bold text-danger tabular-nums" aria-hidden>
+    <span className="font-data text-xs font-bold text-danger tabular-nums" aria-hidden>
       {total > 99 ? '99+' : total}
     </span>
   );
@@ -48,7 +50,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
 
   return (
     <div className="min-w-0">
-      <p className="mb-2.5 font-data text-[10px] uppercase tracking-widest text-text-muted">
+      <p className="mb-2.5 font-data text-xs uppercase tracking-widest text-text-muted">
         {column.label}
       </p>
       <ul className="flex flex-col gap-[7px]">
@@ -60,7 +62,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center justify-between gap-2 rounded-sm text-[13px] leading-tight transition-colors',
+                  'flex items-center justify-between gap-2 rounded-sm text-sm leading-tight transition-colors',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                   isActive
                     ? 'font-medium text-gold'
@@ -68,7 +70,10 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
                 )
               }
             >
-              <span className="truncate">{link.label}</span>
+              {/* Pas de truncate : la largeur du panneau est calculée pour le
+                  contenu ; si la fenêtre clampe le panneau, le libellé passe à
+                  la ligne au lieu d'être coupé. */}
+              <span className="min-w-0">{link.label}</span>
               {link.to.endsWith('/inventory/alerts') && showAlertsCount && <AlertsLinkCount />}
             </NavLink>
           </li>
@@ -93,7 +98,14 @@ export function DomainPanel({ domain, anchorLeft, onClose, id }: DomainPanelProp
   const columns = domain.columns ?? [];
   const [left, setLeft] = useState(anchorLeft);
 
-  const width = Math.max(640, columns.length * COLUMN_WIDTH + PANEL_PADDING_X);
+  // Audit UX/UI 2026-08-13 (lot 2) : l'ancienne formule (n×172 + padding)
+  // oubliait les gouttières inter-colonnes — la grille les prélevait donc sur
+  // le contenu (~153 px réels par colonne) et `truncate` coupait les libellés
+  // (« Expense thresho… »). Les gouttières comptent désormais dans la largeur.
+  const width = Math.max(
+    640,
+    columns.length * COLUMN_WIDTH + (columns.length - 1) * COLUMN_GAP + PANEL_PADDING_X,
+  );
 
   // Recalage : on part du bord de l'onglet, on rentre le panneau dans la
   // fenêtre s'il déborde à droite, sans jamais passer sous la gouttière gauche.
@@ -133,7 +145,7 @@ export function DomainPanel({ domain, anchorLeft, onClose, id }: DomainPanelProp
         maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
         display: 'grid',
         gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
-        columnGap: 22,
+        columnGap: COLUMN_GAP,
       }}
     >
       {columns.map((column) => (

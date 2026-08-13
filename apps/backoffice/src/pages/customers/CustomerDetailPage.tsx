@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Card, LoyaltyBadge } from '@breakery/ui';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
+import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
@@ -156,7 +157,7 @@ export function CustomerDetailPage(): JSX.Element {
               />
               <LoyaltyBadge tier={tier} points={customer.loyalty_points} />
               <span
-                className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${
+                className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${
                   isActive ? 'bg-success-soft text-success' : 'bg-surface-4 text-text-muted'
                 }`}
               >
@@ -178,7 +179,7 @@ export function CustomerDetailPage(): JSX.Element {
       <Card variant="default" padding="lg" className="shadow-none">
         <div className="flex items-center gap-2">
           <Crown className="h-4 w-4 text-text-subtle" aria-hidden />
-          <span className="font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted">{tierMeta.label}</span>
+          <span className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">{tierMeta.label}</span>
         </div>
 
         <div className="mt-4 flex flex-wrap items-end gap-10">
@@ -186,19 +187,19 @@ export function CustomerDetailPage(): JSX.Element {
             <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-text-primary tabular-nums">
               {customer.loyalty_points.toLocaleString()}
             </div>
-            <div className="mt-1 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">Available points</div>
+            <div className="mt-1 font-data text-xs font-semibold uppercase tracking-widest text-text-muted">Available points</div>
           </div>
           <div>
             <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-text-primary tabular-nums">
               {customer.lifetime_points.toLocaleString()}
             </div>
-            <div className="mt-1 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">Lifetime points</div>
+            <div className="mt-1 font-data text-xs font-semibold uppercase tracking-widest text-text-muted">Lifetime points</div>
           </div>
           <div>
             <div className="font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] text-gold tabular-nums" data-testid="store-credit-balance">
               {rp(customer.store_credit_balance)}
             </div>
-            <div className="mt-1 font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">Store credit</div>
+            <div className="mt-1 font-data text-xs font-semibold uppercase tracking-widest text-text-muted">Store credit</div>
           </div>
         </div>
 
@@ -266,7 +267,7 @@ export function CustomerDetailPage(): JSX.Element {
           label="Last visit"
           value={
             customer.last_visit_at
-              ? new Date(customer.last_visit_at).toLocaleDateString('id-ID')
+              ? formatDate(customer.last_visit_at)
               : '—'
           }
         />
@@ -361,7 +362,7 @@ function KpiCard({
 }): JSX.Element {
   return (
     <Card variant="default" padding="none" className="flex flex-col gap-[5px] px-[15px] py-[13px] shadow-none">
-      <div className="font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</div>
+      <div className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</div>
       <div className="font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">{value}</div>
     </Card>
   );

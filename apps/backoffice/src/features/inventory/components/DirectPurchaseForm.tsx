@@ -11,7 +11,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
 import { Button, Input, Select } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
@@ -259,9 +259,9 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       {/* Computed total + base-unit conversion */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-inert px-3 py-2 text-sm">
         <span className="text-text-secondary">
-          {isQtyValid && product !== null ? <>= <span className="font-mono text-text-primary">{baseQty.toLocaleString()} {product.unit}</span> in base unit</> : 'Enter quantity & price'}
+          {isQtyValid && product !== null ? <>= <span className="font-mono text-text-primary">{formatQuantity(baseQty, product.unit)}</span> in base unit</> : 'Enter quantity & price'}
         </span>
-        <span className="font-semibold text-text-primary">Total: <span className="font-mono">{formatIdr(total)}</span></span>
+        <span className="font-semibold text-text-primary">Total: <span className="font-mono">{formatCurrency(total)}</span></span>
       </div>
 
       {/* Supplier (required) · landing section */}
@@ -287,7 +287,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       {/* Purchase date */}
       <div className="space-y-1 sm:max-w-[12rem]">
         <label htmlFor={`${rid}-date`} className="text-xs uppercase tracking-widest text-text-secondary">Purchase date</label>
-        <Input id={`${rid}-date`} type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={purchase.isPending} />
+        <Input id={`${rid}-date`} type="date" lang="id-ID" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={purchase.isPending} />
       </div>
 
       {/* Payment block */}
@@ -316,14 +316,14 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
             </div>
             <div className="space-y-1">
               <label htmlFor={`${rid}-pay-date`} className="text-xs uppercase tracking-widest text-text-secondary">Payment date</label>
-              <Input id={`${rid}-pay-date`} type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} disabled={purchase.isPending} />
+              <Input id={`${rid}-pay-date`} type="date" lang="id-ID" value={payDate} onChange={(e) => setPayDate(e.target.value)} disabled={purchase.isPending} />
             </div>
           </div>
         )}
       </fieldset>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" variant="primary" disabled={!canSubmit}>
+        <Button type="submit" variant="ink" disabled={!canSubmit}>
           {purchase.isPending ? 'Recording…' : 'Record purchase'}
         </Button>
       </div>

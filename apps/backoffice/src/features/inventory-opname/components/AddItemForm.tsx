@@ -66,7 +66,7 @@ export function AddItemForm({ countId }: AddItemFormProps) {
             placeholder="auto"
           />
         </div>
-        <Button onClick={handleAdd} disabled={addItem.isPending}>
+        <Button variant="ink" onClick={handleAdd} disabled={addItem.isPending}>
           {addItem.isPending ? 'Adding…' : 'Add'}
         </Button>
       </div>

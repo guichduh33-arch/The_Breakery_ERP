@@ -111,7 +111,7 @@ export function TransferFormFields({
           placeholder="Reference, batch, or context."
           className="w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         />
-        <p className="text-text-secondary text-[10px]">
+        <p className="text-text-secondary text-xs">
           {value.notes.length}/{NOTES_MAX}
         </p>
       </div>

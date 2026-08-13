@@ -50,7 +50,7 @@ export function RevertProductionDialog({
       if (err instanceof RevertProductionError) {
         switch (err.code) {
           case 'forbidden':           setError('Admin permission required.'); break;
-          case 'production_too_old':  setError('Production is older than 24h ; cannot be reverted.'); break;
+          case 'production_too_old':  setError('Production is older than 24h; cannot be reverted.'); break;
           case 'already_reverted':    setError('Already reverted.'); break;
           case 'already_consumed':
             setError('This batch has already left stock, so it can no longer be reverted — reverting would remove units that are no longer there. Correct it with a stock adjustment instead.');
@@ -105,7 +105,7 @@ export function RevertProductionDialog({
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={mut.isPending}>
+            <Button type="submit" variant="ink" disabled={mut.isPending}>
               {mut.isPending ? 'Reverting…' : 'Revert'}
             </Button>
           </DialogFooter>

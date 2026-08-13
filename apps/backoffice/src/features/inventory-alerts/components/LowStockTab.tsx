@@ -7,16 +7,18 @@
 
 import type { JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { useLowStock, type LowStockRow } from '../hooks/useLowStock.js';
 import { ProductCell } from './ProductCell.js';
 
-/** Une quantité de stock se lit en mono tabulaire, unité comprise. */
+// Une quantité de stock se lit en mono tabulaire, unité comprise. Le rendu
+// passe par `formatQuantity` (audit UX/UI 2026-08-13) : un seuil de 1 000 000
+// s'écrivait sans aucun séparateur, et un manque de 5 pièces se lisait
+// « 5.000 » — soit cinq mille pour un œil habitué au point indonésien.
+// `formatQuantity` porte l'unité elle-même, d'où la disparition du second
+// span : la répéter en afficherait deux.
 function qty(value: number, unit: string): JSX.Element {
-  return (
-    <span className="font-data text-[12.5px]">
-      {Number(value)} <span className="text-text-muted">{unit}</span>
-    </span>
-  );
+  return <span className="font-data text-xs tabular-nums">{formatQuantity(value, unit)}</span>;
 }
 
 const COLUMNS: DataTableColumn<LowStockRow>[] = [
@@ -28,7 +30,7 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
   {
     id: 'section',
     header: 'Location',
-    render: (r) => <span className="text-[12.5px] text-text-secondary">{r.section_name ?? '—'}</span>,
+    render: (r) => <span className="text-xs text-text-secondary">{r.section_name ?? '—'}</span>,
   },
   {
     id: 'current',
@@ -49,8 +51,8 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
     header: 'Shortfall',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold">
-        {Number(r.shortfall).toFixed(3)} <span className="font-normal text-text-muted">{r.unit}</span>
+      <span className="font-data text-xs font-semibold tabular-nums">
+        {formatQuantity(r.shortfall, r.unit)}
       </span>
     ),
   },
@@ -76,7 +78,7 @@ export function LowStockTab(): JSX.Element {
       emptyDescription="Every tracked product sits at or above its minimum."
       data-testid="low-stock-table"
       footer={
-        <span className="font-data text-[11px] text-text-muted tabular-nums">
+        <span className="font-data text-xs text-text-muted tabular-nums">
           {rows.length} {rows.length === 1 ? 'product' : 'products'}
         </span>
       }

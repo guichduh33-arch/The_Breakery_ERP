@@ -54,7 +54,7 @@ export default function UsersListPage() {
           )}
           {canCreate && (
             <Link to="/backoffice/users/new">
-              <Button>
+              <Button variant="ink">
                 <Plus className="h-4 w-4 mr-1.5" aria-hidden />
                 Add user
               </Button>
@@ -63,8 +63,10 @@ export default function UsersListPage() {
         </div>
       </div>
 
-      {/* KPI strip — matches `user.jpg` */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Bande de KPI — densité canonique du back-office : 1 / 2 / 4 colonnes.
+          À `sm:grid-cols-2 lg:grid-cols-4`, les quatre tuiles restaient sur deux
+          rangées jusqu'à 1024 px et un « 7 » s'étalait sur 460 px de carte. */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiTile label="Total users"    value={kpis.total}    icon={UsersRound} footer="All non-deleted profiles" />
         <KpiTile label="Active"         value={kpis.active}   icon={UserCheck}  footer="Currently allowed to sign in" />
         <KpiTile label="Inactive"       value={kpis.inactive} icon={UserX}      footer="Disabled accounts" />

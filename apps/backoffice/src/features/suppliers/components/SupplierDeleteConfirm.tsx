@@ -47,7 +47,7 @@ export function SupplierDeleteConfirm({ open, row, onClose }: SupplierDeleteConf
         {error !== null && <p className="text-sm text-red" role="alert">{error}</p>}
         <DialogFooter className="gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={deleteMut.isPending}>Cancel</Button>
-          <Button type="button" variant="primary" className="bg-red hover:bg-red/80"
+          <Button type="button" variant="ink" className="bg-red hover:bg-red/80"
             onClick={() => { void handleConfirm(); }} disabled={deleteMut.isPending}>
             {deleteMut.isPending ? 'Deleting…' : 'Confirm delete'}
           </Button>

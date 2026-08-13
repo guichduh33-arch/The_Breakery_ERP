@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { CommandPalette, fuzzyScore } from '@/layouts/CommandPalette.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -40,17 +41,23 @@ function LocationProbe() {
 }
 
 function renderPalette(onClose: () => void = vi.fn()) {
+  // La palette interroge désormais les entités via react-query (lot 4) : un
+  // QueryClient neuf par rendu, retry off — les sections serveur restent
+  // vides sous test, seuls pages/actions sont exercés ici.
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={['/backoffice']}>
-      <Routes>
-        <Route path="*" element={<LocationProbe />} />
-      </Routes>
-      <CommandPalette open onClose={onClose} />
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/backoffice']}>
+        <Routes>
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
+        <CommandPalette open onClose={onClose} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
-const input = () => screen.getByRole('textbox', { name: /search pages and actions/i });
+const input = () => screen.getByRole('textbox', { name: /pages and actions/i });
 
 describe('fuzzyScore', () => {
   it('classe une sous-chaîne littérale devant une correspondance dispersée', () => {
@@ -88,10 +95,15 @@ describe('CommandPalette', () => {
 
   it('ne rend rien quand elle est fermée', () => {
     setAuthState(ALL_PERMS);
+    // Même fermée, la palette monte usePaletteSearch (les hooks ne sont pas
+    // conditionnels) : il lui faut un QueryClient.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
-      <MemoryRouter>
-        <CommandPalette open={false} onClose={vi.fn()} />
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <CommandPalette open={false} onClose={vi.fn()} />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
     expect(screen.queryByTestId('command-palette')).not.toBeInTheDocument();
   });
@@ -117,7 +129,10 @@ describe('CommandPalette', () => {
     renderPalette();
     fireEvent.change(input(), { target: { value: 'cash flow' } });
     expect(screen.queryByRole('option', { name: /Cash flow/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/No page or action matches/)).toBeInTheDocument();
+    // Avant l'échéance du debounce (250 ms) le message est « No page or
+    // action matches » ; après, la variante longue avec les entités. Les deux
+    // contiennent « page or action matches » — l'assert reste hors-timing.
+    expect(screen.getByText(/page or action matches/)).toBeInTheDocument();
   });
 
   it('n’expose pas une action dont le droit de création manque', () => {

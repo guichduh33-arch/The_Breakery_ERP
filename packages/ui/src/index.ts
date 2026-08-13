@@ -20,6 +20,7 @@ export {
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './primitives/Tabs.js';
 export { ScrollArea, ScrollBar } from './primitives/ScrollArea.js';
 export { Separator } from './primitives/Separator.js';
+export { Skeleton, type SkeletonProps, type SkeletonVariant } from './primitives/Skeleton.js';
 export { Badge, badgeVariants, type BadgeProps } from './primitives/Badge.js';
 export {
   Card,
@@ -218,6 +219,7 @@ export { useVirtualKeypad, type VkpLayout } from './hooks/useVirtualKeypad.js';
 
 // hooks
 export { useIdleTimeout, type UseIdleTimeoutArgs, IDLE_WARNING_LEAD_MS } from './hooks/useIdleTimeout.js';
+export { useDebouncedValue } from './hooks/useDebouncedValue.js';
 
 // global UI overlays (S21)
 export { IdleWarningToast, type IdleWarningToastProps } from './components/IdleWarningToast.js';

@@ -8,6 +8,7 @@ import {
   Button, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { Plus, Trash2 } from 'lucide-react';
 import { usePostableAccounts } from '../hooks/usePostableAccounts.js';
 import { useCreateManualJournalEntry, type ManualJELine } from '../hooks/useCreateManualJournalEntry.js';
@@ -30,9 +31,7 @@ function newDraftLine(): DraftLine {
   };
 }
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 
 export interface CreateManualJEModalProps {
   onClose: () => void;
@@ -152,7 +151,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
             <label className="flex flex-col text-sm max-w-xs">
               Entry date
               <Input
-                type="date"
+                type="date" lang="id-ID"
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
                 data-testid="je-modal-entry-date"
@@ -290,7 +289,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
             Cancel
           </Button>
           {step === 1 && (
-            <Button onClick={handleNext} data-testid="je-modal-next">Next →</Button>
+            <Button variant="ink" onClick={handleNext} data-testid="je-modal-next">Next →</Button>
           )}
           {step === 2 && (
             <>
@@ -298,6 +297,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                 ← Back
               </Button>
               <Button
+                variant="ink"
                 onClick={handleSubmit}
                 disabled={createJe.isPending}
                 data-testid="je-modal-submit"

@@ -17,9 +17,10 @@ export function useCategories() {
         .from('categories')
         .select('id, name, slug, is_active, sort_order')
         .is('deleted_at', null)
-        .order('sort_order');
+        .order('sort_order')
+        .order('name');
       if (error) throw error;
-      return (data ?? []) as CategoryOption[];
+      return (data ?? []);
     },
   });
 }

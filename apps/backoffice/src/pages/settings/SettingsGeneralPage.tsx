@@ -24,6 +24,7 @@ import { BrandLogoUploader } from '@/features/settings/components/BrandLogoUploa
 import { useSettings, type SettingsCategory } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatTimeWita } from '@breakery/utils';
 
 type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'percent' | 'logo';
 
@@ -209,7 +210,7 @@ export default function SettingsGeneralPage() {
         }
         await setSetting.mutateAsync({ key: k, value: payload, category: f.category });
       }
-      setSavedAt(new Date().toLocaleTimeString());
+      setSavedAt(formatTimeWita(new Date()));
     } catch (e) {
       // useSetSetting rethrows the PostgrestError as-is — read `message`
       // structurally rather than via instanceof Error.

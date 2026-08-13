@@ -4,11 +4,11 @@
 // E-D4). Pure presentation — no behaviour change vs the original inline code.
 
 import type { JSX } from 'react';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 
 /** Format a numeric/string/null amount as IDR. */
 export function rp(amount: number | string | null): string {
-  return formatIdr(Number(amount ?? 0));
+  return formatCurrency(Number(amount ?? 0));
 }
 
 // Badge carré (coins 3 px), label mono capitales — la pilule arrondie lisait
@@ -23,7 +23,7 @@ export function StatusPill({ status }: { status: string }): JSX.Element {
           ? 'bg-warning-soft text-warning'
           : 'bg-surface-4 text-text-muted';
   return (
-    <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${tone}`}>
+    <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${tone}`}>
       {status.replace('_', ' ')}
     </span>
   );

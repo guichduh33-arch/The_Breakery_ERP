@@ -4,8 +4,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, KeyRound, Trash2, UserCog } from 'lucide-react';
-import { Button } from '@breakery/ui';
-import { evaluatePinStrength, type PinWeakReason } from '@breakery/utils';
+import { Button, EmptyState } from '@breakery/ui';
+import { evaluatePinStrength, formatDate, formatDateTime, type PinWeakReason } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useUserDetail } from '@/features/users/hooks/useUsersList.js';
 import { useRolesList } from '@/features/users/hooks/useRolesList.js';
@@ -68,7 +68,19 @@ export default function UserDetailPage() {
     return <div className="text-sm text-danger">Failed: {user.error.message}</div>;
   }
   if (user.data === null || user.data === undefined) {
-    return <div className="text-sm text-text-secondary">User not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/users" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ChevronLeft className="h-4 w-4" aria-hidden /> Back to users
+        </Link>
+        <EmptyState
+          icon={UserCog}
+          title="User not found"
+          description="This account may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
   const u = user.data;
   const isDeleted = u.deleted_at !== null;
@@ -119,7 +131,7 @@ export default function UserDetailPage() {
         </div>
         <div>
           <div className="text-xs uppercase tracking-wider text-text-secondary">Last login</div>
-          <div>{u.last_login_at !== null ? new Date(u.last_login_at).toLocaleString() : '—'}</div>
+          <div>{u.last_login_at !== null ? formatDateTime(u.last_login_at) : '—'}</div>
         </div>
         <div>
           <div className="text-xs uppercase tracking-wider text-text-secondary">Failed attempts</div>
@@ -127,15 +139,15 @@ export default function UserDetailPage() {
         </div>
         <div>
           <div className="text-xs uppercase tracking-wider text-text-secondary">Locked until</div>
-          <div>{u.locked_until !== null ? new Date(u.locked_until).toLocaleString() : '—'}</div>
+          <div>{u.locked_until !== null ? formatDateTime(u.locked_until) : '—'}</div>
         </div>
         <div>
           <div className="text-xs uppercase tracking-wider text-text-secondary">Created</div>
-          <div>{new Date(u.created_at).toLocaleDateString()}</div>
+          <div>{formatDate(u.created_at)}</div>
         </div>
         <div>
           <div className="text-xs uppercase tracking-wider text-text-secondary">Updated</div>
-          <div>{new Date(u.updated_at).toLocaleDateString()}</div>
+          <div>{formatDate(u.updated_at)}</div>
         </div>
       </div>
 
@@ -172,7 +184,7 @@ export default function UserDetailPage() {
               placeholder="6 digits"
               className="w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono"
             />
-            <Button onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
+            <Button variant="ink" onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
               {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}
             </Button>
           </div>

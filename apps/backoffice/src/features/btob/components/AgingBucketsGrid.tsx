@@ -7,7 +7,7 @@
 
 import type { JSX } from 'react';
 import { cn } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import type { B2bAgingBucket } from '../hooks/useB2bDashboard.js';
 
 interface AgingBucketsGridProps {
@@ -30,7 +30,7 @@ export function AgingBucketsGrid({ buckets, tones }: AgingBucketsGridProps): JSX
             {b.label}
           </div>
           <div className="mt-1 text-xs text-text-muted">{b.range}</div>
-          <div className="mt-2 font-data text-lg tabular-nums text-text-primary">{formatIdr(b.total)}</div>
+          <div className="mt-2 font-data text-lg tabular-nums text-text-primary">{formatCurrency(b.total)}</div>
           <div className="text-xs text-text-secondary">{b.count} clients</div>
         </div>
       ))}

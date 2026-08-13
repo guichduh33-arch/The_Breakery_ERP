@@ -78,7 +78,7 @@ export default function PromoRoiPage() {
           <label className="flex flex-col gap-1 text-xs text-text-secondary">
             <span>From</span>
             <Input
-              type="date"
+              type="date" lang="id-ID"
               value={dateStart}
               onChange={(e) => setDateStart(e.target.value)}
               className="h-9 w-40"
@@ -88,7 +88,7 @@ export default function PromoRoiPage() {
           <label className="flex flex-col gap-1 text-xs text-text-secondary">
             <span>To</span>
             <Input
-              type="date"
+              type="date" lang="id-ID"
               value={dateEnd}
               onChange={(e) => setDateEnd(e.target.value)}
               className="h-9 w-40"

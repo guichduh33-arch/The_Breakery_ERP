@@ -21,7 +21,9 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
   const activeCategories = categories.filter((c) => c.is_active);
   const [name,        setName]        = useState('');
   const [sku,         setSku]         = useState('');
-  const [categoryId,  setCategoryId]  = useState(activeCategories[0]?.id ?? '');
+  // Démarre VIDE — pas de préremplissage sur la première catégorie active :
+  // un choix silencieux enregistrait des produits dans la mauvaise catégorie.
+  const [categoryId,  setCategoryId]  = useState('');
   const [retailPrice, setRetailPrice] = useState<string>('0');
   const [unit,        setUnit]        = useState<string>('pcs');
   const [description, setDescription] = useState('');
@@ -40,7 +42,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
       return;
     }
     if (categoryId === '') {
-      setError('Pick a category.');
+      setError('Choose a category.');
       return;
     }
     const retail = Number(retailPrice);
@@ -143,7 +145,10 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               onChange={(e) => { setCategoryId(e.target.value); }}
               className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
             >
-              {activeCategories.length === 0 && <option value="">— No active category —</option>}
+              {/* Placeholder non sélectionnable : force un choix explicite. */}
+              <option value="" disabled>
+                {activeCategories.length === 0 ? '— No active category —' : 'Choose a category'}
+              </option>
               {activeCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -202,7 +207,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
                tient. */
             <p
               data-testid="new-product-display-item-note"
-              className="rounded border border-gold bg-gold-soft px-2 py-1.5 text-[11px] text-text-secondary"
+              className="rounded border border-gold bg-gold-soft px-2 py-1.5 text-xs text-text-secondary"
             >
               <span className="font-semibold text-gold">Display-case counter starts at 0.</span>{' '}
               Stock the display case from the POS («&nbsp;Mettre en vitrine&nbsp;») before selling,
@@ -217,11 +222,18 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
           )}
         </div>
 
-        <DialogFooter>
+        {/* Pied collant — le contenu de la modale défile (DialogContent est
+            `overflow-y-auto`), les boutons restaient noyés sous le pli. Les
+            marges négatives annulent le `p-6` du DialogContent pour que le fond
+            couvre toute la largeur ; `bg-bg-elevated` reprend la surface de la
+            modale afin que les champs disparaissent proprement derrière le pied.
+            Correctif LOCAL : le primitif Dialog n'est pas touché. */}
+        <DialogFooter className="sticky bottom-0 -mx-6 -mb-6 border-t border-border-subtle bg-bg-elevated px-6 py-4">
           <Button variant="ghost" onClick={onClose} disabled={createProduct.isPending}>
             Cancel
           </Button>
           <Button
+            variant="ink"
             onClick={handleSubmit}
             disabled={createProduct.isPending}
             data-testid="new-product-submit"

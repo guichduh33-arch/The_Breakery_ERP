@@ -24,7 +24,7 @@
 --   T9  waste_stock_v1: qty > on-hand -> insufficient_stock (P0002)
 --   T10 waste_stock_v1: happy path (current_stock decremented, movement negative)
 --   T11 RLS: direct INSERT into stock_movements blocked for `authenticated`
---   T12 get_stock_levels_v3: bucket 'low' filters out rows with threshold = 0
+--   T12 get_stock_levels_v4: bucket 'low' filters out rows with threshold = 0
 --   T13 Row-lock serialization: two adjusts on same row sum correctly (no lost update)
 --   T14 void_order_rpc + complete_order regression (sale_void restores stock)
 --   T15 record_stock_movement_v1: REVOKE EXECUTE enforced on `authenticated` role
@@ -35,9 +35,9 @@
 --   T19 record_incoming_stock_v1: MANAGER + soft-deleted supplier -> P0002
 --   T20 record_incoming_stock_v1: idempotent replay (same key, identical args)
 --   T21 get_stock_counters_v1: total independent of the page window, and readable on an empty result
---   T22 get_stock_levels_v3: search is case-insensitive (ILIKE) — upper/lower both match
---   T23 get_stock_levels_v3: p_category_id filter returns only matching products
---   T24 get_stock_levels_v3: bucket 'low' excludes products with current_stock >= threshold (threshold>0)
+--   T22 get_stock_levels_v4: search is case-insensitive (ILIKE) — upper/lower both match
+--   T23 get_stock_levels_v4: p_category_id filter returns only matching products
+--   T24 get_stock_levels_v4: bucket 'low' excludes products with current_stock >= threshold (threshold>0)
 --   T25 adjust_stock_v1: p_new_qty=0 sets stock to 0 and emits negative delta movement
 --   T26 adjust_stock_v1: idempotent replay with different reason still returns original movement_id
 --   T27 waste_stock_v1: reason shorter than 3 chars rejected with reason_required
@@ -54,7 +54,7 @@
 --   T38 cancel_internal_transfer_v1: from received -> cancel_not_allowed_in_status
 --   T39 RLS: direct INSERT into internal_transfers blocked for `authenticated` role
 --   T40 Permission gate: CASHIER -> forbidden P0003; MANAGER -> happy path succeeds
---   T41 ADR-024: counters equal the row count of get_stock_levels_v3 for every bucket
+--   T41 ADR-024: counters equal the row count of get_stock_levels_v4 for every bucket
 --   T42 ADR-024: CASHIER -> forbidden P0003 on get_stock_counters_v1 (negative gate)
 
 BEGIN;
@@ -381,7 +381,7 @@ SELECT ok(current_setting('breakery.t11_pass')::boolean,
   'T11: direct INSERT into stock_movements is blocked for `authenticated` role');
 
 -- =========================================================================
--- T12 — get_stock_levels_v3 with p_bucket = 'low' filters correctly
+-- T12 — get_stock_levels_v4 with p_bucket = 'low' filters correctly
 -- =========================================================================
 DO $t12$
 DECLARE
@@ -392,12 +392,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v3(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v4(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_low_only_has_pgtap_low;
 
   SELECT NOT EXISTS (
-    SELECT 1 FROM get_stock_levels_v3(NULL, 'PGTAP-PROD-1', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v4(NULL, 'PGTAP-PROD-1', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_low_only_excludes_threshold_zero;
 
@@ -405,7 +405,7 @@ BEGIN
     (v_low_only_has_pgtap_low AND v_low_only_excludes_threshold_zero)::text, false);
 END $t12$;
 SELECT ok(current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_levels_v3 bucket low includes (current < threshold > 0) and excludes threshold = 0');
+  'T12: get_stock_levels_v4 bucket low includes (current < threshold > 0) and excludes threshold = 0');
 
 -- =========================================================================
 -- T13 — Sequential adjusts on the same row sum correctly via row lock.
@@ -734,7 +734,7 @@ BEGIN
 
   SELECT total_count INTO v_total_seen FROM get_stock_counters_v1(NULL, NULL);
   SELECT COUNT(*) INTO v_window_rows
-    FROM get_stock_levels_v3(NULL, NULL, 'all', 5, 0);
+    FROM get_stock_levels_v4(NULL, NULL, 'all', 5, 0);
 
   -- Le cœur de la décision : une recherche qui ne ramène AUCUNE ligne laisse
   -- quand même un total lisible. Avec l'ancien contrat, il valait 0.
@@ -754,7 +754,7 @@ SELECT ok(current_setting('breakery.t21_pass')::boolean,
   'T21: get_stock_counters_v1 renders a total independent of the page window, and still answers on an empty result set');
 
 -- =========================================================================
--- T22 — get_stock_levels_v3 search is case-insensitive (ILIKE in the RPC).
+-- T22 — get_stock_levels_v4 search is case-insensitive (ILIKE in the RPC).
 -- =========================================================================
 DO $t22$
 DECLARE
@@ -765,12 +765,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v3(NULL, 'PGTAP-PROD-1', 'all', 100, 0)
+    SELECT 1 FROM get_stock_levels_v4(NULL, 'PGTAP-PROD-1', 'all', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_has_upper;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v3(NULL, 'pgtap-prod-1', 'all', 100, 0)
+    SELECT 1 FROM get_stock_levels_v4(NULL, 'pgtap-prod-1', 'all', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_has_lower;
 
@@ -778,10 +778,10 @@ BEGIN
     (v_has_upper AND v_has_lower)::text, false);
 END $t22$;
 SELECT ok(current_setting('breakery.t22_pass')::boolean,
-  'T22: get_stock_levels_v3 p_search is case-insensitive (ILIKE) — upper/lower both match');
+  'T22: get_stock_levels_v4 p_search is case-insensitive (ILIKE) — upper/lower both match');
 
 -- =========================================================================
--- T23 — get_stock_levels_v3 p_category_id filter returns only matching rows.
+-- T23 — get_stock_levels_v4 p_category_id filter returns only matching rows.
 -- We retarget the three PGTAP fixture products onto category "Sandwiches"
 -- (UUID 44444444-...) so the filter narrows to a known disjoint set.
 -- =========================================================================
@@ -804,12 +804,12 @@ BEGIN
 
   -- Every row returned must have category_id = v_cat (no leakage).
   SELECT COUNT(*) INTO v_other_cnt
-    FROM get_stock_levels_v3(v_cat, NULL, 'all', 100, 0)
+    FROM get_stock_levels_v4(v_cat, NULL, 'all', 100, 0)
    WHERE category_id <> v_cat OR category_id IS NULL;
 
   -- The three fixtures must be present in the filtered result.
   SELECT COUNT(*) INTO v_match_cnt
-    FROM get_stock_levels_v3(v_cat, 'PGTAP-PROD', 'all', 100, 0)
+    FROM get_stock_levels_v4(v_cat, 'PGTAP-PROD', 'all', 100, 0)
    WHERE sku LIKE 'PGTAP-PROD%';
 
   PERFORM set_config('breakery.t23_pass',
@@ -817,10 +817,10 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t23$;
 SELECT ok(current_setting('breakery.t23_pass')::boolean,
-  'T23: get_stock_levels_v3 p_category_id filter returns only matching products (no leakage)');
+  'T23: get_stock_levels_v4 p_category_id filter returns only matching products (no leakage)');
 
 -- =========================================================================
--- T24 — get_stock_levels_v3 bucket 'low' excludes rows where
+-- T24 — get_stock_levels_v4 bucket 'low' excludes rows where
 -- current_stock >= threshold (here threshold>0 but stock above threshold).
 -- We bump PGTAP-PROD-2 to 100 (threshold=20) → must NOT appear.
 -- =========================================================================
@@ -835,12 +835,12 @@ BEGIN
   UPDATE products SET current_stock = 5   WHERE id = '99999999-aaaa-bbbb-cccc-333333333333'::uuid;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v3(NULL, 'PGTAP-PROD-2', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v4(NULL, 'PGTAP-PROD-2', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-2'
   ) INTO v_prod2_in_low;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v3(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v4(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_prod_low_in_low;
 
@@ -850,7 +850,7 @@ BEGIN
     (NOT v_prod2_in_low AND v_prod_low_in_low)::text, false);
 END $t24$;
 SELECT ok(current_setting('breakery.t24_pass')::boolean,
-  'T24: get_stock_levels_v3 bucket low excludes rows where current_stock >= threshold (threshold>0)');
+  'T24: get_stock_levels_v4 bucket low excludes rows where current_stock >= threshold (threshold>0)');
 
 -- =========================================================================
 -- T25 — adjust_stock_v1 p_new_qty=0 is allowed (sets stock exactly to 0).
@@ -1543,11 +1543,11 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   SELECT * INTO c FROM get_stock_counters_v1(NULL, NULL);
 
-  SELECT COUNT(*) INTO v_all       FROM get_stock_levels_v3(NULL, NULL, 'all',       100000, 0);
-  SELECT COUNT(*) INTO v_low       FROM get_stock_levels_v3(NULL, NULL, 'low',       100000, 0);
-  SELECT COUNT(*) INTO v_zero      FROM get_stock_levels_v3(NULL, NULL, 'zero',      100000, 0);
-  SELECT COUNT(*) INTO v_neg       FROM get_stock_levels_v3(NULL, NULL, 'negative',  100000, 0);
-  SELECT COUNT(*) INTO v_untracked FROM get_stock_levels_v3(NULL, NULL, 'untracked', 100000, 0);
+  SELECT COUNT(*) INTO v_all       FROM get_stock_levels_v4(NULL, NULL, 'all',       100000, 0);
+  SELECT COUNT(*) INTO v_low       FROM get_stock_levels_v4(NULL, NULL, 'low',       100000, 0);
+  SELECT COUNT(*) INTO v_zero      FROM get_stock_levels_v4(NULL, NULL, 'zero',      100000, 0);
+  SELECT COUNT(*) INTO v_neg       FROM get_stock_levels_v4(NULL, NULL, 'negative',  100000, 0);
+  SELECT COUNT(*) INTO v_untracked FROM get_stock_levels_v4(NULL, NULL, 'untracked', 100000, 0);
 
   PERFORM set_config('breakery.t41_pass',
     (c.total_count     = v_all
@@ -1557,7 +1557,7 @@ BEGIN
      AND c.untracked_count = v_untracked)::text, false);
 END $t41$;
 SELECT ok(current_setting('breakery.t41_pass')::boolean,
-  'T41: get_stock_counters_v1 equals the row count of get_stock_levels_v3 for every bucket');
+  'T41: get_stock_counters_v1 equals the row count of get_stock_levels_v4 for every bucket');
 
 -- =========================================================================
 -- T42 — ADR-021 déc. 6 : toute garde ajoutée porte son test NÉGATIF. La

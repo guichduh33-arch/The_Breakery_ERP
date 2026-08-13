@@ -135,7 +135,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('refund_order_rpc_v9', {
+  const { data, error } = await admin.rpc('refund_order_rpc_v10', {
     p_order_id:            body.order_id,
     p_lines:               body.lines,
     p_tenders:             body.tenders,
@@ -154,6 +154,8 @@ serve(async (req) => {
     if (error.code === 'P0011') return jsonResponse({ error: 'cross_shift_not_allowed' }, 422);
     // ADR-013 Lot 4 (D6) — refund en avoir : client rattaché requis (v8).
     if (error.code === 'P0015') return jsonResponse({ error: 'store_credit_requires_customer' }, 422);
+    // Lot 6b (v10) — cross-shift : le cash exige une session ouverte.
+    if (error.code === 'P0016') return jsonResponse({ error: 'cash_refund_requires_open_session' }, 422);
     if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
     return jsonResponse(logAndRedact('refund-order', error.message ?? error), 500);
   }

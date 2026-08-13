@@ -59,6 +59,21 @@ describe('NewProductDialog — create flow (S27b)', () => {
     expect(rpcSpy).not.toHaveBeenCalled();
   });
 
+  it('blocks submit and asks for a category when none is chosen', async () => {
+    rpcSpy.mockClear();
+    renderDialog();
+    // Name + SKU valid but the category starts empty (no prefill).
+    fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'Latte' } });
+    fireEvent.change(screen.getByLabelText(/^sku/i), { target: { value: 'cof-002' } });
+    fireEvent.click(screen.getByTestId('new-product-submit'));
+    // Assert on the error node (the placeholder <option> also reads
+    // "Choose a category", so match the dedicated error testid, not the text).
+    await waitFor(() => {
+      expect(screen.getByTestId('new-product-error')).toHaveTextContent(/choose a category/i);
+    });
+    expect(rpcSpy).not.toHaveBeenCalled();
+  });
+
   it('calls create_product_v2 with normalized payload on valid submit', async () => {
     rpcSpy.mockClear();
     const onCreated = vi.fn();
@@ -67,6 +82,8 @@ describe('NewProductDialog — create flow (S27b)', () => {
 
     fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'Latte' } });
     fireEvent.change(screen.getByLabelText(/^sku/i), { target: { value: 'cof-002' } });
+    // La catégorie ne se préremplit plus : il faut la choisir explicitement.
+    fireEvent.change(screen.getByLabelText(/^category/i), { target: { value: 'c-coffee' } });
     fireEvent.click(screen.getByTestId('new-product-submit'));
 
     await waitFor(() => {
@@ -96,6 +113,7 @@ describe('NewProductDialog — create flow (S27b)', () => {
 
     fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'Affogato' } });
     fireEvent.change(screen.getByLabelText(/^sku/i), { target: { value: 'cof-003' } });
+    fireEvent.change(screen.getByLabelText(/^category/i), { target: { value: 'c-coffee' } });
     fireEvent.click(screen.getByTestId('new-product-display-item'));
     fireEvent.click(screen.getByTestId('new-product-submit'));
 

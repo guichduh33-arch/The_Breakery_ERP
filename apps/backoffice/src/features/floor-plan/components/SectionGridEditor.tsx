@@ -39,7 +39,7 @@ function TableChip({ table, canUpdate }: { table: RestaurantTable; canUpdate: bo
       title={`${table.name} — ${table.seats} seats${table.is_active ? '' : ' (inactive)'}`}
     >
       <span className="text-xs font-semibold">{table.name}</span>
-      <span className="text-[10px] text-text-secondary">{table.seats}p</span>
+      <span className="text-xs text-text-secondary">{table.seats}p</span>
     </div>
   );
 }
@@ -117,7 +117,7 @@ export function SectionGridEditor({ tables, canUpdate, pending, onMove }: Sectio
         onDrop={(e) => { handleDrop(e, null, null); }}
         className="rounded-md border border-border-subtle bg-bg-input px-3 py-2"
       >
-        <div className="mb-1 text-[10px] uppercase tracking-widest text-text-secondary">
+        <div className="mb-1 text-xs uppercase tracking-widest text-text-secondary">
           Unplaced — drag onto the grid (drop here to remove)
         </div>
         {unplaced.length === 0 ? (

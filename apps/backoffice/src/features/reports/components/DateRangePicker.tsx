@@ -19,7 +19,7 @@ export function DateRangePicker({ start, end, onStartChange, onEndChange }: Date
       <label className="flex items-center gap-1 text-text-secondary">
         <span>From</span>
         <Input
-          type="date"
+          type="date" lang="id-ID"
           value={start}
           onChange={(e) => onStartChange(e.target.value)}
           className="h-9 w-36"
@@ -29,7 +29,7 @@ export function DateRangePicker({ start, end, onStartChange, onEndChange }: Date
       <label className="flex items-center gap-1 text-text-secondary">
         <span>To</span>
         <Input
-          type="date"
+          type="date" lang="id-ID"
           value={end}
           onChange={(e) => onEndChange(e.target.value)}
           className="h-9 w-36"

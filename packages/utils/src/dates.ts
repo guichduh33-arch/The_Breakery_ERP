@@ -27,6 +27,19 @@ export function formatDateTimeShortWita(d: Date | string): string {
   return formatInTimeZone(date, TIMEZONE, 'dd MMM yyyy, HH:mm');
 }
 
+// Audit UX/UI 2026-08-13 (lot 5) — les DEUX formats canoniques de l'app.
+// `formatDate` : date seule, jj/MM/aaaa (l'audit a relevé du 06/14/2026 US via
+// des toLocaleDateString() sans locale). `formatDateTime` : le format de table
+// existant (dd MMM yyyy, HH:mm) sous son nom générique — même fuseau ADR-019.
+export function formatDate(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return formatInTimeZone(date, TIMEZONE, 'dd/MM/yyyy');
+}
+
+export function formatDateTime(d: Date | string): string {
+  return formatDateTimeShortWita(d);
+}
+
 export function formatTimeWita(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return formatInTimeZone(date, TIMEZONE, 'HH:mm');

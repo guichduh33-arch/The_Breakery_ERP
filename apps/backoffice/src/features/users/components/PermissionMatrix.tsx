@@ -79,7 +79,7 @@ export function PermissionMatrix(): JSX.Element {
                   <td className="py-1.5 px-3 sticky left-0 bg-bg-base z-10">
                     <div className="font-mono">{p.code}</div>
                     {p.description !== null && (
-                      <div className="text-text-secondary text-[10px] leading-tight mt-0.5">
+                      <div className="text-text-secondary text-xs leading-tight mt-0.5">
                         {p.description}
                       </div>
                     )}

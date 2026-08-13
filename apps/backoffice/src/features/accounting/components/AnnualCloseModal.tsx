@@ -9,7 +9,7 @@ import {
   Button, Input, Select,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useFiscalPeriods } from '../hooks/useFiscalPeriods.js';
 import {
   useCloseFiscalYear,
@@ -100,7 +100,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
                 <div>
                   {result.net_result >= 0 ? 'Profit carried forward' : 'Loss carried forward'}{' '}
                   to <span className="font-mono">3200 Retained Earnings</span> :{' '}
-                  <span className="font-mono">{formatIdr(Math.abs(result.net_result))}</span>
+                  <span className="font-mono">{formatCurrency(Math.abs(result.net_result))}</span>
                 </div>
                 <div className="text-xs text-text-secondary">
                   Journal entry <span className="font-mono">{result.entry_number}</span>
@@ -171,7 +171,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
             {result !== null ? 'Close' : 'Cancel'}
           </Button>
           {result === null && step === 1 && (
-            <Button onClick={handleNext} data-testid="ac-modal-next">Next →</Button>
+            <Button variant="ink" onClick={handleNext} data-testid="ac-modal-next">Next →</Button>
           )}
           {result === null && step === 2 && (
             <>
@@ -179,6 +179,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
                 ← Back
               </Button>
               <Button
+                variant="ink"
                 onClick={handleSubmit}
                 disabled={closeYear.isPending}
                 data-testid="ac-modal-submit"

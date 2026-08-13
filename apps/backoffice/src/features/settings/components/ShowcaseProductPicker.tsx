@@ -14,6 +14,7 @@ import {
   useShowcaseCandidates,
   type ShowcaseCandidate,
 } from '../hooks/useShowcaseCandidates.js';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   /** Produits déjà retenus — ils sortent de la liste. */
@@ -103,7 +104,7 @@ export function ShowcaseProductPicker({
               >
                 <span className="flex-1 min-w-0 truncate text-text-primary">{p.name}</span>
                 <span className="text-xs text-text-muted font-mono shrink-0">{p.sku}</span>
-                <Currency
+                <Currency format={formatCurrency}
                   amount={p.retail_price}
                   className="text-xs text-text-secondary shrink-0"
                 />

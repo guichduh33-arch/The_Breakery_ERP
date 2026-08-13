@@ -90,7 +90,7 @@ export default function TransfersListPage(): JSX.Element {
       </div>
 
       {/* KPI strip — matches `14-transfers-list.jpg` */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiTile label="Total"     value={rows.length}     icon={ArrowLeftRight} footer="Rows on this page" />
         <KpiTile label="Drafts"    value={kpis.drafts}     icon={FileEdit}       footer="Awaiting dispatch" />
         <KpiTile label="In transit" value={kpis.inTransit} icon={Truck}          footer="Pending or moving" />

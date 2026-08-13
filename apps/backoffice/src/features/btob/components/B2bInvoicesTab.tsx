@@ -7,7 +7,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Download, FileText, XCircle } from 'lucide-react';
 import { Button, EmptyState, Select } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
@@ -44,7 +44,7 @@ function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRo
     <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
       <div>
         <div className="flex items-center gap-2">
-          <span className="font-data text-[12.5px] tabular-nums text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
+          <span className="font-data text-xs tabular-nums text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
           <span className={`${B2B_SETTLEMENT_BADGE} ${B2B_SETTLEMENT_TONE[settlement]}`}>
             {B2B_SETTLEMENT_LABEL[settlement]}
           </span>
@@ -52,15 +52,15 @@ function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRo
         <div className="text-xs text-text-secondary">
           {inv.invoice_number !== null && `${inv.order_number} • `}
           {inv.b2b_company_name ?? inv.customer_name ?? 'Unknown'}
-          {' • '}{new Date(inv.invoice_date).toLocaleDateString()}
+          {' • '}{formatDate(inv.invoice_date)}
           {' • '}{inv.age_days}d
         </div>
       </div>
       <div className="flex items-center gap-4">
         <div className="text-right text-xs">
-          <div className="font-data text-base tabular-nums text-text-primary">{formatIdr(Number(inv.outstanding))}</div>
+          <div className="font-data text-base tabular-nums text-text-primary">{formatCurrency(Number(inv.outstanding))}</div>
           <div className="text-text-muted">
-            of {formatIdr(Number(inv.invoice_total))} • paid {formatIdr(Number(inv.amount_paid))}
+            of {formatCurrency(Number(inv.invoice_total))} • paid {formatCurrency(Number(inv.amount_paid))}
           </div>
         </div>
         <div className="flex items-center gap-1">

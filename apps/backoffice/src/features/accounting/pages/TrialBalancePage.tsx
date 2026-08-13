@@ -3,6 +3,7 @@
 
 import { useState, type JSX } from 'react';
 import { Button, Input } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { Download } from 'lucide-react';
 import {
   useTrialBalance,
@@ -13,9 +14,7 @@ const CLASS_LABELS: Record<number, string> = {
   1: 'Asset', 2: 'Liability', 3: 'Equity', 4: 'Revenue', 5: 'COGS', 6: 'Expense',
 };
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 function defaultPeriodStart(): string {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
@@ -55,7 +54,7 @@ export default function TrialBalancePage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
-            type="date" value={startDate}
+            type="date" lang="id-ID" value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className="mt-1"
             data-testid="tb-filter-start"
@@ -64,7 +63,7 @@ export default function TrialBalancePage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
-            type="date" value={endDate}
+            type="date" lang="id-ID" value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="mt-1"
             data-testid="tb-filter-end"

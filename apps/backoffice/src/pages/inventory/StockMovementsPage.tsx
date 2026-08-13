@@ -11,6 +11,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { ArrowDownToLine, ArrowUpFromLine, ListTree, Receipt } from 'lucide-react';
 import { KpiTile } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
 import { useStockLedger } from '@/features/inventory-movements/hooks/useStockLedger.js';
 import type { MovementsFilters } from '@/features/inventory-movements/hooks/useStockMovementsFeed.js';
@@ -98,7 +99,7 @@ export default function StockMovementsPage(): JSX.Element {
         />
         <KpiTile label="Stock in"  value={Number(buckets.inQty.toFixed(2))}  icon={ArrowDownToLine} delta={{ value: buckets.inCount, direction: 'up', hint: 'entries' }} />
         <KpiTile label="Stock out" value={Number(buckets.outQty.toFixed(2))} icon={ArrowUpFromLine} delta={{ value: buckets.outCount, direction: 'down', hint: 'entries' }} />
-        <KpiTile label="Value moved" value={Math.round(buckets.totalValue)} valueFormat="currency" icon={Receipt} />
+        <KpiTile label="Value moved" value={formatCurrency(Math.round(buckets.totalValue))} valueFormat="currency" icon={Receipt} />
       </section>
 
       <MovementsFiltersBar value={filters} onChange={setFilters} />

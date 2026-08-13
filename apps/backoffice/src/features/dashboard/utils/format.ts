@@ -1,4 +1,5 @@
 // apps/backoffice/src/features/dashboard/utils/format.ts
+import { formatCurrency, formatTimeWita } from '@breakery/utils';
 //
 // Écran 1c — formatage des valeurs du dashboard.
 //
@@ -45,20 +46,19 @@ export function deltaView(v: number | null | undefined, unit: 'pct' | 'pt' = 'pc
   return { direction: 'down', glyph: '▼', text: `${fixed1(v)}${suffix}` };
 }
 
-/** IDR complet — « Rp34.100 ». Montants unitaires, lignes de détail. */
+/**
+ * IDR complet — « Rp 34.100 ». Montants unitaires, lignes de détail.
+ * Délègue à formatCurrency (@breakery/utils) — audit UX/UI 2026-08-13, lot 1 :
+ * un seul formatteur de devise pour tout le back-office. `null` sort en tiret,
+ * règle déjà portée par formatCurrency.
+ */
 export function formatIdr(v: number | null | undefined): string {
-  if (v === null || v === undefined) return TIRET;
-  return v.toLocaleString('id-ID', {
-    style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
-  });
+  return formatCurrency(v);
 }
 
 /** IDR compact — « Rp 8,42 jt ». Valeurs de tuile KPI et totaux de carte. */
 export function formatIdrShort(v: number | null | undefined): string {
-  if (v === null || v === undefined) return TIRET;
-  return v.toLocaleString('id-ID', {
-    style: 'currency', currency: 'IDR', notation: 'compact', maximumFractionDigits: 2,
-  });
+  return formatCurrency(v, { compact: true });
 }
 
 /** Entier — « 1.084 ». */
@@ -91,12 +91,12 @@ export function formatMinutes(v: number | null | undefined): string {
   return rest === 0 ? `${h} h` : `${h} h ${String(rest).padStart(2, '0')}`;
 }
 
-/** Heure locale courte — « 09:42 ». */
+/** Heure métier courte — « 09:42 », fuseau WITA (ADR-019), pas celui du poste. */
 export function formatClock(iso: string | null | undefined): string {
   if (iso === null || iso === undefined) return '--:--';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '--:--';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatTimeWita(d);
 }
 
 /** Libellé de tranche horaire — « 07:00–09:00 ». */

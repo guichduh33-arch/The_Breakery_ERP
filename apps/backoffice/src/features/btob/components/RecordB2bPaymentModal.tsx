@@ -14,7 +14,7 @@ import {
   Input,
   Select,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import {
   useRecordB2bPayment,
   RecordB2bPaymentError,
@@ -183,7 +183,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                 <li key={a.invoice_id} className="flex items-center justify-between px-3 py-2">
                   <span className="font-mono">{a.invoice_id.slice(0, 8)}…</span>
                   <span className="flex items-center gap-2">
-                    <span className="font-mono">{formatIdr(a.amount_applied)}</span>
+                    <span className="font-mono">{formatCurrency(a.amount_applied)}</span>
                     {a.fully_settled && (
                       <span className={`${B2B_SETTLEMENT_BADGE} ${B2B_SETTLEMENT_TONE.paid}`}>settled</span>
                     )}
@@ -192,7 +192,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               ))}
             </ul>
             <div className="flex justify-end">
-              <Button type="button" variant="primary" onClick={handleClose}>Done</Button>
+              <Button type="button" variant="ink" onClick={handleClose}>Done</Button>
             </div>
           </div>
         ) : (
@@ -221,8 +221,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               ))}
             </Select>
             {selectedCustomer !== null && (
-              <p className="text-[10px] text-text-muted">
-                Outstanding: <span className="font-mono">{formatIdr(selectedCustomer.b2b_current_balance)}</span>
+              <p className="text-xs text-text-muted">
+                Outstanding: <span className="font-mono">{formatCurrency(selectedCustomer.b2b_current_balance)}</span>
               </p>
             )}
           </div>
@@ -251,7 +251,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                           <span className="font-mono text-text-primary">{inv.order_number}</span>
                           <span className="text-text-muted">{inv.age_days}d</span>
                         </span>
-                        <span className="font-mono text-text-primary">{formatIdr(Number(inv.outstanding))}</span>
+                        <span className="font-mono text-text-primary">{formatCurrency(Number(inv.outstanding))}</span>
                       </label>
                     </li>
                   ))}
@@ -262,7 +262,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   .filter((r) => selectedIds.includes(r.invoice_id))
                   .reduce((acc, r) => acc + Number(r.outstanding), 0);
                 return numericAmount > sum ? (
-                  <p className="text-[10px] text-warning">
+                  <p className="text-xs text-warning">
                     Amount exceeds the selected invoices — the excess will be allocated FIFO across the remaining ones.
                   </p>
                 ) : null;
@@ -286,7 +286,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                 aria-invalid={(amount !== '' && !amountValid) || overpaying}
               />
               {overpaying && (
-                <p className="text-[10px] text-red">Cannot exceed outstanding balance.</p>
+                <p className="text-xs text-red">Cannot exceed outstanding balance.</p>
               )}
             </div>
             <div className="space-y-1">
@@ -347,7 +347,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={!canSubmit}>
+            <Button type="submit" variant="ink" disabled={!canSubmit}>
               {recordMut.isPending ? 'Recording…' : 'Record payment'}
             </Button>
           </div>

@@ -5,6 +5,7 @@
 
 import type { JSX } from 'react';
 import { Card } from '@breakery/ui';
+import { formatDate } from '@breakery/utils';
 import { useCustomerLoyaltyHistory } from '@/features/loyalty/hooks/useCustomerLoyaltyHistory.js';
 
 const TXN_TONE: Record<string, string> = {
@@ -25,7 +26,7 @@ export function LoyaltyTab({ customerId }: { customerId: string | null }): JSX.E
   return (
     <Card variant="default" padding="none" className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
-        <thead className="border-b border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <thead className="border-b border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
             <th className="px-4 py-2.5 text-left font-medium">Date</th>
             <th className="px-4 py-2.5 text-left font-medium">Type</th>
@@ -37,7 +38,7 @@ export function LoyaltyTab({ customerId }: { customerId: string | null }): JSX.E
         <tbody>
           {data.map((tx) => (
             <tr key={tx.id} className="border-t border-border-subtle">
-              <td className="px-4 py-3 text-text-secondary">{new Date(tx.created_at).toLocaleDateString('id-ID')}</td>
+              <td className="px-4 py-3 text-text-secondary">{formatDate(tx.created_at)}</td>
               <td className={`px-4 py-3 font-medium capitalize ${TXN_TONE[tx.transaction_type] ?? 'text-text-primary'}`}>{tx.transaction_type}</td>
               <td className="px-4 py-3 text-text-secondary">{tx.description}</td>
               <td className={`px-4 py-3 text-right tabular-nums font-medium ${tx.points >= 0 ? 'text-success' : 'text-danger'}`}>

@@ -10,7 +10,7 @@
 
 import { type JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatDateTimeShortWita } from '@breakery/utils';
+import { formatDateTimeShortWita, formatQuantity } from '@breakery/utils';
 import {
   useDisplayStock,
   type DisplayStockRow,
@@ -27,7 +27,7 @@ const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
     render: (r) => (
       <div className="space-y-0.5">
         <div className="font-medium text-text-primary">{r.product_name}</div>
-        <div className="font-mono text-[11px] text-text-muted">{r.sku}</div>
+        <div className="font-mono text-xs text-text-muted">{r.sku}</div>
       </div>
     ),
   },
@@ -37,9 +37,7 @@ const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
     align: 'right',
     width: '140px',
     render: (r) => (
-      <span className="font-mono text-text-primary">
-        {r.quantity} <span className="text-text-muted">{r.unit}</span>
-      </span>
+      <span className="font-mono tabular-nums text-text-primary">{formatQuantity(r.quantity, r.unit)}</span>
     ),
   },
   {
@@ -75,7 +73,7 @@ const MOVEMENT_COLUMNS: readonly DataTableColumn<DisplayMovementRow>[] = [
     header: 'Type',
     width: '160px',
     render: (r) => (
-      <span className="inline-flex items-center rounded-md border border-border-subtle bg-bg-base px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-text-secondary">
+      <span className="inline-flex items-center rounded-md border border-border-subtle bg-bg-base px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-text-secondary">
         {r.movement_type.replace(/_/g, ' ')}
       </span>
     ),
@@ -88,8 +86,9 @@ const MOVEMENT_COLUMNS: readonly DataTableColumn<DisplayMovementRow>[] = [
     render: (r) => {
       const positive = r.quantity > 0;
       return (
-        <span className={`font-mono ${positive ? 'text-success' : 'text-danger'}`}>
-          {positive ? '+' : ''}{r.quantity}
+        // Le ledger vitrine ne transporte pas l'unité du produit : sans suffixe.
+        <span className={`font-mono tabular-nums ${positive ? 'text-success' : 'text-danger'}`}>
+          {positive ? '+' : ''}{formatQuantity(r.quantity, null)}
         </span>
       );
     },
@@ -113,7 +112,7 @@ export default function DisplayStockPage(): JSX.Element {
         <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Display Stock (Vitrine)</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Read-only view of the POS display-case counter. These quantities live on a
-          separate ledger (display_stock) ; selling a display item draws from the
+          separate ledger (display_stock); selling a display item draws from the
           vitrine, not the global BO inventory. Mutations happen from the POS side.
         </p>
       </header>

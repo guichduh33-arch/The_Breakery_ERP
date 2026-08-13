@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatTimeWita } from '@breakery/utils';
 
 const ALL_METHODS = [
   { value: 'cash',         label: 'Cash' },
@@ -182,7 +183,7 @@ export default function SettingsPaymentMethodsPage() {
       if (expiryDirty) {
         await setSetting.mutateAsync({ key: 'store_credit_expiry_months', value: expiryNum, category: 'payments' });
       }
-      setSaved(new Date().toLocaleTimeString());
+      setSaved(formatTimeWita(new Date()));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Échec de l'enregistrement");
     }

@@ -38,7 +38,7 @@ export const ORDER_STATUS_ORDER = Object.keys(ORDER_STATUS) as readonly OrderSta
 
 /** Classes du badge de statut en cellule — coins 3 px, label mono capitales. */
 export const ORDER_STATUS_BADGE =
-  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest';
+  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest';
 
 export const ORDER_STATUS_BADGE_TONE: Record<OrderStatus, string> = {
   pending_payment: 'bg-warning-soft text-warning',
@@ -68,6 +68,28 @@ export function orderStatusBadgeTone(status: string): string {
  */
 export function isSettledStatus(status: string): boolean {
   return status === 'paid' || status === 'completed';
+}
+
+/** Les seuls faits d'où se déduit le règlement d'une commande détaillée. */
+export interface OrderSettlementFacts {
+  status: string;
+  paid_at: string | null;
+  payments: readonly unknown[];
+}
+
+/**
+ * RÉGLÉ, définition UNIQUE des deux surfaces de détail (page ET tiroir).
+ *
+ * Trois voies mènent à l'argent encaissé et aucune n'est redondante : une ligne
+ * `order_payments` (encaissement POS), un statut porteur d'argent, ou `paid_at`
+ * posé côté serveur. Le tiroir oubliait la troisième et lisait « Unpaid » sur
+ * des règlements B2B (audit UX/UI 2026-08-13, lot 6a).
+ *
+ * Le type est STRUCTUREL, pas un `Pick<OrderDetail>` : `statusMeta` doit rester
+ * sans dépendance vers le hook, qui monte le client Supabase.
+ */
+export function isOrderDetailPaid(order: OrderSettlementFacts): boolean {
+  return order.payments.length > 0 || isSettledStatus(order.status) || order.paid_at != null;
 }
 
 export const ORDER_TYPE_LABEL: Record<OrderType, string> = {

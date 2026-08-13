@@ -20,6 +20,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, Layers, Sigma, X } from 'lucide-react';
 import { Button, EmptyState, KpiTile } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDetail.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
@@ -73,7 +74,19 @@ export default function OpnameDetailPage(): JSX.Element {
     );
   }
   if (detail.data === null || detail.data === undefined) {
-    return <div className="text-sm text-text-secondary">Count not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/inventory/opname" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to counts
+        </Link>
+        <EmptyState
+          icon={ClipboardList}
+          title="Count not found"
+          description="This stock count may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
 
   const d = detail.data;
@@ -112,7 +125,7 @@ export default function OpnameDetailPage(): JSX.Element {
         {revealed ? (
           <KpiTile
             label="Total |variance|"
-            value={Number(stats.varianceTotal.toFixed(3))}
+            value={formatQuantity(stats.varianceTotal, null)}
             icon={Sigma}
             footer="Sum of absolute deltas"
           />
@@ -190,7 +203,7 @@ export default function OpnameDetailPage(): JSX.Element {
           </Button>
         )}
         {(d.status === 'review' || d.status === 'counting') && canFinalize && (
-          <Button onClick={() => { setShowFinalize(true); }} disabled={stats.pending > 0}>
+          <Button variant="ink" onClick={() => { setShowFinalize(true); }} disabled={stats.pending > 0}>
             Finalize and post JE
           </Button>
         )}

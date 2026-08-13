@@ -14,20 +14,21 @@
 // GROUPÉES du pied de table restent inertes — elles réclament des RPC de masse
 // gatées et auditées qui n'existent pas.
 
-import { useCallback, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ProductsHeader } from '@/features/products/components/ProductsHeader.js';
 import { ProductsPageTabs } from '@/features/products/components/ProductsPageTabs.js';
-import { ProductsCounterStrip } from '@/features/products/components/ProductsCounterStrip.js';
 import { ProductsFilters } from '@/features/products/components/ProductsFilters.js';
 import { ProductsTable } from '@/features/products/components/ProductsTable.js';
 import { ProductsGrid } from '@/features/products/components/ProductsGrid.js';
 import { NewProductDialog } from '@/features/products/components/NewProductDialog.js';
 import { DeleteProductDialog } from '@/features/products/components/DeleteProductDialog.js';
 import {
-  PRODUCTS_PAGE_SIZE_DEFAULT,
+  LIST_PAGE_SIZE_DEFAULT,
   coercePageSize,
-} from '@/features/products/components/ProductsPagination.js';
+} from '@/components/ListPagination.js';
+import { ListCounterStrip } from '@/components/ListCounterStrip.js';
+import { buildProductCounters } from '@/features/products/counters.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -44,6 +45,20 @@ import {
 const COUNTERS = new Set<ProductCounter>([
   'all', 'finished', 'semi-finished', 'raw', 'combo', 'inactive', 'no-cost',
 ]);
+
+// Colonne de `ProductsTable` → valeur triée. Les clés sont les identifiants de
+// colonne : ce qui n'est pas ici n'est pas triable, et l'entête ne se présente
+// pas comme cliquable. `type`, `status` et `margin` sont laissés de côté — un
+// classement par badge ou par marge dérivée ne répond à aucune question de
+// catalogue que le filtre ne traite pas mieux.
+const PRODUCT_SORTS: Record<string, (r: ProductRow) => string | number> = {
+  product:  (r) => r.name,
+  sku:      (r) => r.sku,
+  category: (r) => r.category_name ?? '',
+  cost:     (r) => r.cost_price,
+  retail:   (r) => r.retail_price,
+  stock:    (r) => r.current_stock,
+};
 
 function matchesCounter(r: ProductRow, counter: ProductCounter): boolean {
   switch (counter) {
@@ -98,6 +113,12 @@ export default function ProductsPage(): JSX.Element {
   const variantFilter = (params.get('variant') ?? 'all') as ProductVariantFilter;
   const page          = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
   const pageSize      = coercePageSize(params.get('rows'));
+  // Le tri rejoint l'état de liste déjà porté par l'URL (recherche, catégorie,
+  // vue, page) : il se partage par lien et survit au retour arrière. Une clé
+  // inconnue retombe sur l'ordre naturel plutôt que de trier au hasard.
+  const sortParam     = params.get('sort') ?? '';
+  const sortCol       = Object.hasOwn(PRODUCT_SORTS, sortParam) ? sortParam : null;
+  const sortDir: 'asc' | 'desc' = params.get('dir') === 'desc' ? 'desc' : 'asc';
 
   // Un changement de filtre remet en page 1 : rester en page 7 d'un résultat qui
   // n'en compte plus que 2 afficherait une table vide qu'on croirait cassée.
@@ -112,13 +133,28 @@ export default function ProductsPage(): JSX.Element {
   // Changer la taille de page invalide le numéro de page : la ligne du haut de
   // la page 7 à 15 lignes n'est pas celle de la page 7 à 100.
   const setPageSize     = (next: number): void => {
-    patchParams({ rows: next === PRODUCTS_PAGE_SIZE_DEFAULT ? null : String(next), page: null });
+    patchParams({ rows: next === LIST_PAGE_SIZE_DEFAULT ? null : String(next), page: null });
+  };
+  // Trier renvoie en page 1 : la page 7 d'un ordre qui vient de changer est une
+  // tranche arbitraire du nouveau classement.
+  const setSort = (columnId: string, direction: 'asc' | 'desc'): void => {
+    patchParams({ sort: columnId, dir: direction === 'asc' ? null : 'desc', page: null });
   };
 
   const [hiddenColumns, setHiddenColumns] = useState<ReadonlySet<ProductColumnId>>(new Set());
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
+
+  // Deep-link `/backoffice/products/new` → `?new=1` : ouvre la modale de
+  // création au montage puis retire le paramètre pour qu'un rechargement ou un
+  // partage d'URL ne la rouvre pas. Silencieux si l'opérateur n'a pas le droit
+  // de créer — le paramètre est nettoyé sans ouvrir quoi que ce soit.
+  useEffect(() => {
+    if (params.get('new') !== '1') return;
+    if (canCreate) setShowNew(true);
+    patchParams({ new: null });
+  }, [params, canCreate, patchParams]);
 
   // `?? []` crée un tableau NEUF à chaque rendu : mémoïsé, sans quoi les trois
   // useMemo qui en dépendent se recalculent à chaque frappe dans la recherche.
@@ -165,6 +201,29 @@ export default function ProductsPage(): JSX.Element {
       return r.name.toLowerCase().includes(needle) || r.sku.toLowerCase().includes(needle);
     });
   }, [rows, search, categoryId, variantFilter, counter, parentIds]);
+
+  // Le tri vit ICI et non dans `ProductsTable` : la table et la grille montrent
+  // le même jeu, donc trier dans la table seule ferait diverger les deux vues —
+  // le défaut de parité que la pagination partagée vient de fermer.
+  //
+  // Tri CLIENT assumé : `useProducts` charge tout le catalogue (le filtrage
+  // ci-dessus est déjà en mémoire), il n'y a pas de tranche serveur à trier.
+  const sorted = useMemo(() => {
+    if (sortCol === null) return filtered;
+    const pick = PRODUCT_SORTS[sortCol];
+    if (pick === undefined) return filtered;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    // `Array.prototype.sort` est STABLE (ES2019) : à valeur égale les lignes
+    // gardent leur ordre d'arrivée, donc la liste ne se réarrange pas toute
+    // seule entre deux rendus. On trie une COPIE — `filtered` est mémoïsé et
+    // partagé.
+    return [...filtered].sort((a, b) => {
+      const va = pick(a);
+      const vb = pick(b);
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+      return String(va).localeCompare(String(vb), 'id-ID', { numeric: true }) * dir;
+    });
+  }, [filtered, sortCol, sortDir]);
 
   function toggleColumn(id: ProductColumnId): void {
     setHiddenColumns((prev) => {
@@ -229,11 +288,19 @@ export default function ProductsPage(): JSX.Element {
 
       <DeleteProductDialog product={toDelete} onClose={() => { setToDelete(null); }} />
 
-      <ProductsCounterStrip
-        kpis={kpis}
-        active={counter}
-        onSelect={(next) => { setCounterParam(next); }}
-        isLoading={products.isLoading}
+      <ListCounterStrip
+        counters={buildProductCounters(
+          kpis,
+          counter,
+          (next) => { setCounterParam(next); },
+          products.isLoading,
+        )}
+        activeId={counter}
+        ariaLabel="Catalog filters"
+        // Sept compteurs — plus que les cinq ou six des autres listes : la
+        // bande s'autorise à passer à la ligne plutôt qu'à se faire rogner.
+        className="flex-wrap"
+        data-testid="products-counter-strip"
       />
 
       <ProductsFilters
@@ -252,7 +319,7 @@ export default function ProductsPage(): JSX.Element {
 
       {view === 'list' ? (
         <ProductsTable
-          rows={filtered}
+          rows={sorted}
           isLoading={products.isLoading}
           parentIds={parentIds}
           hiddenColumns={hiddenColumns}
@@ -260,6 +327,8 @@ export default function ProductsPage(): JSX.Element {
           onPage={setPage}
           pageSize={pageSize}
           onPageSize={setPageSize}
+          sort={sortCol === null ? null : { columnId: sortCol, direction: sortDir }}
+          onSortChange={(next) => { setSort(next.columnId, next.direction); }}
           selected={selected}
           onToggleRow={toggleRow}
           onToggleAll={toggleAll}
@@ -270,7 +339,7 @@ export default function ProductsPage(): JSX.Element {
         />
       ) : (
         <ProductsGrid
-          rows={filtered}
+          rows={sorted}
           parentIds={parentIds}
           onCardClick={openProduct}
           page={page}

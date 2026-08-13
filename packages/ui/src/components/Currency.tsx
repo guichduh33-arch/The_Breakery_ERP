@@ -6,9 +6,20 @@ export interface CurrencyProps {
   amount: number;
   className?: string;
   emphasis?: 'normal' | 'gold' | 'large';
+  /**
+   * Formatteur du montant. Défaut : `formatIdr` (en-US, la convention POS).
+   * Le back-office passe `formatCurrency` (@breakery/utils, id-ID) — audit
+   * UX/UI 2026-08-13, lot 1. Prop additive : aucun call-site POS ne change.
+   */
+  format?: (amount: number) => string;
 }
 
-export function Currency({ amount, className, emphasis = 'normal' }: CurrencyProps): JSX.Element {
+export function Currency({
+  amount,
+  className,
+  emphasis = 'normal',
+  format = formatIdr,
+}: CurrencyProps): JSX.Element {
   return (
     <span
       className={cn(
@@ -18,7 +29,7 @@ export function Currency({ amount, className, emphasis = 'normal' }: CurrencyPro
         className,
       )}
     >
-      {formatIdr(amount)}
+      {format(amount)}
     </span>
   );
 }

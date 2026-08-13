@@ -11,7 +11,7 @@
 // et laisserait croire qu'elle n'a jamais existé.
 
 import type { JSX } from 'react';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useB2bOrderItems } from '../hooks/useB2bOrderItems.js';
 
 export interface B2bOrderItemsPanelProps {
@@ -35,7 +35,7 @@ export function B2bOrderItemsPanel({ orderId, orderTotal }: B2bOrderItemsPanelPr
 
   if (error !== null) {
     return (
-      <p className="px-6 py-3 text-[12.5px] text-danger" role="alert">
+      <p className="px-6 py-3 text-xs text-danger" role="alert">
         Could not load the order lines: {error.message}
       </p>
     );
@@ -45,7 +45,7 @@ export function B2bOrderItemsPanel({ orderId, orderTotal }: B2bOrderItemsPanelPr
 
   if (items.length === 0) {
     return (
-      <p className="px-6 py-3 text-[12.5px] text-text-muted">
+      <p className="px-6 py-3 text-xs text-text-muted">
         This order has no line. It was most likely cancelled before anything was added.
       </p>
     );
@@ -63,45 +63,45 @@ export function B2bOrderItemsPanel({ orderId, orderTotal }: B2bOrderItemsPanelPr
         <table className="w-full">
           <thead>
             <tr>
-              <th className="pb-1.5 text-left font-data text-[10px] uppercase tracking-widest text-text-muted">Item</th>
-              <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Qty</th>
-              <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Unit price</th>
-              <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Line total</th>
+              <th className="pb-1.5 text-left font-data text-xs uppercase tracking-widest text-text-muted">Item</th>
+              <th className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Qty</th>
+              <th className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Unit price</th>
+              <th className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Line total</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => (
               <tr key={item.id} className={item.is_cancelled ? 'text-text-muted' : 'text-text-primary'}>
-                <td className={`py-1 text-[12.5px] ${item.is_cancelled ? 'line-through' : ''}`}>
+                <td className={`py-1 text-xs ${item.is_cancelled ? 'line-through' : ''}`}>
                   {item.name_snapshot}
                   {item.is_cancelled && (
-                    <span className="ml-2 font-data text-[10px] uppercase tracking-widest text-text-muted no-underline">
+                    <span className="ml-2 font-data text-xs uppercase tracking-widest text-text-muted no-underline">
                       cancelled
                     </span>
                   )}
                 </td>
-                <td className="py-1 text-right font-data text-[12.5px] tabular-nums">{Number(item.quantity)}</td>
-                <td className="py-1 text-right font-data text-[12.5px] tabular-nums">{formatIdr(item.unit_price)}</td>
-                <td className="py-1 text-right font-data text-[12.5px] tabular-nums">
-                  {item.is_cancelled ? formatIdr(0) : formatIdr(item.line_total)}
+                <td className="py-1 text-right font-data text-xs tabular-nums">{Number(item.quantity)}</td>
+                <td className="py-1 text-right font-data text-xs tabular-nums">{formatCurrency(item.unit_price)}</td>
+                <td className="py-1 text-right font-data text-xs tabular-nums">
+                  {item.is_cancelled ? formatCurrency(0) : formatCurrency(item.line_total)}
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="border-t border-border-muted">
-              <td colSpan={3} className="pt-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">
+              <td colSpan={3} className="pt-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">
                 {live.length} {live.length === 1 ? 'line' : 'lines'}
               </td>
-              <td className="pt-1.5 text-right font-data text-[12.5px] font-semibold tabular-nums">
-                {formatIdr(linesTotal)}
+              <td className="pt-1.5 text-right font-data text-xs font-semibold tabular-nums">
+                {formatCurrency(linesTotal)}
               </td>
             </tr>
             {drift !== 0 && (
               <tr>
-                <td colSpan={4} className="pt-1 text-right font-data text-[10.5px] text-text-muted">
-                  order total {formatIdr(orderTotal)} — {drift > 0 ? 'header charge' : 'header discount'}{' '}
-                  {formatIdr(Math.abs(drift))}
+                <td colSpan={4} className="pt-1 text-right font-data text-xs text-text-muted">
+                  order total {formatCurrency(orderTotal)} — {drift > 0 ? 'header charge' : 'header discount'}{' '}
+                  {formatCurrency(Math.abs(drift))}
                 </td>
               </tr>
             )}

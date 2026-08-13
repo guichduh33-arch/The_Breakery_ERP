@@ -1,4 +1,5 @@
 // apps/backoffice/src/features/reports/utils/chartColors.ts
+import { formatCurrency } from '@breakery/utils';
 //
 // Cost & Spend Analytics — the "two cost families" chart language.
 //
@@ -129,24 +130,19 @@ export const CHART_TOOLTIP_STYLE = {
 } as const;
 
 // --- IDR formatters ---------------------------------------------------------
+// Audit UX/UI 2026-08-13 (lot 1) : les deux formatteurs de montants délèguent
+// à `formatCurrency` (@breakery/utils, id-ID, préfixe « Rp  ») — une seule
+// source de vérité pour toute l'app. Les alias `formatIdrFull`/`formatIdrCompact`
+// restent exportés pour ne pas toucher les ~22 pages de reports consommatrices.
 
-/** Full IDR — "Rp2.364.545". */
+/** Full IDR — "Rp 2.364.545". */
 export function formatIdrFull(v: number): string {
-  return v.toLocaleString('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  });
+  return formatCurrency(v);
 }
 
-/** Compact IDR for axis ticks / dense labels — "Rp2,4 jt". */
+/** Compact IDR for axis ticks / dense labels — "Rp 2,4 jt". */
 export function formatIdrCompact(v: number): string {
-  return v.toLocaleString('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  });
+  return formatCurrency(v, { compact: true });
 }
 
 /**

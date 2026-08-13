@@ -12,7 +12,7 @@ import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DataTable, Input, Select, cn, type DataTableColumn } from '@breakery/ui';
-import { formatIdr, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
@@ -199,20 +199,20 @@ export default function OrdersListPage(): JSX.Element {
     {
       id: 'amount-total',
       label: 'Window total',
-      value: countersDown ? '—' : formatIdr(c?.total.amount ?? 0),
+      value: countersDown ? '—' : formatCurrency(c?.total.amount ?? 0),
       title: `Sum of order totals between ${start} and ${end}, current filters applied — voided included.`,
     },
     {
       id: 'amount-paid',
       label: 'Settled',
-      value: countersDown ? '—' : formatIdr(c?.paid.amount ?? 0),
+      value: countersDown ? '—' : formatCurrency(c?.paid.amount ?? 0),
       ...((c?.paid.count ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
       title: `${(c?.paid.count ?? 0).toLocaleString()} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
     },
     {
       id: 'amount-unpaid',
       label: 'Unpaid',
-      value: countersDown ? '—' : formatIdr(c?.unpaid.amount ?? 0),
+      value: countersDown ? '—' : formatCurrency(c?.unpaid.amount ?? 0),
       ...((c?.unpaid.count ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
       title: `${(c?.unpaid.count ?? 0).toLocaleString()} orders not settled yet, voided excluded.`,
     },
@@ -224,8 +224,8 @@ export default function OrdersListPage(): JSX.Element {
       value: countersDown
         ? '—'
         : (c?.refunded.amount ?? 0) > 0
-          ? `− ${formatIdr(c?.refunded.amount ?? 0)}`
-          : formatIdr(0),
+          ? `− ${formatCurrency(c?.refunded.amount ?? 0)}`
+          : formatCurrency(0),
       ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
       title: `${(c?.refunded.count ?? 0).toLocaleString()} orders carry a refund in this window.`,
     },
@@ -236,11 +236,13 @@ export default function OrdersListPage(): JSX.Element {
   const [voidTarget, setVoidTarget] = useState<{ id: string; number: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; number: string; items: OrderItemEdit[] } | null>(null);
 
-  async function loadItemsAndOpenEdit(row: OrdersListLine): Promise<void> {
+  // Un seul flux d'édition pour les DEUX surfaces : la ligne de table et le
+  // tiroir d'aperçu appellent la même fonction, qui monte la même modale.
+  async function loadItemsAndOpenEdit(orderId: string, orderNumber: string): Promise<void> {
     const { data, error } = await supabase
       .from('order_items')
       .select('id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_locked')
-      .eq('order_id', row.id);
+      .eq('order_id', orderId);
     if (error) {
       toast.error(`Failed to load order items: ${(error as { message?: string }).message ?? 'unknown error'}`);
       return;
@@ -259,7 +261,7 @@ export default function OrdersListPage(): JSX.Element {
       modifiers: Array.isArray(it.modifiers) ? it.modifiers : [],
       is_locked: Boolean(it.is_locked),
     }));
-    setEditTarget({ id: row.id, number: row.order_number, items });
+    setEditTarget({ id: orderId, number: orderNumber, items });
   }
 
   const columns = useMemo<readonly DataTableColumn<OrdersListLine>[]>(() => [
@@ -305,7 +307,7 @@ export default function OrdersListPage(): JSX.Element {
     },
     {
       id: 'amount', header: 'Amount', align: 'right', width: '8.5rem',
-      render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatIdr(o.total)}</span>,
+      render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(o.total)}</span>,
     },
     {
       id: 'status', header: 'Status', width: '9.5rem',
@@ -338,7 +340,7 @@ export default function OrdersListPage(): JSX.Element {
             <RowActionButton
               label={`Edit items of ${o.order_number}`}
               testId={`row-edit-${o.id}`}
-              onClick={() => { void loadItemsAndOpenEdit(o); }}
+              onClick={() => { void loadItemsAndOpenEdit(o.id, o.order_number); }}
             >
               <Edit3 className="h-3.5 w-3.5" aria-hidden />
             </RowActionButton>
@@ -433,6 +435,17 @@ export default function OrdersListPage(): JSX.Element {
         data-testid="orders-counters"
       />
 
+      {/* ADR-025 D2 — les compteurs suivent la fenêtre et les filtres serveur,
+          JAMAIS la recherche texte (celle-ci ne filtre que les lignes déjà
+          chargées, côté client). Sans cet indice, un « 36 » à côté d'une liste
+          filtrée à 0 se lisait comme une contradiction. */}
+      {quickFind.trim() !== '' && (
+        <p className="text-xs text-text-muted" data-testid="orders-counters-hint">
+          Counters cover the window, not the text search — typing filters only
+          the rows already loaded below.
+        </p>
+      )}
+
       <div className="flex">
         <ListCounterStrip
           counters={moneyItems}
@@ -455,7 +468,7 @@ export default function OrdersListPage(): JSX.Element {
         <label htmlFor="orders-start" className="sr-only">Start date</label>
         <Input
           id="orders-start"
-          type="date"
+          type="date" lang="id-ID"
           value={startDraft}
           onChange={(e) => { setStartDraft(e.target.value); commitDates(e.target.value, endDraft); }}
           onBlur={() => { commitDates(startDraft, endDraft, true); }}
@@ -464,7 +477,7 @@ export default function OrdersListPage(): JSX.Element {
         <label htmlFor="orders-end" className="sr-only">End date</label>
         <Input
           id="orders-end"
-          type="date"
+          type="date" lang="id-ID"
           value={endDraft}
           onChange={(e) => { setEndDraft(e.target.value); commitDates(startDraft, e.target.value); }}
           onBlur={() => { commitDates(startDraft, endDraft, true); }}
@@ -531,11 +544,15 @@ export default function OrdersListPage(): JSX.Element {
           data-testid="orders-table"
           footer={
             <div className="flex items-center justify-between">
-              <span className="font-data text-[11px] tabular-nums text-text-muted">
-                {countersDown
-                  ? `${lines.length} loaded`
-                  : quickFind.trim() !== ''
-                    ? `${lines.length} match · ${activeTotal.toLocaleString()} in window`
+              <span className="font-data text-xs tabular-nums text-text-muted">
+                {/* La recherche texte ne voit que les lignes chargées : on
+                    compte les correspondances SUR le chargé, jamais sur la
+                    fenêtre serveur — d'où « X of the Y loaded », sans compteur
+                    de fenêtre qui laisserait croire à une recherche complète. */}
+                {quickFind.trim() !== ''
+                  ? `${lines.length} of the ${loadedLines.length} loaded match “${quickFind.trim()}”`
+                  : countersDown
+                    ? `${loadedLines.length} loaded`
                     : `${lines.length} of ${activeTotal.toLocaleString()}`}
               </span>
               {query.hasNextPage && (
@@ -553,7 +570,15 @@ export default function OrdersListPage(): JSX.Element {
         />
       )}
 
-      <OrderDetailDrawer orderId={detailId} onClose={() => setDetailId(null)} />
+      {/* Le tiroir déclenche, la page monte : les modales (et leur clé
+          d'idempotence) restent uniques. On ferme le tiroir AVANT d'ouvrir la
+          modale — deux couches empilées mentiraient sur ce qui a le focus. */}
+      <OrderDetailDrawer
+        orderId={detailId}
+        onClose={() => setDetailId(null)}
+        onEditItems={(id, number) => { setDetailId(null); void loadItemsAndOpenEdit(id, number); }}
+        onVoid={(id, number) => { setDetailId(null); setVoidTarget({ id, number }); }}
+      />
       {voidTarget !== null && (
         <VoidOrderModal open orderId={voidTarget.id} orderNumber={voidTarget.number} onClose={() => setVoidTarget(null)} />
       )}

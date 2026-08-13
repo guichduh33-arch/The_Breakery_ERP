@@ -64,7 +64,7 @@ export function FinalizeOpnameDialog({ countId, items, onClose }: FinalizeOpname
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={finalize.isPending}>
+          <Button variant="ink" onClick={handleSubmit} disabled={finalize.isPending}>
             {finalize.isPending ? 'Finalizing…' : 'Finalize & post JE'}
           </Button>
         </DialogFooter>

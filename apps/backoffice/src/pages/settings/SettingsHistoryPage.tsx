@@ -13,6 +13,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { History } from 'lucide-react';
 import { Badge, Button, Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { formatDateTimeWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
 import {
@@ -20,10 +21,9 @@ import {
   type SettingsHistoryEntry,
 } from '@/features/settings/hooks/useSettingsHistory.js';
 
+// Trail d'audit des réglages : horodatage exact.
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit',
-  });
+  return formatDateTimeWita(iso);
 }
 
 function fmtValue(v: unknown): string {

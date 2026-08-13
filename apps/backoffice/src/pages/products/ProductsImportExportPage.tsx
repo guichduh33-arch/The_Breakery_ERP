@@ -145,7 +145,7 @@ export default function ProductsImportExportPage(): JSX.Element {
   const importTotal =
     stage.step === 'previewed'
       ? Object.values(stage.report.summary).reduce(
-          (sum, section) => sum + (section['create'] ?? 0) + (section['update'] ?? 0),
+          (sum, section) => sum + (section.create ?? 0) + (section.update ?? 0),
           0,
         )
       : 0;
@@ -263,6 +263,7 @@ export default function ProductsImportExportPage(): JSX.Element {
 
               <div className="flex items-center gap-3">
                 <Button
+                  variant="ink"
                   data-testid="confirm-import"
                   onClick={() => void handleConfirmImport()}
                   disabled={!stage.report.valid || importMutation.isPending}

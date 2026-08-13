@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EmptyState, KpiTile } from '@breakery/ui';
-import { formatDateTimeShortWita, formatIdr } from '@breakery/utils';
+import { formatDateTimeShortWita, formatCurrency } from '@breakery/utils';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
@@ -95,7 +95,7 @@ export default function ProductDashboardPage(): JSX.Element {
         />
         <KpiTile
           label="Value at cost"
-          value={valueAtCost}
+          value={formatCurrency(valueAtCost)}
           valueFormat="currency"
           icon={Coins}
         />
@@ -161,7 +161,7 @@ export default function ProductDashboardPage(): JSX.Element {
                     <tr key={c.customer_id} className="border-t border-border-subtle">
                       <td className="py-2 px-3">{c.customer_name}</td>
                       <td className="py-2 px-3 text-right font-mono">{Number(c.units_bought)}</td>
-                      <td className="py-2 px-3 text-right font-mono">{formatIdr(Number(c.spend_total))}</td>
+                      <td className="py-2 px-3 text-right font-mono">{formatCurrency(Number(c.spend_total))}</td>
                     </tr>
                   ))}
                 </tbody>

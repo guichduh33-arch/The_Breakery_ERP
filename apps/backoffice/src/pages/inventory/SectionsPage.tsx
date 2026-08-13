@@ -53,7 +53,7 @@ export default function SectionsPage(): JSX.Element {
 
   function handleDelete(id: string): void {
     // eslint-disable-next-line no-alert
-    if (!confirm('Soft-delete this section? Existing references stay intact ; the section just stops appearing in pickers.')) return;
+    if (!confirm('Soft-delete this section? Existing references stay intact; the section just stops appearing in pickers.')) return;
     softDelete.mutate({ id });
   }
 
@@ -132,14 +132,14 @@ export default function SectionsPage(): JSX.Element {
           </p>
         </div>
         {canWrite && (
-          <Button onClick={() => { setCreating(true); }}>
+          <Button variant="ink" onClick={() => { setCreating(true); }}>
             <Plus className="h-4 w-4" aria-hidden /> New section
           </Button>
         )}
       </header>
 
       <section
-        className="grid grid-cols-1 gap-4 md:grid-cols-4"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
         aria-label="Section totals"
       >
         <KpiTile

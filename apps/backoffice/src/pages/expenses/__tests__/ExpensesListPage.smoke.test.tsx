@@ -1,15 +1,16 @@
 // apps/backoffice/src/pages/expenses/__tests__/ExpensesListPage.smoke.test.tsx
 //
-// Session 14 / Phase 5.A — smoke for the rebuilt Expenses list. Mocks the
-// data hooks + auth permissions and asserts header, KPI tiles, status
-// quick-filter pills, and table rows render correctly.
+// Smoke de la liste des dépenses. Mocks des hooks de données + des permissions ;
+// on vérifie l'ordre de lecture (titre AVANT les onglets), la BANDE DE COMPTEURS
+// (qui a remplacé les tuiles de KPI et les pastilles de statut) et les lignes.
 
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import ExpensesListPage from '@/pages/expenses/ExpensesListPage.js';
 import type { ExpenseRow, ExpenseCategoryRow } from '@/features/expenses/hooks/useExpensesList.js';
+import type * as UseExpensesListModule from '@/features/expenses/hooks/useExpensesList.js';
 
 const ROWS: ExpenseRow[] = [
   {
@@ -86,7 +87,7 @@ const CATS: ExpenseCategoryRow[] = [
 ];
 
 vi.mock('@/features/expenses/hooks/useExpensesList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/expenses/hooks/useExpensesList.js')>();
+  const actual = await importOriginal<typeof UseExpensesListModule>();
   return {
     ...actual,
     useExpensesList:    () => ({ data: ROWS, isLoading: false, error: null }),
@@ -113,15 +114,41 @@ function renderPage(): ReturnType<typeof render> {
   );
 }
 
-describe('ExpensesListPage (Phase 5.A rewrite)', () => {
-  it('renders heading, KPI tiles, status filters, and rows', () => {
+describe('ExpensesListPage', () => {
+  it('renders heading, the counter strip, and rows', () => {
     currentPerms = new Set(['expenses.read', 'expenses.create']);
     renderPage();
     expect(screen.getByRole('heading', { name: /^Expenses$/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Total Expenses/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Monthly Count/i).length).toBeGreaterThan(0);
+    expect(within(screen.getByTestId('counter-all')).getByText('2')).toBeInTheDocument();
+    expect(within(screen.getByTestId('counter-submitted')).getByText('1')).toBeInTheDocument();
+    expect(within(screen.getByTestId('counter-approved')).getByText('1')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /EXP-202604-0001/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Office supplies/i).length).toBeGreaterThan(0);
+  });
+
+  it('names the page before offering its sub-views', () => {
+    // Les onglets étaient AU-DESSUS du <h1> : on choisissait la sous-vue d'une
+    // page pas encore nommée. Le titre passe donc en premier dans le document.
+    currentPerms = new Set(['expenses.read', 'expenses.create']);
+    const { container } = renderPage();
+    const h1      = container.querySelector('h1');
+    const tablist = container.querySelector('[role="tablist"]');
+    expect(h1).not.toBeNull();
+    expect(tablist).not.toBeNull();
+    expect(h1?.compareDocumentPosition(tablist as Node))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('drives the status filter from the counters — no second row of pills', () => {
+    currentPerms = new Set(['expenses.read', 'expenses.create']);
+    renderPage();
+    // Le seul `tablist` restant est celui des sous-vues Expenses / Categories ;
+    // les pastilles de statut ne sont plus des onglets, ce sont les compteurs.
+    expect(screen.getAllByRole('tablist')).toHaveLength(1);
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByTestId('counter-submitted'));
+    expect(screen.getByTestId('counter-submitted')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('shows the New expense CTA when create permission is granted', () => {

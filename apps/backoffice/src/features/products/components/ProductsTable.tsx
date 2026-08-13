@@ -23,29 +23,33 @@
 
 import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
-import { Badge, DataTable, cn, type DataTableColumn } from '@breakery/ui';
+import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
   classifyProduct, productMarginPct,
   type ProductColumnId, type ProductRow,
 } from '../types.js';
 import {
-  PRODUCTS_PAGE_SIZE_DEFAULT,
-  ProductsPagination,
+  LIST_PAGE_SIZE_DEFAULT,
+  ListPagination,
   pageSlice,
-} from './ProductsPagination.js';
+} from '@/components/ListPagination.js';
 
 /** @deprecated Taille par défaut seulement — la taille effective est une prop.
  *  Conservé parce que des tests l'importent comme repère. */
-export const PRODUCTS_PAGE_SIZE = PRODUCTS_PAGE_SIZE_DEFAULT;
+export const PRODUCTS_PAGE_SIZE = LIST_PAGE_SIZE_DEFAULT;
 
 const MONO = 'font-data tabular-nums';
 const DASH = <span className="text-text-subtle">—</span>;
 const EMPTY_SELECTION: ReadonlySet<string> = new Set();
 
-function num(v: number): string {
-  return Math.round(v).toLocaleString('id-ID');
-}
+// Le helper `num` unique est mort (audit UX/UI 2026-08-13) : il rendait un
+// stock et un prix de la même façon, si bien que « 5.000 » sur la ligne Cost et
+// « 5.000 » sur la ligne Stock ne se distinguaient pas — et qu'aucun des deux
+// ne disait s'il s'agissait de roupies. Les trois colonnes de prix passent à
+// `formatCurrency` (préfixe `Rp`), la colonne Stock à `formatQuantity` (unité
+// en suffixe, arrondi entier pour les unités de comptage).
 
 interface Props {
   rows: readonly ProductRow[];
@@ -58,6 +62,13 @@ interface Props {
   /** Lignes par page. Même contrat que `page` : la page la possède. */
   pageSize?: number;
   onPageSize?: (next: number) => void;
+  /**
+   * Tri courant. Même contrat que la pagination : la table REND l'ordre, elle
+   * ne l'applique pas — c'est la page qui trie, parce que la grille montre le
+   * même jeu et doit voir le même ordre.
+   */
+  sort?: DataTableSort | null;
+  onSortChange?: (next: DataTableSort) => void;
   selected?: ReadonlySet<string>;
   onToggleRow?: (id: string) => void;
   onToggleAll?: (ids: readonly string[], allSelected: boolean) => void;
@@ -74,8 +85,10 @@ export function ProductsTable({
   hiddenColumns,
   page = 1,
   onPage,
-  pageSize = PRODUCTS_PAGE_SIZE_DEFAULT,
+  pageSize = LIST_PAGE_SIZE_DEFAULT,
   onPageSize,
+  sort = null,
+  onSortChange,
   selected = EMPTY_SELECTION,
   onToggleRow,
   onToggleAll,
@@ -119,24 +132,40 @@ export function ProductsTable({
     {
       id: 'product',
       header: 'Product',
-      width: '20.3%',
-      render: (r) => (
-        <div className={cn('flex items-center gap-2', r.parent_product_id !== null && 'pl-4')}>
-          <span className="truncate font-medium text-text-primary">{r.name}</span>
-          {r.parent_product_id !== null && (
-            <Badge variant="outline" data-testid="badge-variant">Variant</Badge>
-          )}
-          {parentIds !== undefined && parentIds.has(r.id) && (
-            <Badge variant="outline" data-testid="badge-parent">Parent</Badge>
-          )}
-        </div>
-      ),
+      width: '18%',
+      sortable: true,
+      // Les badges Variant/Parent passent SOUS le nom : inline, ils poussaient un
+      // nom long à la ligne, si bien qu'un produit à trois mots occupait deux
+      // lignes juste pour loger une pastille d'une syllabe.
+      render: (r) => {
+        const isVariant = r.parent_product_id !== null;
+        const isParent = parentIds?.has(r.id) ?? false;
+        return (
+          <div className={cn('flex flex-col gap-0.5', isVariant && 'pl-4')}>
+            <span className="truncate font-medium text-text-primary">{r.name}</span>
+            {(isVariant || isParent) && (
+              <div className="flex items-center gap-1">
+                {isVariant && (
+                  <Badge variant="outline" data-testid="badge-variant">Variant</Badge>
+                )}
+                {isParent && (
+                  <Badge variant="outline" data-testid="badge-parent">Parent</Badge>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: 'sku',
       header: 'SKU',
-      width: '9.9%',
-      render: (r) => <span className="font-data text-[11.5px] text-text-muted">{r.sku}</span>,
+      width: '12.2%',
+      sortable: true,
+      // `whitespace-nowrap` : un SKU alphanumérique long se cassait sur trois
+      // lignes dans une colonne trop étroite. Il reste sur une ligne, la colonne
+      // est élargie pour l'accueillir.
+      render: (r) => <span className="whitespace-nowrap font-data text-xs text-text-muted">{r.sku}</span>,
     },
     ...(shown('type') ? [{
       id: 'type',
@@ -148,16 +177,18 @@ export function ProductsTable({
       id: 'category',
       header: 'Category',
       width: '10.4%',
+      sortable: true,
       // La pilule de catégorie tombe en vue liste : quinze pilules colorées
       // empilées font un vitrail où la couleur ne distingue plus rien.
       render: (r: ProductRow) =>
-        r.category_name === null ? DASH : <span className="text-[12.5px] text-text-secondary">{r.category_name}</span>,
+        r.category_name === null ? DASH : <span className="text-xs text-text-secondary">{r.category_name}</span>,
     }] : []),
     ...(shown('stock') ? [{
       id: 'stock',
       header: 'Stock',
       align: 'right' as const,
       width: '8.3%',
+      sortable: true,
       render: (r: ProductRow) => {
         if (!r.track_inventory) return DASH;
         const qty = r.current_stock;
@@ -172,7 +203,7 @@ export function ProductsTable({
               ? { title: 'Display-case product — the POS sells off the vitrine counter, not this global stock.' }
               : {})}
           >
-            {num(qty)} {r.unit}
+            {formatQuantity(qty, r.unit)}
           </span>
         );
       },
@@ -182,11 +213,12 @@ export function ProductsTable({
       header: 'Cost',
       align: 'right' as const,
       width: '8.3%',
+      sortable: true,
       // Coût manquant EN ROUGE : c'est la population du compteur « No cost
       // price », et la cause d'une marge qu'on ne peut pas calculer.
       render: (r: ProductRow) =>
         r.cost_price > 0
-          ? <span className={cn(MONO, 'text-text-secondary')}>{num(r.cost_price)}</span>
+          ? <span className={cn(MONO, 'text-text-secondary')}>{formatCurrency(r.cost_price)}</span>
           : <span className={cn(MONO, 'font-semibold text-danger')}>—</span>,
     }] : []),
     ...(shown('retail') ? [{
@@ -194,9 +226,10 @@ export function ProductsTable({
       header: 'Retail',
       align: 'right' as const,
       width: '8.3%',
+      sortable: true,
       render: (r: ProductRow) =>
         r.retail_price > 0
-          ? <span className={cn(MONO, 'font-semibold text-gold')}>{num(r.retail_price)}</span>
+          ? <span className={cn(MONO, 'font-semibold text-gold')}>{formatCurrency(r.retail_price)}</span>
           : DASH,
     }] : []),
     ...(shown('wholesale') ? [{
@@ -206,7 +239,7 @@ export function ProductsTable({
       width: '8.8%',
       render: (r: ProductRow) =>
         r.wholesale_price !== null && r.wholesale_price > 0
-          ? <span className={cn(MONO, 'text-text-secondary')}>{num(r.wholesale_price)}</span>
+          ? <span className={cn(MONO, 'text-text-secondary')}>{formatCurrency(r.wholesale_price)}</span>
           : DASH,
     }] : []),
     ...(shown('margin') ? [{
@@ -239,7 +272,7 @@ export function ProductsTable({
       align: 'center' as const,
       width: '7.1%',
       render: (r: ProductRow) => (
-        <span className={cn('text-[11.5px] font-semibold', r.is_active ? 'text-success' : 'text-text-muted')}>
+        <span className={cn('text-xs font-semibold', r.is_active ? 'text-success' : 'text-text-muted')}>
           {r.is_active ? 'Active' : 'Inactive'}
         </span>
       ),
@@ -275,7 +308,7 @@ export function ProductsTable({
   ];
 
   const footer = (
-    <ProductsPagination
+    <ListPagination
       total={total}
       page={page}
       pageSize={pageSize}
@@ -283,7 +316,7 @@ export function ProductsTable({
       {...(onPageSize !== undefined ? { onPageSize } : {})}
       leading={
         <>
-          <span className="text-[12.5px] text-text-secondary">
+          <span className="text-xs text-text-secondary">
             {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
           </span>
           <BulkAction label="Change prices" disabled={selected.size === 0} />
@@ -303,6 +336,7 @@ export function ProductsTable({
     loadingRowCount: pageSize,
     striped: false,
     density: 'compact',
+    sort,
     footer,
     rowClassName: (r) => (selected.has(r.id) ? 'bg-surface-inert' : undefined),
     emptyTitle: 'No products match these filters',
@@ -310,13 +344,14 @@ export function ProductsTable({
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
         <Package className="h-10 w-10 text-text-subtle" aria-hidden />
         <h3 className="text-base font-semibold text-text-primary">No products match these filters</h3>
-        <p className="max-w-prose text-[13px] text-text-secondary">
+        <p className="max-w-prose text-sm text-text-secondary">
           Clear a counter or widen the search to see the catalogue again.
         </p>
       </div>
     ),
   };
   if (onRowClick !== undefined) tableProps.onRowClick = onRowClick;
+  if (onSortChange !== undefined) tableProps.onSortChange = onSortChange;
   return <DataTable {...tableProps} />;
 }
 
@@ -327,7 +362,7 @@ function BulkAction({ label, disabled }: { label: string; disabled: boolean }): 
       disabled
       title="Bulk actions need dedicated gated RPCs — not wired yet."
       className={cn(
-        'text-[12.5px] font-medium text-gold',
+        'text-xs font-medium text-gold',
         'cursor-not-allowed opacity-50',
         disabled && 'opacity-30',
       )}

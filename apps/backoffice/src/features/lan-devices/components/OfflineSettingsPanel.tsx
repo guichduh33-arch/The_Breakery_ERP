@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatTimeWita } from '@breakery/utils';
 
 interface Draft {
   offlinePaymentsEnabled: boolean;
@@ -56,7 +57,7 @@ export function OfflineSettingsPanel() {
           key: 'offline_payments_enabled', value: draft.offlinePaymentsEnabled, category: 'network',
         });
       }
-      setSaved(new Date().toLocaleTimeString());
+      setSaved(formatTimeWita(new Date()));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Échec de l'enregistrement");
     }

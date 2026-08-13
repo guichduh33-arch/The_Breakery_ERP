@@ -27,7 +27,7 @@ export function CategoryChip({ name, className }: Props): JSX.Element {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-sm px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide',
+        'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold uppercase tracking-wide',
         tone,
         className,
       )}

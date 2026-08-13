@@ -11,12 +11,17 @@
 
 import type { JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import {
   useProductionSuggestions,
   type ProductionSuggestion,
 } from '../hooks/useProductionSuggestions.js';
 import { ProductCell } from './ProductCell.js';
 
+// `get_production_suggestions_v1` ne renvoie PAS l'unité du produit : les trois
+// quantités de cet onglet passent donc `null` à `formatQuantity` (audit UX/UI
+// 2026-08-13). Elles gagnent les séparateurs de milliers id-ID et perdent les
+// zéros morts du `toFixed`, sans qu'on invente un « pcs » que la RPC ne dit pas.
 const PRIORITY_CLASS: Record<string, string> = {
   high:   'bg-danger-soft text-danger',
   medium: 'bg-warning-soft text-warning',
@@ -33,20 +38,24 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     id: 'stock',
     header: 'On hand',
     align: 'right',
-    render: (r) => <span className="font-data text-[12.5px]">{Number(r.current_stock)}</span>,
+    render: (r) => (
+      <span className="font-data text-xs tabular-nums">{formatQuantity(r.current_stock, null)}</span>
+    ),
   },
   {
     id: 'avg_daily',
     header: 'Daily sales',
     align: 'right',
-    render: (r) => <span className="font-data text-[12.5px]">{Number(r.avg_daily_sales).toFixed(2)}</span>,
+    render: (r) => (
+      <span className="font-data text-xs tabular-nums">{formatQuantity(r.avg_daily_sales, null)}</span>
+    ),
   },
   {
     id: 'coverage',
     header: 'Coverage',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px]">
+      <span className="font-data text-xs">
         {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
       </span>
     ),
@@ -56,7 +65,9 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'Produce',
     align: 'right',
     render: (r) => (
-      <span className="font-data text-[12.5px] font-semibold">{Number(r.suggested_quantity).toFixed(2)}</span>
+      <span className="font-data text-xs font-semibold tabular-nums">
+        {formatQuantity(r.suggested_quantity, null)}
+      </span>
     ),
   },
   {
@@ -64,7 +75,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     header: 'Priority',
     render: (r) => (
       <span
-        className={`inline-flex rounded-sm px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${
+        className={`inline-flex rounded-sm px-2 py-0.5 font-data text-xs font-semibold uppercase tracking-widest ${
           PRIORITY_CLASS[r.priority] ?? PRIORITY_CLASS.low
         }`}
       >
@@ -89,7 +100,7 @@ export function ProductionAlertsTab(): JSX.Element {
       emptyDescription="Either nothing needs production today, or the production module is not deployed."
       data-testid="production-alerts-table"
       footer={
-        <span className="font-data text-[11px] text-text-muted tabular-nums">
+        <span className="font-data text-xs text-text-muted tabular-nums">
           {rows.length} {rows.length === 1 ? 'suggestion' : 'suggestions'}
         </span>
       }

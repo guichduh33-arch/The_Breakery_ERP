@@ -6,6 +6,11 @@
 // version: green (added), red (removed), amber (qty/unit changed).
 
 import { useMemo, type JSX } from 'react';
+import { formatDateTime, formatQuantity } from '@breakery/utils';
+// Coûts de recette : la précision sous-roupie porte du sens (coût au gramme) —
+// formatCurrency (0 décimale) doublerait un « Rp 0,50 » arrondi. On consomme
+// l'exception documentée du module reports.
+import { formatIdrPrecise } from '@/features/reports/utils/chartColors.js';
 import { useRecipeVersions, type RecipeVersionRow, type RecipeVersionSnapshotRow } from '../hooks/useRecipeVersions.js';
 
 export interface RecipeVersionHistoryProps {
@@ -23,11 +28,6 @@ interface MaterialDiff {
   prev_quantity?: number;
   prev_unit?:     string;
 }
-
-const DATE_FMT = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
 
 function indexByMaterialId(rows: RecipeVersionSnapshotRow[]): Record<string, RecipeVersionSnapshotRow> {
   const out: Record<string, RecipeVersionSnapshotRow> = {};
@@ -122,7 +122,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
     [row.snapshot, previous?.snapshot],
   );
   const createdAt = (() => {
-    try { return DATE_FMT.format(new Date(row.created_at)); }
+    try { return formatDateTime(row.created_at); }
     catch { return row.created_at; }
   })();
 
@@ -149,9 +149,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
               className="text-xs font-mono text-text-secondary"
               data-testid={`version-cost-${row.version_number}`}
             >
-              cost {row.productCostAtVersion.toLocaleString('en-US', {
-                minimumFractionDigits: 2, maximumFractionDigits: 2,
-              })}
+              cost {formatIdrPrecise(row.productCostAtVersion)}
             </span>
           ) : (
             <span
@@ -163,7 +161,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
             </span>
           )}
           {previous === null && (
-            <span className="text-[10px] uppercase tracking-widest text-success bg-success-soft rounded px-2 py-0.5">
+            <span className="text-xs uppercase tracking-widest text-success bg-success-soft rounded px-2 py-0.5">
               Initial
             </span>
           )}
@@ -194,7 +192,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
                 <span className="truncate">
                   {d.material_name}
                   {kindLabel(d.kind) !== '' && (
-                    <span className="ml-2 text-[10px] uppercase tracking-widest opacity-70">
+                    <span className="ml-2 text-xs uppercase tracking-widest opacity-70">
                       {kindLabel(d.kind)}
                     </span>
                   )}
@@ -202,15 +200,15 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
                 <span className="font-mono text-xs whitespace-nowrap flex items-center gap-2">
                   {d.kind === 'changed' && d.prev_quantity !== undefined && (
                     <span className="text-text-secondary line-through">
-                      {d.prev_quantity.toLocaleString()} {d.prev_unit}
+                      {formatQuantity(d.prev_quantity, d.prev_unit)}
                     </span>
                   )}
                   <span>
-                    {d.quantity.toLocaleString()} {d.unit}
+                    {formatQuantity(d.quantity, d.unit)}
                   </span>
                   {matSubtotal !== null && (
                     <span className="text-text-muted">
-                      = {matSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      = {formatIdrPrecise(matSubtotal)}
                     </span>
                   )}
                 </span>

@@ -195,7 +195,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
             Cancel
           </Button>
           <Button
-            variant="primary"
+            variant="ink"
             type="button"
             onClick={() => { void submit(); }}
             disabled={setMut.isPending}

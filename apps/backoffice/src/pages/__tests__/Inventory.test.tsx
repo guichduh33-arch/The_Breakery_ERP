@@ -78,7 +78,7 @@ vi.mock('@/lib/supabase.js', () => {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_stock_levels_v3') {
+        if (fn === 'get_stock_levels_v4') {
           const filtered = args.p_bucket === 'low'
             ? MOCK_ROWS.filter((r) => r.min_stock_threshold > 0 && r.current_stock < r.min_stock_threshold)
             : MOCK_ROWS;
@@ -115,7 +115,7 @@ function renderPage(initialUrl = '/backoffice/inventory') {
 describe('InventoryPage', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
-  it('renders the stock-level table with rows from get_stock_levels_v3', async () => {
+  it('renders the stock-level table with rows from get_stock_levels_v4', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Americano')).toBeInTheDocument();
@@ -129,9 +129,13 @@ describe('InventoryPage', () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));
     const americanoRow = screen.getByText('Americano').closest('tr')!;
-    // LowStockBadge renders "Low" / a label inside the row when threshold > current_stock.
-    // We use the data-presence assertion: at least one element within the row should reflect low-stock.
-    expect(within(americanoRow).getByText('5')).toBeInTheDocument();
+    // Deux choses distinctes, et l'assertion d'origine n'en tenait qu'une :
+    // le BADGE, qui dit que la ligne est sous son seuil, et la QUANTITÉ, qui
+    // dit de combien. La quantité s'écrit désormais avec son unité en suffixe
+    // (`formatQuantity`, audit UX/UI 2026-08-13), en un seul nœud de texte —
+    // « 5 » nu ne la retrouve plus, et ne la retrouvait déjà que par accident.
+    expect(within(americanoRow).getByText(/low stock/i)).toBeInTheDocument();
+    expect(within(americanoRow).getByText('5 pcs')).toBeInTheDocument();
   });
 
   it('renders Adjust / Receive / Waste toolbar buttons when perms granted', async () => {
@@ -151,7 +155,7 @@ describe('InventoryPage', () => {
 
     fireEvent.click(screen.getByTestId('counter-low'));
     await waitFor(() => {
-      const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
+      const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v4');
       expect(lastCall).toBeDefined();
       expect((lastCall as [string, { p_bucket?: string }])[1].p_bucket).toBe('low');
     });
@@ -168,7 +172,7 @@ describe('InventoryPage', () => {
       expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'false');
     });
     const call = mockRpc.mock.calls.find(([fn, args]) =>
-      fn === 'get_stock_levels_v3' && (args as { p_bucket?: string }).p_bucket === 'negative');
+      fn === 'get_stock_levels_v4' && (args as { p_bucket?: string }).p_bucket === 'negative');
     expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
   });
 
@@ -182,7 +186,7 @@ describe('InventoryPage', () => {
 
     fireEvent.click(screen.getByTestId('counter-low'));
     await waitFor(() => {
-      expect(mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3')).toBeDefined();
+      expect(mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v4')).toBeDefined();
     });
     for (const [fn, args] of mockRpc.mock.calls) {
       if (fn === 'get_stock_counters_v1') {
@@ -222,7 +226,7 @@ describe('InventoryPage', () => {
 
     await waitFor(() => {
       const searched = mockRpc.mock.calls.filter(
-        ([fn, args]) => fn === 'get_stock_levels_v3' && (args as { p_search?: string }).p_search !== undefined,
+        ([fn, args]) => fn === 'get_stock_levels_v4' && (args as { p_search?: string }).p_search !== undefined,
       );
       expect(searched).toHaveLength(1);
       expect((searched[0] as [string, { p_search: string }])[1].p_search).toBe('ame');
@@ -242,7 +246,7 @@ describe('InventoryPage', () => {
 
     fireEvent.change(screen.getByLabelText(/^Search$/i), { target: { value: 'amer' } });
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn, args]) => fn === 'get_stock_levels_v3' && (args as { p_search?: string }).p_search === 'amer');
+      const call = mockRpc.mock.calls.find(([fn, args]) => fn === 'get_stock_levels_v4' && (args as { p_search?: string }).p_search === 'amer');
       expect(call).toBeDefined();
       expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
     });
@@ -253,7 +257,7 @@ describe('InventoryPage', () => {
   it('restores the whole list state from the URL', async () => {
     renderPage('/backoffice/inventory?bucket=negative&q=amer&category=c-1&page=2');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v4');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
         p_bucket: 'negative', p_search: 'amer', p_category_id: 'c-1', p_offset: 100,
@@ -269,7 +273,7 @@ describe('InventoryPage', () => {
   it('falls back to "all" on an unknown bucket in the URL', async () => {
     renderPage('/backoffice/inventory?bucket=lol');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v4');
       expect(call).toBeDefined();
       expect((call as [string, { p_bucket?: string }])[1].p_bucket).toBe('all');
     });
@@ -286,7 +290,7 @@ describe('InventoryPage', () => {
     fireEvent.click(screen.getByTestId('counter-zero'));
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn, args]) =>
-        fn === 'get_stock_levels_v3' && (args as { p_bucket?: string }).p_bucket === 'zero');
+        fn === 'get_stock_levels_v4' && (args as { p_bucket?: string }).p_bucket === 'zero');
       expect(call).toBeDefined();
       expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
     });
@@ -305,7 +309,7 @@ describe('InventoryPage', () => {
     fireEvent.change(select, { target: { value: 'c-1' } });
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn, args]) =>
-        fn === 'get_stock_levels_v3' && (args as { p_category_id?: string }).p_category_id === 'c-1');
+        fn === 'get_stock_levels_v4' && (args as { p_category_id?: string }).p_category_id === 'c-1');
       expect(call).toBeDefined();
     });
   });

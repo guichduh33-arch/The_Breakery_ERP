@@ -50,7 +50,7 @@ export function CostMtdCard({
   return (
     <DashboardCard
       title="COGS & expenses"
-      aside={<span className="text-[11.5px] text-text-muted">month to date</span>}
+      aside={<span className="text-xs text-text-muted">month to date</span>}
       isLoading={isLoading}
       error={error}
       testId="card-cost-mtd"
@@ -59,18 +59,24 @@ export function CostMtdCard({
         <>
           <div className="flex gap-5">
             <div>
-              <p className="text-[11px] text-text-muted">
+              <p className="text-xs text-text-muted">
                 COGS · {formatPct(cost.cogs_pct_of_sales)} of sales
               </p>
-              <p className="font-data text-[17px] font-semibold tabular-nums text-text-primary">
+              <p
+                className="font-data text-base font-semibold tabular-nums text-text-primary"
+                title={formatIdr(cost.cogs_total)}
+              >
                 {formatIdrShort(cost.cogs_total)}
               </p>
             </div>
             <div>
-              <p className="text-[11px] text-text-muted">
+              <p className="text-xs text-text-muted">
                 OpEx · {formatPct(cost.opex_pct_of_sales)} of sales
               </p>
-              <p className="font-data text-[17px] font-semibold tabular-nums text-text-primary">
+              <p
+                className="font-data text-base font-semibold tabular-nums text-text-primary"
+                title={formatIdr(cost.opex_total)}
+              >
                 {formatIdrShort(cost.opex_total)}
               </p>
             </div>
@@ -87,7 +93,7 @@ export function CostMtdCard({
 
           <ul className="mt-3 space-y-2">
             {shown.map((l) => (
-              <li key={l.account_code} className="flex items-baseline gap-2 text-[12.5px]">
+              <li key={l.account_code} className="flex items-baseline gap-2 text-xs">
                 <span
                   className="h-2 w-2 shrink-0 rounded-[2px]"
                   style={{ background: familyColor(l.family, rank.get(l.account_code) ?? 0) }}
@@ -95,13 +101,16 @@ export function CostMtdCard({
                 />
                 <span className="min-w-0 flex-1 truncate text-text-primary">{l.account_name}</span>
                 <Delta value={l.mom_delta_pct} period="MoM" invert className="shrink-0" />
-                <span className="shrink-0 font-data tabular-nums text-text-primary">
+                <span
+                  className="shrink-0 font-data tabular-nums text-text-primary"
+                  title={formatIdr(l.amount)}
+                >
                   {formatIdrShort(l.amount)}
                 </span>
               </li>
             ))}
             {hidden > 0 && (
-              <li className="text-[12px]">
+              <li className="text-xs">
                 <Link to="/backoffice/reports/operating-expenses" className="font-medium text-gold">
                   +{hidden} more account{hidden > 1 ? 's' : ''}
                 </Link>
@@ -109,10 +118,13 @@ export function CostMtdCard({
             )}
           </ul>
 
-          <div className="mt-3 space-y-1 border-t border-border-muted pt-2.5 text-[12.5px]">
+          <div className="mt-3 space-y-1 border-t border-border-muted pt-2.5 text-xs">
             <div className="flex items-baseline justify-between">
               <span className="font-medium text-text-primary">Total cost MTD</span>
-              <span className="font-data font-semibold tabular-nums text-text-primary">
+              <span
+                className="font-data font-semibold tabular-nums text-text-primary"
+                title={formatIdr(cost.total)}
+              >
                 {formatIdrShort(cost.total)}
               </span>
             </div>

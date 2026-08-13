@@ -17,6 +17,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type JSX } from 're
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Input, Select } from '@breakery/ui';
 import { validateReceive } from '@breakery/domain';
+import { formatQuantity } from '@breakery/utils';
 import {
   useRecordIncomingStock,
   RecordIncomingStockError,
@@ -181,8 +182,8 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
           disabled={recordMut.isPending}
         />
         {product !== null && (
-          <p className="text-text-muted text-[10px]">
-            Current stock: <span className="font-mono">{product.current_stock.toLocaleString()}</span>
+          <p className="text-text-muted text-xs">
+            Current stock: <span className="font-mono tabular-nums">{formatQuantity(product.current_stock, null)}</span>
           </p>
         )}
       </div>
@@ -261,7 +262,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="submit" variant="primary" disabled={!canSubmit}>
+        <Button type="submit" variant="ink" disabled={!canSubmit}>
           {recordMut.isPending ? 'Recording…' : 'Record receipt'}
         </Button>
       </div>

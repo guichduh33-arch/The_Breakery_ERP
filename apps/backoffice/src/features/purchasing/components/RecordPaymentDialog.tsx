@@ -9,7 +9,7 @@ import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import type { PoPaymentMethod } from '../hooks/useRecordPoPayment.js';
 
 const METHODS: { value: PoPaymentMethod; label: string }[] = [
@@ -60,7 +60,7 @@ export function RecordPaymentDialog({
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
           <DialogDescription>
-            PO {poNumber} — remaining due Rp {formatIdr(remainingDue)}. Recording a
+            PO {poNumber} — remaining due {formatCurrency(remainingDue)}. Recording a
             payment is independent of goods reception.
           </DialogDescription>
         </DialogHeader>
@@ -127,7 +127,7 @@ export function RecordPaymentDialog({
           <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Cancel</Button>
           <Button
             type="button"
-            variant="primary"
+            variant="ink"
             onClick={() => { void handleConfirm(); }}
             disabled={!canSubmit}
           >

@@ -36,7 +36,7 @@ export function LiveMarker(): JSX.Element {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
-      <span className="text-[11.5px] text-text-muted">live</span>
+      <span className="text-xs text-text-muted">live</span>
     </span>
   );
 }
@@ -54,18 +54,18 @@ export function DashboardCard({
       data-testid={testId}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <SectionLabel as="h2" className="font-data text-[11px] font-semibold text-text-primary">
+        <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
           {title}
         </SectionLabel>
         {aside}
       </div>
       {subtitle != null && (
-        <p className="mt-1 text-[12px] text-text-muted">{subtitle}</p>
+        <p className="mt-1 text-xs text-text-muted">{subtitle}</p>
       )}
 
       <div className={cn('mt-3 flex-1', bodyClassName)}>
         {isRestricted ? (
-          <div className="flex items-center gap-2 py-2 text-[12.5px] text-text-muted">
+          <div className="flex items-center gap-2 py-2 text-xs text-text-muted">
             <Lock className="h-3.5 w-3.5" aria-hidden />
             Restricted — your role does not have access to this data.
           </div>
@@ -74,7 +74,7 @@ export function DashboardCard({
           // lisible pour le diagnostic, mais il ne porte plus la phrase :
           // « Could not load: permission denied for table orders » ne dit pas
           // à un gérant ce qu'il doit en conclure.
-          <div className="py-2 text-[12.5px]" role="alert">
+          <div className="py-2 text-xs" role="alert">
             <p className="text-text-primary">This card&apos;s data is unavailable.</p>
             <p className="mt-0.5 text-text-muted">Nothing here is a zero — it is unknown. ({error.message})</p>
           </div>
@@ -93,7 +93,7 @@ export function DashboardCard({
       </div>
 
       {footer != null && !isRestricted && error === null && !isLoading && (
-        <div className="mt-3 flex items-center gap-2 border-t border-border-muted pt-2.5 text-[12.5px]">
+        <div className="mt-3 flex items-center gap-2 border-t border-border-muted pt-2.5 text-xs">
           {footer}
         </div>
       )}

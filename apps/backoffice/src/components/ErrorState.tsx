@@ -46,7 +46,7 @@ export function ErrorState({
         {(onRetry ?? secondaryAction) && (
           <div className="flex items-center justify-center gap-3 pt-2">
             {onRetry && (
-              <Button onClick={onRetry} variant="primary">
+              <Button onClick={onRetry} variant="ink">
                 Retry
               </Button>
             )}

@@ -65,11 +65,11 @@ export function DisplayStockCard({
       }
     >
       {rows.length === 0 ? (
-        <p className="py-2 text-[12.5px] text-text-muted">No product is on display.</p>
+        <p className="py-2 text-xs text-text-muted">No product is on display.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((r) => (
-            <li key={r.product_id} className="flex items-baseline gap-2 text-[12.5px]">
+            <li key={r.product_id} className="flex items-baseline gap-2 text-xs">
               <span className="min-w-0 flex-1 truncate text-text-primary">{r.product_name}</span>
               <span className="shrink-0 font-data tabular-nums text-text-muted">
                 {r.minutes_since_sale === null ? '—' : formatMinutes(r.minutes_since_sale)}

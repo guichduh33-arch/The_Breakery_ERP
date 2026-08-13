@@ -168,6 +168,7 @@ export function AddVariantDialog({
             Cancel
           </Button>
           <Button
+            variant="ink"
             data-testid="add-variant-submit"
             onClick={() => { void submit(); }}
             disabled={mutation.isPending}

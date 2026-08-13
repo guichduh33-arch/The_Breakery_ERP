@@ -5,6 +5,7 @@ import { useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Pencil, Trash2, Radio, Loader2 } from 'lucide-react';
 import { Button } from '@breakery/ui';
+import { formatDateTime } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { resolveBridgeUrl } from '@/stores/bridgeSettingsStore.js';
 import { probePrinter, sendTestTicket } from '../api/bridgeApi.js';
@@ -101,7 +102,7 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
                   </span>
                 </td>
                 <td className="py-2 font-mono text-xs">
-                  {d.last_heartbeat_at !== null ? new Date(d.last_heartbeat_at).toLocaleString() : 'never'}
+                  {d.last_heartbeat_at !== null ? formatDateTime(d.last_heartbeat_at) : 'never'}
                 </td>
                 {canManage && (
                   <td className="py-2 text-right space-x-1 whitespace-nowrap">

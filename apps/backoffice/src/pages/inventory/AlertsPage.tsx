@@ -22,6 +22,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { AlertTriangle, ShoppingCart, SlidersHorizontal, Wheat } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, cn } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useLowStock } from '@/features/inventory-alerts/hooks/useLowStock.js';
 import { useReorderSuggestions } from '@/features/inventory-alerts/hooks/useReorderSuggestions.js';
@@ -43,7 +44,7 @@ function TabCount({ value, tone }: { value: number; tone: 'danger' | 'warning' |
   return (
     <span
       className={cn(
-        'ml-1.5 font-data text-[10.5px] font-bold tabular-nums',
+        'ml-1.5 font-data text-xs font-bold tabular-nums',
         tone === 'danger' && 'text-danger',
         tone === 'warning' && 'text-warning',
         tone === 'neutral' && 'text-text-muted',
@@ -65,8 +66,13 @@ export default function AlertsPage(): JSX.Element {
 
   const lowRows = useMemo(() => lowStock.data ?? [], [lowStock.data]);
 
+  // Le déficit total additionne des lignes d'unités hétérogènes (des kg avec
+  // des pièces) : c'est un ordre de grandeur, pas une quantité dans une unité —
+  // d'où le `null` passé à `formatQuantity`, et le mot « units » resté au
+  // pluriel générique dans la phrase. L'arrondi manuel disparaît : le
+  // formateur plafonne lui-même à trois décimales (audit UX/UI 2026-08-13).
   const shortfall = useMemo(
-    () => Math.round(lowRows.reduce((sum, r) => sum + Number(r.shortfall), 0) * 100) / 100,
+    () => lowRows.reduce((sum, r) => sum + Number(r.shortfall), 0),
     [lowRows],
   );
   const atZero = useMemo(() => lowRows.filter((r) => r.current_qty <= 0).length, [lowRows]);
@@ -87,7 +93,7 @@ export default function AlertsPage(): JSX.Element {
         ? 'Low-stock figures unavailable — the rest of the page still works.'
         : counts.low === 0
           ? 'Nothing under threshold. What to reorder and produce is in the tabs below.'
-          : `${counts.low} under threshold · ${atZero} at zero · ${shortfall} units short in total`;
+          : `${counts.low} under threshold · ${atZero} at zero · ${formatQuantity(shortfall, null)} units short in total`;
 
   return (
     <div className="flex flex-col gap-[13px]">

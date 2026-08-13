@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
-import { formatIdr, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useMarginAlerts,
@@ -51,9 +51,9 @@ function fmtPct(n: number): string {
 
 // `Intl.NumberFormat('en-US', …)` rendait « 4850000 » sans devise ni séparateur
 // de milliers cohérent avec le reste du back-office, et laissait deux décimales
-// à une monnaie qui n'en a pas. `formatIdr` est la source unique — elle rend
-// « Rp 4,850,000 ».
-const fmtMoney = formatIdr;
+// à une monnaie qui n'en a pas. `formatCurrency` est la source unique — elle rend
+// « Rp 4.850.000 ».
+const fmtMoney = formatCurrency;
 
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
@@ -165,7 +165,7 @@ export default function MarginWatchPage(): JSX.Element {
       <section data-testid="margin-watch-table" className="rounded-md border border-border-subtle bg-bg-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-surface-inert text-[11px] uppercase tracking-widest text-text-secondary">
+            <thead className="bg-surface-inert text-xs uppercase tracking-widest text-text-secondary">
               <tr>
                 <th className="px-3 py-2 text-left">Product</th>
                 <th className="px-3 py-2 text-right">Target</th>
@@ -259,6 +259,7 @@ export default function MarginWatchPage(): JSX.Element {
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={closeAckModal}>Cancel</Button>
             <Button
+              variant="ink"
               type="button"
               onClick={() => { void submitAck(); }}
               disabled={ack.isPending}

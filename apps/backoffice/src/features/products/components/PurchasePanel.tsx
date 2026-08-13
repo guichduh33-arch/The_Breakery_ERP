@@ -7,7 +7,7 @@
 import { useMemo, type JSX } from 'react';
 import { Badge, Card, EmptyState, KpiTile, SectionLabel } from '@breakery/ui';
 import { ShoppingCart } from 'lucide-react';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import {
   useProductPurchaseItems,
   type ProductPurchaseItem,
@@ -15,7 +15,7 @@ import {
 
 function fmtDate(iso: string | null): string {
   if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
+  return formatDate(iso);
 }
 
 // Map the free-text PO status to one of the Badge primitive's variants.
@@ -58,7 +58,7 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
   if (q.error !== null && q.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load purchase history: {(q.error as Error).message}
+        Failed to load purchase history: {(q.error).message}
       </div>
     );
   }
@@ -77,10 +77,10 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <KpiTile label="Purchases" value={String(summary.count)} />
-        <KpiTile label="Total Spent" value={formatIdr(summary.totalSpent)} />
+        <KpiTile label="Total Spent" value={formatCurrency(summary.totalSpent)} />
         <KpiTile
           label="Last Unit Price"
-          value={summary.lastPrice !== null ? formatIdr(summary.lastPrice) : '—'}
+          value={summary.lastPrice !== null ? formatCurrency(summary.lastPrice) : '—'}
           footer={summary.lastDate !== null ? fmtDate(summary.lastDate) : undefined}
         />
       </div>
@@ -108,8 +108,8 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
                   <td className="px-4 py-3">{it.supplier_name}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{it.quantity} {it.unit}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{it.received_quantity} {it.unit}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatIdr(it.unit_cost)}</td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums">{formatIdr(it.subtotal)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(it.unit_cost)}</td>
+                  <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCurrency(it.subtotal)}</td>
                   <td className="px-4 py-3">
                     <Badge variant={statusVariant(it.status)}>{it.status}</Badge>
                   </td>

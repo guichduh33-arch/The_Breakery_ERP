@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input, Select } from '@breakery/ui';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { checkFeasibility } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
@@ -164,7 +165,7 @@ export default function ProductionForm(): JSX.Element {
       const wasteExpense = result.waste_expense ?? 0;
       setSuccessMsg(
         `Recorded ${result.production_number} (${result.movements_count} movements, ${result.je_count} JEs)`
-        + (wasteExpense > 0 ? ` — waste expensed: ${wasteExpense.toLocaleString()}` : ''),
+        + (wasteExpense > 0 ? ` — waste expensed: ${formatCurrency(wasteExpense)}` : ''),
       );
       setExpectedQty(''); setActualQty(''); setWaste('0'); setWasteReason(''); setBatchNumber(''); setNotes('');
       setPendingReason(null);
@@ -276,10 +277,10 @@ export default function ProductionForm(): JSX.Element {
               <span>Actual yield</span>
               {hasValidExpected && (
                 <span
-                  className="inline-flex items-center rounded bg-bg-input px-1.5 py-0.5 text-[10px] font-mono text-text-secondary"
+                  className="inline-flex items-center rounded bg-bg-input px-1.5 py-0.5 text-xs font-mono text-text-secondary"
                   data-testid="expected-badge"
                 >
-                  exp {numericExpected.toLocaleString()}
+                  exp {formatQuantity(numericExpected, null)}
                 </span>
               )}
             </label>
@@ -289,7 +290,7 @@ export default function ProductionForm(): JSX.Element {
             {variancePct !== null && (
               <div
                 data-testid="variance-display"
-                className={`text-[11px] font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
+                className={`text-xs font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
               >
                 variance {variancePct > 0 ? '+' : ''}{variancePct.toFixed(1)}%
                 {exceedsThreshold && <> (over ±{thresholdPct.toFixed(1)}%)</>}
@@ -321,7 +322,7 @@ export default function ProductionForm(): JSX.Element {
               ))}
             </Select>
             {wasteNeedsReason && (
-              <p className="text-[11px] text-danger">Required when waste is greater than zero.</p>
+              <p className="text-xs text-danger">Required when waste is greater than zero.</p>
             )}
           </div>
 
@@ -354,7 +355,7 @@ export default function ProductionForm(): JSX.Element {
         <FeasibilityBadge result={feasibility} />
 
         <div className="flex justify-end pt-2">
-          <Button type="submit" variant="primary" disabled={!canSubmit}>
+          <Button type="submit" variant="ink" disabled={!canSubmit}>
             {recordMut.isPending ? 'Recording…' : 'Record production'}
           </Button>
         </div>

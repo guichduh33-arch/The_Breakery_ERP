@@ -44,7 +44,13 @@ export function OpenOrdersCard({
       subtitle={
         panel === null
           ? undefined
-          : `${panel.open_count} open · ${formatIdrShort(panel.open_total)} in the room`
+          : (
+              <>
+                {panel.open_count} open ·{' '}
+                <span title={formatIdr(panel.open_total)}>{formatIdrShort(panel.open_total)}</span>
+                {' '}in the room
+              </>
+            )
       }
       isLoading={isLoading}
       isRestricted={isRestricted}
@@ -67,11 +73,11 @@ export function OpenOrdersCard({
       }
     >
       {rows.length === 0 ? (
-        <p className="py-2 text-[12.5px] text-text-muted">No order is open right now.</p>
+        <p className="py-2 text-xs text-text-muted">No order is open right now.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((o) => (
-            <li key={o.id} className="flex items-baseline gap-2 text-[12.5px]">
+            <li key={o.id} className="flex items-baseline gap-2 text-xs">
               <span className="w-11 shrink-0 font-data text-text-muted">{o.order_number}</span>
               <span className="min-w-0 flex-1 truncate text-text-primary">{o.destination}</span>
               <span className="shrink-0 font-data tabular-nums text-text-primary">{formatIdr(o.total)}</span>

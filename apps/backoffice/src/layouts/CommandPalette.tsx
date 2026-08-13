@@ -15,17 +15,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CornerDownLeft, Search } from 'lucide-react';
-import { CenterModal, cn } from '@breakery/ui';
+import { CenterModal, cn, useDebouncedValue } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
 import { NAV_DOMAINS, flattenDestinations, visibleDomains } from './nav.js';
+import { MIN_ENTITY_QUERY, usePaletteSearch } from './usePaletteSearch.js';
+
+/** Délai avant que la frappe ne parte en requête serveur (audit lot 4). */
+const SEARCH_DEBOUNCE_MS = 250;
+/** Plafond par section — pages et actions suivent la même règle que les entités. */
+const SECTION_LIMIT = 5;
 
 interface PaletteEntry {
   to: string;
   label: string;
   /** « Reports › Inventory » — vide pour les entrées de premier niveau. */
   breadcrumb: string;
-  group: 'Pages' | 'Actions';
+  group: string;
 }
 
 /** Raccourcis de création — leurs droits sont ceux des `PermissionGate` des routes. */
@@ -38,10 +44,14 @@ const ACTIONS: { to: string; label: string; permission: PermissionCode }[] = [
 ];
 
 /**
- * Correspondance approximative : les caractères de la requête doivent
- * apparaître dans l'ordre dans la cible, pas nécessairement contigus
- * (« sbh » trouve « Sales by hour »). Renvoie un score — plus bas = meilleur —
- * ou null si la requête ne correspond pas.
+ * Correspondance resserrée (audit UX/UI 2026-08-13, lot 4). L'ancienne
+ * subséquence libre acceptait n'importe quels caractères dispersés — « crois »
+ * remontait « Customer categories ». Deux formes seulement désormais :
+ *   · sous-chaîne littérale (« sales by » dans « Sales by hour ») —
+ *     score = position, plus tôt = meilleur ;
+ *   · acronyme d'INITIALES de mots, dans l'ordre (« sbh » → Sales By Hour) —
+ *     pénalisé à +1000 pour passer derrière toute sous-chaîne.
+ * Renvoie null si la requête ne correspond à aucune des deux.
  */
 export function fuzzyScore(query: string, target: string): number | null {
   const q = query.trim().toLowerCase();
@@ -51,16 +61,19 @@ export function fuzzyScore(query: string, target: string): number | null {
   const exact = t.indexOf(q);
   if (exact !== -1) return exact; // sous-chaîne littérale : toujours devant
 
-  let score = 0;
-  let cursor = 0;
+  const initials = t.split(/[^a-z0-9]+/).filter((w) => w !== '').map((w) => w.charAt(0));
+  let wordCursor = 0;
+  let firstHit = -1;
   for (const ch of q) {
-    const found = t.indexOf(ch, cursor);
+    let found = -1;
+    for (let i = wordCursor; i < initials.length; i += 1) {
+      if (initials[i] === ch) { found = i; break; }
+    }
     if (found === -1) return null;
-    score += found - cursor + 1;
-    cursor = found + 1;
+    if (firstHit === -1) firstHit = found;
+    wordCursor = found + 1;
   }
-  // Pénalité constante pour que toute sous-chaîne littérale passe devant.
-  return score + 1000;
+  return firstHit + 1000;
 }
 
 export interface CommandPaletteProps {
@@ -75,6 +88,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // La frappe filtre pages/actions immédiatement ; les requêtes serveur
+  // (entités) ne partent qu'après 250 ms de silence et ≥ 2 caractères.
+  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
+  const { sections: entitySections, isSearching, entityQueryActive } =
+    usePaletteSearch(debouncedQuery, open);
 
   const entries = useMemo<PaletteEntry[]>(() => {
     const pages: PaletteEntry[] = flattenDestinations(
@@ -104,12 +123,21 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     // de FAIRE, pas de relire la liste des pages dans l'ordre du menu.
     if (query.trim() === '') {
       return [
-        ...scored.filter((e) => e.group === 'Actions'),
-        ...scored.filter((e) => e.group === 'Pages'),
-      ].slice(0, 12);
+        ...scored.filter((e) => e.group === 'Actions').slice(0, SECTION_LIMIT),
+        ...scored.filter((e) => e.group === 'Pages').slice(0, SECTION_LIMIT),
+      ];
     }
-    return scored.slice(0, 12);
-  }, [entries, query]);
+    // Requête active : entités d'abord (Orders/Products/Customers/Suppliers,
+    // classement serveur), puis Pages, puis Actions — 5 par section.
+    const entityEntries: PaletteEntry[] = entitySections.flatMap((s) =>
+      s.hits.map((h) => ({ ...h, group: s.group })),
+    );
+    return [
+      ...entityEntries,
+      ...scored.filter((e) => e.group === 'Pages').slice(0, SECTION_LIMIT),
+      ...scored.filter((e) => e.group === 'Actions').slice(0, SECTION_LIMIT),
+    ];
+  }, [entries, query, entitySections]);
 
   useEffect(() => { setHighlight(0); }, [query]);
 
@@ -179,12 +207,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             ref={inputRef}
             value={query}
             onChange={(e) => { setQuery(e.target.value); }}
-            placeholder="Jump to a page or start an action…"
-            aria-label="Search pages and actions"
+            placeholder="Search orders, products, customers… or jump to a page"
+            aria-label="Search orders, products, customers, suppliers, pages and actions"
             aria-controls="command-palette-results"
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-muted"
+            className="min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted"
           />
-          <kbd className="shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-data text-[10px] text-text-muted">
+          <kbd className="shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-data text-xs text-text-muted">
             Esc
           </kbd>
         </div>
@@ -195,9 +223,26 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           className="max-h-[46vh] overflow-y-auto py-1.5"
           role="listbox"
         >
-          {results.length === 0 && (
-            <li className="px-4 py-6 text-center text-[13px] text-text-muted">
-              No page or action matches “{query}”.
+          {isSearching && (
+            <li
+              className="flex items-center gap-2 px-4 py-2 text-xs text-text-muted"
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                className="h-3 w-3 animate-spin rounded-full border-2 border-border-subtle border-t-gold"
+                aria-hidden
+              />
+              Searching…
+            </li>
+          )}
+          {results.length === 0 && !isSearching && (
+            <li className="px-4 py-6 text-center text-sm text-text-muted">
+              {entityQueryActive
+                ? <>No order, product, customer, supplier, page or action matches “{query}”.</>
+                : query.trim().length > 0 && query.trim().length < MIN_ENTITY_QUERY
+                  ? <>Type at least {MIN_ENTITY_QUERY} characters to search orders, products and customers.</>
+                  : <>No page or action matches “{query}”.</>}
             </li>
           )}
           {results.map((entry, i) => {
@@ -207,7 +252,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             return (
               <li key={`${entry.group}:${entry.to}`}>
                 {groupHeader !== null && (
-                  <p className="px-4 pb-1 pt-2 font-data text-[10px] uppercase tracking-widest text-text-muted">
+                  <p className="px-4 pb-1 pt-2 font-data text-xs uppercase tracking-widest text-text-muted">
                     {groupHeader}
                   </p>
                 )}
@@ -223,11 +268,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                     highlighted && 'bg-[rgba(138,104,32,0.10)]',
                   )}
                 >
-                  <span className="min-w-0 flex-1 truncate text-[13.5px] text-text-primary">
+                  <span className="min-w-0 flex-1 truncate text-sm text-text-primary">
                     {entry.label}
                   </span>
                   {entry.breadcrumb !== '' && (
-                    <span className="shrink-0 text-[11.5px] text-text-muted">{entry.breadcrumb}</span>
+                    <span className="shrink-0 text-xs text-text-muted">{entry.breadcrumb}</span>
                   )}
                   {highlighted && (
                     <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />

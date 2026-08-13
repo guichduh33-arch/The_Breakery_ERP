@@ -88,7 +88,7 @@ export function CostDonut({
             {formatIdrCompact(total)}
           </span>
           {centerLabel && (
-            <span className="mt-0.5 text-[11px] uppercase tracking-wide text-text-muted">
+            <span className="mt-0.5 text-xs uppercase tracking-wide text-text-muted">
               {centerLabel}
             </span>
           )}

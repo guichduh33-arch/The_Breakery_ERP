@@ -27,7 +27,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { Badge, Card, EmptyState, KpiTile, SectionLabel, cn } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
@@ -45,9 +45,14 @@ const GOLD = 'var(--gold-base)';
 
 function fmtDate(s: string | null): string {
   if (s === null) return '—';
-  return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return formatDateShortWita(s);
 }
-function fmtNum(n: number | null | undefined, digits = 0): string {
+// Ne reste ici qu'un formateur de POURCENTAGE : toutes les quantités du panneau
+// sont passées à `formatQuantity` (audit UX/UI 2026-08-13), qui porte la locale
+// métier id-ID, l'arrondi entier des unités de comptage et l'unité en suffixe.
+// Un taux, lui, n'est pas une quantité : il garde son rendu d'origine — le lot
+// porte sur les montants et les quantités, pas sur les pourcentages.
+function fmtPct(n: number | null | undefined, digits = 1): string {
   if (n === null || n === undefined) return '—';
   return Number(n).toLocaleString(undefined, { maximumFractionDigits: digits });
 }
@@ -115,28 +120,30 @@ export function AnalyticsKpiRow({ data }: { data: ProductAnalyticsData }): JSX.E
     <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
       <KpiTile
         label="Current stock"
-        value={`${fmtNum(k.current_stock, 3)} ${k.unit}`}
+        value={formatQuantity(k.current_stock, k.unit)}
         icon={Package}
-        footer={`Min: ${k.min_stock_threshold > 0 ? fmtNum(k.min_stock_threshold, 3) : 'N/A'}`}
+        footer={`Min: ${k.min_stock_threshold > 0 ? formatQuantity(k.min_stock_threshold, k.unit) : 'N/A'}`}
       />
       <KpiTile
         label="Stock value"
-        value={Math.round(Number(k.stock_value))}
+        value={formatCurrency(Math.round(Number(k.stock_value)))}
         valueFormat="currency"
         icon={DollarSign}
-        footer={`@${formatIdr(Number(k.unit_cost))}/unit`}
+        footer={`@${formatCurrency(Number(k.unit_cost))}/unit`}
       />
       <KpiTile
         label="Days remaining"
         value={daysRemaining}
         icon={Clock}
-        footer={`Avg ${fmtNum(k.avg_daily_consumption, 1)}/day`}
+        // Une conso moyenne par jour est un débit, pas un stock : sans unité,
+        // pour ne pas l'arrondir à l'entier comme le serait un stock en pièces.
+        footer={`Avg ${formatQuantity(k.avg_daily_consumption, null)}/day`}
       />
       <KpiTile
         label="Stock status"
         value={statusLabel}
         icon={AlertTriangle}
-        footer={k.min_stock_threshold > 0 ? `Threshold ${fmtNum(k.min_stock_threshold, 3)}` : 'No min level set'}
+        footer={k.min_stock_threshold > 0 ? `Threshold ${formatQuantity(k.min_stock_threshold, k.unit)}` : 'No min level set'}
       />
     </section>
   );
@@ -182,8 +189,10 @@ export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.
                     {m.movement_type.replace(/_/g, ' ')}
                   </span>
                   <span className="text-xs text-text-muted">{m.count}×</span>
-                  <span className="font-mono tabular-nums text-text-primary">{fmtNum(m.qty_total, 3)}</span>
-                  <span className="w-28 text-right font-mono text-xs tabular-nums text-text-secondary">{formatIdr(Number(m.value_total))}</span>
+                  {/* La ventilation ne porte pas d'unité : elle agrège une
+                      colonne du ledger, pas une ligne de produit. */}
+                  <span className="font-mono tabular-nums text-text-primary">{formatQuantity(m.qty_total, null)}</span>
+                  <span className="w-28 text-right font-mono text-xs tabular-nums text-text-secondary">{formatCurrency(Number(m.value_total))}</span>
                 </div>
               ))}
             </div>
@@ -196,7 +205,7 @@ export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.
           <Line3 key={m.id}
             a={<span className="font-mono text-xs uppercase tracking-wide">{m.movement_type.replace(/_/g, ' ')}</span>}
             b={<span className="text-xs text-text-muted">{m.reason ?? ''}</span>}
-            c={<span className={Number(m.quantity) > 0 ? 'text-success' : 'text-red'}>{Number(m.quantity) > 0 ? '+' : ''}{fmtNum(m.quantity, 3)} {m.unit}</span>}
+            c={<span className={Number(m.quantity) > 0 ? 'text-success' : 'text-red'}>{Number(m.quantity) > 0 ? '+' : ''}{formatQuantity(m.quantity, m.unit)}</span>}
             d={fmtDate(m.created_at)}
           />
         ))}
@@ -213,7 +222,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
         <Panel
           title="Purchase Price Trend"
           right={
-            <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest">
+            <div className="flex items-center gap-3 text-xs uppercase tracking-widest">
               <span className="flex items-center gap-1 text-success"><span className="h-2 w-2 rounded-full bg-success" />Lower</span>
               <span className="flex items-center gap-1 text-red"><span className="h-2 w-2 rounded-full bg-red" />Higher</span>
             </div>
@@ -225,8 +234,8 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
                 <LineChart data={[...data.purchase_price_trend].reverse().map((p) => ({ label: fmtDate(p.date), cost: Number(p.unit_cost) }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} width={48} tickFormatter={(v: number) => formatIdr(v)} />
-                  <Tooltip formatter={(v: number) => formatIdr(v)} />
+                  <YAxis tick={{ fontSize: 10 }} width={48} tickFormatter={(v: number) => formatCurrency(v)} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Line isAnimationActive={!reduced} type="monotone" dataKey="cost" stroke={GOLD} strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -260,7 +269,8 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
           <Line3 key={po.po_id}
             a={po.po_number}
             b={<Badge variant="outline" className="uppercase">{po.status}</Badge>}
-            c={`${fmtNum(po.received_quantity ?? 0)}/${fmtNum(po.quantity)} ${po.unit}`}
+            // « reçu / commandé » : l'unité ne s'écrit qu'une fois, à la fin.
+            c={`${formatQuantity(po.received_quantity ?? 0, null)}/${formatQuantity(po.quantity, po.unit)}`}
             d={fmtDate(po.order_date)}
           />
         ))}
@@ -276,7 +286,7 @@ export function TransfersSection({ data }: { data: ProductAnalyticsData }): JSX.
         <Line3 key={t.id}
           a={t.transfer_number}
           b={<span className="text-xs text-text-muted">{t.from_section_code ?? '—'} → {t.to_section_code ?? '—'}</span>}
-          c={`${fmtNum(t.quantity_received ?? t.quantity_requested, 3)} ${t.unit}`}
+          c={formatQuantity(t.quantity_received ?? t.quantity_requested, t.unit)}
           d={fmtDate(t.transferred_at ?? t.created_at)}
         />
       ))}
@@ -314,7 +324,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <div className="max-h-72 overflow-y-auto">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-bg-elevated text-[10px] uppercase tracking-widest text-text-muted">
+                  <thead className="sticky top-0 bg-bg-elevated text-xs uppercase tracking-widest text-text-muted">
                     <tr>
                       <th className="px-4 py-2 text-left">Product</th>
                       <th className="px-3 py-2 text-left">Type</th>
@@ -332,9 +342,9 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
                             {r.is_semi_finished ? 'Semi' : r.product_type ?? 'Finished'}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtNum(r.qty_per_batch, 3)} {r.unit}</td>
-                        <td className="px-3 py-2 text-right font-mono tabular-nums text-gold">{fmtNum(r.demand_pct, 1)}%</td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums text-text-secondary">{fmtNum(r.est_used, 3)} {r.unit}</td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums">{formatQuantity(r.qty_per_batch, r.unit)}</td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums text-gold">{fmtPct(r.demand_pct, 1)}%</td>
+                        <td className="px-4 py-2 text-right font-mono tabular-nums text-text-secondary">{formatQuantity(r.est_used, r.unit)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -351,7 +361,9 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <Line3 key={p.id}
               a={p.production_number}
               b={p.reverted ? <Badge variant="destructive" className="uppercase">Reverted</Badge> : <Badge variant="secondary" className="uppercase">Done</Badge>}
-              c={`${fmtNum(p.quantity_produced, 3)} produced`}
+              // `production` ne transporte pas d'unité — le mot « produced »
+              // tient lieu de qualificatif, on n'en invente pas une.
+              c={`${formatQuantity(p.quantity_produced, null)} produced`}
               d={fmtDate(p.production_date)}
             />
           ))}
@@ -360,9 +372,9 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
         <RecordCard title="Wastage Analysis" icon={Trash2} count={data.wastage.length} unit="records" empty="No waste records">
           {data.wastage.map((w) => (
             <Line3 key={w.id}
-              a={<span className="text-red">−{fmtNum(w.quantity, 3)} {w.unit}</span>}
+              a={<span className="text-red">−{formatQuantity(w.quantity, w.unit)}</span>}
               b={<span className="truncate text-xs text-text-muted">{w.reason ?? 'Waste'}</span>}
-              c={formatIdr(Number(w.value))}
+              c={formatCurrency(Number(w.value))}
               d={fmtDate(w.created_at)}
             />
           ))}
@@ -373,7 +385,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <Line3 key={o.id}
               a={o.count_number}
               b={<Badge variant="outline" className="uppercase">{o.status}</Badge>}
-              c={`Var ${o.variance === null ? '—' : fmtNum(o.variance, 3)}`}
+              c={`Var ${formatQuantity(o.variance, o.unit)}`}
               d={fmtDate(o.finalized_at ?? o.created_at)}
             />
           ))}

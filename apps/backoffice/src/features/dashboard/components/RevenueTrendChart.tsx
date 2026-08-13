@@ -37,7 +37,7 @@ export function RevenueTrendChart({
   if (error !== null) {
     return (
       <div className="flex h-44 items-center justify-center px-6 text-center">
-        <p className="text-[12.5px] text-text-muted">
+        <p className="text-xs text-text-muted">
           Trend unavailable — the last 30 days could not be read.
         </p>
       </div>

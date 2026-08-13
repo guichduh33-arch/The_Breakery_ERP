@@ -22,12 +22,12 @@ export function ProductCell({ productId, name, secondary }: ProductCellProps): J
     <div className="min-w-0">
       <Link
         to={`/backoffice/products/${productId}/dashboard`}
-        className="text-[13px] text-text-primary transition-colors hover:text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="text-sm text-text-primary transition-colors hover:text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         {name}
       </Link>
       {secondary !== null && secondary !== undefined && secondary !== '' && (
-        <div className="font-data text-[10.5px] text-text-muted">{secondary}</div>
+        <div className="font-data text-xs text-text-muted">{secondary}</div>
       )}
     </div>
   );

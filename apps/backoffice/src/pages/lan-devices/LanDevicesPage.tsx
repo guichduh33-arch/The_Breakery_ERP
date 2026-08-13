@@ -56,13 +56,13 @@ export default function LanDevicesPage() {
           </p>
         </div>
         {canManage && (
-          <Button onClick={openCreate}>
+          <Button variant="ink" onClick={openCreate}>
             <Plus className="h-4 w-4" aria-hidden /> Add device
           </Button>
         )}
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiTile label="Total devices" value={kpis.total}    icon={Wifi}           footer="Registered in the mesh" />
         <KpiTile label="Online"        value={kpis.online}   icon={CheckCircle2}   footer="Heartbeat within 60s" />
         <KpiTile label="Stale"         value={kpis.stale}    icon={AlertTriangle}  footer="No recent heartbeat" />

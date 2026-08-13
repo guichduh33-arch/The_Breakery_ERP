@@ -138,7 +138,7 @@ export function AdjustB2bBalanceModal({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={!valid || adjust.isPending}>
+            <Button type="submit" variant="ink" disabled={!valid || adjust.isPending}>
               {adjust.isPending ? 'Adjusting…' : 'Adjust balance'}
             </Button>
           </div>

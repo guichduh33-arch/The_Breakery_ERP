@@ -25,6 +25,7 @@ import {
 import { cn } from '../lib/cn.js';
 import { Input } from '../primitives/Input.js';
 import { Badge } from '../primitives/Badge.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Types
@@ -88,15 +89,6 @@ const KIND_TABS: readonly { value: IngredientKind; label: string }[] = [
   { value: 'semi_finished', label: 'Semi-finished' },
   { value: 'sub_recipe',    label: 'Sub-recipe' },
 ];
-
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
 
 function formatCurrency(n: number): string {
   if (!Number.isFinite(n)) return '–';

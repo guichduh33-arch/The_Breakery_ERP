@@ -6,6 +6,7 @@
 import { useMemo, useState, useEffect, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Input } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
   useGeneralLedger,
@@ -14,9 +15,7 @@ import {
 import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSourceEntity.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
-function fmt(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(n);
-}
+const fmt = formatCurrency;
 function defaultPeriodStart(): string {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
@@ -127,7 +126,7 @@ export default function GeneralLedgerPage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
-            type="date"
+            type="date" lang="id-ID"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className="mt-1"
@@ -137,7 +136,7 @@ export default function GeneralLedgerPage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
-            type="date"
+            type="date" lang="id-ID"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="mt-1"

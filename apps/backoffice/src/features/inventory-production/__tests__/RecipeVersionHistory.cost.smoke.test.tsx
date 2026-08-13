@@ -45,7 +45,7 @@ vi.mock('../hooks/useRecipeVersions.js', () => ({
 describe('RecipeVersionHistory cost smoke', () => {
   it('renders cost on the new-shape version (v2)', () => {
     render(<RecipeVersionHistory productId="p1" />);
-    expect(screen.getByTestId('version-cost-2')).toHaveTextContent('cost 5.50');
+    expect(screen.getByTestId('version-cost-2')).toHaveTextContent('cost Rp 5,50');
   });
 
   it('renders the legacy placeholder on v1', () => {
@@ -55,8 +55,8 @@ describe('RecipeVersionHistory cost smoke', () => {
 
   it('renders per-material subtotals on v2 rows', () => {
     render(<RecipeVersionHistory productId="p1" />);
-    expect(screen.getByText('= 5.00')).toBeInTheDocument();
-    expect(screen.getByText('= 0.50')).toBeInTheDocument();
+    expect(screen.getByText('= Rp 5,00')).toBeInTheDocument();
+    expect(screen.getByText('= Rp 0,50')).toBeInTheDocument();
   });
 
   it('does NOT render subtotals on v1 (legacy) rows', () => {

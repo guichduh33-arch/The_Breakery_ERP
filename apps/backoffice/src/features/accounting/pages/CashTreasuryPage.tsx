@@ -43,7 +43,7 @@ export default function CashTreasuryPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Cash Treasury</h1>
-        <Button onClick={() => setModalOpen(true)}>New movement</Button>
+        <Button variant="ink" onClick={() => setModalOpen(true)}>New movement</Button>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -64,14 +64,14 @@ export default function CashTreasuryPage() {
       <Card className="p-4">
         <div className="flex items-center gap-3 mb-3 text-sm flex-wrap">
           <input
-            type="date"
+            type="date" lang="id-ID"
             value={start}
             onChange={(e) => setStart(e.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1"
           />
           <span>→</span>
           <input
-            type="date"
+            type="date" lang="id-ID"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1"

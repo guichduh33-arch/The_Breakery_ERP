@@ -1,15 +1,17 @@
 // apps/backoffice/src/pages/purchasing/__tests__/PurchaseOrdersListPage.smoke.test.tsx
 //
-// Session 14 / Phase 5.A — smoke for the rebuilt PO list. Mocks the data
-// hooks + auth permissions and asserts header, KPI tiles, status pills, and
-// table rows render correctly.
+// Smoke de la liste des bons de commande. Mocks des hooks de données + des
+// permissions ; on vérifie l'en-tête, la BANDE DE COMPTEURS (qui a remplacé les
+// tuiles de KPI et les pastilles de statut) et les lignes de la table.
 
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import PurchaseOrdersListPage from '@/pages/purchasing/PurchaseOrdersListPage.js';
 import type { PurchaseOrderListRow } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
+import type * as UsePurchaseOrdersListModule from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
+import type * as UseSuppliersListModule from '@/features/suppliers/hooks/useSuppliersList.js';
 
 const ROWS: PurchaseOrderListRow[] = [
   {
@@ -87,7 +89,7 @@ vi.mock('@/features/purchasing/import/purchasesImportDef.js', () => ({
 }));
 
 vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/purchasing/hooks/usePurchaseOrdersList.js')>();
+  const actual = await importOriginal<typeof UsePurchaseOrdersListModule>();
   return {
     ...actual,
     usePurchaseOrdersList: () => ({ data: ROWS, isLoading: false, error: null }),
@@ -95,7 +97,7 @@ vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOri
 });
 
 vi.mock('@/features/suppliers/hooks/useSuppliersList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/suppliers/hooks/useSuppliersList.js')>();
+  const actual = await importOriginal<typeof UseSuppliersListModule>();
   return {
     ...actual,
     useSuppliersList: () => ({ data: [], isLoading: false, error: null }),
@@ -121,15 +123,28 @@ function renderPage(): ReturnType<typeof render> {
   );
 }
 
-describe('PurchaseOrdersListPage (Phase 5.A rewrite)', () => {
-  it('renders header, KPI tiles, status pills, and rows', () => {
+describe('PurchaseOrdersListPage', () => {
+  it('renders header, the counter strip, and rows', () => {
     currentPerms = new Set(['purchasing.po.read', 'purchasing.po.create']);
     renderPage();
     expect(screen.getByRole('heading', { name: /Purchase Orders/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Total Orders/i).length).toBeGreaterThan(0);
+    expect(within(screen.getByTestId('counter-all')).getByText('2')).toBeInTheDocument();
+    expect(within(screen.getByTestId('counter-pending')).getByText('1')).toBeInTheDocument();
+    expect(within(screen.getByTestId('counter-received')).getByText('1')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /PO-202604-0001/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /PO-202603-0031/i })).toBeInTheDocument();
     expect(screen.getByText(/CAKRA GEMILANG SEJAHTERA/i)).toBeInTheDocument();
+  });
+
+  it('drives the status filter from the counters — no second row of pills', () => {
+    currentPerms = new Set(['purchasing.po.read', 'purchasing.po.create']);
+    renderPage();
+    // Les pastilles `role="tab"` sont mortes : le compteur EST le filtre.
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByTestId('counter-pending'));
+    expect(screen.getByTestId('counter-pending')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('shows the New purchase order CTA when create is granted', () => {

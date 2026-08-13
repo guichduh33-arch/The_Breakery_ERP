@@ -15,11 +15,12 @@ import { Badge, Card, CardContent, Currency } from '@breakery/ui';
 import { CategoryChip } from './CategoryChip.js';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
-  PRODUCTS_PAGE_SIZE_DEFAULT,
-  ProductsPagination,
+  LIST_PAGE_SIZE_DEFAULT,
+  ListPagination,
   pageSlice,
-} from './ProductsPagination.js';
+} from '@/components/ListPagination.js';
 import { classifyProduct, type ProductRow } from '../types.js';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   rows: readonly ProductRow[];
@@ -39,7 +40,7 @@ export function ProductsGrid({
   onCardClick,
   page = 1,
   onPage,
-  pageSize = PRODUCTS_PAGE_SIZE_DEFAULT,
+  pageSize = LIST_PAGE_SIZE_DEFAULT,
   onPageSize,
 }: Props): JSX.Element {
   const { pageRows } = pageSlice(rows, page, pageSize);
@@ -79,7 +80,7 @@ export function ProductsGrid({
               />
             )}
             {!r.is_active && (
-              <span className="absolute left-2 top-2 rounded-sm bg-red-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red">
+              <span className="absolute left-2 top-2 rounded-sm bg-red-soft px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-red">
                 Inactive
               </span>
             )}
@@ -87,7 +88,7 @@ export function ProductsGrid({
           <CardContent className="space-y-2 p-4">
             <div className="flex items-start justify-between gap-2">
               <h3 className="line-clamp-1 text-base font-semibold text-text-primary">{r.name}</h3>
-              <Currency amount={r.retail_price} emphasis="gold" />
+              <Currency format={formatCurrency} amount={r.retail_price} emphasis="gold" />
             </div>
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="font-mono text-text-muted">{r.sku}</span>
@@ -106,7 +107,7 @@ export function ProductsGrid({
         </Card>
       ))}
     </div>
-      <ProductsPagination
+      <ListPagination
         total={rows.length}
         page={page}
         pageSize={pageSize}

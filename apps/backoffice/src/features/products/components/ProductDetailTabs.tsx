@@ -106,7 +106,7 @@ export function ProductDetailTabs({ active, onChange }: Props): JSX.Element {
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(t.id)}
               className={cn(
-                'relative -mb-px pb-2.5 pt-3 text-[12.5px] transition-colors duration-fast',
+                'relative -mb-px pb-2.5 pt-3 text-sm transition-colors duration-fast',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                 selected
                   ? 'font-semibold text-text-primary shadow-[inset_0_-2px_0_var(--gold-base)]'

@@ -14,7 +14,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { cn, DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
@@ -52,7 +52,7 @@ function statusBadges(row: B2bInvoiceRow): JSX.Element {
       {unpaid && !dead && (
         <span
           className={cn(B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE.unpaid)}
-          title={`${formatIdr(row.outstanding)} still outstanding`}
+          title={`${formatCurrency(row.outstanding)} still outstanding`}
         >
           unpaid
         </span>
@@ -105,7 +105,7 @@ export default function B2BOrdersPage(): JSX.Element {
       {
         id: 'outstanding',
         label: 'Outstanding',
-        value: formatIdr(outstanding),
+        value: formatCurrency(outstanding),
         tone: outstanding > 0 ? 'danger' : 'neutral',
         title: 'Total still owed across every unpaid order.',
       },
@@ -130,20 +130,20 @@ export default function B2BOrdersPage(): JSX.Element {
           {expanded.has(r.invoice_id)
             ? <ChevronDown className="h-3.5 w-3.5 text-text-inert" aria-hidden />
             : <ChevronRight className="h-3.5 w-3.5 text-text-inert" aria-hidden />}
-          <span className="font-data text-[12.5px] text-text-primary">{r.order_number}</span>
+          <span className="font-data text-xs text-text-primary">{r.order_number}</span>
         </span>
       ),
     },
     {
       id: 'invoice_date',
       header: 'Created',
-      render: (r) => <span className="font-data text-[12.5px] tabular-nums">{orderDate(r.invoice_date)}</span>,
+      render: (r) => <span className="font-data text-xs tabular-nums">{orderDate(r.invoice_date)}</span>,
     },
     {
       id: 'customer',
       header: 'Customer',
       render: (r) => (
-        <span className="text-[13px] text-text-primary">
+        <span className="text-sm text-text-primary">
           {r.b2b_company_name ?? r.customer_name ?? '—'}
         </span>
       ),
@@ -156,18 +156,18 @@ export default function B2BOrdersPage(): JSX.Element {
       // promettrait une ferait attendre un flux qui n'existe pas.
       render: (r) =>
         r.pickup_date === null ? (
-          <span className="font-data text-[12.5px] text-text-inert" title="No pickup day agreed on this order">
+          <span className="font-data text-xs text-text-inert" title="No pickup day agreed on this order">
             not set
           </span>
         ) : (
-          <span className="font-data text-[12.5px] tabular-nums">{r.pickup_date.slice(0, 10)}</span>
+          <span className="font-data text-xs tabular-nums">{r.pickup_date.slice(0, 10)}</span>
         ),
     },
     {
       id: 'amount',
       header: 'Amount',
       align: 'right',
-      render: (r) => <span className="font-data text-[12.5px]">{formatIdr(r.invoice_total)}</span>,
+      render: (r) => <span className="font-data text-xs">{formatCurrency(r.invoice_total)}</span>,
     },
     {
       id: 'status',
@@ -230,7 +230,7 @@ export default function B2BOrdersPage(): JSX.Element {
           }
           data-testid="b2b-orders-table"
           footer={
-            <span className="font-data text-[11px] text-text-muted tabular-nums">
+            <span className="font-data text-xs text-text-muted tabular-nums">
               {rows.length} of {allRows.length}
             </span>
           }

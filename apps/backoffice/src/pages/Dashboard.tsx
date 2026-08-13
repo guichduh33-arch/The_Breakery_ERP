@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { Card, SectionLabel, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
+import { formatDateLong } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
@@ -50,7 +51,7 @@ import { CostMtdCard } from '@/features/dashboard/components/CostMtdCard.js';
 import { DisplayStockCard } from '@/features/dashboard/components/DisplayStockCard.js';
 import { RevenueShareCard } from '@/features/dashboard/components/RevenueShareCard.js';
 import { Delta } from '@/features/dashboard/components/Delta.js';
-import { formatClock, formatHourRange, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
+import { formatClock, formatHourRange, formatIdr, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
 import { exportDashboardCsv } from '@/features/dashboard/utils/dashboardCsv.js';
 import { useTodayHours } from '@/features/dashboard/hooks/useTodayHours.js';
 import {
@@ -83,9 +84,7 @@ const SHORTCUTS = [
 ] as const;
 
 function todayTitle(): string {
-  return `Today · ${new Date().toLocaleDateString(undefined, {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })}`;
+  return `Today · ${formatDateLong(new Date())}`;
 }
 
 export default function DashboardPage({ data }: DashboardPageProps) {
@@ -202,7 +201,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 {/* Nommer ce que l'écran fait de son ignorance : sans cette
                     phrase, un tiret se lit comme « rien vendu » au lieu de
                     « on ne sait pas ». Le détail technique reste en second. */}
-                <p className="mt-0.5 text-[12.5px] text-text-muted">
+                <p className="mt-0.5 text-xs text-text-muted">
                   Values below read <span className="font-data">—</span> because they are unknown, not zero.
                   Other cards may still be up to date. ({error.message})
                 </p>
@@ -218,12 +217,12 @@ export default function DashboardPage({ data }: DashboardPageProps) {
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
             <Card variant="default" padding="none" className="p-4 shadow-none">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <SectionLabel as="h2" className="font-data text-[11px] font-semibold text-text-primary">
+                <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
                   Revenue · 30 days
                 </SectionLabel>
                 {summary !== null && (
-                  <span className="text-[13px] text-text-secondary">
-                    {formatIdrShort(summary.total)} total{' '}
+                  <span className="text-sm text-text-secondary">
+                    <span title={formatIdr(summary.total)}>{formatIdrShort(summary.total)}</span> total{' '}
                     <Delta value={summary.delta_pct} period="vs previous 30 d" />
                   </span>
                 )}
@@ -235,12 +234,12 @@ export default function DashboardPage({ data }: DashboardPageProps) {
 
             <Card variant="default" padding="none" className="p-4 shadow-none">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <SectionLabel as="h2" className="font-data text-[11px] font-semibold text-text-primary">
+                <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
                   Sales by hour
                 </SectionLabel>
-                <span className="text-[11.5px] text-text-muted">today vs same weekday last week</span>
+                <span className="text-xs text-text-muted">today vs same weekday last week</span>
               </div>
-              <p className="mt-1 text-[12px] text-text-muted">
+              <p className="mt-1 text-xs text-text-muted">
                 {error !== null
                   ? 'Peak unavailable'
                   : peak === null

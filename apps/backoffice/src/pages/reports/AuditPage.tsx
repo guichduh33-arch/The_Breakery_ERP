@@ -17,6 +17,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
+import { formatDateTimeWita } from '@breakery/utils';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { useAuditLogs, type AuditLogRow } from '@/features/reports/hooks/useAuditLogs.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -129,7 +130,7 @@ export default function AuditPage(): JSX.Element {
                             : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
                         </td>
                         <td className="py-2 tabular-nums text-text-secondary">
-                          {new Date(r.created_at).toLocaleString()}
+                          {formatDateTimeWita(r.created_at)}
                         </td>
                         <td className="py-2">{r.action}</td>
                         <td className="py-2">

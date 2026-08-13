@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { RecipeRow } from '@breakery/domain';
+import { formatQuantity } from '@breakery/utils';
 
 export interface SortableRecipeRowProps {
   row: RecipeRow;
@@ -57,7 +58,9 @@ export function SortableRecipeRow({
       </td>
       <td className="px-4 py-3 text-right">
         <span className="rounded-md border border-border-subtle bg-bg-input px-3 py-1 font-mono tabular-nums text-text-primary">
-          {Number(row.quantity).toLocaleString()}
+          {/* L'unité occupe la colonne SUIVANTE : `formatQuantity` la reçoit
+              donc à `null`, sinon la ligne l'écrirait deux fois. */}
+          {formatQuantity(row.quantity, null)}
         </span>
       </td>
       <td className="px-4 py-3">

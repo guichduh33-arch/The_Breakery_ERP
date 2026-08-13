@@ -193,7 +193,7 @@ export function ThresholdForm({
 
       <footer className="flex justify-end gap-3 pt-2 border-t border-border-subtle">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>Cancel</Button>
-        <Button type="submit" variant="primary" disabled={submitting}>
+        <Button type="submit" variant="ink" disabled={submitting}>
           {submitting ? 'Saving…' : mode === 'create' ? 'Create threshold' : 'Save changes'}
         </Button>
       </footer>

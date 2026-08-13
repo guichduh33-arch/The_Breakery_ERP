@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { KpiTile } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -86,10 +87,10 @@ export default function DailySalesPage() {
       )}
 
       {summary && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           <KpiTile
             label="Total (Gross)"
-            value={summary.total}
+            value={formatCurrency(summary.total)}
             valueFormat="currency"
           />
           <KpiTile
@@ -99,17 +100,17 @@ export default function DailySalesPage() {
           />
           <KpiTile
             label="AOV"
-            value={summary.aov}
+            value={formatCurrency(summary.aov)}
             valueFormat="currency"
           />
           <KpiTile
             label="Refunds"
-            value={summary.refund_total}
+            value={formatCurrency(summary.refund_total)}
             valueFormat="currency"
           />
           <KpiTile
             label="Net"
-            value={summary.net}
+            value={formatCurrency(summary.net)}
             valueFormat="currency"
           />
         </div>

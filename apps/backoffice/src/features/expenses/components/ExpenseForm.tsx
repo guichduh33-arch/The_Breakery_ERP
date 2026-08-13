@@ -106,7 +106,7 @@ export function ExpenseForm({
           </label>
           <Input
             id="exp-date"
-            type="date"
+            type="date" lang="id-ID"
             value={value.expense_date}
             onChange={(e) => patch({ expense_date: e.target.value })}
             onBlur={() => setTouched((t) => ({ ...t, expense_date: true }))}
@@ -211,7 +211,7 @@ export function ExpenseForm({
         {onCancel !== undefined && (
           <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
         )}
-        <Button type="submit" variant="primary" disabled={submitting === true || hasErrors}>
+        <Button type="submit" variant="ink" disabled={submitting === true || hasErrors}>
           {submitLabel ?? 'Save as draft'}
         </Button>
       </div>

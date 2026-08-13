@@ -20,6 +20,7 @@
 
 import { useState, useMemo } from 'react';
 import { CenterModal } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useEditOrderItems } from '@/features/orders/hooks/useEditOrderItems.js';
 import { ProductPicker } from '@/features/orders/components/ProductPicker.js';
 import type { OrderEditProduct } from '@/features/orders/hooks/useProductsForOrderEdit.js';
@@ -202,7 +203,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     className="w-16 border rounded px-1 py-0.5 text-sm"
                     data-testid={`qty-${l.id}`}
                   />
-                  <span className="w-20 text-right">{l.line_total.toLocaleString('id-ID')}</span>
+                  <span className="w-20 text-right tabular-nums">{formatCurrency(l.line_total)}</span>
                   {l.isPending ? (
                     <button
                       type="button"
@@ -236,7 +237,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
               ))}
             </ul>
             <p className="mt-3 text-sm border-t pt-2">
-              Subtotal preview: <strong>{previewSubtotal.toLocaleString('id-ID')}</strong>
+              Subtotal preview: <strong className="tabular-nums">{formatCurrency(previewSubtotal)}</strong>
             </p>
             <p className="text-xs text-muted-foreground">Tax + total recalculated server-side at apply.</p>
           </div>

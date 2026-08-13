@@ -4,6 +4,7 @@
 // useProductsForOrderEdit (same S27c rule as POS).
 
 import { useState } from 'react';
+import { formatCurrency } from '@breakery/utils';
 import {
   useProductsForOrderEdit,
   type OrderEditProduct,
@@ -68,8 +69,8 @@ export function ProductPicker({ onPick }: Props) {
                 <span className="text-xs text-text-muted font-mono shrink-0">
                   {p.sku}
                 </span>
-                <span className="text-xs text-text-secondary shrink-0">
-                  {p.retail_price.toLocaleString('id-ID')}
+                <span className="text-xs text-text-secondary shrink-0 tabular-nums">
+                  {formatCurrency(p.retail_price)}
                 </span>
               </button>
             </li>

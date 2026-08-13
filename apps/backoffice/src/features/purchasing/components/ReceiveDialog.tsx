@@ -151,7 +151,7 @@ export function ReceiveDialog({
           <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Cancel</Button>
           <Button
             type="button"
-            variant="primary"
+            variant="ink"
             onClick={() => { void handleConfirm(); }}
             disabled={!canSubmit}
           >

@@ -7,7 +7,7 @@
 // vivent dans la top bar, chacun ouvrant un drop-panel de colonnes.
 //
 // Le panneau est à LARGEUR VARIABLE : il compte autant de colonnes que le
-// domaine en déclare (3 pour Stock, 5 pour Reports, 7 pour Admin). Le handoff
+// domaine en déclare (3 pour Stock, 5 pour Reports, 4 pour Admin). Le handoff
 // dessinait 3 colonnes / 640 px, mais son propre mapping demandait 5 colonnes
 // pour Reports et 6 pour Admin — arbitrage Mamat du 2026-08-05 : on garde la
 // taxonomie complète et c'est le panneau qui s'élargit.
@@ -259,39 +259,27 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/settings/customer-display', label: 'Customer display', permission: 'settings.read' },
         ],
       },
+      // Audit UX/UI 2026-08-13 (lot 2) : Admin est ramené de 7 colonnes à 4
+      // (panneau de 1244 px → 754 px, libellés entiers). Fusion pure — chaque
+      // lien garde sa permission, le filtrage en cascade est inchangé.
       {
-        label: 'Finance',
+        label: 'Finance & notifications',
         links: [
           { to: '/backoffice/settings/accounting', label: 'Fiscal periods', permission: 'accounting.period.close' },
           { to: '/backoffice/settings/expense-thresholds', label: 'Expense thresholds', permission: 'expenses.thresholds.read' },
           { to: '/backoffice/b2b/settings', label: 'B2B credit settings', permission: 'settings.read' },
-        ],
-      },
-      {
-        label: 'Notifications',
-        links: [
           { to: '/backoffice/settings/notifications', label: 'Notifications', permission: 'settings.read' },
           { to: '/backoffice/settings/templates/email', label: 'Email templates', permission: 'settings.read' },
           { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', permission: 'settings.read' },
         ],
       },
       {
-        label: 'Security & access',
+        label: 'Access & network',
         links: [
           { to: '/backoffice/settings/security', label: 'Session timeouts', permission: 'settings.security.manage' },
           { to: '/backoffice/settings/permissions', label: 'Permissions matrix', permission: 'settings.read' },
-        ],
-      },
-      {
-        label: 'Users',
-        links: [
           { to: '/backoffice/users', label: 'Users', end: true, permission: 'users.read' },
           { to: '/backoffice/users/permissions', label: 'Permissions (read-only)', permission: 'rbac.read' },
-        ],
-      },
-      {
-        label: 'Network',
-        links: [
           { to: '/backoffice/lan-devices', label: 'LAN devices', permission: 'lan.devices.read' },
         ],
       },

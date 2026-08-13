@@ -136,8 +136,8 @@ describe('ZReportsListPage', () => {
     render(wrap(<ZReportsListPage />));
 
     await waitFor(() => expect(screen.getByTestId('sign-z1')).toBeInTheDocument());
-    expect(screen.getByText('-Rp 60,000')).toBeInTheDocument();
-    expect(screen.getByText('Rp 1,000,000')).toBeInTheDocument();
+    expect(screen.getByText('-Rp 60.000')).toBeInTheDocument();
+    expect(screen.getByText('Rp 1.000.000')).toBeInTheDocument();
 
     // Le compteur d'alerte le recense — un brouillon qui porte un écart.
     const counter = screen.getByTestId('counter-unresolved');

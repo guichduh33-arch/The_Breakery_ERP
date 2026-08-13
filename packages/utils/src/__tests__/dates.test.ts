@@ -1,6 +1,6 @@
 // packages/utils/src/__tests__/dates.test.ts
 import { describe, it, expect } from 'vitest';
-import { formatDateTimeWita, formatDateTimeShortWita, formatTimeWita, formatDateLong, todayIsoDate, businessDateIso } from '../dates';
+import { formatDate, formatDateTime, formatDateTimeWita, formatDateTimeShortWita, formatTimeWita, formatDateLong, todayIsoDate, businessDateIso } from '../dates';
 
 describe('dates', () => {
   const utc = new Date('2026-05-03T10:30:00Z');  // 18:30 WITA
@@ -21,6 +21,17 @@ describe('dates', () => {
 
   it('formatTimeWita renders HH:mm WITA', () => {
     expect(formatTimeWita(utc)).toBe('18:30');
+  });
+
+  // Audit UX/UI lot 5 — jj/MM/aaaa, jamais l'ordre US ; le fuseau reste WITA
+  // (un instant tard le soir UTC appartient au lendemain métier).
+  it('formatDate renders dd/MM/yyyy WITA', () => {
+    expect(formatDate(utc)).toBe('03/05/2026');
+    expect(formatDate('2026-08-03T19:47:02Z')).toBe('04/08/2026');
+  });
+
+  it('formatDateTime is the canonical table format', () => {
+    expect(formatDateTime(utc)).toBe('03 May 2026, 18:30');
   });
 
   it('formatDateLong renders Month d, yyyy', () => {

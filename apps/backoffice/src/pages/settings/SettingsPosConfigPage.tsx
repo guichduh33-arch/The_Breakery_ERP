@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
@@ -37,9 +38,15 @@ function NumberListEditor({ title, helper, values, canEdit, isPending, onSave }:
         <div className="flex flex-wrap gap-2">
           {values.map((v, i) => (
             <span key={`${v}-${i}`} className="inline-flex items-center gap-1 rounded-md border border-border-subtle px-3 h-8 text-sm font-mono tabular-nums">
-              {v.toLocaleString('id-ID')}
+              {/* Les deux listes servies par cet éditeur sont MONÉTAIRES
+                  (montants d'encaissement rapide, fonds de caisse d'ouverture) :
+                  une pastille « 50.000 » nue se lisait aussi bien comme un
+                  nombre de pièces. Le libellé du bouton suit la pastille — un
+                  lecteur d'écran ne doit pas entendre autre chose que ce qui
+                  est affiché. */}
+              {formatCurrency(v)}
               {canEdit && (
-                <button type="button" aria-label={`Remove ${v}`} disabled={isPending}
+                <button type="button" aria-label={`Remove ${formatCurrency(v)}`} disabled={isPending}
                   onClick={() => { const next = values.filter((_, j) => j !== i); if (next.length > 0) onSave(next); }}
                   className="text-red/80 hover:text-red disabled:opacity-30 p-0.5">
                   <Trash2 className="h-3 w-3" aria-hidden />

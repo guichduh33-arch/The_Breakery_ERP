@@ -10,6 +10,7 @@
 
 import { useMemo, type JSX } from 'react';
 import { Button } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { Trash2, Plus } from 'lucide-react';
 import {
   modifierIngredientLineCost,
@@ -22,10 +23,6 @@ import { useDeductibleIngredientProducts } from '../hooks/useDeductibleIngredien
 export interface OptionIngredientPickerProps {
   value: ModifierIngredient[];
   onChange: (next: ModifierIngredient[]) => void;
-}
-
-function formatIdr(n: number): string {
-  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 export function OptionIngredientPicker({
@@ -79,7 +76,7 @@ export function OptionIngredientPicker({
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] uppercase tracking-widest text-text-muted">
+      <p className="text-xs uppercase tracking-widest text-text-muted">
         Ingredients to deduct (applied once stock-by-option ships)
       </p>
       {value.map((row, idx) => {
@@ -136,7 +133,7 @@ export function OptionIngredientPicker({
               data-testid={`ingredient-cost-${idx}`}
               title="Material cost for one unit of the product"
             >
-              {lineCost === null ? '—' : `Rp ${formatIdr(lineCost)}`}
+              {lineCost === null ? '—' : formatCurrency(lineCost)}
             </span>
             <Button
               type="button"
@@ -161,7 +158,7 @@ export function OptionIngredientPicker({
           >
             Material cost / unit:{' '}
             <span className="font-semibold text-text-primary tabular-nums">
-              Rp {formatIdr(optionCost.total)}
+              {formatCurrency(optionCost.total)}
             </span>
             {!optionCost.complete && (
               <span className="text-text-muted" title="Some ingredients have no cost price yet">

@@ -112,7 +112,7 @@ export function RoleChangeDialog(
           <Button variant="ghost" onClick={onClose} disabled={updateRole.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={updateRole.isPending}>
+          <Button variant="ink" onClick={handleSubmit} disabled={updateRole.isPending}>
             {updateRole.isPending ? 'Saving…' : 'Apply role change'}
           </Button>
         </DialogFooter>

@@ -49,7 +49,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSupplierDetail } from '@/features/suppliers/hooks/useSupplierDetail.js';
 import {
@@ -95,8 +95,8 @@ function PaymentBadge({ row }: { row: SupplierPOListRow }): JSX.Element {
 }
 
 function fmtIdrPrefixed(amount: number): string {
-  // formatIdr already prefixes "Rp ".
-  return formatIdr(amount);
+  // formatCurrency already prefixes "Rp ".
+  return formatCurrency(amount);
 }
 
 function fmtDays(days: number): string {
@@ -395,7 +395,7 @@ function PaymentsSection({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <KpiTile label="Total Paid"   value={fmtIdrPrefixed(metrics.paidAmount)}   icon={CheckCircle2} />
         <KpiTile label="Total Unpaid" value={fmtIdrPrefixed(metrics.unpaidAmount)} icon={CreditCard} />
         <KpiTile label="Overdue"      value={fmtIdrPrefixed(overdue)}              icon={Clock} />

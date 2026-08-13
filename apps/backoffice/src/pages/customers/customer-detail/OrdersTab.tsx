@@ -6,6 +6,7 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@breakery/ui';
+import { formatDate } from '@breakery/utils';
 import type { useCustomerDetail } from '@/features/customers/hooks/useCustomerDetail.js';
 import { rp, StatusPill } from './shared.js';
 
@@ -35,7 +36,7 @@ export function OrdersTab({
         <span className="tabular-nums">{rp(totalShown)}</span>
       </div>
       <table className="w-full border-collapse text-sm">
-        <thead className="border-y border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <thead className="border-y border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
             <th className="px-4 py-2.5 text-left font-medium">Date</th>
             <th className="px-4 py-2.5 text-left font-medium">Order #</th>
@@ -48,7 +49,7 @@ export function OrdersTab({
         <tbody>
           {recent_orders.map((o) => (
             <tr key={o.id} className="border-t border-border-subtle hover:bg-surface-4">
-              <td className="px-4 py-3 text-text-secondary">{new Date(o.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+              <td className="px-4 py-3 text-text-secondary">{formatDate(o.created_at)}</td>
               <td className="px-4 py-3 font-data text-text-primary">
                 <Link to={`/backoffice/orders/${o.id}`} className="hover:text-gold">{o.order_number}</Link>
               </td>

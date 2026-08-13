@@ -21,8 +21,24 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, Search, Settings } from 'lucide-react';
 import { cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { roleLabel } from '@/lib/roleLabels.js';
 import { DomainPanel } from './DomainPanel.js';
+import { MobileNavDrawer } from './MobileNavDrawer.js';
 import { NAV_DOMAINS, activeDomainId, visibleDomains, type NavDomain } from './nav.js';
+
+// Le glyphe ⌘ ne dit rien à un poste Windows/Linux — on affiche Ctrl+K hors
+// macOS (audit UX/UI 2026-08-13, lot 2). `userAgentData.platform` d'abord,
+// `navigator.platform` (déprécié mais universel) en repli ; évalué une fois,
+// la plateforme ne change pas en cours de session. L'`aria-keyshortcuts` de la
+// TopBar liste déjà les deux variantes, lui n'a pas à choisir.
+function isMacPlatform(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const uaPlatform =
+    (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform
+    ?? navigator.platform;
+  return /mac/i.test(uaPlatform);
+}
+const SEARCH_KBD = isMacPlatform() ? '⌘K' : 'Ctrl+K';
 
 function UserChip() {
   const navigate = useNavigate();
@@ -68,12 +84,12 @@ function UserChip() {
         className="flex items-center gap-2 rounded-sm p-1 transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
       >
         <span
-          className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ink-raised text-[11.5px] font-semibold text-ink-fg-muted"
+          className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ink-raised text-xs font-semibold text-ink-fg-muted"
           aria-hidden
         >
           {user.full_name.charAt(0).toUpperCase()}
         </span>
-        <span className="text-[13px] text-ink-fg">{user.full_name}</span>
+        <span className="hidden text-sm text-ink-fg sm:inline">{user.full_name}</span>
       </button>
 
       {open && (
@@ -81,14 +97,14 @@ function UserChip() {
           role="menu"
           className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl border border-border-strong bg-surface-3 py-1.5 shadow-[0_18px_40px_rgba(28,23,18,0.20)]"
         >
-          <p className="px-3.5 pb-1.5 pt-1 font-data text-[10px] uppercase tracking-widest text-text-muted">
-            {user.role_code}
+          <p className="px-3.5 pb-1.5 pt-1 font-data text-xs uppercase tracking-widest text-text-muted">
+            {roleLabel(user.role_code)}
           </p>
           <Link
             to="/backoffice/settings"
             role="menuitem"
             onClick={() => { setOpen(false); }}
-            className="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-text-primary transition-colors hover:bg-surface-4"
+            className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-text-primary transition-colors hover:bg-surface-4"
           >
             <Settings className="h-4 w-4 text-text-muted" aria-hidden /> Settings
           </Link>
@@ -97,7 +113,7 @@ function UserChip() {
             role="menuitem"
             disabled={busy}
             onClick={() => { void logoutAndLeave(); }}
-            className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-4 disabled:opacity-50"
+            className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm text-text-primary transition-colors hover:bg-surface-4 disabled:opacity-50"
           >
             <LogOut className="h-4 w-4 text-text-muted" aria-hidden /> Logout
           </button>
@@ -179,7 +195,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
   }
 
   const tabBase =
-    'relative flex h-[52px] items-center gap-1 px-[13px] text-[13.5px] transition-colors ' +
+    'relative flex h-[52px] items-center gap-1 whitespace-nowrap px-[13px] text-sm transition-colors ' +
     'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink-gold';
 
   return (
@@ -188,21 +204,22 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           la barre sur le fond de page clair. Sans lui, l'encre et l'ivoire se
           touchent à cru et la barre paraît posée sur la page au lieu d'en être
           le bord. */}
-      <header className="flex h-[52px] items-center gap-[22px] border-b border-gold bg-ink px-[22px]">
+      <header className="flex h-[52px] items-center gap-[22px] border-b border-gold bg-ink px-[22px] max-lg:gap-3 max-lg:px-4">
+        <MobileNavDrawer domains={domains} activeId={activeId} />
         <Link
           to="/backoffice"
           className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
         >
           <span
-            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-display text-[14px] leading-none text-ink-fg"
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-display text-sm leading-none text-ink-fg"
             aria-hidden
           >
             B
           </span>
-          <span className="text-[13.5px] font-semibold text-ink-fg">The Breakery</span>
+          <span className="text-sm font-semibold text-ink-fg">The Breakery</span>
         </Link>
 
-        <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center">
+        <nav aria-label="Primary" className="hidden min-w-0 flex-1 items-center lg:flex">
           {domains.map((domain, index) => {
             const isActive = domain.id === activeId;
             const isOpen = domain.id === openId;
@@ -255,7 +272,11 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           })}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-4">
+        {/* La nav horizontale disparaît sous lg : ce ressort garde le bloc
+            recherche/profil collé à droite. */}
+        <div className="flex-1 lg:hidden" aria-hidden />
+
+        <div className="flex shrink-0 items-center gap-4 max-lg:gap-2">
           <button
             type="button"
             onClick={onOpenSearch}
@@ -264,8 +285,8 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
             aria-keyshortcuts="Meta+K Control+K"
           >
             <Search className="h-[14px] w-[14px]" aria-hidden />
-            <span className="text-[12.5px]">Search</span>
-            <kbd className="font-data text-[10px] tracking-wide">⌘K</kbd>
+            <span className="hidden text-sm lg:inline">Search</span>
+            <kbd className="hidden font-data text-xs tracking-wide lg:inline">{SEARCH_KBD}</kbd>
           </button>
 
           <UserChip />

@@ -49,6 +49,12 @@ export interface KpiTileProps {
   delta?: KpiDelta;
   /** Optional footer slot (e.g. small description). */
   footer?: ReactNode;
+  /**
+   * Infobulle native posée sur la valeur. Sert aux tuiles en notation
+   * compacte (« Rp 1,26 jt ») à exposer la valeur exacte — audit UX/UI
+   * 2026-08-13, lot 1. Prop additive : aucun call-site POS ne change.
+   */
+  title?: string;
   className?: string;
 }
 
@@ -87,6 +93,7 @@ export function KpiTile({
   icon: Icon,
   delta,
   footer,
+  title,
   className,
 }: KpiTileProps): JSX.Element {
   const isMono = valueFormat === 'currency' || valueFormat === 'percent';
@@ -110,6 +117,7 @@ export function KpiTile({
             'leading-tight text-text-primary text-3xl font-semibold',
             isMono ? 'font-mono tabular-nums' : 'font-data',
           )}
+          title={title}
         >
           {formatValue(value, valueFormat)}
         </div>

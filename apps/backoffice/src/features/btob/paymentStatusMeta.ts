@@ -14,7 +14,7 @@ export type B2bSettlement = 'paid' | 'partial' | 'unpaid';
 
 /** Classes du badge de règlement — mêmes coins 3 px et label mono que le badge de statut. */
 export const B2B_SETTLEMENT_BADGE =
-  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest';
+  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest';
 
 export const B2B_SETTLEMENT_TONE: Record<B2bSettlement, string> = {
   paid:    'bg-success-soft text-success',

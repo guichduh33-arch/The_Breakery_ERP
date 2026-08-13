@@ -116,6 +116,6 @@ describe('NegotiatedPricesSection', () => {
     expect(screen.queryByLabelText(/product to add/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /add negotiated price/i })).not.toBeInTheDocument();
     // Read-only: the price still renders as plain text.
-    expect(screen.getByText('Rp 20,000')).toBeInTheDocument();
+    expect(screen.getByText('Rp 20.000')).toBeInTheDocument();
   });
 });

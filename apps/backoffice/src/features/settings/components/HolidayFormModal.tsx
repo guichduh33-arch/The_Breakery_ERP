@@ -136,7 +136,7 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
           </div>
           <div>
             <label htmlFor="hol-date" className="text-xs uppercase tracking-widest text-text-secondary">Date *</label>
-            <input id="hol-date" type="date" value={draft.date}
+            <input id="hol-date" type="date" lang="id-ID" value={draft.date}
               onChange={(e) => setField('date', e.target.value)}
               className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
             {errors.date && <p className="text-red text-xs mt-1">{errors.date}</p>}
@@ -170,7 +170,7 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
 
         <DialogFooter className="gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>Cancel</Button>
-          <Button type="button" variant="primary" onClick={() => { void handleSubmit(); }} disabled={pending}>
+          <Button type="button" variant="ink" onClick={() => { void handleSubmit(); }} disabled={pending}>
             {pending ? 'Saving…' : mode === 'create' ? 'Create' : 'Save'}
           </Button>
         </DialogFooter>

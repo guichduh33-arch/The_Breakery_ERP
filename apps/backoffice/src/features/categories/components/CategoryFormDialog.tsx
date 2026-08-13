@@ -226,7 +226,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
 
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button type="submit" disabled={isPending} data-testid="category-form-submit">
+          <Button variant="ink" type="submit" disabled={isPending} data-testid="category-form-submit">
             {isPending
               ? (mode === 'create' ? 'Creating…' : 'Saving…')
               : (mode === 'create' ? 'Create' : 'Save')}

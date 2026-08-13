@@ -9,9 +9,9 @@
 // Spec ref: docs/reference/04-modules/06-inventory-stock.md §III (Phase 3 UI)
 
 import { useMemo, useState, type JSX } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeftRight, ChevronLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { Button } from '@breakery/ui';
+import { Button, EmptyState } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useTransferDetail } from '@/features/inventory-transfers/hooks/useTransferDetail.js';
 import { TransferStatusBadge } from '@/features/inventory-transfers/components/TransferStatusBadge.js';
@@ -56,7 +56,19 @@ export default function TransferDetailPage(): JSX.Element {
     );
   }
   if (detail.data === undefined) {
-    return <div className="text-text-secondary">Transfer not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/inventory/transfers" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ChevronLeft className="h-4 w-4" aria-hidden /> Back to transfers
+        </Link>
+        <EmptyState
+          icon={ArrowLeftRight}
+          title="Transfer not found"
+          description="This transfer may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
 
   const { transfer, items } = detail.data;

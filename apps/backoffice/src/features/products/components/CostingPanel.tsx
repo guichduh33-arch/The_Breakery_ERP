@@ -11,6 +11,7 @@
 import { useRef, useState, type JSX } from 'react';
 import { DollarSign, Percent, Tag } from 'lucide-react';
 import { Card, EmptyState } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';
 import { CorrectCostDialog } from './CorrectCostDialog.js';
@@ -19,16 +20,6 @@ import type { ProductRow } from '../types.js';
 
 export interface CostingPanelProps {
   product: Pick<ProductRow, 'id' | 'cost_price' | 'retail_price'>;
-}
-
-// Prices are shown as whole rupiah (owner decision: no decimals anywhere).
-function formatIdr(n: number): string {
-  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
-}
-
-// Per-unit cost: same whole-rupiah rule.
-function formatUnitCost(n: number): string {
-  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 function computeMargin(cost: number, retail: number): number | null {
@@ -84,7 +75,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             </span>
           </div>
           <p className="font-mono text-lg font-semibold text-text-primary">
-            Rp {formatIdr(product.cost_price)}
+            {formatCurrency(product.cost_price)}
           </p>
         </Card>
 
@@ -99,7 +90,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             </span>
           </div>
           <p className="font-mono text-lg font-semibold text-text-primary">
-            Rp {formatIdr(product.retail_price)}
+            {formatCurrency(product.retail_price)}
           </p>
         </Card>
 
@@ -191,11 +182,11 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
                         </td>
                         <td className="py-2 pr-4 text-text-secondary font-mono">{row.recipe_unit}</td>
                         <td className="py-2 pr-4 text-right font-mono text-text-primary whitespace-nowrap">
-                          Rp {formatUnitCost(unitCostPerRecipeUnit)}
+                          {formatCurrency(unitCostPerRecipeUnit)}
                           <span className="text-text-secondary"> /{row.recipe_unit}</span>
                         </td>
                         <td className="py-2 text-right font-mono text-text-primary">
-                          Rp {formatIdr(row.line_cost)}
+                          {formatCurrency(row.line_cost)}
                         </td>
                       </tr>
                     );
@@ -210,7 +201,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
                       className="py-2 text-right font-mono font-semibold text-text-primary"
                       data-testid="bom-total"
                     >
-                      Rp {formatIdr(bomTotal)}
+                      {formatCurrency(bomTotal)}
                     </td>
                   </tr>
                 </tfoot>

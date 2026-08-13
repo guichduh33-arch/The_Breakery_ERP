@@ -159,7 +159,7 @@ export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices 
 
         <DialogFooter>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={upsert.isPending}>Save</Button>
+          <Button variant="ink" onClick={submit} disabled={upsert.isPending}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

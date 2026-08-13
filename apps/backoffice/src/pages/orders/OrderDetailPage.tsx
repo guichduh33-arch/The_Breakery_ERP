@@ -13,29 +13,35 @@
 
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Download } from 'lucide-react';
 import { Card, cn } from '@breakery/ui';
 // formatDateTimeShortWita : le format de lecture des tables du BO (24 h, mois
 // en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
-import { formatIdr, formatDateTimeShortWita } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
+  isOrderDetailPaid,
   isSettledStatus,
   orderStatusBadgeTone,
   orderStatusLabel,
   orderTypeLabel,
 } from '@/features/orders/statusMeta.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
+import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 const fmtDateTime = formatDateTimeShortWita;
 
 function rp(n: number | null): string {
-  return formatIdr(Number(n ?? 0));
+  return formatCurrency(Number(n ?? 0));
 }
 
-const SECTION_LABEL = 'font-data text-[11px] font-semibold uppercase tracking-widest text-text-muted';
-const TH = 'px-3.5 py-2.5 text-left font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted';
+const SECTION_LABEL = 'font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
+const TH = 'px-3.5 py-2.5 text-left font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
 
 // Le fil d'Ariane porte l'invariant C4/BO-12 (retour vers /backoffice/orders) :
 // il se rend dans TOUS les états — l'erreur est celui où l'on en a le plus
@@ -59,6 +65,9 @@ function Crumbs({ leaf }: { leaf?: string }): JSX.Element {
 export function OrderDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useOrderDetail(id);
+  // Hooks inconditionnels : appelés AVANT les retours anticipés (erreur/chargement).
+  const hasReprint = useAuthStore((s) => s.hasPermission('orders.reprint_receipt'));
+  const reprint = useReprintReceipt();
 
   if (error) {
     return (
@@ -85,9 +94,8 @@ export function OrderDetailPage(): JSX.Element {
   const refundTotal = data.refunds.reduce((s, r) => s + Number(r.total), 0);
   const refundState: 'none' | 'partial' | 'full' =
     refundTotal <= 0 ? 'none' : refundTotal >= data.total ? 'full' : 'partial';
-  // RÉGLÉ : paiement enregistré OU statut porteur d'argent OU paid_at posé —
-  // les règlements B2B n'écrivent pas dans order_payments (review PR #367).
-  const isPaid = data.payments.length > 0 || isSettledStatus(data.status) || data.paid_at != null;
+  // RÉGLÉ : définition unique partagée avec le tiroir (isOrderDetailPaid).
+  const isPaid = isOrderDetailPaid(data);
   const orderNo = data.order_number.replace(/^#+/, '');
 
   return (
@@ -96,6 +104,24 @@ export function OrderDetailPage(): JSX.Element {
 
       <PageHeader
         title={`Order #${orderNo}`}
+        actions={
+          hasReprint && isPaid ? (
+            <button
+              type="button"
+              className={TOOLBAR_BTN_SECONDARY}
+              data-testid="detail-reprint"
+              disabled={reprint.isPending}
+              onClick={() => {
+                reprint.reprint(data, {
+                  onError: (e) => { toast.error(e.message || 'Could not generate the receipt'); },
+                });
+              }}
+            >
+              <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+              {reprint.isPending ? 'Preparing…' : 'Download receipt (PDF)'}
+            </button>
+          ) : undefined
+        }
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             {/* Statuts indépendants : cycle de vie, encaissement, remboursement. */}
@@ -185,7 +211,7 @@ export function OrderDetailPage(): JSX.Element {
               </tbody>
               <tfoot className="bg-surface-inert">
                 <tr>
-                  <td colSpan={4} className="px-3.5 py-2.5 font-data text-[11px] tabular-nums text-text-muted">
+                  <td colSpan={4} className="px-3.5 py-2.5 font-data text-xs tabular-nums text-text-muted">
                     {data.items.length} {data.items.length === 1 ? 'item' : 'items'}
                     {data.items.some((it) => it.is_cancelled) &&
                       ` · ${data.items.filter((it) => it.is_cancelled).length} cancelled`}
@@ -200,17 +226,22 @@ export function OrderDetailPage(): JSX.Element {
         <div className="flex flex-col gap-[13px]">
           <Card variant="default" padding="md" className="shadow-none">
             <h2 className={SECTION_LABEL}>Totals</h2>
+            {/* NON-PKP (ADR-005) : la PB1 est INCLUSE dans le prix affiché. La
+                pile se lit donc de bas en haut — le total est le prix payé, et
+                la base s'en déduit. Rien n'est recalculé côté serveur ici :
+                `subtotal − tax_amount` est un affichage, pas une écriture. */}
             <dl className="mt-3 space-y-1.5 text-sm">
-              <MoneyRow label="Subtotal" value={rp(data.subtotal)} />
+              <MoneyRow label="Base (excl. PB1)" value={rp(data.subtotal - data.tax_amount)} />
               {data.discount_amount > 0 && (
                 <MoneyRow label="Discount" value={`− ${rp(data.discount_amount)}`} />
               )}
               {data.promotions.map((promo, i) => (
                 <MoneyRow key={i} label={promo.description} value={`− ${rp(promo.amount)}`} />
               ))}
-              <MoneyRow label="PB1 (included)" value={rp(data.tax_amount)} muted />
+              {/* Seule ligne FISCALE du bloc : elle cesse d'être en creux. */}
+              <MoneyRow label="PB1 (included)" value={rp(data.tax_amount)} />
               <div className="flex items-baseline justify-between border-t border-border-subtle pt-2">
-                <dt className="text-sm font-semibold text-text-primary">Total</dt>
+                <dt className="text-sm font-semibold text-text-primary">Total (incl. PB1)</dt>
                 <dd className="font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">
                   {rp(data.total)}
                 </dd>
@@ -288,20 +319,20 @@ export function OrderDetailPage(): JSX.Element {
 function MetaPair({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
   return (
     <div>
-      <dt className="font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</dt>
+      <dt className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</dt>
       <dd className="mt-0.5 text-sm text-text-primary">{children}</dd>
     </div>
   );
 }
 
 function MoneyRow({
-  label, value, muted = false, tone,
+  label, value, tone,
 }: {
-  label: string; value: string; muted?: boolean; tone?: 'danger';
+  label: string; value: string; tone?: 'danger';
 }): JSX.Element {
   return (
     <div className="flex items-baseline justify-between">
-      <dt className={cn('text-sm', muted ? 'text-text-muted' : 'text-text-secondary')}>{label}</dt>
+      <dt className="text-sm text-text-secondary">{label}</dt>
       <dd className={cn('font-data text-sm tabular-nums', tone === 'danger' ? 'text-danger' : 'text-text-primary')}>
         {value}
       </dd>
@@ -367,9 +398,12 @@ function Timeline({
             )}
           />
           <span className="min-w-0 flex-1">
+            {/* Le séparateur est TEXTUEL, pas une marge : deux nœuds texte
+                adjacents se copient et se lisent « Completedpending » (audit
+                UX/UI 2026-08-13, lot 6a). Vaut pour Paid comme pour Completed. */}
             <span className={cn('block text-sm', step.done ? 'text-text-primary' : 'text-text-muted')}>
               {step.label}
-              {!step.done && <span className="ml-1.5 text-xs text-text-subtle">pending</span>}
+              {!step.done && <span className="text-xs text-text-subtle">{' — pending'}</span>}
             </span>
             {step.at !== undefined && (
               <span className="block font-data text-xs tabular-nums text-text-muted">{fmtDateTime(step.at)}</span>

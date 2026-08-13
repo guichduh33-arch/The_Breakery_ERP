@@ -5,6 +5,7 @@
 
 import type { JSX } from 'react';
 import type { FeasibilityResult } from '@breakery/domain';
+import { formatQuantity } from '@breakery/utils';
 
 export function FeasibilityBadge({ result }: { result: FeasibilityResult | null }): JSX.Element | null {
   if (result === null) return null;
@@ -21,8 +22,10 @@ export function FeasibilityBadge({ result }: { result: FeasibilityResult | null 
       <ul className="font-mono">
         {result.missing.map((m) => (
           <li key={m.material_id}>
-            {m.material_name}: need {m.required.toFixed(3)} {m.unit}, have {m.available.toFixed(3)}
-            {' '}(short {m.shortfall.toFixed(3)})
+            {/* L'unité n'est écrite qu'une fois, sur la quantité requise : la
+                phrase compare trois mesures d'un même matériau. */}
+            {m.material_name}: need {formatQuantity(m.required, m.unit)}, have {formatQuantity(m.available, null)}
+            {' '}(short {formatQuantity(m.shortfall, null)})
           </li>
         ))}
       </ul>

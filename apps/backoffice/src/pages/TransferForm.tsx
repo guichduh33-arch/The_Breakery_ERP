@@ -189,7 +189,7 @@ export default function TransferFormPage(): JSX.Element {
           >
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={!canSubmit}>
+          <Button type="submit" variant="ink" disabled={!canSubmit}>
             {createMut.isPending ? 'Creating…' : 'Create transfer'}
           </Button>
         </div>

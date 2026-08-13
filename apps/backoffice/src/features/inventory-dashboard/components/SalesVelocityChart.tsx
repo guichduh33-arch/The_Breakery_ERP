@@ -4,6 +4,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
+import { formatDateShortWita } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
@@ -15,7 +16,7 @@ export interface SalesVelocityChartProps {
 export function SalesVelocityChart({ data, unit }: SalesVelocityChartProps) {
   const reduced = usePrefersReducedMotion();
   const fmt = data.map((d) => ({
-    label: new Date(d.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    label: formatDateShortWita(d.day),
     units: Number(d.units_sold),
   }));
 

@@ -169,7 +169,7 @@ export default function PromotionsPage(): JSX.Element {
           />
           <span
             className={[
-              'text-[10px] font-semibold uppercase tracking-widest',
+              'text-xs font-semibold uppercase tracking-widest',
               row.is_active ? 'text-success' : 'text-text-secondary',
             ].join(' ')}
           >
@@ -334,10 +334,10 @@ interface DateFieldProps {
 function DateField({ id, label, value, onChange }: DateFieldProps): JSX.Element {
   return (
     <label htmlFor={id} className="flex flex-col">
-      <span className="px-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</span>
+      <span className="px-1 text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</span>
       <input
         id={id}
-        type="date"
+        type="date" lang="id-ID"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"

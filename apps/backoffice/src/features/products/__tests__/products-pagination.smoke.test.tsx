@@ -9,11 +9,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProductsGrid } from '../components/ProductsGrid.js';
 import {
-  ProductsPagination,
+  ListPagination,
   coercePageSize,
   pageSlice,
-  PRODUCTS_PAGE_SIZE_DEFAULT,
-} from '../components/ProductsPagination.js';
+  LIST_PAGE_SIZE_DEFAULT,
+} from '@/components/ListPagination.js';
 import type { ProductRow } from '../types.js';
 
 function makeRows(n: number): ProductRow[] {
@@ -43,9 +43,9 @@ describe('coercePageSize', () => {
     expect(coercePageSize('100')).toBe(100);
     // Une valeur d'URL est une entrée non fiable : elle se borne, elle ne
     // devient pas un slice de 99 999 lignes.
-    expect(coercePageSize('99999')).toBe(PRODUCTS_PAGE_SIZE_DEFAULT);
-    expect(coercePageSize('abc')).toBe(PRODUCTS_PAGE_SIZE_DEFAULT);
-    expect(coercePageSize(null)).toBe(PRODUCTS_PAGE_SIZE_DEFAULT);
+    expect(coercePageSize('99999')).toBe(LIST_PAGE_SIZE_DEFAULT);
+    expect(coercePageSize('abc')).toBe(LIST_PAGE_SIZE_DEFAULT);
+    expect(coercePageSize(null)).toBe(LIST_PAGE_SIZE_DEFAULT);
   });
 });
 
@@ -62,29 +62,29 @@ describe('pageSlice', () => {
 describe('ProductsGrid — pagination parity with the table', () => {
   it('renders one page of cards, not the whole filtered set', () => {
     render(<ProductsGrid rows={makeRows(40)} />);
-    expect(gridCards()).toBe(PRODUCTS_PAGE_SIZE_DEFAULT);
-    expect(screen.getByTestId('products-page-range')).toHaveTextContent('1–15 of 40');
+    expect(gridCards()).toBe(LIST_PAGE_SIZE_DEFAULT);
+    expect(screen.getByTestId('list-page-range')).toHaveTextContent('1–15 of 40');
   });
 
   it('honours the page it is given', () => {
     render(<ProductsGrid rows={makeRows(40)} page={3} />);
     expect(gridCards()).toBe(10);
-    expect(screen.getByTestId('products-page-range')).toHaveTextContent('31–40 of 40');
+    expect(screen.getByTestId('list-page-range')).toHaveTextContent('31–40 of 40');
   });
 
   it('honours a larger page size', () => {
     render(<ProductsGrid rows={makeRows(120)} pageSize={100} />);
     expect(gridCards()).toBe(100);
-    expect(screen.getByTestId('products-page-range')).toHaveTextContent('1–100 of 120');
+    expect(screen.getByTestId('list-page-range')).toHaveTextContent('1–100 of 120');
   });
 });
 
-describe('ProductsPagination', () => {
+describe('ListPagination', () => {
   it('offers 15 / 50 / 100 and reports the chosen size', () => {
     const onPageSize = vi.fn();
-    render(<ProductsPagination total={373} page={1} pageSize={15} onPageSize={onPageSize} />);
+    render(<ListPagination total={373} page={1} pageSize={15} onPageSize={onPageSize} />);
 
-    const select = screen.getByTestId('products-page-size');
+    const select = screen.getByTestId('list-page-size');
     expect(Array.from(select.querySelectorAll('option')).map((o) => o.textContent))
       .toEqual(['15', '50', '100']);
 
@@ -93,18 +93,18 @@ describe('ProductsPagination', () => {
   });
 
   it('disables Previous on the first page and Next on the last', () => {
-    const { unmount } = render(<ProductsPagination total={40} page={1} pageSize={15} />);
+    const { unmount } = render(<ListPagination total={40} page={1} pageSize={15} />);
     expect(screen.getByLabelText('Previous page')).toBeDisabled();
     expect(screen.getByLabelText('Next page')).not.toBeDisabled();
     unmount();
 
-    render(<ProductsPagination total={40} page={3} pageSize={15} />);
+    render(<ListPagination total={40} page={3} pageSize={15} />);
     expect(screen.getByLabelText('Previous page')).not.toBeDisabled();
     expect(screen.getByLabelText('Next page')).toBeDisabled();
   });
 
   it('shows 0 as the lower bound when there is nothing to page through', () => {
-    render(<ProductsPagination total={0} page={1} pageSize={15} />);
-    expect(screen.getByTestId('products-page-range')).toHaveTextContent('0–0 of 0');
+    render(<ListPagination total={0} page={1} pageSize={15} />);
+    expect(screen.getByTestId('list-page-range')).toHaveTextContent('0–0 of 0');
   });
 });

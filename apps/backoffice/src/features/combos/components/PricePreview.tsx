@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { Currency } from '@breakery/ui';
 import { priceRange } from '@breakery/domain';
 import type { ComboDefinition } from '@breakery/domain';
+import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   definition: ComboDefinition;
@@ -36,13 +37,13 @@ export function PricePreview({ definition }: Props): JSX.Element {
       <div className="text-right shrink-0">
         {min === max ? (
           <span className="text-xl" data-testid="price-fixed">
-            <Currency amount={min} emphasis="gold" />
+            <Currency format={formatCurrency} amount={min} emphasis="gold" />
           </span>
         ) : (
           <span className="text-xl" data-testid="price-range">
-            <Currency amount={min} emphasis="gold" />
+            <Currency format={formatCurrency} amount={min} emphasis="gold" />
             {' – '}
-            <Currency amount={max} emphasis="gold" />
+            <Currency format={formatCurrency} amount={max} emphasis="gold" />
           </span>
         )}
       </div>

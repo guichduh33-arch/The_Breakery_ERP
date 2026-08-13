@@ -193,7 +193,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
         <label htmlFor="mvt-from" className="block text-xs uppercase text-text-secondary mb-1">From</label>
         <input
           id="mvt-from"
-          type="date"
+          type="date" lang="id-ID"
           value={value.dateStart ?? ''}
           onChange={(e) => { onChange({ ...value, dateStart: e.target.value }); }}
           className="px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"
@@ -204,7 +204,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
         <label htmlFor="mvt-to" className="block text-xs uppercase text-text-secondary mb-1">To</label>
         <input
           id="mvt-to"
-          type="date"
+          type="date" lang="id-ID"
           value={value.dateEnd ?? ''}
           onChange={(e) => { onChange({ ...value, dateEnd: e.target.value }); }}
           className="px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"

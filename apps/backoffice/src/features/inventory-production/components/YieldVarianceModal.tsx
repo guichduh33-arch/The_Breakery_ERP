@@ -10,6 +10,7 @@ import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
+import { formatQuantity } from '@breakery/utils';
 
 export interface YieldVarianceModalProps {
   expectedQty:  number;
@@ -58,11 +59,11 @@ export function YieldVarianceModal({
         >
           <div className="space-y-0.5">
             <div className="text-xs uppercase tracking-widest text-text-secondary">Expected</div>
-            <div className="font-mono">{expectedQty.toLocaleString()}</div>
+            <div className="font-mono">{formatQuantity(expectedQty, null)}</div>
           </div>
           <div className="space-y-0.5">
             <div className="text-xs uppercase tracking-widest text-text-secondary">Actual</div>
-            <div className="font-mono">{actualQty.toLocaleString()}</div>
+            <div className="font-mono">{formatQuantity(actualQty, null)}</div>
           </div>
           <div className="space-y-0.5">
             <div className="text-xs uppercase tracking-widest text-text-secondary">Variance</div>
@@ -103,7 +104,7 @@ export function YieldVarianceModal({
             <Button type="button" variant="ghost" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={!canConfirm}>
+            <Button type="submit" variant="ink" disabled={!canConfirm}>
               Confirm with reason
             </Button>
           </DialogFooter>

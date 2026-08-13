@@ -213,7 +213,7 @@ export function POFormDraft({
           </label>
           <input
             id={`${reactId}-order`}
-            type="date"
+            type="date" lang="id-ID"
             value={value.orderDate}
             onChange={(e) => patch({ orderDate: e.target.value })}
             disabled={submitting}
@@ -227,7 +227,7 @@ export function POFormDraft({
           </label>
           <input
             id={`${reactId}-expected`}
-            type="date"
+            type="date" lang="id-ID"
             value={value.expectedDate}
             onChange={(e) => patch({ expectedDate: e.target.value })}
             disabled={submitting}

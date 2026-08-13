@@ -195,7 +195,7 @@ export function CategoryFormModal({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={pending}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={pending} data-testid="category-form-submit">
+          <Button variant="ink" onClick={handleSubmit} disabled={pending} data-testid="category-form-submit">
             {pending
               ? (initial !== undefined ? 'Saving…' : 'Creating…')
               : (initial !== undefined ? 'Save' : 'Create')}

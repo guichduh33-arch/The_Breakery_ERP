@@ -28,7 +28,7 @@ import {
   Input,
   Select,
 } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import {
   useCreateB2bOrder,
   CreateB2bOrderError,
@@ -231,11 +231,11 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             <div role="alert" className="rounded-md border border-warning bg-warning-soft p-3 text-xs text-warning">
               <div className="font-semibold">Credit limit exceeded</div>
               <div className="mt-1 space-y-0.5">
-                <div>Current balance:  <span className="font-mono">{formatIdr(creditPayload.current_balance)}</span></div>
-                <div>Credit limit:     <span className="font-mono">{creditPayload.credit_limit !== null ? formatIdr(creditPayload.credit_limit) : '—'}</span></div>
-                <div>Available credit: <span className="font-mono">{creditPayload.available !== null ? formatIdr(creditPayload.available) : '—'}</span></div>
-                <div>Order total:      <span className="font-mono">{formatIdr(itemsTotal)}</span></div>
-                <div>Would exceed by:  <span className="font-mono">{creditPayload.would_exceed_by !== null ? formatIdr(creditPayload.would_exceed_by) : '—'}</span></div>
+                <div>Current balance:  <span className="font-mono">{formatCurrency(creditPayload.current_balance)}</span></div>
+                <div>Credit limit:     <span className="font-mono">{creditPayload.credit_limit !== null ? formatCurrency(creditPayload.credit_limit) : '—'}</span></div>
+                <div>Available credit: <span className="font-mono">{creditPayload.available !== null ? formatCurrency(creditPayload.available) : '—'}</span></div>
+                <div>Order total:      <span className="font-mono">{formatCurrency(itemsTotal)}</span></div>
+                <div>Would exceed by:  <span className="font-mono">{creditPayload.would_exceed_by !== null ? formatCurrency(creditPayload.would_exceed_by) : '—'}</span></div>
               </div>
               <div className="mt-2">Adjust the basket or escalate to a manager to increase the credit limit.</div>
             </div>
@@ -259,10 +259,10 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               ))}
             </Select>
             {selectedCustomer !== null && (
-              <p className="text-[10px] text-text-muted">
-                Outstanding: <span className="font-mono">{formatIdr(selectedCustomer.b2b_current_balance)}</span>
+              <p className="text-xs text-text-muted">
+                Outstanding: <span className="font-mono">{formatCurrency(selectedCustomer.b2b_current_balance)}</span>
                 {selectedCustomer.b2b_credit_limit !== null && (
-                  <> • Limit: <span className="font-mono">{formatIdr(selectedCustomer.b2b_credit_limit)}</span></>
+                  <> • Limit: <span className="font-mono">{formatCurrency(selectedCustomer.b2b_credit_limit)}</span></>
                 )}
               </p>
             )}
@@ -275,7 +275,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add line
               </Button>
             </div>
-            <p className="text-[10px] text-text-muted">
+            <p className="text-xs text-text-muted">
               Final price is set by the server from negotiated/category pricing.
             </p>
             <div className="space-y-2">
@@ -334,8 +334,8 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                       <Trash2 className="h-3.5 w-3.5" aria-hidden />
                     </Button>
                     {overstock && product !== null && (
-                      <p className="col-span-12 text-[10px] text-red">
-                        Only {product.current_stock.toLocaleString()} in stock for {product.name}.
+                      <p className="col-span-12 text-xs text-red">
+                        Only {formatQuantity(product.current_stock, null)} in stock for {product.name}.
                       </p>
                     )}
                   </div>
@@ -354,7 +354,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               </label>
               <Input
                 id={deliveryId}
-                type="date"
+                type="date" lang="id-ID"
                 value={deliveryDate}
                 onChange={(e) => setDeliveryDate(e.target.value)}
               />
@@ -362,7 +362,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             <div className="space-y-1 col-span-1">
               <label className="text-xs uppercase tracking-widest text-text-secondary">Total</label>
               <div className="h-9 flex items-center justify-end pr-2 font-mono text-base text-text-primary">
-                {formatIdr(itemsTotal)}
+                {formatCurrency(itemsTotal)}
               </div>
             </div>
           </div>
@@ -383,7 +383,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={!canSubmit}>
+            <Button type="submit" variant="ink" disabled={!canSubmit}>
               {createMut.isPending ? 'Creating…' : 'Create B2B order'}
             </Button>
           </div>

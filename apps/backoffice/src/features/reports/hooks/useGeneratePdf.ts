@@ -13,7 +13,7 @@ export type PdfTemplate =
   | 'sales_by_hour' | 'sales_by_category' | 'sales_by_staff'
   | 'stock_variance' | 'production_yield' | 'audit'
   | 'wastage' | 'payment_by_method' | 'pb1' | 'stock_movements'
-  | 'b2b_invoice';
+  | 'b2b_invoice' | 'receipt';
 
 export interface GeneratePdfArgs {
   template:        PdfTemplate;

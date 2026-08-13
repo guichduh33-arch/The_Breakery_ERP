@@ -105,6 +105,7 @@ export default function CategoriesPage(): JSX.Element {
         </div>
         {canCreate && (
           <Button
+            variant="ink"
             onClick={() => { rememberTrigger(); setShowCreate(true); }}
             data-testid="categories-new-btn"
             className="inline-flex items-center gap-2"

@@ -24,7 +24,7 @@ import { Plus, Truck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Input, Select } from '@breakery/ui';
-import { formatIdr, businessDateIso, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatQuantity, businessDateIso, todayIsoDate } from '@breakery/utils';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -40,11 +40,27 @@ import {
   type StockBucket,
   type StockLevelRow as Row,
   type StockLevelsFilters,
+  type StockSortKey,
 } from '@/features/inventory/hooks/useStockLevels.js';
+import { ListPagination, coercePageSize } from '@/components/ListPagination.js';
 import { useStockCounters, type StockCounters } from '@/features/inventory/hooks/useStockCounters.js';
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
 
 const PAGE_SIZE = 50;
+
+// Colonne affichée → clé de l'allowlist serveur de `get_stock_levels_v4`. Le
+// tri est SERVEUR : la page ne tient que 50 lignes sur plusieurs milliers, un
+// tri client ne trierait que la tranche déjà à l'écran et mentirait.
+// Les colonnes absentes de cet objet ne sont pas triables — `actions` n'a rien
+// à trier, et `min` est une clé serveur sans colonne dans cette table.
+const SORT_KEYS: Record<string, StockSortKey> = {
+  sku:      'sku',
+  name:     'name',
+  category: 'category',
+  onhand:   'stock',
+  value:    'value',
+  moved:    'last_movement',
+};
 
 // Pas de hook de debounce partagé dans ce dépôt — l'idiome maison est une
 // minuterie référencée, portée par l'appelant (voir `AuditLogFilters`, et le
@@ -171,6 +187,16 @@ export default function InventoryPage() {
   const categoryId    = params.get('category') ?? '';
   const parsedPage    = Number.parseInt(params.get('page') ?? '0', 10);
   const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 0;
+  // Le sélecteur « Rows » pilote le `p_limit` de la RPC. Le défaut de cette
+  // liste reste 50 — même borne qu'avant la refonte du pied.
+  const pageSize      = coercePageSize(params.get('rows') ?? PAGE_SIZE);
+
+  // Tri : même discipline que les filtres — il vit dans l'URL, donc il se
+  // partage par lien et survit au retour arrière. Un `?sort=` inconnu retombe
+  // sur l'ordre historique plutôt que de partir tel quel vers la RPC.
+  const sortParam = params.get('sort') ?? '';
+  const sortCol   = Object.hasOwn(SORT_KEYS, sortParam) ? sortParam : null;
+  const sortDir: 'asc' | 'desc' = params.get('dir') === 'desc' ? 'desc' : 'asc';
 
   function setCategoryId(next: string): void { patchParams({ category: next, page: null }); }
 
@@ -191,6 +217,22 @@ export default function InventoryPage() {
     patchParams({ page: next <= 0 ? null : String(next) });
   }
 
+  // Changer la taille de page invalide le numéro de page : la ligne du haut de
+  // la page 7 à 50 lignes n'est pas celle de la page 7 à 100.
+  function setPageSize(next: number): void {
+    patchParams({ rows: next === PAGE_SIZE ? null : String(next), page: null });
+  }
+
+  // Un tri renvoie en tête de liste : rester à l'offset 400 d'un ordre qui
+  // vient de changer montre une tranche arbitraire du nouveau classement.
+  function setSort(columnId: string, direction: 'asc' | 'desc'): void {
+    patchParams({
+      sort: columnId,
+      dir:  direction === 'asc' ? null : 'desc',
+      page: null,
+    });
+  }
+
   function onSearchChange(next: string): void {
     setSearch(next);
     if (searchTimer.current !== null) clearTimeout(searchTimer.current);
@@ -204,10 +246,14 @@ export default function InventoryPage() {
       ...(appliedSearch !== '' ? { search: appliedSearch } : {}),
       ...(categoryId    !== '' ? { categoryId }            : {}),
       bucket,
-      limit:  PAGE_SIZE,
-      offset: page * PAGE_SIZE,
+      limit:  pageSize,
+      offset: page * pageSize,
+      // `sortCol` a déjà passé le `Object.hasOwn` ci-dessus : la clé existe.
+      ...(sortCol !== null
+        ? { sort: { key: SORT_KEYS[sortCol]!, dir: sortDir } }
+        : {}),
     }),
-    [appliedSearch, categoryId, bucket, page],
+    [appliedSearch, categoryId, bucket, page, pageSize, sortCol, sortDir],
   );
 
   // ADR-024 déc. 2 — les compteurs suivent la recherche et la catégorie, JAMAIS
@@ -256,11 +302,11 @@ export default function InventoryPage() {
 
   const columns = useMemo<readonly DataTableColumn<Row>[]>(() => [
     {
-      id: 'sku', header: 'SKU', width: '7rem',
+      id: 'sku', header: 'SKU', width: '7rem', sortable: true,
       render: (r) => <span className="font-data text-xs text-text-secondary">{r.sku}</span>,
     },
     {
-      id: 'name', header: 'Product',
+      id: 'name', header: 'Product', sortable: true,
       // Un vrai lien, et non un `<td role="button">` : celui-ci écrasait la
       // sémantique de cellule (chaque ligne annonçait une colonne de moins) et
       // interdisait l'ouverture dans un nouvel onglet.
@@ -280,32 +326,29 @@ export default function InventoryPage() {
       ),
     },
     {
-      id: 'category', header: 'Category', width: '9rem',
+      id: 'category', header: 'Category', width: '9rem', sortable: true,
       render: (r) => <span className="text-text-secondary">{r.category_name ?? '—'}</span>,
     },
     {
-      id: 'onhand', header: 'On hand', align: 'right', width: '9rem',
+      id: 'onhand', header: 'On hand', align: 'right', width: '9rem', sortable: true,
       render: (r) => (
         r.track_inventory
           ? (
-            <span className="font-data tabular-nums">
-              {r.current_stock.toLocaleString()}
-              <span className="ml-1 text-text-muted">{r.unit}</span>
-            </span>
+            <span className="font-data tabular-nums">{formatQuantity(r.current_stock, r.unit)}</span>
           )
           : <span className="text-text-muted">Not tracked</span>
       ),
     },
     {
-      id: 'value', header: 'Value at cost', align: 'right', width: '10rem',
+      id: 'value', header: 'Value at cost', align: 'right', width: '10rem', sortable: true,
       render: (r) => (
         r.track_inventory
-          ? <span className="font-data tabular-nums">{formatIdr(r.stock_value)}</span>
+          ? <span className="font-data tabular-nums">{formatCurrency(r.stock_value)}</span>
           : <span className="text-text-muted">—</span>
       ),
     },
     {
-      id: 'moved', header: 'Last movement', width: '9rem',
+      id: 'moved', header: 'Last movement', headerClassName: 'whitespace-nowrap', width: '9rem', sortable: true,
       render: (r) => <span className="text-text-secondary">{formatLastMovement(r.last_movement_at)}</span>,
     },
     {
@@ -335,9 +378,6 @@ export default function InventoryPage() {
       </div>
     );
   }
-
-  const hasMore = (page + 1) * PAGE_SIZE < activeTotal;
-  const hasPrev = page > 0;
 
   function closeModal(): void { setModal({ kind: 'none' }); }
 
@@ -412,7 +452,7 @@ export default function InventoryPage() {
       <span className="sr-only" role="status" aria-live="polite">
         {counters.isLoading
           ? 'Loading stock counts'
-          : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
+          : `${activeTotal.toLocaleString('id-ID')} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
       </span>
 
       {list.error !== null ? (
@@ -440,30 +480,28 @@ export default function InventoryPage() {
               : 'No product carries a stock level yet.'
           }
           data-testid="stock-levels-table"
+          sort={sortCol === null ? null : { columnId: sortCol, direction: sortDir }}
+          onSortChange={(next) => { setSort(next.columnId, next.direction); }}
           footer={
-            <div className="flex items-center justify-between">
-              <span className="font-data text-[11px] tabular-nums text-text-muted">
-                {pageRows.length} of {activeTotal.toLocaleString()}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={TOOLBAR_BTN_SECONDARY}
-                  onClick={() => { setPage(page - 1); }}
-                  disabled={!hasPrev}
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  className={TOOLBAR_BTN_SECONDARY}
-                  onClick={() => { setPage(page + 1); }}
-                  disabled={!hasMore}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+            // `ListPagination` compte en pages 1-based, l'URL de cette liste en
+            // offsets 0-based : la conversion vit ici, à la frontière, et nulle
+            // part ailleurs.
+            <ListPagination
+              total={activeTotal}
+              page={page + 1}
+              pageSize={pageSize}
+              onPage={(next) => { setPage(next - 1); }}
+              onPageSize={setPageSize}
+              leading={
+                // Le compte RÉEL des lignes rendues, à côté de la tranche
+                // théorique. Les deux divergent quand la liste revient vide sur
+                // un panier que les compteurs disent peuplé — et c'est
+                // précisément là qu'un pied qui annoncerait « 1–50 » mentirait.
+                <span className="font-data text-xs tabular-nums text-text-muted">
+                  {pageRows.length} of {activeTotal.toLocaleString('id-ID')}
+                </span>
+              }
+            />
           }
         />
       )}

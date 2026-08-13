@@ -4,6 +4,7 @@
 
 import type { JSX } from 'react';
 import { Card } from '@breakery/ui';
+import { formatDate } from '@breakery/utils';
 import {
   useStoreCreditHistory, type StoreCreditSource,
 } from '@/features/customers/hooks/useStoreCreditHistory.js';
@@ -36,7 +37,7 @@ export function StoreCreditTab({ customerId }: { customerId: string | null }): J
   return (
     <Card variant="default" padding="none" className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
-        <thead className="border-b border-border-subtle bg-surface-inert font-data text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        <thead className="border-b border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
             <th className="px-4 py-2.5 text-left font-medium">Date</th>
             <th className="px-4 py-2.5 text-left font-medium">Source</th>
@@ -49,7 +50,7 @@ export function StoreCreditTab({ customerId }: { customerId: string | null }): J
         <tbody>
           {data.map((row) => (
             <tr key={row.id} className="border-t border-border-subtle">
-              <td className="px-4 py-3 text-text-secondary">{new Date(row.created_at).toLocaleDateString('id-ID')}</td>
+              <td className="px-4 py-3 text-text-secondary">{formatDate(row.created_at)}</td>
               <td className={`px-4 py-3 font-medium ${SOURCE_TONE[row.source] ?? 'text-text-primary'}`}>
                 {SOURCE_LABEL[row.source] ?? row.source}
               </td>
@@ -59,7 +60,7 @@ export function StoreCreditTab({ customerId }: { customerId: string | null }): J
               </td>
               <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{rp(row.balance_after)}</td>
               <td className="px-4 py-3 text-right text-text-secondary">
-                {row.expires_at ? new Date(row.expires_at).toLocaleDateString('id-ID') : '—'}
+                {row.expires_at ? formatDate(row.expires_at) : '—'}
               </td>
             </tr>
           ))}

@@ -7616,13 +7616,15 @@ export type Database = {
           zero_count: number
         }[]
       }
-      get_stock_levels_v3: {
+      get_stock_levels_v4: {
         Args: {
           p_bucket?: Database["public"]["Enums"]["stock_bucket"]
           p_category_id?: string
           p_limit?: number
           p_offset?: number
           p_search?: string
+          p_sort?: string
+          p_sort_dir?: string
         }
         Returns: {
           category_id: string
@@ -8292,7 +8294,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v9: {
+      refund_order_rpc_v10: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -8412,6 +8414,18 @@ export type Database = {
           product_id: string
           sku: string
           unit: string
+        }[]
+      }
+      search_orders_v1: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          id: string
+          order_number: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
         }[]
       }
       send_items_to_kitchen: {
@@ -8788,7 +8802,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v9: {
+      void_order_rpc_v10: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

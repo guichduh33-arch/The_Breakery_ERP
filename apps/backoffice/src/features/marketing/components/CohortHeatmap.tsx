@@ -9,6 +9,7 @@
 // Session 13 / Phase 6.B.
 
 import { useMemo } from 'react';
+import { formatCurrency } from '@breakery/utils';
 import type { CohortBucket } from '../hooks/useCustomerCohorts.js';
 
 export interface CohortHeatmapProps {
@@ -75,7 +76,7 @@ export function CohortHeatmap({ buckets }: CohortHeatmapProps) {
                 <td
                   key={`r-${b.months_since_signup}`}
                   className={`px-2 py-2 text-center font-mono tabular-nums ${heatColour(b.retention_pct)}`}
-                  title={`${b.retained_customers} retained · ${b.total_revenue.toLocaleString()} IDR revenue`}
+                  title={`${b.retained_customers} retained · ${formatCurrency(b.total_revenue)} revenue`}
                 >
                   {b.retention_pct.toFixed(1)}%
                 </td>
@@ -90,7 +91,7 @@ export function CohortHeatmap({ buckets }: CohortHeatmapProps) {
                   key={`v-${b.months_since_signup}`}
                   className="px-2 py-2 text-center font-mono tabular-nums text-text-secondary"
                 >
-                  {b.total_revenue > 0 ? b.total_revenue.toLocaleString() : '—'}
+                  {b.total_revenue > 0 ? formatCurrency(b.total_revenue) : '—'}
                 </td>
               ))}
             </tr>

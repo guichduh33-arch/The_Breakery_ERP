@@ -107,7 +107,7 @@ export function ApproveDialog({
           <Button
             data-testid="approve-submit-btn"
             type="button"
-            variant="primary"
+            variant="ink"
             onClick={() => { void handleSubmit(); }}
             disabled={sodBlocked || mut.isPending || pin.trim().length === 0}
             title={sodTooltip}

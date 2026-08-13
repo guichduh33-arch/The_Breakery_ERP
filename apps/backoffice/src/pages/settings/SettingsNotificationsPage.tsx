@@ -17,6 +17,7 @@ import {
   type NotificationTemplateRow,
 } from '@/features/settings/hooks/useNotificationTemplates.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatTimeWita } from '@breakery/utils';
 
 const CHANNEL_VARIANT: Record<string, 'info' | 'success' | 'warning' | 'neutral'> = {
   email: 'info',
@@ -85,7 +86,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
           is_active: draft.is_active,
         },
       });
-      setSavedAt(new Date().toLocaleTimeString());
+      setSavedAt(formatTimeWita(new Date()));
     } catch (e) {
       setServerError(e instanceof Error ? e.message : 'Failed to save template');
     }
@@ -200,7 +201,7 @@ function AlertEmailCard() {
         value: draft.trim() === '' ? null : draft.trim(),
         category: 'business',
       });
-      setSavedAt(new Date().toLocaleTimeString());
+      setSavedAt(formatTimeWita(new Date()));
     } catch (e) {
       setServerError(e instanceof Error ? e.message : 'Failed to save alert email');
     }

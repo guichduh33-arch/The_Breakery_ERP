@@ -21,6 +21,7 @@ import * as pb1                from './pb1.ts';
 import * as stockMovements     from './stock_movements.ts';
 import * as perishableTurnover from './perishable_turnover.ts';
 import * as b2bInvoice         from './b2b_invoice.ts';
+import * as receipt            from './receipt.ts';
 
 export type TemplateName =
   | 'pnl'
@@ -40,7 +41,8 @@ export type TemplateName =
   | 'pb1'
   | 'stock_movements'
   | 'perishable_turnover'
-  | 'b2b_invoice';
+  | 'b2b_invoice'
+  | 'receipt';
 
 // deno-lint-ignore no-explicit-any
 type RenderFn = (ctx: LayoutContext, data: any, period: { start: string; end: string } | null) => Promise<void>;
@@ -69,4 +71,7 @@ export const TEMPLATES: Record<TemplateName, TemplateRegistration> = {
   stock_movements:      { render: stockMovements.render,     permission: 'reports.inventory.read' },
   perishable_turnover:  { render: perishableTurnover.render, permission: 'reports.inventory.read' },
   b2b_invoice:          { render: b2bInvoice.render,          permission: 'b2b.read'               },
+  // Lot 6c — reçu duplicata : gaté par la permission opérationnelle de reprint
+  // (le second verrou reports.export tient déjà — mêmes rôles ADMIN/MANAGER/SUPER_ADMIN).
+  receipt:              { render: receipt.render,             permission: 'orders.reprint_receipt' },
 };

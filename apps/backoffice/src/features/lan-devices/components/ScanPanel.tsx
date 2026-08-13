@@ -82,7 +82,7 @@ export function ScanPanel({ devices, onAdd }: {
             </Button>
           </>
         ) : (
-          <Button onClick={() => void runScan()}>
+          <Button variant="ink" onClick={() => void runScan()}>
             <Search className="h-4 w-4" aria-hidden /> Scan network
           </Button>
         )}

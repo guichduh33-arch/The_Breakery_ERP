@@ -59,7 +59,7 @@ export function Delta({
           : `down ${d.text}`;
 
   return (
-    <span className={cn('inline-flex items-baseline gap-1 font-data text-[11px]', className)}>
+    <span className={cn('inline-flex items-baseline gap-1 font-data text-xs', className)}>
       <span className={cn('font-semibold tabular-nums', tone)}>
         <span aria-hidden>{d.glyph}</span>
         <span className="sr-only">{spoken}{period != null ? ` versus ${period}` : ''}</span>

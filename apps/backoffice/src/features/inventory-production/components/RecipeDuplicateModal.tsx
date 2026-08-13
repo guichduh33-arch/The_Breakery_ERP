@@ -152,7 +152,7 @@ export function RecipeDuplicateModal({
           </Button>
           <Button
             type="button"
-            variant="primary"
+            variant="ink"
             onClick={handleConfirm}
             disabled={!canConfirm}
             data-testid="duplicate-confirm"
