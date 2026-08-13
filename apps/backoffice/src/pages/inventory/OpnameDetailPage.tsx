@@ -74,7 +74,19 @@ export default function OpnameDetailPage(): JSX.Element {
     );
   }
   if (detail.data === null || detail.data === undefined) {
-    return <div className="text-sm text-text-secondary">Count not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/inventory/opname" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to counts
+        </Link>
+        <EmptyState
+          icon={ClipboardList}
+          title="Count not found"
+          description="This stock count may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
 
   const d = detail.data;

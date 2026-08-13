@@ -9,7 +9,8 @@
 
 import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BarChart3 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Package } from 'lucide-react';
+import { EmptyState } from '@breakery/ui';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import {
   ProductDetailTabs,
@@ -111,7 +112,19 @@ export default function ProductDetailPage(): JSX.Element {
     );
   }
   if (product.data === null || product.data === undefined) {
-    return <div className="py-16 text-center text-sm text-text-secondary">Product not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/products" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to products
+        </Link>
+        <EmptyState
+          icon={Package}
+          title="Product not found"
+          description="This product may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
 
   const p = product.data;

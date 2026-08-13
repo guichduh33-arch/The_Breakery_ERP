@@ -419,6 +419,17 @@ export default function OrdersListPage(): JSX.Element {
         data-testid="orders-counters"
       />
 
+      {/* ADR-025 D2 — les compteurs suivent la fenêtre et les filtres serveur,
+          JAMAIS la recherche texte (celle-ci ne filtre que les lignes déjà
+          chargées, côté client). Sans cet indice, un « 36 » à côté d'une liste
+          filtrée à 0 se lisait comme une contradiction. */}
+      {quickFind.trim() !== '' && (
+        <p className="text-xs text-text-muted" data-testid="orders-counters-hint">
+          Counters cover the window, not the text search — typing filters only
+          the rows already loaded below.
+        </p>
+      )}
+
       <div className="flex">
         <ListCounterStrip
           counters={moneyItems}
@@ -518,10 +529,14 @@ export default function OrdersListPage(): JSX.Element {
           footer={
             <div className="flex items-center justify-between">
               <span className="font-data text-[11px] tabular-nums text-text-muted">
-                {countersDown
-                  ? `${lines.length} loaded`
-                  : quickFind.trim() !== ''
-                    ? `${lines.length} match · ${activeTotal.toLocaleString()} in window`
+                {/* La recherche texte ne voit que les lignes chargées : on
+                    compte les correspondances SUR le chargé, jamais sur la
+                    fenêtre serveur — d'où « X of the Y loaded », sans compteur
+                    de fenêtre qui laisserait croire à une recherche complète. */}
+                {quickFind.trim() !== ''
+                  ? `${lines.length} of the ${loadedLines.length} loaded match “${quickFind.trim()}”`
+                  : countersDown
+                    ? `${loadedLines.length} loaded`
                     : `${lines.length} of ${activeTotal.toLocaleString()}`}
               </span>
               {query.hasNextPage && (

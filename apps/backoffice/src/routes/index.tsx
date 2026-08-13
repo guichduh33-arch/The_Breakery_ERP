@@ -11,6 +11,7 @@ import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
 const DashboardPage = lazy(() => import('@/pages/Dashboard.js'));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage.js'));
 const ProductsPage = lazy(() => import('@/pages/Products.js'));
 const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage.js'));
 const ProductsImportExportPage = lazy(() => import('@/pages/products/ProductsImportExportPage.js'));
@@ -223,6 +224,15 @@ export function AppRoutes() {
               <ProductsImportExportPage />
             </PermissionGate>
           }
+        />
+        {/* Route explicite AVANT `products/:productId` : le segment statique
+            `new` l'emporte sur le paramètre, donc un `:productId` valant "new"
+            ne peut plus atteindre la fiche produit. On rebondit vers la liste
+            avec `?new=1`, que ProductsPage lit pour ouvrir la modale de
+            création au montage (puis nettoie le paramètre). */}
+        <Route
+          path="products/new"
+          element={<Navigate to="/backoffice/products?new=1" replace />}
         />
         <Route
           path="products/:productId"
@@ -1065,8 +1075,13 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
+        {/* Catch-all INTERNE : une URL `/backoffice/*` inconnue rend la 404
+            DANS la coquille (sidebar + topbar), pas une page nue. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/backoffice" replace />} />
+      {/* Catch-all racine : plus de redirection silencieuse vers le tableau de
+          bord — une URL fautive affiche une vraie 404. */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

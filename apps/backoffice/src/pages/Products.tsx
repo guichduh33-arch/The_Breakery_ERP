@@ -14,7 +14,7 @@
 // GROUPÉES du pied de table restent inertes — elles réclament des RPC de masse
 // gatées et auditées qui n'existent pas.
 
-import { useCallback, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ProductsHeader } from '@/features/products/components/ProductsHeader.js';
 import { ProductsPageTabs } from '@/features/products/components/ProductsPageTabs.js';
@@ -145,6 +145,16 @@ export default function ProductsPage(): JSX.Element {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
+
+  // Deep-link `/backoffice/products/new` → `?new=1` : ouvre la modale de
+  // création au montage puis retire le paramètre pour qu'un rechargement ou un
+  // partage d'URL ne la rouvre pas. Silencieux si l'opérateur n'a pas le droit
+  // de créer — le paramètre est nettoyé sans ouvrir quoi que ce soit.
+  useEffect(() => {
+    if (params.get('new') !== '1') return;
+    if (canCreate) setShowNew(true);
+    patchParams({ new: null });
+  }, [params, canCreate, patchParams]);
 
   // `?? []` crée un tableau NEUF à chaque rendu : mémoïsé, sans quoi les trois
   // useMemo qui en dépendent se recalculent à chaque frappe dans la recherche.

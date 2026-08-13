@@ -18,7 +18,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, CalendarRange, Coins, Package, Settings2, TrendingUp,
 } from 'lucide-react';
-import { KpiTile, cn } from '@breakery/ui';
+import { EmptyState, KpiTile, cn } from '@breakery/ui';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
@@ -65,7 +65,19 @@ export default function ProductStockPage(): JSX.Element {
     );
   }
   if (product.data === null || product.data === undefined) {
-    return <div className="py-16 text-center text-sm text-text-secondary">Product not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/inventory" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to inventory
+        </Link>
+        <EmptyState
+          icon={Package}
+          title="Product not found"
+          description="This product may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
 
   const p = product.data;

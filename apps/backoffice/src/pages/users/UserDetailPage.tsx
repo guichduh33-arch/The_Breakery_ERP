@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, KeyRound, Trash2, UserCog } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button, EmptyState } from '@breakery/ui';
 import { evaluatePinStrength, formatDate, formatDateTime, type PinWeakReason } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useUserDetail } from '@/features/users/hooks/useUsersList.js';
@@ -68,7 +68,19 @@ export default function UserDetailPage() {
     return <div className="text-sm text-danger">Failed: {user.error.message}</div>;
   }
   if (user.data === null || user.data === undefined) {
-    return <div className="text-sm text-text-secondary">User not found.</div>;
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/users" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ChevronLeft className="h-4 w-4" aria-hidden /> Back to users
+        </Link>
+        <EmptyState
+          icon={UserCog}
+          title="User not found"
+          description="This account may have been deleted or you do not have access."
+          size="md"
+        />
+      </div>
+    );
   }
   const u = user.data;
   const isDeleted = u.deleted_at !== null;
