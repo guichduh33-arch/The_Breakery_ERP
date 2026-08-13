@@ -11,6 +11,7 @@ import { RecordCashMovementModal } from '../components/RecordCashMovementModal.j
 import { CashReconciliationPanel } from '../components/CashReconciliationPanel.js';
 import { CashAnalysisPanel } from '../components/CashAnalysisPanel.js';
 import { exportCashWalletCsv } from '../components/exportCashWalletCsv.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const SMALL_MONEY_FLOAT = 4_000_000;
 
@@ -41,10 +42,11 @@ export default function CashTreasuryPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Cash Treasury</h1>
-        <Button variant="ink" onClick={() => setModalOpen(true)}>New movement</Button>
-      </div>
+      <PageHeader
+        className="items-center"
+        title="Cash Treasury"
+        actions={<Button variant="ink" onClick={() => setModalOpen(true)}>New movement</Button>}
+      />
 
       <div className="flex flex-wrap gap-3">
         {isLoading && (

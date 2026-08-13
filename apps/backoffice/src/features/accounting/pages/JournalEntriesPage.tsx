@@ -13,6 +13,7 @@ import {
 import { JournalEntryDetailDrawer } from '@/features/accounting/components/JournalEntryDetailDrawer.js';
 import { CreateManualJEModal } from '@/features/accounting/components/CreateManualJEModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const fmt = formatCurrency;
 
@@ -37,14 +38,14 @@ export default function JournalEntriesPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Journal Entries</h1>
-          <p className="text-sm text-text-secondary italic">
+      <PageHeader
+        title="Journal Entries"
+        subtitle={
+          <span className="italic">
             {rows.length} entries — click a row for line detail
-          </p>
-        </div>
-        {canCreate && (
+          </span>
+        }
+        actions={canCreate ? (
           <Button
             variant="ink"
             onClick={() => setShowCreate(true)}
@@ -54,8 +55,8 @@ export default function JournalEntriesPage(): JSX.Element {
             <Plus className="h-4 w-4" aria-hidden />
             New manual JE
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">

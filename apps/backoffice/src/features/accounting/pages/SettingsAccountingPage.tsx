@@ -9,6 +9,7 @@ import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriod
 import { FiscalPeriodModal } from '../components/FiscalPeriodModal.js';
 import { AnnualCloseModal } from '../components/AnnualCloseModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 function statusBadgeClass(status: string): string {
   if (status === 'locked') return 'bg-red-soft text-red';
@@ -33,38 +34,40 @@ export default function SettingsAccountingPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Accounting settings</h1>
-          <p className="text-sm text-text-secondary italic">
+      <PageHeader
+        title="Accounting settings"
+        subtitle={
+          <span className="italic">
             Manage fiscal periods (close / lock for backdating prevention)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canClose && (
-            <Button
-              variant="ink"
-              onClick={() => openModalFor(null)}
-              className="inline-flex items-center gap-2"
-              data-testid="fp-new-btn"
-            >
-              <Lock className="h-4 w-4" aria-hidden />
-              Close a period
-            </Button>
-          )}
-          {canCloseYear && (
-            <Button
-              variant="secondary"
-              onClick={() => setShowAnnual(true)}
-              className="inline-flex items-center gap-2"
-              data-testid="ac-open-btn"
-            >
-              <CalendarCheck className="h-4 w-4" aria-hidden />
-              Annual close
-            </Button>
-          )}
-        </div>
-      </div>
+          </span>
+        }
+        actions={
+          <>
+            {canClose && (
+              <Button
+                variant="ink"
+                onClick={() => openModalFor(null)}
+                className="inline-flex items-center gap-2"
+                data-testid="fp-new-btn"
+              >
+                <Lock className="h-4 w-4" aria-hidden />
+                Close a period
+              </Button>
+            )}
+            {canCloseYear && (
+              <Button
+                variant="secondary"
+                onClick={() => setShowAnnual(true)}
+                className="inline-flex items-center gap-2"
+                data-testid="ac-open-btn"
+              >
+                <CalendarCheck className="h-4 w-4" aria-hidden />
+                Annual close
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {periods.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
 

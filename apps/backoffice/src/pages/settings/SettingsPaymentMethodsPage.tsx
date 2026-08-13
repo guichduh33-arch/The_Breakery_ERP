@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { formatTimeWita } from '@breakery/utils';
 
 const ALL_METHODS = [
@@ -191,15 +192,10 @@ export default function SettingsPaymentMethodsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Moyens de paiement</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Les méthodes décochées disparaissent des terminaux POS (≤ 60 s, sans redémarrage) ;
-          l&apos;ordre ci-dessous est l&apos;ordre d&apos;affichage sur les grilles POS.
-          Le % de frais est informatif (net estimé dans le rapport Payments by Method),
-          aucune écriture comptable automatique. Chaque changement écrit une entrée d&apos;audit.
-        </p>
-      </div>
+      <PageHeader
+        title="Moyens de paiement"
+        subtitle="Les méthodes décochées disparaissent des terminaux POS (≤ 60 s, sans redémarrage) ; l'ordre ci-dessous est l'ordre d'affichage sur les grilles POS. Le % de frais est informatif (net estimé dans le rapport Payments by Method), aucune écriture comptable automatique. Chaque changement écrit une entrée d'audit."
+      />
 
       {payments.isLoading && <div className="text-text-secondary">Loading…</div>}
       {payments.error && <div className="text-red">Échec du chargement : {payments.error.message}</div>}

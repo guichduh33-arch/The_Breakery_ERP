@@ -12,6 +12,7 @@ import { useHolidaysList, type HolidayRow } from '@/features/settings/hooks/useH
 import { HolidayFormModal }   from '@/features/settings/components/HolidayFormModal.js';
 import { HolidayDeleteConfirm } from '@/features/settings/components/HolidayDeleteConfirm.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 function typeLabel(t: string): string {
   switch (t) {
@@ -79,20 +80,16 @@ export default function SettingsHolidaysPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Holidays</h1>
-          <p className="text-text-secondary text-sm mt-1">
-            National, religious, and company-level non-working days. Recurring holidays are listed separately —
-            verify the date for next year before rolling over.
-          </p>
-        </div>
-        {canManage && (
+      <PageHeader
+        className="items-start"
+        title="Holidays"
+        subtitle="National, religious, and company-level non-working days. Recurring holidays are listed separately — verify the date for next year before rolling over."
+        actions={canManage ? (
           <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
             <Plus className="h-3.5 w-3.5" aria-hidden /> New holiday
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}
       {list.error && <div className="text-red">Failed to load: {list.error.message}</div>}

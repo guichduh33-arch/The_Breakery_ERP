@@ -20,6 +20,7 @@ import { formatDateTimeShortWita, formatCurrency } from '@breakery/utils';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
@@ -61,27 +62,28 @@ export default function ProductDashboardPage(): JSX.Element {
         >
           <ArrowLeft className="h-3 w-3" aria-hidden /> Back to products
         </Link>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{d.product.name}</h1>
-            <p className="mt-0.5 font-mono text-xs text-text-muted">{d.product.sku}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="dash-days" className="text-xs uppercase tracking-widest text-text-secondary">
-              Window
-            </label>
-            <select
-              id="dash-days"
-              value={days}
-              onChange={(e) => { setDays(Number(e.target.value)); }}
-              className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
-            >
-              {WINDOW_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <PageHeader
+          className="mt-2"
+          title={d.product.name}
+          subtitle={<span className="font-mono text-xs text-text-muted">{d.product.sku}</span>}
+          actions={
+            <>
+              <label htmlFor="dash-days" className="text-xs uppercase tracking-widest text-text-secondary">
+                Window
+              </label>
+              <select
+                id="dash-days"
+                value={days}
+                onChange={(e) => { setDays(Number(e.target.value)); }}
+                className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              >
+                {WINDOW_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </>
+          }
+        />
       </header>
 
       <section

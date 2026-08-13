@@ -18,6 +18,7 @@ import {
 import { useCreatePurchaseOrder } from '@/features/purchasing/hooks/useCreatePurchaseOrder.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
 import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsForPO.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function NewPurchaseOrderPage(): JSX.Element {
   const navigate = useNavigate();
@@ -75,12 +76,10 @@ export default function NewPurchaseOrderPage(): JSX.Element {
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to purchase orders
       </Link>
 
-      <header>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">New Purchase Order</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Draft a PO. Receipt (goods + JE posting) happens later from the detail page.
-        </p>
-      </header>
+      <PageHeader
+        title="New Purchase Order"
+        subtitle="Draft a PO. Receipt (goods + JE posting) happens later from the detail page."
+      />
       <POFormDraft
         value={value}
         onChange={setValue}

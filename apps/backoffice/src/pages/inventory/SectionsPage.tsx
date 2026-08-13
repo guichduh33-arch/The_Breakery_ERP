@@ -19,6 +19,7 @@ import {
   type SectionRow,
 } from '@/features/sections/hooks/useSectionsList.js';
 import { SectionFormModal } from '@/features/sections/components/SectionFormModal.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 interface SectionKpi {
   total:      number;
@@ -123,20 +124,16 @@ export default function SectionsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Sections</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Physical zones (warehouse, production kitchen, sales front) referenced
-            by every section-aware stock movement.
-          </p>
-        </div>
-        {canWrite && (
+      <PageHeader
+        className="items-start gap-4"
+        title="Sections"
+        subtitle="Physical zones (warehouse, production kitchen, sales front) referenced by every section-aware stock movement."
+        actions={canWrite ? (
           <Button variant="ink" onClick={() => { setCreating(true); }}>
             <Plus className="h-4 w-4" aria-hidden /> New section
           </Button>
-        )}
-      </header>
+        ) : undefined}
+      />
 
       <section
         className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"

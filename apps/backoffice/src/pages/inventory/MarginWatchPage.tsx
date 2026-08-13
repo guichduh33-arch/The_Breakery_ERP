@@ -20,6 +20,7 @@ import {
 import type { CsvColumn } from '@breakery/domain';
 import { formatCurrency, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import {
   useMarginAlerts,
   useAcknowledgeMarginAlert,
@@ -119,42 +120,39 @@ export default function MarginWatchPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Margin Watch</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Recipe-built products whose expected gross margin has slipped
-            below the per-product target. Recomputed daily at 02:00 UTC.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {rows.length > 0 && (
-            <ExportButtons
-              csv={{
-                rows,
-                columns: marginCsvColumns,
-                // Le jour métier, pas le jour UTC : un export lancé le soir à
-                // Lombok se nommait de la veille.
-                filename: `margin-watch-${todayIsoDate()}`,
-              }}
-            />
-          )}
-          <div role="tablist" className="flex items-center gap-1 rounded-md border border-border-subtle p-1 text-xs">
-            {FILTERS.map((f) => (
-              <button
-                key={f.value}
-                type="button"
-                role="tab"
-                aria-selected={filter === f.value}
-                onClick={() => setFilter(f.value)}
-                className={`rounded px-3 py-1 ${filter === f.value ? 'bg-surface-4 text-text-primary' : 'text-text-secondary'}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Margin Watch"
+        subtitle="Recipe-built products whose expected gross margin has slipped below the per-product target. Recomputed daily at 02:00 UTC."
+        actions={
+          <>
+            {rows.length > 0 && (
+              <ExportButtons
+                csv={{
+                  rows,
+                  columns: marginCsvColumns,
+                  // Le jour métier, pas le jour UTC : un export lancé le soir à
+                  // Lombok se nommait de la veille.
+                  filename: `margin-watch-${todayIsoDate()}`,
+                }}
+              />
+            )}
+            <div role="tablist" className="flex items-center gap-1 rounded-md border border-border-subtle p-1 text-xs">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={filter === f.value}
+                  onClick={() => setFilter(f.value)}
+                  className={`rounded px-3 py-1 ${filter === f.value ? 'bg-surface-4 text-text-primary' : 'text-text-secondary'}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </>
+        }
+      />
 
       {error !== null && (
         <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">

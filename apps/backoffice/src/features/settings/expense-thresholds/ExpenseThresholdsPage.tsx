@@ -11,6 +11,7 @@ import { useDeleteExpenseThreshold } from './hooks/useDeleteExpenseThreshold.js'
 import { useExpenseCategories } from '@/features/expenses/hooks/useExpensesList.js';
 import { ThresholdFormDialog } from './ThresholdFormDialog.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const IDR = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
@@ -56,15 +57,15 @@ export default function ExpenseThresholdsPage(): JSX.Element {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expense Thresholds</h1>
-          <p className="text-sm text-text-secondary italic">
+      <PageHeader
+        title="Expense Thresholds"
+        subtitle={
+          <span className="italic">
             Configure approval chains by amount bracket and category. Changes apply to new expenses
             only — in-flight expenses keep their original approval chain.
-          </p>
-        </div>
-        {canWrite && (
+          </span>
+        }
+        actions={canWrite ? (
           <Button
             variant="ink"
             onClick={openCreate}
@@ -74,8 +75,8 @@ export default function ExpenseThresholdsPage(): JSX.Element {
             <Plus className="h-4 w-4" aria-hidden />
             New threshold
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Loading */}
       {thresholds.isLoading && (

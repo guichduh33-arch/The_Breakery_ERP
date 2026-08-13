@@ -25,6 +25,7 @@ import {
   TransferItemsTable,
   type TransferItemDraft,
 } from '@/features/inventory-transfers/components/TransferItemsTable.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const EMPTY_HEADER: TransferFormFieldsValue = {
   fromSectionId: '',
@@ -150,10 +151,11 @@ export default function TransferFormPage(): JSX.Element {
         >
           <ChevronLeft className="h-3 w-3" aria-hidden /> Back to transfers
         </Link>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary mt-2">New Transfer</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Move stock between two sections. Items below zero on the source after this transfer are rejected by the server.
-        </p>
+        <PageHeader
+          className="mt-2"
+          title="New Transfer"
+          subtitle="Move stock between two sections. Items below zero on the source after this transfer are rejected by the server."
+        />
       </div>
 
       <form
