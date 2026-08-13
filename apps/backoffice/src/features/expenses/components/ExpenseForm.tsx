@@ -1,9 +1,17 @@
 // apps/backoffice/src/features/expenses/components/ExpenseForm.tsx
 //
 // Controlled form for creating an expense (draft). Used in NewExpensePage.
+//
+// Critique /impeccable 2026-08-13 (P1, lot 2) — le formulaire verrouillait son
+// bouton tant que la saisie était invalide, sans dire ce qui manquait : un
+// bouton disabled n'émet jamais de submit, la branche de validation était du
+// code mort, et le « Required » de la catégorie (sans onBlur) était
+// inatteignable. Le bouton reste actif ; la validation se joue AU submit,
+// révèle toutes les erreurs (câblées aux champs par FormField) et renvoie le
+// focus au premier champ fautif.
 
 import { useState } from 'react';
-import { Button, Input, Select } from '@breakery/ui';
+import { Button, FormField, Input, Select } from '@breakery/ui';
 import { CategoryPicker } from './CategoryPicker.js';
 import { ReceiptUploader } from './ReceiptUploader.js';
 
@@ -48,6 +56,16 @@ export interface ExpenseFormProps {
   submitLabel?: string;
 }
 
+// Ordre de focus au submit raté = ordre visuel du formulaire.
+const FIELD_DOM_IDS: Partial<Record<keyof ExpenseFormValues, string>> = {
+  category_id: 'exp-category',
+  expense_date: 'exp-date',
+  amount: 'exp-amount',
+  vat_amount: 'exp-vat',
+  description: 'exp-desc',
+};
+const FIELD_ORDER = ['category_id', 'expense_date', 'amount', 'vat_amount', 'description'] as const;
+
 export function ExpenseForm({
   draftId, value, onChange, onSubmit, onCancel, submitting, submitLabel,
 }: ExpenseFormProps): JSX.Element {
@@ -71,6 +89,15 @@ export function ExpenseForm({
     onChange({ ...value, ...p });
   }
 
+  /** Erreur visible seulement une fois le champ touché (blur ou submit raté). */
+  function shown(field: keyof ExpenseFormValues): string | null {
+    return touched[field] === true ? errors[field] ?? null : null;
+  }
+
+  function touch(field: keyof ExpenseFormValues): void {
+    setTouched((t) => ({ ...t, [field]: true }));
+  }
+
   function handleSubmit(e: React.FormEvent): void {
     e.preventDefault();
     if (hasErrors) {
@@ -78,82 +105,58 @@ export function ExpenseForm({
         category_id: true, amount: true, description: true,
         expense_date: true, vat_amount: true,
       });
+      const firstFaulty = FIELD_ORDER.find((f) => errors[f] !== undefined);
+      if (firstFaulty !== undefined) {
+        document.getElementById(FIELD_DOM_IDS[firstFaulty] ?? '')?.focus();
+      }
       return;
     }
     onSubmit();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label htmlFor="exp-category" className="text-xs uppercase tracking-widest text-text-secondary">
-            Category <span className="text-red">*</span>
-          </label>
+        <FormField id="exp-category" label="Category" required error={shown('category_id')}>
           <CategoryPicker
-            id="exp-category"
             value={value.category_id}
-            onChange={(id) => patch({ category_id: id })}
+            onChange={(id) => { patch({ category_id: id }); touch('category_id'); }}
           />
-          {touched.category_id === true && errors.category_id !== undefined && (
-            <div className="text-xs text-red">{errors.category_id}</div>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-1">
-          <label htmlFor="exp-date" className="text-xs uppercase tracking-widest text-text-secondary">
-            Date <span className="text-red">*</span>
-          </label>
+        <FormField id="exp-date" label="Date" required error={shown('expense_date')}>
           <Input
-            id="exp-date"
             type="date" lang="id-ID"
             value={value.expense_date}
             onChange={(e) => patch({ expense_date: e.target.value })}
-            onBlur={() => setTouched((t) => ({ ...t, expense_date: true }))}
+            onBlur={() => touch('expense_date')}
           />
-        </div>
+        </FormField>
 
-        <div className="space-y-1">
-          <label htmlFor="exp-amount" className="text-xs uppercase tracking-widest text-text-secondary">
-            Amount (IDR) <span className="text-red">*</span>
-          </label>
+        <FormField id="exp-amount" label="Amount (IDR)" required error={shown('amount')}>
           <Input
-            id="exp-amount"
             type="number"
             min={0}
             step="0.01"
             value={value.amount}
             onChange={(e) => patch({ amount: e.target.value })}
-            onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
+            onBlur={() => touch('amount')}
           />
-          {touched.amount === true && errors.amount !== undefined && (
-            <div className="text-xs text-red">{errors.amount}</div>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-1">
-          <label htmlFor="exp-vat" className="text-xs uppercase tracking-widest text-text-secondary">
-            VAT amount (IDR)
-          </label>
+        <FormField id="exp-vat" label="VAT amount (IDR)" error={shown('vat_amount')}>
           <Input
-            id="exp-vat"
             type="number"
             min={0}
             step="0.01"
             value={value.vat_amount}
             onChange={(e) => patch({ vat_amount: e.target.value })}
+            onBlur={() => touch('vat_amount')}
           />
-          {touched.vat_amount === true && errors.vat_amount !== undefined && (
-            <div className="text-xs text-red">{errors.vat_amount}</div>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-1">
-          <label htmlFor="exp-method" className="text-xs uppercase tracking-widest text-text-secondary">
-            Payment method <span className="text-red">*</span>
-          </label>
+        <FormField id="exp-method" label="Payment method" required>
           <Select
-            id="exp-method"
             value={value.payment_method}
             onChange={(e) => patch({ payment_method: e.target.value as ExpenseFormValues['payment_method'] })}
             className="w-full"
@@ -163,43 +166,32 @@ export function ExpenseForm({
             <option value="card">Card</option>
             <option value="credit">Credit (pay later)</option>
           </Select>
-        </div>
+        </FormField>
 
-        <div className="space-y-1">
-          <label htmlFor="exp-vendor" className="text-xs uppercase tracking-widest text-text-secondary">
-            Vendor / supplier name
-          </label>
+        <FormField id="exp-vendor" label="Vendor / supplier name">
           <Input
-            id="exp-vendor"
             value={value.vendor_name}
             onChange={(e) => patch({ vendor_name: e.target.value })}
             placeholder="e.g. PLN, Indomaret…"
             maxLength={120}
           />
-        </div>
+        </FormField>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="exp-desc" className="text-xs uppercase tracking-widest text-text-secondary">
-          Description <span className="text-red">*</span>
-        </label>
+      <FormField id="exp-desc" label="Description" required error={shown('description')}>
         <Input
-          id="exp-desc"
           value={value.description}
           onChange={(e) => patch({ description: e.target.value })}
-          onBlur={() => setTouched((t) => ({ ...t, description: true }))}
+          onBlur={() => touch('description')}
           placeholder="Short description (e.g. April electricity bill)"
           maxLength={250}
         />
-        {touched.description === true && errors.description !== undefined && (
-          <div className="text-xs text-red">{errors.description}</div>
-        )}
-      </div>
+      </FormField>
 
       <div className="space-y-1">
-        <label className="text-xs uppercase tracking-widest text-text-secondary">
+        <span className="block text-xs uppercase tracking-widest text-text-secondary">
           Receipt (optional)
-        </label>
+        </span>
         <ReceiptUploader
           expenseId={draftId}
           value={value.receipt_url}
@@ -211,7 +203,10 @@ export function ExpenseForm({
         {onCancel !== undefined && (
           <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
         )}
-        <Button type="submit" variant="ink" disabled={submitting === true || hasErrors}>
+        {/* Le bouton reste actif quand la saisie est incomplète : c'est le
+            submit qui révèle ce qui manque (DESIGN.md § Do's). Seul l'envoi
+            en cours le neutralise. */}
+        <Button type="submit" variant="ink" disabled={submitting === true}>
           {submitLabel ?? 'Save as draft'}
         </Button>
       </div>

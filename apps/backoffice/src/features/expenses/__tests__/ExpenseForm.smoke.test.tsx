@@ -1,11 +1,10 @@
 // apps/backoffice/src/features/expenses/__tests__/ExpenseForm.smoke.test.tsx
 //
 // Session 13 — Phase 3.B smoke test for ExpenseForm.
-//
-// Goals:
-//   1. Renders all required fields.
-//   2. Submit is disabled while required fields are empty.
-//   3. Filling required fields enables submit ; clicking it triggers onSubmit.
+// Critique /impeccable 2026-08-13 (lot 2) — nouveau contrat de validation :
+// le bouton reste ACTIF quand la saisie est incomplète ; c'est le submit qui
+// révèle toutes les erreurs (câblées aux champs) et focalise le premier champ
+// fautif. onSubmit n'est appelé qu'avec une saisie valide.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -68,10 +67,35 @@ describe('ExpenseForm — smoke', () => {
     expect(screen.getByLabelText(/Vendor/i)).toBeInTheDocument();
   });
 
-  it('disables submit when required fields are empty', () => {
-    renderForm();
+  it('garde le bouton actif à vide, révèle les erreurs au submit et focalise le premier champ fautif', async () => {
+    const { onSubmit } = renderForm();
+    // Attendre le montage du picker (catégories asynchrones) pour que le
+    // focus ait une cible.
+    const category = await screen.findByLabelText(/Category/i);
     const submit = screen.getByRole('button', { name: /Save as draft/i });
-    expect(submit).toBeDisabled();
+    expect(submit).not.toBeDisabled();
+
+    fireEvent.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // Toutes les erreurs sont révélées et câblées à leur champ.
+    expect(category).toHaveAttribute('aria-invalid', 'true');
+    expect(category).toHaveAccessibleDescription('Required');
+    const amount = screen.getByLabelText(/^Amount \(IDR\)/i);
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
+    expect(amount).toHaveAccessibleDescription('Must be > 0');
+    expect(screen.getByLabelText(/Description/i)).toHaveAccessibleDescription('Required');
+
+    // Le focus est renvoyé au premier champ fautif (ordre visuel : catégorie).
+    expect(category).toHaveFocus();
+  });
+
+  it('porte le requis sur les contrôles (pas seulement l’astérisque)', async () => {
+    renderForm();
+    expect(await screen.findByLabelText(/Category/i)).toBeRequired();
+    expect(screen.getByLabelText(/^Amount \(IDR\)/i)).toBeRequired();
+    expect(screen.getByLabelText(/Description/i)).toBeRequired();
+    expect(screen.getByLabelText(/Vendor/i)).not.toBeRequired();
   });
 
   it('enables submit when all required fields are populated', () => {
