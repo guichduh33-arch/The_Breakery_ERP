@@ -7365,13 +7365,15 @@ export type Database = {
         Args: { p_end: string; p_filters?: Json; p_start: string }
         Returns: Json
       }
-      get_orders_list_v3: {
+      get_orders_list_v4: {
         Args: {
-          p_cursor?: string
           p_cursor_id?: string
+          p_cursor_val?: string
+          p_dir?: string
           p_end: string
           p_filters?: Json
           p_limit?: number
+          p_sort?: string
           p_start: string
         }
         Returns: Json

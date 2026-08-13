@@ -11,7 +11,7 @@
 import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { DataTable, Input, Select, cn, type DataTableColumn } from '@breakery/ui';
+import { DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
@@ -20,7 +20,24 @@ import {
   useOrdersList,
   type OrdersListFilters,
   type OrdersListLine,
+  type OrdersSortColumn,
+  type OrdersSortDir,
 } from '@/features/orders/hooks/useOrdersList.js';
+
+// Lot 5 chantier 4 — tri serveur. La liste blanche vit dans la RPC v4 ; ici,
+// seulement la correspondance colonne d'écran ↔ colonne de tri serveur.
+const SORT_TO_COLUMN_ID: Record<OrdersSortColumn, string> = {
+  created_at: 'time',
+  order_type: 'type',
+  total:      'amount',
+  status:     'status',
+};
+const COLUMN_ID_TO_SORT: Record<string, OrdersSortColumn> = {
+  time:   'created_at',
+  type:   'order_type',
+  amount: 'total',
+  status: 'status',
+};
 import {
   useOrdersCounters,
   type OrdersCounters,
@@ -118,6 +135,23 @@ export default function OrdersListPage(): JSX.Element {
 
   const [quickFind, setQuickFind] = useState('');
 
+  // Tri serveur depuis l'URL (drill-down/partage), même défense que ?status :
+  // une valeur inconnue retombe sur le défaut, jamais une liste cassée.
+  const sortRaw = params.get('sort') ?? '';
+  const sortCol: OrdersSortColumn = Object.hasOwn(SORT_TO_COLUMN_ID, sortRaw)
+    ? (sortRaw as OrdersSortColumn)
+    : 'created_at';
+  const sortDir: OrdersSortDir = params.get('dir') === 'asc' ? 'asc' : 'desc';
+  const tableSort: DataTableSort = { columnId: SORT_TO_COLUMN_ID[sortCol], direction: sortDir };
+  const onSortChange = useCallback((next: DataTableSort): void => {
+    const col = COLUMN_ID_TO_SORT[next.columnId];
+    if (col === undefined) return;
+    patchParams({
+      sort: col === 'created_at' ? null : col,
+      dir:  next.direction === 'desc' ? null : next.direction,
+    });
+  }, [patchParams]);
+
   // Filtres serveur S32/S33 — tous honorés depuis l'URL (drill-downs).
   const serverFilters = useMemo<Omit<OrdersListFilters, 'status'>>(() => {
     const f: Omit<OrdersListFilters, 'status'> = {};
@@ -141,7 +175,7 @@ export default function OrdersListPage(): JSX.Element {
     [serverFilters, status],
   );
 
-  const query = useOrdersList({ start, end, filters: listFilters });
+  const query = useOrdersList({ start, end, filters: listFilters, sort: sortCol, dir: sortDir });
   // ADR-025 D2 — les compteurs suivent la fenêtre et les filtres, JAMAIS le
   // statut actif.
   const counters = useOrdersCounters({ start, end, filters: serverFilters });
@@ -277,7 +311,7 @@ export default function OrdersListPage(): JSX.Element {
       ),
     },
     {
-      id: 'time', header: 'Time', width: '7rem',
+      id: 'time', header: 'Time', width: '7rem', sortable: true,
       render: (o) => (
         <span className="block whitespace-nowrap font-data text-xs leading-tight tabular-nums">
           {formatTimeWita(o.created_at)}
@@ -286,7 +320,7 @@ export default function OrdersListPage(): JSX.Element {
       ),
     },
     {
-      id: 'type', header: 'Type', width: '6.5rem',
+      id: 'type', header: 'Type', width: '6.5rem', sortable: true,
       render: (o) => <span className="text-text-secondary">{orderTypeLabel(o.order_type)}</span>,
     },
     {
@@ -306,11 +340,11 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => <span className="font-data tabular-nums">{o.items_count}</span>,
     },
     {
-      id: 'amount', header: 'Amount', align: 'right', width: '8.5rem',
+      id: 'amount', header: 'Amount', align: 'right', width: '8.5rem', sortable: true,
       render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(o.total)}</span>,
     },
     {
-      id: 'status', header: 'Status', width: '9.5rem',
+      id: 'status', header: 'Status', width: '9.5rem', sortable: true,
       render: (o) => (
         <span className={cn(ORDER_STATUS_BADGE, orderStatusBadgeTone(o.status))}>
           {orderStatusLabel(o.status)}
@@ -535,6 +569,8 @@ export default function OrdersListPage(): JSX.Element {
           getRowKey={(o) => o.id}
           isLoading={query.isLoading}
           density="compact"
+          sort={tableSort}
+          onSortChange={onSortChange}
           emptyTitle="No orders here"
           emptyDescription={
             status !== '' || quickFind.trim() !== '' || Object.keys(serverFilters).length > 0
