@@ -9,6 +9,7 @@ import {
   useTrialBalance,
 } from '@/features/accounting/hooks/useTrialBalance.js';
 import { downloadTrialBalanceCsv } from '@/features/accounting/components/exportTrialBalanceCsv.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const CLASS_LABELS: Record<number, string> = {
   1: 'Asset', 2: 'Liability', 3: 'Equity', 4: 'Revenue', 5: 'COGS', 6: 'Expense',
@@ -30,14 +31,10 @@ export default function TrialBalancePage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Trial Balance</h1>
-          <p className="text-sm text-text-secondary italic">
-            Asserts Σ debit = Σ credit across active accounts
-          </p>
-        </div>
-        {tb.data && (
+      <PageHeader
+        title="Trial Balance"
+        subtitle={<span className="italic">Asserts Σ debit = Σ credit across active accounts</span>}
+        actions={tb.data ? (
           <Button
             variant="secondary"
             onClick={() => downloadTrialBalanceCsv(tb.data)}
@@ -47,8 +44,8 @@ export default function TrialBalancePage(): JSX.Element {
             <Download className="h-4 w-4" aria-hidden />
             Export CSV
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">

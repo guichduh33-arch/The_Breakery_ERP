@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Button, EmptyState, KpiTile } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { SupplierCard } from '@/features/suppliers/components/SupplierCard.js';
 import { SupplierDeleteConfirm } from '@/features/suppliers/components/SupplierDeleteConfirm.js';
 import { SupplierFormModal } from '@/features/suppliers/components/SupplierFormModal.js';
@@ -105,33 +106,34 @@ export default function SuppliersPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Supplier Management</h1>
-          <p className="mt-1 text-sm text-text-secondary">Manage your suppliers and their contact information.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" disabled aria-label="Categories (coming soon)">
-            <Tag className="h-4 w-4" aria-hidden /> Categories
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download suppliers template">
-            <FileText className="h-4 w-4" aria-hidden /> Template
-          </Button>
-          {canCreate && (
-            <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import suppliers">
-              <Upload className="h-4 w-4" aria-hidden /> Import
+      <PageHeader
+        className="items-start gap-4"
+        title="Supplier Management"
+        subtitle="Manage your suppliers and their contact information."
+        actions={
+          <>
+            <Button variant="ghost" size="sm" disabled aria-label="Categories (coming soon)">
+              <Tag className="h-4 w-4" aria-hidden /> Categories
             </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={handleExport} aria-label="Export suppliers">
-            <Download className="h-4 w-4" aria-hidden /> Export
-          </Button>
-          {canCreate && (
-            <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setCreating(true)}>
-              <Plus className="h-3.5 w-3.5" aria-hidden /> Add new supplier
-            </button>
-          )}
-        </div>
-      </header>
+            <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download suppliers template">
+              <FileText className="h-4 w-4" aria-hidden /> Template
+            </Button>
+            {canCreate && (
+              <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import suppliers">
+                <Upload className="h-4 w-4" aria-hidden /> Import
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleExport} aria-label="Export suppliers">
+              <Download className="h-4 w-4" aria-hidden /> Export
+            </Button>
+            {canCreate && (
+              <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setCreating(true)}>
+                <Plus className="h-3.5 w-3.5" aria-hidden /> Add new supplier
+              </button>
+            )}
+          </>
+        }
+      />
 
       <section
         className="grid grid-cols-1 gap-4 md:grid-cols-3"

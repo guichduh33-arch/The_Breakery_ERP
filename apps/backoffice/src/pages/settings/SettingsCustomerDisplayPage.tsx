@@ -15,6 +15,7 @@ import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { ShowcaseCurator } from '@/features/settings/components/ShowcaseCurator.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const FIELDS = [
   { key: 'display_footer_message', label: 'Idle footer message', max: 120,
@@ -89,12 +90,10 @@ export default function SettingsCustomerDisplayPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Customer Display</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Copy shown on every customer-facing display (all terminals). Audited on change.
-        </p>
-      </div>
+      <PageHeader
+        title="Customer Display"
+        subtitle="Copy shown on every customer-facing display (all terminals). Audited on change."
+      />
       {isLoading && <div className="text-text-secondary">Loading…</div>}
       {error && <div className="text-red">Failed to load: {error.message}</div>}
       {!isLoading && !error && (

@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useMappings, type MappingRow } from '@/features/accounting-mappings/hooks/useMappings.js';
 import { MappingEditDialog } from '@/features/accounting-mappings/components/MappingEditDialog.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { Button } from '@breakery/ui';
 
 export default function MappingsPage() {
@@ -26,14 +27,16 @@ export default function MappingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Accounting Mappings</h1>
-        <p className="text-text-secondary text-sm mt-1 max-w-2xl">
-          Symbolic JE keys (e.g. <code>SALE_POS_REVENUE</code>) routed to chart-of-accounts codes.
-          JE triggers resolve via these rows — never via hardcoded account codes.
-          Edits are recorded in <code>audit_logs</code> and require a reason.
-        </p>
-      </div>
+      <PageHeader
+        title="Accounting Mappings"
+        subtitle={
+          <span className="block max-w-2xl">
+            Symbolic JE keys (e.g. <code>SALE_POS_REVENUE</code>) routed to chart-of-accounts codes.
+            JE triggers resolve via these rows — never via hardcoded account codes.
+            Edits are recorded in <code>audit_logs</code> and require a reason.
+          </span>
+        }
+      />
 
       {list.isLoading && <div className="text-text-secondary">Loading mappings…</div>}
       {list.error && (

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { formatTimeWita } from '@breakery/utils';
 
 export default function SettingsInventoryPage() {
@@ -47,12 +48,10 @@ export default function SettingsInventoryPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Réglages Inventaire</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Contrôles globaux du stock. Chaque changement écrit une entrée d&apos;audit.
-        </p>
-      </div>
+      <PageHeader
+        title="Réglages Inventaire"
+        subtitle="Contrôles globaux du stock. Chaque changement écrit une entrée d'audit."
+      />
 
       {inventory.isLoading && <div className="text-text-secondary">Loading…</div>}
       {inventory.error && <div className="text-red">Échec du chargement : {inventory.error.message}</div>}

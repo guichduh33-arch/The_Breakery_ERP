@@ -28,6 +28,7 @@ import {
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
@@ -96,35 +97,36 @@ export default function ProductStockPage(): JSX.Element {
         >
           <ArrowLeft className="h-3 w-3" aria-hidden /> Back to Stock &amp; Inventory
         </Link>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{p.name}</h1>
-            <p className="mt-0.5 font-mono text-xs text-text-muted">{p.sku}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to={`/backoffice/products/${p.id}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border-subtle px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
-            >
-              <Settings2 className="h-3.5 w-3.5" aria-hidden /> Product settings
-            </Link>
-            <div className="flex items-center gap-2">
-              <label htmlFor="stock-days" className="text-xs uppercase tracking-widest text-text-secondary">
-                Window
-              </label>
-              <select
-                id="stock-days"
-                value={days}
-                onChange={(e) => { setDays(Number(e.target.value)); }}
-                className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+        <PageHeader
+          className="mt-2"
+          title={p.name}
+          subtitle={<span className="font-mono text-xs text-text-muted">{p.sku}</span>}
+          actions={
+            <div className="flex items-center gap-3">
+              <Link
+                to={`/backoffice/products/${p.id}`}
+                className="inline-flex items-center gap-1 rounded-md border border-border-subtle px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
               >
-                {WINDOW_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+                <Settings2 className="h-3.5 w-3.5" aria-hidden /> Product settings
+              </Link>
+              <div className="flex items-center gap-2">
+                <label htmlFor="stock-days" className="text-xs uppercase tracking-widest text-text-secondary">
+                  Window
+                </label>
+                <select
+                  id="stock-days"
+                  value={days}
+                  onChange={(e) => { setDays(Number(e.target.value)); }}
+                  className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+                >
+                  {WINDOW_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-        </div>
+          }
+        />
       </header>
 
       {/* Live stock KPIs — always visible above the tabs */}

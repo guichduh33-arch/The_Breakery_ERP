@@ -64,6 +64,7 @@ import {
   type POFormDraftValue,
 } from '@/features/purchasing/components/POFormDraft.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
@@ -270,12 +271,10 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
         >
           <ArrowLeft className="h-4 w-4" aria-hidden /> Back to order
         </Button>
-        <header>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Edit {po.po_number}</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Editing is locked once goods are received or any payment is recorded.
-          </p>
-        </header>
+        <PageHeader
+          title={`Edit ${po.po_number}`}
+          subtitle="Editing is locked once goods are received or any payment is recorded."
+        />
         <POFormDraft
           value={editValue}
           onChange={setEditValue}

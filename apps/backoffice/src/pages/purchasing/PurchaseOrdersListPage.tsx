@@ -52,6 +52,7 @@ import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 type POFilterKey = POStatus | 'all';
 
@@ -218,32 +219,31 @@ export default function PurchaseOrdersListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Purchase Orders</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Track open and historical POs; receive goods to post inventory + accounting entries.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download purchases template">
-            <FileText className="h-4 w-4" aria-hidden /> Template
-          </Button>
-          {canCreate && (
-            <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import historical purchases">
-              <Upload className="h-4 w-4" aria-hidden /> Import
+      <PageHeader
+        className="items-start gap-4"
+        title="Purchase Orders"
+        subtitle="Track open and historical POs; receive goods to post inventory + accounting entries."
+        actions={
+          <>
+            <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download purchases template">
+              <FileText className="h-4 w-4" aria-hidden /> Template
             </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={() => void handleExport()} disabled={exportMut.isPending} aria-label="Export historical purchases">
-            <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
-          </Button>
-          {canCreate && (
-            <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
-              <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
-            </Link>
-          )}
-        </div>
-      </header>
+            {canCreate && (
+              <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import historical purchases">
+                <Upload className="h-4 w-4" aria-hidden /> Import
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => void handleExport()} disabled={exportMut.isPending} aria-label="Export historical purchases">
+              <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
+            </Button>
+            {canCreate && (
+              <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
+                <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
+              </Link>
+            )}
+          </>
+        }
+      />
 
       <ListCounterStrip
         counters={counters}

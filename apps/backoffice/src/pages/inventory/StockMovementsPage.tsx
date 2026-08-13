@@ -20,6 +20,7 @@ import { MovementsFiltersBar } from '@/features/inventory-movements/components/M
 import { StockLedgerTable } from '@/features/inventory-movements/components/StockLedgerTable.js';
 import { enrichLedgerLines, stockLedgerCsvColumns } from '@/features/inventory-movements/stockLedgerColumns.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const IN_TYPES = new Set([
   'purchase', 'incoming', 'transfer_in', 'production_in',
@@ -76,19 +77,16 @@ export default function StockMovementsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock movements</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Per-product stock card over the selected range: opening → in/out → balance, with cost and movement value.
-          </p>
-        </div>
-        {rows.length > 0 && (
+      <PageHeader
+        className="items-start"
+        title="Stock movements"
+        subtitle="Per-product stock card over the selected range: opening → in/out → balance, with cost and movement value."
+        actions={rows.length > 0 ? (
           <ExportButtons
             csv={{ rows, columns: stockLedgerCsvColumns, filename: `stock-movements-${start}_${end}` }}
           />
-        )}
-      </header>
+        ) : undefined}
+      />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Movement totals">
         <KpiTile

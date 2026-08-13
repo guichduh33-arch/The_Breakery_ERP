@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const WARNING_KEY = 'kds_warning_threshold_minutes';
 const URGENT_KEY = 'kds_urgent_threshold_minutes';
@@ -103,12 +104,10 @@ export default function SettingsKdsConfigPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">KDS Configuration</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Ticket-age warning/urgent color bands + ready auto-archive delay, shared by every kitchen display terminal. Audited on change.
-        </p>
-      </div>
+      <PageHeader
+        title="KDS Configuration"
+        subtitle="Ticket-age warning/urgent color bands + ready auto-archive delay, shared by every kitchen display terminal. Audited on change."
+      />
       {isLoading && <div className="text-text-secondary">Loading…</div>}
       {error && <div className="text-red">Failed to load: {error.message}</div>}
       {!isLoading && !error && (

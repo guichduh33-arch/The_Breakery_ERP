@@ -5,6 +5,7 @@ import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, ClipboardList, LineChart, Scale } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import type { PermissionCode } from '@breakery/supabase';
 
 interface Tile {
@@ -52,12 +53,14 @@ export default function AccountingIndexPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Accounting</h1>
-        <p className="text-sm text-text-secondary italic">
-          Comptable cockpit — Chart of Accounts, Journal Entries, General Ledger, Trial Balance.
-        </p>
-      </div>
+      <PageHeader
+        title="Accounting"
+        subtitle={
+          <span className="italic">
+            Comptable cockpit — Chart of Accounts, Journal Entries, General Ledger, Trial Balance.
+          </span>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-2" data-testid="accounting-index-tiles">
         {visible.map((tile) => {

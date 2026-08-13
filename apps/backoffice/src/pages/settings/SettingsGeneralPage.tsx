@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { BrandLogoUploader } from '@/features/settings/components/BrandLogoUploader.js';
 import { useSettings, type SettingsCategory } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
@@ -273,12 +274,10 @@ export default function SettingsGeneralPage() {
         </DialogContent>
       </Dialog>
 
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">General settings</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Business identity, localisation, tax, and shift controls. Every change writes an audit log entry.
-        </p>
-      </div>
+      <PageHeader
+        title="General settings"
+        subtitle="Business identity, localisation, tax, and shift controls. Every change writes an audit log entry."
+      />
 
       {isLoading && <div className="text-text-secondary">Loading…</div>}
       {loadError && <div className="text-red">Failed to load: {loadError.message}</div>}

@@ -14,6 +14,7 @@ import {
 } from '@/features/accounting/hooks/useGeneralLedger.js';
 import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSourceEntity.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const fmt = formatCurrency;
 function defaultPeriodStart(): string {
@@ -97,12 +98,10 @@ export default function GeneralLedgerPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">General Ledger</h1>
-        <p className="text-sm text-text-secondary italic">
-          Drilldown by account with running balance
-        </p>
-      </div>
+      <PageHeader
+        title="General Ledger"
+        subtitle={<span className="italic">Drilldown by account with running balance</span>}
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">

@@ -21,6 +21,7 @@ import { CategorySortableRow } from '@/features/categories/components/CategorySo
 import { CategoryFormDialog } from '@/features/categories/components/CategoryFormDialog.js';
 import { DeleteCategoryDialog } from '@/features/categories/components/DeleteCategoryDialog.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function CategoriesPage(): JSX.Element {
   const cats = useAllCategories();
@@ -95,15 +96,16 @@ export default function CategoriesPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Product categories</h1>
-          <p id="categories-order-hint" className="text-sm text-text-secondary italic">
+      <PageHeader
+        className="items-center"
+        title="Product categories"
+        subtitle={
+          <span id="categories-order-hint" className="block italic">
             Rows are in display order on the POS grid. Drag a row, or focus its handle and use the
             arrow keys, to reorder.
-          </p>
-        </div>
-        {canCreate && (
+          </span>
+        }
+        actions={canCreate ? (
           <Button
             variant="ink"
             onClick={() => { rememberTrigger(); setShowCreate(true); }}
@@ -113,8 +115,8 @@ export default function CategoriesPage(): JSX.Element {
             <Plus className="h-4 w-4" aria-hidden />
             New category
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {reorderError !== null && (
         <div role="alert" className="rounded border border-red bg-red-soft px-3 py-2 text-sm text-red">

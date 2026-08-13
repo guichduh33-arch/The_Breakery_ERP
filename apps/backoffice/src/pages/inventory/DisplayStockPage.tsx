@@ -19,6 +19,7 @@ import {
   useDisplayMovements,
   type DisplayMovementRow,
 } from '@/features/inventory/hooks/useDisplayMovements.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
   {
@@ -108,14 +109,10 @@ export default function DisplayStockPage(): JSX.Element {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Display Stock (Vitrine)</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Read-only view of the POS display-case counter. These quantities live on a
-          separate ledger (display_stock); selling a display item draws from the
-          vitrine, not the global BO inventory. Mutations happen from the POS side.
-        </p>
-      </header>
+      <PageHeader
+        title="Display Stock (Vitrine)"
+        subtitle="Read-only view of the POS display-case counter. These quantities live on a separate ledger (display_stock); selling a display item draws from the vitrine, not the global BO inventory. Mutations happen from the POS side."
+      />
 
       <section className="space-y-3" aria-label="Display-stock counters">
         <h2 className="font-display text-xl text-text-primary">Current counters</h2>

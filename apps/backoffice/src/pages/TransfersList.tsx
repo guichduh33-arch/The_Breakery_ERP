@@ -19,6 +19,7 @@ import {
 } from '@/features/inventory-transfers/hooks/useInternalTransfers.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { TransferStatusBadge } from '@/features/inventory-transfers/components/TransferStatusBadge.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const PAGE_SIZE = 50;
 
@@ -72,22 +73,19 @@ export default function TransfersListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Transfers</h1>
-          <p className="text-text-secondary text-sm mt-1">
-            Move stock between sections. Items leave the source and land at the destination on receive.
-          </p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        className="items-start"
+        title="Transfers"
+        subtitle="Move stock between sections. Items leave the source and land at the destination on receive."
+        actions={canCreate ? (
           <Link
             to="/backoffice/inventory/transfers/new"
             className="inline-flex items-center gap-2 h-touch-comfy px-4 text-sm bg-green hover:bg-green-hover text-white uppercase tracking-wide rounded-md font-semibold"
           >
             <Plus className="h-4 w-4" aria-hidden /> New Transfer
           </Link>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* KPI strip — matches `14-transfers-list.jpg` */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
