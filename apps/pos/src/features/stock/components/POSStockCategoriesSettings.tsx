@@ -58,7 +58,10 @@ export function POSStockCategoriesSettings({
     >
       <header className="px-5 py-4 flex items-start justify-between border-b border-border-subtle">
         <div>
-          <DialogTitle className="font-display text-lg">Cafe Stock Categories</DialogTitle>
+          {/* Functional modal title, not the brand monogram — DESIGN.md
+              "La Règle de la Serif Réservée" keeps Playfair off everything
+              but the login screen. */}
+          <DialogTitle className="font-semibold text-lg">Cafe Stock Categories</DialogTitle>
           <DialogDescription className="text-text-secondary text-sm mt-0.5">
             Toggle which POS categories are tracked in the cafe live stock system.
           </DialogDescription>
@@ -76,7 +79,8 @@ export function POSStockCategoriesSettings({
             {draft.map((c) => (
               <li
                 key={c.slug}
-                className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-base/40 px-3 py-2.5"
+                // `bg-base` is a bare token — no alpha outside cat-* (/40 was dead).
+                className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-base px-3 py-2.5"
               >
                 <div className="text-sm font-medium text-text-primary">{c.name}</div>
                 <ToggleSwitch

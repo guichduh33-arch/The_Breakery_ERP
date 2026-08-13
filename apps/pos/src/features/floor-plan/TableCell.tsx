@@ -47,12 +47,16 @@ const STATUS_COPY: Record<TableStatus, string> = {
 export function TableCell({ table, selected, onTap, fit = false }: TableCellProps): JSX.Element {
   const shape = table.shape ?? (table.seats >= 4 ? 'pill' : 'circle');
 
+  // `amber-warn`/`green`/`text-muted` are bare tokens (no alpha outside
+  // cat-*). `warning-soft`/`success-soft` are the pre-baked translucent
+  // aliases of the same hues; "reserved" has no semantic-soft counterpart so
+  // it falls back to the numeric surface scale + `border-muted`.
   const surface =
     table.status === 'occupied'
-      ? 'bg-amber-warn/15 border-amber-warn/50'
+      ? 'bg-warning-soft border-amber-warn'
       : table.status === 'reserved'
-        ? 'bg-text-muted/10 border-text-muted/40'
-        : 'bg-green/15 border-green/50';
+        ? 'bg-surface-3 border-border-muted'
+        : 'bg-success-soft border-green';
 
   const ring = selected
     ? 'ring-2 ring-offset-2 ring-offset-bg-base ring-gold shadow-lg'
@@ -90,7 +94,7 @@ export function TableCell({ table, selected, onTap, fit = false }: TableCellProp
       </span>
       <span
         className={cn(
-          'mt-0.5 text-[9px] uppercase tracking-widest font-semibold',
+          'mt-0.5 text-xs uppercase tracking-widest font-semibold',
           table.status === 'occupied' && 'text-amber-warn',
           table.status === 'reserved' && 'text-text-muted',
           table.status === 'available' && 'text-green',

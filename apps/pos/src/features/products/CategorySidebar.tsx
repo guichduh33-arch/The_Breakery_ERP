@@ -26,7 +26,7 @@ export function CategorySidebar({ selectedSlug, onSelect }: CategorySidebarProps
       <button
         onClick={() => onSelect('favorites')}
         className={cn(
-          'w-16 py-3 flex flex-col items-center gap-1 rounded-md text-[10px] uppercase tracking-wide font-semibold',
+          'w-16 py-3 flex flex-col items-center gap-1 rounded-md text-xs uppercase tracking-wide font-semibold',
           selectedSlug === 'favorites' ? 'bg-gold-soft text-gold' : 'text-text-secondary hover:text-text-primary',
         )}
       >
@@ -41,7 +41,7 @@ export function CategorySidebar({ selectedSlug, onSelect }: CategorySidebarProps
             key={cat.id}
             onClick={() => onSelect(cat.slug)}
             className={cn(
-              'w-16 py-3 flex flex-col items-center gap-1 rounded-md text-[10px] uppercase tracking-wide font-semibold',
+              'w-16 py-3 flex flex-col items-center gap-1 rounded-md text-xs uppercase tracking-wide font-semibold',
               active ? 'bg-gold-soft text-gold' : 'text-text-secondary hover:text-text-primary',
             )}
           >

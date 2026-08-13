@@ -43,7 +43,9 @@ export function POSStockRow({
       data-testid={`pos-stock-row-${product.sku}`}
       data-state={isOut ? 'out' : isLow ? 'low' : 'ok'}
       className={cn(
-        'rounded-md border border-border-subtle border-l-4 bg-bg-elevated/60',
+        // `border-l-4` is the functional stock-state indicator — kept as is.
+        // `bg-bg-elevated` alone: bare token, no alpha outside cat-* (/60 was dead).
+        'rounded-md border border-border-subtle border-l-4 bg-bg-elevated',
         leftBorder,
       )}
     >
@@ -65,7 +67,7 @@ export function POSStockRow({
         {/* Name + sku + status */}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-text-primary truncate">{product.name}</div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-text-muted">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-text-muted">
             <span className="truncate">{product.sku}</span>
             {isOut && <span className="text-red normal-case tracking-normal">Out of stock</span>}
             {isLow && <span className="text-amber-warn normal-case tracking-normal">Low stock</span>}
@@ -82,7 +84,7 @@ export function POSStockRow({
           <span className={cn('font-mono text-xl font-bold tabular-nums', stockTextTone)}>
             {product.display_stock}
           </span>
-          <span className="block text-[10px] text-text-muted">{product.unit}</span>
+          <span className="block text-xs text-text-muted">{product.unit}</span>
         </div>
 
         {/* Stepper — 56px touch targets */}

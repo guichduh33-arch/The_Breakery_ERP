@@ -221,7 +221,10 @@ export default function POSStockView(): JSX.Element {
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </Button>
         <Package className="h-5 w-5 text-gold" aria-hidden />
-        <h1 className="font-display text-lg">Display Stock</h1>
+        {/* Functional header, not the brand monogram — DESIGN.md "La Règle
+            de la Serif Réservée" keeps Playfair off everything but the
+            login screen. */}
+        <h1 className="font-semibold text-lg">Display Stock</h1>
 
         <div className="flex-1" />
 
@@ -399,7 +402,9 @@ function KpiChip({
       className={cn(
         'inline-flex items-center gap-1 px-2 h-7 rounded-md text-xs font-semibold uppercase tracking-widest',
         tone === 'danger' && 'bg-red-soft text-red',
-        tone === 'warning' && 'bg-amber-warn/10 text-amber-warn',
+        // `amber-warn` has no alpha outside cat-* — `warning-soft` mirrors
+        // the `danger` branch's `-soft` pattern above.
+        tone === 'warning' && 'bg-warning-soft text-amber-warn',
         tone === 'neutral' && 'bg-bg-overlay text-text-secondary',
       )}
     >
