@@ -170,6 +170,15 @@
                'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif;
   --font-sans: var(--font-body);
 
+  /* Règle Playfair-Is-Brand-Only (DESIGN.md, critique /impeccable 2026-08-13) :
+   * dans ce thème le serif ne rend QUE le monogramme, qui lit --font-brand —
+   * jamais touché ici. Remapper --font-display sur la pile du corps fait
+   * quitter Playfair d'un coup à tout ce qui le consomme encore (DialogTitle,
+   * SheetTitle, EmptyState…), --font-serif suivant de lui-même puisqu'il n'est
+   * qu'un alias var(--font-display). Le POS (:root / luxe-dark) n'hérite pas
+   * de ce bloc et garde son serif. */
+  --font-display: var(--font-body);
+
   /* Labels mono : .14em au lieu de .12em. Instrument Sans a un œil plus étroit
    * qu'Inter ; à interlettrage égal les capitales mono paraissaient tassées
    * contre lui. */

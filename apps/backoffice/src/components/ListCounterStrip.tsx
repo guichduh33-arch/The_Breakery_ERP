@@ -49,7 +49,9 @@ const TONE: Record<CounterTone, string> = {
 };
 
 const LABEL = 'font-data text-xs uppercase tracking-widest text-text-muted';
-const VALUE = 'font-data text-[20px] font-semibold leading-tight tabular-nums';
+// Palier « Valeur KPI ordinaire » de DESIGN.md (mono, 600, 23 px, -0.02em,
+// tabulaire) — même écriture que DashboardKpiStrip ; la couleur vient du ton.
+const VALUE = 'font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums';
 
 export interface ListCounterStripProps {
   counters: readonly ListCounter[];
