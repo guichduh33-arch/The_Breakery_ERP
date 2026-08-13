@@ -20,7 +20,7 @@
 // matches OR no products in category.
 
 import { useMemo, useState } from 'react';
-import type { JSX } from 'react';
+import type { JSX, ReactElement } from 'react';
 import { Search } from 'lucide-react';
 import type { Product } from '@breakery/domain';
 import { allLotsExpiredOrConsumed } from '@breakery/domain';
@@ -59,6 +59,13 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
     }
     return m;
   }, [cartItems]);
+
+  // Perf (P2) — `ProductCard` is now `React.memo`-wrapped; a fresh
+  // `<ComboBadge />` element created inline in the .map() below would break
+  // that memoization (new element = new prop reference) for every combo
+  // card on every render. `ComboBadge` takes no product-specific props, so a
+  // single stable element can be shared across all combo cards.
+  const comboBadge = useMemo<ReactElement>(() => <ComboBadge />, []);
 
   const selectedCat = categories.find((c) => c.slug === selectedSlug);
   const title = selectedSlug === 'favorites'
@@ -173,9 +180,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   lowStockLabel={lowStockLabel}
                   cartQty={qtyByProduct.get(p.id) ?? 0}
                   onSelect={onSelect}
-                  topLeftSlot={
-                    p.product_type === 'combo' ? <ComboBadge /> : undefined
-                  }
+                  topLeftSlot={p.product_type === 'combo' ? comboBadge : undefined}
                 />
               );
             })}
