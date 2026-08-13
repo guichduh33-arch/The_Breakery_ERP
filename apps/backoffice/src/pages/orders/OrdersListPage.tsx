@@ -219,7 +219,13 @@ export default function OrdersListPage(): JSX.Element {
     {
       id: 'amount-refunded',
       label: 'Refunded',
-      value: countersDown ? '—' : `− ${formatCurrency(c?.refunded.amount ?? 0)}`,
+      // « − Rp 0 » affichait un moins permanent devant un zéro : le signe ne
+      // se montre que lorsqu'il y a réellement de l'argent rendu.
+      value: countersDown
+        ? '—'
+        : (c?.refunded.amount ?? 0) > 0
+          ? `− ${formatCurrency(c?.refunded.amount ?? 0)}`
+          : formatCurrency(0),
       ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
       title: `${(c?.refunded.count ?? 0).toLocaleString()} orders carry a refund in this window.`,
     },
