@@ -1,6 +1,6 @@
 // apps/pos/src/features/heldOrders/components/AttachTabCustomerButton.tsx
 //
-// Session 62 — Task 5 — "Ardoise" action on a fired counter order row in
+// Session 62 — Task 5 — "Tab" action on a fired counter order row in
 // HeldOrdersModal. Opens the same customer picker the cart uses
 // (`CustomerAttachModal`, search-only here — this flow expects an existing
 // customer to gate credit against, no quick-create) and attaches it via
@@ -37,10 +37,10 @@ async function searchCustomers(query: string): Promise<CustomerWithCategory[]> {
 
 function creditLimitMessage(details: AttachTabCustomerErrorDetails): string {
   const c = details.creditLimit;
-  if (!c) return 'Plafond ardoise dépassé pour ce client.';
+  if (!c) return 'Tab limit exceeded for this customer.';
   return (
-    `Plafond ardoise dépassé — encours ${formatIdr(c.current_outstanding)} ` +
-    `+ commande ${formatIdr(c.order_amount)} > plafond ${formatIdr(c.credit_limit)}`
+    `Tab limit exceeded — outstanding ${formatIdr(c.current_outstanding)} ` +
+    `+ order ${formatIdr(c.order_amount)} > limit ${formatIdr(c.credit_limit)}`
   );
 }
 
@@ -48,12 +48,12 @@ function errorMessage(err: Error): string {
   const details = (err as Error & { details?: AttachTabCustomerErrorDetails }).details;
   if (details?.error === 'credit_limit_exceeded') return creditLimitMessage(details);
   if (details?.error === 'customer_not_found_or_inactive') {
-    return 'Ce client est introuvable ou inactif.';
+    return 'This customer could not be found or is inactive.';
   }
   if (details?.error === 'order_not_attachable') {
-    return "Cette commande n'est plus attachable (déjà payée ou annulée).";
+    return 'This order can no longer be attached (already paid or voided).';
   }
-  return err.message || "Impossible d'attacher ce client à l'ardoise.";
+  return err.message || 'Could not attach this customer to the tab.';
 }
 
 export function AttachTabCustomerButton({ orderId }: { orderId: string }): JSX.Element {
@@ -66,7 +66,7 @@ export function AttachTabCustomerButton({ orderId }: { orderId: string }): JSX.E
       { orderId, customerId: customer.id },
       {
         onSuccess: (result) => {
-          toast.success(`Ardoise de ${result.customer_name} : ${formatIdr(result.total)}`);
+          toast.success(`Tab for ${result.customer_name}: ${formatIdr(result.total)}`);
         },
         onError: (err) => {
           toast.error(errorMessage(err));
@@ -91,7 +91,7 @@ export function AttachTabCustomerButton({ orderId }: { orderId: string }): JSX.E
         )}
       >
         <CreditCard className="h-4 w-4" aria-hidden />
-        Ardoise
+        Tab
       </button>
 
       <CustomerAttachModal

@@ -1,12 +1,12 @@
 /// <reference types="@testing-library/jest-dom" />
 // apps/pos/src/features/heldOrders/__tests__/attach-tab-customer.smoke.test.tsx
 //
-// Session 62 — Task 5 — "Ardoise" action on a fired counter order in
+// Session 62 — Task 5 — "Tab" action on a fired counter order in
 // HeldOrdersModal. Verifies: the button renders on every held row (ADR-022
 // déc. 4 : la voie brouillon a disparu, toute ligne listée est une commande
 // envoyée), selecting a customer calls attach_tab_customer_v3 with the right
 // args, success shows the named-total toast, and a P0011
-// credit_limit_exceeded reply surfaces the plafond breakdown in French
+// credit_limit_exceeded reply surfaces the tab-limit breakdown
 // (mock rpc — no live DB).
 //
 // `CustomerAttachModal` is stubbed (its own search/VKP behavior is covered by
@@ -167,7 +167,7 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
 
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     const message = toastError.mock.calls[0]?.[0] as string;
-    expect(message).toMatch(/plafond ardoise dépassé/i);
+    expect(message).toMatch(/tab limit exceeded/i);
     expect(message).toContain('300.000');
     expect(message).toContain('125.000');
     expect(message).toContain('400.000');
