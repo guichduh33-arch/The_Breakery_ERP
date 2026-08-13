@@ -11,6 +11,15 @@ describe('Button', () => {
     render(<Button variant="primary">P</Button>);
     expect(screen.getByRole('button')).toHaveClass('bg-green');
   });
+  // DESIGN.md exige liseré ET halo au focus (--shadow-focus, audit P1-1) ; le
+  // seul `focus-visible:outline-*` a déjà été silencieusement absorbé une fois
+  // par tailwind-merge (voir cn.ts) — on fige la présence de l'utilitaire.
+  it('carries the focus halo utility alongside the outline ring', () => {
+    render(<Button>F</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn).toHaveClass('focus-visible:outline-gold');
+    expect(btn).toHaveClass('focus-visible:shadow-focus');
+  });
   it('disables when disabled', () => {
     render(<Button disabled>D</Button>);
     expect(screen.getByRole('button')).toBeDisabled();
