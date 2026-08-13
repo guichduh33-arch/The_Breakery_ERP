@@ -35,7 +35,7 @@ export function VarianceWarningBadge({
     <span
       role="status"
       data-testid="variance-warning-badge"
-      className="inline-flex items-center gap-1 rounded-full bg-red/15 text-red px-2 py-0.5 text-xs uppercase tracking-wide font-medium"
+      className="inline-flex items-center gap-1 rounded-full bg-red-soft text-red px-2 py-0.5 text-xs uppercase tracking-wide font-medium"
     >
       {sign} threshold
     </span>

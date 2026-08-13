@@ -60,7 +60,7 @@ export default function POSSettingsPage(): JSX.Element {
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </Button>
         <Settings className="h-5 w-5 text-gold" aria-hidden />
-        <h1 className="font-display text-lg">POS Settings</h1>
+        <h1 className="font-semibold text-lg">POS Settings</h1>
         {!canEdit && (
           <span className="ml-2 text-xs uppercase tracking-widest text-text-muted inline-flex items-center gap-1">
             <ShieldCheck className="h-3 w-3" aria-hidden /> Read only
@@ -124,7 +124,7 @@ function PosConfigSection({ readOnly }: { readOnly: boolean }): JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display text-xl inline-flex items-center gap-2">
+        <h2 className="font-semibold text-xl inline-flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-gold" aria-hidden />
           POS Configuration
         </h2>
@@ -208,7 +208,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <ScopeBadge scope="org" />
-        <span className="text-xs text-text-muted">Presets partagés par tous les terminaux.</span>
+        <span className="text-xs text-text-muted">Shared presets — applies to every terminal.</span>
       </div>
       <NumericPresetGroup
         title="Quick Payment Amounts"
@@ -320,7 +320,7 @@ function NumericPresetGroup({
   return (
     <Card variant="default" padding="md" className="space-y-4">
       <div>
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           {title}
         </SectionLabel>
         {description && <p className="text-text-secondary text-xs mt-0.5">{description}</p>}
@@ -378,7 +378,7 @@ function PresetChip({
   onRemove: () => void;
 }): JSX.Element {
   return (
-    <div className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-bg-base h-9 px-3 text-sm font-semibold">
+    <div className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-bg-base px-3 py-1 text-sm font-semibold">
       <span className="font-mono tabular-nums">{formatIdr(amount)}</span>
       {!readOnly && (
         <span className="ml-1 inline-flex items-center gap-0.5">
@@ -387,26 +387,26 @@ function PresetChip({
             aria-label="Move up"
             disabled={!canMoveUp}
             onClick={onMoveUp}
-            className="text-text-muted hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-muted p-1"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-muted"
           >
-            <ArrowUp className="h-3 w-3" aria-hidden />
+            <ArrowUp className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
             aria-label="Move down"
             disabled={!canMoveDown}
             onClick={onMoveDown}
-            className="text-text-muted hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-muted p-1"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-muted"
           >
-            <ArrowDown className="h-3 w-3" aria-hidden />
+            <ArrowDown className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
             aria-label="Remove"
             onClick={onRemove}
-            className="text-red/80 hover:text-red p-1"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-red-as-text"
           >
-            <Trash2 className="h-3 w-3" aria-hidden />
+            <Trash2 className="h-4 w-4" aria-hidden />
           </button>
         </span>
       )}
@@ -456,7 +456,7 @@ function DiscountPresetsGroup({
   return (
     <Card variant="default" padding="md" className="space-y-3">
       <div>
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Quick Discount Presets
         </SectionLabel>
         <p className="text-text-secondary text-xs mt-0.5">
@@ -470,7 +470,7 @@ function DiscountPresetsGroup({
         {presets.map((d, idx) => (
           <li
             key={`${d.name}-${idx}`}
-            className="flex items-center gap-3 rounded-md border border-border-subtle bg-bg-base/40 px-3 py-2"
+            className="flex items-center gap-3 rounded-md border border-border-subtle bg-bg-input px-3 py-2"
           >
             <Tag className="h-4 w-4 text-gold" aria-hidden />
             <span className="font-mono text-sm font-semibold w-12 tabular-nums">{d.value}%</span>
@@ -482,9 +482,9 @@ function DiscountPresetsGroup({
                 aria-label={`Remove ${d.name}`}
                 onClick={() => remove(idx)}
                 disabled={isPending}
-                className="text-red/80 hover:text-red disabled:opacity-30 p-1"
+                className="min-h-11 min-w-11 inline-flex items-center justify-center text-text-muted hover:text-red-as-text disabled:opacity-30"
               >
-                <Trash2 className="h-3 w-3" aria-hidden />
+                <Trash2 className="h-4 w-4" aria-hidden />
               </button>
             )}
           </li>

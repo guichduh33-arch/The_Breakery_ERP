@@ -41,10 +41,10 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-2">
         <ScopeBadge scope="terminal" />
-        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+        <span className="text-xs text-text-muted">This terminal only.</span>
       </div>
       <Card variant="default" padding="md" className="space-y-2">
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Diagnostics
         </SectionLabel>
         <div>
@@ -56,7 +56,7 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
       </Card>
 
       <Card variant="default" padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Maintenance
         </SectionLabel>
         <p className="text-text-secondary text-xs">
@@ -76,7 +76,7 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
             </Button>
           ) : (
             <>
-              <Button variant="ghostDestructive" size="sm" className="border border-red-as-text/30" onClick={doReset}>
+              <Button variant="ghostDestructive" size="sm" className="border border-red-as-text" onClick={doReset}>
                 Confirm reset
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setConfirmReset(false)}>

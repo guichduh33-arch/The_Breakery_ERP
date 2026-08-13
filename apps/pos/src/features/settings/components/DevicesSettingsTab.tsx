@@ -77,10 +77,10 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-2">
         <ScopeBadge scope="terminal" />
-        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+        <span className="text-xs text-text-muted">This terminal only.</span>
       </div>
       <Card variant="default" padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Print server
         </SectionLabel>
         <div className="space-y-1">
@@ -115,7 +115,7 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
       </Card>
 
       <Card variant="default" padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           LAN device code
         </SectionLabel>
         <div className="space-y-2">
@@ -162,7 +162,7 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
       </Card>
 
       <Card variant="default" padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Hardware checks
         </SectionLabel>
         <p className="text-text-secondary text-xs">

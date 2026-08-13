@@ -12,9 +12,9 @@ export function ScopeBadge({ scope }: { scope: 'org' | 'terminal' }): JSX.Elemen
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest',
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-widest',
         isOrg
-          ? 'border-gold/40 text-gold bg-gold/10'
+          ? 'border-gold-soft text-gold bg-gold-soft'
           : 'border-border-subtle text-text-muted bg-bg-overlay',
       )}
       title={
@@ -28,7 +28,7 @@ export function ScopeBadge({ scope }: { scope: 'org' | 'terminal' }): JSX.Elemen
       ) : (
         <MonitorSmartphone className="h-3 w-3" aria-hidden />
       )}
-      {isOrg ? 'Établissement' : 'Ce terminal'}
+      {isOrg ? 'Shared' : 'This terminal'}
     </span>
   );
 }

@@ -79,7 +79,7 @@ export function CashInOutModal({
     <FullScreenModal open={open} onOpenChange={(o) => { if (!o) resetAndClose(); }}>
       <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6">
         <header className="flex items-center justify-between">
-          <h2 className="font-serif text-2xl">{title}</h2>
+          <h2 className="font-semibold text-2xl">{title}</h2>
           <span className="text-xs uppercase tracking-wide text-text-secondary">
             {direction === 'in' ? 'Add to drawer' : 'Remove from drawer'}
           </span>

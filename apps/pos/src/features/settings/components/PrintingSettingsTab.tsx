@@ -57,7 +57,7 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
       <div>
         <div className="flex items-center gap-2">
           <ScopeBadge scope="org" />
-          <span className="text-xs text-text-muted">Réglage partagé par tous les terminaux.</span>
+          <span className="text-xs text-text-muted">Shared setting — applies to every terminal.</span>
         </div>
         <div className="mt-4">
           <SettingToggle
@@ -79,8 +79,8 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
           <div>
             <p className="text-sm font-medium text-text-primary">Kitchen ticket copies (KOT)</p>
             <p className="text-xs text-text-muted">
-              Copies papier par station à chaque envoi cuisine. 0 = pas de papier
-              pour la station — le KDS écran reçoit toujours.
+              Paper copies per station on each kitchen send. 0 = no paper for
+              that station — the KDS screen still receives it.
             </p>
           </div>
           {KOT_STATIONS.map(({ station, key, label }) => (
@@ -102,7 +102,7 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <ScopeBadge scope="terminal" />
-          <span className="text-xs text-text-muted">Réglage de ce terminal uniquement.</span>
+          <span className="text-xs text-text-muted">This terminal only.</span>
         </div>
         <label
           htmlFor="print-server-url"
