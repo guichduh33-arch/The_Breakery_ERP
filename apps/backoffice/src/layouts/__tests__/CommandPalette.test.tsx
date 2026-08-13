@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { CommandPalette, fuzzyScore } from '@/layouts/CommandPalette.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -40,17 +41,23 @@ function LocationProbe() {
 }
 
 function renderPalette(onClose: () => void = vi.fn()) {
+  // La palette interroge désormais les entités via react-query (lot 4) : un
+  // QueryClient neuf par rendu, retry off — les sections serveur restent
+  // vides sous test, seuls pages/actions sont exercés ici.
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={['/backoffice']}>
-      <Routes>
-        <Route path="*" element={<LocationProbe />} />
-      </Routes>
-      <CommandPalette open onClose={onClose} />
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/backoffice']}>
+        <Routes>
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
+        <CommandPalette open onClose={onClose} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
-const input = () => screen.getByRole('textbox', { name: /search pages and actions/i });
+const input = () => screen.getByRole('textbox', { name: /pages and actions/i });
 
 describe('fuzzyScore', () => {
   it('classe une sous-chaîne littérale devant une correspondance dispersée', () => {
@@ -117,7 +124,7 @@ describe('CommandPalette', () => {
     renderPalette();
     fireEvent.change(input(), { target: { value: 'cash flow' } });
     expect(screen.queryByRole('option', { name: /Cash flow/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/No page or action matches/)).toBeInTheDocument();
+    expect(screen.getByText(/No order, product, customer, supplier, page or action matches/)).toBeInTheDocument();
   });
 
   it('n’expose pas une action dont le droit de création manque', () => {

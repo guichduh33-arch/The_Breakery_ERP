@@ -7167,6 +7167,7 @@ export type Database = {
           metadata: Json
         }[]
       }
+      get_b2b_dashboard_counters_v1: { Args: never; Returns: Json }
       get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
@@ -8411,6 +8412,18 @@ export type Database = {
           product_id: string
           sku: string
           unit: string
+        }[]
+      }
+      search_orders_v1: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          id: string
+          order_number: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
         }[]
       }
       send_items_to_kitchen: {
