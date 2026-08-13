@@ -188,7 +188,9 @@ describe('TopBar', () => {
     renderTopBar();
     fireEvent.click(screen.getByRole('button', { name: /Mamat/ }));
     const menu = screen.getByRole('menu');
-    expect(within(menu).getByText('OWNER')).toBeInTheDocument();
+    // Le rôle est rendu « Owner » (lot lisibilité) — la casse capitale vient
+    // du CSS (uppercase), pas du texte.
+    expect(within(menu).getByText('Owner')).toBeInTheDocument();
     expect(within(menu).getByRole('menuitem', { name: /Settings/ })).toBeInTheDocument();
     expect(within(menu).getByRole('menuitem', { name: /Logout/ })).toBeInTheDocument();
   });

@@ -95,10 +95,15 @@ describe('CommandPalette', () => {
 
   it('ne rend rien quand elle est fermée', () => {
     setAuthState(ALL_PERMS);
+    // Même fermée, la palette monte usePaletteSearch (les hooks ne sont pas
+    // conditionnels) : il lui faut un QueryClient.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
-      <MemoryRouter>
-        <CommandPalette open={false} onClose={vi.fn()} />
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <CommandPalette open={false} onClose={vi.fn()} />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
     expect(screen.queryByTestId('command-palette')).not.toBeInTheDocument();
   });
@@ -124,7 +129,10 @@ describe('CommandPalette', () => {
     renderPalette();
     fireEvent.change(input(), { target: { value: 'cash flow' } });
     expect(screen.queryByRole('option', { name: /Cash flow/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/No order, product, customer, supplier, page or action matches/)).toBeInTheDocument();
+    // Avant l'échéance du debounce (250 ms) le message est « No page or
+    // action matches » ; après, la variante longue avec les entités. Les deux
+    // contiennent « page or action matches » — l'assert reste hors-timing.
+    expect(screen.getByText(/page or action matches/)).toBeInTheDocument();
   });
 
   it('n’expose pas une action dont le droit de création manque', () => {
