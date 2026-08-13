@@ -10,6 +10,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import PurchaseOrdersListPage from '@/pages/purchasing/PurchaseOrdersListPage.js';
 import type { PurchaseOrderListRow } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
+import type * as UsePurchaseOrdersListModule from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
+import type * as UseSuppliersListModule from '@/features/suppliers/hooks/useSuppliersList.js';
 
 const ROWS: PurchaseOrderListRow[] = [
   {
@@ -87,7 +89,7 @@ vi.mock('@/features/purchasing/import/purchasesImportDef.js', () => ({
 }));
 
 vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/purchasing/hooks/usePurchaseOrdersList.js')>();
+  const actual = await importOriginal<typeof UsePurchaseOrdersListModule>();
   return {
     ...actual,
     usePurchaseOrdersList: () => ({ data: ROWS, isLoading: false, error: null }),
@@ -95,7 +97,7 @@ vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOri
 });
 
 vi.mock('@/features/suppliers/hooks/useSuppliersList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/suppliers/hooks/useSuppliersList.js')>();
+  const actual = await importOriginal<typeof UseSuppliersListModule>();
   return {
     ...actual,
     useSuppliersList: () => ({ data: [], isLoading: false, error: null }),

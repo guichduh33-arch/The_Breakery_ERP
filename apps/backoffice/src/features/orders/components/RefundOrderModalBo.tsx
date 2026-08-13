@@ -120,7 +120,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
   const methodLedger: MethodLedgerEntry[] = useMemo(() => {
     if (!effectiveMethod) return [];
     if (effectiveMethod === 'store_credit') {
-      return [{ method: 'store_credit' as PaymentMethod, paid: refundTotal, refunded: 0 }];
+      return [{ method: 'store_credit', paid: refundTotal, refunded: 0 }];
     }
     return [
       {

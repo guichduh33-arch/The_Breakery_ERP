@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import ExpensesListPage from '@/pages/expenses/ExpensesListPage.js';
 import type { ExpenseRow, ExpenseCategoryRow } from '@/features/expenses/hooks/useExpensesList.js';
+import type * as UseExpensesListModule from '@/features/expenses/hooks/useExpensesList.js';
 
 const ROWS: ExpenseRow[] = [
   {
@@ -86,7 +87,7 @@ const CATS: ExpenseCategoryRow[] = [
 ];
 
 vi.mock('@/features/expenses/hooks/useExpensesList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/expenses/hooks/useExpensesList.js')>();
+  const actual = await importOriginal<typeof UseExpensesListModule>();
   return {
     ...actual,
     useExpensesList:    () => ({ data: ROWS, isLoading: false, error: null }),

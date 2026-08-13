@@ -139,7 +139,7 @@ export function ProductsTable({
       // lignes juste pour loger une pastille d'une syllabe.
       render: (r) => {
         const isVariant = r.parent_product_id !== null;
-        const isParent = parentIds !== undefined && parentIds.has(r.id);
+        const isParent = parentIds?.has(r.id) ?? false;
         return (
           <div className={cn('flex flex-col gap-0.5', isVariant && 'pl-4')}>
             <span className="truncate font-medium text-text-primary">{r.name}</span>

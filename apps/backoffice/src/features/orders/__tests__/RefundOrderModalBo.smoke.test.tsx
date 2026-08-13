@@ -37,7 +37,7 @@ function makeOrder(over: Partial<Order> = {}): Order {
     payments: [{ id: 'pay-1', method: 'card', amount: 100_000, cash_received: null, change_given: null, paid_at: '2026-05-22T10:05:00Z', reference: null }],
     refunds: [], promotions: [], refunded_by_method: {}, total_refunded: 0,
     ...over,
-  } as Order;
+  };
 }
 
 function renderModal(order: Order) {
@@ -64,9 +64,9 @@ describe('RefundOrderModalBo — cross-shift BO refund (lot 6c)', () => {
     }));
     expect(screen.getByText(/cannot be refunded from the back-office/i)).toBeInTheDocument();
     // store_credit désactivé faute de client.
-    const sc = screen.getByRole('option', { name: /Store credit \(requires a customer\)/i }) as HTMLOptionElement;
-    expect(sc.disabled).toBe(true);
-    expect((screen.getByTestId('refund-submit') as HTMLButtonElement).disabled).toBe(true);
+    const sc = screen.getByRole('option', { name: /Store credit \(requires a customer\)/i });
+    expect(sc).toBeDisabled();
+    expect(screen.getByTestId('refund-submit')).toBeDisabled();
   });
 
   it('routes a non-cash refund back to the original method with the picked lines', async () => {
@@ -76,8 +76,8 @@ describe('RefundOrderModalBo — cross-shift BO refund (lot 6c)', () => {
     fireEvent.click(screen.getByLabelText('Increase Latte')); // qty 1 → Rp 50.000
     fireEvent.change(screen.getByTestId('refund-reason'), { target: { value: 'customer return' } });
     fireEvent.change(screen.getByTestId('refund-pin'), { target: { value: '123456' } });
-    const submit = screen.getByTestId('refund-submit') as HTMLButtonElement;
-    await waitFor(() => expect(submit.disabled).toBe(false));
+    const submit = screen.getByTestId('refund-submit');
+    await waitFor(() => expect(submit).not.toBeDisabled());
     fireEvent.click(submit);
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({
@@ -93,13 +93,13 @@ describe('RefundOrderModalBo — cross-shift BO refund (lot 6c)', () => {
     renderModal(makeOrder({
       payments: [{ id: 'pay-1', method: 'cash', amount: 100_000, cash_received: 100_000, change_given: 0, paid_at: '2026-05-22T10:05:00Z', reference: null }],
     }));
-    const sc = screen.getByRole('option', { name: /^Store credit$/i }) as HTMLOptionElement;
-    expect(sc.disabled).toBe(false);
+    const sc = screen.getByRole('option', { name: /^Store credit$/i });
+    expect(sc).not.toBeDisabled();
     fireEvent.click(screen.getByLabelText('Increase Latte'));
     fireEvent.change(screen.getByTestId('refund-reason'), { target: { value: 'goodwill' } });
     fireEvent.change(screen.getByTestId('refund-pin'), { target: { value: '123456' } });
-    const submit = screen.getByTestId('refund-submit') as HTMLButtonElement;
-    await waitFor(() => expect(submit.disabled).toBe(false));
+    const submit = screen.getByTestId('refund-submit');
+    await waitFor(() => expect(submit).not.toBeDisabled());
     fireEvent.click(submit);
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({

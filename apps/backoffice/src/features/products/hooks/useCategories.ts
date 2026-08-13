@@ -20,7 +20,7 @@ export function useCategories() {
         .order('sort_order')
         .order('name');
       if (error) throw error;
-      return (data ?? []) as CategoryOption[];
+      return (data ?? []);
     },
   });
 }

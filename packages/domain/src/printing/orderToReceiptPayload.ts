@@ -23,20 +23,20 @@ export interface ReceiptOrderInput {
   discount_amount: number;
   tax_amount: number;
   total: number;
-  items: ReadonlyArray<{
+  items: readonly {
     name: string;
     quantity: number;
     unit_price: number;
     line_total: number;
     is_cancelled?: boolean;
-  }>;
-  payments: ReadonlyArray<{
+  }[];
+  payments: readonly {
     method: string;
     amount: number;
     cash_received: number | null;
     change_given: number | null;
-  }>;
-  promotions?: ReadonlyArray<{ description: string; amount: number }>;
+  }[];
+  promotions?: readonly { description: string; amount: number }[];
 }
 
 export interface ReceiptPdfData {
@@ -48,12 +48,12 @@ export interface ReceiptPdfData {
     customer_name: string | null;
     table_number: string | null;
   };
-  items: Array<{
+  items: {
     name: string;
     quantity: number;
     unit_price: number;
     line_total: number;
-  }>;
+  }[];
   totals: {
     /** Base hors PB1 = subtotal − tax_amount. */
     base: number;
@@ -64,12 +64,12 @@ export interface ReceiptPdfData {
     tax: number;
     total: number;
   };
-  payments: Array<{
+  payments: {
     method: string;
     amount: number;
     cash_received: number | null;
     change_given: number | null;
-  }>;
+  }[];
 }
 
 /**
