@@ -142,12 +142,20 @@ export default function DashboardPage({ data }: DashboardPageProps) {
         subtitle={
           <span className="inline-flex items-center gap-2" aria-live="polite">
             {hours !== null && <>Open since {hours.open} · closes {hours.close} · </>}
-            Last sync {formatClock(overview?.generated_at)}
+            {/* Audit /impeccable 2026-08-13 (P2-4) — le seul témoin d'activité
+                était la rotation de l'icône, éteinte par `motion-reduce`. Sous
+                mouvement réduit l'écran ne répondait donc RIEN au clic, et on
+                recliquait. Le témoin passe à un état STATIQUE — libellé qui
+                change, contrôle désactivé et grisé — lisible par tout le monde,
+                pas seulement par ceux qui acceptent le mouvement. Même geste
+                que le bouton Refresh de la liste des commandes. */}
+            {isLoading ? 'Refreshing…' : <>Last sync {formatClock(overview?.generated_at)}</>}
             <button
               type="button"
               onClick={refetch}
-              className="text-text-muted hover:text-text-primary"
-              aria-label="Refresh dashboard"
+              disabled={isLoading}
+              className="text-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={isLoading ? 'Refreshing dashboard' : 'Refresh dashboard'}
             >
               <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin motion-reduce:animate-none')} aria-hidden />
             </button>

@@ -17,7 +17,13 @@ const DialogOverlay = forwardRef<
     className={cn(
       'fixed inset-0 z-50 bg-backdrop backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       // motion-reduce: respect prefers-reduced-motion (TASK-22-009)
-      'motion-reduce:animate-none motion-reduce:transition-none',
+      // Audit /impeccable 2026-08-13 (P3-4) — `backdrop-blur-md` est le seul
+      // effet de composition plein écran du produit : le compositeur refait le
+      // flou de toute la page à chaque frame tant que le dialogue est ouvert.
+      // `prefers-reduced-motion` est aussi la demande des postes qui peinent à
+      // composer ; le flou tombe donc avec le reste. Le voile `bg-backdrop`
+      // reste : la profondeur survit, seule la passe coûteuse disparaît.
+      'motion-reduce:animate-none motion-reduce:transition-none motion-reduce:backdrop-blur-none',
       className,
     )}
     {...props}

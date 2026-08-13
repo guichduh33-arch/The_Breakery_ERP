@@ -234,6 +234,41 @@ describe('DashboardPage — écran 1c', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
+  // Le défaut que ce bloc verrouille (audit /impeccable 2026-08-13, P2-4) : le
+  // seul témoin d'un rafraîchissement en cours était la ROTATION de l'icône,
+  // que `motion-reduce:animate-none` éteint. Un utilisateur en mouvement réduit
+  // cliquait donc dans le vide et recliquait. Le témoin doit être STATIQUE, donc
+  // lisible quel que soit le réglage de mouvement — une classe CSS ne se teste
+  // pas, un état désactivé et un libellé se testent.
+  describe('le rafraîchissement se signale sans mouvement', () => {
+    it('désactive le contrôle et nomme son état pendant le chargement', () => {
+      const refetch = vi.fn();
+      renderWith(null, { isLoading: true, refetch });
+
+      const btn = screen.getByRole('button', { name: /Refreshing dashboard/i });
+      expect(btn).toBeDisabled();
+      fireEvent.click(btn);
+      expect(refetch).not.toHaveBeenCalled();
+    });
+
+    it('remplace « Last sync » par un libellé porteur, pas par une heure figée', () => {
+      renderWith(null, { isLoading: true });
+      // Le sous-titre est le parent direct du contrôle — le viser par là évite
+      // de dépendre d'un testid ajouté pour le seul confort du test.
+      const subtitle = screen.getByRole('button', { name: /Refreshing dashboard/i }).parentElement;
+      expect(subtitle).toHaveTextContent('Refreshing…');
+      expect(subtitle).not.toHaveTextContent('Last sync');
+    });
+
+    it('rend le contrôle au repos dès que les chiffres sont là', () => {
+      renderWith(overviewFixture());
+      const btn = screen.getByRole('button', { name: /Refresh dashboard/i });
+      expect(btn).toBeEnabled();
+      expect(btn.parentElement).toHaveTextContent('Last sync');
+      expect(btn.parentElement).not.toHaveTextContent('Refreshing…');
+    });
+  });
+
   it('renders the four detail cards with their data', () => {
     renderWith(overviewFixture());
     expect(screen.getByTestId('card-open-orders')).toBeInTheDocument();
