@@ -128,7 +128,7 @@ describe('POSSettingsPage', () => {
     renderPage();
     expect(screen.getByRole('button', { name: /customer display/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /kds/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Établissement').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Shared').length).toBeGreaterThan(0);
   });
 
   it('switches between Configuration sub-tabs (General → Advanced)', () => {

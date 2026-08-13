@@ -32,11 +32,11 @@ export function BehaviorSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-2">
         <ScopeBadge scope="terminal" />
-        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+        <span className="text-xs text-text-muted">This terminal only.</span>
       </div>
       <Card variant="default" padding="md" className="space-y-3">
         <div>
-          <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+          <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
             Default order type
           </SectionLabel>
           <p className="text-text-secondary text-xs mt-0.5">

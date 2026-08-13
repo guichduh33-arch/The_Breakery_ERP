@@ -41,10 +41,10 @@ export function DisplaySettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-2">
         <ScopeBadge scope="org" />
-        <span className="text-xs text-text-muted">Réglage partagé par tous les terminaux.</span>
+        <span className="text-xs text-text-muted">Shared setting — applies to every terminal.</span>
       </div>
       <Card variant="default" padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Customer display
         </SectionLabel>
         <div className="space-y-2">
