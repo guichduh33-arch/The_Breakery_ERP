@@ -53,10 +53,12 @@ import { RevenueShareCard } from '@/features/dashboard/components/RevenueShareCa
 import { Delta } from '@/features/dashboard/components/Delta.js';
 import { formatClock, formatHourRange, formatIdr, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
 import { exportDashboardCsv } from '@/features/dashboard/utils/dashboardCsv.js';
+import { revenue30dTarget } from '@/features/dashboard/utils/kpiTargets.js';
 import { useTodayHours } from '@/features/dashboard/hooks/useTodayHours.js';
 import {
   TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON,
 } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface DashboardData {
   data: DashboardOverview | null;
@@ -119,6 +121,19 @@ export default function DashboardPage({ data }: DashboardPageProps) {
 
   const summary = overview?.revenue_30d_summary ?? null;
   const peak    = overview?.hourly_peak ?? null;
+
+  // Le graphe 30 jours mène au tableau qui le détaille, sur la MÊME fenêtre —
+  // et seulement si le rôle peut ouvrir cet écran, sinon `PermissionGate` le
+  // renverrait ici même. Les bornes viennent des dates DÉJÀ tracées : lire la
+  // première du tableau évite de recalculer un intervalle qui pourrait diverger
+  // de celui du serveur.
+  const revenueDays  = overview?.revenue_30d ?? [];
+  const revenueStart = revenueDays[0]?.date ?? null;
+  const revenueEnd   = revenueDays[revenueDays.length - 1]?.date ?? null;
+  const revenueLink =
+    revenueStart !== null && revenueEnd !== null && hasPermission('reports.sales.read')
+      ? revenue30dTarget(revenueEnd, revenueStart)
+      : null;
 
   return (
     <div className="space-y-3.5">
@@ -218,7 +233,18 @@ export default function DashboardPage({ data }: DashboardPageProps) {
             <Card variant="default" padding="none" className="p-4 shadow-none">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
-                  Revenue · 30 days
+                  {revenueLink === null ? (
+                    'Revenue · 30 days'
+                  ) : (
+                    <Link
+                      to={revenueLink.href}
+                      data-testid="revenue-30d-link"
+                      className={cn('rounded-sm hover:text-gold', FOCUS_RING)}
+                    >
+                      Revenue · 30 days
+                      <span className="sr-only"> — {revenueLink.hint}</span>
+                    </Link>
+                  )}
                 </SectionLabel>
                 {summary !== null && (
                   <span className="text-sm text-text-secondary">
