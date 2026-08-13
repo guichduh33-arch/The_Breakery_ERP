@@ -62,6 +62,7 @@ export function PaymentTerminal() {
         {...(success.customerName ? { customerName: success.customerName } : {})}
         {...(success.loyaltyBalanceAfter !== undefined ? { loyaltyBalanceAfter: success.loyaltyBalanceAfter } : {})}
         {...(success.appliedPromotions ? { appliedPromotions: success.appliedPromotions } : {})}
+        {...(success.offline ? { offline: true } : {})}
       />
     );
   }

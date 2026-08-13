@@ -115,6 +115,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search..."
             aria-label="Search products"
+            data-vkp="qwerty"
             className="pl-9 h-11 bg-bg-base border-border-subtle rounded-md text-sm"
           />
         </div>

@@ -51,6 +51,7 @@ import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
+import { useOfflinePendingCount } from '@/features/lan/hooks/useOfflinePendingCount';
 import { supabase } from '@/lib/supabase';
 import type { Customer } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
@@ -109,6 +110,8 @@ export default function PosPage() {
   // le gate ne bloque plus que sur le réglage, jamais sur la durée de coupure.
   useOfflineReplay();
   const offlineGate = useOfflinePaymentGate();
+  // Backlog d'intents offline — alimente la pastille de régime du header.
+  const pendingIntents = useOfflinePendingCount();
 
   async function handleLogout() {
     await logout();
@@ -179,8 +182,27 @@ export default function PosPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Régime offline ambiant (principe produit n°3) — le caissier ne doit
+              pas découvrir la coupure en ouvrant le terminal de paiement, et une
+              vente en file n'est pas une vente aboutie tant qu'elle n'est pas
+              rejouée. La pastille reste visible en ligne tant que la file draine. */}
+          {(offlineGate.offlineMode || pendingIntents > 0) && (
+            <span
+              role="status"
+              data-testid="offline-status-pill"
+              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest tabular-nums ${
+                offlineGate.offlineMode
+                  ? 'bg-warning-soft text-warning border-warning'
+                  : 'bg-info-soft text-blue-info border-blue-info'
+              }`}
+            >
+              {offlineGate.offlineMode
+                ? pendingIntents > 0 ? `Offline · ${pendingIntents} queued` : 'Offline'
+                : `Syncing · ${pendingIntents} queued`}
+            </span>
+          )}
           <span className="text-text-secondary text-sm">
-            Server:{' '}
+            Cashier:{' '}
             <span className="text-text-primary font-semibold">{user?.full_name}</span>
           </span>
           <Button

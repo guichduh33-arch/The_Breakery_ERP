@@ -281,6 +281,7 @@ export function CloseShiftModal({
             <input
               id="counted_qris"
               data-testid="counted-qris-input"
+              data-vkp="numeric"
               type="text"
               inputMode="numeric"
               placeholder="0"
@@ -298,6 +299,7 @@ export function CloseShiftModal({
             <input
               id="counted_card"
               data-testid="counted-card-input"
+              data-vkp="numeric"
               type="text"
               inputMode="numeric"
               placeholder="0"
@@ -317,6 +319,7 @@ export function CloseShiftModal({
             </label>
             <textarea
               id="close_notes"
+              data-vkp="qwerty"
               className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
               rows={2}
               value={notes}
@@ -354,6 +357,7 @@ export function CloseShiftModal({
             </select>
             <input
               id="approver_pin"
+              data-vkp="numeric"
               type="password"
               inputMode="numeric"
               autoComplete="one-time-code"
