@@ -1,7 +1,7 @@
 // apps/pos/src/features/products/__tests__/product-grid-error.smoke.test.tsx
 //
 // S57 P2.3 (C-D1) — a failed products fetch must surface a distinct error panel
-// (ErrorState, role="alert", "Réessayer") instead of the neutral "No products
+// (ErrorState, role="alert", "Retry") instead of the neutral "No products
 // yet" empty state, which would mislead the cashier into thinking the catalog is
 // empty. Tapping Retry re-runs the query.
 
@@ -49,7 +49,7 @@ describe('ProductGrid — load error (C-D1)', () => {
     const { ProductGrid } = await import('../ProductGrid');
     render(wrap(<ProductGrid selectedSlug={null} onSelect={vi.fn()} />));
 
-    fireEvent.click(screen.getByRole('button', { name: /réessayer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

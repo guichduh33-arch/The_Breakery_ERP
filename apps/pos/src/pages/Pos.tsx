@@ -241,7 +241,7 @@ export default function PosPage() {
       <ShiftClosedState
         open={shiftAlertOpen}
         onCancel={() => setShiftAlertDismissed(true)}
-        onRecover={() => toast.info('Recover shift not implemented yet')}
+        // onRecover omitted: shift recovery is not implemented — reinstate the prop when it ships
         onOpenShift={() => { setShiftAlertDismissed(false); setOpenShiftOpen(true); }}
       />
       <OpenShiftModal
