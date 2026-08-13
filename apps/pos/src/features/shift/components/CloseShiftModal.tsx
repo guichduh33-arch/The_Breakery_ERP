@@ -121,7 +121,7 @@ export function CloseShiftModal({
       return;
     }
     if (nonCashIncomplete) {
-      toast.error('Enter every counted volet (0 is allowed).');
+      toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
     setStep('review');
@@ -133,7 +133,7 @@ export function CloseShiftModal({
       return;
     }
     if (nonCashIncomplete) {
-      toast.error('Enter every counted volet (0 is allowed).');
+      toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
     try {
@@ -260,7 +260,7 @@ export function CloseShiftModal({
 
         {step === 'review' && (qrisVisible || cardVisible) && (
           <p className="text-xs text-text-secondary">
-            Non-cash volets are reconciled server-side at close; any large variance
+            Non-cash tenders are reconciled server-side at close; any large variance
             will ask for a note or manager approval.
           </p>
         )}
