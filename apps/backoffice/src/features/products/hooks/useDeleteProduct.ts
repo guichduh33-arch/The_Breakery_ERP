@@ -30,10 +30,10 @@ export interface DeleteProductResult {
 /** Map a raw Postgres/RPC error message to a user-friendly string. */
 function mapDeleteError(message: string): string {
   if (message.includes('parent_has_active_variants')) {
-    return 'Ce produit est un parent de variantes actives — dissolvez ou désactivez les variantes d\'abord.';
+    return 'This product is a parent with active variants — dissolve it or deactivate its variants first.';
   }
   if (message.includes('product_not_found')) {
-    return 'Produit introuvable.';
+    return 'Product not found.';
   }
   return message;
 }
@@ -57,7 +57,7 @@ export function useDeleteProduct() {
       // somehow returned without deleted=true, surface a failure rather than a
       // false success.
       if (result.deleted !== true) {
-        throw new Error('Le produit n\'a pas pu être désactivé. Veuillez réessayer.');
+        throw new Error('The product could not be deactivated. Please try again.');
       }
       return result;
     },

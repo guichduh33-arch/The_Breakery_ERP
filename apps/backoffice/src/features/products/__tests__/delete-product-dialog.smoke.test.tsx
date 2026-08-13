@@ -131,7 +131,7 @@ describe('DeleteProductDialog [S45 W-B]', () => {
 
   it('renders the mapped parent-error message when RPC rejects with parent_has_active_variants', async () => {
     const parentError = new Error(
-      "Ce produit est un parent de variantes actives — dissolvez ou désactivez les variantes d'abord.",
+      'This product is a parent with active variants — dissolve it or deactivate its variants first.',
     );
     mutateAsync.mockRejectedValueOnce(parentError);
 
@@ -142,7 +142,7 @@ describe('DeleteProductDialog [S45 W-B]', () => {
       expect(screen.getByTestId('delete-product-error')).toBeInTheDocument();
     });
     expect(screen.getByTestId('delete-product-error')).toHaveTextContent(
-      "Ce produit est un parent de variantes actives",
+      'This product is a parent with active variants',
     );
   });
 
