@@ -54,12 +54,12 @@ export function FormField({
     hasError ? errorId : null,
   ].filter(Boolean).join(' ');
 
-  const control = cloneElement(children, {
-    id,
-    required: required || children.props.required,
-    'aria-invalid': hasError,
-    'aria-describedby': describedBy === '' ? undefined : describedBy,
-  });
+  // exactOptionalPropertyTypes : on n'assigne jamais un undefined explicite —
+  // une prop absente reste absente.
+  const injected: Partial<InjectedControlProps> = { id, 'aria-invalid': hasError };
+  if (required || children.props.required === true) injected.required = true;
+  if (describedBy !== '') injected['aria-describedby'] = describedBy;
+  const control = cloneElement(children, injected);
 
   return (
     <div className={cn('space-y-1', className)}>
