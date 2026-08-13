@@ -69,7 +69,7 @@ function MarginReport({ period }: { period: ReportsPeriod }): JSX.Element {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-text-muted">{data.timezone}</span>
+        <span className="text-xs text-text-muted">{data.timezone}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -235,7 +235,7 @@ function MarginLine({
       </div>
       <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay/60 overflow-hidden')}>
         <div
-          className="h-full rounded-full bg-gold/70"
+          className="h-full rounded-full bg-gold"
           style={{ width: `${Math.min(Math.max(marginPct, 0), 100)}%` }}
         />
       </div>

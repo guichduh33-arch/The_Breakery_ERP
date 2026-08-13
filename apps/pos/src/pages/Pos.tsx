@@ -159,7 +159,7 @@ export default function PosPage() {
           data-testid="offline-payments-disabled-banner"
           className="px-4 py-2 text-sm font-semibold text-center bg-red-as-text/15 text-red-as-text border-b border-red-as-text/40"
         >
-          Mode hors-ligne — encaissement désactivé en réglages, aucune vente possible jusqu&apos;au retour du cloud
+          Offline mode — checkout disabled in settings, no sale possible until the cloud connection returns
         </div>
       )}
       <header className="h-14 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">

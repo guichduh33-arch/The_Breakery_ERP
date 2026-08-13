@@ -149,7 +149,7 @@ function eventTone(_kind: POSReportsEventKind): {
 } {
   // Single event kind since Lot D (sales only); session events live in the
   // Sessions tab.
-  return { bg: 'bg-green/15', fg: 'text-green', icon: ShoppingCart, label: 'SALE' };
+  return { bg: 'bg-success-soft', fg: 'text-success', icon: ShoppingCart, label: 'SALE' };
 }
 
 function EventRow({ event }: { event: POSReportsEvent }): JSX.Element {

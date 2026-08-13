@@ -59,7 +59,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
             <BarChart3 className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="font-display text-lg">POS Reports</h1>
+            <h1 className="font-sans text-lg font-semibold">POS Reports</h1>
             <p className="text-text-secondary text-xs">{period.label}</p>
           </div>
         </div>

@@ -78,7 +78,7 @@ function Overview({ period }: { period: ReportsPeriod }): JSX.Element {
       <section className="rounded-lg border border-border-subtle bg-bg-elevated p-5">
         <div className="flex items-baseline justify-between">
           <SectionLabel size="xs" as="h2">{multiDay ? 'Sales by day' : 'Sales by hour'}</SectionLabel>
-          <span className="text-[10px] text-text-muted">{data.timezone}</span>
+          <span className="text-xs text-text-muted">{data.timezone}</span>
         </div>
         {multiDay ? (
           <TrendChart
@@ -148,7 +148,7 @@ function TrendChart({ bars }: { bars: TrendBar[] }): JSX.Element {
           );
         })}
       </div>
-      <div className="mt-2 flex gap-1 text-[10px] text-text-muted">
+      <div className="mt-2 flex gap-1 text-xs text-text-muted">
         {bars.map((b) => (
           <div key={b.key} className="flex-1 text-center truncate">
             {b.label}

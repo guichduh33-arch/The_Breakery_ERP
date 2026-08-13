@@ -111,11 +111,11 @@ function toneOf(e: PosJournalEvent): { bg: string; fg: string; icon: LucideIcon 
     e.event_type === 'cash_drawer_opened' &&
     (e.payload as { trigger?: string }).trigger === 'manual';
   if (HOT_TYPES.has(e.event_type) || manualDrawer) {
-    return { bg: 'bg-red/15', fg: 'text-red', icon: ShieldAlert };
+    return { bg: 'bg-red-soft', fg: 'text-red', icon: ShieldAlert };
   }
   switch (fam) {
     case 'control': return { bg: 'bg-gold-soft', fg: 'text-gold', icon: AlertTriangle };
-    case 'payment': return { bg: 'bg-green/15', fg: 'text-green', icon: Banknote };
+    case 'payment': return { bg: 'bg-success-soft', fg: 'text-success', icon: Banknote };
     case 'kitchen': return { bg: 'bg-gold-soft', fg: 'text-gold', icon: ChefHat };
     case 'session': return { bg: 'bg-bg-elevated', fg: 'text-text-secondary', icon: UserRound };
     default:        return { bg: 'bg-bg-elevated', fg: 'text-text-secondary', icon: ShoppingCart };
@@ -330,7 +330,7 @@ function JournalRow({
     <li
       className={cn(
         'rounded-lg border px-3 py-2 flex items-center gap-3',
-        hot ? 'border-red/40 bg-red/5' : 'border-border-subtle bg-bg-elevated',
+        hot ? 'border-red bg-red-soft' : 'border-border-subtle bg-bg-elevated',
       )}
       data-testid={`journal-${e.id}`}
     >
@@ -345,7 +345,7 @@ function JournalRow({
           {(e.payload as { source?: string }).source === 'server' ? (
             // S72 Lot 5 — outcome derived from the money tables (authoritative),
             // as opposed to a best-effort client gesture.
-            <span className="px-1.5 rounded border border-border-subtle text-[10px] uppercase tracking-wider text-text-muted">
+            <span className="px-1.5 rounded border border-border-subtle text-xs uppercase tracking-wider text-text-muted">
               server
             </span>
           ) : null}
@@ -369,7 +369,7 @@ function JournalRow({
         {e.amount !== null ? (
           <Currency amount={e.amount} emphasis="gold" {...(hot ? { className: 'text-red' } : {})} />
         ) : null}
-        <div className="text-[11px] text-text-muted font-mono">{timeFmt.format(new Date(e.occurred_at))}</div>
+        <div className="text-xs text-text-muted font-mono">{timeFmt.format(new Date(e.occurred_at))}</div>
       </div>
     </li>
   );
