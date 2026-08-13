@@ -44,7 +44,7 @@ export function ModeSelectStep({ onSelect }: ModeSelectStepProps): JSX.Element {
     >
       <div className="text-center space-y-8">
         <div className="space-y-2">
-          <h2 className="font-display text-2xl tracking-wide text-text-primary">
+          <h2 className="font-bold text-2xl tracking-wide text-text-primary">
             HOW DO YOU WANT TO SPLIT?
           </h2>
           <p className="text-text-secondary text-sm">
@@ -63,12 +63,12 @@ export function ModeSelectStep({ onSelect }: ModeSelectStepProps): JSX.Element {
                 'w-80 rounded-lg border-2 flex items-center gap-4 px-6 py-5 text-left',
                 'transition-[border-color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-                'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold/60 hover:bg-bg-overlay',
+                'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold hover:bg-bg-overlay',
               )}
             >
               <Icon className="h-6 w-6 text-gold shrink-0" aria-hidden />
               <div>
-                <div className="font-display text-base font-bold tracking-wide">{label}</div>
+                <div className="text-base font-bold tracking-wide">{label}</div>
                 <div className="text-xs text-text-secondary mt-0.5">{sub}</div>
               </div>
             </button>

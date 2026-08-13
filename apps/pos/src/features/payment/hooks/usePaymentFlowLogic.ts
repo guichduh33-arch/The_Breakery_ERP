@@ -205,28 +205,28 @@ export function usePaymentFlowLogic() {
   // au replay bloquerait tout le drain derrière lui.
   async function dispatchOfflinePayment(tendersToShip: Tender[]): Promise<void> {
     if (!offlineGate.paymentsAllowed) {
-      toast.error('Encaissement hors-ligne désactivé (Settings → Network)');
+      toast.error('Offline payments disabled (Settings → Network)');
       return;
     }
     if (tendersToShip.length < 1 || tendersToShip.length > 5) {
-      toast.error('Hors-ligne : 1 à 5 règlements par vente');
+      toast.error('Offline: 1 to 5 tenders per sale');
       return;
     }
     if (tendersToShip.some((t) => t.method === 'store_credit')) {
-      toast.error('Avoir indisponible hors-ligne — retirer ce règlement');
+      toast.error('Store credit unavailable offline — remove this tender');
       return;
     }
     const cartState = useCartStore.getState();
     if (cartState.pickedUpOrderId !== null) {
-      toast.error('Commande cloud — paiement indisponible hors-ligne');
+      toast.error('Cloud order — payment unavailable offline');
       return;
     }
     if (appliedPromotions.length > 0 || cart.cartDiscount !== undefined) {
-      toast.error('Promotions et remises commande indisponibles hors-ligne — retirer avant d\'encaisser');
+      toast.error('Promotions and order discounts unavailable offline — remove before checkout');
       return;
     }
     if ((cart.loyaltyPointsToRedeem ?? 0) > 0) {
-      toast.error('Échange de points indisponible hors-ligne');
+      toast.error('Points redemption unavailable offline');
       return;
     }
 
@@ -238,7 +238,7 @@ export function usePaymentFlowLogic() {
     }
     const offlineOrder = useCartStore.getState().offlineOrder;
     if (offlineOrder === null) {
-      toast.error('Envoi hors-ligne impossible — rien à encaisser');
+      toast.error('Offline send failed — nothing to charge');
       return;
     }
 

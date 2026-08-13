@@ -85,7 +85,7 @@ export function RetryBanner({
       <div
         role="alert"
         data-testid="payment-fatal-banner"
-        className="mb-4 rounded-md border border-danger/40 bg-danger-soft p-3 text-sm"
+        className="mb-4 rounded-md border border-danger bg-danger-soft p-3 text-sm"
       >
         <div className="flex items-start gap-2">
           <AlertCircle className="h-4 w-4 mt-0.5 text-danger shrink-0" aria-hidden />

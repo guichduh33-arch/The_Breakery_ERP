@@ -228,7 +228,7 @@ export function ComboConfigModal({
             </div>
 
             {/* Price summary */}
-            <div className="mt-4 flex items-center justify-between rounded-lg bg-bg-subtle px-4 py-3">
+            <div className="mt-4 flex items-center justify-between rounded-lg bg-bg-overlay px-4 py-3">
               <span className="text-sm font-medium text-text-muted">Total</span>
               <span className="font-mono text-xl font-bold text-gold">
                 {formatIdr(totalPrice)}
@@ -293,8 +293,8 @@ function GroupSection({ group, selection, onSelect }: GroupSectionProps): JSX.El
               <label
                 className={`flex min-h-[3.5rem] cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
                   isChosen
-                    ? 'border-gold bg-gold/10'
-                    : 'border-border-subtle bg-bg-card hover:bg-bg-subtle'
+                    ? 'border-gold bg-gold-soft'
+                    : 'border-border-subtle bg-bg-elevated hover:bg-surface-4'
                 }`}
               >
                 <input
@@ -330,10 +330,10 @@ function GroupSection({ group, selection, onSelect }: GroupSectionProps): JSX.El
             <label
               className={`flex min-h-[3.5rem] cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
                 disabledByMax
-                  ? 'cursor-not-allowed border-border-subtle bg-bg-muted opacity-50'
+                  ? 'cursor-not-allowed border-border-subtle bg-bg-input opacity-50'
                   : isChosen
-                    ? 'border-gold bg-gold/10'
-                    : 'border-border-subtle bg-bg-card hover:bg-bg-subtle'
+                    ? 'border-gold bg-gold-soft'
+                    : 'border-border-subtle bg-bg-elevated hover:bg-surface-4'
               }`}
             >
               <input
@@ -425,7 +425,7 @@ function ComponentModifierSections({
 
   return (
     <div
-      className="ml-4 space-y-3 border-l-2 border-gold/30 pl-4"
+      className="ml-4 space-y-3 border-l-2 border-gold-soft pl-4"
       data-testid={`component-modifiers-${option.id}`}
     >
       {modGroups.map((mg) => {
@@ -478,8 +478,8 @@ function ComponentModifierSections({
                       }
                       className={`min-h-touch-min rounded-lg border px-3 py-2 text-sm transition-colors ${
                         isPicked
-                          ? 'border-gold bg-gold/10 font-semibold'
-                          : 'border-border-subtle bg-bg-card hover:bg-bg-subtle'
+                          ? 'border-gold bg-gold-soft font-semibold'
+                          : 'border-border-subtle bg-bg-elevated hover:bg-surface-4'
                       }`}
                     >
                       {mo.option_label}

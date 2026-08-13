@@ -40,6 +40,29 @@ function rp(amount: number): string {
   return `Rp ${CurrencyFmt.format(Math.round(amount))}`;
 }
 
+// cancel-item EF error codes → actionable, English messages. The EF redacts
+// the underlying RPC message (ADR-013 D15/M5 — no raw DB text to the client),
+// so `check_violation` covers several distinct RPC guards (already served,
+// already cancelled, waste declaration missing/out of range) that the client
+// cannot tell apart; the message below names the likely causes and the
+// recovery step (ask a manager to check the order) instead of echoing the code.
+const CANCEL_ERROR_MESSAGES: Record<string, string> = {
+  wrong_pin: 'Wrong manager PIN — try again.',
+  invalid_pin_format: 'Enter a 6-digit manager PIN.',
+  check_violation:
+    'Cannot cancel — item may already be served or cancelled, or needs a waste declaration. Ask a manager to check the order.',
+  not_found: 'Item not found — it may have already been removed. Refresh and try again.',
+  permission_denied: "This manager PIN can't authorize cancellations.",
+  reason_too_short: 'Reason must be at least 3 characters.',
+  invalid_waste_qty: 'Waste quantity is out of range for this line.',
+  not_authenticated: 'Session expired — sign in again.',
+  internal_error: 'Server error — try again in a moment.',
+};
+
+function cancelErrorMessage(code: string): string {
+  return CANCEL_ERROR_MESSAGES[code] ?? 'Could not cancel this item — try again or ask a manager.';
+}
+
 interface ActiveOrderPanelProps {
   /** Kept for POS-shell wiring compatibility (the attach trigger lives in the bar). */
   onOpenCustomerSearch?: () => void;
@@ -93,10 +116,10 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   function removeWithUndo(target: CartItem): void {
     const index = cart.items.findIndex((i) => i.id === target.id);
     remove(target.id);
-    toast(`${target.name} retiré`, {
+    toast(`${target.name} removed`, {
       duration: 5000,
       action: {
-        label: 'Annuler',
+        label: 'Undo',
         onClick: () => restoreLine(target, index < 0 ? 0 : index),
       },
     });
@@ -137,7 +160,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
             <span className="font-bold uppercase tracking-widest text-sm text-text-primary">
               Order
             </span>
-            <span className="font-display italic text-base text-gold">
+            <span className="font-bold text-base text-gold">
               {orderLabel(pickedUpOrderId)}
             </span>
           </div>
@@ -156,7 +179,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
                 aria-selected={active}
                 onClick={() => setOrderType(tab.value)}
                 className={cn(
-                  'h-11 rounded text-[13px] font-semibold uppercase tracking-wide transition-colors',
+                  'h-11 rounded text-sm font-semibold uppercase tracking-wide transition-colors',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold',
                   active
                     ? 'bg-gold-soft text-gold border border-gold'
@@ -233,19 +256,19 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
             />
           )}
 
-          <div className="flex items-center justify-between text-[11px] text-text-muted">
+          <div className="flex items-center justify-between text-xs text-text-muted">
             <span className="uppercase tracking-wide">Subtotal</span>
             <span className="font-mono tabular-nums">{rp(baseTotals.subtotal)}</span>
           </div>
 
           {appliedPromotions.length > 0 && (
-            <div className="text-[11px] text-red-as-text">
+            <div className="text-xs text-red-as-text">
               <PromotionsList applied={appliedPromotions} />
             </div>
           )}
 
           {baseTotals.redemption_amount > 0 && (
-            <div className="flex items-center justify-between text-[11px] text-red-as-text">
+            <div className="flex items-center justify-between text-xs text-red-as-text">
               <span className="uppercase tracking-wide">
                 Loyalty Discount ({cart.loyaltyPointsToRedeem ?? 0} pts)
               </span>
@@ -254,7 +277,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           )}
 
           {cart.cartDiscount && (
-            <div className="flex items-center justify-between text-[11px] text-red-as-text">
+            <div className="flex items-center justify-between text-xs text-red-as-text">
               <span className="uppercase tracking-wide">
                 Discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
               </span>
@@ -262,7 +285,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
             </div>
           )}
 
-          <div className="flex items-center justify-between text-[11px] text-text-muted">
+          <div className="flex items-center justify-between text-xs text-text-muted">
             <span className="uppercase tracking-wide">
               {taxInclusive ? 'Tax Included' : 'Tax'} ({Math.round(taxRate * 100)}%)
             </span>
@@ -304,10 +327,8 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               toast.success(`${cancelTarget.name} cancelled`);
             } catch (err: unknown) {
               const e = err as { details?: { error?: string }; status?: number };
-              const msg = e.details?.error ?? 'cancel_failed';
-              if (e.status === 401) toast.error('Wrong manager PIN');
-              else if (e.status === 422) toast.error(`Cannot cancel: ${msg}`);
-              else toast.error(`Cancel failed: ${msg}`);
+              const code = e.details?.error ?? 'cancel_failed';
+              toast.error(cancelErrorMessage(code));
               throw err;
             }
           }}
@@ -350,7 +371,7 @@ function EmptyBagState(): JSX.Element {
   return (
     <div className="h-full grid place-items-center px-6">
       <div className="text-center space-y-3 max-w-[220px]">
-        <div className="mx-auto h-16 w-16 rounded-full bg-bg-overlay/60 grid place-items-center">
+        <div className="mx-auto h-16 w-16 rounded-full bg-bg-overlay grid place-items-center">
           <ShoppingBag className="h-8 w-8 text-text-muted" aria-hidden />
         </div>
         <SectionLabel size="sm" className="text-text-secondary block">

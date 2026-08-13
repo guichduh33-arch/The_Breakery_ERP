@@ -76,13 +76,13 @@ function HeldOrderCard({
             Held {formatTime(row.created_at)} · {row.table_number ? `Table ${row.table_number}` : 'No table'}
           </span>
           {row.table_number && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-info/20 text-blue-info">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-widest bg-info-soft text-blue-info">
               Table {row.table_number}
             </span>
           )}
           {/* ADR-022 déc. 4 — le badge « Draft » disparaît avec la voie
               brouillon : toute commande listée est envoyée en cuisine. */}
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-gold/20 text-gold">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-widest bg-gold-soft text-gold">
             Sent
           </span>
         </div>
@@ -100,7 +100,7 @@ function HeldOrderCard({
       )}
 
       {/* Footer with total + actions */}
-      <footer className="px-4 py-3 bg-bg-overlay/40 flex items-end justify-between gap-3">
+      <footer className="px-4 py-3 bg-bg-overlay flex items-end justify-between gap-3">
         <div className="min-w-0">
           <SectionLabel size="xs" className="text-text-muted">
             Total Amount
@@ -119,7 +119,7 @@ function HeldOrderCard({
             aria-label={`Delete held order ${row.order_number}`}
             className={cn(
               'h-10 w-10 inline-flex items-center justify-center rounded-md',
-              'text-red border border-red/30 bg-red-soft hover:bg-red/20',
+              'text-red border border-red bg-red-soft hover:bg-red hover:text-red-on-fill',
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
             )}
@@ -216,7 +216,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
             <div className="flex items-center gap-3 min-w-0">
               <Clock className="h-5 w-5 text-gold shrink-0" aria-hidden />
               <div className="min-w-0">
-                <h2 className="font-display italic text-xl text-text-primary">
+                <h2 className="font-bold text-xl text-text-primary">
                   Active Orders
                 </h2>
                 <SectionLabel size="xs">Manage held orders</SectionLabel>
@@ -273,7 +273,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
               </div>
             ) : isLoading ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                <Clock className="h-12 w-12 text-text-muted opacity-50 animate-pulse" aria-hidden />
+                <Clock className="h-12 w-12 text-text-muted opacity-50 motion-safe:animate-pulse" aria-hidden />
                 <SectionLabel size="sm" className="text-text-muted">
                   Loading held orders…
                 </SectionLabel>

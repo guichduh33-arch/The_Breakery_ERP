@@ -48,7 +48,7 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
                 active
                   ? 'border-gold bg-gold-soft text-gold'
-                  : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold/60',
+                  : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold',
               )}
               data-testid={`pay-method-${m.value}`}
             >

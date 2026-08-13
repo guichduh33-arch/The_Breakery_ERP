@@ -286,12 +286,12 @@ export function SuccessModal(props: SuccessModalProps) {
         data-testid="receipt-success"
       >
         <div className="grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-green-soft border-2 border-green grid place-items-center motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-500">
+          <div className="h-16 w-16 rounded-full bg-success-soft border-2 border-green grid place-items-center motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-500">
             <Check className="h-8 w-8 text-green" strokeWidth={3} aria-hidden />
           </div>
         </div>
         <div className="space-y-1">
-          <h2 className="font-serif text-2xl">Payment successful!</h2>
+          <h2 className="font-bold text-2xl">Payment successful!</h2>
           <p className="text-text-secondary text-sm">Order completed · {orderNumber}</p>
           {customerName && <p className="text-text-secondary text-xs">{customerName}</p>}
         </div>
@@ -301,10 +301,10 @@ export function SuccessModal(props: SuccessModalProps) {
               omitted entirely for card/QRIS where changeGiven is null/0. */}
           {changeGiven !== null && changeGiven > 0 && (
             <div
-              className="rounded-lg border border-gold/40 bg-gold-soft px-4 py-4"
+              className="rounded-lg border border-gold bg-gold-soft px-4 py-4"
               data-testid="success-change-block"
             >
-              <div className="text-[11px] uppercase tracking-widest text-text-secondary mb-1">
+              <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">
                 Change to give
               </div>
               <Currency

@@ -101,7 +101,7 @@ export function CustomAmountsStep({
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                     isActive
                       ? cn(colors.bg, colors.border, 'border-2')
-                      : 'bg-bg-elevated border-border-subtle hover:border-gold/60',
+                      : 'bg-bg-elevated border-border-subtle hover:border-gold',
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">

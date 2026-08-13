@@ -108,15 +108,15 @@ export function ItemAssignStep({
                     'w-full text-left rounded-md border p-3 transition-colors',
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
                     exhausted
-                      ? 'bg-bg-input/30 border-border-subtle opacity-60 cursor-not-allowed'
-                      : 'bg-bg-base border-border-subtle hover:border-gold/60',
+                      ? 'bg-bg-elevated border-border-subtle opacity-60 cursor-not-allowed'
+                      : 'bg-bg-base border-border-subtle hover:border-gold',
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="text-text-primary font-semibold leading-tight">{line.name}</div>
                       {line.modifiers.length > 0 && (
-                        <div className="text-[11px] text-text-secondary mt-0.5 truncate">
+                        <div className="text-xs text-text-secondary mt-0.5 truncate">
                           {line.modifiers.map((m) => m.option_label).join(' · ')}
                         </div>
                       )}
@@ -129,7 +129,7 @@ export function ItemAssignStep({
                   <div className="mt-2 flex items-center gap-2">
                     <span
                       className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest',
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest',
                         exhausted
                           ? activeColors.bg + ' ' + activeColors.border + ' ' + activeColors.text
                           : 'border-cat-violet/60 bg-cat-violet/10 text-cat-violet',
@@ -198,7 +198,7 @@ export function ItemAssignStep({
                 <span className={cn('h-2 w-2 rounded-full', colors.dot)} aria-hidden />
                 {p.label}
                 {sub > 0 && (
-                  <span className={cn('ml-1 normal-case tracking-normal text-[10px] font-mono', isActive ? colors.text : 'text-text-secondary')}>
+                  <span className={cn('ml-1 normal-case tracking-normal text-xs font-mono', isActive ? colors.text : 'text-text-secondary')}>
                     <Currency amount={sub} />
                   </span>
                 )}
@@ -272,7 +272,7 @@ export function ItemAssignStep({
             emphasis="gold"
             className={cn('text-2xl block', activeColors.text)}
           />
-          <div className="mt-2 text-[11px] text-text-muted flex items-center justify-between">
+          <div className="mt-2 text-xs text-text-muted flex items-center justify-between">
             <span>Total cart</span>
             <Currency amount={grandTotal} className="text-text-secondary" />
           </div>

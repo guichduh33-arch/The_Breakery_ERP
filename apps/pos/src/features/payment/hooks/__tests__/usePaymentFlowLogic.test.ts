@@ -249,7 +249,7 @@ describe('usePaymentFlowLogic — dispatch hors-ligne (ADR-015)', () => {
 
     expect(outboxMock.enqueueIntent).not.toHaveBeenCalled();
     expect(result.current.success).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith('Avoir indisponible hors-ligne — retirer ce règlement');
+    expect(toast.error).toHaveBeenCalledWith('Store credit unavailable offline — remove this tender');
   });
 
   it('refuse tout encaissement quand le réglage est OFF (fail-closed), sans mise en file', async () => {

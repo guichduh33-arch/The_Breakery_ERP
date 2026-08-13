@@ -79,7 +79,7 @@ export function OrderSummaryPanel({
                   className="mt-1.5 flex items-center justify-between text-xs"
                   data-testid="summary-store-credit"
                 >
-                  <span className="text-text-secondary">Avoir disponible</span>
+                  <span className="text-text-secondary">Store Credit</span>
                   <span className="font-mono text-gold">
                     <Currency amount={attachedCustomer.store_credit_balance ?? 0} />
                   </span>

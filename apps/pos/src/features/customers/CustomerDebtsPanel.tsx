@@ -69,7 +69,7 @@ export default function CustomerDebtsPanel(): JSX.Element {
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </Button>
         <AlertCircle className="h-5 w-5 text-amber-warn" aria-hidden />
-        <h1 className="font-display text-lg">POS Outstanding</h1>
+        <h1 className="font-bold text-lg">POS Outstanding</h1>
         <div className="flex-1" />
         <span className="text-xs uppercase tracking-widest text-text-secondary">
           {data ? `${data.length} client${data.length > 1 ? 's' : ''} with outstanding` : ''}
@@ -78,7 +78,7 @@ export default function CustomerDebtsPanel(): JSX.Element {
 
       <div className="flex-1 grid grid-cols-[280px_1fr] overflow-hidden">
         {/* Sidebar */}
-        <aside className="border-r border-border-subtle bg-bg-elevated/40 flex flex-col">
+        <aside className="border-r border-border-subtle bg-bg-elevated flex flex-col">
           <div className="p-3 border-b border-border-subtle">
             <label className="relative block">
               <Search className="h-4 w-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
@@ -146,7 +146,7 @@ export default function CustomerDebtsPanel(): JSX.Element {
 function DebtSidebarSkeleton(): JSX.Element {
   return (
     <li aria-hidden>
-      <div className="w-full rounded-md border border-border-subtle bg-bg-base/40 px-3 py-2.5 motion-safe:animate-pulse">
+      <div className="w-full rounded-md border border-border-subtle bg-bg-elevated px-3 py-2.5 motion-safe:animate-pulse">
         <div className="flex items-center justify-between gap-2">
           <div className="h-4 w-28 rounded bg-bg-input" />
           <div className="h-5 w-5 rounded-full bg-bg-input" />
@@ -181,14 +181,14 @@ function DebtSidebarItem({
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-[-2px]',
           selected
             ? 'border-gold bg-gold-soft'
-            : 'border-border-subtle bg-bg-base/40 hover:bg-bg-overlay',
+            : 'border-border-subtle bg-bg-elevated hover:bg-bg-overlay',
         )}
       >
         <div className="flex items-center justify-between gap-2">
           <span className="font-semibold text-sm text-text-primary truncate">{debt.customer_name}</span>
           <span
             className={cn(
-              'h-5 min-w-5 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-bold',
+              'h-5 min-w-5 px-1.5 inline-flex items-center justify-center rounded-full text-xs font-bold',
               'bg-amber-warn text-bg-base',
             )}
           >
@@ -220,7 +220,7 @@ function DebtDetail({
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="font-display text-2xl">{debt.customer_name}</h2>
+          <h2 className="font-bold text-2xl">{debt.customer_name}</h2>
           <p className="text-text-secondary text-sm mt-1">
             Credit: <Currency amount={debt.credit_limit} className="font-mono" />
             {' / '}
@@ -244,7 +244,7 @@ function DebtDetail({
               aria-label={`Credit utilization ${Math.round(utilizationPct)}%`}
             />
           </div>
-          <div className="text-right text-[10px] uppercase tracking-widest text-text-muted mt-1">
+          <div className="text-right text-xs uppercase tracking-widest text-text-muted mt-1">
             {Math.round(utilizationPct)}% used
           </div>
         </div>
@@ -285,15 +285,15 @@ function DebtOrderRow({
 
       <div className="grid grid-cols-3 gap-4 text-sm">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-text-muted">Total</div>
+          <div className="text-xs uppercase tracking-widest text-text-muted">Total</div>
           <Currency amount={order.total} className="font-mono text-text-primary" />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-text-muted">Paid</div>
+          <div className="text-xs uppercase tracking-widest text-text-muted">Paid</div>
           <Currency amount={order.paid} className="font-mono text-green" />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-text-muted">Due</div>
+          <div className="text-xs uppercase tracking-widest text-text-muted">Due</div>
           <Currency amount={order.due} className="font-mono text-red" />
         </div>
       </div>
