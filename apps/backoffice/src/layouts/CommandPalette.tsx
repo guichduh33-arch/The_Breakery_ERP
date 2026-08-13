@@ -281,7 +281,15 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   onClick={() => { go(entry.to); }}
                   className={cn(
                     'flex w-full items-center gap-3 px-4 py-2 text-left transition-colors',
-                    highlighted && 'bg-[rgba(138,104,32,0.10)]',
+                    // Audit /impeccable 2026-08-13 (P3-2) — la surbrillance
+                    // était `rgba(138,104,32,0.10)`, soit l'ANCIEN --gold-base
+                    // (#8a6820) recopié à la main. Ce token a été assombri en
+                    // #7a5c1c le même jour (lot 8, AA sur les quatre fonds) :
+                    // le littéral pointait déjà une couleur qui n'existe plus.
+                    // `bg-gold-soft` EST ce cran (--gold-soft, or du thème à
+                    // très faible opacité) et suit le token — aucun alpha posé
+                    // sur un `var()` nu, l'opacité vit dans le token lui-même.
+                    highlighted && 'bg-gold-soft',
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate text-sm text-text-primary">
