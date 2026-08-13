@@ -92,7 +92,7 @@ export default function LoginPage(): JSX.Element {
           try { localStorage.setItem(LAST_USER_KEY, selectedUser.id); } catch { /* storage unavailable */ }
           const { user } = useAuthStore.getState();
           const dest = user?.role_code === 'waiter' ? '/tablet/order' : '/pos';
-          navigate(dest, { replace: true });
+          void navigate(dest, { replace: true });
         })
         .catch(() => { /* error surfaced via authStore.error */ });
     },
