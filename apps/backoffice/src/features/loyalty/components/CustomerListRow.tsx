@@ -95,9 +95,9 @@ export function CustomerListRow({
       <td className="px-3 py-2">
         <LoyaltyBadge tier={tier} points={row.loyalty_points} />
       </td>
-      <td className="px-3 py-2 font-mono">{row.loyalty_points.toLocaleString()}</td>
+      <td className="px-3 py-2 font-mono">{row.loyalty_points.toLocaleString('id-ID')}</td>
       <td className="px-3 py-2 font-mono text-text-secondary">
-        {row.lifetime_points.toLocaleString()}
+        {row.lifetime_points.toLocaleString('id-ID')}
       </td>
       <td className="px-3 py-2 text-text-secondary">{formatLastVisit(row.last_visit_at)}</td>
       <td className="px-3 py-2 relative text-right">

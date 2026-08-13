@@ -37,9 +37,9 @@ function makeItem(quantity: number): CartItem {
 
 describe('CartLineRow — line total = unit_price × quantity (Bug 2 contract)', () => {
   it.each<[number, RegExp]>([
-    [1, /Rp\s*25,000/],
-    [2, /Rp\s*50,000/],
-    [3, /Rp\s*75,000/],
+    [1, /Rp\s*25\.000/],
+    [2, /Rp\s*50\.000/],
+    [3, /Rp\s*75\.000/],
   ])('qty %i renders unit_price × quantity, never doubled', (quantity, expected) => {
     render(
       <CartLineRow
@@ -125,6 +125,6 @@ describe('CartLineRow — quantity chip (cart redesign v2)', () => {
     );
     // unit each = 25,000 rendered alongside the Rp 50,000 line total.
     expect(screen.getByText(/@/)).toBeInTheDocument();
-    expect(screen.getByText(/Rp\s*25,000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*25\.000/)).toBeInTheDocument();
   });
 });

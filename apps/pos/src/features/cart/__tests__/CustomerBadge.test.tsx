@@ -26,13 +26,13 @@ const baseCustomer: CustomerWithCategory = {
 
 describe('CustomerBadge', () => {
   it('renders name + tier (Bronze when no lifetime points)', () => {
-    render(<CustomerBadge customer={baseCustomer} onDetach={() => {}} />);
+    render(<CustomerBadge customer={baseCustomer} onDetach={() => undefined} />);
     expect(screen.getByText('Bali Organic Store')).toBeInTheDocument();
     expect(screen.getByText('Bronze')).toBeInTheDocument();
   });
 
   it('renders first initial inside the avatar circle', () => {
-    render(<CustomerBadge customer={baseCustomer} onDetach={() => {}} />);
+    render(<CustomerBadge customer={baseCustomer} onDetach={() => undefined} />);
     // The initial is rendered inside an aria-hidden span — find by text.
     expect(screen.getByText('B', { selector: 'span[aria-hidden]' })).toBeInTheDocument();
   });
@@ -41,11 +41,11 @@ describe('CustomerBadge', () => {
     render(
       <CustomerBadge
         customer={{ ...baseCustomer, name: 'Loyal Gold Customer', loyalty_points: 2500, lifetime_points: 2500 }}
-        onDetach={() => {}}
+        onDetach={() => undefined}
       />,
     );
     expect(screen.getByText('Gold')).toBeInTheDocument();
-    expect(screen.getByText(/2,500 pts/)).toBeInTheDocument();
+    expect(screen.getByText(/2\.500 pts/)).toBeInTheDocument();
   });
 
   it('exposes a "Detach customer" button and fires the handler on click', () => {

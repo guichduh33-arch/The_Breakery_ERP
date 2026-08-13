@@ -169,7 +169,7 @@ function CategoryRow({ row }: { row: POSReportsCategoryRow }): JSX.Element {
     <li className="px-4 py-2.5" data-testid={`category-${row.categoryId ?? 'uncat'}`}>
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-sm text-text-primary truncate">
-          {row.categoryName} <span className="text-text-muted">· {row.qty.toLocaleString()} sold</span>
+          {row.categoryName} <span className="text-text-muted">· {row.qty.toLocaleString('id-ID')} sold</span>
         </span>
         <div className="flex items-baseline gap-3 shrink-0">
           <span className="text-xs text-text-muted tabular-nums w-12 text-right">

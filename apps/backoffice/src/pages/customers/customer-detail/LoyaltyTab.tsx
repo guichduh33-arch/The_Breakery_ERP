@@ -42,9 +42,9 @@ export function LoyaltyTab({ customerId }: { customerId: string | null }): JSX.E
               <td className={`px-4 py-3 font-medium capitalize ${TXN_TONE[tx.transaction_type] ?? 'text-text-primary'}`}>{tx.transaction_type}</td>
               <td className="px-4 py-3 text-text-secondary">{tx.description}</td>
               <td className={`px-4 py-3 text-right tabular-nums font-medium ${tx.points >= 0 ? 'text-success' : 'text-danger'}`}>
-                {tx.points >= 0 ? '+' : ''}{tx.points.toLocaleString()}
+                {tx.points >= 0 ? '+' : ''}{tx.points.toLocaleString('id-ID')}
               </td>
-              <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{tx.points_balance_after.toLocaleString()}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{tx.points_balance_after.toLocaleString('id-ID')}</td>
             </tr>
           ))}
         </tbody>

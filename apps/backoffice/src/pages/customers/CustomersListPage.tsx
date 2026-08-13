@@ -183,7 +183,7 @@ export default function CustomersListPage(): JSX.Element {
         label: 'Outstanding B2B',
         value: formatCurrency(s?.outstandingB2b ?? 0),
         ...((s?.outstandingB2b ?? 0) > 0 ? { tone: 'warning' as const } : {}),
-        title: `${(s?.outstandingCount ?? 0).toLocaleString()} account customers carry an unpaid balance.`,
+        title: `${(s?.outstandingCount ?? 0).toLocaleString('id-ID')} account customers carry an unpaid balance.`,
       },
     ];
   }, [stats.data]);
@@ -255,7 +255,7 @@ export default function CustomersListPage(): JSX.Element {
       width:  '6rem',
       sortable: true,
       render: (row) => (
-        <span className="font-data tabular-nums">{row.loyalty_points.toLocaleString()}</span>
+        <span className="font-data tabular-nums">{row.loyalty_points.toLocaleString('id-ID')}</span>
       ),
     },
     {

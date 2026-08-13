@@ -17,13 +17,14 @@ describe('roundIdr', () => {
 });
 
 describe('formatIdr', () => {
-  it('formats with Rp prefix and thousands separator', () => {
-    expect(formatIdr(35000)).toBe('Rp 35,000');
-    expect(formatIdr(7273)).toBe('Rp 7,273');
+  // Locale métier id-ID (arbitrage 2026-08-13) : milliers au POINT.
+  it('formats with Rp prefix and id-ID thousands separator', () => {
+    expect(formatIdr(35000)).toBe('Rp 35.000');
+    expect(formatIdr(7273)).toBe('Rp 7.273');
     expect(formatIdr(0)).toBe('Rp 0');
-    expect(formatIdr(1234567)).toBe('Rp 1,234,567');
+    expect(formatIdr(1234567)).toBe('Rp 1.234.567');
   });
   it('handles negatives', () => {
-    expect(formatIdr(-35000)).toBe('-Rp 35,000');
+    expect(formatIdr(-35000)).toBe('-Rp 35.000');
   });
 });

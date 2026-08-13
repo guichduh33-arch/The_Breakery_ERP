@@ -148,12 +148,12 @@ describe('POSSettingsPage', () => {
   it('renders mocked preset values from usePOSPresets', () => {
     renderPage();
     // Quick payments amounts (3 chips)
-    expect(screen.getByText(/Rp\s*50,000/)).toBeInTheDocument();
-    expect(screen.getByText(/Rp\s*100,000/)).toBeInTheDocument();
-    expect(screen.getByText(/Rp\s*150,000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*50\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*100\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*150\.000/)).toBeInTheDocument();
     // Opening cash presets (2 chips)
-    expect(screen.getByText(/Rp\s*200,000/)).toBeInTheDocument();
-    expect(screen.getByText(/Rp\s*300,000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*200\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*300\.000/)).toBeInTheDocument();
     // Discount presets (2 rows)
     expect(screen.getByText('Tens')).toBeInTheDocument();
   });

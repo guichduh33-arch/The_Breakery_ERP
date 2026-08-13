@@ -95,7 +95,7 @@ export default function StockMovementsPage(): JSX.Element {
           label="Movements"
           value={buckets.totalCount}
           icon={ListTree}
-          footer={ledger.isLoading ? 'Loading…' : `${result.row_count.toLocaleString()} in range`}
+          footer={ledger.isLoading ? 'Loading…' : `${result.row_count.toLocaleString('id-ID')} in range`}
         />
         <KpiTile label="Stock in"  value={Number(buckets.inQty.toFixed(2))}  icon={ArrowDownToLine} delta={{ value: buckets.inCount, direction: 'up', hint: 'entries' }} />
         <KpiTile label="Stock out" value={Number(buckets.outQty.toFixed(2))} icon={ArrowUpFromLine} delta={{ value: buckets.outCount, direction: 'down', hint: 'entries' }} />

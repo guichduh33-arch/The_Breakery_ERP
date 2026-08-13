@@ -10,7 +10,7 @@ describe('TenderRow', () => {
   it('renders method label + amount', () => {
     render(<TenderRow method="cash" amount={50_000} />);
     expect(screen.getByText('Cash')).toBeInTheDocument();
-    expect(screen.getByText(/50,000/)).toBeInTheDocument();
+    expect(screen.getByText(/50\.000/)).toBeInTheDocument();
   });
 
   it('shows recv/chg when cash overpay set', () => {

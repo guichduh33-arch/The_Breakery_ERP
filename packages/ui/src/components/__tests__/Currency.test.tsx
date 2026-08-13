@@ -5,7 +5,7 @@ import { Currency } from '../Currency.js';
 describe('Currency', () => {
   it('formats amount as IDR', () => {
     render(<Currency amount={35000} />);
-    expect(screen.getByText('Rp 35,000')).toBeInTheDocument();
+    expect(screen.getByText('Rp 35.000')).toBeInTheDocument();
   });
 
   it('applies gold emphasis class', () => {

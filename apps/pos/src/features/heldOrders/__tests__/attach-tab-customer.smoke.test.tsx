@@ -168,8 +168,8 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     const message = toastError.mock.calls[0]?.[0] as string;
     expect(message).toMatch(/plafond ardoise dépassé/i);
-    expect(message).toContain('300,000');
-    expect(message).toContain('125,000');
-    expect(message).toContain('400,000');
+    expect(message).toContain('300.000');
+    expect(message).toContain('125.000');
+    expect(message).toContain('400.000');
   });
 });

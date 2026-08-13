@@ -84,7 +84,7 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     useCartStore.getState().attachCustomer(GOLD_CUSTOMER);
     render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
     expect(screen.getByText('Gold')).toBeInTheDocument();
-    expect(screen.getByText(/2,500 pts/)).toBeInTheDocument();
+    expect(screen.getByText(/2\.500 pts/)).toBeInTheDocument();
   });
 
   it('shows Points to earn line when items in cart and customer attached', () => {
@@ -117,7 +117,7 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     });
     render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
     expect(screen.getByText(/loyalty discount/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Rp 30,000/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Rp 30.000/).length).toBeGreaterThan(0);
   });
 
   it('detachCustomer removes customer and resets loyalty points', () => {

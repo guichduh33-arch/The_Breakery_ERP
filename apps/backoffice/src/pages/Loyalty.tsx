@@ -135,7 +135,7 @@ export default function LoyaltyPage(): JSX.Element {
       id:     'balance',
       header: 'Balance',
       align:  'right',
-      render: (row) => <span className="font-mono text-sm">{row.loyalty_points.toLocaleString()}</span>,
+      render: (row) => <span className="font-mono text-sm">{row.loyalty_points.toLocaleString('id-ID')}</span>,
     },
     {
       id:     'lifetime',
@@ -143,7 +143,7 @@ export default function LoyaltyPage(): JSX.Element {
       align:  'right',
       render: (row) => (
         <span className="font-mono text-sm text-text-secondary">
-          {row.lifetime_points.toLocaleString()}
+          {row.lifetime_points.toLocaleString('id-ID')}
         </span>
       ),
     },

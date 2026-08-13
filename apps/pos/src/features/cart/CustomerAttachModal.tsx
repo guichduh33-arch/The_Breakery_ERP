@@ -121,7 +121,7 @@ function CustomerRow({
         >
           <span>{TIER_LABEL[tier]}</span>
           <span className="font-mono normal-case tracking-normal text-text-muted">
-            {customer.loyalty_points.toLocaleString()} pts
+            {customer.loyalty_points.toLocaleString('id-ID')} pts
           </span>
         </span>
       </div>

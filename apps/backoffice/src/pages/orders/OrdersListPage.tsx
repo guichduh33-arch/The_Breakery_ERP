@@ -207,14 +207,14 @@ export default function OrdersListPage(): JSX.Element {
       label: 'Settled',
       value: countersDown ? '—' : formatCurrency(c?.paid.amount ?? 0),
       ...((c?.paid.count ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
-      title: `${(c?.paid.count ?? 0).toLocaleString()} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
+      title: `${(c?.paid.count ?? 0).toLocaleString('id-ID')} orders with a recorded payment or a paid/completed status (B2B settlements carry no payment row). Sum of order totals — refunds are shown separately.`,
     },
     {
       id: 'amount-unpaid',
       label: 'Unpaid',
       value: countersDown ? '—' : formatCurrency(c?.unpaid.amount ?? 0),
       ...((c?.unpaid.count ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
-      title: `${(c?.unpaid.count ?? 0).toLocaleString()} orders not settled yet, voided excluded.`,
+      title: `${(c?.unpaid.count ?? 0).toLocaleString('id-ID')} orders not settled yet, voided excluded.`,
     },
     {
       id: 'amount-refunded',
@@ -227,7 +227,7 @@ export default function OrdersListPage(): JSX.Element {
           ? `− ${formatCurrency(c?.refunded.amount ?? 0)}`
           : formatCurrency(0),
       ...((c?.refunded.count ?? 0) > 0 && !countersDown ? { tone: 'danger' as const } : {}),
-      title: `${(c?.refunded.count ?? 0).toLocaleString()} orders carry a refund in this window.`,
+      title: `${(c?.refunded.count ?? 0).toLocaleString('id-ID')} orders carry a refund in this window.`,
     },
   ], [c, countersDown, start, end]);
 
@@ -514,7 +514,7 @@ export default function OrdersListPage(): JSX.Element {
           ? 'Order counts unavailable'
           : counters.isLoading
             ? 'Loading order counts'
-            : `${activeTotal.toLocaleString()} ${activeTotal === 1 ? 'order' : 'orders'} in the current filter`}
+            : `${activeTotal.toLocaleString('id-ID')} ${activeTotal === 1 ? 'order' : 'orders'} in the current filter`}
       </span>
 
       {/* L'erreur SURPLOMBE la table : un refetch raté ne doit pas effacer les
@@ -553,7 +553,7 @@ export default function OrdersListPage(): JSX.Element {
                   ? `${lines.length} of the ${loadedLines.length} loaded match “${quickFind.trim()}”`
                   : countersDown
                     ? `${loadedLines.length} loaded`
-                    : `${lines.length} of ${activeTotal.toLocaleString()}`}
+                    : `${lines.length} of ${activeTotal.toLocaleString('id-ID')}`}
               </span>
               {query.hasNextPage && (
                 <button
