@@ -22,7 +22,22 @@ import { ChevronDown, LogOut, Search, Settings } from 'lucide-react';
 import { cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { DomainPanel } from './DomainPanel.js';
+import { MobileNavDrawer } from './MobileNavDrawer.js';
 import { NAV_DOMAINS, activeDomainId, visibleDomains, type NavDomain } from './nav.js';
+
+// Le glyphe ⌘ ne dit rien à un poste Windows/Linux — on affiche Ctrl+K hors
+// macOS (audit UX/UI 2026-08-13, lot 2). `userAgentData.platform` d'abord,
+// `navigator.platform` (déprécié mais universel) en repli ; évalué une fois,
+// la plateforme ne change pas en cours de session. L'`aria-keyshortcuts` de la
+// TopBar liste déjà les deux variantes, lui n'a pas à choisir.
+function isMacPlatform(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const uaPlatform =
+    (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform
+    ?? navigator.platform;
+  return /mac/i.test(uaPlatform);
+}
+const SEARCH_KBD = isMacPlatform() ? '⌘K' : 'Ctrl+K';
 
 function UserChip() {
   const navigate = useNavigate();
@@ -73,7 +88,7 @@ function UserChip() {
         >
           {user.full_name.charAt(0).toUpperCase()}
         </span>
-        <span className="text-[13px] text-ink-fg">{user.full_name}</span>
+        <span className="hidden text-[13px] text-ink-fg sm:inline">{user.full_name}</span>
       </button>
 
       {open && (
@@ -179,7 +194,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
   }
 
   const tabBase =
-    'relative flex h-[52px] items-center gap-1 px-[13px] text-[13.5px] transition-colors ' +
+    'relative flex h-[52px] items-center gap-1 whitespace-nowrap px-[13px] text-[13.5px] transition-colors ' +
     'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink-gold';
 
   return (
@@ -188,7 +203,8 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           la barre sur le fond de page clair. Sans lui, l'encre et l'ivoire se
           touchent à cru et la barre paraît posée sur la page au lieu d'en être
           le bord. */}
-      <header className="flex h-[52px] items-center gap-[22px] border-b border-gold bg-ink px-[22px]">
+      <header className="flex h-[52px] items-center gap-[22px] border-b border-gold bg-ink px-[22px] max-lg:gap-3 max-lg:px-4">
+        <MobileNavDrawer domains={domains} activeId={activeId} />
         <Link
           to="/backoffice"
           className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
@@ -202,7 +218,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           <span className="text-[13.5px] font-semibold text-ink-fg">The Breakery</span>
         </Link>
 
-        <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center">
+        <nav aria-label="Primary" className="hidden min-w-0 flex-1 items-center lg:flex">
           {domains.map((domain, index) => {
             const isActive = domain.id === activeId;
             const isOpen = domain.id === openId;
@@ -255,7 +271,11 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           })}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-4">
+        {/* La nav horizontale disparaît sous lg : ce ressort garde le bloc
+            recherche/profil collé à droite. */}
+        <div className="flex-1 lg:hidden" aria-hidden />
+
+        <div className="flex shrink-0 items-center gap-4 max-lg:gap-2">
           <button
             type="button"
             onClick={onOpenSearch}
@@ -264,8 +284,8 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
             aria-keyshortcuts="Meta+K Control+K"
           >
             <Search className="h-[14px] w-[14px]" aria-hidden />
-            <span className="text-[12.5px]">Search</span>
-            <kbd className="font-data text-[10px] tracking-wide">⌘K</kbd>
+            <span className="hidden text-[12.5px] lg:inline">Search</span>
+            <kbd className="hidden font-data text-[10px] tracking-wide lg:inline">{SEARCH_KBD}</kbd>
           </button>
 
           <UserChip />
