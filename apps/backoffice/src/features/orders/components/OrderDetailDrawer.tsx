@@ -11,8 +11,9 @@
 // VoidOrderModal avec sa clé d'idempotence). Le tiroir remonte l'intention par
 // callback — deux surfaces, un seul flux, une seule clé d'idempotence.
 
-import type { JSX } from 'react';
+import { useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Sheet,
   SheetContent,
@@ -25,12 +26,14 @@ import {
   CalendarDays,
   Clock,
   CreditCard,
+  Download,
   Edit3,
   ExternalLink,
   Hash,
   MapPin,
   PackageOpen,
   ReceiptText,
+  Undo2,
   XCircle,
 } from 'lucide-react';
 import { cn } from '@breakery/ui';
@@ -40,6 +43,8 @@ import { cn } from '@breakery/ui';
 import { formatCurrency, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
 import { TOOLBAR_BTN, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
+import { RefundOrderModalBo } from '@/features/orders/components/RefundOrderModalBo.js';
+import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
 import {
   ORDER_STATUS_BADGE,
   isOrderDetailPaid,
@@ -65,6 +70,8 @@ export interface OrderDetailDrawerProps {
 const EDITABLE_STATUSES = new Set(['draft', 'pending_payment']);
 /** Statuts annulables — le void est la seule sortie de `completed` (ADR-009). */
 const VOIDABLE_STATUSES = new Set(['paid', 'completed']);
+/** Statuts remboursables — une commande portant l'argent (lot 6c). */
+const REFUNDABLE_STATUSES = new Set(['paid', 'completed']);
 
 const BTN_DANGER = `${TOOLBAR_BTN} border border-red bg-bg-elevated text-red-as-text hover:bg-red-soft`;
 
@@ -241,6 +248,22 @@ export function OrderDetailDrawer({
   // transporte pas en prop (une prop peut mentir, le store non).
   const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
   const hasVoid     = useAuthStore((s) => s.hasPermission('orders.void'));
+  const hasRefund   = useAuthStore((s) => s.hasPermission('orders.refund'));
+  const hasReprint  = useAuthStore((s) => s.hasPermission('orders.reprint_receipt'));
+
+  // Le refund est POSSÉDÉ par le tiroir (contrairement à Void/Edit, hissés vers
+  // la liste) : aucune surface concurrente ne le déclenche, la modale vit donc
+  // ici, en état local — zéro couplage à la page de liste.
+  const [refundOpen, setRefundOpen] = useState(false);
+  const reprint = useReprintReceipt();
+
+  // Reste remboursable = le total moins ce qui est déjà remboursé.
+  const canRefund =
+    data !== undefined && hasRefund
+    && REFUNDABLE_STATUSES.has(data.status)
+    && data.total_refunded < data.total;
+  // Le reçu duplicata n'a de sens que sur une commande qui a porté l'argent.
+  const canReprint = data !== undefined && hasReprint && isOrderDetailPaid(data);
 
   // Les gestes sont des CLOSURES, pas des booléens : la garde et l'appel
   // partagent le même narrowing, personne ne réaffirme la condition en `!`.
@@ -256,6 +279,7 @@ export function OrderDetailDrawer({
       : null;
 
   return (
+    <>
     <Sheet open={orderId !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-full max-w-md sm:max-w-lg" data-testid="order-detail-drawer">
         <SheetHeader>
@@ -291,8 +315,24 @@ export function OrderDetailDrawer({
               <ExternalLink className="h-3.5 w-3.5 text-text-muted" aria-hidden />
               Open full page
             </Link>
-            {(editAction !== null || voidAction !== null) && (
-              <span className="flex gap-2">
+            {(editAction !== null || voidAction !== null || canRefund || canReprint) && (
+              <span className="flex flex-wrap justify-end gap-2">
+                {canReprint && (
+                  <button
+                    type="button"
+                    className={TOOLBAR_BTN_SECONDARY}
+                    data-testid="drawer-reprint"
+                    disabled={reprint.isPending}
+                    onClick={() => {
+                      reprint.reprint(data, {
+                        onError: (e) => { toast.error(e.message || 'Could not generate the receipt'); },
+                      });
+                    }}
+                  >
+                    <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+                    {reprint.isPending ? 'Preparing…' : 'Download receipt (PDF)'}
+                  </button>
+                )}
                 {editAction !== null && (
                   <button
                     type="button"
@@ -302,6 +342,17 @@ export function OrderDetailDrawer({
                   >
                     <Edit3 className="h-3.5 w-3.5 text-text-muted" aria-hidden />
                     Edit items
+                  </button>
+                )}
+                {canRefund && (
+                  <button
+                    type="button"
+                    className={BTN_DANGER}
+                    data-testid="drawer-refund"
+                    onClick={() => { setRefundOpen(true); }}
+                  >
+                    <Undo2 className="h-3.5 w-3.5" aria-hidden />
+                    Refund
                   </button>
                 )}
                 {voidAction !== null && (
@@ -321,5 +372,13 @@ export function OrderDetailDrawer({
         )}
       </SheetContent>
     </Sheet>
+    {data !== undefined && (
+      <RefundOrderModalBo
+        open={refundOpen}
+        order={data}
+        onClose={() => { setRefundOpen(false); }}
+      />
+    )}
+    </>
   );
 }

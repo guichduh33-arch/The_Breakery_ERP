@@ -61,6 +61,17 @@ vi.mock('@/features/orders/hooks/useOrderDetail.js', () => ({
   }),
 }));
 
+// Lot 6c — le bouton « Download receipt (PDF) » ajoute deux imports qui
+// transitent par @/lib/supabase (env-gated en test) : le hook de reprint et le
+// store d'auth. On les stub pour garder la page hors de cette chaîne d'import.
+vi.mock('@/features/orders/hooks/useReprintReceipt.js', () => ({
+  useReprintReceipt: () => ({ reprint: vi.fn(), isPending: false, error: null }),
+}));
+vi.mock('@/stores/authStore.js', () => ({
+  useAuthStore: (selector: (s: { hasPermission: (c: string) => boolean }) => unknown) =>
+    selector({ hasPermission: () => true }),
+}));
+
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

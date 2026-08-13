@@ -13,6 +13,8 @@
 
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Download } from 'lucide-react';
 import { Card, cn } from '@breakery/ui';
 // formatDateTimeShortWita : le format de lecture des tables du BO (24 h, mois
 // en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
@@ -28,6 +30,9 @@ import {
   orderTypeLabel,
 } from '@/features/orders/statusMeta.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
+import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 const fmtDateTime = formatDateTimeShortWita;
 
@@ -60,6 +65,9 @@ function Crumbs({ leaf }: { leaf?: string }): JSX.Element {
 export function OrderDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useOrderDetail(id);
+  // Hooks inconditionnels : appelés AVANT les retours anticipés (erreur/chargement).
+  const hasReprint = useAuthStore((s) => s.hasPermission('orders.reprint_receipt'));
+  const reprint = useReprintReceipt();
 
   if (error) {
     return (
@@ -96,6 +104,24 @@ export function OrderDetailPage(): JSX.Element {
 
       <PageHeader
         title={`Order #${orderNo}`}
+        actions={
+          hasReprint && isPaid ? (
+            <button
+              type="button"
+              className={TOOLBAR_BTN_SECONDARY}
+              data-testid="detail-reprint"
+              disabled={reprint.isPending}
+              onClick={() => {
+                reprint.reprint(data, {
+                  onError: (e) => { toast.error(e.message || 'Could not generate the receipt'); },
+                });
+              }}
+            >
+              <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+              {reprint.isPending ? 'Preparing…' : 'Download receipt (PDF)'}
+            </button>
+          ) : undefined
+        }
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             {/* Statuts indépendants : cycle de vie, encaissement, remboursement. */}

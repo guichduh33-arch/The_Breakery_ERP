@@ -42,6 +42,7 @@ const BASE_ORDER = {
       modifiers: null,
       is_cancelled: false,
       kitchen_status: 'pending',
+      qty_already_refunded: 0,
     },
   ],
   payments: [
@@ -57,6 +58,8 @@ const BASE_ORDER = {
   ],
   refunds: [],
   promotions: [],
+  refunded_by_method: {},
+  total_refunded: 0,
 };
 
 let orderOverrides: Record<string, unknown> = {};
@@ -70,6 +73,15 @@ let grantedPerms = new Set(['orders.edit_open', 'orders.void']);
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (selector: (s: { hasPermission: (c: string) => boolean }) => unknown) =>
     selector({ hasPermission: (c: string) => grantedPerms.has(c) }),
+}));
+
+// Lot 6c — ces deux hooks transitent par @/lib/supabase (env-gated en test).
+// On les stub pour garder le tiroir hors de la chaîne d'import Supabase.
+vi.mock('@/features/orders/hooks/useReprintReceipt.js', () => ({
+  useReprintReceipt: () => ({ reprint: vi.fn(), isPending: false, error: null }),
+}));
+vi.mock('@/features/orders/hooks/useRefundOrder.js', () => ({
+  useRefundOrder: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
 }));
 
 import { OrderDetailDrawer } from '../components/OrderDetailDrawer.js';
@@ -197,5 +209,43 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     await screen.findByTestId('order-detail-drawer');
     await waitFor(() => expect(screen.getByTestId('drawer-open-full-page')).toBeInTheDocument());
     expect(screen.queryByTestId('drawer-void')).toBeNull();
+  });
+
+  // ── lot 6c · refund + reprint, gates propres au tiroir ────────────────────
+  it('T12 Refund shows on a refundable paid order with the permission and opens the modal', async () => {
+    grantedPerms = new Set(['orders.refund']);
+    renderDrawer();
+    const btn = await screen.findByTestId('drawer-refund');
+    fireEvent.click(btn);
+    // La modale de refund BO est possédée par le tiroir (état local), pas hissée.
+    expect(await screen.findByTestId('refund-modal-bo')).toBeInTheDocument();
+  });
+
+  it('T13 Refund is absent once the order is fully refunded (nothing left)', async () => {
+    grantedPerms = new Set(['orders.refund']);
+    orderOverrides = { total_refunded: 100_000 };
+    renderDrawer();
+    await screen.findByTestId('order-detail-drawer');
+    expect(screen.queryByTestId('drawer-refund')).toBeNull();
+  });
+
+  it('T14 Refund is absent without the orders.refund permission', async () => {
+    grantedPerms = new Set(['orders.void']);
+    renderDrawer({ onVoid: vi.fn() });
+    await screen.findByTestId('order-detail-drawer');
+    expect(screen.queryByTestId('drawer-refund')).toBeNull();
+  });
+
+  it('T15 Download receipt shows on a paid order with the reprint permission', async () => {
+    grantedPerms = new Set(['orders.reprint_receipt']);
+    renderDrawer();
+    expect(await screen.findByTestId('drawer-reprint')).toBeInTheDocument();
+  });
+
+  it('T16 Download receipt is absent without the permission', async () => {
+    grantedPerms = new Set();
+    renderDrawer();
+    await screen.findByTestId('order-detail-drawer');
+    expect(screen.queryByTestId('drawer-reprint')).toBeNull();
   });
 });

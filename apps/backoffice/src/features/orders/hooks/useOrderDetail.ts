@@ -16,6 +16,12 @@ export interface OrderItem {
   modifiers: unknown;
   is_cancelled: boolean;
   kitchen_status: string | null;
+  /**
+   * Lot 6c — quantité déjà remboursée sur cette ligne (somme des refund_lines.qty
+   * de tous les remboursements de la commande). Sert de plafond à la modale de
+   * refund BO : on ne rembourse jamais plus que `quantity − qty_already_refunded`.
+   */
+  qty_already_refunded: number;
 }
 
 export interface OrderPayment {
@@ -71,6 +77,14 @@ export interface OrderDetail {
   payments: OrderPayment[];
   refunds: OrderRefundRow[];
   promotions: OrderPromotionRow[];
+  /**
+   * Lot 6c — montant déjà remboursé par méthode de règlement (somme des
+   * refund_payments.amount). Alimente le plafond par tender de la modale de
+   * refund BO (un tender ne peut excéder `payé − déjà remboursé` pour sa méthode).
+   */
+  refunded_by_method: Record<string, number>;
+  /** Lot 6c — total déjà remboursé sur la commande (somme des refunds.total). */
+  total_refunded: number;
 }
 
 export function useOrderDetail(id: string | undefined) {
@@ -91,7 +105,7 @@ export function useOrderDetail(id: string | undefined) {
           user_profiles!orders_served_by_fkey(full_name),
           order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled, kitchen_status),
           order_payments(id, method, amount, cash_received, change_given, paid_at, reference),
-          refunds(id, refund_number, total, reason, created_at, refunded_by, is_full_void),
+          refunds(id, refund_number, total, reason, created_at, refunded_by, is_full_void, refund_lines(order_item_id, qty), refund_payments(method, amount)),
           promotion_applications(amount, description, promotions(name))
         `,
         )
@@ -117,9 +131,31 @@ export function useOrderDetail(id: string | undefined) {
         user_profiles: { full_name: string } | null;
         order_items: OrderItem[];
         order_payments: OrderPayment[];
-        refunds: OrderRefundRow[];
+        refunds: (OrderRefundRow & {
+          refund_lines: { order_item_id: string; qty: number }[] | null;
+          refund_payments: { method: string; amount: number }[] | null;
+        })[];
         promotion_applications: { amount: number; description: string; promotions: { name: string } | null }[];
       };
+
+      // Lot 6c — agrégation des remboursements antérieurs (miroir du hook POS
+      // apps/pos/src/features/order-history/hooks/useOrderDetail) : qty déjà
+      // remboursée par ligne + montant remboursé par méthode + total remboursé.
+      const refundedQtyByItem = new Map<string, number>();
+      const refundedByMethod: Record<string, number> = {};
+      let totalRefunded = 0;
+      for (const r of row.refunds ?? []) {
+        totalRefunded += Number(r.total ?? 0);
+        for (const ln of r.refund_lines ?? []) {
+          refundedQtyByItem.set(
+            ln.order_item_id,
+            (refundedQtyByItem.get(ln.order_item_id) ?? 0) + Number(ln.qty),
+          );
+        }
+        for (const rp of r.refund_payments ?? []) {
+          refundedByMethod[rp.method] = (refundedByMethod[rp.method] ?? 0) + Number(rp.amount);
+        }
+      }
       return {
         id: row.id,
         order_number: row.order_number,
@@ -137,7 +173,10 @@ export function useOrderDetail(id: string | undefined) {
         discount_amount: Number(row.discount_amount ?? 0),
         tax_amount: Number(row.tax_amount ?? 0),
         total: Number(row.total ?? 0),
-        items: row.order_items ?? [],
+        items: (row.order_items ?? []).map((it) => ({
+          ...it,
+          qty_already_refunded: refundedQtyByItem.get(it.id) ?? 0,
+        })),
         // Review PR #367 : un embed PostgREST sans clause order est dans un
         // ordre NON SPÉCIFIÉ (l'index (order_id, created_at DESC) le rend même
         // vraisemblablement antichronologique). La frise et les cartes lisent
@@ -153,6 +192,8 @@ export function useOrderDetail(id: string | undefined) {
           name: pa.promotions?.name ?? null,
           amount: Number(pa.amount),
         })),
+        refunded_by_method: refundedByMethod,
+        total_refunded: totalRefunded,
       };
     },
   });
