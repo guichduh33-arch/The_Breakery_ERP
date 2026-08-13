@@ -35,7 +35,7 @@
 //     default 5 min). Grouping is FIFO-stable (Map insertion order = first-seen).
 
 import { useMemo } from 'react';
-import { Loader2, Volume2, VolumeX, WifiOff } from 'lucide-react';
+import { Volume2, VolumeX, WifiOff } from 'lucide-react';
 
 import { SectionLabel } from '@breakery/ui';
 
@@ -126,7 +126,9 @@ export function KdsBoard({
       <header className="px-6 py-4 flex flex-col gap-3 border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
-            <h1 className="font-display text-2xl text-text-primary">
+            {/* Mamat decision — Playfair (font-display/font-serif) is out of
+                functional titles. Sans + bold keeps the same visual weight. */}
+            <h1 className="font-bold text-2xl text-text-primary">
               Live Orders
             </h1>
             <SectionLabel as="span" size="sm" className="text-gold">
@@ -164,10 +166,10 @@ export function KdsBoard({
         >
           <WifiOff className="h-6 w-6" aria-hidden />
           <span className="text-lg font-bold uppercase tracking-widest">
-            Mode hors-ligne — bus local actif
+            Offline mode — local bus active
           </span>
           <span className="hidden md:inline text-base font-medium normal-case tracking-normal opacity-90">
-            Les commandes circulent par le hub boutique ; resynchronisation au retour d&apos;internet.
+            Orders route through the store hub; resyncing once internet is back.
           </span>
         </div>
       )}
@@ -183,12 +185,12 @@ export function KdsBoard({
           data-testid="kds-reconnecting-banner"
           className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-amber-warn/40"
         >
-          <WifiOff className="h-6 w-6 animate-pulse" aria-hidden />
+          <WifiOff className="h-6 w-6 motion-safe:animate-pulse" aria-hidden />
           <span className="text-lg font-bold uppercase tracking-widest">
-            Reconnexion en cours…
+            Reconnecting…
           </span>
           <span className="hidden md:inline text-base font-medium normal-case tracking-normal opacity-90">
-            Les nouveaux tickets peuvent être retardés.
+            New tickets may be delayed.
           </span>
         </div>
       )}
@@ -207,23 +209,21 @@ export function KdsBoard({
           // cloud + tickets bus), le banner offline explique la situation.
           <div className="col-span-full">
             <ErrorState
-              title="Connexion au KDS perdue"
-              description="Les tickets n'ont pas pu être chargés. Vérifiez le réseau et réessayez."
+              title="KDS connection lost"
+              description="Tickets could not be loaded. Check your network and try again."
               onRetry={() => void refetch()}
             />
           </div>
         ) : isLoading ? (
-          <div
-            className="col-span-full h-full grid place-items-center text-text-secondary"
+          // Loading is a single muted line — KDS users care about throughput,
+          // not skeleton sophistication. Size stays legible at kitchen
+          // distance (text-2xl), just without the full-screen spinner theatre.
+          <p
+            className="col-span-full py-6 text-center text-2xl font-semibold tracking-wide text-text-secondary"
             data-testid="kds-loading"
           >
-            <div className="text-center space-y-4">
-              <Loader2 className="h-16 w-16 mx-auto animate-spin text-gold" aria-hidden />
-              <p className="text-2xl font-semibold tracking-wide">
-                Chargement des tickets…
-              </p>
-            </div>
-          </div>
+            Loading tickets…
+          </p>
         ) : visibleOrders.length === 0 ? (
           <KdsEmptyState message="No active tickets" />
         ) : (
