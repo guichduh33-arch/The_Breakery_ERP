@@ -1,15 +1,23 @@
 // apps/backoffice/src/features/orders/components/OrderDetailDrawer.tsx
 //
-// Rich order detail drawer (Sheet) opened from the Live Orders list "Details"
-// button. Read-only — reuses useOrderDetail. Mirrors the reference design:
-// info grid, items with per-item kitchen status, totals, and an activity log
-// synthesised from order creation + payment events.
+// Tiroir de détail d'une commande (Sheet), ouvert depuis l'icône œil de la
+// liste. C'est l'APERÇU CANONIQUE : il montre la même vérité que la page
+// /backoffice/orders/:id (mêmes définitions de règlement et de totaux, même
+// encre pour le total), il y renvoie d'un lien, et il porte les gestes métier
+// EXISTANTS de la liste — Edit items et Void, aux mêmes gates et aux mêmes
+// conditions de statut.
+//
+// Les MODALES ne vivent pas ici : la liste les possède déjà (EditOrderItemsModal,
+// VoidOrderModal avec sa clé d'idempotence). Le tiroir remonte l'intention par
+// callback — deux surfaces, un seul flux, une seule clé d'idempotence.
 
 import type { JSX } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@breakery/ui';
@@ -17,29 +25,48 @@ import {
   CalendarDays,
   Clock,
   CreditCard,
+  Edit3,
+  ExternalLink,
   Hash,
   MapPin,
   PackageOpen,
   ReceiptText,
+  XCircle,
 } from 'lucide-react';
 import { cn } from '@breakery/ui';
 // Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas).
 // Les montants passent par `formatCurrency`, qui pose lui-même le préfixe
 // « Rp » — audit UX/UI 2026-08-13, lot 1.
 import { formatCurrency, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
+import { TOOLBAR_BTN, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
-  isSettledStatus,
+  isOrderDetailPaid,
   orderStatusBadgeTone,
   orderStatusLabel,
   orderTypeLabel,
 } from '@/features/orders/statusMeta.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 export interface OrderDetailDrawerProps {
   orderId: string | null;
   onClose: () => void;
+  /**
+   * Ouvre l'édition d'items sur la surface appelante. Absent = le tiroir ne
+   * propose pas le geste (aperçu strictement lecture seule).
+   */
+  onEditItems?: (orderId: string, orderNumber: string) => void;
+  /** Ouvre l'annulation sur la surface appelante (PIN + idempotence côté modale). */
+  onVoid?: (orderId: string, orderNumber: string) => void;
 }
+
+/** Statuts éditables — même liste que la liste (ADR-009 : jamais `'open'`). */
+const EDITABLE_STATUSES = new Set(['draft', 'pending_payment']);
+/** Statuts annulables — le void est la seule sortie de `completed` (ADR-009). */
+const VOIDABLE_STATUSES = new Set(['paid', 'completed']);
+
+const BTN_DANGER = `${TOOLBAR_BTN} border border-red bg-bg-elevated text-red-as-text hover:bg-red-soft`;
 
 const KITCHEN_TONE: Record<string, string> = {
   new: 'bg-info-soft text-info',
@@ -74,8 +101,13 @@ function InfoCell({
 
 function Body({ order }: { order: OrderDetail }): JSX.Element {
   const firstPayment = order.payments[0];
-  // RÉGLÉ : même helper que la liste et la page détail (review PR #367).
-  const isPaid = order.payments.length > 0 || isSettledStatus(order.status);
+  // RÉGLÉ : définition UNIQUE, partagée avec la page détail. Le tiroir oubliait
+  // `paid_at` et lisait « Unpaid » sur des règlements B2B (audit lot 6a).
+  const isPaid = isOrderDetailPaid(order);
+  // Une commande jamais envoyée au KDS porte le DEFAULT 'pending' de
+  // `order_items.kitchen_status` sans qu'aucun cuisinier ne l'ait vu : afficher
+  // ce badge ferait lire « impayé » là où il n'y a pas de cycle cuisine.
+  const wentToKitchen = order.sent_to_kitchen_at != null;
 
   const activity: { key: string; title: string; at: string; tone: string; detail?: string }[] = [
     { key: 'created', title: 'Order created', at: order.created_at, tone: 'bg-info' },
@@ -128,9 +160,12 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
               <li key={it.id} className={`flex items-center gap-3 py-2.5 ${it.is_cancelled ? 'opacity-50 line-through' : ''}`}>
                 <span className="font-data text-sm tabular-nums text-text-secondary">{it.quantity}×</span>
                 <span className="flex-1 text-sm text-text-primary">{it.name_snapshot}</span>
-                {it.kitchen_status && (
+                {/* Le badge NOMME sa dimension : c'est le cycle CUISINE, pas
+                    l'encaissement — et il ne se rend pas du tout si la
+                    commande n'est jamais passée en cuisine. */}
+                {wentToKitchen && it.kitchen_status && (
                   <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${tone}`}>
-                    {ks}
+                    Kitchen: {ks}
                   </span>
                 )}
                 <span className="w-24 text-right font-data text-sm tabular-nums text-text-primary">{formatCurrency(it.line_total)}</span>
@@ -140,18 +175,23 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         </ul>
       </div>
 
-      {/* Totals */}
+      {/* Totals — MÊME ordre et mêmes libellés que la page détail.
+          NON-PKP (ADR-005) : la PB1 est INCLUSE dans le total. La base s'en
+          déduit à l'affichage (`subtotal − tax_amount`) ; rien n'est recalculé
+          côté serveur. Le total est en ENCRE : l'or est une encre de sens, pas
+          un remplissage — la page l'affiche déjà ainsi. */}
       <div className="rounded-md border border-border-subtle p-4 text-sm">
-        <Row label="Subtotal" value={formatCurrency(order.subtotal)} muted />
+        <Row label="Base (excl. PB1)" value={formatCurrency(order.subtotal - order.tax_amount)} muted />
         {order.discount_amount > 0 && <Row label="Discount" value={`− ${formatCurrency(order.discount_amount)}`} muted />}
         {order.promotions.map((promo, i) => (
           <Row key={i} label={promo.description} value={`− ${formatCurrency(promo.amount)}`} muted />
         ))}
-        <Row label="PB1 (included)" value={formatCurrency(order.tax_amount)} muted />
+        {/* Seule ligne fiscale du bloc : elle cesse d'être en creux. */}
+        <Row label="PB1 (included)" value={formatCurrency(order.tax_amount)} />
         <div className="my-2 border-t border-border-subtle" />
         <div className="flex items-center justify-between">
-          <span className="text-base font-semibold text-text-primary">Total</span>
-          <span className="font-data text-lg font-semibold tabular-nums text-gold">{formatCurrency(order.total)}</span>
+          <span className="text-base font-semibold text-text-primary">Total (incl. PB1)</span>
+          <span className="font-data text-lg font-semibold tabular-nums text-text-primary">{formatCurrency(order.total)}</span>
         </div>
         {firstPayment && (
           <>
@@ -193,8 +233,27 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
   );
 }
 
-export function OrderDetailDrawer({ orderId, onClose }: OrderDetailDrawerProps): JSX.Element {
+export function OrderDetailDrawer({
+  orderId, onClose, onEditItems, onVoid,
+}: OrderDetailDrawerProps): JSX.Element {
   const { data, isLoading } = useOrderDetail(orderId ?? undefined);
+  // Mêmes gates que la liste — la permission se lit à la source, elle ne se
+  // transporte pas en prop (une prop peut mentir, le store non).
+  const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
+  const hasVoid     = useAuthStore((s) => s.hasPermission('orders.void'));
+
+  // Les gestes sont des CLOSURES, pas des booléens : la garde et l'appel
+  // partagent le même narrowing, personne ne réaffirme la condition en `!`.
+  const editAction =
+    data !== undefined && onEditItems !== undefined
+      && hasEditOpen && EDITABLE_STATUSES.has(data.status)
+      ? (): void => { onEditItems(data.id, data.order_number); }
+      : null;
+  const voidAction =
+    data !== undefined && onVoid !== undefined
+      && hasVoid && VOIDABLE_STATUSES.has(data.status)
+      ? (): void => { onVoid(data.id, data.order_number); }
+      : null;
 
   return (
     <Sheet open={orderId !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -216,6 +275,49 @@ export function OrderDetailDrawer({ orderId, onClose }: OrderDetailDrawerProps):
           <div className="px-6 py-12 text-center text-text-secondary">Loading…</div>
         ) : (
           <Body order={data} />
+        )}
+
+        {data !== undefined && (
+          <SheetFooter className="sm:justify-between">
+            {/* L'aperçu n'est jamais un cul-de-sac : il ouvre le document
+                complet, et se ferme en y allant (deux surfaces empilées
+                mentiraient sur ce qui a le focus). */}
+            <Link
+              to={`/backoffice/orders/${data.id}`}
+              onClick={onClose}
+              className={TOOLBAR_BTN_SECONDARY}
+              data-testid="drawer-open-full-page"
+            >
+              <ExternalLink className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+              Open full page
+            </Link>
+            {(editAction !== null || voidAction !== null) && (
+              <span className="flex gap-2">
+                {editAction !== null && (
+                  <button
+                    type="button"
+                    className={TOOLBAR_BTN_SECONDARY}
+                    data-testid="drawer-edit-items"
+                    onClick={editAction}
+                  >
+                    <Edit3 className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+                    Edit items
+                  </button>
+                )}
+                {voidAction !== null && (
+                  <button
+                    type="button"
+                    className={BTN_DANGER}
+                    data-testid="drawer-void"
+                    onClick={voidAction}
+                  >
+                    <XCircle className="h-3.5 w-3.5" aria-hidden />
+                    Void
+                  </button>
+                )}
+              </span>
+            )}
+          </SheetFooter>
         )}
       </SheetContent>
     </Sheet>

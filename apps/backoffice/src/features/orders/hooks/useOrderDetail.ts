@@ -52,6 +52,13 @@ export interface OrderDetail {
   table_number: string | null;
   created_at: string;
   paid_at: string | null;
+  /**
+   * Horodatage d'envoi en cuisine. NULL = la commande n'a JAMAIS été envoyée au
+   * KDS : `order_items.kitchen_status` y vaut alors son DEFAULT ('pending') sans
+   * qu'aucun cuisinier ne l'ait jamais touché — l'afficher ferait lire « impayé »
+   * là où il n'y a que l'absence de cycle cuisine (audit UX/UI 2026-08-13, lot 6a).
+   */
+  sent_to_kitchen_at: string | null;
   customer_id: string | null;
   customer_name: string | null;
   served_by: string | null;
@@ -77,6 +84,7 @@ export function useOrderDetail(id: string | undefined) {
         .select(
           `
           id, order_number, status, order_type, table_number, created_at, paid_at,
+          sent_to_kitchen_at,
           customer_id, served_by,
           subtotal, discount_amount, tax_amount, total,
           customers(name),
@@ -98,6 +106,7 @@ export function useOrderDetail(id: string | undefined) {
         table_number: string | null;
         created_at: string;
         paid_at: string | null;
+        sent_to_kitchen_at: string | null;
         customer_id: string | null;
         served_by: string | null;
         subtotal: number;
@@ -119,6 +128,7 @@ export function useOrderDetail(id: string | undefined) {
         table_number: row.table_number,
         created_at: row.created_at,
         paid_at: row.paid_at,
+        sent_to_kitchen_at: row.sent_to_kitchen_at ?? null,
         customer_id: row.customer_id,
         customer_name: row.customers?.name ?? null,
         served_by: row.served_by,

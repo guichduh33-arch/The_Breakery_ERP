@@ -230,11 +230,13 @@ export default function OrdersListPage(): JSX.Element {
   const [voidTarget, setVoidTarget] = useState<{ id: string; number: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; number: string; items: OrderItemEdit[] } | null>(null);
 
-  async function loadItemsAndOpenEdit(row: OrdersListLine): Promise<void> {
+  // Un seul flux d'édition pour les DEUX surfaces : la ligne de table et le
+  // tiroir d'aperçu appellent la même fonction, qui monte la même modale.
+  async function loadItemsAndOpenEdit(orderId: string, orderNumber: string): Promise<void> {
     const { data, error } = await supabase
       .from('order_items')
       .select('id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_locked')
-      .eq('order_id', row.id);
+      .eq('order_id', orderId);
     if (error) {
       toast.error(`Failed to load order items: ${(error as { message?: string }).message ?? 'unknown error'}`);
       return;
@@ -253,7 +255,7 @@ export default function OrdersListPage(): JSX.Element {
       modifiers: Array.isArray(it.modifiers) ? it.modifiers : [],
       is_locked: Boolean(it.is_locked),
     }));
-    setEditTarget({ id: row.id, number: row.order_number, items });
+    setEditTarget({ id: orderId, number: orderNumber, items });
   }
 
   const columns = useMemo<readonly DataTableColumn<OrdersListLine>[]>(() => [
@@ -328,7 +330,7 @@ export default function OrdersListPage(): JSX.Element {
             <RowActionButton
               label={`Edit items of ${o.order_number}`}
               testId={`row-edit-${o.id}`}
-              onClick={() => { void loadItemsAndOpenEdit(o); }}
+              onClick={() => { void loadItemsAndOpenEdit(o.id, o.order_number); }}
             >
               <Edit3 className="h-3.5 w-3.5" aria-hidden />
             </RowActionButton>
@@ -537,7 +539,15 @@ export default function OrdersListPage(): JSX.Element {
         />
       )}
 
-      <OrderDetailDrawer orderId={detailId} onClose={() => setDetailId(null)} />
+      {/* Le tiroir déclenche, la page monte : les modales (et leur clé
+          d'idempotence) restent uniques. On ferme le tiroir AVANT d'ouvrir la
+          modale — deux couches empilées mentiraient sur ce qui a le focus. */}
+      <OrderDetailDrawer
+        orderId={detailId}
+        onClose={() => setDetailId(null)}
+        onEditItems={(id, number) => { setDetailId(null); void loadItemsAndOpenEdit(id, number); }}
+        onVoid={(id, number) => { setDetailId(null); setVoidTarget({ id, number }); }}
+      />
       {voidTarget !== null && (
         <VoidOrderModal open orderId={voidTarget.id} orderNumber={voidTarget.number} onClose={() => setVoidTarget(null)} />
       )}

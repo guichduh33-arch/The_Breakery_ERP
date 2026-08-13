@@ -21,6 +21,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
+  isOrderDetailPaid,
   isSettledStatus,
   orderStatusBadgeTone,
   orderStatusLabel,
@@ -85,9 +86,8 @@ export function OrderDetailPage(): JSX.Element {
   const refundTotal = data.refunds.reduce((s, r) => s + Number(r.total), 0);
   const refundState: 'none' | 'partial' | 'full' =
     refundTotal <= 0 ? 'none' : refundTotal >= data.total ? 'full' : 'partial';
-  // RÉGLÉ : paiement enregistré OU statut porteur d'argent OU paid_at posé —
-  // les règlements B2B n'écrivent pas dans order_payments (review PR #367).
-  const isPaid = data.payments.length > 0 || isSettledStatus(data.status) || data.paid_at != null;
+  // RÉGLÉ : définition unique partagée avec le tiroir (isOrderDetailPaid).
+  const isPaid = isOrderDetailPaid(data);
   const orderNo = data.order_number.replace(/^#+/, '');
 
   return (
@@ -200,17 +200,22 @@ export function OrderDetailPage(): JSX.Element {
         <div className="flex flex-col gap-[13px]">
           <Card variant="default" padding="md" className="shadow-none">
             <h2 className={SECTION_LABEL}>Totals</h2>
+            {/* NON-PKP (ADR-005) : la PB1 est INCLUSE dans le prix affiché. La
+                pile se lit donc de bas en haut — le total est le prix payé, et
+                la base s'en déduit. Rien n'est recalculé côté serveur ici :
+                `subtotal − tax_amount` est un affichage, pas une écriture. */}
             <dl className="mt-3 space-y-1.5 text-sm">
-              <MoneyRow label="Subtotal" value={rp(data.subtotal)} />
+              <MoneyRow label="Base (excl. PB1)" value={rp(data.subtotal - data.tax_amount)} />
               {data.discount_amount > 0 && (
                 <MoneyRow label="Discount" value={`− ${rp(data.discount_amount)}`} />
               )}
               {data.promotions.map((promo, i) => (
                 <MoneyRow key={i} label={promo.description} value={`− ${rp(promo.amount)}`} />
               ))}
-              <MoneyRow label="PB1 (included)" value={rp(data.tax_amount)} muted />
+              {/* Seule ligne FISCALE du bloc : elle cesse d'être en creux. */}
+              <MoneyRow label="PB1 (included)" value={rp(data.tax_amount)} />
               <div className="flex items-baseline justify-between border-t border-border-subtle pt-2">
-                <dt className="text-sm font-semibold text-text-primary">Total</dt>
+                <dt className="text-sm font-semibold text-text-primary">Total (incl. PB1)</dt>
                 <dd className="font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">
                   {rp(data.total)}
                 </dd>
@@ -295,13 +300,13 @@ function MetaPair({ label, children }: { label: string; children: React.ReactNod
 }
 
 function MoneyRow({
-  label, value, muted = false, tone,
+  label, value, tone,
 }: {
-  label: string; value: string; muted?: boolean; tone?: 'danger';
+  label: string; value: string; tone?: 'danger';
 }): JSX.Element {
   return (
     <div className="flex items-baseline justify-between">
-      <dt className={cn('text-sm', muted ? 'text-text-muted' : 'text-text-secondary')}>{label}</dt>
+      <dt className="text-sm text-text-secondary">{label}</dt>
       <dd className={cn('font-data text-sm tabular-nums', tone === 'danger' ? 'text-danger' : 'text-text-primary')}>
         {value}
       </dd>
@@ -367,9 +372,12 @@ function Timeline({
             )}
           />
           <span className="min-w-0 flex-1">
+            {/* Le séparateur est TEXTUEL, pas une marge : deux nœuds texte
+                adjacents se copient et se lisent « Completedpending » (audit
+                UX/UI 2026-08-13, lot 6a). Vaut pour Paid comme pour Completed. */}
             <span className={cn('block text-sm', step.done ? 'text-text-primary' : 'text-text-muted')}>
               {step.label}
-              {!step.done && <span className="ml-1.5 text-xs text-text-subtle">pending</span>}
+              {!step.done && <span className="text-xs text-text-subtle">{' — pending'}</span>}
             </span>
             {step.at !== undefined && (
               <span className="block font-data text-xs tabular-nums text-text-muted">{fmtDateTime(step.at)}</span>

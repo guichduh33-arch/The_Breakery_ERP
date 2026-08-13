@@ -70,6 +70,28 @@ export function isSettledStatus(status: string): boolean {
   return status === 'paid' || status === 'completed';
 }
 
+/** Les seuls faits d'où se déduit le règlement d'une commande détaillée. */
+export interface OrderSettlementFacts {
+  status: string;
+  paid_at: string | null;
+  payments: readonly unknown[];
+}
+
+/**
+ * RÉGLÉ, définition UNIQUE des deux surfaces de détail (page ET tiroir).
+ *
+ * Trois voies mènent à l'argent encaissé et aucune n'est redondante : une ligne
+ * `order_payments` (encaissement POS), un statut porteur d'argent, ou `paid_at`
+ * posé côté serveur. Le tiroir oubliait la troisième et lisait « Unpaid » sur
+ * des règlements B2B (audit UX/UI 2026-08-13, lot 6a).
+ *
+ * Le type est STRUCTUREL, pas un `Pick<OrderDetail>` : `statusMeta` doit rester
+ * sans dépendance vers le hook, qui monte le client Supabase.
+ */
+export function isOrderDetailPaid(order: OrderSettlementFacts): boolean {
+  return order.payments.length > 0 || isSettledStatus(order.status) || order.paid_at != null;
+}
+
 export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
   dine_in:  'Dine in',
   take_out: 'Takeaway',
