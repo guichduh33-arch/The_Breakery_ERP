@@ -157,7 +157,7 @@ export default function PosPage() {
       {offlineGate.offlineMode && offlineGate.blockedReason === 'payments_disabled' && (
         <div
           data-testid="offline-payments-disabled-banner"
-          className="px-4 py-2 text-sm font-semibold text-center bg-red-as-text/15 text-red-as-text border-b border-red-as-text/40"
+          className="px-4 py-2 text-sm font-semibold text-center bg-danger-soft text-red-as-text border-b border-danger"
         >
           Offline mode — checkout disabled in settings, no sale possible until the cloud connection returns
         </div>

@@ -233,7 +233,7 @@ function MarginLine({
           <Currency amount={margin} className="text-sm font-semibold" />
         </div>
       </div>
-      <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay/60 overflow-hidden')}>
+      <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay overflow-hidden')}>
         <div
           className="h-full rounded-full bg-gold"
           style={{ width: `${Math.min(Math.max(marginPct, 0), 100)}%` }}

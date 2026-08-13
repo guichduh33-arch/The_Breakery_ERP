@@ -53,7 +53,7 @@ export function StationFilter() {
             className={
               active
                 ? 'shadow-sm'
-                : 'bg-bg-elevated text-text-secondary hover:bg-bg-muted'
+                : 'bg-bg-elevated text-text-secondary hover:bg-bg-overlay'
             }
           >
             {chip.label}

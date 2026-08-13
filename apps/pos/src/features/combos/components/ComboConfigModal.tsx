@@ -312,7 +312,7 @@ function GroupSection({ group, selection, onSelect }: GroupSectionProps): JSX.El
                 <span
                   aria-hidden="true"
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                    isChosen ? 'border-gold bg-gold' : 'border-border-default bg-transparent'
+                    isChosen ? 'border-gold bg-gold' : 'border-border-strong bg-transparent'
                   }`}
                 >
                   {isChosen && (
@@ -350,7 +350,7 @@ function GroupSection({ group, selection, onSelect }: GroupSectionProps): JSX.El
               <span
                 aria-hidden="true"
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${
-                  isChosen ? 'border-gold bg-gold' : 'border-border-default bg-transparent'
+                  isChosen ? 'border-gold bg-gold' : 'border-border-strong bg-transparent'
                 }`}
               >
                 {isChosen && (

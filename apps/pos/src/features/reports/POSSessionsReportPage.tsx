@@ -197,7 +197,7 @@ function VarianceCell({ value }: { value: number | null }): JSX.Element {
 function SessionRow({ session: s }: { session: POSReportsSession }): JSX.Element {
   const isOpen = s.status === 'open';
   return (
-    <tr data-testid={`session-${s.sessionId}`} className="hover:bg-bg-overlay/40">
+    <tr data-testid={`session-${s.sessionId}`} className="hover:bg-bg-overlay">
       <td className="px-3 py-2">
         <span
           data-testid="session-status-badge"

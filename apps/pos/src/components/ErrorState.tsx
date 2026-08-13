@@ -35,7 +35,7 @@ export function ErrorState({
       }
     >
       <div className="max-w-sm text-center space-y-4">
-        <AlertTriangle className="h-10 w-10 text-red mx-auto" aria-hidden />
+        <AlertTriangle className="h-10 w-10 text-red-as-text mx-auto" aria-hidden />
         <div className="space-y-1">
           <h2 className="font-sans text-xl font-semibold text-text-primary">{title}</h2>
           <p className="text-text-secondary text-sm">{description}</p>

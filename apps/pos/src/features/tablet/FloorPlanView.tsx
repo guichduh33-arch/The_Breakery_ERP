@@ -178,7 +178,7 @@ export function FloorPlanView({
       >
         <div
           className={cn(
-            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated/40 p-8',
+            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-8',
             'bg-[radial-gradient(circle,_rgba(201,165,87,0.08)_1px,_transparent_1px)] [background-size:18px_18px]',
           )}
         >

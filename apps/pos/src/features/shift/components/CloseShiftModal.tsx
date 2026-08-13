@@ -232,7 +232,7 @@ export function CloseShiftModal({
                       ? 'font-mono tabular-nums text-text-primary'
                       : variance > 0
                         ? 'font-mono tabular-nums text-green'
-                        : 'font-mono tabular-nums text-red'
+                        : 'font-mono tabular-nums text-red-as-text'
                   }
                 >
                   {variance > 0 ? '+' : ''}{variance.toLocaleString('id-ID')}

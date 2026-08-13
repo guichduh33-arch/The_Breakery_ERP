@@ -100,7 +100,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   // Session 10: cancelled items have no actionable CTA — only the badge.
   if (item.is_cancelled) {
     return (
-      <Badge variant="default" className="bg-red text-bg-base border-transparent">
+      <Badge variant="default" className="bg-red text-red-on-fill border-transparent">
         Cancelled
       </Badge>
     );
@@ -252,7 +252,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
       {/* Session 59 (17 D1.1) — order-level note (tablet), e.g. allergy / "no gluten". */}
       {head.order_notes && (
         <div
-          className="rounded-md border border-amber-warn/40 bg-amber-warn/10 px-3 py-2 text-sm text-amber-warn"
+          className="rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-amber-warn"
           data-testid="kds-order-note"
         >
           {head.order_notes}
