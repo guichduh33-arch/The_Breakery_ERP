@@ -25,6 +25,14 @@ export interface ListCounter {
   /** Couleur de la valeur. Le ton dit la gravité, jamais la catégorie. */
   tone?: CounterTone;
   /**
+   * Compteur d'ARRIÈRE-PLAN : la valeur se grise. Ce n'est pas un ton — il ne
+   * dit aucune gravité — mais l'inverse : « ces lignes existent, elles ne sont
+   * pas ce que tu es venu regarder » (le catalogue désactivé, par exemple).
+   * Prend le pas sur `tone` : une valeur ne peut pas être à la fois en retrait
+   * et alarmante.
+   */
+  muted?: boolean;
+  /**
    * Absent = compteur informatif, rendu mais non cliquable. Un compteur qui ne
    * filtre rien ne doit pas se présenter comme un contrôle.
    */
@@ -72,7 +80,9 @@ export function ListCounterStrip({
     >
       {counters.map((counter) => {
         const isActive = counter.id === activeId;
-        const tone = TONE[counter.tone ?? 'neutral'];
+        const tone = counter.muted === true
+          ? 'text-text-muted'
+          : TONE[counter.tone ?? 'neutral'];
         const shell = cn(
           'flex flex-col gap-0.5 px-[18px] py-[11px] text-left',
           'border-r border-border-muted last:border-r-0',

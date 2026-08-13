@@ -208,7 +208,7 @@ export function TransferReceiveModal({
             <Button type="button" variant="ghost" onClick={close} disabled={receiveMut.isPending}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={receiveMut.isPending}>
+            <Button type="submit" variant="ink" disabled={receiveMut.isPending}>
               {receiveMut.isPending ? 'Receiving…' : 'Confirm receive'}
             </Button>
           </div>

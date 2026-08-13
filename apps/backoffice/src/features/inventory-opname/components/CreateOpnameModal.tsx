@@ -83,7 +83,7 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createOpname.isPending}>
+          <Button variant="ink" onClick={handleSubmit} disabled={createOpname.isPending}>
             {createOpname.isPending ? 'Creating…' : 'Create count'}
           </Button>
         </DialogFooter>

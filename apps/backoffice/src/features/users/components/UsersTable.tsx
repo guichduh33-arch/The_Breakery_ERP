@@ -3,6 +3,7 @@
 
 import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
+import { formatDateTime } from '@breakery/utils';
 import type { UserRow } from '../hooks/useUsersList.js';
 
 export interface UsersTableProps {
@@ -67,7 +68,7 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
               </td>
               <td className="py-2 px-3 text-xs text-text-secondary">
                 {u.last_login_at !== null
-                  ? new Date(u.last_login_at).toLocaleString()
+                  ? formatDateTime(u.last_login_at)
                   : '—'}
               </td>
               <td className="py-2 px-3 text-right">

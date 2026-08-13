@@ -287,7 +287,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       {/* Purchase date */}
       <div className="space-y-1 sm:max-w-[12rem]">
         <label htmlFor={`${rid}-date`} className="text-xs uppercase tracking-widest text-text-secondary">Purchase date</label>
-        <Input id={`${rid}-date`} type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={purchase.isPending} />
+        <Input id={`${rid}-date`} type="date" lang="id-ID" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={purchase.isPending} />
       </div>
 
       {/* Payment block */}
@@ -316,14 +316,14 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
             </div>
             <div className="space-y-1">
               <label htmlFor={`${rid}-pay-date`} className="text-xs uppercase tracking-widest text-text-secondary">Payment date</label>
-              <Input id={`${rid}-pay-date`} type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} disabled={purchase.isPending} />
+              <Input id={`${rid}-pay-date`} type="date" lang="id-ID" value={payDate} onChange={(e) => setPayDate(e.target.value)} disabled={purchase.isPending} />
             </div>
           </div>
         )}
       </fieldset>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" variant="primary" disabled={!canSubmit}>
+        <Button type="submit" variant="ink" disabled={!canSubmit}>
           {purchase.isPending ? 'Recording…' : 'Record purchase'}
         </Button>
       </div>

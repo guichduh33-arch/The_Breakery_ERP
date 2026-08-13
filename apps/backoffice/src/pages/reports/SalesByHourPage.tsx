@@ -83,7 +83,7 @@ export default function SalesByHourPage() {
           <label className="flex items-center gap-1 text-sm text-text-secondary">
             <span>Date</span>
             <Input
-              type="date"
+              type="date" lang="id-ID"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="h-9 w-40"

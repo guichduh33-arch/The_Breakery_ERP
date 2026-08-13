@@ -171,7 +171,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
             {result !== null ? 'Close' : 'Cancel'}
           </Button>
           {result === null && step === 1 && (
-            <Button onClick={handleNext} data-testid="ac-modal-next">Next →</Button>
+            <Button variant="ink" onClick={handleNext} data-testid="ac-modal-next">Next →</Button>
           )}
           {result === null && step === 2 && (
             <>
@@ -179,6 +179,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
                 ← Back
               </Button>
               <Button
+                variant="ink"
                 onClick={handleSubmit}
                 disabled={closeYear.isPending}
                 data-testid="ac-modal-submit"

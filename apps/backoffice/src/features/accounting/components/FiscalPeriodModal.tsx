@@ -157,7 +157,7 @@ export function FiscalPeriodModal({
             Cancel
           </Button>
           {step === 1 && (
-            <Button onClick={handleNext} data-testid="fp-modal-next">Next →</Button>
+            <Button variant="ink" onClick={handleNext} data-testid="fp-modal-next">Next →</Button>
           )}
           {step === 2 && (
             <>
@@ -165,6 +165,7 @@ export function FiscalPeriodModal({
                 ← Back
               </Button>
               <Button
+                variant="ink"
                 onClick={handleSubmit}
                 disabled={closePeriod.isPending}
                 data-testid="fp-modal-submit"

@@ -43,7 +43,7 @@ export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: Can
   async function handleConfirm(): Promise<void> {
     setError(null);
     if (reason.trim().length < 3) {
-      setError(ERROR_COPY['reason_required'] as string);
+      setError(ERROR_COPY.reason_required!);
       return;
     }
     try {
@@ -92,7 +92,7 @@ export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: Can
             </Button>
             <Button
               type="button"
-              variant="primary"
+              variant="ink"
               onClick={() => { void handleConfirm(); }}
               disabled={cancelMut.isPending || reason.trim().length < 3}
               data-testid="cb2b-confirm"

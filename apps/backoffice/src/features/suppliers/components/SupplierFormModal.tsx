@@ -214,7 +214,7 @@ export function SupplierFormModal({ open, mode, initial, onClose }: SupplierForm
 
         <DialogFooter className="gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>Cancel</Button>
-          <Button type="button" variant="primary" onClick={() => { void handleSubmit(); }} disabled={pending}>
+          <Button type="button" variant="ink" onClick={() => { void handleSubmit(); }} disabled={pending}>
             {pending ? 'Saving…' : mode === 'create' ? 'Create' : 'Save'}
           </Button>
         </DialogFooter>

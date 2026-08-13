@@ -23,7 +23,7 @@
 
 import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
-import { Badge, DataTable, cn, type DataTableColumn } from '@breakery/ui';
+import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
@@ -31,14 +31,14 @@ import {
   type ProductColumnId, type ProductRow,
 } from '../types.js';
 import {
-  PRODUCTS_PAGE_SIZE_DEFAULT,
-  ProductsPagination,
+  LIST_PAGE_SIZE_DEFAULT,
+  ListPagination,
   pageSlice,
-} from './ProductsPagination.js';
+} from '@/components/ListPagination.js';
 
 /** @deprecated Taille par défaut seulement — la taille effective est une prop.
  *  Conservé parce que des tests l'importent comme repère. */
-export const PRODUCTS_PAGE_SIZE = PRODUCTS_PAGE_SIZE_DEFAULT;
+export const PRODUCTS_PAGE_SIZE = LIST_PAGE_SIZE_DEFAULT;
 
 const MONO = 'font-data tabular-nums';
 const DASH = <span className="text-text-subtle">—</span>;
@@ -62,6 +62,13 @@ interface Props {
   /** Lignes par page. Même contrat que `page` : la page la possède. */
   pageSize?: number;
   onPageSize?: (next: number) => void;
+  /**
+   * Tri courant. Même contrat que la pagination : la table REND l'ordre, elle
+   * ne l'applique pas — c'est la page qui trie, parce que la grille montre le
+   * même jeu et doit voir le même ordre.
+   */
+  sort?: DataTableSort | null;
+  onSortChange?: (next: DataTableSort) => void;
   selected?: ReadonlySet<string>;
   onToggleRow?: (id: string) => void;
   onToggleAll?: (ids: readonly string[], allSelected: boolean) => void;
@@ -78,8 +85,10 @@ export function ProductsTable({
   hiddenColumns,
   page = 1,
   onPage,
-  pageSize = PRODUCTS_PAGE_SIZE_DEFAULT,
+  pageSize = LIST_PAGE_SIZE_DEFAULT,
   onPageSize,
+  sort = null,
+  onSortChange,
   selected = EMPTY_SELECTION,
   onToggleRow,
   onToggleAll,
@@ -124,6 +133,7 @@ export function ProductsTable({
       id: 'product',
       header: 'Product',
       width: '20.3%',
+      sortable: true,
       render: (r) => (
         <div className={cn('flex items-center gap-2', r.parent_product_id !== null && 'pl-4')}>
           <span className="truncate font-medium text-text-primary">{r.name}</span>
@@ -140,6 +150,7 @@ export function ProductsTable({
       id: 'sku',
       header: 'SKU',
       width: '9.9%',
+      sortable: true,
       render: (r) => <span className="font-data text-[11.5px] text-text-muted">{r.sku}</span>,
     },
     ...(shown('type') ? [{
@@ -152,6 +163,7 @@ export function ProductsTable({
       id: 'category',
       header: 'Category',
       width: '10.4%',
+      sortable: true,
       // La pilule de catégorie tombe en vue liste : quinze pilules colorées
       // empilées font un vitrail où la couleur ne distingue plus rien.
       render: (r: ProductRow) =>
@@ -162,6 +174,7 @@ export function ProductsTable({
       header: 'Stock',
       align: 'right' as const,
       width: '8.3%',
+      sortable: true,
       render: (r: ProductRow) => {
         if (!r.track_inventory) return DASH;
         const qty = r.current_stock;
@@ -186,6 +199,7 @@ export function ProductsTable({
       header: 'Cost',
       align: 'right' as const,
       width: '8.3%',
+      sortable: true,
       // Coût manquant EN ROUGE : c'est la population du compteur « No cost
       // price », et la cause d'une marge qu'on ne peut pas calculer.
       render: (r: ProductRow) =>
@@ -198,6 +212,7 @@ export function ProductsTable({
       header: 'Retail',
       align: 'right' as const,
       width: '8.3%',
+      sortable: true,
       render: (r: ProductRow) =>
         r.retail_price > 0
           ? <span className={cn(MONO, 'font-semibold text-gold')}>{formatCurrency(r.retail_price)}</span>
@@ -279,7 +294,7 @@ export function ProductsTable({
   ];
 
   const footer = (
-    <ProductsPagination
+    <ListPagination
       total={total}
       page={page}
       pageSize={pageSize}
@@ -307,6 +322,7 @@ export function ProductsTable({
     loadingRowCount: pageSize,
     striped: false,
     density: 'compact',
+    sort,
     footer,
     rowClassName: (r) => (selected.has(r.id) ? 'bg-surface-inert' : undefined),
     emptyTitle: 'No products match these filters',
@@ -321,6 +337,7 @@ export function ProductsTable({
     ),
   };
   if (onRowClick !== undefined) tableProps.onRowClick = onRowClick;
+  if (onSortChange !== undefined) tableProps.onSortChange = onSortChange;
   return <DataTable {...tableProps} />;
 }
 

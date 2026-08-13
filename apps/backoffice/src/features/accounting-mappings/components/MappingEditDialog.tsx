@@ -165,7 +165,7 @@ export function MappingEditDialog({ open, initial, onClose }: MappingEditDialogP
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={update.isPending}>
+            <Button type="submit" variant="ink" disabled={update.isPending}>
               {update.isPending ? 'Saving…' : 'Save changes'}
             </Button>
           </DialogFooter>

@@ -1,28 +1,32 @@
 // apps/backoffice/src/pages/purchasing/PurchaseOrdersListPage.tsx
 //
-// Session 14 / Phase 5.A — rewrite of the Purchase Orders list to match the
-// `13-incoming-po-list.jpg` family (KPI strip + status pills + DataTable).
+// Liste des bons de commande — instance de l'archétype LIST.
 //
-// Composition:
-//   - Fraunces title + supporting copy on the left, primary CTA right.
-//   - Four KPI tiles: TOTAL ORDERS / PENDING / PARTIAL / RECEIVED.
-//   - Status quick-filter pills (all / pending / partial / received /
-//     cancelled) + supplier select + free-text search bar.
-//   - Themed DataTable (PO number link, supplier, status pill, dates,
-//     total) with EmptyState v2 fallback.
+// Ce que l'audit UX/UI change ici, et pourquoi :
+//   · Les quatre tuiles de KPI et les cinq pastilles dorées disaient DEUX FOIS
+//     la même chose — « 12 en attente » au-dessus, un bouton « Pending » en
+//     dessous — sans que la tuile serve à rien : elle affichait le nombre que
+//     la pastille permettait d'atteindre. Les deux cèdent à une seule bande de
+//     compteurs (`ListCounterStrip`), où le compteur EST le filtre.
+//   · Les compteurs suivent le fournisseur et la recherche, mais JAMAIS le
+//     statut actif : un compteur qui se recalcule sur son propre filtre ne
+//     compte plus que lui-même. C'est la règle déjà tenue par la liste des
+//     commandes (ADR-025 D2).
+//   · Le montant engagé par statut passe en infobulle plutôt qu'en seconde
+//     bande : la bande répond à « combien de lignes vais-je voir », pas à
+//     « combien ça coûte ».
+//
+// Reste inchangé : le DataTable thémé (lien PO, fournisseur, pastille de
+// statut, dates, total) et l'import/export historique.
 
 import { useMemo, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  CheckCircle2,
-  ClipboardList,
-  Clock,
   Download,
   FileText,
   Package,
   Plus,
   Search,
-  TrendingUp,
   Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,14 +34,13 @@ import {
   Badge,
   Button,
   DataTable,
-  KpiTile,
   type DataTableColumn,
 } from '@breakery/ui';
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
 import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
 import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
 import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   usePurchaseOrdersList,
@@ -48,30 +51,42 @@ import {
 import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 
-interface POKpi {
-  total:     number;
-  pending:   number;
-  partial:   number;
-  received:  number;
-  cancelled: number;
-}
+type POFilterKey = POStatus | 'all';
 
-function aggregate(rows: readonly PurchaseOrderListRow[]): POKpi {
-  const acc: POKpi = { total: rows.length, pending: 0, partial: 0, received: 0, cancelled: 0 };
+interface POBucket { count: number; amount: number }
+
+/** Un seau par statut filtrable, plus le total. Les clés sont celles du filtre. */
+type POBuckets = Record<POFilterKey, POBucket>;
+
+function aggregate(rows: readonly PurchaseOrderListRow[]): POBuckets {
+  const acc: POBuckets = {
+    all:       { count: rows.length, amount: 0 },
+    pending:   { count: 0, amount: 0 },
+    partial:   { count: 0, amount: 0 },
+    received:  { count: 0, amount: 0 },
+    cancelled: { count: 0, amount: 0 },
+    draft:     { count: 0, amount: 0 },
+  };
   for (const r of rows) {
-    if (r.status === 'pending')   acc.pending   += 1;
-    if (r.status === 'partial')   acc.partial   += 1;
-    if (r.status === 'received')  acc.received  += 1;
-    if (r.status === 'cancelled') acc.cancelled += 1;
+    const amount = Number(r.total_amount ?? 0);
+    acc.all.amount += amount;
+    const bucket = acc[r.status as POFilterKey] as POBucket | undefined;
+    if (bucket === undefined) continue;
+    bucket.count  += 1;
+    bucket.amount += amount;
   }
   return acc;
 }
 
-const QUICK_FILTERS: { value: POStatus | 'all'; label: string }[] = [
-  { value: 'all',       label: 'All' },
-  { value: 'pending',   label: 'Pending' },
-  { value: 'partial',   label: 'Partial' },
+// Les cinq entrées de la bande — mêmes valeurs de filtre que les pastilles
+// qu'elle remplace, `draft` compris nulle part : aucune RPC ne crée de brouillon
+// aujourd'hui, et un filtre qui ne peut rien rendre est un état menteur.
+const PO_COUNTERS: readonly { value: POFilterKey; label: string; tone?: 'warning' }[] = [
+  { value: 'all',       label: 'All POs' },
+  { value: 'pending',   label: 'Pending',   tone: 'warning' },
+  { value: 'partial',   label: 'Partial',   tone: 'warning' },
   { value: 'received',  label: 'Received' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
@@ -82,7 +97,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
   const canRead   = hasPermission('purchasing.po.read');
   const canCreate = hasPermission('purchasing.po.create');
 
-  const [status, setStatus]         = useState<POStatus | 'all'>('all');
+  const [status, setStatus]         = useState<POFilterKey>('all');
   const [supplierId, setSupplierId] = useState<string>('');
   const [search, setSearch]         = useState<string>('');
   const [importing, setImporting]   = useState<boolean>(false);
@@ -105,18 +120,42 @@ export default function PurchaseOrdersListPage(): JSX.Element {
     }
   }
 
-  const filters = useMemo<PurchaseOrdersFilters>(() => ({
-    ...(status !== 'all' ? { status } : {}),
+  // Les filtres HORS statut : ce sur quoi les compteurs se calculent. Le statut
+  // s'ajoute pour la table seule — sans quoi chaque compteur ne compterait que
+  // les lignes que son propre filtre a déjà retenues.
+  const counterFilters = useMemo<PurchaseOrdersFilters>(() => ({
     ...(supplierId !== '' ? { supplierId } : {}),
     ...(search.trim() !== '' ? { search } : {}),
-  }), [status, supplierId, search]);
+  }), [supplierId, search]);
+
+  const filters = useMemo<PurchaseOrdersFilters>(() => ({
+    ...counterFilters,
+    ...(status !== 'all' ? { status } : {}),
+  }), [counterFilters, status]);
 
   const list      = usePurchaseOrdersList(filters);
-  const allList   = usePurchaseOrdersList({});
+  const allList   = usePurchaseOrdersList(counterFilters);
   const suppliers = useSuppliersList({ active: 'active' });
 
-  const rows = list.data ?? [];
-  const kpi  = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
+  const rows    = list.data ?? [];
+  const buckets = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
+  const countersDown = allList.isError;
+
+  const counters = useMemo<ListCounter[]>(() => PO_COUNTERS.map((c) => {
+    const bucket = buckets[c.value];
+    return {
+      id:    c.value,
+      label: c.label,
+      // Un échec de chargement rend un tiret, jamais un zéro : « aucun bon en
+      // attente » et « je n'ai pas pu compter » ne se ressemblent pas.
+      value: countersDown ? '—' : bucket.count,
+      ...(c.tone !== undefined && bucket.count > 0 && !countersDown ? { tone: c.tone } : {}),
+      ...(countersDown ? {} : {
+        title: `${formatCurrency(bucket.amount)} committed across ${String(bucket.count)} purchase order(s). Counted over the 50 most recent POs matching the supplier and search filters.`,
+      }),
+      onSelect: () => { setStatus(c.value); },
+    };
+  }), [buckets, countersDown]);
 
   const columns: readonly DataTableColumn<PurchaseOrderListRow>[] = useMemo(() => [
     {
@@ -155,14 +194,14 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       header: 'Order date',
       width: '120px',
       align: 'left',
-      render: (r) => <span className="tabular-nums text-text-secondary">{r.order_date ?? '—'}</span>,
+      render: (r) => <span className="tabular-nums text-text-secondary">{r.order_date !== null ? formatDate(r.order_date) : '—'}</span>,
     },
     {
       id:    'expected_date',
       header: 'Expected',
       width: '120px',
       align: 'left',
-      render: (r) => <span className="tabular-nums text-text-secondary">{r.expected_date ?? '—'}</span>,
+      render: (r) => <span className="tabular-nums text-text-secondary">{r.expected_date !== null ? formatDate(r.expected_date) : '—'}</span>,
     },
     {
       id:    'total',
@@ -206,31 +245,12 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         </div>
       </header>
 
-      <section
-        className="grid grid-cols-1 gap-4 md:grid-cols-4"
-        aria-label="Purchase order totals"
-      >
-        <KpiTile
-          label="Total Orders"
-          value={kpi.total}
-          icon={ClipboardList}
-        />
-        <KpiTile
-          label="Pending"
-          value={kpi.pending}
-          icon={Clock}
-        />
-        <KpiTile
-          label="Partial"
-          value={kpi.partial}
-          icon={TrendingUp}
-        />
-        <KpiTile
-          label="Received"
-          value={kpi.received}
-          icon={CheckCircle2}
-        />
-      </section>
+      <ListCounterStrip
+        counters={counters}
+        activeId={status}
+        ariaLabel="Purchase order status filter"
+        data-testid="po-counters"
+      />
 
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3">
         <div className="relative flex-1 min-w-[16rem]">
@@ -257,25 +277,6 @@ export default function PurchaseOrdersListPage(): JSX.Element {
             <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
           ))}
         </select>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Status filter">
-        {QUICK_FILTERS.map((q) => {
-          const isActive = status === q.value;
-          return (
-            <Button
-              key={q.value}
-              type="button"
-              variant={isActive ? 'gold' : 'ghost'}
-              size="sm"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => setStatus(q.value)}
-            >
-              {q.label}
-            </Button>
-          );
-        })}
       </div>
 
       {list.error !== null && list.error !== undefined ? (

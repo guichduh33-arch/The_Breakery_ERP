@@ -116,7 +116,7 @@ vi.mock('@/lib/supabase.js', () => {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_stock_levels_v3') {
+        if (fn === 'get_stock_levels_v4') {
           return Promise.resolve({ data: MOCK_ROWS, error: null });
         }
         if (fn === 'get_stock_counters_v1') {

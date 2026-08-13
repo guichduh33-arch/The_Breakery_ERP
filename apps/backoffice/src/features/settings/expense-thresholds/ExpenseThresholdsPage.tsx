@@ -66,6 +66,7 @@ export default function ExpenseThresholdsPage(): JSX.Element {
         </div>
         {canWrite && (
           <Button
+            variant="ink"
             onClick={openCreate}
             className="inline-flex items-center gap-2"
             data-testid="new-threshold-btn"

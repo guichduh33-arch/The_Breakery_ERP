@@ -28,7 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDateTime } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -251,7 +251,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                         <div className="text-xs text-text-secondary">
                           {p.company_name ?? p.customer_name ?? 'Unknown'}
                           {' • '}
-                          {new Date(p.paid_at).toLocaleString()}
+                          {formatDateTime(p.paid_at)}
                           {' • '}
                           {p.method}
                           {p.reference !== null && p.reference !== '' && (

@@ -395,7 +395,7 @@ function PaymentsSection({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <KpiTile label="Total Paid"   value={fmtIdrPrefixed(metrics.paidAmount)}   icon={CheckCircle2} />
         <KpiTile label="Total Unpaid" value={fmtIdrPrefixed(metrics.unpaidAmount)} icon={CreditCard} />
         <KpiTile label="Overdue"      value={fmtIdrPrefixed(overdue)}              icon={Clock} />

@@ -127,7 +127,7 @@ export default function OpnameListPage(): JSX.Element {
           </p>
         </div>
         {canCreate && (
-          <Button onClick={() => { setCreateOpen(true); }}>
+          <Button variant="ink" onClick={() => { setCreateOpen(true); }}>
             <Plus className="h-4 w-4" aria-hidden /> New count
           </Button>
         )}

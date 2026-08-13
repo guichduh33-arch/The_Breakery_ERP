@@ -104,7 +104,7 @@ export function YieldVarianceModal({
             <Button type="button" variant="ghost" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={!canConfirm}>
+            <Button type="submit" variant="ink" disabled={!canConfirm}>
               Confirm with reason
             </Button>
           </DialogFooter>

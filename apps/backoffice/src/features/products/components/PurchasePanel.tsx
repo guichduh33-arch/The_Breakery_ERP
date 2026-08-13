@@ -7,7 +7,7 @@
 import { useMemo, type JSX } from 'react';
 import { Badge, Card, EmptyState, KpiTile, SectionLabel } from '@breakery/ui';
 import { ShoppingCart } from 'lucide-react';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import {
   useProductPurchaseItems,
   type ProductPurchaseItem,
@@ -15,7 +15,7 @@ import {
 
 function fmtDate(iso: string | null): string {
   if (iso === null) return '—';
-  return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
+  return formatDate(iso);
 }
 
 // Map the free-text PO status to one of the Badge primitive's variants.
@@ -58,7 +58,7 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
   if (q.error !== null && q.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load purchase history: {(q.error as Error).message}
+        Failed to load purchase history: {(q.error).message}
       </div>
     );
   }

@@ -46,6 +46,7 @@ export default function JournalEntriesPage(): JSX.Element {
         </div>
         {canCreate && (
           <Button
+            variant="ink"
             onClick={() => setShowCreate(true)}
             className="inline-flex items-center gap-2"
             data-testid="je-new-btn"
@@ -60,7 +61,7 @@ export default function JournalEntriesPage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
-            type="date"
+            type="date" lang="id-ID"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className="mt-1"
@@ -70,7 +71,7 @@ export default function JournalEntriesPage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
-            type="date"
+            type="date" lang="id-ID"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="mt-1"

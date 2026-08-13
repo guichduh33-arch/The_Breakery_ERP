@@ -24,7 +24,7 @@ import {
   KpiTile,
   SectionLabel,
 } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
@@ -261,7 +261,7 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
               <div>
                 <div className="font-data tabular-nums text-text-primary">{o.order_number}</div>
                 <div className="text-xs text-text-secondary">
-                  {new Date(o.created_at).toLocaleDateString()} • {o.status}
+                  {formatDate(o.created_at)} • {o.status}
                 </div>
               </div>
               <span className="font-data tabular-nums text-text-primary">{formatCurrency(o.total)}</span>

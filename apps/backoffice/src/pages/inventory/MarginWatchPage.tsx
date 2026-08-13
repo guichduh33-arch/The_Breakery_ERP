@@ -259,6 +259,7 @@ export default function MarginWatchPage(): JSX.Element {
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={closeAckModal}>Cancel</Button>
             <Button
+              variant="ink"
               type="button"
               onClick={() => { void submitAck(); }}
               disabled={ack.isPending}

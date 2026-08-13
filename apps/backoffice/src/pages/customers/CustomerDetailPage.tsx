@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Card, LoyaltyBadge } from '@breakery/ui';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
+import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
@@ -266,7 +267,7 @@ export function CustomerDetailPage(): JSX.Element {
           label="Last visit"
           value={
             customer.last_visit_at
-              ? new Date(customer.last_visit_at).toLocaleDateString('id-ID')
+              ? formatDate(customer.last_visit_at)
               : '—'
           }
         />

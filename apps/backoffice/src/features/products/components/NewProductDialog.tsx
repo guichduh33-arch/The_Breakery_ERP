@@ -222,6 +222,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
             Cancel
           </Button>
           <Button
+            variant="ink"
             onClick={handleSubmit}
             disabled={createProduct.isPending}
             data-testid="new-product-submit"

@@ -141,7 +141,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
           <Button variant="ghost" onClick={onClose} disabled={createUser.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={createUser.isPending}>
+          <Button variant="ink" onClick={handleSubmit} disabled={createUser.isPending}>
             {createUser.isPending ? 'Creating…' : 'Create user'}
           </Button>
         </DialogFooter>

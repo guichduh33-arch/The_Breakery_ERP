@@ -160,7 +160,7 @@ export default function SettingsFloorPlanPage(): JSX.Element {
         actions={
           <>
             <Button
-              variant={view === 'list' ? 'primary' : 'secondary'}
+              variant={view === 'list' ? 'ink' : 'secondary'}
               onClick={() => setView('list')}
               aria-pressed={view === 'list'}
               data-testid="fp-view-list"
@@ -169,7 +169,7 @@ export default function SettingsFloorPlanPage(): JSX.Element {
               List
             </Button>
             <Button
-              variant={view === 'plan' ? 'primary' : 'secondary'}
+              variant={view === 'plan' ? 'ink' : 'secondary'}
               onClick={() => setView('plan')}
               aria-pressed={view === 'plan'}
               data-testid="fp-view-plan"

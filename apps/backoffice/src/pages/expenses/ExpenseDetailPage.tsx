@@ -173,7 +173,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             </div>
           )}
           {expense.status === 'approved' && canPay && (
-            <Button type="button" variant="primary" onClick={() => setPayOpen(true)}>
+            <Button type="button" variant="ink" onClick={() => setPayOpen(true)}>
               <CreditCard className="h-4 w-4" aria-hidden /> Mark as paid
             </Button>
           )}

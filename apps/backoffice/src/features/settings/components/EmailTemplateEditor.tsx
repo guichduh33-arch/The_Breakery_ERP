@@ -10,6 +10,7 @@ import {
   useUpdateEmailTemplate,
   type EmailTemplateRow,
 } from '../hooks/useEmailTemplates.js';
+import { formatTimeWita } from '@breakery/utils';
 
 interface Draft {
   subject:   string;
@@ -82,7 +83,7 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
           is_active: draft.is_active,
         },
       });
-      setSavedAt(new Date().toLocaleTimeString());
+      setSavedAt(formatTimeWita(new Date()));
     } catch (e) {
       setServerError(e instanceof Error ? e.message : 'Failed to save template');
     }
@@ -125,7 +126,7 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
         {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
         {savedAt && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
         {canEdit && (
-          <Button type="button" variant="primary" disabled={!dirty || update.isPending}
+          <Button type="button" variant="ink" disabled={!dirty || update.isPending}
             onClick={() => { void handleSave(); }}>
             {update.isPending ? 'Saving…' : 'Save changes'}
           </Button>

@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { Card, SectionLabel, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
+import { formatDateLong } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
@@ -83,9 +84,7 @@ const SHORTCUTS = [
 ] as const;
 
 function todayTitle(): string {
-  return `Today · ${new Date().toLocaleDateString(undefined, {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })}`;
+  return `Today · ${formatDateLong(new Date())}`;
 }
 
 export default function DashboardPage({ data }: DashboardPageProps) {

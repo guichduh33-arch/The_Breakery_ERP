@@ -9,9 +9,15 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-import { ProductsCounterStrip } from '../ProductsCounterStrip.js';
+import { ListCounterStrip } from '@/components/ListCounterStrip.js';
+import { buildProductCounters } from '../../counters.js';
 import { ProductsTable, PRODUCTS_PAGE_SIZE } from '../ProductsTable.js';
-import { productMarginPct, type ProductRow, type ProductsKpis } from '../../types.js';
+import {
+  productMarginPct,
+  type ProductCounter,
+  type ProductRow,
+  type ProductsKpis,
+} from '../../types.js';
 
 afterEach(cleanup);
 
@@ -64,41 +70,73 @@ const KPIS: ProductsKpis = {
   inactive: 12, no_cost_price: 6,
 };
 
-describe('ProductsCounterStrip', () => {
+// La bande du catalogue n'a plus de composant à elle : elle est une instance de
+// l'archétype LIST (`ListCounterStrip`) décrite par `buildProductCounters`. Les
+// tests portent donc sur le couple description + rendu partagé, exactement ce
+// que la page monte.
+function renderCounters(
+  kpis: ProductsKpis,
+  active: ProductCounter,
+  onSelect: (next: ProductCounter) => void,
+  isLoading = false,
+) {
+  return render(
+    <ListCounterStrip
+      counters={buildProductCounters(kpis, active, onSelect, isLoading)}
+      activeId={active}
+    />,
+  );
+}
+
+describe('bande de compteurs du catalogue', () => {
   it('renders the seven counters, data-quality ones included', () => {
-    render(<ProductsCounterStrip kpis={KPIS} active="all" onSelect={vi.fn()} />);
+    renderCounters(KPIS, 'all', vi.fn());
     expect(within(screen.getByTestId('counter-all')).getByText('318')).toBeInTheDocument();
     expect(within(screen.getByTestId('counter-inactive')).getByText('12')).toBeInTheDocument();
     expect(within(screen.getByTestId('counter-no-cost')).getByText('6')).toBeInTheDocument();
   });
 
   it('paints a non-zero "no cost price" count as a defect', () => {
-    render(<ProductsCounterStrip kpis={KPIS} active="all" onSelect={vi.fn()} />);
+    renderCounters(KPIS, 'all', vi.fn());
     expect(within(screen.getByTestId('counter-no-cost')).getByText('6').className)
       .toMatch(/text-danger/);
   });
 
   it('does not paint the defect counter when it is at zero', () => {
-    render(<ProductsCounterStrip kpis={{ ...KPIS, no_cost_price: 0 }} active="all" onSelect={vi.fn()} />);
+    renderCounters({ ...KPIS, no_cost_price: 0 }, 'all', vi.fn());
     expect(within(screen.getByTestId('counter-no-cost')).getByText('0').className)
       .not.toMatch(/text-danger/);
   });
 
+  it('holds the "inactive" count in the background rather than alarming on it', () => {
+    renderCounters(KPIS, 'all', vi.fn());
+    expect(within(screen.getByTestId('counter-inactive')).getByText('12').className)
+      .toMatch(/text-text-muted/);
+  });
+
+  it('renders a dash — not a zero — while the catalog loads', () => {
+    renderCounters(KPIS, 'all', vi.fn(), true);
+    expect(within(screen.getByTestId('counter-no-cost')).getByText('—')).toBeInTheDocument();
+  });
+
   it('selects a counter, and a second click on the active one clears back to all', () => {
     const onSelect = vi.fn();
-    const { rerender } = render(
-      <ProductsCounterStrip kpis={KPIS} active="all" onSelect={onSelect} />,
-    );
+    const { rerender } = renderCounters(KPIS, 'all', onSelect);
     fireEvent.click(screen.getByTestId('counter-no-cost'));
     expect(onSelect).toHaveBeenLastCalledWith('no-cost');
 
-    rerender(<ProductsCounterStrip kpis={KPIS} active="no-cost" onSelect={onSelect} />);
+    rerender(
+      <ListCounterStrip
+        counters={buildProductCounters(KPIS, 'no-cost', onSelect)}
+        activeId="no-cost"
+      />,
+    );
     fireEvent.click(screen.getByTestId('counter-no-cost'));
     expect(onSelect).toHaveBeenLastCalledWith('all');
   });
 
   it('marks the active counter for assistive tech, not only in colour', () => {
-    render(<ProductsCounterStrip kpis={KPIS} active="inactive" onSelect={vi.fn()} />);
+    renderCounters(KPIS, 'inactive', vi.fn());
     expect(screen.getByTestId('counter-inactive')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'false');
   });

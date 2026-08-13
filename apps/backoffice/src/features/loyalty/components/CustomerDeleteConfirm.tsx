@@ -53,7 +53,7 @@ export function CustomerDeleteConfirm({ customer, onClose }: CustomerDeleteConfi
         <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={customer?.name ?? ''} />
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={handleClose}>Cancel</Button>
-          <Button variant="primary" disabled={!canConfirm} onClick={() => { void handleConfirm(); }}>Delete</Button>
+          <Button variant="ink" disabled={!canConfirm} onClick={() => { void handleConfirm(); }}>Delete</Button>
         </div>
       </DialogContent>
     </Dialog>

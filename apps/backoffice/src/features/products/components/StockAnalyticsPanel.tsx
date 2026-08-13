@@ -27,7 +27,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { Badge, Card, EmptyState, KpiTile, SectionLabel, cn } from '@breakery/ui';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
@@ -45,7 +45,7 @@ const GOLD = 'var(--gold-base)';
 
 function fmtDate(s: string | null): string {
   if (s === null) return '—';
-  return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return formatDateShortWita(s);
 }
 // Ne reste ici qu'un formateur de POURCENTAGE : toutes les quantités du panneau
 // sont passées à `formatQuantity` (audit UX/UI 2026-08-13), qui porte la locale

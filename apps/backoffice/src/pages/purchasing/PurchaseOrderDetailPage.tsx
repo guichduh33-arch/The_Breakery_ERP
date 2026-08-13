@@ -500,7 +500,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             )}
 
             {canRecordPay && (
-              <Button type="button" variant="primary" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
+              <Button type="button" variant="ink" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
                 <Wallet className="h-4 w-4" aria-hidden /> Record payment
               </Button>
             )}

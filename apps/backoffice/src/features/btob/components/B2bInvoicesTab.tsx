@@ -7,7 +7,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Download, FileText, XCircle } from 'lucide-react';
 import { Button, EmptyState, Select } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
@@ -52,7 +52,7 @@ function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRo
         <div className="text-xs text-text-secondary">
           {inv.invoice_number !== null && `${inv.order_number} • `}
           {inv.b2b_company_name ?? inv.customer_name ?? 'Unknown'}
-          {' • '}{new Date(inv.invoice_date).toLocaleDateString()}
+          {' • '}{formatDate(inv.invoice_date)}
           {' • '}{inv.age_days}d
         </div>
       </div>

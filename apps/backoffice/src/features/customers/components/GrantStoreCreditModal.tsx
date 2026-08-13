@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import {
   Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDate } from '@breakery/utils';
 import {
   useGrantStoreCredit, GrantStoreCreditError, type GrantErrorCode,
 } from '../hooks/useGrantStoreCredit.js';
@@ -72,7 +72,7 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
       });
       toast.success(
         `Store credit granted — new balance ${formatCurrency(result.balance_after)}`
-        + (result.expires_at ? ` (expires ${new Date(result.expires_at).toLocaleDateString('id-ID')})` : ''),
+        + (result.expires_at ? ` (expires ${formatDate(result.expires_at)})` : ''),
       );
       resetAll();
       onClose();

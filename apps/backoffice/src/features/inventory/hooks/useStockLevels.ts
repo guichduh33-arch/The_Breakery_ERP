@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useStockLevels.ts
 //
-// Lignes de la liste de stock (`get_stock_levels_v3`). Les filtres sont
+// Lignes de la liste de stock (`get_stock_levels_v4`). Les filtres sont
 // résolus côté serveur : l'aller-retour reste petit même à plusieurs milliers
 // de produits.
 //
@@ -32,12 +32,17 @@ export interface StockLevelRow {
   last_movement_at:     string | null;
 }
 
+/** Colonnes triables serveur — l'allowlist de get_stock_levels_v4. */
+export type StockSortKey = 'name' | 'sku' | 'category' | 'stock' | 'min' | 'value' | 'last_movement';
+
 export interface StockLevelsFilters {
   categoryId?:  string;
   search?:      string;
   bucket?:      StockBucket;
   limit?:       number;
   offset?:      number;
+  /** Absent = ordre historique (déficit de stock d'abord, puis nom). */
+  sort?:        { key: StockSortKey; dir: 'asc' | 'desc' };
 }
 
 // Racine partagée avec `useStockCounters` : React Query invalide par préfixe,
@@ -69,6 +74,8 @@ export function useStockLevels(filters: StockLevelsFilters = {}) {
         p_bucket?:       StockBucket;
         p_limit?:        number;
         p_offset?:       number;
+        p_sort?:         StockSortKey;
+        p_sort_dir?:     'asc' | 'desc';
       } = {
         p_bucket: bucket,
         p_limit:  limit,
@@ -80,8 +87,12 @@ export function useStockLevels(filters: StockLevelsFilters = {}) {
       if (filters.search !== undefined && filters.search.trim() !== '') {
         args.p_search = filters.search.trim();
       }
+      if (filters.sort !== undefined) {
+        args.p_sort = filters.sort.key;
+        args.p_sort_dir = filters.sort.dir;
+      }
 
-      const { data, error } = await supabase.rpc('get_stock_levels_v3', args);
+      const { data, error } = await supabase.rpc('get_stock_levels_v4', args);
       if (error) throw error;
       return data ?? [];
     },

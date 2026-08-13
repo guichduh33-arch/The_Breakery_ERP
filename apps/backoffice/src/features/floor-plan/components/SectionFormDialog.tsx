@@ -90,7 +90,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isPending} data-testid="section-form-submit">
+          <Button variant="ink" onClick={handleSubmit} disabled={isPending} data-testid="section-form-submit">
             {isPending
               ? (mode === 'create' ? 'Creating…' : 'Saving…')
               : (mode === 'create' ? 'Create' : 'Save')}

@@ -94,6 +94,7 @@ export function DeleteUserDialog(
             Cancel
           </Button>
           <Button
+            variant="ink"
             onClick={handleSubmit}
             disabled={del.isPending}
             className="bg-danger hover:opacity-90 text-white"

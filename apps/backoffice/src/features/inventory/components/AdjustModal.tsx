@@ -249,7 +249,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={!canSubmit}>
+            <Button type="submit" variant="ink" disabled={!canSubmit}>
               {adjustMut.isPending ? 'Applying…' : 'Apply'}
             </Button>
           </div>

@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/dashboard/utils/format.ts
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatTimeWita } from '@breakery/utils';
 //
 // Écran 1c — formatage des valeurs du dashboard.
 //
@@ -91,12 +91,12 @@ export function formatMinutes(v: number | null | undefined): string {
   return rest === 0 ? `${h} h` : `${h} h ${String(rest).padStart(2, '0')}`;
 }
 
-/** Heure locale courte — « 09:42 ». */
+/** Heure métier courte — « 09:42 », fuseau WITA (ADR-019), pas celui du poste. */
 export function formatClock(iso: string | null | undefined): string {
   if (iso === null || iso === undefined) return '--:--';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '--:--';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatTimeWita(d);
 }
 
 /** Libellé de tranche horaire — « 07:00–09:00 ». */

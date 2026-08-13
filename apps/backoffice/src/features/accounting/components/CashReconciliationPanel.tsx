@@ -51,7 +51,7 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
       {mut.isError && (
         <p className="text-sm text-destructive">{(mut.error).message}</p>
       )}
-      <Button disabled={diff === 0 || mut.isPending || !canAdjust} onClick={book}>
+      <Button variant="ink" disabled={diff === 0 || mut.isPending || !canAdjust} onClick={book}>
         {diff === 0 ? 'Balanced' : `Book ${diff > 0 ? 'overage' : 'shortage'}`}
       </Button>
       {!canAdjust && (

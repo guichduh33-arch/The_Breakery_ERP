@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatTimeWita } from '@breakery/utils';
 
 export default function SettingsInventoryPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -38,7 +39,7 @@ export default function SettingsInventoryPage() {
     setError(null);
     try {
       await setSetting.mutateAsync({ key: 'allow_negative_stock', value: draft, category: 'inventory' });
-      setSaved(new Date().toLocaleTimeString());
+      setSaved(formatTimeWita(new Date()));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Échec de l'enregistrement");
     }

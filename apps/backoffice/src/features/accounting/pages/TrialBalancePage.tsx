@@ -54,7 +54,7 @@ export default function TrialBalancePage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
-            type="date" value={startDate}
+            type="date" lang="id-ID" value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className="mt-1"
             data-testid="tb-filter-start"
@@ -63,7 +63,7 @@ export default function TrialBalancePage(): JSX.Element {
         <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
-            type="date" value={endDate}
+            type="date" lang="id-ID" value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="mt-1"
             data-testid="tb-filter-end"

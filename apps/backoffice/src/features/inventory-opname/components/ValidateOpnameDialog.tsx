@@ -73,6 +73,7 @@ export function ValidateOpnameDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Keep counting</Button>
           <Button
+            variant="ink"
             onClick={handleSubmit}
             disabled={validate.isPending}
             data-testid="confirm-validate"

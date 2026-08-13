@@ -6,6 +6,7 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@breakery/ui';
+import { formatDate } from '@breakery/utils';
 import type { useCustomerDetail } from '@/features/customers/hooks/useCustomerDetail.js';
 import { rp, StatusPill } from './shared.js';
 
@@ -48,7 +49,7 @@ export function OrdersTab({
         <tbody>
           {recent_orders.map((o) => (
             <tr key={o.id} className="border-t border-border-subtle hover:bg-surface-4">
-              <td className="px-4 py-3 text-text-secondary">{new Date(o.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+              <td className="px-4 py-3 text-text-secondary">{formatDate(o.created_at)}</td>
               <td className="px-4 py-3 font-data text-text-primary">
                 <Link to={`/backoffice/orders/${o.id}`} className="hover:text-gold">{o.order_number}</Link>
               </td>

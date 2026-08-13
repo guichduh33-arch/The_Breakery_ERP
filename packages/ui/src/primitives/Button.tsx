@@ -15,6 +15,10 @@ const buttonVariants = cva(
         // it was not). The flat variants below stay on the base opacity, which
         // is legible enough on an already neutral surface.
         primary: 'bg-green hover:bg-green-hover text-green-fg uppercase tracking-wide rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
+        // Audit UX/UI 2026-08-13 (lot 5) — l'action primaire du Backoffice est
+        // ENCRE, en casse de phrase (doctrine toolbarButton.ts) ; variant
+        // additif, le POS garde `primary` vert.
+        ink: 'bg-ink hover:bg-ink-hover text-ink-fg rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
         gold: 'bg-gold hover:bg-gold-hover text-gold-fg uppercase tracking-wide rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
         secondary: 'bg-bg-overlay border border-border-subtle text-text-primary hover:bg-bg-input rounded-md',
         outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md disabled:border-border-subtle disabled:text-text-muted disabled:opacity-100',

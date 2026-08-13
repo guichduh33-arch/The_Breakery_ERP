@@ -6,7 +6,7 @@
 // version: green (added), red (removed), amber (qty/unit changed).
 
 import { useMemo, type JSX } from 'react';
-import { formatQuantity } from '@breakery/utils';
+import { formatDateTime, formatQuantity } from '@breakery/utils';
 // Coûts de recette : la précision sous-roupie porte du sens (coût au gramme) —
 // formatCurrency (0 décimale) doublerait un « Rp 0,50 » arrondi. On consomme
 // l'exception documentée du module reports.
@@ -28,11 +28,6 @@ interface MaterialDiff {
   prev_quantity?: number;
   prev_unit?:     string;
 }
-
-const DATE_FMT = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
 
 function indexByMaterialId(rows: RecipeVersionSnapshotRow[]): Record<string, RecipeVersionSnapshotRow> {
   const out: Record<string, RecipeVersionSnapshotRow> = {};
@@ -127,7 +122,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
     [row.snapshot, previous?.snapshot],
   );
   const createdAt = (() => {
-    try { return DATE_FMT.format(new Date(row.created_at)); }
+    try { return formatDateTime(row.created_at); }
     catch { return row.created_at; }
   })();
 

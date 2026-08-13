@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@breakery/ui';
+import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { ProductionEntryCard } from '@/features/inventory-production/components/ProductionEntryCard.js';
@@ -28,9 +29,7 @@ function isSameDay(a: Date, b: Date): boolean {
 }
 
 function formatDay(d: Date): string {
-  return d
-    .toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-    .toUpperCase();
+  return formatDate(d);
 }
 
 export default function ProductionPage(): JSX.Element {

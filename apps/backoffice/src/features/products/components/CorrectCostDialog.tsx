@@ -150,6 +150,7 @@ export function CorrectCostDialog({
             Cancel
           </Button>
           <Button
+            variant="ink"
             data-testid="correct-cost-submit"
             onClick={() => { void handleSubmit(); }}
             disabled={!canSubmit}

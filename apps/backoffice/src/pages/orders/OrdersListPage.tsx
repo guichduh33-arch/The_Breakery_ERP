@@ -439,7 +439,7 @@ export default function OrdersListPage(): JSX.Element {
         <label htmlFor="orders-start" className="sr-only">Start date</label>
         <Input
           id="orders-start"
-          type="date"
+          type="date" lang="id-ID"
           value={startDraft}
           onChange={(e) => { setStartDraft(e.target.value); commitDates(e.target.value, endDraft); }}
           onBlur={() => { commitDates(startDraft, endDraft, true); }}
@@ -448,7 +448,7 @@ export default function OrdersListPage(): JSX.Element {
         <label htmlFor="orders-end" className="sr-only">End date</label>
         <Input
           id="orders-end"
-          type="date"
+          type="date" lang="id-ID"
           value={endDraft}
           onChange={(e) => { setEndDraft(e.target.value); commitDates(startDraft, e.target.value); }}
           onBlur={() => { commitDates(startDraft, endDraft, true); }}

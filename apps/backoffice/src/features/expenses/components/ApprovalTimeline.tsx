@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/expenses/components/ApprovalTimeline.tsx
 // S28 Task 5.G — stepper showing the approval chain state for a given expense.
 import { Check, Circle, CircleDot } from 'lucide-react';
+import { formatDateTime } from '@breakery/utils';
 import { useExpenseApprovals } from '../hooks/useExpenseApprovals.js';
 import type { ApprovalStep } from '../../settings/expense-thresholds/hooks/useExpenseThresholds.js';
 
@@ -54,7 +55,7 @@ export function ApprovalTimeline({ expenseId, snapshot, autoApproved, currentSte
                 {approval && (
                   <div className="text-xs text-text-muted" data-testid={`timeline-approver-${idx}`}>
                     Approved by {approval.approver_name ?? 'unknown'} on{' '}
-                    {new Date(approval.approved_at).toLocaleString()}
+                    {formatDateTime(approval.approved_at)}
                   </div>
                 )}
               </div>

@@ -128,7 +128,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
             )}
             <DialogFooter className="pt-4">
               <Button variant="ghost" onClick={() => onOpenChange(false)} data-testid="sign-cancel">Cancel</Button>
-              <Button onClick={() => setStep(2)} data-testid="sign-continue">Continue</Button>
+              <Button variant="ink" onClick={() => setStep(2)} data-testid="sign-continue">Continue</Button>
             </DialogFooter>
           </div>
         ) : (
@@ -156,6 +156,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
             <DialogFooter className="pt-2">
               <Button variant="ghost" onClick={() => setStep(1)} data-testid="sign-back">Back</Button>
               <Button
+                variant="ink"
                 onClick={() => void handleSign()}
                 disabled={pin.length !== 6 || signMutation.isPending || pdfMutation.isPending}
                 data-testid="sign-submit"

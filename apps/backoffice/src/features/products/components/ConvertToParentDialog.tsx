@@ -160,6 +160,7 @@ export function ConvertToParentDialog({
             Cancel
           </Button>
           <Button
+            variant="ink"
             data-testid="convert-dialog-submit"
             onClick={() => { void submit(); }}
             disabled={mutation.isPending || label.trim().length === 0}

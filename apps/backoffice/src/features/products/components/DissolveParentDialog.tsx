@@ -66,6 +66,7 @@ export function DissolveParentDialog({
             Cancel
           </Button>
           <Button
+            variant="ink"
             data-testid="dissolve-confirm"
             onClick={() => { void confirm(); }}
             disabled={mutation.isPending}

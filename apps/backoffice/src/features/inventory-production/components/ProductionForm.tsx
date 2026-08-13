@@ -355,7 +355,7 @@ export default function ProductionForm(): JSX.Element {
         <FeasibilityBadge result={feasibility} />
 
         <div className="flex justify-end pt-2">
-          <Button type="submit" variant="primary" disabled={!canSubmit}>
+          <Button type="submit" variant="ink" disabled={!canSubmit}>
             {recordMut.isPending ? 'Recording…' : 'Record production'}
           </Button>
         </div>

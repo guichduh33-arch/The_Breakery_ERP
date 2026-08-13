@@ -91,6 +91,7 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
             Annuler
           </Button>
           <Button
+            variant="ink"
             data-testid="delete-product-confirm"
             onClick={() => { void handleConfirm(); }}
             disabled={mutation.isPending}

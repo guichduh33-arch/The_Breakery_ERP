@@ -105,7 +105,7 @@ export function RevertProductionDialog({
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={mut.isPending}>
+            <Button type="submit" variant="ink" disabled={mut.isPending}>
               {mut.isPending ? 'Reverting…' : 'Revert'}
             </Button>
           </DialogFooter>

@@ -31,6 +31,7 @@ import { tierFromLifetime } from '@breakery/domain';
 import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { ListPagination, pageSlice } from '@/components/ListPagination.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
@@ -65,6 +66,29 @@ const SORT_OPTIONS: readonly { value: CustomersSort; label: string }[] = [
   { value: 'points',     label: 'Sort: points' },
 ];
 
+// Colonne de la table → clé de tri du hook. Les quatre clés serveur, pas une de
+// plus : `category`, `tier` et `credit` n'ont pas d'ordre côté requête, et une
+// entête cliquable qui ne trie rien est un état menteur.
+const COLUMN_SORT: Record<string, CustomersSort> = {
+  customer: 'name',
+  points:   'points',
+  spent:    'spend',
+  last:     'last_visit',
+};
+
+// Chaque clé porte une direction FIXE côté hook (`useCustomersList`) : le nom
+// monte, l'argent, les points et la dernière visite descendent. On affiche donc
+// la direction réelle du serveur plutôt qu'un chevron réversible que la requête
+// ignorerait.
+const SORT_DIRECTION: Record<CustomersSort, 'asc' | 'desc'> = {
+  name:       'asc',
+  spend:      'desc',
+  points:     'desc',
+  last_visit: 'desc',
+};
+
+const CUSTOMERS_PAGE_SIZE_DEFAULT = 50;
+
 function formatLastVisit(iso: string | null): string {
   if (iso === null) return '—';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -88,7 +112,19 @@ export default function CustomersListPage(): JSX.Element {
   const [sort,       setSort      ] = useState<CustomersSort>('last_visit');
   const [creating,   setCreating  ] = useState<boolean>(false);
   const [importing,  setImporting ] = useState<boolean>(false);
+  // Pagination CLIENT : le hook charge toute la base cliente d'un coup (jeu
+  // borné, cf. l'en-tête de ce fichier), le pied ne fait que découper.
+  const [page,       setPage      ] = useState<number>(1);
+  const [pageSize,   setPageSize  ] = useState<number>(CUSTOMERS_PAGE_SIZE_DEFAULT);
   const exportMut = useCustomersExport();
+
+  // Tout changement de filtre ou de tri ramène en page 1 : rester en page 7
+  // d'un résultat qui n'en compte plus que 2 afficherait une table vide qu'on
+  // croirait cassée.
+  function applySearch(next: string): void      { setSearch(next);     setPage(1); }
+  function applyCategory(next: string | null): void { setCategoryId(next); setPage(1); }
+  function applyTier(next: CustomersTier): void { setTier(next);       setPage(1); }
+  function applySort(next: CustomersSort): void { setSort(next);       setPage(1); }
 
   const filters = useMemo(
     () => ({
@@ -155,6 +191,7 @@ export default function CustomersListPage(): JSX.Element {
     {
       id:     'customer',
       header: 'Customer',
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
           <CustomerAvatar name={row.name} />
@@ -203,6 +240,7 @@ export default function CustomersListPage(): JSX.Element {
       header: 'Points',
       align:  'right',
       width:  '6rem',
+      sortable: true,
       render: (row) => (
         <span className="font-data tabular-nums">{row.loyalty_points.toLocaleString()}</span>
       ),
@@ -212,6 +250,7 @@ export default function CustomersListPage(): JSX.Element {
       header: 'Total spent',
       align:  'right',
       width:  '8.5rem',
+      sortable: true,
       render: (row) => (
         <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(row.total_spent)}</span>
       ),
@@ -221,6 +260,7 @@ export default function CustomersListPage(): JSX.Element {
       header: 'Last visit',
       align:  'right',
       width:  '6.5rem',
+      sortable: true,
       render: (row) => (
         <span className="text-xs text-text-secondary">{formatLastVisit(row.last_visit_at)}</span>
       ),
@@ -241,6 +281,10 @@ export default function CustomersListPage(): JSX.Element {
 
   const rows = list.data ?? [];
   const total = stats.data?.totalCustomers ?? 0;
+  const { pageRows, current } = pageSlice(rows, page, pageSize);
+  // La colonne triée courante, dérivée du même état que le Select : les deux
+  // contrôles ne peuvent pas diverger puisqu'il n'y a qu'une source.
+  const sortedColumnId = Object.keys(COLUMN_SORT).find((id) => COLUMN_SORT[id] === sort) ?? null;
 
   return (
     <div className="flex flex-col gap-[13px]">
@@ -298,7 +342,7 @@ export default function CustomersListPage(): JSX.Element {
           id="cust-search"
           type="search"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => applySearch(e.target.value)}
           placeholder="Search by name, email or phone"
           maxLength={64}
           className="w-full max-w-xs"
@@ -307,7 +351,7 @@ export default function CustomersListPage(): JSX.Element {
         <Select
           id="cust-category"
           value={categoryId ?? ''}
-          onChange={(e) => setCategoryId(e.target.value === '' ? null : e.target.value)}
+          onChange={(e) => applyCategory(e.target.value === '' ? null : e.target.value)}
           disabled={cats.isLoading}
           className="w-44"
         >
@@ -320,7 +364,7 @@ export default function CustomersListPage(): JSX.Element {
         <Select
           id="cust-tier"
           value={tier}
-          onChange={(e) => setTier(e.target.value as CustomersTier)}
+          onChange={(e) => applyTier(e.target.value as CustomersTier)}
           className="w-36"
         >
           {TIER_OPTIONS.map((o) => (
@@ -331,7 +375,7 @@ export default function CustomersListPage(): JSX.Element {
         <Select
           id="cust-sort"
           value={sort}
-          onChange={(e) => setSort(e.target.value as CustomersSort)}
+          onChange={(e) => applySort(e.target.value as CustomersSort)}
           className="w-44"
         >
           {SORT_OPTIONS.map((o) => (
@@ -350,7 +394,7 @@ export default function CustomersListPage(): JSX.Element {
       ) : (
         <DataTable
           columns={columns}
-          rows={rows}
+          rows={pageRows}
           getRowKey={(r) => r.id}
           isLoading={list.isLoading}
           density="compact"
@@ -358,10 +402,29 @@ export default function CustomersListPage(): JSX.Element {
           emptyTitle="No customers match"
           emptyDescription="Adjust the filters above, or record your first customer."
           data-testid="customers-table"
+          sort={sortedColumnId === null
+            ? null
+            : { columnId: sortedColumnId, direction: SORT_DIRECTION[sort] }}
+          onSortChange={(next) => {
+            const key = COLUMN_SORT[next.columnId];
+            // La direction vient du serveur, pas du clic : on ne retient que la
+            // colonne. Cliquer deux fois ne « renverse » donc rien — ce serait
+            // une promesse que la requête ne tient pas.
+            if (key !== undefined) applySort(key);
+          }}
           footer={
-            <span className="font-data text-[11px] tabular-nums text-text-muted">
-              {rows.length} of {total.toLocaleString()}
-            </span>
+            <ListPagination
+              total={rows.length}
+              page={current}
+              pageSize={pageSize}
+              onPage={setPage}
+              onPageSize={(next) => { setPageSize(next); setPage(1); }}
+              leading={
+                <span className="font-data text-[11px] tabular-nums text-text-muted">
+                  {rows.length} of {total.toLocaleString('id-ID')}
+                </span>
+              }
+            />
           }
         />
       )}

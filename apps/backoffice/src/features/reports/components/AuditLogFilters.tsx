@@ -124,7 +124,7 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
       <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
         From
         <input
-          type="date"
+          type="date" lang="id-ID"
           value={value.dateStart}
           max={value.dateEnd || undefined}
           onChange={(e) => patchNow({ dateStart: e.target.value })}
@@ -137,7 +137,7 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
       <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
         To
         <input
-          type="date"
+          type="date" lang="id-ID"
           value={value.dateEnd}
           min={value.dateStart || undefined}
           onChange={(e) => patchNow({ dateEnd: e.target.value })}

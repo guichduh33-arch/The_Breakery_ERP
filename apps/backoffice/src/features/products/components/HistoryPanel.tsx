@@ -7,16 +7,16 @@
 
 import { type JSX } from 'react';
 import { Badge, Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { formatDateTimeWita } from '@breakery/utils';
 import { History } from 'lucide-react';
 import {
   useProductAuditLog,
   type ProductAuditEntry,
 } from '../hooks/useProductAuditLog.js';
 
+// Trail d'audit : horodatage exact, pas format de lecture de liste.
 function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit',
-  });
+  return formatDateTimeWita(iso);
 }
 
 // Render the audit metadata as a compact, human-scannable summary. Falls back

@@ -354,7 +354,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               </label>
               <Input
                 id={deliveryId}
-                type="date"
+                type="date" lang="id-ID"
                 value={deliveryDate}
                 onChange={(e) => setDeliveryDate(e.target.value)}
               />
@@ -383,7 +383,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={!canSubmit}>
+            <Button type="submit" variant="ink" disabled={!canSubmit}>
               {createMut.isPending ? 'Creating…' : 'Create B2B order'}
             </Button>
           </div>

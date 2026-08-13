@@ -145,7 +145,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isPending} data-testid="table-form-submit">
+          <Button variant="ink" onClick={handleSubmit} disabled={isPending} data-testid="table-form-submit">
             {isPending
               ? (mode === 'create' ? 'Creating…' : 'Saving…')
               : (mode === 'create' ? 'Create' : 'Save')}

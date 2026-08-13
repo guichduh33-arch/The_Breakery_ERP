@@ -15,10 +15,10 @@ import { Badge, Card, CardContent, Currency } from '@breakery/ui';
 import { CategoryChip } from './CategoryChip.js';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
-  PRODUCTS_PAGE_SIZE_DEFAULT,
-  ProductsPagination,
+  LIST_PAGE_SIZE_DEFAULT,
+  ListPagination,
   pageSlice,
-} from './ProductsPagination.js';
+} from '@/components/ListPagination.js';
 import { classifyProduct, type ProductRow } from '../types.js';
 import { formatCurrency } from '@breakery/utils';
 
@@ -40,7 +40,7 @@ export function ProductsGrid({
   onCardClick,
   page = 1,
   onPage,
-  pageSize = PRODUCTS_PAGE_SIZE_DEFAULT,
+  pageSize = LIST_PAGE_SIZE_DEFAULT,
   onPageSize,
 }: Props): JSX.Element {
   const { pageRows } = pageSlice(rows, page, pageSize);
@@ -107,7 +107,7 @@ export function ProductsGrid({
         </Card>
       ))}
     </div>
-      <ProductsPagination
+      <ListPagination
         total={rows.length}
         page={page}
         pageSize={pageSize}

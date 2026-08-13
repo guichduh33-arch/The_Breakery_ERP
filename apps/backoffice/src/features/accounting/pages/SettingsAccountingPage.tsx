@@ -43,6 +43,7 @@ export default function SettingsAccountingPage(): JSX.Element {
         <div className="flex items-center gap-2">
           {canClose && (
             <Button
+              variant="ink"
               onClick={() => openModalFor(null)}
               className="inline-flex items-center gap-2"
               data-testid="fp-new-btn"

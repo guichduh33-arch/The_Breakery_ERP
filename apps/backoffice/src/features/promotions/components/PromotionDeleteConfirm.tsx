@@ -62,7 +62,7 @@ export function PromotionDeleteConfirm({ open, row, onClose }: PromotionDeleteCo
           </Button>
           <Button
             type="button"
-            variant="primary"
+            variant="ink"
             className="bg-danger hover:bg-danger/80"
             onClick={() => { void handleConfirm(); }}
             disabled={deleteMut.isPending}

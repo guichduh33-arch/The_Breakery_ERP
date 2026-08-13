@@ -7616,13 +7616,15 @@ export type Database = {
           zero_count: number
         }[]
       }
-      get_stock_levels_v3: {
+      get_stock_levels_v4: {
         Args: {
           p_bucket?: Database["public"]["Enums"]["stock_bucket"]
           p_category_id?: string
           p_limit?: number
           p_offset?: number
           p_search?: string
+          p_sort?: string
+          p_sort_dir?: string
         }
         Returns: {
           category_id: string

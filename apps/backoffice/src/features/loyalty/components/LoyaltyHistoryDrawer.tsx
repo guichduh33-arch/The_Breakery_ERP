@@ -9,6 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@breakery/ui';
+import { formatDateTime } from '@breakery/utils';
 import { useCustomerLoyaltyHistory, type LoyaltyTxnRow } from '../hooks/useCustomerLoyaltyHistory.js';
 import type { CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';
 
@@ -56,7 +57,7 @@ export function LoyaltyHistoryDrawer({ customer, onClose }: LoyaltyHistoryDrawer
                 <tbody>
                   {q.data.map((row) => (
                     <tr key={row.id} className="border-t border-border-subtle">
-                      <td className="px-2 py-1 text-text-secondary">{new Date(row.created_at).toLocaleString()}</td>
+                      <td className="px-2 py-1 text-text-secondary">{formatDateTime(row.created_at)}</td>
                       <td className="px-2 py-1">{TYPE_LABEL[row.transaction_type]}</td>
                       <td className={`px-2 py-1 text-right font-mono ${row.points >= 0 ? 'text-green' : 'text-red'}`}>
                         {row.points >= 0 ? '+' : ''}{row.points}

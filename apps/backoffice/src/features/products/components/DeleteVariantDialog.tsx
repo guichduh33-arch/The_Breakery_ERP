@@ -63,6 +63,7 @@ export function DeleteVariantDialog({
             Cancel
           </Button>
           <Button
+            variant="ink"
             data-testid="delete-variant-confirm"
             onClick={() => { void confirm(); }}
             disabled={mutation.isPending}

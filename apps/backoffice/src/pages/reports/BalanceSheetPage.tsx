@@ -106,7 +106,7 @@ export default function BalanceSheetPage() {
           <label className="flex items-center gap-1 text-sm text-text-secondary">
             <span>As of</span>
             <Input
-              type="date"
+              type="date" lang="id-ID"
               value={asOf}
               onChange={(e) => setAsOf(e.target.value)}
               className="h-9 w-40"

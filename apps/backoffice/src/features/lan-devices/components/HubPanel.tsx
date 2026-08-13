@@ -5,6 +5,7 @@
 import type { JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CloudOff, CloudUpload, Radio, ShieldCheck, ShieldOff } from 'lucide-react';
+import { formatTimeWita } from '@breakery/utils';
 import { resolveBridgeUrl } from '@/stores/bridgeSettingsStore.js';
 import { getHubStatus } from '../api/bridgeApi.js';
 
@@ -72,7 +73,7 @@ export function HubPanel(): JSX.Element {
             {data.cloud_sync.last_result === 'error'
               ? `Cloud sync failing (${data.cloud_sync.last_error ?? 'unknown'})`
               : data.cloud_sync.last_push_at !== null
-                ? `Cloud sync ${new Date(data.cloud_sync.last_push_at).toLocaleTimeString()}`
+                ? `Cloud sync ${formatTimeWita(data.cloud_sync.last_push_at)}`
                 : 'Cloud sync idle'}
           </span>
         ) : (
@@ -105,7 +106,7 @@ export function HubPanel(): JSX.Element {
                   <td className="py-2 font-mono text-xs">{d.device_code}</td>
                   <td className="py-2 text-xs">{d.device_type}</td>
                   <td className="py-2 font-mono text-xs">{d.ip}</td>
-                  <td className="py-2 text-xs">{new Date(d.last_seen_at).toLocaleTimeString()}</td>
+                  <td className="py-2 text-xs">{formatTimeWita(d.last_seen_at)}</td>
                 </tr>
               ))}
             </tbody>

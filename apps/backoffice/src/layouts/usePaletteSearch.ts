@@ -2,7 +2,7 @@
 //
 // Audit UX/UI 2026-08-13 (lot 4) — la palette Ctrl+K cherche désormais des
 // ENTITÉS, pas seulement des pages : commandes (RPC search_orders_v1, gate
-// orders.read), produits (get_stock_levels_v3 p_search, gate inventory.read),
+// orders.read), produits (get_stock_levels_v4 p_search, gate inventory.read),
 // clients (PostgREST nom/téléphone/email — le seul chemin couvrant l'email),
 // fournisseurs (PostgREST nom/code). Chaque section est gatée côté client par
 // la permission que le serveur exigera de toute façon (defense-in-depth : le
@@ -74,15 +74,15 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
       if (error) throw error;
       if (!Array.isArray(data)) return [];
       return data.filter(isRecord).flatMap((r) => {
-        const id = asString(r['id']);
-        const num = asString(r['order_number']);
+        const id = asString(r.id);
+        const num = asString(r.order_number);
         if (id === null || num === null) return [];
-        const customer = asString(r['customer_name']);
-        const status = asString(r['status']) ?? '';
+        const customer = asString(r.customer_name);
+        const status = asString(r.status) ?? '';
         return [{
           to: `/backoffice/orders/${id}`,
           label: `#${num}${customer !== null ? ` — ${customer}` : ''}`,
-          breadcrumb: `${status} · ${formatCurrency(r['total'] as number | string | null)}`,
+          breadcrumb: `${status} · ${formatCurrency(r.total)}`,
         }];
       });
     },
@@ -93,7 +93,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
     enabled: active && canProducts,
     staleTime: 30_000,
     queryFn: async (): Promise<PaletteHit[]> => {
-      const { data, error } = await supabase.rpc('get_stock_levels_v3', {
+      const { data, error } = await supabase.rpc('get_stock_levels_v4', {
         p_search: term,
         p_limit: SECTION_LIMIT,
         p_offset: 0,
@@ -101,10 +101,10 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
       if (error) throw error;
       if (!Array.isArray(data)) return [];
       return data.filter(isRecord).flatMap((r) => {
-        const id = asString(r['product_id']);
-        const name = asString(r['name']);
+        const id = asString(r.product_id);
+        const name = asString(r.name);
         if (id === null || name === null) return [];
-        const sku = asString(r['sku']);
+        const sku = asString(r.sku);
         return [{
           to: `/backoffice/products/${id}`,
           label: name,

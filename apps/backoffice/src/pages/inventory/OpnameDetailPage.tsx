@@ -191,7 +191,7 @@ export default function OpnameDetailPage(): JSX.Element {
           </Button>
         )}
         {(d.status === 'review' || d.status === 'counting') && canFinalize && (
-          <Button onClick={() => { setShowFinalize(true); }} disabled={stats.pending > 0}>
+          <Button variant="ink" onClick={() => { setShowFinalize(true); }} disabled={stats.pending > 0}>
             Finalize and post JE
           </Button>
         )}

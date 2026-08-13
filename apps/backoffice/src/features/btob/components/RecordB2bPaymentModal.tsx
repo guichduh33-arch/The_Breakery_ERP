@@ -192,7 +192,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               ))}
             </ul>
             <div className="flex justify-end">
-              <Button type="button" variant="primary" onClick={handleClose}>Done</Button>
+              <Button type="button" variant="ink" onClick={handleClose}>Done</Button>
             </div>
           </div>
         ) : (
@@ -347,7 +347,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={!canSubmit}>
+            <Button type="submit" variant="ink" disabled={!canSubmit}>
               {recordMut.isPending ? 'Recording…' : 'Record payment'}
             </Button>
           </div>

@@ -119,9 +119,6 @@ vi.mock('@/features/products/hooks/useCategories.js', () => ({
 vi.mock('@/features/products/components/ProductsPageTabs.js', () => ({
   ProductsPageTabs: () => null,
 }));
-vi.mock('@/features/products/components/ProductsCounterStrip.js', () => ({
-  ProductsCounterStrip: () => null,
-}));
 vi.mock('@/features/products/components/ProductsFilters.js', () => ({
   ProductsFilters: () => null,
 }));

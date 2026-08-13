@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
 import { TrendingUp } from 'lucide-react';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDate, formatDateShortWita } from '@breakery/utils';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE, CATEGORICAL_SERIES, CHART_SERIES_OFF } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
@@ -28,8 +28,14 @@ import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersRe
 // literal — see S59 T7 report.
 const PALETTE = CATEGORICAL_SERIES;
 
+// Deux surfaces, deux longueurs : l'axe du graphe reçoit le jour court
+// (« 12 Aug »), la table reçoit la date complète non ambiguë.
+function fmtAxisDate(iso: string): string {
+  return formatDateShortWita(iso);
+}
+
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
+  return formatDate(iso);
 }
 
 export interface SupplierPriceEvolutionTabProps {
@@ -64,7 +70,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
     const byDate = new Map<string, Record<string, number | string>>();
     for (const it of items) {
       if (!selected.has(it.product_id)) continue;
-      const point = byDate.get(it.order_date) ?? { date: it.order_date, label: fmtDate(it.order_date) };
+      const point = byDate.get(it.order_date) ?? { date: it.order_date, label: fmtAxisDate(it.order_date) };
       point[it.product_id] = it.unit_cost;
       byDate.set(it.order_date, point);
     }

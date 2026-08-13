@@ -151,7 +151,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
             <label className="flex flex-col text-sm max-w-xs">
               Entry date
               <Input
-                type="date"
+                type="date" lang="id-ID"
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
                 data-testid="je-modal-entry-date"
@@ -289,7 +289,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
             Cancel
           </Button>
           {step === 1 && (
-            <Button onClick={handleNext} data-testid="je-modal-next">Next →</Button>
+            <Button variant="ink" onClick={handleNext} data-testid="je-modal-next">Next →</Button>
           )}
           {step === 2 && (
             <>
@@ -297,6 +297,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                 ← Back
               </Button>
               <Button
+                variant="ink"
                 onClick={handleSubmit}
                 disabled={createJe.isPending}
                 data-testid="je-modal-submit"

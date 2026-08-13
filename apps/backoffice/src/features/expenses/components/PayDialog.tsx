@@ -57,7 +57,7 @@ export function PayDialog({ open, expenseId, onClose, onSuccess }: PayDialogProp
         )}
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="button" variant="primary" onClick={() => { void handleSubmit(); }} disabled={mut.isPending}>
+          <Button type="button" variant="ink" onClick={() => { void handleSubmit(); }} disabled={mut.isPending}>
             {mut.isPending ? 'Marking…' : 'Mark paid'}
           </Button>
         </DialogFooter>
