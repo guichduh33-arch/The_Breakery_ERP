@@ -16,13 +16,14 @@
 // the same `weak` flag from the shared util).
 //
 // Implementation note : reuses `NumpadPin` from `@breakery/ui` (collection-only
-// 6-digit pad with `onSubmit(pin)` callback). The other `PinPad` in
-// `apps/pos/src/features/auth/PinPad.tsx` is verification-only (hits
-// `auth-verify-pin` directly) and cannot be reused as a collection-only step.
+// 6-digit pad with `onSubmit(pin)` callback). The now-removed `PinPad` (was
+// `apps/pos/src/features/auth/PinPad.tsx`, deleted lot 4 — dead, unimported,
+// French-only) was verification-only (hit `auth-verify-pin` directly) and
+// could not have been reused as a collection-only step.
 // `NumpadPin` is the canonical primitive for collect-then-confirm flows
 // (already used by `RefundOrderModal` for manager PIN).
 // DEV-S21-1.C.4-01 : spec requested swap NumpadPin→PinPad (DEV-S19-3.C-01)
-// but PinPad is wired to auth-verify-pin EF and cannot collect a new PIN —
+// but PinPad was wired to auth-verify-pin EF and could not collect a new PIN —
 // NumpadPin remains the correct primitive. Deviation recorded in INDEX §10.
 
 import { useState, type JSX } from 'react';
@@ -167,7 +168,7 @@ export function ChangePinModal({ open, onClose, userId }: ChangePinModalProps): 
     >
       <header className="px-5 py-4 flex items-center justify-between border-b border-border-subtle">
         <div className="min-w-0">
-          <DialogTitle className="font-serif text-lg leading-tight">
+          <DialogTitle className="font-semibold text-lg leading-tight">
             {STEP_TITLE[step]}
           </DialogTitle>
           <DialogDescription className="text-text-secondary text-xs mt-1">

@@ -44,7 +44,7 @@ export function TerminalLockedOverlay() {
           </div>
         </div>
         <div className="space-y-1">
-          <h2 className="font-serif text-2xl">Terminal locked</h2>
+          <h2 className="font-semibold text-2xl">Terminal locked</h2>
           <p className="text-text-secondary text-sm">{user?.full_name ?? 'Cashier'} — enter your PIN to resume</p>
         </div>
         <NumpadPin key={attempt} onSubmit={(pin) => { void handleSubmit(pin); }} isLoading={isVerifying} error={error} />

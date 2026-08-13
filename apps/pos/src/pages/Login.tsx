@@ -134,7 +134,7 @@ export default function LoginPage(): JSX.Element {
         <div className="text-center space-y-1.5">
           <h1
             id="login-heading"
-            className="font-display text-2xl tracking-[0.18em] text-text-primary"
+            className="font-semibold text-2xl tracking-[0.18em] text-text-primary"
           >
             STAFF PIN ACCESS
           </h1>
@@ -179,7 +179,7 @@ export default function LoginPage(): JSX.Element {
                   {initialOf(u.display_name)}
                 </span>
                 <span className="flex-1 text-sm text-text-primary truncate">{u.display_name}</span>
-                <span className="text-[10px] uppercase tracking-widest text-text-muted">{u.role}</span>
+                <span className="text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
               </button>
             ))}
             <button
@@ -205,7 +205,7 @@ export default function LoginPage(): JSX.Element {
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="text-[10px] uppercase tracking-widest text-text-muted bg-bg-input border border-border-subtle rounded-md px-2 py-0.5 hover:text-text-primary hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                className="text-xs uppercase tracking-widest text-text-muted bg-bg-input border border-border-subtle rounded-md px-2 py-0.5 hover:text-text-primary hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
               >
                 Switch
               </button>
@@ -283,15 +283,9 @@ export default function LoginPage(): JSX.Element {
           {isLoading ? 'Signing in…' : 'Sign In'}
         </Button>
 
-        {/* Email-login link — placeholder route ; click-through is wired to /login/email
-            which is not yet implemented (Session 14 phase 2.C scope = PIN UX only). */}
-        <button
-          type="button"
-          onClick={() => navigate('/login/email')}
-          className="text-text-secondary text-sm underline-offset-2 hover:text-text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-        >
-          Switch to Email Login
-        </button>
+        {/* Email-login entry point removed (lot 4, audit P3): /login/email has no
+            route in routes/index.tsx, so the link was a dead end. Re-add once that
+            route ships. */}
       </main>
     </div>
   );
