@@ -13,6 +13,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Lot 5 chantier 1 — le hub interroge désormais get_settings_hub_summary_v1 ;
+// ces smoke tests portent sur la STRUCTURE du hub, le résumé est servi vide.
+vi.mock('@/lib/supabase.js', () => ({
+  supabase: { rpc: vi.fn().mockResolvedValue({ data: {}, error: null }) },
+}));
+
 import SettingsHubPage from '@/pages/settings/SettingsHubPage.js';
 
 let currentPerms = new Set<string>(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read', 'tables.update']);
@@ -24,10 +32,13 @@ vi.mock('@/stores/authStore.js', () => ({
 }));
 
 function renderPage() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <SettingsHubPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <SettingsHubPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

@@ -7589,6 +7589,7 @@ export type Database = {
         Args: { p_category: string }
         Returns: Json
       }
+      get_settings_hub_summary_v1: { Args: never; Returns: Json }
       get_staff_performance_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
