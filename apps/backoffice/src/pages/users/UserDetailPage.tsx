@@ -12,6 +12,7 @@ import { useRolesList } from '@/features/users/hooks/useRolesList.js';
 import { useResetUserPin } from '@/features/users/hooks/useResetUserPin.js';
 import { RoleChangeDialog } from '@/features/users/components/RoleChangeDialog.js';
 import { DeleteUserDialog } from '@/features/users/components/DeleteUserDialog.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function UserDetailPage() {
   const navigate = useNavigate();
@@ -92,19 +93,20 @@ export default function UserDetailPage() {
         Back to users
       </Link>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{u.full_name}</h1>
-          <p className="text-sm text-text-secondary">
+      <PageHeader
+        className="items-start"
+        title={u.full_name}
+        subtitle={
+          <>
             <span className="font-mono mr-3">{u.employee_code}</span>
             <span className="uppercase tracking-wider text-xs">{u.role_code}</span>
             {isDeleted && (
               <span className="ml-3 text-xs text-danger">(deleted)</span>
             )}
-          </p>
-        </div>
-        {canUpdate && !isDeleted && (
-          <div className="flex gap-2">
+          </>
+        }
+        actions={canUpdate && !isDeleted ? (
+          <>
             <Button variant="ghost" onClick={() => { setShowRole(true); }}>
               <UserCog className="h-4 w-4 mr-1.5" aria-hidden /> Change role
             </Button>
@@ -115,9 +117,9 @@ export default function UserDetailPage() {
             >
               <Trash2 className="h-4 w-4 mr-1.5" aria-hidden /> Delete
             </Button>
-          </div>
-        )}
-      </div>
+          </>
+        ) : undefined}
+      />
 
       <div className="grid grid-cols-2 gap-4 text-sm bg-bg-elevated rounded p-4">
         <div>

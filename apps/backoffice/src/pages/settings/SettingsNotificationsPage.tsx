@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import {
@@ -249,15 +250,10 @@ export default function SettingsNotificationsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Notifications</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          System notification templates consumed by enqueue_notification_v2 (order complete, payment
-          received, low stock…). Codes are system events — no create/delete from here. Deactivating a
-          template silences its event. An active Email template with the same code upgrades the send
-          to branded HTML.
-        </p>
-      </div>
+      <PageHeader
+        title="Notifications"
+        subtitle="System notification templates consumed by enqueue_notification_v2 (order complete, payment received, low stock…). Codes are system events — no create/delete from here. Deactivating a template silences its event. An active Email template with the same code upgrades the send to branded HTML."
+      />
 
       <AlertEmailCard />
 

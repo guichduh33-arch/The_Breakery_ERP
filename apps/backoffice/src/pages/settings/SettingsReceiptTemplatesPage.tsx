@@ -7,6 +7,7 @@
 import { useAuthStore } from '@/stores/authStore.js';
 import { useReceiptTemplatesList } from '@/features/settings/hooks/useReceiptTemplates.js';
 import { ReceiptTemplateEditor } from '@/features/settings/components/ReceiptTemplateEditor.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function SettingsReceiptTemplatesPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -21,13 +22,15 @@ export default function SettingsReceiptTemplatesPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Receipt templates</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          POS receipt layout for thermal printers (58mm, 80mm) and A4 invoices. Exactly one default at a time.
-          The POS applies the <strong>default</strong> template's header, footer and QR toggle on every printed receipt.
-        </p>
-      </div>
+      <PageHeader
+        title="Receipt templates"
+        subtitle={
+          <>
+            POS receipt layout for thermal printers (58mm, 80mm) and A4 invoices. Exactly one default at a time.
+            The POS applies the <strong>default</strong> template's header, footer and QR toggle on every printed receipt.
+          </>
+        }
+      />
 
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}
       {list.error && <div className="text-red">Failed to load: {list.error.message}</div>}

@@ -12,6 +12,7 @@ import { OfflineSettingsPanel } from '@/features/lan-devices/components/OfflineS
 import { ScanPanel } from '@/features/lan-devices/components/ScanPanel.js';
 import { LanDeviceFormModal } from '@/features/lan-devices/components/LanDeviceFormModal.js';
 import { useLanDevices, type LanDeviceRow } from '@/features/lan-devices/hooks/useLanDevices.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function LanDevicesPage() {
   const { data } = useLanDevices();
@@ -46,21 +47,16 @@ export default function LanDevicesPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">LAN Devices</h1>
-          <p className="text-sm text-text-secondary">
-            Devices participating in the on-site LAN mesh. Status is computed
-            from the last heartbeat — devices that haven&apos;t pinged in 60s
-            are flagged as stale.
-          </p>
-        </div>
-        {canManage && (
+      <PageHeader
+        className="items-start"
+        title="LAN Devices"
+        subtitle="Devices participating in the on-site LAN mesh. Status is computed from the last heartbeat — devices that haven't pinged in 60s are flagged as stale."
+        actions={canManage ? (
           <Button variant="ink" onClick={openCreate}>
             <Plus className="h-4 w-4" aria-hidden /> Add device
           </Button>
-        )}
-      </header>
+        ) : undefined}
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiTile label="Total devices" value={kpis.total}    icon={Wifi}           footer="Registered in the mesh" />

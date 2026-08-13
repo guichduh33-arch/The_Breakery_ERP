@@ -52,6 +52,7 @@ import {
   type ExpenseStatus,
 } from '@/features/expenses/hooks/useExpensesList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 type ExpenseFilterKey = ExpenseStatus | 'all';
 
@@ -213,22 +214,23 @@ export default function ExpensesListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expenses</h1>
-          <p className="mt-1 text-sm text-text-secondary">Manage and track your bakery&apos;s expenditure.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" size="sm" disabled aria-label="Export (coming soon)">
-            <Download className="h-4 w-4" aria-hidden /> Export
-          </Button>
-          {canCreate && (
-            <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
-              <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
-            </Link>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        className="items-start gap-4"
+        title="Expenses"
+        subtitle="Manage and track your bakery's expenditure."
+        actions={
+          <>
+            <Button variant="ghost" size="sm" disabled aria-label="Export (coming soon)">
+              <Download className="h-4 w-4" aria-hidden /> Export
+            </Button>
+            {canCreate && (
+              <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+                <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
+              </Link>
+            )}
+          </>
+        }
+      />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList>

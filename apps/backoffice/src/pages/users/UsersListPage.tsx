@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useUsersList } from '@/features/users/hooks/useUsersList.js';
 import { useRolesList } from '@/features/users/hooks/useRolesList.js';
 import { UsersTable } from '@/features/users/components/UsersTable.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function UsersListPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -36,32 +37,31 @@ export default function UsersListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">User Administration</h1>
-          <p className="text-sm text-text-secondary">
-            Staff profiles + role assignments. Sign-in is via PIN — there are no passwords.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canViewMatrix && (
-            <Link to="/backoffice/users/permissions">
-              <Button variant="ghost">
-                <ShieldCheck className="h-4 w-4 mr-1.5" aria-hidden />
-                Permission matrix
-              </Button>
-            </Link>
-          )}
-          {canCreate && (
-            <Link to="/backoffice/users/new">
-              <Button variant="ink">
-                <Plus className="h-4 w-4 mr-1.5" aria-hidden />
-                Add user
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        className="items-center"
+        title="User Administration"
+        subtitle="Staff profiles + role assignments. Sign-in is via PIN — there are no passwords."
+        actions={
+          <>
+            {canViewMatrix && (
+              <Link to="/backoffice/users/permissions">
+                <Button variant="ghost">
+                  <ShieldCheck className="h-4 w-4 mr-1.5" aria-hidden />
+                  Permission matrix
+                </Button>
+              </Link>
+            )}
+            {canCreate && (
+              <Link to="/backoffice/users/new">
+                <Button variant="ink">
+                  <Plus className="h-4 w-4 mr-1.5" aria-hidden />
+                  Add user
+                </Button>
+              </Link>
+            )}
+          </>
+        }
+      />
 
       {/* Bande de KPI — densité canonique du back-office : 1 / 2 / 4 colonnes.
           À `sm:grid-cols-2 lg:grid-cols-4`, les quatre tuiles restaient sur deux

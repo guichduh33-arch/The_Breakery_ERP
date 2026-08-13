@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 interface RoleRow {
   code: string;
@@ -69,19 +70,21 @@ export default function SecuritySettingsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Security</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Per-role idle limits and PIN lockout policy. Changes are
-          audit-logged.
-        </p>
-        {!canEdit && (
-          <p className="text-text-secondary text-xs italic mt-2">
-            Read-only view — the <code>settings.update</code> permission is
-            required to edit.
-          </p>
-        )}
-      </div>
+      <PageHeader
+        title="Security"
+        subtitle={
+          <>
+            Per-role idle limits and PIN lockout policy. Changes are
+            audit-logged.
+            {!canEdit && (
+              <span className="mt-2 block text-xs italic">
+                Read-only view — the <code>settings.update</code> permission is
+                required to edit.
+              </span>
+            )}
+          </>
+        }
+      />
 
       <div>
         <h2 className="font-serif text-xl">Session timeouts</h2>

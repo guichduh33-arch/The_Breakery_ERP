@@ -23,6 +23,7 @@ import {
 } from '@/features/inventory-opname/hooks/useOpnameList.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
 import { CreateOpnameModal } from '@/features/inventory-opname/components/CreateOpnameModal.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 const STATUS_OPTIONS: readonly { value: '' | OpnameStatus; label: string }[] = [
   { value: '',          label: 'All statuses' },
@@ -118,20 +119,16 @@ export default function OpnameListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock counts</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Periodic counts compared against the section_stock cache. Finalizing
-            emits adjustment movements and balanced journal entries.
-          </p>
-        </div>
-        {canCreate && (
+      <PageHeader
+        className="items-start gap-4"
+        title="Stock counts"
+        subtitle="Periodic counts compared against the section_stock cache. Finalizing emits adjustment movements and balanced journal entries."
+        actions={canCreate ? (
           <Button variant="ink" onClick={() => { setCreateOpen(true); }}>
             <Plus className="h-4 w-4" aria-hidden /> New count
           </Button>
-        )}
-      </header>
+        ) : undefined}
+      />
 
       <section
         className="grid grid-cols-1 gap-4 md:grid-cols-3"

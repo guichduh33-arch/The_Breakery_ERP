@@ -17,6 +17,7 @@ import {
   type ExpenseFormValues,
   type DuplicateExpenseSeed,
 } from '@/features/expenses/components/ExpenseForm.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 interface NewExpenseNavigationState {
   duplicateFrom?: DuplicateExpenseSeed;
@@ -91,12 +92,10 @@ export default function NewExpensePage(): JSX.Element {
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to expenses
       </Link>
 
-      <header>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">New expense</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Capture an operational expense. Submit it later to request approval.
-        </p>
-      </header>
+      <PageHeader
+        title="New expense"
+        subtitle="Capture an operational expense. Submit it later to request approval."
+      />
 
       <ExpenseForm
         draftId={draftId}

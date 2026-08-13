@@ -8,6 +8,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 
@@ -92,12 +93,10 @@ export default function SettingsPosConfigPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">POS Configuration</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Org-wide presets consumed by every POS terminal. Audited on change.
-        </p>
-      </div>
+      <PageHeader
+        title="POS Configuration"
+        subtitle="Org-wide presets consumed by every POS terminal. Audited on change."
+      />
       <NumberListEditor title="Quick payment amounts" helper="Cash entry buttons in the payment terminal."
         values={quick} canEdit={canEdit} isPending={setSetting.isPending}
         onSave={(next) => save('pos_quick_payment_amounts', next)} />

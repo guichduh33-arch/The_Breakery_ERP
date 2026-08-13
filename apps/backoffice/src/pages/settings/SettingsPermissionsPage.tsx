@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePermissionsMatrix } from '@/features/settings/hooks/usePermissionsMatrix.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 export default function SettingsPermissionsPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -47,18 +48,18 @@ export default function SettingsPermissionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Permissions</h1>
-          <p className="text-text-secondary text-sm mt-1">
+      <PageHeader
+        title="Permissions"
+        subtitle={
+          <>
             Read-only role → permission matrix. Use{' '}
             <Link to="/backoffice/users/permissions" className="text-gold underline-offset-4 hover:underline">
               Users → Permissions
             </Link>
             {' '}for editing, user overrides, and last-admin protection.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="flex items-end gap-3">
         <div className="space-y-1">
