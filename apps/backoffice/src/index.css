@@ -23,6 +23,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Audit UX/UI 2026-08-13 (lot 3) — une seule barre de défilement.
+   * Le shell possède le scroll (`<main id="main-content">` en overflow-y-auto)
+   * mais le document restait libre : tout dépassement du 100vh (éléments
+   * positionnés ancrés au bloc conteneur initial, min-h-screen imbriqué…)
+   * créait une SECONDE barre au niveau document, avec ~600 px de zone morte
+   * scrollable sous le contenu. Le verrou est scopé au shell monté
+   * (`:has(#main-content)`) : l'écran de login et l'écran de boot, hors
+   * shell, gardent le défilement naturel du document. */
+  html.theme-backoffice:has(#main-content),
+  html.theme-backoffice:has(#main-content) body {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 @layer components {
   /* Fond de page gradué — l'unique consommateur des tokens `--page-grid*`.
    * Monté sur le conteneur scrollant du shell, il descend aux huit écrans d'un
