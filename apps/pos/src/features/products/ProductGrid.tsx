@@ -141,6 +141,9 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
         ) : filtered.length === 0 ? (
           <EmptyState
             tone="branded"
+            // h2 : l'état vide vit directement sous le h1 de la grille — h3
+            // créait un saut h1→h3 dans l'outline (détecteur, critique run 3).
+            headingLevel="h2"
             title={query.trim() ? 'No matches' : 'No products yet'}
             description={
               query.trim()

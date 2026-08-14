@@ -90,9 +90,14 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
 
   return (
     <>
+      {/* size md = h-touch-comfy (56px), le plancher de la Règle des 56.
+          Critique run 3 : les h-12/h-14 posés en className par la barre étaient
+          des classes MORTES — le h-touch-large du size lg gagnait la cascade et
+          Send rendait 80px, à égalité avec Checkout. La hiérarchie vit ici :
+          Checkout size lg (80) ▸ Send size md (56) ▸ ghosts h-11 (44). */}
       <Button
         variant={variant ?? 'secondary'}
-        size="lg"
+        size="md"
         className={className ?? 'w-full'}
         disabled={disabled}
         onClick={() => { void handleClick(); }}
