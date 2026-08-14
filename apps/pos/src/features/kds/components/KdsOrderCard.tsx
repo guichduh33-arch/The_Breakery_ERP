@@ -101,7 +101,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   // Session 10: cancelled items have no actionable CTA — only the badge.
   if (item.is_cancelled) {
     return (
-      <Badge variant="default" className="bg-red text-red-as-text-on-fill border-transparent">
+      <Badge variant="default" className="bg-red text-red-on-fill border-transparent">
         Cancelled
       </Badge>
     );
