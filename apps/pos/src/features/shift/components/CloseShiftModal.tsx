@@ -295,7 +295,6 @@ export function CloseShiftModal({
               type="text"
               inputMode="numeric"
               aria-required="true"
-              aria-invalid={qrisStr === ''}
               placeholder="0"
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
               value={qrisStr}
@@ -315,7 +314,6 @@ export function CloseShiftModal({
               type="text"
               inputMode="numeric"
               aria-required="true"
-              aria-invalid={cardStr === ''}
               placeholder="0"
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
               value={cardStr}

@@ -240,8 +240,8 @@ export function RefundOrderModal({
               placeholder="e.g. spilled latte, customer return…"
               className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text')}
               disabled={isPending}
-              aria-invalid={reason.trim().length > 0 && reason.trim().length < 3}
-              {...((reason.trim().length > 0 && reason.trim().length < 3)
+              aria-invalid={reason.length > 0 && reason.trim().length < 3}
+              {...((reason.length > 0 && reason.trim().length < 3)
                 ? { 'aria-describedby': 'refund-reason-error' } : {})}
             />
             {reason.length > 0 && reason.trim().length < 3 && (

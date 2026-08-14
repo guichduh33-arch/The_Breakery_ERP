@@ -84,8 +84,8 @@ export function VoidOrderModal({
               placeholder="e.g. wrong order, customer cancelled…"
               className={cn('w-full', ((reason.trim().length > 0 && reason.trim().length < 3) || reasonError) && 'border-red-as-text')}
               disabled={isPending}
-              aria-invalid={(reason.trim().length > 0 && reason.trim().length < 3) || reasonError}
-              {...(((reason.trim().length > 0 && reason.trim().length < 3) || reasonError)
+              aria-invalid={(reason.length > 0 && reason.trim().length < 3) || reasonError}
+              {...(((reason.length > 0 && reason.trim().length < 3) || reasonError)
                 ? { 'aria-describedby': 'void-hist-reason-error' } : {})}
             />
             {((reason.length > 0 && reason.trim().length < 3) || reasonError) && (

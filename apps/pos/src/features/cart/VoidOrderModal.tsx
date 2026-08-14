@@ -103,8 +103,11 @@ export function VoidOrderModal({
               className={cn('w-full', ((reason.trim().length > 0 && reason.trim().length < 3) || reasonError) && 'border-red-as-text')}
               disabled={isPending}
               aria-label="Void reason"
-              aria-invalid={(reason.trim().length > 0 && reason.trim().length < 3) || reasonError}
-              {...(((reason.trim().length > 0 && reason.trim().length < 3) || reasonError)
+              // Review de pile — même prédicat que l'erreur AFFICHÉE (length,
+              // pas trim) : une raison en espaces seuls montrait l'alerte
+              // avec aria-invalid=false.
+              aria-invalid={(reason.length > 0 && reason.trim().length < 3) || reasonError}
+              {...(((reason.length > 0 && reason.trim().length < 3) || reasonError)
                 ? { 'aria-describedby': 'void-reason-error' } : {})}
               data-vkp="qwerty"
             />

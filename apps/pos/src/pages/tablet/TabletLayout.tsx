@@ -15,8 +15,10 @@ import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 
 function TabletAccessDenied(): JSX.Element {
   useEffect(() => {
+    // id fixe : dédoublonne le double-mount de StrictMode en dev.
     toast.error(
       'Tablet ordering needs the waiter role or the sales permission — redirected to the POS.',
+      { id: 'tablet-access-denied' },
     );
   }, []);
   return <Navigate to="/pos" replace />;

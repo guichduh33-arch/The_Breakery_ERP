@@ -74,7 +74,12 @@ function ProductCardImpl({
       // Critique run 4 lot 5 — l'aria-label recomposé effaçait le PRIX, la
       // valeur que la tuile promet de faire vérifier ; aria-labelledby recompose
       // le nom + le prix (ou l'état sold-out) depuis les éléments visibles.
-      aria-labelledby={`pc-name-${product.id} ${disabled && overlayLabel ? `pc-overlay-${product.id}` : `pc-price-${product.id}`}`}
+      aria-labelledby={[
+        `pc-name-${product.id}`,
+        // Review de pile — pas de référence pendante : le prix n'existe que si
+        // !disabled, l'overlay que s'il est fourni ; sinon le nom seul suffit.
+        disabled ? (overlayLabel ? `pc-overlay-${product.id}` : null) : `pc-price-${product.id}`,
+      ].filter(Boolean).join(' ')}
       className={cn(
         'group relative bg-bg-elevated rounded-lg overflow-hidden border text-left',
         // Perf (P2) — no permanent `will-change`, it pins a compositor layer

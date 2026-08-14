@@ -197,7 +197,9 @@ export default function PosPage() {
             <button
               type="button"
               data-testid="no-shift-pill"
-              onClick={() => { setShiftAlertDismissed(false); setOpenShiftOpen(true); }}
+              // Review de pile — ne pas ré-armer l'alerte balayée : annuler la
+              // modale ne doit pas faire resurgir le plein-écran ShiftClosedState.
+              onClick={() => setOpenShiftOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-full border border-warning bg-warning-soft px-3 py-1 text-xs font-bold uppercase tracking-widest text-warning hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
             >
               No shift · Open
@@ -306,7 +308,7 @@ export default function PosPage() {
         />
       )}
       <PaymentTerminal
-        onOpenShift={() => { setShiftAlertDismissed(false); setOpenShiftOpen(true); }}
+        onOpenShift={() => setOpenShiftOpen(true)}
       />
       {/* Montage conditionnel : la modale s'abonne au realtime dès le mount —
           la monter fermée en permanence doublerait la souscription de la barre. */}
