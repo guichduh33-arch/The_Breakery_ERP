@@ -9,42 +9,11 @@ import { formatCurrency, formatTimeWita } from '@breakery/utils';
 // « rien n'a bougé » ou « la caisse est vide », deux mensonges. Tout ce qui est
 // nul sort en tiret cadratin.
 
-/** Sens d'une variation. `none` = pas de comparaison possible. */
-export type DeltaDirection = 'up' | 'down' | 'flat' | 'none';
-
-export interface DeltaView {
-  direction: DeltaDirection;
-  /** Glyphe seul — rendu `aria-hidden`, la valeur est portée par `text`. */
-  glyph: string;
-  /** Valeur formatée, unité comprise : « 12,4% », « 1,4pt », « — ». */
-  text: string;
-}
+// Lot B (campagne Reports 2026-08-15) — deltaView vit désormais en partagé
+// (src/components/kpi/deltaView.ts), avec le composant Delta qu'il sert.
+export { deltaView, type DeltaView, type DeltaDirection } from '@/components/kpi/deltaView.js';
 
 const TIRET = '—';
-
-function fixed1(v: number): string {
-  return Math.abs(v).toLocaleString('id-ID', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
-}
-
-/**
- * Vue d'une variation. `unit` distingue les deux registres :
- *   · `pct` — variation RELATIVE d'une mesure (CA, commandes…).
- *   · `pt`  — écart en POINTS entre deux pourcentages (marge brute). Comparer
- *     deux taux en relatif est le classique du rapport faux, la RPC renvoie
- *     donc déjà des points ; l'unité affichée doit suivre.
- */
-export function deltaView(v: number | null | undefined, unit: 'pct' | 'pt' = 'pct'): DeltaView {
-  if (v === null || v === undefined || Number.isNaN(v)) {
-    return { direction: 'none', glyph: '', text: TIRET };
-  }
-  const suffix = unit === 'pct' ? '%' : 'pt';
-  if (v === 0) return { direction: 'flat', glyph: '=', text: `0,0${suffix}` };
-  if (v > 0)   return { direction: 'up',   glyph: '▲', text: `${fixed1(v)}${suffix}` };
-  return { direction: 'down', glyph: '▼', text: `${fixed1(v)}${suffix}` };
-}
 
 /**
  * IDR complet — « Rp 34.100 ». Montants unitaires, lignes de détail.

@@ -71,13 +71,23 @@ export function familyBase(family: CostFamily): string {
 // Multi-series line / pie charts that don't map to a single cost family
 // (e.g. per-supplier price trends) draw from one shared, mutually-legible
 // hue set instead of ad-hoc per-file hex. Cycles if series exceed length.
+//
+// Lot B (campagne Reports 2026-08-15) — recomposée sur les deux familles de la
+// direction (bleus COGS / ambres OpEx alternés) : l'or est une encre de sens
+// (jamais une série), et le vert/rouge sont réservés au vocabulaire d'état —
+// une « série 4 » rouge lisait comme une alerte. Les deux bleus médians sont
+// remontés en chroma (les crans de rampe #4f93bf/#0d5f8a tombaient sous le
+// plancher « reads gray »). Palette VALIDÉE au validateur data-viz du
+// 2026-08-15 (lightness band, chroma, ΔE CVD 19,4, ΔE normal 23,1) ; l'ambre
+// clair #d9a44a est sous 3:1 sur blanc → légal parce que chaque graphe du
+// module garde étiquettes directes + table.
 export const CATEGORICAL_SERIES = [
-  'var(--gold-base)', // accent du thème (or encre en Backoffice)
-  '#2b6c9c',          // bleu — COGS_BASE
-  '#16a34a',          // green
-  '#b4342c',          // red — --red-base du thème clair
-  '#0891b2',          // cyan
-  '#7c3aed',          // violet
+  '#2b6c9c', // bleu — COGS_BASE
+  '#a8701c', // ambre — OPEX_RAMP[1]
+  '#3f92cc', // bleu clair (chroma remonté depuis COGS_RAMP[2])
+  '#c2872a', // ambre clair — OPEX_RAMP[2]
+  '#0e63a8', // bleu profond (chroma remonté depuis COGS_RAMP[3])
+  '#d9a44a', // ambre pâle — OPEX_RAMP[4]
 ] as const;
 
 /** Color for categorical series `i` (cycles). */
@@ -85,18 +95,30 @@ export function categoricalColor(i: number): string {
   return CATEGORICAL_SERIES[i % CATEGORICAL_SERIES.length]!;
 }
 
-/** Neutral swatch for an "off / disabled" series (legend toggles). */
-export const CHART_SERIES_OFF = '#c2beb5'; // --border-strong (neutre refroidi)
+/** Neutral swatch for an "off / disabled" series (legend toggles) and for the
+ *  DASHED comparison line of a trend chart. Suit `--text-inert` (#c2beb5). */
+export const CHART_SERIES_OFF = 'var(--text-inert)';
 
 /**
  * Série de COMPARAISON (période précédente) dans un graphe à deux séries.
- * Bleu clair : même famille que la série courante — c'est la même mesure, à une
- * autre date — mais assez pâle pour rester en arrière-plan.
+ * Le cran le plus pâle de la rampe séquentielle : même famille que la série
+ * courante — c'est la même mesure, à une autre date — mais assez pâle pour
+ * rester en arrière-plan. Suit `--chart-4` (#c9dcea en Backoffice).
  */
-export const CHART_SERIES_COMPARE = '#c9dcea';
+export const CHART_SERIES_COMPARE = 'var(--chart-4)';
 
-/** Gold accent stroke for a single-series backoffice trend line. */
-export const CHART_ACCENT_GOLD = '#8a6820'; // --gold-base du thème clair
+// --- Rampe séquentielle du thème --------------------------------------------
+// `--chart-1..4`, du plus soutenu au plus clair. C'est une rampe SÉQUENTIELLE
+// (une teinte, lisibilité par luminosité) : jamais quatre identités
+// catégorielles — les paires courant/comparaison prennent les EXTRÊMES
+// (chart-1 vs chart-4), les ventilations à pistes la descendent dans l'ordre.
+export const CHART_1 = 'var(--chart-1)';
+export const CHART_2 = 'var(--chart-2)';
+export const CHART_3 = 'var(--chart-3)';
+export const CHART_4 = 'var(--chart-4)';
+
+/** Gris inerte du thème — chevrons éteints, cellules vides de heatmap. */
+export const TEXT_INERT = 'var(--text-inert)';
 
 // --- Neutrals (light theme) -------------------------------------------------
 // Miroirs des tokens `.theme-backoffice`. Recharts pose ses couleurs en props

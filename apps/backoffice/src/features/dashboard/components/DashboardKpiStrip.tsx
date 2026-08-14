@@ -23,11 +23,17 @@
 //     comparaisons cèdent la place à une mention unique (`dayState`).
 
 import { useMemo, type JSX, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, SectionLabel, cardVariants, cn } from '@breakery/ui';
+import { Card, SectionLabel, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
+// Lot B (campagne Reports 2026-08-15) — la tuile vit désormais en partagé
+// (src/components/kpi/KpiTile.tsx), consommée par le dashboard ET les rapports.
+// La tuile HÉRO encre (valeur 26 px, une seule par écran) y est documentée.
+import {
+  KpiTile,
+  KPI_CARD, KPI_CARD_HERO, KPI_LABEL, KPI_LABEL_HERO,
+  KPI_NOTE, KPI_NOTE_HERO, KPI_VALUE, KPI_VALUE_HERO,
+} from '@/components/kpi/KpiTile.js';
 import { Delta } from './Delta.js';
 import {
   formatCount, formatIdr, formatIdrShort, formatPct,
@@ -36,30 +42,17 @@ import { buildKpiTargets, type KpiTarget, type KpiTargetKey } from '../utils/kpi
 import { hasNoSalesYetToday, NO_SALES_YET_NOTE } from '../utils/dayState.js';
 import type { DashboardKpis } from '../hooks/useDashboardOverview.js';
 
-const CARD = 'flex flex-col gap-[5px] px-[15px] py-[13px] shadow-none';
-const LABEL = 'font-data text-xs font-semibold text-text-muted';
-const VALUE = 'font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary';
-const NOTE = 'font-data text-xs leading-tight text-text-muted';
+const CARD = KPI_CARD;
+const LABEL = KPI_LABEL;
+const VALUE = KPI_VALUE;
+const NOTE = KPI_NOTE;
+const CARD_HERO = KPI_CARD_HERO;
+const LABEL_HERO = KPI_LABEL_HERO;
+const VALUE_HERO = KPI_VALUE_HERO;
+const NOTE_HERO = KPI_NOTE_HERO;
 
-// Tuile HÉRO — direction « Instrument » (maquette 3a). La première tuile est
-// remplie d'encre et sa valeur monte de 23 à 26 px. Ce n'est pas un ornement :
-// sept tuiles identiques donnent une frise où rien ne prime, alors que la
-// question qu'on pose à un dashboard de boulangerie en ouvrant la page est
-// toujours la même — combien a-t-on fait aujourd'hui. Une seule tuile est
-// traitée ainsi ; une deuxième détruirait la hiérarchie qu'elle installe.
-const CARD_HERO = `${CARD} border-ink bg-ink`;
-const LABEL_HERO = 'font-data text-xs font-semibold text-ink-fg-sub';
-const VALUE_HERO = 'font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] tabular-nums text-ink-fg';
-const NOTE_HERO = 'font-data text-xs leading-tight text-ink-fg-sub';
-
-// Une tuile-lien reste une TUILE. Pas de bleu, pas de soulignement : le seul
-// signal au survol est le cran de surface prévu pour ça par le thème ivoire
-// (`--surface-4` porte le commentaire « survol / pressé »), et son équivalent
-// sur encre pour la tuile héro. Le focus passe par l'anneau maison — l'anneau
-// par défaut du navigateur a été mesuré sous le seuil WCAG de 3:1.
-const TILE_LINK      = `${FOCUS_RING} motion-safe:transition-colors hover:bg-surface-4`;
-const TILE_LINK_HERO = `${FOCUS_RING} motion-safe:transition-colors hover:bg-ink-hover`;
-
+/** Adaptateur local : la tuile partagée prend `to`/`srHint`, la bande raisonne
+ *  encore en `KpiTarget | null` (cible filtrée par permission). */
 function Tile({
   label, value, children, testId, hero = false, valueTitle, target = null,
 }: {
@@ -68,59 +61,20 @@ function Tile({
   children?: ReactNode;
   testId: string;
   hero?: boolean;
-  /**
-   * Montant EXACT posé en infobulle quand `value` est en notation compacte
-   * (« Rp 8,42 jt »). Un compact tronque : sans lui, le chiffre précis de la
-   * journée n'est lisible nulle part sur la page — audit UX/UI 2026-08-13.
-   */
   valueTitle?: string;
-  /**
-   * Cible de drill-down, déjà filtrée par permission par l'appelant. `null`
-   * laisse la tuile inerte — un `<div>`, pas un lien mort.
-   */
   target?: KpiTarget | null;
 }): JSX.Element {
-  const body = (
-    <>
-      <SectionLabel as="h3" className={hero ? LABEL_HERO : LABEL}>{label}</SectionLabel>
-      <span className={hero ? VALUE_HERO : VALUE} title={valueTitle}>{value}</span>
-      <div className="flex min-h-[16px] flex-wrap items-baseline gap-x-3 gap-y-0.5">
-        {children}
-      </div>
-    </>
-  );
-
-  if (target !== null) {
-    // `cardVariants` plutôt qu'un `<Card>` enveloppé dans un `<Link>` : le lien
-    // DOIT être la boîte elle-même, sinon la zone cliquable ne couvre pas la
-    // tuile et le focus ne se dessine pas autour d'elle. La destination est
-    // annoncée par un complément en `sr-only` et non par un `aria-label`, qui
-    // écraserait le contenu — le chiffre disparaîtrait de la lecture vocale.
-    return (
-      <Link
-        to={target.href}
-        data-testid={testId}
-        className={cn(
-          cardVariants({ variant: 'default', padding: 'none' }),
-          hero ? CARD_HERO : CARD,
-          hero ? TILE_LINK_HERO : TILE_LINK,
-        )}
-      >
-        {body}
-        <span className="sr-only">{target.hint}</span>
-      </Link>
-    );
-  }
-
   return (
-    <Card
-      variant="default"
-      padding="none"
-      className={hero ? CARD_HERO : CARD}
-      data-testid={testId}
+    <KpiTile
+      label={label}
+      value={value}
+      {...(valueTitle !== undefined ? { valueTitle } : {})}
+      hero={hero}
+      {...(target !== null ? { to: target.href, srHint: target.hint } : {})}
+      testId={testId}
     >
-      {body}
-    </Card>
+      {children}
+    </KpiTile>
   );
 }
 

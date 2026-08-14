@@ -24,7 +24,7 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import {
-  CHART_ACCENT_GOLD,
+  COGS_BASE,
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
@@ -188,11 +188,14 @@ export function RecipeCostTimelinePage(): JSX.Element {
                   formatter={(v: number) => [formatIdrPrecise(v), 'Cost / unit']}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
+                {/* Lot B — la ligne était en or (#8a6820, valeur périmée depuis
+                    l'audit AA du 2026-08-13) : l'or est une encre de sens, pas
+                    une série de données. CHART_ACCENT_GOLD est supprimé. */}
                 <Line
                   isAnimationActive={!reduced}
                   type="monotone"
                   dataKey="cost"
-                  stroke={CHART_ACCENT_GOLD}
+                  stroke={COGS_BASE}
                   strokeWidth={2}
                   dot
                 />
