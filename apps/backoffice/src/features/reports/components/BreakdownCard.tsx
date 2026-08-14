@@ -12,7 +12,7 @@
 
 import type { JSX, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { cn } from '@breakery/ui';
+import { SectionLabel, cn } from '@breakery/ui';
 import { PanelCard } from '@/components/PanelCard.js';
 import { formatIdrCompact, formatIdrFull } from '../utils/chartColors.js';
 
@@ -52,8 +52,18 @@ export interface BreakdownCardProps {
    * total nommé (ex. « Total collected » venu du serveur).
    */
   total?: 'derived' | { label: string; amount: number };
-  /** Barre de partage segmentée + légende à pastilles (ex. « By order type »). */
-  shareBar?: { ariaLabel: string; segments: ShareSegment[] };
+  /**
+   * Barre de partage segmentée + légende à pastilles (ex. « By order type »).
+   * `title` pose le sous-libellé de section de la maquette 4c — la barre y est
+   * une SECONDE lecture des mêmes lignes, pas un ornement du tableau au-dessus.
+   */
+  shareBar?: { ariaLabel: string; segments: ShareSegment[]; title?: string };
+  /**
+   * Où poser la barre de partage. La maquette 4c totalise d'abord les lignes,
+   * PUIS ouvre la section de partage sous un filet : un total qui vient après
+   * la barre se lit comme le total de la barre, ce qu'il n'est pas.
+   */
+  shareBarPlacement?: 'before-total' | 'after-total';
   /** Pied d'état opérationnel, séparé par un filet (alerte + lien). */
   footer?: ReactNode;
   emptyText?: string;
@@ -79,13 +89,49 @@ function RowLabel({ row }: { row: BreakdownRow }): JSX.Element {
 export function BreakdownCard({
   title, aside, subtitle,
   isLoading = false, isRestricted = false, error = null,
-  rows, variant = 'plain', total, shareBar, footer,
+  rows, variant = 'plain', total, shareBar, shareBarPlacement = 'before-total', footer,
   emptyText = 'No data for this period.',
   testId,
 }: BreakdownCardProps): JSX.Element {
   const totalLine = total === 'derived'
     ? { label: 'Total', amount: rows.reduce((s, r) => s + r.amount, 0) }
     : total;
+
+  const shareBarBlock = shareBar !== undefined && shareBar.segments.length > 0 ? (
+    <div
+      className={shareBarPlacement === 'after-total'
+        ? 'mt-3 border-t border-border-muted pt-2.5'
+        : undefined}
+      data-testid="breakdown-sharebar"
+    >
+      {shareBar.title !== undefined && (
+        <SectionLabel as="h3" className="font-data text-xs font-semibold text-text-primary">
+          {shareBar.title}
+        </SectionLabel>
+      )}
+      <div
+        className={cn(
+          'flex h-2.5 overflow-hidden rounded-[2px] bg-surface-4',
+          shareBar.title !== undefined ? 'mt-2.5' : 'mt-3',
+        )}
+        role="img"
+        aria-label={shareBar.ariaLabel}
+      >
+        {shareBar.segments.map((s) => (
+          <div key={s.label} style={{ width: `${s.pct}%`, background: s.color }} />
+        ))}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        {shareBar.segments.map((s) => (
+          <li key={s.label} className="flex items-center gap-1.5 text-xs text-text-secondary">
+            <span className="h-2 w-2 rounded-[2px]" style={{ background: s.color }} aria-hidden />
+            {s.label}
+            <span className="font-data tabular-nums text-text-muted">{Math.round(s.pct)}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
 
   return (
     <PanelCard
@@ -156,28 +202,7 @@ export function BreakdownCard({
         </ul>
       )}
 
-      {shareBar !== undefined && shareBar.segments.length > 0 && (
-        <>
-          <div
-            className="mt-3 flex h-2.5 overflow-hidden rounded-[2px] bg-surface-4"
-            role="img"
-            aria-label={shareBar.ariaLabel}
-          >
-            {shareBar.segments.map((s) => (
-              <div key={s.label} style={{ width: `${s.pct}%`, background: s.color }} />
-            ))}
-          </div>
-          <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-            {shareBar.segments.map((s) => (
-              <li key={s.label} className="flex items-center gap-1.5 text-xs text-text-secondary">
-                <span className="h-2 w-2 rounded-[2px]" style={{ background: s.color }} aria-hidden />
-                {s.label}
-                <span className="font-data tabular-nums text-text-muted">{Math.round(s.pct)}%</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {shareBarPlacement === 'before-total' && shareBarBlock}
 
       {totalLine !== undefined && rows.length > 0 && (
         <div className="mt-3 border-t border-border-muted pt-2.5 text-xs">
@@ -192,6 +217,8 @@ export function BreakdownCard({
           </div>
         </div>
       )}
+
+      {shareBarPlacement === 'after-total' && shareBarBlock}
 
       {footer !== undefined && (
         <div className={cn('mt-3 flex items-center gap-2 border-t border-border-muted pt-2.5 text-xs')}>
