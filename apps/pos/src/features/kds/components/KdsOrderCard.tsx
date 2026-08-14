@@ -210,9 +210,16 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
   return (
     <article
       data-age-band={style.bandLabel}
-      className={`rounded-lg border-2 bg-bg-elevated p-4 flex flex-col gap-3 shadow-md ${style.border}`}
+      // Règle du Filet (critique run 3) : l'élévation du ticket = surface +
+      // bordure d'âge, pas d'ombre portée sous le cran `lg`.
+      className={`rounded-lg border-2 bg-bg-elevated p-4 flex flex-col gap-3 ${style.border}`}
     >
-      <header className="flex items-center justify-between gap-3">
+      {/* flex-wrap (critique run 3, occlusion détectée en page) : sur carte
+          étroite, le groupe gauche `min-w-0` se comprimait et ses chips
+          `shrink-0` débordaient SOUS le groupe droit — « Takeaway » sous le
+          bouton All ready, « PAID » sous « Late ». Le wrap fait descendre le
+          groupe droit d'une ligne au lieu de superposer. */}
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-2 min-w-0">
           {/* S43 P2-5a — order_number already carries its `#` prefix; do NOT
               re-prefix here (was rendering `##B-123`). */}
@@ -289,8 +296,11 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
                   >
                     {item.quantity}×
                   </span>
+                  {/* line-clamp-2 (critique run 3) : à 2-3 m, « Sandwiches
+                      Baguette P… » et « …T… » tronqués sur une ligne sont
+                      indistinguables ; la tuile POS s'offre déjà deux lignes. */}
                   <span
-                    className={`text-2xl font-bold truncate ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
+                    className={`text-2xl font-bold line-clamp-2 ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
                   >
                     {item.product_name}
                   </span>

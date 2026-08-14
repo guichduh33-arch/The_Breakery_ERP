@@ -209,7 +209,9 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   return (
     <div
-      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap shadow-[0_-4px_16px_rgba(0,0,0,0.25)] z-50"
+      // Règle du Filet (critique run 3) : la barre se détache par sa surface et
+      // son border-t, pas par une ombre portée — supprimée.
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap z-50"
       role="toolbar"
       aria-label="Order actions"
     >
@@ -359,8 +361,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
       {/* ── Right group : validation ────────────────────────────────────── */}
       {/* LOT 7 (audit 2026-06-25) — visual hierarchy by touch size:
-          Checkout (h-14/56px) dominates ▸ Send (h-12/48px) ▸ ghosts (h-11).
-          Bigger = more important = faster to hit during the rush. */}
+          Checkout dominates ▸ Send ▸ ghosts (h-11). Bigger = more important =
+          faster to hit during the rush.
+          Critique run 3 (Règle des 56) : la hiérarchie vit dans le `size` du
+          Button (lg = 80px ▸ md = 56px, le plancher money-path) — les h-12/h-14
+          posés ici en className étaient des classes mortes, écrasées par le
+          h-touch-* du size dans la cascade. Ne pas les réintroduire. */}
       {/* Below md the validation pair stacks full-width: Send+Checkout side by
           side can't fit 390px without horizontal scroll (measured 403px), and
           the total must never be truncated. Two stacked full-width rows give
@@ -368,7 +374,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       <div className="flex items-center gap-2 max-md:w-full max-md:flex-col max-md:items-stretch">
         <SendToKitchenButton
           variant="outlineGold"
-          className="h-12 px-4 rounded-md text-sm font-bold uppercase tracking-wide"
+          className="px-4 rounded-md text-sm font-bold uppercase tracking-wide"
         />
 
         {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
@@ -378,7 +384,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <Button
           variant="gold"
           size="lg"
-          className="h-14 shrink-0 px-7 gap-2.5 text-base font-bold uppercase tracking-wide active:bg-gold-pressed max-md:px-4"
+          className="shrink-0 px-7 gap-2.5 text-base font-bold uppercase tracking-wide active:bg-gold-pressed max-md:px-4"
           onClick={() => { if (checkoutTableGuard.ensureTable()) openPayment(); }}
           disabled={!hasItems}
           data-testid="checkout-cta"

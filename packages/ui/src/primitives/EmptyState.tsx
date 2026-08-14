@@ -63,6 +63,12 @@ export interface EmptyStateProps {
   size?: EmptyStateSize;
   /** Tone. 'branded' shows BrandMark when no icon. */
   tone?: 'default' | 'branded';
+  /**
+   * Heading element for the title. Default 'h3'. Pass 'h2' when the empty
+   * state sits directly under a page's h1 (avoids an h1→h3 skip in the
+   * outline — POS product grid, critique 2026-08-14).
+   */
+  headingLevel?: 'h2' | 'h3';
   className?: string;
   /** Test ID propagated to the outer element. */
   'data-testid'?: string;
@@ -124,6 +130,7 @@ export function EmptyState({
   action,
   size = 'md',
   tone = 'default',
+  headingLevel: Heading = 'h3',
   className,
   'data-testid': testId,
 }: EmptyStateProps): JSX.Element {
@@ -147,14 +154,14 @@ export function EmptyState({
           {iconNode}
         </div>
       )}
-      <h3
+      <Heading
         className={cn(
           'font-display italic text-text-primary',
           size === 'sm' ? 'text-lg' : size === 'lg' ? 'text-2xl' : 'text-xl',
         )}
       >
         {title}
-      </h3>
+      </Heading>
       {description !== undefined && (
         <p className="max-w-prose text-sm text-text-secondary">{description}</p>
       )}

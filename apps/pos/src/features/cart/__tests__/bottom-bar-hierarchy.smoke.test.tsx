@@ -1,9 +1,13 @@
 // apps/pos/src/features/cart/__tests__/bottom-bar-hierarchy.smoke.test.tsx
 //
 // LOT 7 (POS P0 hardening, audit 2026-06-25) — visual hierarchy by touch size:
-// Checkout (h-14) must dominate over Void/Send (h-12), which dominate the
-// left-hand ghost management buttons (h-11). Bigger = more important = faster
-// to hit during the rush.
+// Checkout must dominate Send, which dominates the left-hand ghost management
+// buttons (h-11). Bigger = more important = faster to hit during the rush.
+// Critique run 3 (Règle des 56) : la hiérarchie vit dans le `size` du Button
+// (lg → h-touch-large 80px ▸ md → h-touch-comfy 56px, le plancher money-path).
+// Les anciens h-12/h-14 posés en className étaient des classes MORTES, écrasées
+// par le h-touch-* du size dans la cascade — ce test asserte les classes qui
+// gagnent réellement.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -56,16 +60,16 @@ describe('BottomActionBar — touch hierarchy (LOT 7)', () => {
     });
   });
 
-  it('Checkout is the tallest CTA (h-14), dominating Send to Kitchen (h-12)', () => {
+  it('Checkout is the tallest CTA (touch-large 80px), dominating Send to Kitchen (touch-comfy, the 56px money-path floor)', () => {
     render(wrapper(<BottomActionBar />));
     const checkout = screen.getByTestId('checkout-cta');
     const send = screen.getByRole('button', { name: /send to kitchen/i });
 
-    expect(checkout.className).toContain('h-14');
-    expect(send.className).toContain('h-12');
-    // Checkout must not be smaller than the secondary actions.
-    expect(checkout.className).not.toContain('h-11');
-    expect(send.className).not.toContain('h-11');
+    expect(checkout.className).toContain('h-touch-large');
+    expect(send.className).toContain('h-touch-comfy');
+    // No dead height overrides riding along — the size prop owns the height.
+    expect(send.className).not.toMatch(/\bh-1[24]\b/);
+    expect(checkout.className).not.toMatch(/\bh-1[46]\b/);
   });
 
   it('left-hand management buttons stay at the ghost size (h-11)', () => {

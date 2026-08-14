@@ -135,7 +135,10 @@ export default function LoginPage(): JSX.Element {
     <div className="theme-pos min-h-screen grid place-items-center bg-bg-base p-6">
       <main
         aria-labelledby="login-heading"
-        className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-elevated shadow-modal p-8 flex flex-col items-center gap-6"
+        // Règle du Filet (critique run 3) : bordure 1 px + ombre de 72 px de
+        // flou était l'anti-pattern « thin border, wide shadow » — la carte se
+        // détache par sa surface et son filet, pas par une ombre.
+        className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-elevated p-8 flex flex-col items-center gap-6"
       >
         {/* Brand */}
         <BrandLogo size="lg" showTagline />
@@ -259,7 +262,9 @@ export default function LoginPage(): JSX.Element {
 
         {/* Numpad — auto-submit at 6 digits is the only submit path. Digits are
             inert until a user is chosen : typing into nobody's account is the
-            reflex-lockout trap this screen used to invite. */}
+            reflex-lockout trap this screen used to invite.
+            Touches à 80 px (h-20) : la spec pavé du DESIGN.md — 56 px était
+            sous le cran « pavé » (critique run 3). */}
         <div className="grid grid-cols-3 gap-3 w-full" role="group" aria-label="PIN numpad">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
             <button
@@ -267,7 +272,7 @@ export default function LoginPage(): JSX.Element {
               type="button"
               onClick={() => handleDigit(d)}
               disabled={isLoading || !selectedUser}
-              className="h-14 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
+              className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
               aria-label={d}
             >
               {d}
@@ -278,7 +283,7 @@ export default function LoginPage(): JSX.Element {
             type="button"
             onClick={() => handleDigit('0')}
             disabled={isLoading || !selectedUser}
-            className="h-14 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
+            className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
             aria-label="0"
           >
             0
@@ -287,7 +292,7 @@ export default function LoginPage(): JSX.Element {
             type="button"
             onClick={handleBackspace}
             disabled={isLoading || pin.length === 0}
-            className="h-14 rounded-lg bg-bg-input border border-border-subtle text-text-primary transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50 grid place-items-center"
+            className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50 grid place-items-center"
             aria-label="Backspace"
           >
             <Delete className="h-5 w-5" aria-hidden />
