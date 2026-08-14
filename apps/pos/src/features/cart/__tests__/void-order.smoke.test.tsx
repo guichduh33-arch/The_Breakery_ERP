@@ -59,7 +59,7 @@ describe('BottomActionBar — Void Order', () => {
 
   function openVoid(): void {
     fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /void order/i }));
+    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
   }
 
   it('lives under "More" and opens a reason+PIN modal without wiping the cart', () => {

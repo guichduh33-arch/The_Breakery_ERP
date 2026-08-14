@@ -12,6 +12,10 @@ export interface RetryBannerProps {
   checkoutPending: boolean;
   onRetry: () => void;
   onDismissAlreadyPaid: () => void;
+  /** Critique run 4 lot 2 — recovery CTA for the `no_open_shift` fatal:
+   * closes the terminal and opens the shift modal. Optional so satellite
+   * surfaces without a shift flow render the plain banner. */
+  onOpenShift?: () => void;
 }
 
 export function RetryBanner({
@@ -19,6 +23,7 @@ export function RetryBanner({
   checkoutPending,
   onRetry,
   onDismissAlreadyPaid,
+  onOpenShift,
 }: RetryBannerProps) {
   if (lastError?.kind === 'retryable') {
     return (
@@ -92,6 +97,17 @@ export function RetryBanner({
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-danger">Payment failed</div>
             <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
+            {lastError.code === 'no_open_shift' && onOpenShift && (
+              <Button
+                variant="gold"
+                size="sm"
+                className="mt-2 uppercase tracking-widest"
+                onClick={onOpenShift}
+                data-testid="payment-open-shift-cta"
+              >
+                Open a Shift
+              </Button>
+            )}
           </div>
         </div>
       </div>

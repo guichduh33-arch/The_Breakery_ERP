@@ -30,12 +30,16 @@ export function VoidOrderModal({
 }: VoidOrderModalProps): JSX.Element {
   const [reason, setReason] = useState('');
   const [pinKey, setPinKey] = useState(0);
+  // Lot 2 harden — la raison manquante ne sortait qu'en toast (WCAG 3.3.1) :
+  // l'état arme l'erreur inline au champ après une tentative de soumission.
+  const [reasonError, setReasonError] = useState(false);
   // One UUID per "modal open session", sticky across re-renders/retries; rotated
   // on close so the next open gets a fresh key (idempotency for the server void).
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   function handleClose(): void {
     setReason('');
+    setReasonError(false);
     setPinKey((k) => k + 1);
     idempotencyKeyRef.current = crypto.randomUUID();
     onClose();
@@ -43,6 +47,7 @@ export function VoidOrderModal({
 
   async function handlePinSubmit(pin: string): Promise<void> {
     if (reason.trim().length < 3) {
+      setReasonError(true);
       toast.error('Reason required (≥ 3 chars)');
       setPinKey((k) => k + 1);
       return;
@@ -93,15 +98,20 @@ export function VoidOrderModal({
             </label>
             <Input
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => { setReason(e.target.value); setReasonError(false); }}
               placeholder="e.g. customer left, wrong order, duplicate…"
-              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text')}
+              className={cn('w-full', ((reason.trim().length > 0 && reason.trim().length < 3) || reasonError) && 'border-red-as-text')}
               disabled={isPending}
               aria-label="Void reason"
+              aria-invalid={(reason.trim().length > 0 && reason.trim().length < 3) || reasonError}
+              {...(((reason.trim().length > 0 && reason.trim().length < 3) || reasonError)
+                ? { 'aria-describedby': 'void-reason-error' } : {})}
               data-vkp="qwerty"
             />
-            {reason.length > 0 && reason.trim().length < 3 && (
-              <div className="mt-1 text-xs text-red-as-text">Reason must be at least 3 characters</div>
+            {((reason.length > 0 && reason.trim().length < 3) || reasonError) && (
+              <div id="void-reason-error" role="alert" className="mt-1 text-xs text-red-as-text">
+                Reason must be at least 3 characters
+              </div>
             )}
           </div>
 

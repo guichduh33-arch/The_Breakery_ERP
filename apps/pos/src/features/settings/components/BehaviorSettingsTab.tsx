@@ -44,8 +44,10 @@ export function BehaviorSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
             next empty cart; an in-progress order is never changed.
           </p>
         </div>
+        {/* Critique run 4 lot 2 (harden) — ARIA honnête : boutons à bascule
+            au lieu d'un radiogroup sans navigation aux flèches. */}
         <div
-          role="radiogroup"
+          role="group"
           aria-label="Default order type"
           className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-bg-base p-1"
         >
@@ -55,8 +57,7 @@ export function BehaviorSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
               <button
                 key={t}
                 type="button"
-                role="radio"
-                aria-checked={active}
+                aria-pressed={active}
                 disabled={readOnly}
                 onClick={() => choose(t)}
                 className={cn(

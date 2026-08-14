@@ -15,9 +15,11 @@ export function OrderTypeToggle({
   value: 'dine_in' | 'take_out';
   onChange: (next: 'dine_in' | 'take_out') => void;
 }): JSX.Element {
+  // Critique run 4 lot 2 (harden) — ARIA honnête : boutons à bascule
+  // aria-pressed au lieu d'un tablist sans flèches (WCAG 2.1.1).
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label="Order type"
       className="inline-flex rounded-md border border-border-subtle overflow-hidden"
     >
@@ -53,8 +55,7 @@ function ToggleTab({
   return (
     <button
       type="button"
-      role="tab"
-      aria-selected={active}
+      aria-pressed={active}
       onClick={onClick}
       data-testid={testId}
       className={cn(

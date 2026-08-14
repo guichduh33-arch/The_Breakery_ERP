@@ -188,6 +188,21 @@ export default function PosPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Critique run 4 lot 2 — vérité du poste : l'alerte « No shift »
+              se balaye, et sans rappel le caissier compose une commande
+              entière avant d'échouer au process. La pastille reste tant
+              qu'aucune session n'est ouverte, et elle EST le chemin de
+              récupération (tapable-et-explique, comme Hold). */}
+          {needsShift && (
+            <button
+              type="button"
+              data-testid="no-shift-pill"
+              onClick={() => { setShiftAlertDismissed(false); setOpenShiftOpen(true); }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-warning bg-warning-soft px-3 py-1 text-xs font-bold uppercase tracking-widest text-warning hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+            >
+              No shift · Open
+            </button>
+          )}
           {/* Régime offline ambiant (principe produit n°3) — le caissier ne doit
               pas découvrir la coupure en ouvrant le terminal de paiement, et une
               vente en file n'est pas une vente aboutie tant qu'elle n'est pas
@@ -290,7 +305,9 @@ export default function PosPage() {
           onClose={() => setCloseShiftOpen(false)}
         />
       )}
-      <PaymentTerminal />
+      <PaymentTerminal
+        onOpenShift={() => { setShiftAlertDismissed(false); setOpenShiftOpen(true); }}
+      />
       {/* Montage conditionnel : la modale s'abonne au realtime dès le mount —
           la monter fermée en permanence doublerait la souscription de la barre. */}
       {heldFromMenuOpen && (

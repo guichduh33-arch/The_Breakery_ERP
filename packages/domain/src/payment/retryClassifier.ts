@@ -31,7 +31,9 @@ export interface CheckoutErrorShape {
 export type RetryClassification =
   | { kind: 'retryable'; userMessage: string }
   | { kind: 'already_paid'; userMessage: string; orderNumber?: string }
-  | { kind: 'fatal'; userMessage: string };
+  // `code` : le code serveur brut, pour que l'UI puisse attacher une action de
+  // récupération à un cas précis (no_open_shift → CTA « Open a Shift »).
+  | { kind: 'fatal'; userMessage: string; code?: string };
 
 /**
  * Set of error codes the server returns for already-paid / replay conflicts.
@@ -103,6 +105,7 @@ export function classifyCheckoutError(err: unknown): RetryClassification {
   return {
     kind: 'fatal',
     userMessage: friendlyFatalMessage(code, shape.message),
+    ...(code ? { code } : {}),
   };
 }
 
@@ -132,6 +135,10 @@ function extractErrorShape(err: unknown): CheckoutErrorShape {
  */
 function friendlyFatalMessage(code: string, message?: string): string {
   switch (code) {
+    case 'no_open_shift':
+      // Critique run 4 lot 2 — le code sortait brut (« Payment failed
+      // (no_open_shift). ») au point d'engagement maximal.
+      return 'No shift is open on this terminal. Open a shift before charging.';
     case 'session_closed':
       return 'Your shift is closed. Open a new shift before charging.';
     case 'fiscal_period_closed':

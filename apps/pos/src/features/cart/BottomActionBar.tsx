@@ -286,7 +286,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           <button
             type="button"
             className={GHOST_BTN}
-            aria-haspopup="menu"
             aria-expanded={moreOpen}
             onClick={() => setMoreOpen((o) => !o)}
           >
@@ -302,8 +301,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             )}
           </button>
           {moreOpen && (
+            /* Critique run 4 lot 2 (harden) — role=menu promettait flèches +
+               Escape (WCAG 4.1.2) ; un groupe de boutons dit ce que le clavier
+               sait faire : Tab + Enter. */
             <div
-              role="menu"
+              role="group"
+              aria-label="More actions"
               className="absolute bottom-full left-0 mb-2 w-60 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
             >
               {/* Self-contained buttons restyled as menu rows (own their modals). */}
@@ -311,7 +314,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               <PrintBillButton variant="ghost" className={cn(MENU_ITEM, 'justify-start')} />
               <button
                 type="button"
-                role="menuitem"
                 className={MENU_ITEM}
                 disabled={!hasItems}
                 onClick={() => {
@@ -325,7 +327,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               {attachedCustomer && (
                 <button
                   type="button"
-                  role="menuitem"
                   className={MENU_ITEM}
                   onClick={() => {
                     setMoreOpen(false);
@@ -340,7 +341,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               {/* Void order — destructive, under More, always PIN + reason. */}
               <button
                 type="button"
-                role="menuitem"
                 className={cn(MENU_ITEM, 'text-red-as-text hover:bg-red-soft')}
                 disabled={!hasItems}
                 onClick={() => {

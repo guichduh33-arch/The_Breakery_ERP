@@ -28,7 +28,13 @@ import { TenderDraftPanel } from './components/TenderDraftPanel';
 import { QuickPayRow } from './components/QuickPayRow';
 import { OrderSummaryPanel } from './components/OrderSummaryPanel';
 
-export function PaymentTerminal() {
+export interface PaymentTerminalProps {
+  /** Critique run 4 lot 2 — hand-off to the shift flow when a checkout dies
+   * on `no_open_shift` : the terminal closes and the OpenShiftModal opens. */
+  onOpenShift?: () => void;
+}
+
+export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
   // warm org config so SuccessModal's fire-once effect sees resolved values
   useOrgDisplaySettings();
   const {
@@ -181,6 +187,7 @@ export function PaymentTerminal() {
             checkoutPending={checkoutPending}
             onRetry={handleRetry}
             onDismissAlreadyPaid={handleDismissAlreadyPaid}
+            {...(onOpenShift ? { onOpenShift: () => { close(); onOpenShift(); } } : {})}
           />
 
           {/* Quick-pay row : prominent CASH EXACT (when fast-path-ready) + SPLIT BY ITEM */}

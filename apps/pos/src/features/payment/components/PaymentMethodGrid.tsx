@@ -27,12 +27,12 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
   return (
     <>
       <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
-      {/* a11y (critique 2026-08-14) — the selection used to be visual only
-          (gold border) ; radiogroup + aria-checked lets a screen reader hear
-          which method is active. */}
+      {/* Critique run 4 lot 2 (harden) — ARIA honnête : radiogroup promettait
+          la navigation aux flèches qu'aucun onKeyDown n'implémente (WCAG 2.1.1).
+          Des boutons à bascule (aria-pressed) disent vrai : Tab + Enter suffisent. */}
       {/* Critique run 4 lot 1 (adapt) — 3 colonnes à 390 px = tuiles ~108 px
           où « Store Credit » déborde ; 2 colonnes sous md. */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6" role="radiogroup" aria-label="Payment method">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6" role="group" aria-label="Payment method">
         {/* ADR-006 déc. 9 lot A — iterate the enabled set (BO-configured
             order, Set preserves insertion order) instead of the constant. */}
         {[...enabled]
@@ -47,8 +47,7 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
             <button
               key={m.value}
               onClick={() => onSelect(m.value)}
-              role="radio"
-              aria-checked={active}
+              aria-pressed={active}
               className={cn(
                 'h-24 rounded-md border flex flex-col items-center justify-center gap-1.5',
                 'transition-[color,background-color,border-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100',

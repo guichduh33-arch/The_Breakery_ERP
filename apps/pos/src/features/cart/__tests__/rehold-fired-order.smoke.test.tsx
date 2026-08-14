@@ -7,7 +7,7 @@
 // decision 2026-07-10): it re-parks via hold_fired_order_v1 and is disabled while
 // there are unfired new lines (Send to Kitchen fires + parks first).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { holdFiredMutate } = vi.hoisted(() => ({
@@ -117,6 +117,9 @@ describe('BottomActionBar — re-hold a reopened fired order', () => {
     render(wrap(<BottomActionBar />));
 
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    expect(screen.queryByRole('menuitem', { name: /hold/i })).toBeNull();
+    // Lot 2 harden — le menu n'est plus un role=menu (ARIA honnête) : on
+    // scope la recherche au groupe « More actions » pour garder l'assertion.
+    const menu = screen.getByRole('group', { name: /more actions/i });
+    expect(within(menu).queryByRole('button', { name: /hold/i })).toBeNull();
   });
 });
