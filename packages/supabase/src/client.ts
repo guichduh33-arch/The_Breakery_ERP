@@ -3,6 +3,7 @@ import type { Database } from './types.generated.js';
 
 let _client: SupabaseClient<Database> | null = null;
 let _accessToken: string | null = null;
+let _onAuthError: ((status: number) => void) | null = null;
 
 /**
  * Configuration injected on first {@link getSupabaseClient} call.
@@ -50,6 +51,19 @@ export function getSupabaseAccessToken(): string | null {
 }
 
 /**
+ * Observe authenticated requests that come back 401 — i.e. the injected bearer
+ * (PIN or kiosk JWT) was refused. The handler fires only when a token was
+ * attached: anonymous traffic (pre-login RPCs) never triggers it. Consumers use
+ * it to detect an expired/revoked session and re-probe or surface a re-auth
+ * gate instead of letting every query fail silently.
+ *
+ * @param handler - Called with the HTTP status (401), or `null` to unregister.
+ */
+export function setSupabaseAuthErrorHandler(handler: ((status: number) => void) | null): void {
+  _onAuthError = handler;
+}
+
+/**
  * Inject a kiosk JWT (from `kiosk-issue-jwt` EF) into the bearer header.
  *
  * Mechanically identical to {@link setSupabaseAccessToken} — both PIN and
@@ -93,11 +107,18 @@ export function getSupabaseClient(config?: BreakerySupabaseConfig): SupabaseClie
       headers: { 'x-app': 'breakery' },
       fetch: (input, init) => {
         const headers = new Headers(init?.headers);
+        const hadToken = _accessToken !== null;
         if (_accessToken) {
           headers.set('Authorization', `Bearer ${_accessToken}`);
           headers.set('apikey', config.anonKey);
         }
-        return fetch(input, { ...init, headers });
+        return fetch(input, { ...init, headers }).then((res) => {
+          if (res.status === 401 && hadToken && _onAuthError) {
+            // The observer must never break the request path.
+            try { _onAuthError(res.status); } catch { /* observer error swallowed */ }
+          }
+          return res;
+        });
       },
     },
   });
@@ -114,4 +135,5 @@ export function getSupabaseClient(config?: BreakerySupabaseConfig): SupabaseClie
 export function resetSupabaseClient(): void {
   _client = null;
   _accessToken = null;
+  _onAuthError = null;
 }

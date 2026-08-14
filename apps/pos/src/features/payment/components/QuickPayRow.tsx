@@ -4,7 +4,7 @@
 
 import { Users } from 'lucide-react';
 import type { PaymentMethod } from '@breakery/domain';
-import { formatLabel } from '../format';
+import { formatIdr } from '@breakery/utils';
 
 export interface QuickPayRowProps {
   fastPathReady: boolean;
@@ -39,7 +39,7 @@ export function QuickPayRow({
         >
           {checkoutPending
             ? 'Processing…'
-            : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
+            : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatIdr(total)}`}
         </button>
       ) : (
         <div className="flex-1 h-14 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">

@@ -27,7 +27,10 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
   return (
     <>
       <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      {/* a11y (critique 2026-08-14) — the selection used to be visual only
+          (gold border) ; radiogroup + aria-checked lets a screen reader hear
+          which method is active. */}
+      <div className="grid grid-cols-3 gap-3 mb-6" role="radiogroup" aria-label="Payment method">
         {/* ADR-006 déc. 9 lot A — iterate the enabled set (BO-configured
             order, Set preserves insertion order) instead of the constant. */}
         {[...enabled]
@@ -42,6 +45,8 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
             <button
               key={m.value}
               onClick={() => onSelect(m.value)}
+              role="radio"
+              aria-checked={active}
               className={cn(
                 'h-24 rounded-md border flex flex-col items-center justify-center gap-1.5',
                 'transition-[color,background-color,border-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100',

@@ -4,7 +4,7 @@
 
 import { Plus } from 'lucide-react';
 import { Button, Currency, Numpad, SectionLabel, cn } from '@breakery/ui';
-import { formatLabel } from '../format';
+import { formatIdr } from '@breakery/utils';
 
 export interface TenderDraftPanelProps {
   cashReceivedStr: string;
@@ -66,7 +66,7 @@ export function TenderDraftPanel({
                   : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
               )}
             >
-              Exact ({formatLabel(remaining)})
+              Exact ({formatIdr(remaining)})
             </button>
             {isCashDraft && quickAmounts.filter((q) => q >= remaining).slice(0, 4).map((q) => (
               <button
@@ -74,7 +74,7 @@ export function TenderDraftPanel({
                 onClick={() => setCashReceivedStr(String(q))}
                 className="min-h-[44px] rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
-                {formatLabel(q)}
+                {formatIdr(q)}
               </button>
             ))}
           </div>

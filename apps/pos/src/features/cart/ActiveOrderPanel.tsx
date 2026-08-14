@@ -18,6 +18,7 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
+import { formatIdr } from '@breakery/utils';
 import { calculateTotals, resolveLoyaltyMultiplier } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
@@ -34,11 +35,6 @@ import { CustomerBadge } from './CustomerBadge';
 import { CancelItemModal } from './CancelItemModal';
 import { QtyEditModal } from './QtyEditModal';
 import { useCancelOrderItem } from './hooks/useCancelOrderItem';
-
-const CurrencyFmt = new Intl.NumberFormat('en-US');
-function rp(amount: number): string {
-  return `Rp ${CurrencyFmt.format(Math.round(amount))}`;
-}
 
 // cancel-item EF error codes → actionable, English messages. The EF redacts
 // the underlying RPC message (ADR-013 D15/M5 — no raw DB text to the client),
@@ -258,7 +254,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
 
           <div className="flex items-center justify-between text-xs text-text-muted">
             <span className="uppercase tracking-wide">Subtotal</span>
-            <span className="font-mono tabular-nums">{rp(baseTotals.subtotal)}</span>
+            <span className="font-mono tabular-nums">{formatIdr(baseTotals.subtotal)}</span>
           </div>
 
           {appliedPromotions.length > 0 && (
@@ -272,7 +268,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               <span className="uppercase tracking-wide">
                 Loyalty Discount ({cart.loyaltyPointsToRedeem ?? 0} pts)
               </span>
-              <span className="font-mono tabular-nums">-{rp(baseTotals.redemption_amount)}</span>
+              <span className="font-mono tabular-nums">-{formatIdr(baseTotals.redemption_amount)}</span>
             </div>
           )}
 
@@ -281,7 +277,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               <span className="uppercase tracking-wide">
                 Discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
               </span>
-              <span className="font-mono tabular-nums">-{rp(cart.cartDiscount.amount)}</span>
+              <span className="font-mono tabular-nums">-{formatIdr(cart.cartDiscount.amount)}</span>
             </div>
           )}
 
@@ -289,7 +285,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
             <span className="uppercase tracking-wide">
               {taxInclusive ? 'Tax Included' : 'Tax'} ({Math.round(taxRate * 100)}%)
             </span>
-            <span className="font-mono tabular-nums">{rp(tax_amount)}</span>
+            <span className="font-mono tabular-nums">{formatIdr(tax_amount)}</span>
           </div>
 
           <div className="flex items-baseline justify-between pt-2.5 mt-1 border-t border-border-subtle">
@@ -300,7 +296,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               key={total}
               className="font-mono tabular-nums text-3xl font-bold tracking-tight text-gold motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in-0 motion-safe:duration-200"
             >
-              {rp(total)}
+              {formatIdr(total)}
             </span>
           </div>
         </footer>

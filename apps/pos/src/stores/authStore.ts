@@ -41,6 +41,11 @@ interface AuthState {
   // an overlay without dropping the PIN-JWT session, cart or shift. NOT
   // persisted (see partialize) so a page reload always starts unlocked.
   isLocked: boolean;
+  // Why the gate is up. 'manual' covers the Lock button and the idle timeout ;
+  // 'session_expired' is raised by the 401-storm watchdog when the server no
+  // longer honors the PIN session — the overlay copy tells the cashier the
+  // session died instead of pretending the terminal was parked on purpose.
+  lockReason: 'manual' | 'session_expired' | null;
   isLoading: boolean;
   error: string | null;
   bootstrapStatus: BootstrapStatus;
@@ -52,7 +57,7 @@ interface AuthState {
   login: (userId: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
   bootstrap: () => Promise<void>;
-  lock: () => void;
+  lock: (reason?: 'manual' | 'session_expired') => void;
   unlock: () => void;
   validateSession: () => Promise<void>;
   hasPermission: (code: PermissionCode) => boolean;
@@ -75,6 +80,7 @@ export const useAuthStore = create<AuthState>()(
       permissions: [],
       isAuthenticated: false,
       isLocked: false,
+      lockReason: null,
       isLoading: false,
       error: null,
       bootstrapStatus: 'pending',
@@ -132,6 +138,7 @@ export const useAuthStore = create<AuthState>()(
           permissions: [],
           isAuthenticated: false,
           isLocked: false,
+          lockReason: null,
           error: null,
           // Terminal state — bootstrap is "done" (router → /login). Never leave
           // it loading/error after a sign-out.
@@ -183,8 +190,8 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      lock: () => set({ isLocked: true }),
-      unlock: () => set({ isLocked: false }),
+      lock: (reason = 'manual') => set({ isLocked: true, lockReason: reason }),
+      unlock: () => set({ isLocked: false, lockReason: null }),
 
       async validateSession() {
         const token = get().sessionToken;
@@ -205,7 +212,13 @@ export const useAuthStore = create<AuthState>()(
         } catch (err: unknown) {
           const e = err as { status?: number };
           if (e.status === 401) {
-            await get().logout();
+            // The server no longer honors this PIN session. Do NOT logout():
+            // that would silently dump the cashier to /login and lose the
+            // operating context. Lock the terminal with the session-expired
+            // copy instead — cart and shift survive, and the overlay's re-PIN
+            // mints a fresh session via login().
+            logger.warn('session.expired', { via: 'validateSession' });
+            set({ isLocked: true, lockReason: 'session_expired' });
           } else {
             // Network error : keep local session
             logger.warn('validateSession.transient_error');

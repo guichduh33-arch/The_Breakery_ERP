@@ -293,8 +293,10 @@ describe('CustomerDisplayPage — smoke', () => {
     );
 
     expect(await screen.findByTestId('display-pair-prompt')).toBeInTheDocument();
-    expect(await screen.findByTestId('display-pair-error')).toHaveTextContent(
-      /ip_not_allowed/,
-    );
+    // Human copy, never the raw EF code (critique 2026-08-14 — the screen used
+    // to greet with "(ip_not_allowed)").
+    const hint = await screen.findByTestId('display-pair-error');
+    expect(hint).toHaveTextContent(/network is not allowed/i);
+    expect(hint).not.toHaveTextContent(/ip_not_allowed/);
   });
 });
