@@ -10,7 +10,9 @@ import { useKdsStore, type KdsStation } from '@/stores/kdsStore';
 const STATIONS: readonly { value: KdsStation; label: string }[] = [
   { value: 'kitchen', label: 'Kitchen' },
   { value: 'barista', label: 'Barista' },
-  { value: 'display', label: 'Display / Vitrine' },
+  // « Display » seul — « / Vitrine » était la dernière chaîne française
+  // visible de la surface (langue d'interface : anglais, PRODUCT.md).
+  { value: 'display', label: 'Display' },
 ];
 
 export function KdsStationSelector() {
