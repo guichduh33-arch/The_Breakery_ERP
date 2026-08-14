@@ -231,7 +231,7 @@ export function CartLineRow({
           )}
           {cancelled && (
             <span
-              className="mt-0.5 shrink-0 inline-flex items-center rounded-full border border-red bg-red-soft px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red"
+              className="mt-0.5 shrink-0 inline-flex items-center rounded-full border border-red bg-red-soft px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red-as-text"
               aria-label="Cancelled"
             >
               Cancelled

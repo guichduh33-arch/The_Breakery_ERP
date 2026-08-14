@@ -125,21 +125,31 @@ export function PaymentTerminal() {
                 : 'Offline payments disabled — enable offline_payments_enabled (Settings → Network)'}
             </div>
           )}
+          {/* Critique run 3 (polish) — le même état était narré trois fois
+              (« Total Amount » ×2, Remaining, progression) avant tout tender.
+              Le panneau droit dit « Amount Due » (ce qu'on encaisse, distinct
+              du total récapitulatif de gauche) ; la progression et le restant
+              n'apparaissent qu'une fois un tender posé, quand ils divergent
+              réellement du total. */}
           <div className="space-y-1 mb-4">
-            <SectionLabel as="div">Total Amount</SectionLabel>
+            <SectionLabel as="div">Amount Due</SectionLabel>
             <Currency amount={totals.total} emphasis="gold" className="text-4xl block" />
-            <div
-              aria-hidden
-              className="h-0.5 w-full rounded-full bg-border-subtle overflow-hidden mt-2"
-            >
-              <div
-                className="h-full bg-gold transition-all duration-300"
-                style={{ width: `${total > 0 ? Math.min(100, (tenderedSum / total) * 100) : 0}%` }}
-              />
-            </div>
-            <div className="text-xs text-text-secondary text-right pt-1">
-              Remaining: <span className="text-text-primary font-mono"><Currency amount={remaining} /></span>
-            </div>
+            {tenders.length > 0 && (
+              <>
+                <div
+                  aria-hidden
+                  className="h-0.5 w-full rounded-full bg-border-subtle overflow-hidden mt-2"
+                >
+                  <div
+                    className="h-full bg-gold transition-all duration-300"
+                    style={{ width: `${total > 0 ? Math.min(100, (tenderedSum / total) * 100) : 0}%` }}
+                  />
+                </div>
+                <div className="text-xs text-text-secondary text-right pt-1">
+                  Remaining: <span className="text-text-primary font-mono"><Currency amount={remaining} /></span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Accumulated tenders list (session 10) */}

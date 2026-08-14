@@ -51,7 +51,7 @@ function varianceText(v: number | null): { text: string; tone: string } {
   return {
     text: `${sign}${formatIdr(v)}`,
     // short (manque) = red, over (excédent) = gold — mirrors the close screen.
-    tone: v < 0 ? 'text-red' : 'text-gold',
+    tone: v < 0 ? 'text-red-as-text' : 'text-gold',
   };
 }
 
@@ -104,7 +104,7 @@ function SessionsReport({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsSessions(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading sessions…</p>;
-  if (isError || !data) return <p className="text-red text-sm">Failed to load sessions.</p>;
+  if (isError || !data) return <p className="text-red-as-text text-sm">Failed to load sessions.</p>;
 
   const { summary: sm, sessions } = data;
 

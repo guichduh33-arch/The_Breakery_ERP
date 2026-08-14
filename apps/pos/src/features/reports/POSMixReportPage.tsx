@@ -74,7 +74,7 @@ function MixReport({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsMix(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading mix…</p>;
-  if (isError || !data) return <p className="text-red text-sm">Failed to load mix.</p>;
+  if (isError || !data) return <p className="text-red-as-text text-sm">Failed to load mix.</p>;
 
   const hasOrderTypes = data.byOrderType.length > 0;
   const hasCategories = data.byCategory.length > 0;

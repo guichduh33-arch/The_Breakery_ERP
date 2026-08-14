@@ -285,7 +285,11 @@ export function ModifierModal({
           >
             <span className="inline-flex items-center gap-2">
               <Check className="h-4 w-4" aria-hidden />
-              Add to Cart · <Currency amount={total} className="text-bg-base" />
+              Add to Cart
+              {/* Séparateur purement visuel — hors du nom accessible, qui
+                  lisait « Add to Cart · » avec un point pendouillant. */}
+              <span aria-hidden>·</span>
+              <Currency amount={total} className="text-bg-base" />
             </span>
           </Button>
         </footer>

@@ -54,7 +54,7 @@ function Overview({ period }: { period: ReportsPeriod }): JSX.Element {
     return <p className="text-text-secondary text-sm">Loading overview…</p>;
   }
   if (isError || !data) {
-    return <p className="text-red text-sm">Failed to load overview.</p>;
+    return <p className="text-red-as-text text-sm">Failed to load overview.</p>;
   }
 
   // Multi-day range → daily trend; single day → hourly trend.
@@ -170,7 +170,7 @@ function PaymentMix({ period }: { period: ReportsPeriod }): JSX.Element {
       {isLoading ? (
         <p className="mt-4 text-text-secondary text-sm">Loading…</p>
       ) : isError || !data ? (
-        <p className="mt-4 text-red text-sm">Failed to load payments.</p>
+        <p className="mt-4 text-red-as-text text-sm">Failed to load payments.</p>
       ) : data.byMethod.length === 0 ? (
         <EmptyState icon={Wallet} title="No payments" description="No tenders in this period." />
       ) : (
@@ -210,7 +210,7 @@ function TopProducts({ period }: { period: ReportsPeriod }): JSX.Element {
       {isLoading ? (
         <p className="mt-4 text-text-secondary text-sm">Loading…</p>
       ) : isError ? (
-        <p className="mt-4 text-red text-sm">Failed to load products.</p>
+        <p className="mt-4 text-red-as-text text-sm">Failed to load products.</p>
       ) : !data || data.length === 0 ? (
         <EmptyState icon={Trophy} title="No products sold" description="No transactions in this period." />
       ) : (

@@ -60,7 +60,7 @@ export function WasteDisplayModal({
     >
       <div className="p-6 space-y-5">
         <header className="flex items-center gap-2">
-          <Trash2 className="h-5 w-5 text-red" aria-hidden />
+          <Trash2 className="h-5 w-5 text-red-as-text" aria-hidden />
           <h2 className="font-serif text-xl">Record waste</h2>
         </header>
 

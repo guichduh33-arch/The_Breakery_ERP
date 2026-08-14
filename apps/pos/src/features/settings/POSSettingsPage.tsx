@@ -197,7 +197,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
   if (error) {
     return (
       <Card variant="default" padding="md" data-testid="pos-presets-error">
-        <p className="text-red text-sm">
+        <p className="text-red-as-text text-sm">
           Could not load POS presets — using fallback defaults. Check your connection and try again.
         </p>
       </Card>

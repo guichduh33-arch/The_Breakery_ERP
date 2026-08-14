@@ -34,20 +34,19 @@ export function POSStockRow({
   const { isOut, isLow, qty, increments } = entry;
   const [expanded, setExpanded] = useState(false);
 
-  const stockTextTone = isOut ? 'text-red' : isLow ? 'text-amber-warn' : 'text-text-primary';
-  const leftBorder = isOut ? 'border-l-red' : isLow ? 'border-l-amber-warn' : 'border-l-transparent';
+  const stockTextTone = isOut ? 'text-red-as-text' : isLow ? 'text-amber-warn' : 'text-text-primary';
   const hasClosure = Boolean(onReturnToKitchen ?? onWaste ?? onAdjust);
 
   return (
     <div
       data-testid={`pos-stock-row-${product.sku}`}
       data-state={isOut ? 'out' : isLow ? 'low' : 'ok'}
-      className={cn(
-        // `border-l-4` is the functional stock-state indicator — kept as is.
-        // `bg-bg-elevated` alone: bare token, no alpha outside cat-* (/60 was dead).
-        'rounded-md border border-border-subtle border-l-4 bg-bg-elevated',
-        leftBorder,
-      )}
+      // Critique run 3 (polish) : le border-l-4 coloré était le seul « side-tab »
+      // de la surface — DESIGN.md réserve la bordure porteuse d'état au ticket
+      // de cuisine. L'état vit déjà dans la couleur du chiffre de stock
+      // (stockTextTone) et data-state ; `bg-bg-elevated` seul : token nu, pas
+      // d'alpha hors cat-* (/60 était mort).
+      className="rounded-md border border-border-subtle bg-bg-elevated"
     >
       <div className="flex items-center gap-3 px-3 py-2">
         {/* Thumbnail */}
@@ -69,7 +68,7 @@ export function POSStockRow({
           <div className="text-sm font-semibold text-text-primary truncate">{product.name}</div>
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-text-muted">
             <span className="truncate">{product.sku}</span>
-            {isOut && <span className="text-red normal-case tracking-normal">Out of stock</span>}
+            {isOut && <span className="text-red-as-text normal-case tracking-normal">Out of stock</span>}
             {isLow && <span className="text-amber-warn normal-case tracking-normal">Low stock</span>}
           </div>
         </div>

@@ -33,6 +33,7 @@ import { SideMenuDrawer } from '@/features/nav/SideMenuDrawer';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { BottomActionBar } from '@/features/cart/BottomActionBar';
 import { CustomerAttachModal } from '@/features/cart/CustomerAttachModal';
+import { HeldOrdersModal } from '@/features/cart/HeldOrdersModal';
 import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
 import { CloseShiftModal } from '@/features/shift/components/CloseShiftModal';
 import { useShiftCloseSummary } from '@/features/shift/hooks/useShiftCloseSummary';
@@ -71,6 +72,11 @@ export default function PosPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveSessionsOpen, setLiveSessionsOpen] = useState(false);
+  // Critique run 3 (polish) — les entrées « Held Orders » et « Customer List »
+  // du tiroir étaient disabled en permanence : Pos ne passait jamais leurs
+  // handlers. Le tiroir ouvre désormais la même modale d'ardoises que la barre
+  // (instance dédiée, une seule ouverte à la fois) et la recherche client.
+  const [heldFromMenuOpen, setHeldFromMenuOpen] = useState(false);
   // Session 19 / Phase 3.C — self-change PIN modal (greenfield).
   const [changePinOpen, setChangePinOpen] = useState(false);
   const currentUserId = user?.id ?? null;
@@ -240,6 +246,8 @@ export default function PosPage() {
         userName={user?.full_name ?? null}
         userRole={user?.role_code?.toUpperCase() ?? null}
         userInitial={user?.full_name?.charAt(0) ?? null}
+        onOpenHeldOrders={() => { setMenuOpen(false); setHeldFromMenuOpen(true); }}
+        onOpenCustomers={() => { setMenuOpen(false); setCustomerSearchOpen(true); }}
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenLiveSessions={() => setLiveSessionsOpen(true)}
         {...(currentShift ? { onCloseShift: () => setCloseShiftOpen(true) } : {})}
@@ -283,6 +291,11 @@ export default function PosPage() {
         />
       )}
       <PaymentTerminal />
+      {/* Montage conditionnel : la modale s'abonne au realtime dès le mount —
+          la monter fermée en permanence doublerait la souscription de la barre. */}
+      {heldFromMenuOpen && (
+        <HeldOrdersModal open onClose={() => setHeldFromMenuOpen(false)} />
+      )}
       <OrderHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
       <CustomerAttachModal
         open={customerSearchOpen}

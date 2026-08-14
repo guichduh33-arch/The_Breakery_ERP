@@ -60,7 +60,7 @@ function PaymentsBreakdown({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsPayments(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading payments…</p>;
-  if (isError || !data) return <p className="text-red text-sm">Failed to load payments.</p>;
+  if (isError || !data) return <p className="text-red-as-text text-sm">Failed to load payments.</p>;
   if (data.byMethod.length === 0) {
     return (
       <EmptyState

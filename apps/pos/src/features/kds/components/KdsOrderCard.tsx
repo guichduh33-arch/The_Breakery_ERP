@@ -30,7 +30,7 @@
 // Constraints:
 //   - Zero hardcoded hex (D-color). All colours flow through tokens via
 //     Tailwind preset (`bg-bg-elevated`, `text-text-primary`, `border-red`,
-//     `border-amber-warn`, `text-amber-warn`, `text-red`, `text-gold`, …).
+//     `border-amber-warn`, `text-amber-warn`, `text-red-as-text`, `text-gold`, …).
 //   - No raw `style={{}}` — Tailwind classes only.
 //   - StrictMode-safe — no module-scoped mutable state ; the only timer is
 //     the shared `useAgeTimer` hook.
@@ -101,7 +101,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   // Session 10: cancelled items have no actionable CTA — only the badge.
   if (item.is_cancelled) {
     return (
-      <Badge variant="default" className="bg-red text-red-on-fill border-transparent">
+      <Badge variant="default" className="bg-red text-red-as-text-on-fill border-transparent">
         Cancelled
       </Badge>
     );

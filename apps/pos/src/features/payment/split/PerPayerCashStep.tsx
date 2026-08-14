@@ -12,6 +12,7 @@
 import type { JSX } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Currency, Numpad, cn } from '@breakery/ui';
+import { formatIdr } from '@breakery/utils';
 import type { CartItem } from '@breakery/domain';
 import { COLOR_CLASSES, type SplitMode, type SplitPayer } from './types';
 import { payerSubtotal } from './ItemAssignStep';
@@ -141,8 +142,9 @@ export function PerPayerCashStep({
           <div>
             <div className="text-xs uppercase tracking-widest text-gold mb-2">Enter Amount</div>
             <div className="bg-bg-input border-2 border-gold rounded-md py-6 text-center">
+              {/* Critique run 3 (polish) — saisie formatée dès la frappe, une seule graphie. */}
               <span className="font-mono tabular-nums text-3xl text-text-primary">
-                Rp {activePayer.cashReceivedStr || '0'}
+                {formatIdr(received)}
               </span>
             </div>
             {change > 0 && (
@@ -185,7 +187,7 @@ export function PerPayerCashStep({
             <div className="text-xs uppercase tracking-widest text-gold mb-2">Cash Received</div>
             <div className="bg-bg-input border border-border-subtle rounded-md px-4 py-3 mb-3 text-right">
               <span className="font-mono tabular-nums text-2xl text-text-primary">
-                {activePayer.cashReceivedStr || '0'}
+                {formatIdr(received)}
               </span>
             </div>
             <Numpad

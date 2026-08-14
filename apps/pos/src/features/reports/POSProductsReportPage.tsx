@@ -31,7 +31,7 @@ function ProductsList({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsTopProducts(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading top products…</p>;
-  if (isError) return <p className="text-red text-sm">Failed to load top products.</p>;
+  if (isError) return <p className="text-red-as-text text-sm">Failed to load top products.</p>;
   if (!data || data.length === 0) {
     return (
       <EmptyState
