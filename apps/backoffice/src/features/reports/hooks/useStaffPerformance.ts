@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { asArray, asRecord, toNum, toStr } from '../utils/parse.js';
 
 export interface StaffPerformanceRow {
   staff_id:              string;
@@ -34,32 +35,36 @@ export function useStaffPerformance(params: UseStaffPerformanceParams) {
   return useQuery<StaffPerformanceData, Error>({
     queryKey: ['reports', 'staff-performance', params.start, params.end],
     queryFn:  async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_staff_performance_v1', {
+      const { data, error } = await supabase.rpc('get_staff_performance_v1', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (data ?? {}) as any;
+      const raw    = asRecord(data);
+      const period = asRecord(raw.period);
       return {
-        period:   raw.period   ?? { start: params.start, end: params.end },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        by_staff: ((raw.by_staff ?? []) as any[]).map((r) => ({
-          staff_id:              r.staff_id              ?? '',
-          staff_name:            r.staff_name            ?? '',
-          orders_served:         Number(r.orders_served         ?? 0),
-          revenue:               Number(r.revenue               ?? 0),
-          aov:                   Number(r.aov                   ?? 0),
-          items_per_order:       Number(r.items_per_order       ?? 0),
-          voids_count:           Number(r.voids_count           ?? 0),
-          voids_value:           Number(r.voids_value           ?? 0),
-          refunds_count:         Number(r.refunds_count         ?? 0),
-          refunds_value:         Number(r.refunds_value         ?? 0),
-          discount_orders_count: Number(r.discount_orders_count ?? 0),
-          discount_value:        Number(r.discount_value        ?? 0),
-          items_cancelled:       Number(r.items_cancelled       ?? 0),
-        })) as StaffPerformanceRow[],
+        period: {
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
+        },
+        by_staff: asArray(raw.by_staff).map((r): StaffPerformanceRow => {
+          const o = asRecord(r);
+          return {
+            staff_id:              toStr(o.staff_id),
+            staff_name:            toStr(o.staff_name, '—'),
+            orders_served:         toNum(o.orders_served),
+            revenue:               toNum(o.revenue),
+            aov:                   toNum(o.aov),
+            items_per_order:       toNum(o.items_per_order),
+            voids_count:           toNum(o.voids_count),
+            voids_value:           toNum(o.voids_value),
+            refunds_count:         toNum(o.refunds_count),
+            refunds_value:         toNum(o.refunds_value),
+            discount_orders_count: toNum(o.discount_orders_count),
+            discount_value:        toNum(o.discount_value),
+            items_cancelled:       toNum(o.items_cancelled),
+          };
+        }),
       } satisfies StaffPerformanceData;
     },
     enabled: Boolean(params.start && params.end),

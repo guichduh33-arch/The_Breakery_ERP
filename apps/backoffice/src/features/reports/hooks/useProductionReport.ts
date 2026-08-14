@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { asArray, asRecord, toNum, toStr } from '../utils/parse.js';
 
 export interface ProductionReportByProduct {
   product_id:   string;
@@ -43,19 +44,45 @@ export function useProductionReport(params: UseProductionReportParams) {
   return useQuery<ProductionReportData, Error>({
     queryKey: ['reports', 'production', params.start, params.end],
     queryFn:  async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_production_report_v1', {
+      const { data, error } = await supabase.rpc('get_production_report_v1', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (data ?? {}) as any;
+      const raw     = asRecord(data);
+      const period  = asRecord(raw.period);
+      const summary = asRecord(raw.summary);
       return {
-        period:     raw.period     ?? { start: params.start, end: params.end },
-        summary:    raw.summary    ?? { runs: 0, total_produced: 0, total_waste: 0, total_value: 0 },
-        by_product: raw.by_product ?? [],
-        by_day:     raw.by_day     ?? [],
+        period: {
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
+        },
+        summary: {
+          runs:           toNum(summary.runs),
+          total_produced: toNum(summary.total_produced),
+          total_waste:    toNum(summary.total_waste),
+          total_value:    toNum(summary.total_value),
+        },
+        by_product: asArray(raw.by_product).map((e): ProductionReportByProduct => {
+          const o = asRecord(e);
+          return {
+            product_id:   toStr(o.product_id),
+            product_name: toStr(o.product_name, '—'),
+            qty_produced: toNum(o.qty_produced),
+            qty_waste:    toNum(o.qty_waste),
+            value:        toNum(o.value),
+            runs:         toNum(o.runs),
+          };
+        }),
+        by_day: asArray(raw.by_day).map((e): ProductionReportByDay => {
+          const o = asRecord(e);
+          return {
+            date:         toStr(o.date),
+            qty_produced: toNum(o.qty_produced),
+            qty_waste:    toNum(o.qty_waste),
+            value:        toNum(o.value),
+          };
+        }),
       } satisfies ProductionReportData;
     },
     enabled: Boolean(params.start && params.end),

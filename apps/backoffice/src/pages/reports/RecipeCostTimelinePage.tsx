@@ -8,7 +8,6 @@
 
 import { useMemo, type JSX } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import {
   LineChart,
   Line,
@@ -20,7 +19,6 @@ import {
 } from 'recharts';
 import { toLocalDateStr, type CsvColumn } from '@breakery/domain';
 import { DEFAULT_TIMEZONE } from '@breakery/domain';
-import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -34,15 +32,9 @@ import {
   formatIdrPrecise,
 } from '@/features/reports/utils/chartColors.js';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
-
-interface TimelineRow {
-  product_id:     string;
-  product_name:   string;
-  version_number: number;
-  created_at:     string;
-  cost_per_unit:  number;
-  change_note:    string | null;
-}
+import {
+  useRecipeCostTimeline, type RecipeCostTimelineRow as TimelineRow,
+} from '@/features/reports/hooks/useRecipeCostHistory.js';
 
 interface TimelineRowWithDelta extends TimelineRow {
   delta_pct: number | null;
@@ -79,20 +71,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
   const [from, setFrom] = useUrlState('from', defaultStart());
   const [to,   setTo]   = useUrlState('to', toLocalDateStr(new Date()));
 
-  const q = useQuery<TimelineRow[]>({
-    queryKey: ['reports', 'recipe-cost', 'timeline', productId, from, to] as const,
-    enabled: productId !== '',
-    staleTime: 60_000,
-    queryFn: async (): Promise<TimelineRow[]> => {
-      const { data, error } = await supabase.rpc('recipe_cost_history_v1', {
-        p_from: from,
-        p_to: to,
-        p_product_id: productId,
-      });
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    },
-  });
+  const q = useRecipeCostTimeline(productId, from, to);
 
   const rows = useMemo(() => q.data ?? [], [q.data]);
   const productName = rows[0]?.product_name ?? 'Recipe Cost Timeline';

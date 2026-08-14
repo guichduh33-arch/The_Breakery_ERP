@@ -14,29 +14,16 @@
 //   internally and only multiplies by 100 at the display layer.
 
 import { useMemo, useState, type JSX } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC, type CsvColumn,
-} from '@breakery/domain';
+import { toLocalDateStr, type CsvColumn } from '@breakery/domain';
 import { Button, cn } from '@breakery/ui';
-import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-
-interface YieldRow {
-  id:                 string;
-  production_number:  string;
-  product_id:         string;
-  product_name:       string;
-  production_date:    string;
-  expected_yield_qty: number | null;
-  actual_yield_qty:   number | null;
-  yield_variance_pct: number | null;
-  yield_variance_reason: string | null;
-}
+import {
+  useProductionYield, YIELD_ROW_CAP, type YieldRow,
+} from '@/features/reports/hooks/useProductionYield.js';
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -68,66 +55,6 @@ const YIELD_CSV_COLUMNS: CsvColumn<YieldRow>[] = [
   { header: 'yield_variance_pct',   accessor: (r) => r.yield_variance_pct === null ? null : (r.yield_variance_pct * 100).toFixed(4) },
   { header: 'yield_variance_reason', accessor: (r) => r.yield_variance_reason },
 ];
-
-/** Server-side row cap — surfaced to the user via `truncated`. */
-const YIELD_ROW_CAP = 1000;
-
-interface YieldResult {
-  rows:      YieldRow[];
-  truncated: boolean;
-}
-
-function useProductionYield(start: string, end: string) {
-  return useQuery<YieldResult>({
-    queryKey: ['reports', 'production-yield', start, end] as const,
-    staleTime: 60_000,
-    queryFn: async (): Promise<YieldResult> => {
-      // production_date is timestamptz. Audit R-03 : les bornes étaient écrites
-      // `${start}T00:00:00Z` / `${end}T23:59:59Z`, donc en UTC, alors que
-      // `start`/`end` sont des dates MÉTIER (Asia/Makassar, UTC+8). La fenêtre
-      // était décalée de 8 h dans les deux sens. On passe par les helpers du
-      // domaine, qui résolvent le fuseau.
-      const startTs = toLocalDayStartUTC(start).toISOString();
-      const endTs   = toLocalDayEndUTC(end).toISOString();
-      const { data, error } = await supabase
-        .from('production_records')
-        .select('id, production_number, product_id, production_date, expected_yield_qty, actual_yield_qty, yield_variance_pct, yield_variance_reason')
-        .gte('production_date', startTs)
-        .lte('production_date', endTs)
-        .is('reverted_at', null)
-        .order('production_date', { ascending: false })
-        .limit(YIELD_ROW_CAP);
-      if (error) throw error;
-      const rows = data ?? [];
-
-      const productIds = Array.from(new Set(rows.map((r) => r.product_id)));
-      const nameById: Record<string, string> = {};
-      if (productIds.length > 0) {
-        const { data: prods, error: pe } = await supabase
-          .from('products')
-          .select('id, name')
-          .in('id', productIds);
-        if (pe) throw pe;
-        for (const p of prods ?? []) nameById[p.id] = p.name;
-      }
-
-      return {
-        rows: rows.map((r): YieldRow => ({
-          id: r.id,
-          production_number: r.production_number,
-          product_id: r.product_id,
-          product_name: nameById[r.product_id] ?? '—',
-          production_date: r.production_date,
-          expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
-          actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
-          yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
-          yield_variance_reason: r.yield_variance_reason,
-        })),
-        truncated: rows.length >= YIELD_ROW_CAP,
-      };
-    },
-  });
-}
 
 interface TrendRow {
   product_id:   string;

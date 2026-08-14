@@ -10,25 +10,16 @@
 
 import { useMemo, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { toLocalDateStr, type CsvColumn } from '@breakery/domain';
-import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { formatIdrPrecise } from '@/features/reports/utils/chartColors.js';
-
-interface OverviewRow {
-  product_id:    string;
-  product_name:  string;
-  cost_per_unit: number | null; // current cost (≤ p_to)
-  baseline_cost: number | null;
-  delta_pct:     number | null;
-  change_count:  number;
-  created_at:    string | null; // last_change_date in overview mode
-}
+import {
+  useRecipeCostOverview, type RecipeCostOverviewRow as OverviewRow,
+} from '@/features/reports/hooks/useRecipeCostHistory.js';
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -63,19 +54,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
-  const q = useQuery<OverviewRow[]>({
-    queryKey: ['reports', 'recipe-cost', 'overview', start, end] as const,
-    staleTime: 60_000,
-    queryFn: async (): Promise<OverviewRow[]> => {
-      const { data, error } = await supabase.rpc('recipe_cost_history_v1', {
-        p_from: start,
-        p_to: end,
-        // omit p_product_id → PostgreSQL DEFAULT NULL → overview mode
-      });
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    },
-  });
+  const q = useRecipeCostOverview(start, end);
 
   /** Sort by |delta_pct| DESC (D7). Non-null deltas first; NULLs last. */
   const rows = useMemo<OverviewRow[]>(() => {

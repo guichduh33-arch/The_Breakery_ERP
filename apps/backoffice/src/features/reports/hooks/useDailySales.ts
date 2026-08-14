@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { asArray, asRecord, toNum, toStr } from '../utils/parse.js';
 
 export interface DailySalesRow {
   date:        string;
@@ -36,26 +37,37 @@ export function useDailySales(params: UseDailySalesParams) {
   return useQuery<DailySalesData, Error>({
     queryKey: ['reports', 'daily-sales', params.start, params.end],
     queryFn:  async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_daily_sales_v1', {
+      const { data, error } = await supabase.rpc('get_daily_sales_v1', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (data ?? {}) as any;
+      const raw     = asRecord(data);
+      const period  = asRecord(raw.period);
+      const summary = asRecord(raw.summary);
       return {
-        period:  raw.period  ?? { start: params.start, end: params.end },
-        summary: raw.summary ?? { total: 0, order_count: 0, aov: 0, refund_total: 0, net: 0 },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        by_day:  ((raw.by_day ?? []) as any[]).map((r) => ({
-          date:        r.date,
-          order_count: Number(r.order_count ?? 0),
-          gross:       Number(r.gross       ?? 0),
-          refunds:     Number(r.refunds     ?? 0),
-          net:         Number(r.net         ?? 0),
-          aov:         Number(r.aov         ?? 0),
-        })) as DailySalesRow[],
+        period: {
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
+        },
+        summary: {
+          total:        toNum(summary.total),
+          order_count:  toNum(summary.order_count),
+          aov:          toNum(summary.aov),
+          refund_total: toNum(summary.refund_total),
+          net:          toNum(summary.net),
+        },
+        by_day: asArray(raw.by_day).map((r): DailySalesRow => {
+          const o = asRecord(r);
+          return {
+            date:        toStr(o.date),
+            order_count: toNum(o.order_count),
+            gross:       toNum(o.gross),
+            refunds:     toNum(o.refunds),
+            net:         toNum(o.net),
+            aov:         toNum(o.aov),
+          };
+        }),
       } satisfies DailySalesData;
     },
     enabled: Boolean(params.start && params.end),
