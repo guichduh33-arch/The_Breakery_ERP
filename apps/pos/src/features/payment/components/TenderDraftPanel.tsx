@@ -38,9 +38,11 @@ export function TenderDraftPanel({
         <SectionLabel as="div" className="text-gold mb-2 text-center">
           Enter Amount
         </SectionLabel>
+        {/* Critique run 3 (résiduel du lot 4) — saisie formatée dès la frappe,
+            comme OpenShiftModal / CashInOutModal / PerPayerCashStep. */}
         <div className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
           <span className="font-mono tabular-nums text-3xl text-text-primary">
-            Rp {cashReceivedStr || '0'}
+            {formatIdr(Number(cashReceivedStr || '0'))}
           </span>
         </div>
         {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
