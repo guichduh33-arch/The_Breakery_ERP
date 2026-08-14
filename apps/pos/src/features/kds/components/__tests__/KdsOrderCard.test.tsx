@@ -172,7 +172,11 @@ describe('KdsOrderCard', () => {
     const urgCard = screen.getByText('#A-003').closest('article');
     expect(urgCard?.getAttribute('data-age-band')).toBe('urgent');
     expect(urgCard?.className).toMatch(/border-red/);
-    expect(urgCard?.className).toMatch(/animate-pulse/);
+    // Lot 5 — la pulsation vit sur un overlay bordure-seule : le contenu de
+    // la carte ne descend plus sous le contraste au creux de l'animation.
+    expect(urgCard?.className).not.toMatch(/animate-pulse/);
+    const pulseOverlay = urgCard?.querySelector('div[aria-hidden]');
+    expect(pulseOverlay?.className).toMatch(/animate-pulse/);
   });
 
   it('shows a Start CTA for a pending item and a Cancelled badge (no CTA) for a cancelled item', () => {

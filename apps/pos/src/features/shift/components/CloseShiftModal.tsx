@@ -80,6 +80,9 @@ export function CloseShiftModal({
   // a toast with no field to fill.
   const [serverPinRequired, setServerPinRequired] = useState(false);
   const [serverNoteRequired, setServerNoteRequired] = useState(false);
+  // Lot 2 harden — l'échec serveur ne sortait qu'en toast (4 s) : il vit
+  // aussi inline, au-dessus des boutons (WCAG 3.3.1).
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const closeMut = useCloseShift();
   const loginUsers = useLoginUsers();
   const denomEnabled = useDenominationCountEnabled();
@@ -141,6 +144,7 @@ export function CloseShiftModal({
       toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
+    setSubmitError(null);
     try {
       const payload: {
         session_id: string;
@@ -181,6 +185,7 @@ export function CloseShiftModal({
       // resubmit instead of looping on a toast.
       if (msg.includes('Manager approval is required')) setServerPinRequired(true);
       if (msg.includes('A note is required')) setServerNoteRequired(true);
+      setSubmitError(msg);
       toast.error(msg);
     }
   }
@@ -289,6 +294,7 @@ export function CloseShiftModal({
               data-vkp="numeric"
               type="text"
               inputMode="numeric"
+              aria-required="true"
               placeholder="0"
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
               value={qrisStr}
@@ -307,6 +313,7 @@ export function CloseShiftModal({
               data-vkp="numeric"
               type="text"
               inputMode="numeric"
+              aria-required="true"
               placeholder="0"
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
               value={cardStr}
@@ -330,9 +337,11 @@ export function CloseShiftModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add notes..."
+              aria-invalid={noteRequired}
+              {...(noteRequired ? { 'aria-describedby': 'close-notes-error' } : {})}
             />
             {noteRequired && (
-              <p className="text-xs text-danger" role="alert">
+              <p id="close-notes-error" className="text-xs text-danger" role="alert">
                 Variance above threshold — a note explaining the difference is required.
               </p>
             )}
@@ -352,6 +361,8 @@ export function CloseShiftModal({
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
               value={approverId}
               onChange={(e) => setApproverId(e.target.value)}
+              aria-invalid={approverId === ''}
+              {...(pinIncomplete ? { 'aria-describedby': 'approver-error' } : {})}
             >
               <option value="">Select manager…</option>
               {approvers.map((u) => (
@@ -371,15 +382,22 @@ export function CloseShiftModal({
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold"
               value={managerPin}
               onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              aria-invalid={!/^\d{6}$/.test(managerPin)}
+              {...(pinIncomplete ? { 'aria-describedby': 'approver-error' } : {})}
             />
             {pinIncomplete && (
-              <p className="text-xs text-danger" role="alert">
+              <p id="approver-error" className="text-xs text-danger" role="alert">
                 Select the approving manager and enter their 6-digit PIN.
               </p>
             )}
           </section>
         )}
 
+        {submitError && (
+          <p role="alert" className="text-xs text-danger">
+            {submitError}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3">
           {step === 'count' ? (
             <>

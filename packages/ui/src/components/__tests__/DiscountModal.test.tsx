@@ -25,8 +25,8 @@ describe('DiscountModal', () => {
   it('renders header and type toggle when open', () => {
     render(<DiscountModal {...baseProps} />);
     expect(screen.getByRole('heading', { name: 'Apply discount' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '%' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'IDR' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '%' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'IDR' })).toBeInTheDocument();
   });
 
   it('renders nothing when closed', () => {
@@ -36,14 +36,14 @@ describe('DiscountModal', () => {
 
   it('tab toggle switches from % to IDR', () => {
     render(<DiscountModal {...baseProps} />);
-    const pctTab = screen.getByRole('tab', { name: '%' });
-    const idrTab = screen.getByRole('tab', { name: 'IDR' });
+    const pctTab = screen.getByRole('button', { name: '%' });
+    const idrTab = screen.getByRole('button', { name: 'IDR' });
     // Initially % is active
-    expect(pctTab).toHaveAttribute('aria-selected', 'true');
+    expect(pctTab).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(idrTab);
     // After click IDR should be active
-    expect(idrTab).toHaveAttribute('aria-selected', 'true');
-    expect(pctTab).toHaveAttribute('aria-selected', 'false');
+    expect(idrTab).toHaveAttribute('aria-pressed', 'true');
+    expect(pctTab).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('numpad input updates value display', () => {
@@ -55,7 +55,7 @@ describe('DiscountModal', () => {
 
   it('numpad input in IDR mode shows the formatIdr display (Rp prefix)', () => {
     render(<DiscountModal {...baseProps} />);
-    fireEvent.click(screen.getByRole('tab', { name: 'IDR' }));
+    fireEvent.click(screen.getByRole('button', { name: 'IDR' }));
     pressKey('5');
     pressKey('0');
     pressKey('0');

@@ -131,7 +131,7 @@ function HeldOrderCard({
             onClick={onRestore}
             className={cn(
               'h-10 px-4 inline-flex items-center justify-center gap-2 rounded-md',
-              'bg-gold hover:bg-gold-hover text-bg-base font-bold uppercase tracking-widest text-xs',
+              'bg-gold hover:bg-gold-hover text-gold-fg font-bold uppercase tracking-widest text-xs',
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
             )}
@@ -262,7 +262,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                   onClick={() => { void refetch(); }}
                   className={cn(
                     'mt-1 h-11 px-5 inline-flex items-center justify-center gap-2 rounded-md',
-                    'bg-gold hover:bg-gold-hover text-bg-base font-bold uppercase tracking-widest text-xs',
+                    'bg-gold hover:bg-gold-hover text-gold-fg font-bold uppercase tracking-widest text-xs',
                     'transition-colors duration-fast motion-reduce:transition-none',
                     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                   )}
@@ -317,14 +317,16 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
             <button
               type="button"
               onClick={() => setConfirmRow(null)}
-              className="h-10 px-4 rounded-md border border-border-subtle bg-bg-overlay text-text-primary text-sm font-semibold hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="min-h-touch-min px-4 rounded-md border border-border-subtle bg-bg-overlay text-text-primary text-sm font-semibold hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Cancel
             </button>
+            {/* Critique run 4 lot 3 — 40 px sur une action « cannot be undone » :
+                remontés au plancher tactile de 44. */}
             <button
               type="button"
               onClick={handleConfirmReplace}
-              className="h-10 px-4 rounded-md bg-gold hover:bg-gold-hover text-bg-base text-sm font-bold uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="min-h-touch-min px-4 rounded-md bg-gold hover:bg-gold-hover text-gold-fg text-sm font-bold uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Replace
             </button>

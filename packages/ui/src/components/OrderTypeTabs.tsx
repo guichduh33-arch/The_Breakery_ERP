@@ -22,13 +22,16 @@ function OrderTypeTabsInner({ value, onChange }: OrderTypeTabsProps): JSX.Elemen
     [onChange],
   );
 
+  // Critique run 4 lot 6 (harden) — ARIA honnête : le tablist promettait une
+  // navigation aux flèches qu'aucun onKeyDown ne sert ; groupe de boutons à
+  // bascule aria-pressed (WCAG 2.1.1/4.1.2).
   return (
-    <div role="tablist" className="grid grid-cols-3 gap-1 p-1 bg-bg-input rounded-md">
+    <div role="group" aria-label="Order type" className="grid grid-cols-3 gap-1 p-1 bg-bg-input rounded-md">
       {TYPES.map((t) => (
         <button
           key={t.value}
-          role="tab"
-          aria-selected={value === t.value}
+          type="button"
+          aria-pressed={value === t.value}
           onClick={() => handleSelect(t.value)}
           className={cn(
             'h-10 rounded-sm uppercase text-xs tracking-wide font-semibold transition-colors',

@@ -95,7 +95,7 @@ describe('Discount smoke — cart discount with PIN guard', () => {
 
     // Open discount modal via the bottom-bar More menu
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
+    fireEvent.click(screen.getByRole('button', { name: /apply discount/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe('Discount smoke — cart discount with PIN guard', () => {
     render(wrapper(<BottomActionBar />));
 
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
+    fireEvent.click(screen.getByRole('button', { name: /apply discount/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();
@@ -181,7 +181,7 @@ describe('Discount smoke — cart discount with PIN guard', () => {
     render(wrapper(<BottomActionBar />));
 
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
+    fireEvent.click(screen.getByRole('button', { name: /apply discount/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();

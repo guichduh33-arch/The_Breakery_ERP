@@ -43,6 +43,8 @@ import {
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { useShiftStore } from '@/stores/shiftStore';
+import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
@@ -67,16 +69,28 @@ const GHOST_BTN =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:opacity-50 disabled:pointer-events-none';
 
+// Critique run 4 lot 3 — h-10 (40 px) était sous le plancher tactile de 44,
+// et ce menu porte « Void order ».
 const MENU_ITEM =
-  'w-full flex items-center gap-3 px-3 h-10 text-sm text-text-primary hover:bg-bg-input ' +
+  'w-full flex items-center gap-3 px-3 h-11 text-sm text-text-primary hover:bg-bg-input ' +
   'disabled:opacity-50 disabled:pointer-events-none rounded-md transition-colors';
 
 interface BottomActionBarProps {
   /** Opens the customer search/attach modal (owned by the POS shell). */
   onOpenCustomerSearch?: () => void;
+  /**
+   * Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Ouvre le
+   * formulaire d'ouverture de session (possédé par le shell POS, comme pour le
+   * terminal de paiement). Les deux gestes qui ENGAGENT — encaisser, envoyer en
+   * cuisine — y mènent tant qu'aucune session n'est ouverte.
+   */
+  onOpenShift?: () => void;
 }
 
-export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps): JSX.Element {
+export function BottomActionBar({
+  onOpenCustomerSearch,
+  onOpenShift,
+}: BottomActionBarProps): JSX.Element {
   const cart = useCartStore((s) => s.cart);
   const lockedItemIds = useCartStore((s) => s.lockedItemIds);
   const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
@@ -87,6 +101,14 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   const heldCount = useHeldOrdersQuery().data?.length ?? 0;
   const holdFired = useHoldFiredOrder();
+  // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Même source
+  // que le filet client de useCheckout (`no_open_shift` sur useShiftStore) :
+  // la garde ne peut donc jamais contredire ce que le money-path fera.
+  // useCurrentShift ne sert qu'à distinguer « pas de session » de « on ne sait
+  // pas encore » — pendant le vol de la requête, on n'accuse pas.
+  const { isLoading: shiftLoading } = useCurrentShift();
+  const currentShift = useShiftStore((s) => s.current);
+  const needsShift = !shiftLoading && !currentShift;
   // Fiche 02 D2.5 — a dine-in order can be paid directly without a fire; the
   // checkout CTA carries the same mandatory-table guard as Send to Kitchen.
   const checkoutTableGuard = useDineInTableGuard({ onSelected: () => openPayment() });
@@ -169,6 +191,23 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     }
   }
 
+  // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Composer une
+  // commande reste libre pendant que le fond de caisse se compte ; le geste qui
+  // ENGAGE mène à l'ouverture de session au lieu d'ouvrir le terminal pour
+  // échouer sur `no_open_shift` au bout du parcours. Ordre imposé : la garde de
+  // session passe AVANT la garde de table (fiche 02 D2.5) — faire choisir une
+  // table pour une vente qui ne peut pas aboutir serait un détour inutile. La
+  // reprise du plan de salle (`onSelected`) n'est atteignable qu'une fois cette
+  // garde franchie, elle n'a donc pas à la refaire.
+  function handleCheckout(): void {
+    if (needsShift) {
+      toast.info('No shift open — opening the shift form.');
+      onOpenShift?.();
+      return;
+    }
+    if (checkoutTableGuard.ensureTable()) openPayment();
+  }
+
   // Void Order (owner decision 2026-07-10) — lives under "More" and ALWAYS
   // requires a manager PIN + a mandatory reason, whether or not anything was
   // fired. Accidental voids become impossible and every void is attributable.
@@ -220,17 +259,26 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           right edge — this is what fixes the Checkout/total truncation (#14):
           the group is `min-w-0 flex-wrap`, the validation pair is `shrink-0`. */}
       <div className="flex flex-wrap items-center gap-2 min-w-0 max-md:w-full">
+        {/* Critique run 4 lot 5 — même contrat que Hold : indisponible ≠
+            disabled. Un bouton mort au doigt n'explique rien ; celui-ci reste
+            tapable et enseigne le parcours quand la liste est vide. */}
         <button
           type="button"
-          className={GHOST_BTN}
-          onClick={() => setHeldOpen(true)}
-          disabled={heldCount === 0}
+          className={`${GHOST_BTN} ${heldCount === 0 ? 'opacity-50' : ''}`}
+          aria-disabled={heldCount === 0}
+          onClick={() => {
+            if (heldCount === 0) {
+              toast.info('No held orders — send an order to the kitchen, then tap Hold to park it here.');
+              return;
+            }
+            setHeldOpen(true);
+          }}
         >
           <Clock className="h-4 w-4 text-gold" aria-hidden />
           <span>Held Orders</span>
           {heldCount > 0 && (
             <span
-              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
+              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
               aria-label={`${heldCount} held order${heldCount === 1 ? '' : 's'}`}
             >
               {heldCount}
@@ -286,7 +334,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           <button
             type="button"
             className={GHOST_BTN}
-            aria-haspopup="menu"
             aria-expanded={moreOpen}
             onClick={() => setMoreOpen((o) => !o)}
           >
@@ -294,7 +341,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             <span>More</span>
             {pendingTablet > 0 && (
               <span
-                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
+                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
                 aria-label={`${pendingTablet} pending tablet order${pendingTablet === 1 ? '' : 's'}`}
               >
                 {pendingTablet}
@@ -302,8 +349,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             )}
           </button>
           {moreOpen && (
+            /* Critique run 4 lot 2 (harden) — role=menu promettait flèches +
+               Escape (WCAG 4.1.2) ; un groupe de boutons dit ce que le clavier
+               sait faire : Tab + Enter. */
             <div
-              role="menu"
+              role="group"
+              aria-label="More actions"
               className="absolute bottom-full left-0 mb-2 w-60 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
             >
               {/* Self-contained buttons restyled as menu rows (own their modals). */}
@@ -311,7 +362,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               <PrintBillButton variant="ghost" className={cn(MENU_ITEM, 'justify-start')} />
               <button
                 type="button"
-                role="menuitem"
                 className={MENU_ITEM}
                 disabled={!hasItems}
                 onClick={() => {
@@ -325,7 +375,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               {attachedCustomer && (
                 <button
                   type="button"
-                  role="menuitem"
                   className={MENU_ITEM}
                   onClick={() => {
                     setMoreOpen(false);
@@ -340,7 +389,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               {/* Void order — destructive, under More, always PIN + reason. */}
               <button
                 type="button"
-                role="menuitem"
                 className={cn(MENU_ITEM, 'text-red-as-text hover:bg-red-soft')}
                 disabled={!hasItems}
                 onClick={() => {
@@ -375,6 +423,9 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <SendToKitchenButton
           variant="outlineGold"
           className="px-4 rounded-md text-sm font-bold uppercase tracking-wide"
+          // Critique run 4 lot 8 — l'envoi en cuisine engage autant que
+          // l'encaissement : même issue, le formulaire d'ouverture de session.
+          {...(onOpenShift ? { onRequireShift: onOpenShift } : {})}
         />
 
         {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
@@ -385,8 +436,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           variant="gold"
           size="lg"
           className="shrink-0 px-7 gap-2.5 text-base font-bold uppercase tracking-wide active:bg-gold-pressed max-md:px-4"
-          onClick={() => { if (checkoutTableGuard.ensureTable()) openPayment(); }}
+          onClick={handleCheckout}
           disabled={!hasItems}
+          // Tapable-et-explique : sans session le bouton reste vivant et MÈNE à
+          // l'ouverture de session ; un `disabled` laisserait le caissier
+          // pousser un bouton mort sans jamais apprendre pourquoi.
+          aria-disabled={needsShift}
           data-testid="checkout-cta"
         >
           <CreditCard className="h-5 w-5" aria-hidden />

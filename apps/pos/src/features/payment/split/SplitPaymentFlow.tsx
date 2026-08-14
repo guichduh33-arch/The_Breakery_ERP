@@ -240,8 +240,10 @@ export function SplitPaymentFlow({
   // ─── Footer bar (varies per step) ──────────────────────────────────────
   const footer = useMemo(() => {
     if (step === 'assign_items') {
+      // Critique run 4 lot 1 (adapt) — Back + compteur + CTA dorée
+      // débordent des 390 px : wrap sous md, hauteur libérée.
       return (
-        <div className="h-16 px-6 flex items-center justify-between border-t border-border-subtle bg-bg-elevated">
+        <div className="min-h-16 px-6 flex max-md:flex-wrap items-center justify-between gap-x-3 max-md:gap-y-2 max-md:py-2 border-t border-border-subtle bg-bg-elevated">
           <Button variant="ghost" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden /> Back
           </Button>
@@ -263,7 +265,7 @@ export function SplitPaymentFlow({
     }
     if (step === 'per_payer_method' || step === 'per_payer_cash') {
       return (
-        <div className="h-16 px-6 flex items-center justify-between border-t border-border-subtle bg-bg-elevated">
+        <div className="min-h-16 px-6 flex max-md:flex-wrap items-center justify-between gap-x-3 max-md:gap-y-2 max-md:py-2 border-t border-border-subtle bg-bg-elevated">
           <Button variant="ghost" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden /> Back
           </Button>
@@ -286,7 +288,9 @@ export function SplitPaymentFlow({
   return (
     <div className="absolute inset-0 z-30 bg-bg-base flex flex-col" data-testid="split-payment-flow">
       {/* Header */}
-      <header className="h-14 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
+      {/* Critique run 4 lot 1 (adapt) — même régime que le header du
+          terminal : wrap sous md, la hauteur suit. */}
+      <header className="min-h-14 px-4 flex max-md:flex-wrap items-center justify-between gap-x-3 max-md:gap-y-1 max-md:py-2 border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <BrandMark size="sm" />
           <span className="text-text-secondary text-xs uppercase tracking-widest">Terminal</span>

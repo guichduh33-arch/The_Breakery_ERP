@@ -94,10 +94,12 @@ export function PerPayerMethodStep({
   const paid = payers.filter((p) => p.confirmed).reduce((s, p) => s + effectiveSubtotal(p, cartItems), 0);
   const remaining = Math.max(0, grandTotal - paid);
 
+  // Critique run 4 lot 1 (adapt) — colonne payeurs fixe 280 px intenable
+  // sous md : une colonne, le corps entier défile.
   return (
-    <div className="flex-1 grid grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-hidden" data-testid="split-per-payer-method">
+    <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden" data-testid="split-per-payer-method">
       {/* LEFT — payer list */}
-      <aside className="bg-bg-base p-5 overflow-y-auto">
+      <aside className="bg-bg-base p-5 overflow-y-auto max-md:overflow-visible">
         <h3 className="text-xs uppercase tracking-widest text-gold mb-4">Payers</h3>
         <ul className="space-y-2">
           {payers.map((p) => {
@@ -156,7 +158,7 @@ export function PerPayerMethodStep({
       </aside>
 
       {/* RIGHT — method picker for active payer */}
-      <section className="bg-bg-base p-8 overflow-y-auto flex flex-col">
+      <section className="bg-bg-base p-8 overflow-y-auto max-md:overflow-visible flex flex-col">
         <div className="text-center mb-6 space-y-2">
           <span
             className={cn(

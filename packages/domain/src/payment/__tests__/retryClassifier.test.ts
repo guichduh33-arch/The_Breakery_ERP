@@ -77,13 +77,13 @@ describe('classifyCheckoutError', () => {
       expect(classifyCheckoutError(err).userMessage).toMatch(/promotion/i);
     });
 
-    it('maps account_locked to the French lockout copy (S38 SEC-06)', () => {
+    it('maps account_locked to the lockout copy (S38 SEC-06)', () => {
       const err = Object.assign(new Error('account_locked'), {
         details: { error: 'account_locked' },
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/verrouillé 15 min/i);
+      expect(result.userMessage).toMatch(/locked for 15 minutes/i);
     });
 
     it('maps discount_requires_authorizer to a clear fatal message (S43 P0-1)', () => {
@@ -104,7 +104,7 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('discount_requires_authorizer');
     });
 
-    it('maps combo_invalid_component to friendly FR copy (S57 P2.1)', () => {
+    it('maps combo_invalid_component to friendly EN copy (S57 P2.1)', () => {
       const err = Object.assign(new Error('combo_invalid_component'), {
         details: { error: 'combo_invalid_component', message: 'combo_invalid_component: ...' },
         status: 409,
@@ -116,7 +116,7 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('combo_invalid_component');
     });
 
-    it('maps combo_group_violation to friendly FR copy (S57 P2.1)', () => {
+    it('maps combo_group_violation to friendly EN copy (S57 P2.1)', () => {
       const err = Object.assign(new Error('combo_group_violation'), {
         details: { error: 'combo_group_violation', message: 'combo_group_violation: ...' },
         status: 409,
@@ -127,7 +127,7 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('combo_group_violation');
     });
 
-    it('maps promo_cap_exceeded to friendly FR copy (S57 P2.1)', () => {
+    it('maps promo_cap_exceeded to friendly EN copy (S57 P2.1)', () => {
       const err = Object.assign(new Error('promo_cap_exceeded'), {
         details: { error: 'promo_cap_exceeded', message: 'promo_cap_exceeded: ...' },
         status: 409,
@@ -138,79 +138,79 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('promo_cap_exceeded');
     });
 
-    it('maps product_inactive to friendly FR copy (ADR-011 déc. 2)', () => {
+    it('maps product_inactive to friendly EN copy (ADR-011 déc. 2)', () => {
       const err = Object.assign(new Error('product_inactive'), {
         details: { error: 'product_inactive', message: 'product_inactive: Croissant est desactive' },
         status: 409,
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/désactivé/i);
+      expect(result.userMessage).toMatch(/deactivated/i);
       expect(result.userMessage).not.toContain('product_inactive');
     });
 
-    it('maps product_is_parent to friendly FR copy (ADR-011 déc. 2)', () => {
+    it('maps product_is_parent to friendly EN copy (ADR-011 déc. 2)', () => {
       const err = Object.assign(new Error('product_is_parent'), {
         details: { error: 'product_is_parent', message: 'product_is_parent: Croissant est un groupe de variantes' },
         status: 409,
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/variante/i);
+      expect(result.userMessage).toMatch(/variant/i);
       expect(result.userMessage).not.toContain('product_is_parent');
     });
 
-    it('maps credit_limit_exceeded to friendly FR copy (S62 D4)', () => {
+    it('maps credit_limit_exceeded to friendly EN copy (S62 D4)', () => {
       const err = Object.assign(new Error('credit_limit_exceeded'), {
         details: { error: 'credit_limit_exceeded', message: 'credit_limit_exceeded: {"allowed":false}' },
         status: 409,
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/plafond|crédit/i);
+      expect(result.userMessage).toMatch(/credit limit/i);
       expect(result.userMessage).not.toContain('credit_limit_exceeded');
     });
 
     // ADR-013 Lot 4 (D8) — chemin EF : codes nommés par process-payment.
-    it('maps store_credit_requires_customer to friendly FR copy (ADR-013 Lot 4)', () => {
+    it('maps store_credit_requires_customer to friendly EN copy (ADR-013 Lot 4)', () => {
       const err = Object.assign(new Error('store_credit_requires_customer'), {
         details: { error: 'store_credit_requires_customer' },
         status: 409,
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/avoir.*client rattaché/i);
+      expect(result.userMessage).toMatch(/store-credit.*customer/i);
     });
 
-    it('maps insufficient_store_credit to friendly FR copy (ADR-013 Lot 4)', () => {
+    it('maps insufficient_store_credit to friendly EN copy (ADR-013 Lot 4)', () => {
       const err = Object.assign(new Error('insufficient_store_credit'), {
         details: { error: 'insufficient_store_credit' },
         status: 409,
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/Solde d’avoir insuffisant/);
+      expect(result.userMessage).toMatch(/Store-credit balance is too low/);
     });
 
     // ADR-013 Lot 4 — chemin ardoise : pay_existing_order appelé en direct,
     // le PostgrestError expose le SQLSTATE brut dans details.code (pas d'EF).
-    it('maps raw SQLSTATE P0015 (pickup path) to the same FR copy', () => {
+    it('maps raw SQLSTATE P0015 (pickup path) to the same EN copy', () => {
       const err = Object.assign(new Error('Store credit payment requires a customer'), {
         details: { code: 'P0015', message: 'Store credit payment requires a customer' },
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/avoir.*client rattaché/i);
+      expect(result.userMessage).toMatch(/store-credit.*customer/i);
       expect(result.userMessage).not.toContain('p0015');
     });
 
-    it('maps raw SQLSTATE P0016 (pickup path) to the same FR copy', () => {
+    it('maps raw SQLSTATE P0016 (pickup path) to the same EN copy', () => {
       const err = Object.assign(new Error('Insufficient store credit (balance: 10000)'), {
         details: { code: 'P0016', message: 'Insufficient store credit (balance: 10000)' },
       });
       const result = classifyCheckoutError(err);
       expect(result.kind).toBe('fatal');
-      expect(result.userMessage).toMatch(/Solde d’avoir insuffisant/);
+      expect(result.userMessage).toMatch(/Store-credit balance is too low/);
       expect(result.userMessage).not.toContain('p0016');
     });
 

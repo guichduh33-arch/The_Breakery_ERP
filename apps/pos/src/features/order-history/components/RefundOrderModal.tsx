@@ -46,6 +46,9 @@ export function RefundOrderModal({
   const [tenderValues, setTenderValues] = useState<RefundTenderSplitterEntry[]>([]);
   const [reason, setReason] = useState('');
   const [pinKey, setPinKey] = useState(0);
+  // Lot 2 harden — le brouillon incomplet ne sortait qu'en toast au submit
+  // PIN : l'erreur vit désormais aussi inline, au pavé (WCAG 3.3.1).
+  const [pinError, setPinError] = useState<string | null>(null);
   // One UUID per "modal open session" — sticky across re-renders and retries.
   // Reset on close (dismiss or post-success) so the next open gets a fresh key.
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
@@ -121,6 +124,7 @@ export function RefundOrderModal({
     setSelectedQty(new Map());
     setTenderValues([]);
     setReason('');
+    setPinError(null);
     setPinKey((k) => k + 1);
     // Fresh UUID for the next open session (covers both dismiss-without-success and post-success close).
     idempotencyKeyRef.current = crypto.randomUUID();
@@ -129,14 +133,15 @@ export function RefundOrderModal({
 
   async function handlePinSubmit(pin: string): Promise<void> {
     if (!canSubmit) {
-      toast.error(
-        validation && !validation.ok
-          ? `${validation.error}${validation.detail ? ` — ${validation.detail}` : ''}`
-          : 'Refund draft incomplete',
-      );
+      const msg = validation && !validation.ok
+        ? `${validation.error}${validation.detail ? ` — ${validation.detail}` : ''}`
+        : 'Refund draft incomplete — pick lines, split tenders and give a reason.';
+      setPinError(msg);
+      toast.error(msg);
       setPinKey((k) => k + 1);
       return;
     }
+    setPinError(null);
     try {
       await onSubmit({
         lines: draftLines,
@@ -219,7 +224,7 @@ export function RefundOrderModal({
               onChange={setTenderValues}
             />
             {validation && !validation.ok && draftLines.length > 0 && draftTenders.length > 0 && (
-              <div className="mt-2 text-xs text-red-as-text">
+              <div role="alert" className="mt-2 text-xs text-red-as-text">
                 {validation.error}{validation.detail ? ` — ${validation.detail}` : ''}
               </div>
             )}
@@ -231,13 +236,18 @@ export function RefundOrderModal({
             </label>
             <Input
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => { setReason(e.target.value); setPinError(null); }}
               placeholder="e.g. spilled latte, customer return…"
               className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text')}
               disabled={isPending}
+              aria-invalid={reason.length > 0 && reason.trim().length < 3}
+              {...((reason.length > 0 && reason.trim().length < 3)
+                ? { 'aria-describedby': 'refund-reason-error' } : {})}
             />
             {reason.length > 0 && reason.trim().length < 3 && (
-              <div className="mt-1 text-xs text-red-as-text">Reason must be at least 3 characters</div>
+              <div id="refund-reason-error" role="alert" className="mt-1 text-xs text-red-as-text">
+                Reason must be at least 3 characters
+              </div>
             )}
           </section>
 
@@ -250,6 +260,7 @@ export function RefundOrderModal({
               maxLength={6}
               onSubmit={(pin) => { void handlePinSubmit(pin); }}
               isLoading={isPending || !canSubmit}
+              error={pinError}
             />
           </section>
         </div>

@@ -64,7 +64,7 @@ beforeEach(() => {
 describe('Void — under More, always reason + manager PIN', () => {
   function openVoid(): void {
     fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /void order/i }));
+    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
   }
 
   it('opens a reason+PIN alertdialog and does NOT wipe the cart yet', () => {

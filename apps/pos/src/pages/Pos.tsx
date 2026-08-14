@@ -188,6 +188,23 @@ export default function PosPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Critique run 4 lot 2 — vérité du poste : l'alerte « No shift »
+              se balaye, et sans rappel le caissier compose une commande
+              entière avant d'échouer au process. La pastille reste tant
+              qu'aucune session n'est ouverte, et elle EST le chemin de
+              récupération (tapable-et-explique, comme Hold). */}
+          {needsShift && (
+            <button
+              type="button"
+              data-testid="no-shift-pill"
+              // Review de pile — ne pas ré-armer l'alerte balayée : annuler la
+              // modale ne doit pas faire resurgir le plein-écran ShiftClosedState.
+              onClick={() => setOpenShiftOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-warning bg-warning-soft px-3 py-1 text-xs font-bold uppercase tracking-widest text-warning hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+            >
+              No shift · Open
+            </button>
+          )}
           {/* Régime offline ambiant (principe produit n°3) — le caissier ne doit
               pas découvrir la coupure en ouvrant le terminal de paiement, et une
               vente en file n'est pas une vente aboutie tant qu'elle n'est pas
@@ -237,8 +254,14 @@ export default function PosPage() {
         <ActiveOrderPanel onDetachCustomer={handleDetachCustomer} />
       </div>
 
-      {/* Global action bar — all order actions live here (full width). */}
-      <BottomActionBar onOpenCustomerSearch={() => setCustomerSearchOpen(true)} />
+      {/* Global action bar — all order actions live here (full width).
+          Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15) : la barre
+          reçoit le même chemin de récupération que le terminal de paiement,
+          pour ses deux gestes qui engagent (encaisser, envoyer en cuisine). */}
+      <BottomActionBar
+        onOpenCustomerSearch={() => setCustomerSearchOpen(true)}
+        onOpenShift={() => setOpenShiftOpen(true)}
+      />
 
       <SideMenuDrawer
         open={menuOpen}
@@ -290,7 +313,9 @@ export default function PosPage() {
           onClose={() => setCloseShiftOpen(false)}
         />
       )}
-      <PaymentTerminal />
+      <PaymentTerminal
+        onOpenShift={() => setOpenShiftOpen(true)}
+      />
       {/* Montage conditionnel : la modale s'abonne au realtime dès le mount —
           la monter fermée en permanence doublerait la souscription de la barre. */}
       {heldFromMenuOpen && (

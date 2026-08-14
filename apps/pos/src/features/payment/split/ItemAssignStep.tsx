@@ -78,10 +78,12 @@ export function ItemAssignStep({
   const activeSubtotal = payerSubtotal(activePayer, cartItems);
   const activeItemCount = activePayer.items.reduce((s, a) => s + a.quantity, 0);
 
+  // Critique run 4 lot 1 (adapt) — deux panneaux côte à côte illisibles
+  // sous md : une colonne, le corps entier défile.
   return (
-    <div className="flex-1 grid grid-cols-2 gap-px bg-border-subtle overflow-hidden" data-testid="split-item-assign">
+    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-px bg-border-subtle overflow-y-auto md:overflow-hidden" data-testid="split-item-assign">
       {/* LEFT — order items */}
-      <section className="bg-bg-base p-6 overflow-y-auto">
+      <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible">
         <div className="flex items-baseline justify-between mb-4">
           <h3 className="text-xs uppercase tracking-widest text-gold">Order Items</h3>
           <span className="text-xs text-text-secondary">Tap item to assign to selected payer</span>
@@ -175,7 +177,7 @@ export function ItemAssignStep({
       </section>
 
       {/* RIGHT — payer tabs + active payer items */}
-      <section className="bg-bg-base p-6 overflow-y-auto flex flex-col">
+      <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible flex flex-col">
         {/* Tabs */}
         <div className="flex flex-wrap items-center gap-3 border-b border-border-subtle pb-3 mb-4">
           {payers.map((p) => {

@@ -147,6 +147,6 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     });
     render(wrapper(<BottomActionBar onOpenCustomerSearch={vi.fn()} />));
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    expect(screen.getByRole('menuitem', { name: /redeem points/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /redeem points/i })).toBeInTheDocument();
   });
 });

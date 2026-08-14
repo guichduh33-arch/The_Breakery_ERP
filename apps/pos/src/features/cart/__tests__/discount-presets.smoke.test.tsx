@@ -82,7 +82,7 @@ describe('BottomActionBar — discount modal presets (S73 A5)', () => {
   it('discount modal shows the org presets', async () => {
     renderBar(); // helper existant, cart non vide
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
+    fireEvent.click(screen.getByRole('button', { name: /apply discount/i }));
     expect(await screen.findByTestId('discount-presets')).toBeInTheDocument();
   });
 });

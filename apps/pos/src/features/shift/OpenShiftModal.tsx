@@ -79,6 +79,9 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   const [notes, setNotes] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(false);
+  // Lot 2 harden — l'échec d'ouverture ne sortait qu'en toast (4 s) : il vit
+  // aussi inline, au-dessus de la CTA (WCAG 3.3.1).
+  const [submitError, setSubmitError] = useState<string | null>(null);
   // S67 (12 D2.3) — opt-in denomination grid, mirrors CloseShiftModal.
   const [denoms, setDenoms] = useState<Record<string, number>>({});
   const denomEnabled = useDenominationCountEnabled();
@@ -133,6 +136,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
 
   async function handleSubmit(): Promise<void> {
     if (amount <= 0) return;
+    setSubmitError(null);
     try {
       const mutInput: {
         opening_cash: number;
@@ -151,6 +155,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
       setNotes('');
       setDenoms({});
     } catch (err) {
+      setSubmitError('Failed to open shift — check the connection and try again.');
       toast.error('Failed to open shift');
       console.error(err);
     }
@@ -166,6 +171,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
       setAmountStr('');
       setNotes('');
       setPinError(null);
+      setSubmitError(null);
       setDenoms({});
       onClose();
     }
@@ -337,6 +343,11 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
               />
             </section>
 
+            {submitError && (
+              <p role="alert" className="text-xs text-red-as-text text-center">
+                {submitError}
+              </p>
+            )}
             <div className="flex flex-col gap-2 pt-2">
               <Button
                 variant="ghost"

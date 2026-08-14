@@ -225,7 +225,7 @@ function TopProducts({ period }: { period: ReportsPeriod }): JSX.Element {
                 className={cn(
                   'h-6 w-6 inline-flex items-center justify-center rounded-md text-xs font-bold shrink-0',
                   i === 0
-                    ? 'bg-gold text-bg-base'
+                    ? 'bg-gold text-gold-fg'
                     : 'bg-bg-overlay border border-border-subtle text-text-secondary',
                 )}
               >

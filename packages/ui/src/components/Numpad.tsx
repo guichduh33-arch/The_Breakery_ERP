@@ -47,7 +47,9 @@ function NumpadInner({ value, onChange, maxLength, className }: NumpadProps): JS
             onClick={() => handle(k)}
             aria-label={ariaLabel}
             className={cn(
-              'h-touch-comfy rounded-md text-2xl font-semibold transition-colors active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
+              // Critique run 4 lot 3 — la spec pavé de DESIGN.md est touch-large
+              // (80 px, « numpad-key ») ; 56 était le cran bouton, pas le cran pavé.
+              'h-touch-large rounded-md text-2xl font-semibold transition-colors active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
               // Keyboard focus ring on a money-path surface (design audit 2026-07-08, T5).
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
               // Only Clear ("C") is destructive-red; Backspace is neutral —

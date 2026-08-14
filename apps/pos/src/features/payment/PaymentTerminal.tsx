@@ -28,7 +28,13 @@ import { TenderDraftPanel } from './components/TenderDraftPanel';
 import { QuickPayRow } from './components/QuickPayRow';
 import { OrderSummaryPanel } from './components/OrderSummaryPanel';
 
-export function PaymentTerminal() {
+export interface PaymentTerminalProps {
+  /** Critique run 4 lot 2 — hand-off to the shift flow when a checkout dies
+   * on `no_open_shift` : the terminal closes and the OpenShiftModal opens. */
+  onOpenShift?: () => void;
+}
+
+export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
   // warm org config so SuccessModal's fire-once effect sees resolved values
   useOrgDisplaySettings();
   const {
@@ -82,7 +88,10 @@ export function PaymentTerminal() {
 
   return (
     <FullScreenModal open={isOpen} onOpenChange={close} accessibleTitle="Payment terminal">
-      <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
+      {/* Critique run 4 lot 1 (adapt) — sous md le groupe droit (cashier +
+          Back to Cart + X) déborde des 390 px : le header passe en wrap et
+          libère sa hauteur au lieu de pousser un scroll horizontal. */}
+      <header className="min-h-14 flex max-md:flex-wrap items-center justify-between gap-x-3 max-md:gap-y-1 max-md:py-2 px-6 border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <BrandMark size="sm" />
           <span className="text-text-secondary text-xs uppercase tracking-widest">Terminal</span>
@@ -98,7 +107,12 @@ export function PaymentTerminal() {
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-2 gap-px bg-border-subtle overflow-hidden">
+      {/* Critique run 4 lot 1 (adapt) — grid-cols-2 sans breakpoint : à 390 px
+          chaque colonne tombait à ~195 px et le pavé imbriqué à ~22 px par
+          touche (spec 80 px, WCAG 1.4.10). Sous md : une colonne, le corps
+          entier défile, les contrôles de paiement passent devant le
+          récapitulatif (le pouce atteint l'argent sans scroller le ticket). */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-px bg-border-subtle overflow-y-auto md:overflow-hidden">
         {/* LEFT — order summary */}
         <OrderSummaryPanel
           cart={cart}
@@ -108,7 +122,7 @@ export function PaymentTerminal() {
         />
 
         {/* RIGHT — payment controls */}
-        <section className="bg-bg-base p-6 overflow-y-auto">
+        <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible max-md:order-first">
           {/* ADR-015 — état hors-ligne : tous moyens sauf l'avoir, ou blocage. */}
           {offlineGate.offlineMode && (
             <div
@@ -173,6 +187,7 @@ export function PaymentTerminal() {
             checkoutPending={checkoutPending}
             onRetry={handleRetry}
             onDismissAlreadyPaid={handleDismissAlreadyPaid}
+            {...(onOpenShift ? { onOpenShift: () => { close(); onOpenShift(); } } : {})}
           />
 
           {/* Quick-pay row : prominent CASH EXACT (when fast-path-ready) + SPLIT BY ITEM */}

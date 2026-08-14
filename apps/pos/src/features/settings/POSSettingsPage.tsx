@@ -165,7 +165,7 @@ function SubTabButton({
       className={cn(
         'inline-flex items-center gap-2 px-3 h-8 rounded-md text-xs font-semibold',
         'transition-colors motion-reduce:transition-none',
-        active ? 'bg-gold text-bg-base' : 'text-text-secondary hover:text-text-primary',
+        active ? 'bg-gold text-gold-fg' : 'text-text-secondary hover:text-text-primary',
       )}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />

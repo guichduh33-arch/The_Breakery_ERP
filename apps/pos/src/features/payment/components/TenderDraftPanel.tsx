@@ -52,7 +52,10 @@ export function TenderDraftPanel({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Critique run 4 lot 1 (adapt) — la paire presets/pavé imbriquée dans
+          la colonne droite du terminal tombait à ~90 px par sous-colonne à
+          390 px ; sous md elle s'empile, le pavé reprend la pleine largeur. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* AMOUNT RECEIVED preset grid */}
         <div>
           <SectionLabel as="div" className="text-gold mb-2">Amount Received</SectionLabel>
@@ -60,11 +63,13 @@ export function TenderDraftPanel({
             <button
               onClick={() => setCashReceivedStr(String(remaining))}
               className={cn(
-                'col-span-2 min-h-[44px] rounded-md py-2.5 text-xs font-bold uppercase tracking-widest border',
+                // Critique run 4 lot 3 — valider un montant = parcours d'argent :
+                // la Règle des 56 s'applique, 44 est le plancher du secondaire.
+                'col-span-2 min-h-touch-comfy rounded-md py-2.5 text-xs font-bold uppercase tracking-widest border',
                 'transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                 draftAmount === remaining
-                  ? 'bg-gold text-bg-base border-gold'
+                  ? 'bg-gold text-gold-fg border-gold'
                   : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
               )}
             >
@@ -74,7 +79,7 @@ export function TenderDraftPanel({
               <button
                 key={q}
                 onClick={() => setCashReceivedStr(String(q))}
-                className="min-h-[44px] rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                className="min-h-touch-comfy rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
                 {formatIdr(q)}
               </button>

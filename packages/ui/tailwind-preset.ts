@@ -91,7 +91,8 @@ const preset: Partial<Config> = {
           'on-fill': 'var(--red-on-fill)',
         },
         blue: { info: 'var(--blue-info)' },
-        amber: { warn: 'var(--amber-warn)' },
+        // `fg` = premier plan SUR l'aplat ambre, comme gold.fg / green.fg.
+        amber: { warn: 'var(--amber-warn)', fg: 'var(--amber-fg)' },
         backdrop: 'var(--backdrop)',
         // Semantic aliases (Session 13 / ui-steward batch 1) — components
         // express intent via these utilities, not raw palette names.

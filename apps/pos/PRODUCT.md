@@ -109,9 +109,11 @@ générique ne pourrait pas copier sans refaire le même travail :
   boîtier par poste, tiroir-caisse ouvert par impulsion sur l'imprimante de
   caisse, terminal de paiement carte/QRIS **doté de sa propre liaison** — le POS
   n'en pilote rien, il enregistre le règlement.
-- **Pas de session de caisse ouverte, pas de vente.** Tant que le fond de caisse
-  n'est pas compté et la session attribuée, la surface comptoir n'affiche que
-  l'ouverture de session.
+- **Pas de session de caisse ouverte, pas d'encaissement ni d'envoi en
+  cuisine** (décision du 2026-08-15). Composer une commande reste libre pendant
+  que le fond de caisse se compte ; les gestes qui engagent — encaisser,
+  envoyer en cuisine — mènent à l'ouverture de session tant qu'elle n'existe
+  pas, et le serveur refuse de toute façon une vente sans session.
 - Le back-office cohabite en permanence avec la caisse en service : ce qu'il
   modifie (prix, catalogue, réglages, droits) atterrit en moins de deux secondes
   sur un poste où quelqu'un encaisse.

@@ -163,16 +163,17 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
         </div>
 
         {/* Service-type tabs — frequent rush action: 44px touch targets on a
-            dedicated full-width row (was h-7/10px inline, below the 44px floor). */}
-        <div className="grid grid-cols-3 gap-1 p-1 bg-bg-input rounded-md" role="tablist" aria-label="Service type">
+            dedicated full-width row (was h-7/10px inline, below the 44px floor).
+            Critique run 4 lot 2 (harden) — tablist promettait les flèches ;
+            boutons à bascule aria-pressed, honnêtes au clavier. */}
+        <div className="grid grid-cols-3 gap-1 p-1 bg-bg-input rounded-md" role="group" aria-label="Service type">
           {SERVICE_TABS.map((tab) => {
             const active = cart.order_type === tab.value;
             return (
               <button
                 key={tab.value}
                 type="button"
-                role="tab"
-                aria-selected={active}
+                aria-pressed={active}
                 onClick={() => setOrderType(tab.value)}
                 className={cn(
                   'h-11 rounded text-sm font-semibold uppercase tracking-wide transition-colors',

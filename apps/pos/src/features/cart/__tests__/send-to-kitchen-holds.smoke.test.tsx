@@ -29,6 +29,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.f
 
 import { SendToKitchenButton } from '../SendToKitchenButton';
 import { useCartStore } from '@/stores/cartStore';
+import { useShiftStore } from '@/stores/shiftStore';
 
 function wrap(n: React.ReactElement) {
   return <QueryClientProvider client={new QueryClient()}>{n}</QueryClientProvider>;
@@ -36,6 +37,10 @@ function wrap(n: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15) : l'envoi en
+  // cuisine ne part plus sans session de caisse. Le scénario testé ici — parquer
+  // la commande APRÈS l'envoi — suppose une session ouverte (comme les fire-*).
+  useShiftStore.setState({ current: { id: 'sess-1', opened_at: '', opening_cash: 0 } });
   useCartStore.setState({
     cart: { items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30000, quantity: 1, modifiers: [] }], order_type: 'dine_in', tableNumber: 'T-01' },
     lockedItemIds: [], printedItemIds: [], attachedCustomer: null,

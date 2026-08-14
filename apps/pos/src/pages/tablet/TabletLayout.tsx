@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
+import { useEffect, type JSX } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
+import { toast } from 'sonner';
 import { MapPin, Wifi, WifiOff, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
@@ -11,6 +12,17 @@ import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
+
+function TabletAccessDenied(): JSX.Element {
+  useEffect(() => {
+    // id fixe : dédoublonne le double-mount de StrictMode en dev.
+    toast.error(
+      'Tablet ordering needs the waiter role or the sales permission — redirected to the POS.',
+      { id: 'tablet-access-denied' },
+    );
+  }, []);
+  return <Navigate to="/pos" replace />;
+}
 
 export default function TabletLayout(): JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -43,7 +55,10 @@ export default function TabletLayout(): JSX.Element {
 
   const canAccessTablet =
     user?.role_code === 'waiter' || permissions.includes('sales.create');
-  if (!canAccessTablet) return <Navigate to="/pos" replace />;
+  // Critique run 4 lot 4 (clarify) — l'éjection était silencieuse : l'écran
+  // changeait sans un mot, et l'utilisateur ne savait pas pourquoi ni quoi
+  // demander. Le toast nomme la cause et la destination.
+  if (!canAccessTablet) return <TabletAccessDenied />;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-bg-base">
@@ -109,7 +124,7 @@ export default function TabletLayout(): JSX.Element {
           Orders
           {orderCount > 0 && (
             <span
-              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
+              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
               aria-label={`${orderCount} order${orderCount === 1 ? '' : 's'}`}
             >
               {orderCount}

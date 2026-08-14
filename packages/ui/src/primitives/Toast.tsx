@@ -13,7 +13,7 @@ function Toaster({ ...props }: ToasterProps) {
           toast:
             'group toast group-[.toaster]:bg-bg-elevated group-[.toaster]:text-text-primary group-[.toaster]:border-border-subtle group-[.toaster]:shadow-md',
           description: 'group-[.toast]:text-text-secondary',
-          actionButton: 'group-[.toast]:bg-gold group-[.toast]:text-bg-base',
+          actionButton: 'group-[.toast]:bg-gold group-[.toast]:text-gold-fg',
           cancelButton: 'group-[.toast]:bg-bg-overlay group-[.toast]:text-text-muted',
         },
       }}

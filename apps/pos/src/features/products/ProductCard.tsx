@@ -71,7 +71,15 @@ function ProductCardImpl({
       onClick={() => !disabled && onSelect(product)}
       disabled={disabled}
       data-testid={`product-card-${product.id}`}
-      aria-label={`${product.name} — ${disabled && overlayLabel ? overlayLabel : 'tap to add'}`}
+      // Critique run 4 lot 5 — l'aria-label recomposé effaçait le PRIX, la
+      // valeur que la tuile promet de faire vérifier ; aria-labelledby recompose
+      // le nom + le prix (ou l'état sold-out) depuis les éléments visibles.
+      aria-labelledby={[
+        `pc-name-${product.id}`,
+        // Review de pile — pas de référence pendante : le prix n'existe que si
+        // !disabled, l'overlay que s'il est fourni ; sinon le nom seul suffit.
+        disabled ? (overlayLabel ? `pc-overlay-${product.id}` : null) : `pc-price-${product.id}`,
+      ].filter(Boolean).join(' ')}
       className={cn(
         'group relative bg-bg-elevated rounded-lg overflow-hidden border text-left',
         // Perf (P2) — no permanent `will-change`, it pins a compositor layer
@@ -114,7 +122,7 @@ function ProductCardImpl({
           <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5 z-10">
             {inCart && (
               <span
-                className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold tabular-nums shadow-md"
+                className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold tabular-nums shadow-md"
                 aria-label={`${cartQty} in cart`}
               >
                 {cartQty}
@@ -133,8 +141,10 @@ function ProductCardImpl({
             aria-label="Favourite"
             // `bg-bg-base` is a bare token (no alpha outside cat-*); `--backdrop`
             // is the design system's own pre-baked translucent dark scrim,
-            // exactly this "dim overlay on a photo" use case.
-            className="absolute top-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-full bg-backdrop backdrop-blur-sm z-10"
+            // exactly this "dim overlay on a photo" use case. Lot 5 : le
+            // backdrop-blur-sm coûtait une couche de compositing par tuile
+            // pour un flou invisible derrière une pastille de 28 px.
+            className="absolute top-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-full bg-backdrop z-10"
           >
             <Star className="h-4 w-4 fill-gold text-gold" aria-hidden />
           </span>
@@ -143,7 +153,10 @@ function ProductCardImpl({
         {/* Out-of-stock / disabled overlay — explicit and unmistakable. */}
         {overlayLabel && (
           <div className="absolute inset-0 grid place-items-center bg-backdrop z-20">
-            <span className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red-as-text shadow-lg">
+            <span
+              id={`pc-overlay-${product.id}`}
+              className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red-as-text shadow-lg"
+            >
               {overlayLabel}
             </span>
           </div>
@@ -159,6 +172,7 @@ function ProductCardImpl({
 
       <div className="px-2.5 py-2 space-y-0.5">
         <div
+          id={`pc-name-${product.id}`}
           className="text-sm leading-tight font-medium text-text-primary line-clamp-2 min-h-[2.4em]"
           title={product.name}
         >
@@ -167,11 +181,13 @@ function ProductCardImpl({
         {/* Price is the read-aloud, verified value (#8): at least as large as the
             name and bolder. Hidden on sold-out cards (they aren't priceable). */}
         {!disabled && (
-          <Currency
-            amount={product.retail_price}
-            emphasis="gold"
-            className="text-base font-mono font-bold tabular-nums"
-          />
+          <span id={`pc-price-${product.id}`}>
+            <Currency
+              amount={product.retail_price}
+              emphasis="gold"
+              className="text-base font-mono font-bold tabular-nums"
+            />
+          </span>
         )}
       </div>
     </button>

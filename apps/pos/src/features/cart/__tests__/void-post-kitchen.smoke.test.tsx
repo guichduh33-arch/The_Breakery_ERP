@@ -133,7 +133,7 @@ describe('BottomActionBar — Void Order post-kitchen routing (POS-06)', () => {
 
   function openVoid(): void {
     fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /void order/i }));
+    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
   }
 
   it('(b) counter cart with no server row: client-only void, no server call', async () => {

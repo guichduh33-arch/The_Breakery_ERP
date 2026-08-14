@@ -38,7 +38,9 @@ function NumpadPinInner({ onSubmit, maxLength = 6, isLoading, error }: NumpadPin
         ))}
       </div>
       <Numpad value={pin} onChange={setPin} maxLength={maxLength} />
-      {error && <p className="text-red text-sm text-center">{error}</p>}
+      {/* Lot 2 harden — role=alert pour l'annonce SR ; red-as-text, jamais
+          le rouge de remplissage en texte (Règle des Deux Rouges). */}
+      {error && <p role="alert" className="text-red-as-text text-sm text-center">{error}</p>}
       <div className="flex gap-3 justify-center">
         <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
         <Button

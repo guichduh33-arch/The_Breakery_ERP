@@ -248,11 +248,11 @@ describe('TabletOrderPage', () => {
     const dineIn = screen.getByTestId('tablet-order-type-dine-in');
     const takeOut = screen.getByTestId('tablet-order-type-take-out');
 
-    expect(dineIn).toHaveAttribute('aria-selected', 'true');
-    expect(takeOut).toHaveAttribute('aria-selected', 'false');
+    expect(dineIn).toHaveAttribute('aria-pressed', 'true');
+    expect(takeOut).toHaveAttribute('aria-pressed', 'false');
 
     fireEvent.click(takeOut);
     expect(useTabletCartStore.getState().orderType).toBe('take_out');
-    expect(takeOut).toHaveAttribute('aria-selected', 'true');
+    expect(takeOut).toHaveAttribute('aria-pressed', 'true');
   });
 });

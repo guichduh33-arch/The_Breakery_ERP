@@ -238,7 +238,7 @@ export function ModifierModal({
                             aria-hidden
                             className={cn(
                               'absolute top-1.5 right-1.5 h-3.5 w-3.5 rounded-sm border-2 grid place-items-center',
-                              selected ? 'border-gold bg-gold text-bg-base' : 'border-border-strong bg-transparent',
+                              selected ? 'border-gold bg-gold text-gold-fg' : 'border-border-strong bg-transparent',
                             )}
                           >
                             {selected ? <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden /> : null}
@@ -289,7 +289,7 @@ export function ModifierModal({
               {/* Séparateur purement visuel — hors du nom accessible, qui
                   lisait « Add to Cart · » avec un point pendouillant. */}
               <span aria-hidden>·</span>
-              <Currency amount={total} className="text-bg-base" />
+              <Currency amount={total} className="text-gold-fg" />
             </span>
           </Button>
         </footer>

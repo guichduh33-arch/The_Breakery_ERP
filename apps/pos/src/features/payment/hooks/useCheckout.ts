@@ -62,7 +62,13 @@ export function useCheckout() {
 
   return useMutation({
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
-      if (!sessionId) throw new Error('no_open_shift');
+      // Critique run 4 lot 2 — details.error porte le code jusqu'au
+      // classifier ; sans lui, la bannière fatale affichait le code brut.
+      if (!sessionId) {
+        throw Object.assign(new Error('no_open_shift'), {
+          details: { error: 'no_open_shift' },
+        });
+      }
       const { useCartStore } = await import('@/stores/cartStore');
       const cartState = useCartStore.getState();
       const { customerId, loyaltyPointsToRedeem, tableNumber, cartDiscount } = cartState.cart;

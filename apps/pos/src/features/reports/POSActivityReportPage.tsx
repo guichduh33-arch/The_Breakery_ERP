@@ -47,14 +47,16 @@ export default function POSActivityReportPage(): JSX.Element {
     <POSReportsLayout activeTab="activity">
       {(period) => (
         <div className="space-y-4">
+          {/* Critique run 4 lot 6 (harden) — ARIA honnête : le tablist promettait
+              une navigation aux flèches qu'aucun onKeyDown ne sert ; groupe de
+              boutons à bascule aria-pressed (WCAG 2.1.1/4.1.2). */}
           {canAudit ? (
-            <div role="tablist" aria-label="Activity view" className="inline-flex rounded-lg border border-border-subtle bg-bg-elevated p-0.5">
+            <div role="group" aria-label="Activity view" className="inline-flex rounded-lg border border-border-subtle bg-bg-elevated p-0.5">
               {(['sales', 'journal'] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
-                  role="tab"
-                  aria-selected={view === v}
+                  aria-pressed={view === v}
                   onClick={() => setView(v)}
                   className={cn(
                     'px-4 h-8 rounded-md text-xs font-semibold uppercase tracking-wider',
