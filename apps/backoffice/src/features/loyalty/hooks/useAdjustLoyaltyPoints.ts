@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/loyalty/hooks/useAdjustLoyaltyPoints.ts
 //
-// Calls adjust_loyalty_points RPC (session 12). Surfaces RPC errors as a
+// Calls adjust_loyalty_points_v2 RPC (session 12 ; v2 = ADR-020 déc. 6, le
+// geste écrit une ligne audit_logs serveur). Surfaces RPC errors as a
 // typed enum so the modal can map them to inline form errors.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,7 +46,7 @@ export function useAdjustLoyaltyPoints() {
   const qc = useQueryClient();
   return useMutation<AdjustLoyaltyPointsResult, AdjustError, AdjustLoyaltyPointsArgs>({
     mutationFn: async ({ customerId, delta, reason }) => {
-      const { data, error } = await supabase.rpc('adjust_loyalty_points', {
+      const { data, error } = await supabase.rpc('adjust_loyalty_points_v2', {
         p_customer_id: customerId, p_delta: delta, p_reason: reason,
       });
       if (error) throw new AdjustError(classify(error.message), error.message);
