@@ -1,6 +1,6 @@
 // apps/pos/src/features/payment/components/paymentMethods.ts
 import {
-  ArrowRightLeft, Banknote, CircleDollarSign, CreditCard, QrCode, Smartphone, Wallet,
+  ArrowRightLeft, Banknote, Coins, CreditCard, HandCoins, QrCode, Smartphone, SmartphoneNfc, Wallet,
 } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
@@ -24,9 +24,13 @@ export const METHODS: MethodMeta[] = [
   { value: 'transfer',     label: 'Transfer',     icon: ArrowRightLeft },
   { value: 'store_credit', label: 'Store Credit', icon: Wallet },
   // Lot B (ADR-006 déc. 9) — e-wallets individuels, settlement type QRIS.
-  { value: 'gopay',        label: 'GoPay',        icon: CircleDollarSign },
-  { value: 'ovo',          label: 'OVO',          icon: CircleDollarSign },
-  { value: 'dana',         label: 'DANA',         icon: CircleDollarSign },
+  // Critique run 2 (2026-08-14 P2) — trois tuiles à icône IDENTIQUE ne se
+  // distinguaient que par le libellé, au moment le plus rapide du parcours :
+  // une silhouette distincte par e-wallet (l'identité de marque colorée reste
+  // une décision de design-system non prise — pas de token inventé ici).
+  { value: 'gopay',        label: 'GoPay',        icon: SmartphoneNfc },
+  { value: 'ovo',          label: 'OVO',          icon: Coins },
+  { value: 'dana',         label: 'DANA',         icon: HandCoins },
 ];
 
 // ADR-006 déc. 9 (payment methods enrichis, lot A) — the BO-configured order

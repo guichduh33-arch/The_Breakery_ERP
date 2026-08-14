@@ -3,6 +3,7 @@
 
 import { useRef, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal, Select } from '@breakery/ui';
+import { formatIdr } from '@breakery/utils';
 import { toast } from 'sonner';
 import { useCashMovement, type CashMovementReasonCode } from '../hooks/useCashMovement';
 
@@ -65,7 +66,7 @@ export function CashInOutModal({
         reason_code: reasonCode,
         idempotency_key: idemRef.current,
       });
-      toast.success(`${title} recorded (${amount.toLocaleString('id-ID')} IDR).`);
+      toast.success(`${title} recorded (${formatIdr(amount)}).`);
       onRecorded?.(result.cash_in_total, result.cash_out_total);
       setAmountStr('');
       setReason('');

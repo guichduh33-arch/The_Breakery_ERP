@@ -62,6 +62,7 @@ export function PaymentTerminal() {
         {...(success.customerName ? { customerName: success.customerName } : {})}
         {...(success.loyaltyBalanceAfter !== undefined ? { loyaltyBalanceAfter: success.loyaltyBalanceAfter } : {})}
         {...(success.appliedPromotions ? { appliedPromotions: success.appliedPromotions } : {})}
+        {...(success.offline ? { offline: true } : {})}
       />
     );
   }
@@ -87,7 +88,7 @@ export function PaymentTerminal() {
           <span className="text-text-secondary text-xs uppercase tracking-widest">Terminal</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-text-secondary text-sm">Server: <span className="text-text-primary font-semibold">{user?.full_name}</span></span>
+          <span className="text-text-secondary text-sm">Cashier: <span className="text-text-primary font-semibold">{user?.full_name}</span></span>
           <Button variant="ghost" size="sm" onClick={close}>
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden /> Back to Cart
           </Button>

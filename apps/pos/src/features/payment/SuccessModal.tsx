@@ -1,6 +1,6 @@
 // apps/pos/src/features/payment/SuccessModal.tsx
 import { useEffect, useRef, useState } from 'react';
-import { Check, Printer, RotateCw } from 'lucide-react';
+import { Check, CloudOff, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
@@ -53,6 +53,13 @@ export interface SuccessModalProps {
    * aggregate promotion_total.
    */
   appliedPromotions?: AppliedPromotion[];
+  /**
+   * Critique 2026-08-14 P1 — la vente a été mise en file offline (outbox), pas
+   * confirmée par le serveur. Le principe produit n°3 interdit un écran de
+   * succès identique : la variante ambre dit « recorded », jamais « successful »,
+   * tant que l'écriture serveur n'existe pas.
+   */
+  offline?: boolean;
 }
 
 function buildReceiptPayload(
@@ -280,19 +287,35 @@ export function SuccessModal(props: SuccessModalProps) {
   }, [open, orgSettingsLoading, identityLoading, templateLoading, autoPrint, autoOpenDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }} accessibleTitle="Payment successful">
+    <FullScreenModal
+      open={open}
+      onOpenChange={() => { /* must click action */ }}
+      accessibleTitle={props.offline ? 'Payment recorded offline' : 'Payment successful'}
+    >
       <div
         className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300"
         data-testid="receipt-success"
       >
         <div className="grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-success-soft border-2 border-green grid place-items-center motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-500">
-            <Check className="h-8 w-8 text-green" strokeWidth={3} aria-hidden />
+          <div
+            className={`h-16 w-16 rounded-full border-2 grid place-items-center motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-500 ${
+              props.offline ? 'bg-warning-soft border-warning' : 'bg-success-soft border-green'
+            }`}
+          >
+            {props.offline
+              ? <CloudOff className="h-8 w-8 text-warning" strokeWidth={2.5} aria-hidden />
+              : <Check className="h-8 w-8 text-green" strokeWidth={3} aria-hidden />}
           </div>
         </div>
         <div className="space-y-1">
-          <h2 className="font-bold text-2xl">Payment successful!</h2>
-          <p className="text-text-secondary text-sm">Order completed · {orderNumber}</p>
+          <h2 className="font-bold text-2xl">{props.offline ? 'Payment recorded' : 'Payment successful!'}</h2>
+          {props.offline ? (
+            <p className="text-warning text-sm" data-testid="success-offline-note">
+              Offline — will sync when the connection returns · {orderNumber}
+            </p>
+          ) : (
+            <p className="text-text-secondary text-sm">Order completed · {orderNumber}</p>
+          )}
           {customerName && <p className="text-text-secondary text-xs">{customerName}</p>}
         </div>
         <div className="space-y-4">

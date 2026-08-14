@@ -54,6 +54,8 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
   return {
     id: 'oi-1',
     order_id: 'ord-1',
+    order_type: '',
+    table_number: null,
     product_id: 'prod-1',
     product_name: 'Americano',
     quantity: 1,
@@ -127,6 +129,24 @@ describe('KdsOrderCard', () => {
     const item = makeItem({ order_notes: null });
     render(wrap(<KdsOrderCard items={[item]} />));
     expect(screen.queryByTestId('kds-order-note')).not.toBeInTheDocument();
+  });
+
+  // Critique run 2 (2026-08-14 P1) — le ticket dit OÙ porter l'assiette.
+  it('renders the table + service chip for a dine-in order with a table', () => {
+    const item = makeItem({ order_type: 'dine_in', table_number: '12' });
+    render(wrap(<KdsOrderCard items={[item]} />));
+    expect(screen.getByTestId('kds-service-chip')).toHaveTextContent('T12 · Dine-in');
+  });
+
+  it('renders the service label alone for a takeaway order', () => {
+    const item = makeItem({ order_type: 'take_out', table_number: null });
+    render(wrap(<KdsOrderCard items={[item]} />));
+    expect(screen.getByTestId('kds-service-chip')).toHaveTextContent('Takeaway');
+  });
+
+  it('renders no service chip when order_type is unknown (legacy/offline rows)', () => {
+    render(wrap(<KdsOrderCard items={[makeItem()]} />));
+    expect(screen.queryByTestId('kds-service-chip')).not.toBeInTheDocument();
   });
 
   it('escalates the age band to "warning" at 300s and "urgent" at 600s (kds configue thresholds)', () => {

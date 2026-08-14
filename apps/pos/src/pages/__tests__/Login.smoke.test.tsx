@@ -75,6 +75,7 @@ function renderPage() {
 
 describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
   beforeEach(() => {
+    localStorage.clear();
     navigateMock.mockReset();
     loginMock.mockReset();
     loginMock.mockResolvedValue(undefined);
@@ -92,12 +93,27 @@ describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
     };
   });
 
-  it('defaults to the first returned user — not a hardcoded seed', () => {
+  it('does not preselect an arbitrary user — the picker is open until a choice is made', () => {
     renderPage();
+    // Both users are offered ; nobody is "Welcome"-ed by default and the
+    // digits are inert (a reflex-typed PIN can no longer lock a colleague).
+    expect(screen.getByText('Who is signing in?')).toBeInTheDocument();
     expect(screen.getByText('Mamat (Owner)')).toBeInTheDocument();
+    expect(screen.getByText('New Hire')).toBeInTheDocument();
+    expect(screen.queryByText(/welcome,/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1' })).toBeDisabled();
+  });
+
+  it('remembers the last user who signed in on this terminal', () => {
+    localStorage.setItem('pos:last_login_user', 'u2');
+    renderPage();
+    expect(screen.getByText(/welcome,/i)).toBeInTheDocument();
+    expect(screen.getByText('New Hire')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1' })).toBeEnabled();
   });
 
   it('lists a newly-created employee (regression: used to be invisible)', () => {
+    localStorage.setItem('pos:last_login_user', 'u1');
     renderPage();
     fireEvent.click(screen.getByText('Switch'));
     expect(screen.getByText('New Hire')).toBeInTheDocument();
@@ -130,6 +146,7 @@ describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
 
   it('auto-submits login(userId, pin) once 6 digits are typed', () => {
     renderPage();
+    fireEvent.click(screen.getByText('Mamat (Owner)'));
     for (const d of ['1', '2', '3', '4', '5', '6']) {
       fireEvent.click(screen.getByRole('button', { name: d }));
     }

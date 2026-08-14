@@ -147,7 +147,7 @@ function OrderTypeRow({ row }: { row: POSReportsOrderTypeRow }): JSX.Element {
         </span>
         <Currency amount={row.revenue} emphasis="gold" />
       </div>
-      <div className="mt-2 h-2 rounded-full bg-bg-overlay/60 overflow-hidden">
+      <div className="mt-2 h-2 rounded-full bg-bg-overlay overflow-hidden">
         <div
           className="h-full rounded-full bg-gold"
           style={{ width: `${Math.min(row.sharePct, 100)}%` }}
@@ -178,7 +178,7 @@ function CategoryRow({ row }: { row: POSReportsCategoryRow }): JSX.Element {
           <Currency amount={row.revenue} className="text-sm font-semibold" />
         </div>
       </div>
-      <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay/60 overflow-hidden')}>
+      <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay overflow-hidden')}>
         <div
           className="h-full rounded-full bg-gold"
           style={{ width: `${Math.min(row.sharePct, 100)}%` }}

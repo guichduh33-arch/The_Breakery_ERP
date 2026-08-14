@@ -36,6 +36,7 @@
 //     the shared `useAgeTimer` hook.
 
 import { Button, Badge } from '@breakery/ui';
+import { orderTypeLabel } from '@breakery/domain';
 import { toast } from 'sonner';
 
 import { useAgeTimer } from '../hooks/useAgeTimer';
@@ -100,7 +101,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   // Session 10: cancelled items have no actionable CTA — only the badge.
   if (item.is_cancelled) {
     return (
-      <Badge variant="default" className="bg-red text-bg-base border-transparent">
+      <Badge variant="default" className="bg-red text-red-on-fill border-transparent">
         Cancelled
       </Badge>
     );
@@ -218,6 +219,19 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
           <span className="font-mono text-2xl font-extrabold tabular-nums text-gold truncate">
             {head.order_number}
           </span>
+          {/* Critique run 2 (2026-08-14 P1) — WHERE the plate goes, at the same
+              2-3 m glance distance as the timer: `T12 · Dine-in` for table
+              service, the service label alone otherwise. */}
+          {head.order_type !== '' && (
+            <span
+              data-testid="kds-service-chip"
+              className="shrink-0 text-sm font-bold uppercase tracking-widest text-text-primary border border-border-strong rounded-md px-2 py-0.5"
+            >
+              {head.order_type === 'dine_in' && head.table_number
+                ? `T${head.table_number} · ${orderTypeLabel(head.order_type)}`
+                : orderTypeLabel(head.order_type)}
+            </span>
+          )}
           {/* S43 P2-5b — surfaced so the kitchen knows the ticket is already paid. */}
           {(head.order_status === 'paid' || head.order_status === 'completed') && (
             <Badge variant="default" className="bg-green text-green-fg border-transparent shrink-0">
@@ -252,7 +266,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
       {/* Session 59 (17 D1.1) — order-level note (tablet), e.g. allergy / "no gluten". */}
       {head.order_notes && (
         <div
-          className="rounded-md border border-amber-warn/40 bg-amber-warn/10 px-3 py-2 text-sm text-amber-warn"
+          className="rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-amber-warn"
           data-testid="kds-order-note"
         >
           {head.order_notes}

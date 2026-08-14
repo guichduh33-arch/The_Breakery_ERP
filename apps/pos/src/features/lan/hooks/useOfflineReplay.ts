@@ -36,7 +36,7 @@ export function useOfflineReplay(): void {
         }
         if (res.failed > 0) {
           toast.error(
-            `Resynchronisation hors-ligne interrompue (${res.failed} en attente) — nouvel essai au prochain retour réseau`,
+            `Offline resync interrupted (${res.failed} still queued) — will retry when the network returns`,
           );
         }
       });

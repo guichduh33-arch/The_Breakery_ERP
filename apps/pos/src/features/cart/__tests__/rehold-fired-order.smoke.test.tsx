@@ -100,11 +100,16 @@ describe('BottomActionBar — re-hold a reopened fired order', () => {
     expect(useCartStore.getState().pickedUpOrderId).toBeNull();
   });
 
-  it('disables the HOLD button while there are unfired new lines (Send to Kitchen first)', () => {
+  // Critique run 2 (2026-08-14 P2) — indisponible ≠ disabled : le bouton reste
+  // tapable (il explique au tap) et porte aria-disabled ; le tap ne re-park pas.
+  it('marks HOLD unavailable while there are unfired new lines (Send to Kitchen first)', () => {
     seedReopenedFiredOrder(true);
     render(wrap(<BottomActionBar />));
 
-    expect(screen.getByRole('button', { name: /^hold$/i })).toBeDisabled();
+    const hold = screen.getByRole('button', { name: /^hold$/i });
+    expect(hold).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(hold);
+    expect(holdFiredMutate).not.toHaveBeenCalled();
   });
 
   it('no longer lists Hold inside the "More ▾" menu', () => {

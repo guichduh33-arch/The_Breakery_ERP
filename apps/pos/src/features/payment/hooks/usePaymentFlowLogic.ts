@@ -51,6 +51,9 @@ export interface PaymentSuccessState {
   // moment of success, so the receipt shows named promo lines without reading
   // the store directly (parity with the other frozen PaymentSuccessState fields).
   appliedPromotions?: AppliedPromotion[];
+  // Critique 2026-08-14 P1 — encaissement mis en file offline (outbox), pas
+  // confirmé serveur : le SuccessModal rend la variante ambre « recorded ».
+  offline?: boolean;
 }
 
 export function usePaymentFlowLogic() {
@@ -298,6 +301,7 @@ export function usePaymentFlowLogic() {
       taxAmount: tax_amount,
       changeGiven,
       pointsEarned: 0,
+      offline: true,
       customerName: attachedCustomer?.name ?? undefined,
       // Sur un split, la méthode « principale » affichée est celle du plus gros
       // règlement — le ticket, lui, porte le détail complet.

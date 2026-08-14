@@ -40,7 +40,7 @@ describe('ProductGrid — load error (C-D1)', () => {
     render(wrap(<ProductGrid selectedSlug={null} onSelect={vi.fn()} />));
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/impossible de charger les produits/i)).toBeInTheDocument();
+    expect(screen.getByText(/cannot load products/i)).toBeInTheDocument();
     // The misleading empty-state copy must NOT appear on error.
     expect(screen.queryByText(/no products yet/i)).toBeNull();
   });

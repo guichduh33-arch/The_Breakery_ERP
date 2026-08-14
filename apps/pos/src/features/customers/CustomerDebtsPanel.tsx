@@ -63,7 +63,7 @@ export default function CustomerDebtsPanel(): JSX.Element {
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => navigate('/pos')}
+          onClick={() => { void navigate('/pos'); }}
           data-testid="pos-debts-back"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
@@ -88,7 +88,8 @@ export default function CustomerDebtsPanel(): JSX.Element {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search customer…"
                 aria-label="Search customer"
-                className="h-9 w-full rounded-md border border-border-subtle bg-bg-base pl-9 pr-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+                data-vkp="qwerty"
+                className="h-11 w-full rounded-md border border-border-subtle bg-bg-base pl-9 pr-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
                 data-testid="pos-debts-search"
               />
             </label>

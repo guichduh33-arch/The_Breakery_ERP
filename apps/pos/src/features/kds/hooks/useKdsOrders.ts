@@ -92,6 +92,10 @@ export interface KdsItemRow {
   order_number: string;
   /** Session 43 (P2-5) — parent order status; drives the PAID badge on the ticket. */
   order_status: string;
+  /** Critique run 2 (2026-08-14 P1) — where the plate goes: without table and
+   *  service type the kitchen knows WHEN it is late but not WHERE to serve. */
+  order_type: string;
+  table_number: string | null;
   /** Session 59 (17 D1.1) — order-level free-text note (allergy, "no gluten"...). */
   order_notes: string | null;
   /** Session 10 — true if cashier cancelled the line via cancel_order_item_rpc. */
@@ -135,8 +139,8 @@ interface RawRow {
     | { name: string; categories: { kds_station: string | null } | { kds_station: string | null }[] | null }[]
     | null;
   orders:
-    | { order_number: string; status: string; notes: string | null }
-    | { order_number: string; status: string; notes: string | null }[]
+    | { order_number: string; status: string; notes: string | null; order_type: string; table_number: string | null }
+    | { order_number: string; status: string; notes: string | null; order_type: string; table_number: string | null }[]
     | null;
 }
 
@@ -163,7 +167,7 @@ export function useKdsOrders(station: KdsStation) {
           sent_to_kitchen_at, ready_at, prep_started_at,
           is_cancelled, cancelled_at, cancelled_reason,
           products(name, categories(kds_station)),
-          orders(order_number, status, notes)
+          orders(order_number, status, notes, order_type, table_number)
         `,
         )
         // Spec B-1 Ph2 — dual-branch filter:
@@ -228,6 +232,8 @@ export function useKdsOrders(station: KdsStation) {
           order_number: order?.order_number ?? '?',
           order_status: order?.status ?? '',
           order_notes: order?.notes ?? null,
+          order_type: order?.order_type ?? '',
+          table_number: order?.table_number ?? null,
           is_cancelled: row.is_cancelled === true,
           cancelled_at: row.cancelled_at,
           cancelled_reason: row.cancelled_reason,

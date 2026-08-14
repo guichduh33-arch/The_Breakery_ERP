@@ -96,10 +96,12 @@ describe('Void — under More, always reason + manager PIN', () => {
 // eu de rapport avec le hold. Le bouton Hold est désormais désactivé tant que
 // rien n'est parti en cuisine — voir rehold-fired-order.smoke.test.tsx.
 describe('ADR-022 déc. 4 — le hold exige une commande envoyée en cuisine', () => {
-  it('le bouton Hold est désactivé sur un panier non envoyé', () => {
+  // Critique run 2 (2026-08-14 P2) — l'indisponible n'est plus `disabled` :
+  // il reste tapable, porte aria-disabled et explique le parcours au tap.
+  it('le bouton Hold est indisponible (aria-disabled) sur un panier non envoyé', () => {
     render(wrapper(<BottomActionBar />));
 
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    expect(screen.getByRole('button', { name: /^hold$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^hold$/i })).toHaveAttribute('aria-disabled', 'true');
   });
 });

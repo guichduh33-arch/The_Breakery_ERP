@@ -98,6 +98,16 @@ vi.mock('@/features/order-history/hooks/useVoidOrder', () => ({
   }),
 }));
 
+// Critique run 2 — Hold indisponible reste tapable (il explique au tap) : le
+// spy prouve qu'un tap en état aria-disabled ne déclenche JAMAIS le re-park.
+const holdFiredMutateAsync = vi.fn().mockResolvedValue({});
+vi.mock('@/features/cart/hooks/useHoldFiredOrder', () => ({
+  useHoldFiredOrder: () => ({
+    mutateAsync: holdFiredMutateAsync,
+    isPending: false,
+  }),
+}));
+
 function wrapper(children: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={qc}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>;
@@ -180,7 +190,10 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
   });
 
-  it('(c) reopened fired order with a new unfired line: Hold is disabled', () => {
+  // Critique run 2 (2026-08-14 P2) — l'indisponible n'est plus `disabled`
+  // (un bouton disabled n'émet rien au tap et le `title` n'existe pas au
+  // doigt) : il reste tapable, porte aria-disabled et EXPLIQUE au tap.
+  it('(c) reopened fired order with a new unfired line: Hold explains instead of re-parking', () => {
     useCartStore.setState({
       cart: { items: [ITEM, { ...ITEM, id: 'new1', name: 'Croissant' }], order_type: 'dine_in' },
       lockedItemIds: ['l1'],
@@ -191,20 +204,24 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     render(wrapper(<BottomActionBar />));
 
     const hold = screen.getByRole('button', { name: /^hold$/i });
-    expect(hold).toBeDisabled();
+    expect(hold).toHaveAttribute('aria-disabled', 'true');
     expect(hold).toHaveAttribute('title', 'Send the new items to the kitchen first');
+    fireEvent.click(hold);
+    expect(holdFiredMutateAsync).not.toHaveBeenCalled();
   });
 
   // ADR-022 déc. 4 — inversion assumée de cette assertion. Le « draft hold »
   // qu'elle protégeait a disparu : une commande n'existe qu'à partir du moment
   // où elle part en cuisine ou qu'elle est payée, et on ne met en attente
-  // qu'une commande envoyée. Le bouton reste visible mais désactivé, avec un
-  // titre qui enseigne le nouveau parcours plutôt que de disparaître.
-  it('(c) never-fired cart: Hold est désactivé — le hold passe par l’envoi en cuisine', () => {
+  // qu'une commande envoyée. Le bouton reste visible, indisponible (aria) et
+  // enseigne le nouveau parcours au tap plutôt que de disparaître.
+  it('(c) never-fired cart: Hold est indisponible — le hold passe par l’envoi en cuisine', () => {
     render(wrapper(<BottomActionBar />));
 
     const hold = screen.getByRole('button', { name: /^hold$/i });
-    expect(hold).toBeDisabled();
+    expect(hold).toHaveAttribute('aria-disabled', 'true');
     expect(hold).toHaveAttribute('title', 'Send the order to the kitchen first, then hold it');
+    fireEvent.click(hold);
+    expect(holdFiredMutateAsync).not.toHaveBeenCalled();
   });
 });

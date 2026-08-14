@@ -11,6 +11,11 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
+// Critique run 2 (2026-08-14 P2) — une seule notation des milliers sur le
+// parcours d'argent : formatIdr, le formatteur unique (id-ID depuis
+// l'arbitrage du 2026-08-13, voir packages/utils/src/idr.ts), jamais un
+// toLocaleString local qui divergerait à la prochaine bascule de locale.
+import { formatIdr } from '@breakery/utils';
 import { toast } from 'sonner';
 import { sumDenominations } from '@breakery/domain';
 import { useCloseShift } from '../hooks/useCloseShift';
@@ -121,7 +126,7 @@ export function CloseShiftModal({
       return;
     }
     if (nonCashIncomplete) {
-      toast.error('Enter every counted volet (0 is allowed).');
+      toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
     setStep('review');
@@ -133,7 +138,7 @@ export function CloseShiftModal({
       return;
     }
     if (nonCashIncomplete) {
-      toast.error('Enter every counted volet (0 is allowed).');
+      toast.error('Enter every counted tender total (0 is allowed).');
       return;
     }
     try {
@@ -165,7 +170,7 @@ export function CloseShiftModal({
       toast.success(
         resultVariance === 0
           ? 'Shift closed (balanced).'
-          : `Shift closed — variance ${resultVariance > 0 ? '+' : ''}${resultVariance.toLocaleString('id-ID')} IDR.`,
+          : `Shift closed — variance ${resultVariance > 0 ? '+' : ''}${formatIdr(resultVariance)}.`,
       );
       onClosed?.(resultVariance);
       onClose();
@@ -217,7 +222,7 @@ export function CloseShiftModal({
             label="Counted cash"
             value={
               <span className="font-mono tabular-nums text-text-primary">
-                Rp {denomEnabled ? counted.toLocaleString('id-ID') : (amountStr || '0')}
+                {formatIdr(denomEnabled ? counted : Number(amountStr || '0'))}
               </span>
             }
           />
@@ -232,10 +237,10 @@ export function CloseShiftModal({
                       ? 'font-mono tabular-nums text-text-primary'
                       : variance > 0
                         ? 'font-mono tabular-nums text-green'
-                        : 'font-mono tabular-nums text-red'
+                        : 'font-mono tabular-nums text-red-as-text'
                   }
                 >
-                  {variance > 0 ? '+' : ''}{variance.toLocaleString('id-ID')}
+                  {variance > 0 ? '+' : ''}{formatIdr(variance)}
                 </span>
               }
             />
@@ -247,20 +252,20 @@ export function CloseShiftModal({
           {step === 'review' && qrisVisible && (
             <Row
               label="QRIS + e-wallets counted"
-              value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(qrisStr || '0').toLocaleString('id-ID')}</span>}
+              value={<span className="font-mono tabular-nums text-text-primary">{formatIdr(Number(qrisStr || '0'))}</span>}
             />
           )}
           {step === 'review' && cardVisible && (
             <Row
               label="Card + EDC counted"
-              value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(cardStr || '0').toLocaleString('id-ID')}</span>}
+              value={<span className="font-mono tabular-nums text-text-primary">{formatIdr(Number(cardStr || '0'))}</span>}
             />
           )}
         </section>
 
         {step === 'review' && (qrisVisible || cardVisible) && (
           <p className="text-xs text-text-secondary">
-            Non-cash volets are reconciled server-side at close; any large variance
+            Non-cash tenders are reconciled server-side at close; any large variance
             will ask for a note or manager approval.
           </p>
         )}
@@ -281,6 +286,7 @@ export function CloseShiftModal({
             <input
               id="counted_qris"
               data-testid="counted-qris-input"
+              data-vkp="numeric"
               type="text"
               inputMode="numeric"
               placeholder="0"
@@ -298,6 +304,7 @@ export function CloseShiftModal({
             <input
               id="counted_card"
               data-testid="counted-card-input"
+              data-vkp="numeric"
               type="text"
               inputMode="numeric"
               placeholder="0"
@@ -317,6 +324,7 @@ export function CloseShiftModal({
             </label>
             <textarea
               id="close_notes"
+              data-vkp="qwerty"
               className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
               rows={2}
               value={notes}
@@ -354,6 +362,7 @@ export function CloseShiftModal({
             </select>
             <input
               id="approver_pin"
+              data-vkp="numeric"
               type="password"
               inputMode="numeric"
               autoComplete="one-time-code"
