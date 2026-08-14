@@ -145,8 +145,22 @@ describe('KdsBoard', () => {
     expect(screen.getByRole('tab', { name: /kitchen/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /barista/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /display/i })).toBeInTheDocument();
-    // Filter chip group from StationFilter.
+    // StationFilter chips are data-derived (critique run 3) : with no items,
+    // no distinct kds_station exists and the chip row must NOT render.
+    expect(screen.queryByRole('group', { name: /kds station filter/i })).toBeNull();
+  });
+
+  it('renders the station chip row only when tickets carry two distinct kds_station values', () => {
+    mockItems = [
+      makeItem({ id: 'oi-1', order_id: 'ord-1', kds_station: 'hot' }),
+      makeItem({ id: 'oi-2', order_id: 'ord-2', kds_station: 'bar' }),
+    ];
+    render(wrap(<KdsBoard />));
     expect(screen.getByRole('group', { name: /kds station filter/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filter to hot kitchen items/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filter to bar items/i })).toBeInTheDocument();
+    // Stations absent from the data get no chip.
+    expect(screen.queryByRole('button', { name: /filter to cold prep items/i })).toBeNull();
   });
 
   it('shows the empty state when there are no active tickets', () => {

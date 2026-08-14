@@ -112,6 +112,17 @@ export function KdsBoard({
 
   const allItems = useMemo(() => [...items, ...offlineRows], [items, offlineRows]);
 
+  // Critique run 3 (distill) — les chips kds_station sont dérivées des données :
+  // seules les stations réellement présentes dans les tickets chargés rendent
+  // une chip, et la rangée disparaît sous deux stations distinctes.
+  const presentStations = useMemo(() => {
+    const stations = new Set<string>();
+    for (const item of allItems) {
+      if (item.kds_station !== null) stations.add(item.kds_station);
+    }
+    return stations;
+  }, [allItems]);
+
   // Session 59 (04 D1.3) — one beep per newly-arrived order, deduped by
   // order_id and gated on the persisted mute toggle below.
   useKdsAlarm(allItems);
@@ -152,7 +163,7 @@ export function KdsBoard({
             <KdsStationSelector />
           </div>
         </div>
-        <StationFilter />
+        <StationFilter presentStations={presentStations} />
       </header>
 
       {/* Spec 006x lot 3 — mode OFFLINE : internet down mais bus LAN vivant.
