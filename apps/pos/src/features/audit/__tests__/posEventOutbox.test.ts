@@ -5,7 +5,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock the singleton supabase client and auth store BEFORE importing the SUT.
 // vi.mock factories are hoisted, so shared refs must go through vi.hoisted.
-const h = vi.hoisted(() => ({ rpc: vi.fn(), authed: true }));
+const h = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  authed: true,
+  lockReason: null as 'manual' | 'session_expired' | null,
+}));
 const rpc = h.rpc;
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: h.rpc } }));
 vi.mock('@/stores/authStore', () => ({
@@ -13,6 +17,7 @@ vi.mock('@/stores/authStore', () => ({
     getState: () => ({
       user: { id: '00000000-0000-0000-0000-000000000001' },
       isAuthenticated: h.authed,
+      lockReason: h.lockReason,
     }),
   },
 }));
@@ -37,6 +42,7 @@ beforeEach(() => {
   localStorage.clear();
   rpc.mockReset();
   h.authed = true;
+  h.lockReason = null;
 });
 
 describe('outbox (durable queue)', () => {
@@ -117,5 +123,26 @@ describe('flushPosEvents', () => {
     expect(acked).toBe(0);
     expect(rpc).not.toHaveBeenCalled();
     expect(await pendingCount()).toBe(1);
+  });
+
+  // Backlog 401 — a dead PIN session (terminal locked behind the
+  // session-expired overlay) must not feed a silent 30 s 401 loop. Events
+  // stay queued for the post-re-PIN drain.
+  it('is a no-op while the terminal is locked for session_expired (no 401 loop)', async () => {
+    h.lockReason = 'session_expired';
+    await enqueueEvent(envelope());
+    const acked = await flushPosEvents();
+    expect(acked).toBe(0);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(await pendingCount()).toBe(1);
+  });
+
+  it('still flushes under a manual lock (session is alive)', async () => {
+    h.lockReason = 'manual';
+    rpc.mockResolvedValue({ data: { inserted: 1 }, error: null });
+    await enqueueEvent(envelope());
+    const acked = await flushPosEvents();
+    expect(acked).toBe(1);
+    expect(await pendingCount()).toBe(0);
   });
 });

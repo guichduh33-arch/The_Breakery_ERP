@@ -32,16 +32,17 @@ export interface TabletOfflineState {
   lastSync: Date | null;
 }
 
-async function pingSupabase(supabaseUrl: string): Promise<boolean> {
+async function pingSupabase(supabaseUrl: string, anonKey: string): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/health`, {
       method: 'HEAD',
       signal: controller.signal,
-      // Don't send auth headers — health endpoint is public + we want a
-      // pure network/DNS check.
+      // No user auth here — still a pure network/DNS check. `apikey` is the
+      // gateway key: without it every ping logs a 401 server-side (401 backlog).
       cache: 'no-store',
+      headers: { apikey: anonKey },
     });
     return res.ok || res.status === 401; // 401 still means the host answered
   } catch {
@@ -73,14 +74,17 @@ export function useTabletOffline(): TabletOfflineState {
   }, []);
 
   useEffect(() => {
-    const supabaseUrl =
-      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ?? '';
+    const env = (typeof import.meta !== 'undefined' ? import.meta.env : undefined) as
+      | Record<string, string | undefined>
+      | undefined;
+    const supabaseUrl = env?.VITE_SUPABASE_URL ?? '';
+    const anonKey = env?.VITE_SUPABASE_ANON_KEY ?? '';
     if (supabaseUrl === '') return;
 
     let cancelled = false;
 
     async function doPing() {
-      const ok = await pingSupabase(supabaseUrl);
+      const ok = await pingSupabase(supabaseUrl, anonKey);
       if (cancelled) return;
       setPingOnline(ok);
       if (ok) setLastSync(new Date());

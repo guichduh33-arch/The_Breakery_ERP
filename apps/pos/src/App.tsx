@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { initSessionDeathWatch, disposeSessionDeathWatch } from './features/auth/sessionDeathWatch';
+import { initSessionRefresh, disposeSessionRefresh } from './features/auth/sessionRefresh';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -60,9 +61,15 @@ function BootGate({ children }: { children: React.ReactNode }) {
 export default function App() {
   // Critique 2026-08-14 P1 — 401-storm watchdog: an expired PIN JWT recovers
   // silently (re-probe), a dead session locks the terminal with honest copy.
+  // Backlog 401 — the proactive twin: refresh the PIN JWT before it expires
+  // so the storm never starts (sessionRefresh mirrors the kiosk timer).
   useEffect(() => {
     initSessionDeathWatch();
-    return () => disposeSessionDeathWatch();
+    initSessionRefresh();
+    return () => {
+      disposeSessionRefresh();
+      disposeSessionDeathWatch();
+    };
   }, []);
 
   return (

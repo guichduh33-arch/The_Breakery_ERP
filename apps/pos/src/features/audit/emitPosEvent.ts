@@ -108,7 +108,13 @@ export function scheduleFlush(delayMs = 400): void {
 export async function flushPosEvents(): Promise<number> {
   if (flushing) return 0;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 0;
-  if (!useAuthStore.getState().isAuthenticated) return 0;
+  const auth = useAuthStore.getState();
+  if (!auth.isAuthenticated) return 0;
+  // Backlog 401 — the server no longer honors this PIN session (terminal is
+  // locked behind the session-expired overlay): every flush would 401 in a
+  // silent 30 s loop. Events stay queued ; the re-PIN mints a fresh bearer
+  // and the next trigger drains the backlog.
+  if (auth.lockReason === 'session_expired') return 0;
 
   flushing = true;
   try {

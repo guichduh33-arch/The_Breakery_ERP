@@ -53,6 +53,12 @@ interface AuthState {
   // null until the first auth-get-session round-trip lands (e.g. fresh login
   // before the rehydrate fires). Treat null/0 as "no idle logout".
   sessionTimeoutMinutes: number | null;
+  // Backlog 401 — expiry (epoch seconds) of the PIN JWT currently injected in
+  // the fetch wrapper. Drives the proactive refresh timer (sessionRefresh.ts).
+  // NOT persisted: a reload goes through bootstrap(), which re-mints anyway.
+  // null when the EF predates the re-mint field — the reactive watchdog
+  // (sessionDeathWatch) then remains the only net.
+  authExpiresAt: number | null;
 
   login: (userId: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -85,6 +91,7 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       bootstrapStatus: 'pending',
       sessionTimeoutMinutes: null,
+      authExpiresAt: null,
 
       async login(userId, pin) {
         set({ isLoading: true, error: null });
@@ -107,6 +114,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
             bootstrapStatus: 'ready',
+            authExpiresAt: res.auth.expires_at,
           });
           logger.info('login.success', { user_id: res.user.id });
         } catch (err: unknown) {
@@ -144,6 +152,7 @@ export const useAuthStore = create<AuthState>()(
           // it loading/error after a sign-out.
           bootstrapStatus: 'ready',
           sessionTimeoutMinutes: null,
+          authExpiresAt: null,
         });
       },
 
@@ -175,6 +184,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             sessionTimeoutMinutes: session.session_timeout_minutes,
             bootstrapStatus: 'ready',
+            authExpiresAt: session.auth?.expires_at ?? null,
           });
           logger.info('bootstrap.rehydrated', { user_id: session.id, perms: session.permissions.length });
         } catch (err: unknown) {
@@ -208,6 +218,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             // Session 19 / Phase 3.A — refreshed per `auth-get-session` round-trip.
             sessionTimeoutMinutes: session.session_timeout_minutes,
+            authExpiresAt: session.auth?.expires_at ?? null,
           });
         } catch (err: unknown) {
           const e = err as { status?: number };
