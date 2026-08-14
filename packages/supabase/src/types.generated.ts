@@ -6593,7 +6593,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_loyalty_points: {
+      adjust_loyalty_points_v2: {
         Args: { p_customer_id: string; p_delta: number; p_reason: string }
         Returns: {
           new_balance: number
@@ -7123,6 +7123,22 @@ export type Database = {
       }
       expire_store_credit_v1: { Args: never; Returns: number }
       export_catalog_v1: { Args: never; Returns: Json }
+      export_customers_v1: {
+        Args: never
+        Returns: {
+          b2b_company_name: string
+          b2b_credit_limit: number
+          b2b_payment_terms_days: number
+          b2b_tax_id: string
+          birth_date: string
+          category: string
+          customer_type: string
+          email: string
+          marketing_consent: boolean
+          name: string
+          phone: string
+        }[]
+      }
       fail:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
