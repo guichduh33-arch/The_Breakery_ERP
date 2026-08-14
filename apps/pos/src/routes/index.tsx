@@ -46,10 +46,15 @@ function RouteFallback() {
   );
 }
 
+// Critique run 2 (2026-08-14 P1) — le pavé virtuel couvre TOUTES les surfaces
+// comptoir, pas seulement /pos : les satellites (debts, settings, stock,
+// reports) tournent sur le même poste sans clavier physique.
 function ProtectedLazy({ children }: { children: ReactNode }) {
   return (
     <Protected>
-      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+      <VirtualKeypadProvider>
+        <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+      </VirtualKeypadProvider>
     </Protected>
   );
 }

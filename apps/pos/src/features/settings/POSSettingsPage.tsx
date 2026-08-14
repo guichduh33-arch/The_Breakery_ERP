@@ -348,7 +348,8 @@ function NumericPresetGroup({
             placeholder="e.g. 50000"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="h-9 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            data-vkp="numeric"
+            className="h-11 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             aria-label={`New ${title} preset`}
           />
           <Button variant="secondary" size="sm" onClick={add} disabled={isPending || draft.trim() === ''}>
@@ -497,7 +498,8 @@ function DiscountPresetsGroup({
             placeholder="Name (e.g. Staff Meal)"
             value={draftName}
             onChange={(e) => setDraftName(e.target.value)}
-            className="h-9 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            data-vkp="qwerty"
+            className="h-11 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             aria-label="New discount preset name"
           />
           <input
@@ -506,7 +508,8 @@ function DiscountPresetsGroup({
             placeholder="%"
             value={draftPct}
             onChange={(e) => setDraftPct(e.target.value)}
-            className="h-9 w-24 rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            data-vkp="numeric"
+            className="h-11 w-24 rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             aria-label="New discount preset percent"
           />
           <Button variant="secondary" size="sm" onClick={add} disabled={isPending || draftPct.trim() === ''}>

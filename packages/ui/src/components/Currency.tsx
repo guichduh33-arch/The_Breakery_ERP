@@ -7,9 +7,11 @@ export interface CurrencyProps {
   className?: string;
   emphasis?: 'normal' | 'gold' | 'large';
   /**
-   * Formatteur du montant. Défaut : `formatIdr` (en-US, la convention POS).
-   * Le back-office passe `formatCurrency` (@breakery/utils, id-ID) — audit
-   * UX/UI 2026-08-13, lot 1. Prop additive : aucun call-site POS ne change.
+   * Formatteur du montant. Défaut : `formatIdr` — id-ID (« Rp 35.000 ») depuis
+   * l'arbitrage du 2026-08-13 (packages/utils/src/idr.ts) ; la mention en-US
+   * qui vivait ici était antérieure à la bascule. Le back-office passe
+   * `formatCurrency` (@breakery/utils). Prop additive : aucun call-site POS ne
+   * change.
    */
   format?: (amount: number) => string;
 }

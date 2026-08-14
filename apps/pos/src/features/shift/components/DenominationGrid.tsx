@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { IDR_DENOMINATIONS, sumDenominations } from '@breakery/domain';
 import { Currency } from '@breakery/ui';
+import { formatIdr } from '@breakery/utils';
 
 export interface DenominationGridProps {
   value:    Record<string, number>;
@@ -76,7 +77,7 @@ export function DenominationGrid({ value, onChange }: DenominationGridProps): JS
       <div className="flex items-center justify-between px-1 pt-1 text-sm">
         <span className="uppercase tracking-wide text-xs text-text-secondary">Total counted</span>
         <span className="font-mono tabular-nums text-text-primary" data-testid="denom-total">
-          {total.toLocaleString('id-ID')}
+          {formatIdr(total)}
         </span>
       </div>
     </div>

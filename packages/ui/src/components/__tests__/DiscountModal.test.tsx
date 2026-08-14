@@ -53,7 +53,7 @@ describe('DiscountModal', () => {
     expect(screen.getByTestId('discount-value-display')).toHaveTextContent('15%');
   });
 
-  it('numpad input in IDR mode shows IDR suffix', () => {
+  it('numpad input in IDR mode shows the formatIdr display (Rp prefix)', () => {
     render(<DiscountModal {...baseProps} />);
     fireEvent.click(screen.getByRole('tab', { name: 'IDR' }));
     pressKey('5');
@@ -61,9 +61,9 @@ describe('DiscountModal', () => {
     pressKey('0');
     pressKey('0');
     const display = screen.getByTestId('discount-value-display');
-    // toLocaleString('id-ID') uses . as thousands sep → "5.000 IDR"
-    // fallback: just check "5000" appears and "IDR" appears
-    expect(display.textContent).toMatch(/5[,.]?000\s*IDR/);
+    // Critique run 2 (2026-08-14 P2) — formatIdr est le formatteur unique
+    // (id-ID : « Rp 5.000 ») ; l'ancien suffixe local « 5.000 IDR » est retiré.
+    expect(display.textContent).toMatch(/Rp\s*5[.,]000/);
   });
 
   it('Confirm disabled when reason is less than 5 chars', () => {

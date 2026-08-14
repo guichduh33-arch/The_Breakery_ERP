@@ -53,6 +53,10 @@ function toKdsRow(payload: OrderFiredPayload, item: OrderFiredPayload['items'][n
     order_number: payload.order_number,
     // Pas de statut de paiement offline (badge PAID jamais affiché).
     order_status: '',
+    // Critique run 2 (2026-08-14 P1) — le chip table/service du ticket vaut
+    // aussi hors-ligne : le bus fired transporte les deux champs.
+    order_type: payload.order_type,
+    table_number: payload.table_number,
     order_notes: payload.notes,
     is_cancelled: false,
     cancelled_at: null,

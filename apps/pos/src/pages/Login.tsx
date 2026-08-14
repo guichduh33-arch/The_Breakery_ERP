@@ -169,7 +169,10 @@ export default function LoginPage(): JSX.Element {
         ) : !users || users.length === 0 ? (
           <p className="text-text-secondary text-sm" data-testid="login-users-empty">No active staff found.</p>
         ) : pickerOpen || !selectedUser ? (
-          <div className="w-full space-y-2 rounded-md border border-border-subtle bg-bg-input p-3">
+          /* Liste nue, pas une carte-dans-carte : la carte de login est déjà le
+             conteneur (détecteur run 2 : nested-cards) — les lignes portent
+             leur propre affordance de survol. */
+          <div className="w-full space-y-1">
             <SectionLabel as="div">{selectedUser ? 'Switch user' : 'Who is signing in?'}</SectionLabel>
             {users.map((u) => (
               <button

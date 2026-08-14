@@ -133,7 +133,7 @@ describe('CloseShiftModal', () => {
     expect(screen.getByText(/expected cash/i)).toBeInTheDocument();
     expect(screen.getByTestId('variance-preview')).toBeInTheDocument();
     // Counted 500.000 vs expected 500.000 → variance 0.
-    expect(screen.getByTestId('variance-preview').textContent).toMatch(/^0$/);
+    expect(screen.getByTestId('variance-preview').textContent).toMatch(/^Rp 0$/);
   });
 
   it('disables confirm until amount entered', () => {

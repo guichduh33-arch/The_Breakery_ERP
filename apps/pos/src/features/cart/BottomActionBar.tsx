@@ -245,12 +245,20 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             rapprochement de caisse. Une commande n'existe qu'à partir du moment
             où elle part en cuisine ou qu'elle est payée ; le geste passe donc
             par l'envoi en cuisine, puis hold_fired_order_v1. */}
+        {/* Critique run 2 (2026-08-14 P2) — un `title` n'existe pas au doigt et
+            un bouton `disabled` n'émet aucun événement : l'état « indisponible »
+            reste TAPABLE et explique le parcours au tap (même pattern que la
+            garde de table dine-in). Seul l'envoi en cours désactive vraiment. */}
         <button
           type="button"
-          className={GHOST_BTN}
-          disabled={!hasFiredOrderOpen || hasUnfiredItems || holdFired.isPending}
+          className={`${GHOST_BTN} ${holdTitle ? 'opacity-50' : ''}`}
+          disabled={holdFired.isPending}
+          aria-disabled={holdTitle !== ''}
           {...(holdTitle ? { title: holdTitle } : {})}
-          onClick={() => { void handleReholdFired(); }}
+          onClick={() => {
+            if (holdTitle) { toast.info(holdTitle); return; }
+            void handleReholdFired();
+          }}
         >
           <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
           <span>Hold</span>

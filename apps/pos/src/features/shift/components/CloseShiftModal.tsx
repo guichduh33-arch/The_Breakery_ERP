@@ -11,6 +11,11 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
+// Critique run 2 (2026-08-14 P2) — une seule notation des milliers sur le
+// parcours d'argent : formatIdr, le formatteur unique (id-ID depuis
+// l'arbitrage du 2026-08-13, voir packages/utils/src/idr.ts), jamais un
+// toLocaleString local qui divergerait à la prochaine bascule de locale.
+import { formatIdr } from '@breakery/utils';
 import { toast } from 'sonner';
 import { sumDenominations } from '@breakery/domain';
 import { useCloseShift } from '../hooks/useCloseShift';
@@ -165,7 +170,7 @@ export function CloseShiftModal({
       toast.success(
         resultVariance === 0
           ? 'Shift closed (balanced).'
-          : `Shift closed — variance ${resultVariance > 0 ? '+' : ''}${resultVariance.toLocaleString('id-ID')} IDR.`,
+          : `Shift closed — variance ${resultVariance > 0 ? '+' : ''}${formatIdr(resultVariance)}.`,
       );
       onClosed?.(resultVariance);
       onClose();
@@ -217,7 +222,7 @@ export function CloseShiftModal({
             label="Counted cash"
             value={
               <span className="font-mono tabular-nums text-text-primary">
-                Rp {denomEnabled ? counted.toLocaleString('id-ID') : (amountStr || '0')}
+                {formatIdr(denomEnabled ? counted : Number(amountStr || '0'))}
               </span>
             }
           />
@@ -235,7 +240,7 @@ export function CloseShiftModal({
                         : 'font-mono tabular-nums text-red-as-text'
                   }
                 >
-                  {variance > 0 ? '+' : ''}{variance.toLocaleString('id-ID')}
+                  {variance > 0 ? '+' : ''}{formatIdr(variance)}
                 </span>
               }
             />
@@ -247,13 +252,13 @@ export function CloseShiftModal({
           {step === 'review' && qrisVisible && (
             <Row
               label="QRIS + e-wallets counted"
-              value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(qrisStr || '0').toLocaleString('id-ID')}</span>}
+              value={<span className="font-mono tabular-nums text-text-primary">{formatIdr(Number(qrisStr || '0'))}</span>}
             />
           )}
           {step === 'review' && cardVisible && (
             <Row
               label="Card + EDC counted"
-              value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(cardStr || '0').toLocaleString('id-ID')}</span>}
+              value={<span className="font-mono tabular-nums text-text-primary">{formatIdr(Number(cardStr || '0'))}</span>}
             />
           )}
         </section>

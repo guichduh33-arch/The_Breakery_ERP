@@ -15,6 +15,7 @@ import {
   validateDiscount,
   type Discount,
 } from '@breakery/domain';
+import { formatIdr } from '@breakery/utils';
 import { cn } from '../lib/cn.js';
 import { Button } from '../primitives/Button.js';
 import { ScrollArea } from '../primitives/ScrollArea.js';
@@ -98,7 +99,9 @@ export function DiscountModal({
     }
   }
 
-  const displayValue = raw === '' ? '—' : type === 'percentage' ? `${raw}%` : `${parseInt(raw, 10).toLocaleString('id-ID')} IDR`;
+  // Critique run 2 (2026-08-14 P2) — même formatteur que `Currency` (formatIdr,
+  // id-ID depuis l'arbitrage 2026-08-13) : ce modal n'est consommé que par le POS.
+  const displayValue = raw === '' ? '—' : type === 'percentage' ? `${raw}%` : formatIdr(parseInt(raw, 10));
 
   return (
     <FullScreenModal open={open} onOpenChange={handleOpenChange} accessibleTitle="Apply discount">

@@ -43,6 +43,8 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
   return {
     id: 'oi-1',
     order_id: 'ord-1',
+    order_type: '',
+    table_number: null,
     product_id: 'prod-1',
     product_name: 'Americano',
     quantity: 1,
