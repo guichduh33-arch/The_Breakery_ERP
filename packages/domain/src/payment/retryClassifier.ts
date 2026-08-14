@@ -152,7 +152,7 @@ function friendlyFatalMessage(code: string, message?: string): string {
       return 'Loyalty redemption is invalid (insufficient points or expired tier).';
     case 'account_locked':
       // S38 SEC-06 — the named manager hit 5 failed discount PINs.
-      return 'Compte manager verrouillé 15 min (PIN erronés).';
+      return 'Manager account locked for 15 minutes (too many wrong PINs).';
     case 'discount_requires_authorizer':
       // S43 P0-1 — v11 discount gate: discount sent without an authorizing
       // manager (p_discount_authorized_by) ; surfaced by the process-payment EF.
@@ -160,53 +160,53 @@ function friendlyFatalMessage(code: string, message?: string): string {
     case 'promo_amount_mismatch':
       // S44 P0-C(1) — v12 re-evaluates promotions server-side ; the client
       // amount no longer matches (promo changed / expired since the cart eval).
-      return 'La promotion a changé — réévaluez le panier avant d’encaisser.';
+      return 'This promotion has changed — re-check the cart before charging.';
     case 'invalid_change':
       // S44 P0-C(4) — v12/v8 revalidate the change against cash_received.
-      return 'Montant de monnaie invalide — recommencez le paiement.';
+      return 'Invalid change amount — restart the payment.';
     case 'combo_invalid_component':
       // S57 P2.1 — v17 validates each combo line against its groups/options.
-      return 'Un composant de ce combo n’est pas valide. Reconfigurez le combo et réessayez.';
+      return 'A component of this combo is not valid. Reconfigure the combo and try again.';
     case 'combo_group_violation':
       // S57 P2.1 — v17 enforces the combo group min/max selection rules.
-      return 'La composition du combo ne respecte pas les règles (choix requis). Corrigez le combo et réessayez.';
+      return 'This combo does not meet its selection rules (required choices). Fix the combo and try again.';
     case 'promo_cap_exceeded':
       // S57 P2.1 — v17 hard-gates promotion usage caps atomically.
-      return 'Le plafond d’utilisation de cette promotion est atteint. Retirez la promotion et réessayez.';
+      return 'This promotion has reached its usage cap. Remove the promotion and try again.';
     case 'product_inactive':
       // ADR-011 déc. 2 — v19 refuse un produit désactivé au paiement, même
       // déjà présent au panier (refus strict, pas de tolérance).
-      return 'Un produit du panier a été désactivé. Retirez-le et réessayez.';
+      return 'A product in the cart has been deactivated. Remove it and try again.';
     case 'product_is_parent':
       // ADR-011 déc. 2 — v19 refuse un produit-groupe de variantes (jamais
       // vendable) ; le POS a servi un catalogue périmé.
-      return 'Ce produit est un groupe de variantes — sélectionnez une variante précise.';
+      return 'This product is a variant group — pick a specific variant.';
     case 'credit_limit_exceeded':
       // S62 D4 — la famille attach_tab_customer garde l ardoise retail contre
       // customers.retail_credit_limit.
-      return 'Le plafond de crédit ardoise de ce client est dépassé. Réduisez l’encours ou choisissez un autre mode de paiement.';
+      return 'This customer has reached their tab credit limit. Settle part of the balance or choose another payment method.';
     case 'wrong_pin':
       // ADR-013 Lot 3 (D15/M5) — process-payment renvoie désormais le même
       // `wrong_pin` nu que void/refund/cancel (oracle PIN harmonisé).
-      return 'PIN manager incorrect. Vérifiez le PIN et réessayez.';
+      return 'Wrong manager PIN. Check the PIN and try again.';
     case 'missing_manager_pin':
-      return 'Cette remise exige le PIN manager. Ré-appliquez la remise et saisissez le PIN.';
+      return 'This discount requires the manager PIN. Re-apply the discount and enter the PIN.';
     case 'p0015': // chemin ardoise : pay_existing_order appelé en direct,
                   // le PostgrestError expose le SQLSTATE brut (pas de mapping EF).
                   // NB : P0010 (loyalty) a le même gap — hors périmètre Lot 4 UI.
     case 'store_credit_requires_customer':
       // ADR-013 Lot 4 (D8) — v21/v16 refusent un tender store_credit sans
       // client rattaché (P0015).
-      return 'Le paiement par avoir exige un client rattaché à la vente. Attachez le client et réessayez.';
+      return 'Store-credit payment requires a customer attached to the sale. Attach the customer and try again.';
     case 'p0016': // idem — SQLSTATE brut sur le chemin ardoise.
     case 'insufficient_store_credit':
       // ADR-013 Lot 4 (D8) — solde d'avoir insuffisant, vérifié sous verrou
       // serveur (P0016).
-      return 'Solde d’avoir insuffisant pour ce montant. Réduisez la part payée en avoir.';
+      return 'Store-credit balance is too low for this amount. Reduce the store-credit share.';
     case 'internal_error':
       // ADR-013 Lot 3 (D15/M5) — les EF money-path ne renvoient plus le
       // message Postgres brut ; le détail vit dans les logs serveur.
-      return 'Erreur serveur pendant le paiement. Réessayez ; si le problème persiste, contactez le support.';
+      return 'Server error during payment. Try again; if it persists, contact support.';
     case '':
       return message ?? 'Payment failed for an unknown reason. Try again or contact support.';
     default:
