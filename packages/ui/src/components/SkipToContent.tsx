@@ -38,7 +38,7 @@ export function SkipToContent({
         'sr-only focus:not-sr-only',
         'focus:fixed focus:top-2 focus:left-2 focus:z-[100]',
         'focus:rounded-md focus:bg-gold focus:px-4 focus:py-2',
-        'focus:text-bg-base focus:font-semibold',
+        'focus:text-gold-fg focus:font-semibold',
         'focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-gold',
         className,
       )}

@@ -122,7 +122,7 @@ export default function TabletLayout(): JSX.Element {
           Orders
           {orderCount > 0 && (
             <span
-              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
+              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
               aria-label={`${orderCount} order${orderCount === 1 ? '' : 's'}`}
             >
               {orderCount}

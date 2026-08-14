@@ -66,6 +66,10 @@ interface AgeStyle {
 function formatAge(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1_000));
   const minutes = Math.floor(totalSeconds / 60);
+  // Critique run 4 lot 5 (résiduel run 3) — un ticket oublié affichait
+  // « 3371:51 » : au-delà d'une heure trente le décompte exact n'apprend
+  // plus rien, le plafond dit juste « très en retard ».
+  if (minutes > 99) return '99:59+';
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
@@ -73,9 +77,10 @@ function formatAge(ms: number): string {
 function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
   if (ageMs >= cfg.urgentMs) {
     return {
-      // motion-safe: the "Late" text badge below is the non-colour signal
-      // that stays fully legible under reduced-motion; the pulse is a bonus.
-      border: 'border-red motion-safe:animate-pulse',
+      // Critique run 4 lot 5 — animate-pulse sur l'article entier faisait
+      // passer « Late » et le minuteur à ~2,8:1 au creux : la pulsation vit
+      // désormais sur un overlay qui ne porte QUE la bordure (voir le rendu).
+      border: 'border-red',
       timer: 'text-red-as-text font-bold',
       bandLabel: 'urgent',
     };
@@ -212,8 +217,18 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
       data-age-band={style.bandLabel}
       // Règle du Filet (critique run 3) : l'élévation du ticket = surface +
       // bordure d'âge, pas d'ombre portée sous le cran `lg`.
-      className={`rounded-lg border-2 bg-bg-elevated p-4 flex flex-col gap-3 ${style.border}`}
+      className={`relative rounded-lg border-2 bg-bg-elevated p-4 flex flex-col gap-3 ${style.border}`}
     >
+      {/* motion-safe: the "Late" text badge is the non-colour signal that
+          stays fully legible under reduced-motion; the pulse is a bonus —
+          confined to this border-only overlay so the card CONTENT never
+          dips below contrast (critique run 4 lot 5). */}
+      {style.bandLabel === 'urgent' && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-0.5 rounded-lg border-2 border-red motion-safe:animate-pulse"
+        />
+      )}
       {/* flex-wrap (critique run 3, occlusion détectée en page) : sur carte
           étroite, le groupe gauche `min-w-0` se comprimait et ses chips
           `shrink-0` débordaient SOUS le groupe droit — « Takeaway » sous le

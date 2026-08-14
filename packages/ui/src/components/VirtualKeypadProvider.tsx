@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   VirtualKeypadContext,
@@ -90,7 +90,7 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={close}
-            className="mt-3 w-full h-touch-comfy rounded-md bg-gold text-black font-semibold"
+            className="mt-3 w-full h-touch-comfy rounded-md bg-gold text-gold-fg font-semibold"
           >
             Done
           </button>
@@ -99,8 +99,12 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
     </div>
   );
 
+  // Lot 5 — openFor/close sont stables (useCallback) : mémoïser l'objet évite
+  // de re-rendre tous les consommateurs du contexte à chaque render du provider.
+  const ctxValue = useMemo(() => ({ openFor, close }), [openFor, close]);
+
   return (
-    <VirtualKeypadContext.Provider value={{ openFor, close }}>
+    <VirtualKeypadContext.Provider value={ctxValue}>
       {children}
       {/* Position is `fixed` (viewport-relative) so the portal parent never
           affects layout — only the DOM ancestry, which is what a11y needs. */}

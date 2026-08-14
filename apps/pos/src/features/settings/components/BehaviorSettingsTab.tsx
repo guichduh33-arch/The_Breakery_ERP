@@ -63,7 +63,7 @@ export function BehaviorSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
                 className={cn(
                   'px-4 h-9 rounded-md text-sm font-semibold transition-colors',
                   'disabled:opacity-50 disabled:pointer-events-none',
-                  active ? 'bg-gold text-bg-base' : 'text-text-secondary hover:text-text-primary',
+                  active ? 'bg-gold text-gold-fg' : 'text-text-secondary hover:text-text-primary',
                 )}
               >
                 {orderTypeLabel(t)}

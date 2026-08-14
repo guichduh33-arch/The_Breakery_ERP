@@ -81,7 +81,7 @@ function TopProductRow({
           className={cn(
             'h-8 w-8 inline-flex items-center justify-center rounded-md font-bold text-sm shrink-0',
             rank === 1
-              ? 'bg-gold text-bg-base'
+              ? 'bg-gold text-gold-fg'
               : 'bg-bg-overlay border border-border-subtle text-text-secondary',
           )}
         >

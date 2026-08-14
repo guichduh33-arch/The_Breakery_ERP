@@ -69,7 +69,7 @@ export function TenderDraftPanel({
                 'transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                 draftAmount === remaining
-                  ? 'bg-gold text-bg-base border-gold'
+                  ? 'bg-gold text-gold-fg border-gold'
                   : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
               )}
             >

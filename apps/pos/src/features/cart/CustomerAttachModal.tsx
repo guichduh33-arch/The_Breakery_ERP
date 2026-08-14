@@ -185,7 +185,7 @@ function QuickCreateForm({
         disabled={!form.name.trim() || !form.phone.trim() || isSubmitting}
         className={cn(
           'h-12 mt-1 inline-flex items-center justify-center gap-2 rounded-md',
-          'bg-gold hover:bg-gold-hover text-bg-base font-bold uppercase tracking-widest text-sm',
+          'bg-gold hover:bg-gold-hover text-gold-fg font-bold uppercase tracking-widest text-sm',
           'transition-colors duration-fast motion-reduce:transition-none',
           'disabled:opacity-50 disabled:pointer-events-none',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',

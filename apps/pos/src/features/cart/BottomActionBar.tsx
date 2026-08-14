@@ -222,17 +222,26 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           right edge — this is what fixes the Checkout/total truncation (#14):
           the group is `min-w-0 flex-wrap`, the validation pair is `shrink-0`. */}
       <div className="flex flex-wrap items-center gap-2 min-w-0 max-md:w-full">
+        {/* Critique run 4 lot 5 — même contrat que Hold : indisponible ≠
+            disabled. Un bouton mort au doigt n'explique rien ; celui-ci reste
+            tapable et enseigne le parcours quand la liste est vide. */}
         <button
           type="button"
-          className={GHOST_BTN}
-          onClick={() => setHeldOpen(true)}
-          disabled={heldCount === 0}
+          className={`${GHOST_BTN} ${heldCount === 0 ? 'opacity-50' : ''}`}
+          aria-disabled={heldCount === 0}
+          onClick={() => {
+            if (heldCount === 0) {
+              toast.info('No held orders — send an order to the kitchen, then tap Hold to park it here.');
+              return;
+            }
+            setHeldOpen(true);
+          }}
         >
           <Clock className="h-4 w-4 text-gold" aria-hidden />
           <span>Held Orders</span>
           {heldCount > 0 && (
             <span
-              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
+              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
               aria-label={`${heldCount} held order${heldCount === 1 ? '' : 's'}`}
             >
               {heldCount}
@@ -295,7 +304,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             <span>More</span>
             {pendingTablet > 0 && (
               <span
-                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold"
+                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
                 aria-label={`${pendingTablet} pending tablet order${pendingTablet === 1 ? '' : 's'}`}
               >
                 {pendingTablet}

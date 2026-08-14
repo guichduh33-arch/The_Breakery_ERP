@@ -166,7 +166,7 @@ export function PerPayerCashStep({
                   className={cn(
                     'rounded-md py-3 text-xs font-bold uppercase tracking-widest border',
                     received === total
-                      ? 'bg-gold text-bg-base border-gold'
+                      ? 'bg-gold text-gold-fg border-gold'
                       : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
                   )}
                 >

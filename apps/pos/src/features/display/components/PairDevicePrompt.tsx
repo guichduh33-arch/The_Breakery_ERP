@@ -45,7 +45,7 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
       data-testid="display-pair-prompt"
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => { void handleSubmit(e); }}
         className="w-full max-w-md rounded-2xl border border-border-subtle bg-bg-elevated px-10 py-12"
       >
         <h2 className="font-serif text-3xl text-gold mb-2">Pair this display</h2>
@@ -91,7 +91,7 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
         <button
           type="submit"
           disabled={submitting || !code.trim()}
-          className="w-full bg-gold text-bg-base font-semibold py-3 rounded-md transition-base hover:bg-gold-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gold text-gold-fg font-semibold py-3 rounded-md transition-base hover:bg-gold-hover disabled:opacity-50 disabled:cursor-not-allowed"
           data-testid="display-pair-submit"
         >
           {submitting ? 'Pairing…' : 'Pair display'}

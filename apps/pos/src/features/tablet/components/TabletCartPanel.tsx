@@ -57,7 +57,7 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
     <span
       className={cn(
         'inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full text-xs font-semibold tabular-nums transition-colors duration-base',
-        flash ? 'bg-gold text-bg-base' : 'bg-bg-overlay text-text-secondary',
+        flash ? 'bg-gold text-gold-fg' : 'bg-bg-overlay text-text-secondary',
       )}
       aria-hidden
     >

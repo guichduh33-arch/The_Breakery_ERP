@@ -63,7 +63,7 @@ function ToggleTab({
         'transition-colors duration-fast motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
         active
-          ? 'bg-gold text-bg-base'
+          ? 'bg-gold text-gold-fg'
           : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
       )}
     >

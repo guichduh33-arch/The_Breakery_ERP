@@ -357,7 +357,7 @@ export function IngredientPicker({
                 className={cn(
                   'px-3 py-1 text-xs rounded-md border transition-colors',
                   isActive
-                    ? 'border-gold bg-gold text-bg-base'
+                    ? 'border-gold bg-gold text-gold-fg'
                     : 'border-border-subtle bg-bg-elevated text-text-secondary hover:bg-bg-overlay',
                 )}
                 onClick={() => setActiveKind(tab.value)}
