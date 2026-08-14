@@ -67,8 +67,10 @@ const GHOST_BTN =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:opacity-50 disabled:pointer-events-none';
 
+// Critique run 4 lot 3 — h-10 (40 px) était sous le plancher tactile de 44,
+// et ce menu porte « Void order ».
 const MENU_ITEM =
-  'w-full flex items-center gap-3 px-3 h-10 text-sm text-text-primary hover:bg-bg-input ' +
+  'w-full flex items-center gap-3 px-3 h-11 text-sm text-text-primary hover:bg-bg-input ' +
   'disabled:opacity-50 disabled:pointer-events-none rounded-md transition-colors';
 
 interface BottomActionBarProps {

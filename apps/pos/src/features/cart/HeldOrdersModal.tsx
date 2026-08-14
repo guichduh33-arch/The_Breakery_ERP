@@ -317,14 +317,16 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
             <button
               type="button"
               onClick={() => setConfirmRow(null)}
-              className="h-10 px-4 rounded-md border border-border-subtle bg-bg-overlay text-text-primary text-sm font-semibold hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="min-h-touch-min px-4 rounded-md border border-border-subtle bg-bg-overlay text-text-primary text-sm font-semibold hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Cancel
             </button>
+            {/* Critique run 4 lot 3 — 40 px sur une action « cannot be undone » :
+                remontés au plancher tactile de 44. */}
             <button
               type="button"
               onClick={handleConfirmReplace}
-              className="h-10 px-4 rounded-md bg-gold hover:bg-gold-hover text-bg-base text-sm font-bold uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="min-h-touch-min px-4 rounded-md bg-gold hover:bg-gold-hover text-bg-base text-sm font-bold uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Replace
             </button>
