@@ -196,8 +196,8 @@ describe('IngredientPicker', () => {
         showKindTabs={false}
       />,
     );
-    expect(screen.queryByRole('tab', { name: /Raw/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: /Semi-finished/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Raw/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Semi-finished/ })).not.toBeInTheDocument();
   });
 
   it('renders kind tabs by default with All/Raw/Semi/Sub', () => {
@@ -208,10 +208,10 @@ describe('IngredientPicker', () => {
         searchFn={vi.fn().mockResolvedValue([])}
       />,
     );
-    expect(screen.getByRole('tab', { name: /All/ })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Raw/ })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Semi-finished/ })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Sub-recipe/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /All/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Raw/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Semi-finished/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sub-recipe/ })).toBeInTheDocument();
   });
 
   it('clicking a kind tab triggers a new search with that kind', async () => {
@@ -234,7 +234,7 @@ describe('IngredientPicker', () => {
     expect(searchFn).toHaveBeenLastCalledWith('fl', 'all');
 
     // Switch tab → another searchFn call with kind=raw.
-    fireEvent.click(screen.getByRole('tab', { name: /^Raw/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Raw/ }));
     await act(async () => {
       await Promise.resolve();
     });

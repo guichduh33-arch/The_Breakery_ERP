@@ -122,14 +122,16 @@ export function DiscountModal({
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-6">
           {/* Type toggle — custom implementation to avoid Radix Dialog event propagation issues */}
+          {/* Critique run 4 lot 6 (harden) — ARIA honnête : le tablist promettait
+              une navigation aux flèches qu'aucun onKeyDown ne sert ; groupe de
+              boutons à bascule aria-pressed (WCAG 2.1.1/4.1.2). */}
           <div className="flex justify-center">
-            <div role="tablist" className="inline-flex h-10 items-center justify-center rounded-md bg-bg-input p-1">
+            <div role="group" aria-label="Discount type" className="inline-flex h-10 items-center justify-center rounded-md bg-bg-input p-1">
               {(['percentage', 'fixed_amount'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
-                  role="tab"
-                  aria-selected={type === t}
+                  aria-pressed={type === t}
                   onClick={() => {
                     setType(t);
                     setRaw('');

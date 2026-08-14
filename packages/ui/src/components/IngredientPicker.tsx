@@ -335,8 +335,11 @@ export function IngredientPicker({
         />
       </div>
 
+      {/* Critique run 4 lot 6 (harden) — ARIA honnête : le tablist promettait une
+          navigation aux flèches qu'aucun onKeyDown ne sert ; groupe de boutons à
+          bascule aria-pressed (WCAG 2.1.1/4.1.2). */}
       {showKindTabs && (
-        <div role="tablist" className="mt-2 flex gap-1">
+        <div role="group" aria-label="Ingredient kind" className="mt-2 flex gap-1">
           {KIND_TABS.map((tab) => {
             const isActive = effectiveKind === tab.value;
             const count =
@@ -350,9 +353,8 @@ export function IngredientPicker({
             return (
               <button
                 key={tab.value}
-                role="tab"
                 type="button"
-                aria-selected={isActive}
+                aria-pressed={isActive}
                 disabled={disabled}
                 className={cn(
                   'px-3 py-1 text-xs rounded-md border transition-colors',
