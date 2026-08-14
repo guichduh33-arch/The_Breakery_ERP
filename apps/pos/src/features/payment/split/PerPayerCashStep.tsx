@@ -58,10 +58,12 @@ export function PerPayerCashStep({
   const paid = payers.filter((p) => p.confirmed).reduce((s, p) => s + effectiveSubtotal(p, cartItems), 0);
   const remaining = Math.max(0, grandTotal - paid);
 
+  // Critique run 4 lot 1 (adapt) — colonne payeurs fixe 280 px intenable
+  // sous md : une colonne, le corps entier défile.
   return (
-    <div className="flex-1 grid grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-hidden" data-testid="split-per-payer-cash">
+    <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden" data-testid="split-per-payer-cash">
       {/* LEFT — payer list */}
-      <aside className="bg-bg-base p-5 overflow-y-auto">
+      <aside className="bg-bg-base p-5 overflow-y-auto max-md:overflow-visible">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs uppercase tracking-widest text-gold">Payers</h3>
           <Button variant="ghost" size="sm" onClick={onBackToMethod}>
@@ -117,7 +119,7 @@ export function PerPayerCashStep({
       </aside>
 
       {/* RIGHT — cash entry */}
-      <section className="bg-bg-base p-6 overflow-y-auto flex flex-col gap-5">
+      <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible flex flex-col gap-5">
         {/* Header chip */}
         <div className="text-center">
           <span
@@ -137,7 +139,9 @@ export function PerPayerCashStep({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        {/* Critique run 4 lot 1 (adapt) — même paire presets/pavé que
+            TenderDraftPanel : empilée sous md, pavé pleine largeur. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Enter amount display */}
           <div>
             <div className="text-xs uppercase tracking-widest text-gold mb-2">Enter Amount</div>

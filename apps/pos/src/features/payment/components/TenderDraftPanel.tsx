@@ -52,7 +52,10 @@ export function TenderDraftPanel({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Critique run 4 lot 1 (adapt) — la paire presets/pavé imbriquée dans
+          la colonne droite du terminal tombait à ~90 px par sous-colonne à
+          390 px ; sous md elle s'empile, le pavé reprend la pleine largeur. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* AMOUNT RECEIVED preset grid */}
         <div>
           <SectionLabel as="div" className="text-gold mb-2">Amount Received</SectionLabel>

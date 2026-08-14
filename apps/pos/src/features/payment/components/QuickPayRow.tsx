@@ -27,8 +27,11 @@ export function QuickPayRow({
   onProcess,
   onSplitOpen,
 }: QuickPayRowProps) {
+  // Critique run 4 lot 1 (adapt) — « Cash Exact — Rp 4.850.000 » +
+  // « Split by Item » ne tiennent pas côte à côte à 390 px : empilés
+  // pleine largeur sous md, chacun garde ses 56 px de haut.
   return (
-    <div className="flex items-stretch gap-3 mb-5">
+    <div className="flex max-md:flex-col items-stretch gap-3 mb-5">
       {fastPathReady ? (
         <button
           type="button"

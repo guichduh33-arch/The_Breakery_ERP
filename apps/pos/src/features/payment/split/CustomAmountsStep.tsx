@@ -62,10 +62,10 @@ export function CustomAmountsStep({
   return (
     <div
       data-testid="split-custom-amounts"
-      className="flex-1 grid grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-hidden"
+      className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden"
     >
       {/* LEFT — payer list + live totals */}
-      <aside className="bg-bg-base p-5 overflow-y-auto flex flex-col">
+      <aside className="bg-bg-base p-5 overflow-y-auto max-md:overflow-visible flex flex-col">
         {/* Live header */}
         <div className="mb-4 space-y-1 text-xs">
           <div className="flex justify-between text-text-secondary">
@@ -135,7 +135,7 @@ export function CustomAmountsStep({
       </aside>
 
       {/* RIGHT — numpad for active payer */}
-      <section className="bg-bg-base p-6 overflow-y-auto flex flex-col gap-5">
+      <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible flex flex-col gap-5">
         {/* Active payer header */}
         <div className="text-center">
           <span

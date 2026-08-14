@@ -37,7 +37,9 @@ export function PayerCountStep({ value, onPick }: PayerCountStepProps): JSX.Elem
           </p>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        {/* Critique run 4 lot 1 (adapt) — 4 tuiles de 96 px = 432 px,
+            déborde les 390 px d'un téléphone : 2×2 sous md. */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-center">
           {OPTIONS.map((n) => {
             const selected = value === n;
             return (

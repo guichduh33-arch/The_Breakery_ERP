@@ -30,7 +30,9 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
       {/* a11y (critique 2026-08-14) — the selection used to be visual only
           (gold border) ; radiogroup + aria-checked lets a screen reader hear
           which method is active. */}
-      <div className="grid grid-cols-3 gap-3 mb-6" role="radiogroup" aria-label="Payment method">
+      {/* Critique run 4 lot 1 (adapt) — 3 colonnes à 390 px = tuiles ~108 px
+          où « Store Credit » déborde ; 2 colonnes sous md. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6" role="radiogroup" aria-label="Payment method">
         {/* ADR-006 déc. 9 lot A — iterate the enabled set (BO-configured
             order, Set preserves insertion order) instead of the constant. */}
         {[...enabled]
