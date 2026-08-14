@@ -190,7 +190,8 @@ function DebtSidebarItem({
           <span
             className={cn(
               'h-5 min-w-5 px-1.5 inline-flex items-center justify-center rounded-full text-xs font-bold',
-              'bg-amber-warn text-bg-base',
+              // Critique run 4 lot 7 — contrat -fg sur aplat ambre, tenu dans les deux thèmes
+              'bg-amber-warn text-amber-fg',
             )}
           >
             {debt.orders.length}

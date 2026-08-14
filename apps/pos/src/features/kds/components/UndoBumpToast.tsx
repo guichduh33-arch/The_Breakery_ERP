@@ -71,7 +71,8 @@ export function UndoBumpToast({ orderItemId, bumpedAtMs, onClose }: UndoBumpToas
         type="button"
         onClick={handleUndo}
         disabled={undo.isPending}
-        className="rounded-md border border-amber-warn px-3 py-1 text-sm font-semibold text-amber-warn hover:bg-amber-warn hover:text-bg-base"
+        // Critique run 4 lot 7 — contrat -fg sur aplat ambre, tenu dans les deux thèmes
+        className="rounded-md border border-amber-warn px-3 py-1 text-sm font-semibold text-amber-warn hover:bg-amber-warn hover:text-amber-fg"
         aria-label="Undo bump"
       >
         Undo

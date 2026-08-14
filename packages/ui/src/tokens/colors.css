@@ -66,6 +66,12 @@
   /* Foreground when green is bg (mirror of --gold-fg). */
   --green-fg:     #0a1610;
 
+  /* Premier plan SUR un aplat ambre (--amber-warn, défini en luxe-dark.css).
+   * Même contrat que --gold-fg / --green-fg / --red-on-fill : déclaré PAR thème,
+   * jamais emprunté à un token de surface. Brun quasi-noir de la famille de
+   * --gold-fg, tiré vers l'ambre — 7,65:1 sur --amber-warn (#d99a3a). */
+  --amber-fg:     #1b1105;
+
   /* Categorical identity hues — RGB triplets pour les modificateurs alpha du
    * preset Tailwind (bg-cat-amber/15, border-cat-amber/30). Thème sombre =
    * nuances -300 ; le Backoffice passe en -700/-800. Inchangé. */
@@ -306,6 +312,11 @@
   --red-on-fill:   #ffffff;                  /* texte SUR remplissage rouge — 6,1:1 sur --red-base */
   --blue-info:     #2b6c9c;
   --amber-warn:    #8a5a10;
+  /* Texte SUR remplissage ambre — même logique que --gold-fg ici : l'ambre du
+   * thème clair est une ENCRE sombre, son premier plan est donc l'ivoire de la
+   * feuille. 5,82:1 sur --amber-warn. Le POS le résout en brun quasi-noir :
+   * c'est tout l'objet du token, l'aplat n'emprunte plus une couleur de fond. */
+  --amber-fg:      #fffdf9;
 
   --success:      var(--green-base);
   --success-soft: rgba(24, 122, 82, 0.12);
