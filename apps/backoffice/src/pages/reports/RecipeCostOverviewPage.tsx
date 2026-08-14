@@ -132,11 +132,21 @@ export function RecipeCostOverviewPage(): JSX.Element {
             </thead>
             <tbody>
               {rows.map((r) => (
+                // Lot A2 — la navigation par ligne n'était accessible qu'à la
+                // souris : focusable + Enter/Espace, destination annoncée.
                 <tr
                   key={r.product_id}
-                  className="border-t border-border-subtle cursor-pointer hover:bg-bg-elevated"
+                  tabIndex={0}
+                  aria-label={`Open cost timeline for ${r.product_name}`}
+                  className="border-t border-border-subtle cursor-pointer hover:bg-bg-elevated focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold"
                   data-testid={`overview-row-${r.product_id}`}
                   onClick={() => { void navigate(`/backoffice/reports/recipe-cost/${r.product_id}`); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void navigate(`/backoffice/reports/recipe-cost/${r.product_id}`);
+                    }
+                  }}
                 >
                   <td className="py-1.5" onClick={(e) => e.stopPropagation()}>
                     <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />

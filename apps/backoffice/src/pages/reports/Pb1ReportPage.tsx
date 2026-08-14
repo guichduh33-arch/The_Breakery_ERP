@@ -155,13 +155,6 @@ export default function Pb1ReportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.by_day.length === 0 && (
-                    <tr>
-                      <td className="py-3 text-text-secondary" colSpan={3}>
-                        No sales recorded for this month.
-                      </td>
-                    </tr>
-                  )}
                   {data.by_day.map((d) => (
                     <tr key={d.day} className="border-b border-border-subtle">
                       <td className="py-2 text-text-secondary">{String(d.day).slice(0, 10)}</td>

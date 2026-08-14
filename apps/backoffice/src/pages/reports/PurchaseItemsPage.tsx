@@ -17,6 +17,7 @@ import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
 import {
@@ -159,7 +160,9 @@ export default function PurchaseItemsPage() {
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">
+        // Lot A2 — aligné sur les 4 autres bannières de troncature du module
+        // (rounded + role="status" ; celle-ci était la seule divergente).
+        <p role="status" className="mb-3 rounded border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">
           First 1000 rows shown — narrow the date range to see all results.
         </p>
       )}
@@ -231,10 +234,15 @@ export default function PurchaseItemsPage() {
             <tbody>
               {lines.map((r, idx) => (
                 <tr key={`${r.po_id}-${r.product_id}-${idx}`} className="border-b border-border-subtle">
-                  <td className="py-2 font-medium">{r.po_number}</td>
+                  <td className="py-2 font-medium">
+                    {/* Lot A2 — po_id / product_id étaient disponibles, aucun lien posé. */}
+                    <DrilldownLink entity="purchase_order" id={r.po_id} label={r.po_number} />
+                  </td>
                   <td className="py-2 text-text-secondary">{String(r.order_date).slice(0, 10)}</td>
                   <td className="py-2 text-text-secondary">{r.supplier_name}</td>
-                  <td className="py-2">{r.product_name}</td>
+                  <td className="py-2">
+                    <DrilldownLink entity="product" id={r.product_id} label={r.product_name} />
+                  </td>
                   <td className="py-2 text-text-secondary font-mono text-xs">{r.sku}</td>
                   <td className="py-2 text-right tabular-nums">{r.quantity}</td>
                   <td className="py-2 text-right tabular-nums">{r.received_quantity}</td>

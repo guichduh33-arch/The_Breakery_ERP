@@ -124,10 +124,21 @@ export default function AuditPage(): JSX.Element {
                         onClick={() => setExpandedId(expanded ? null : r.id)}
                         data-testid={`audit-row-${r.id}`}
                       >
-                        <td className="py-2 text-text-secondary" data-testid={`audit-toggle-${r.id}`}>
-                          {expanded
-                            ? <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                            : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
+                        <td className="py-2 text-text-secondary">
+                          {/* Lot A2 — la ligne dépliable n'était accessible qu'à la
+                              souris : le chevron devient un vrai bouton focusable. */}
+                          <button
+                            type="button"
+                            aria-expanded={expanded}
+                            aria-label={expanded ? 'Collapse entry details' : 'Expand entry details'}
+                            data-testid={`audit-toggle-${r.id}`}
+                            className="flex h-6 w-6 items-center justify-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                            onClick={(e) => { e.stopPropagation(); setExpandedId(expanded ? null : r.id); }}
+                          >
+                            {expanded
+                              ? <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                              : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
+                          </button>
                         </td>
                         <td className="py-2 tabular-nums text-text-secondary">
                           {formatDateTimeWita(r.created_at)}

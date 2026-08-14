@@ -8,6 +8,7 @@ import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { useCashierVariance } from '@/features/reports/hooks/useCashierVariance.js';
@@ -97,7 +98,10 @@ export default function CashierVariancePage() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.cashier_id} className="border-b border-border-subtle">
-                    <td className="py-2">{r.cashier_name}</td>
+                    <td className="py-2">
+                      {/* Lot A2 — cashier_id était disponible et aucun lien posé. */}
+                      <DrilldownLink entity="user" id={r.cashier_id} label={r.cashier_name} />
+                    </td>
                     <td className="py-2 text-right tabular-nums">{r.sessions_count}</td>
                     <td className={`py-2 text-right tabular-nums ${varianceClass(r.cash.total_variance)}`}>{fmt(r.cash.total_variance)}</td>
                     <td className="py-2 text-right tabular-nums">{fmt(r.cash.avg_variance)}</td>

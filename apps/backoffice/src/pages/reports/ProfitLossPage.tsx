@@ -186,14 +186,7 @@ export default function ProfitLossPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.lines.length === 0 ? (
-                    <tr>
-                      <td className="py-3 text-text-secondary" colSpan={5}>
-                        No journal-entry activity in the selected range.
-                      </td>
-                    </tr>
-                  ) : (
-                    data.lines.map((l) => (
+                  {data.lines.map((l) => (
                       <tr key={l.code} className="border-b border-border-subtle">
                         <td className="py-2">
                           <DrilldownLink
@@ -209,8 +202,7 @@ export default function ProfitLossPage() {
                         <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>
                         <td className="py-2 text-right tabular-nums">{fmt(l.balance)}</td>
                       </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>

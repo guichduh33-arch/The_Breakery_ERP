@@ -5,6 +5,7 @@ import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
@@ -98,7 +99,11 @@ export default function StaffPerformancePage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.staff_id} className="border-b border-border-subtle">
-                  <td className="py-2 font-medium">{r.staff_name}</td>
+                  <td className="py-2 font-medium">
+                    {/* Lot A2 — staff_id était disponible et aucun lien posé
+                        (SalesByStaff drille déjà sur le même id). */}
+                    <DrilldownLink entity="user" id={r.staff_id} label={r.staff_name} />
+                  </td>
                   <td className="py-2 text-right tabular-nums">{r.orders_served}</td>
                   <td className="py-2 text-right tabular-nums">{IDR(r.revenue)}</td>
                   <td className="py-2 text-right tabular-nums">{IDR(r.aov)}</td>

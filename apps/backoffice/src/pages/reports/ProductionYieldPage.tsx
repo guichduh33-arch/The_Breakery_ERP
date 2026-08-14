@@ -112,13 +112,24 @@ function OutliersTable({
           {rows.map((r) => {
             const isSelected = selectedProductId === r.product_id;
             return (
+              // Lot A2 — la ligne de drill-down interne n'était accessible
+              // qu'à la souris : focusable + Enter/Espace.
               <tr
                 key={r.id}
+                tabIndex={0}
+                aria-selected={isSelected}
                 className={cn(
                   'border-b border-border-subtle cursor-pointer hover:bg-bg-elevated',
+                  'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold',
                   isSelected && 'bg-bg-elevated',
                 )}
                 onClick={() => onSelectProduct(isSelected ? null : r.product_id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectProduct(isSelected ? null : r.product_id);
+                  }
+                }}
                 aria-label={`Outlier ${r.production_number}, click to drill into product`}
                 data-testid="yield-outlier-row"
               >
