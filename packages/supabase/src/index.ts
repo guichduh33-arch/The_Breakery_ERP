@@ -4,6 +4,7 @@ export {
   setSupabaseAccessToken,
   setSupabaseKioskAccessToken,
   getSupabaseAccessToken,
+  setSupabaseAuthErrorHandler,
   type BreakerySupabaseConfig,
 } from './client.js';
 export type { Database, Json } from './types.generated.js';

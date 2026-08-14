@@ -39,7 +39,7 @@ export function ShiftClosedState({
   onOpenShift,
 }: ShiftClosedStateProps): JSX.Element {
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => !o && onCancel()}>
+    <FullScreenModal open={open} onOpenChange={(o) => !o && onCancel()} title="No shift open">
       <div className="m-auto bg-bg-overlay rounded-2xl border border-border-subtle shadow-modal w-full max-w-md p-8 text-center space-y-6"
            data-testid="shift-closed-state">
         <div className="grid place-items-center">

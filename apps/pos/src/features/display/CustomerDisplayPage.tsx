@@ -50,6 +50,25 @@ const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
  *  resets the timer, so an actively-rung cart never trips it. */
 const CART_FRESHNESS_MS = 5 * 60 * 1_000;
 
+// Kiosk-issue-jwt error codes → human copy (critique 2026-08-14 — the screen
+// used to greet with the raw code, e.g. "(kiosk_unpaired)", on a surface that
+// faces the customer once mounted). Unknown codes fall back to a generic line;
+// never echo the code itself.
+function pairingErrorCopy(code: string | null): string {
+  switch (code) {
+    case 'kiosk_unpaired':
+      return 'This display is not paired yet — enter the pairing code to connect it.';
+    case 'kiosk_revoked':
+      return 'This display was unpaired by a manager — enter a new pairing code.';
+    case 'kiosk_unavailable':
+      return 'Cannot reach the server — check the network, then re-enter the pairing code.';
+    case 'ip_not_allowed':
+      return "This device's network is not allowed for kiosk screens — ask a manager to check the network settings.";
+    default:
+      return 'Pairing check failed — re-enter the pairing code.';
+  }
+}
+
 export default function CustomerDisplayPage() {
   const auth = useKioskAuth();
   // Settings §6.C — push settings propagation for the kiosk surface. The App
@@ -172,11 +191,7 @@ export default function CustomerDisplayPage() {
               await auth.retry();
             })();
           }}
-          errorHint={
-            auth.status === 'pin_fallback'
-              ? `Kiosk authentication failed (${auth.error ?? 'unknown'}). Re-enter pairing code.`
-              : null
-          }
+          errorHint={auth.status === 'pin_fallback' ? pairingErrorCopy(auth.error) : null}
         />
       </BrandedLayout>
     );

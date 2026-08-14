@@ -4,6 +4,7 @@ import { VirtualKeypadProvider } from '@breakery/ui';
 import LoginPage from '@/pages/Login';
 import PosPage from '@/pages/Pos';
 import { useAuthStore } from '@/stores/authStore';
+import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 
 const KdsPage = lazy(() => import('@/pages/Kds'));
 const TabletLayout = lazy(() => import('@/pages/tablet/TabletLayout'));
@@ -49,11 +50,17 @@ function RouteFallback() {
 // Critique run 2 (2026-08-14 P1) — le pavé virtuel couvre TOUTES les surfaces
 // comptoir, pas seulement /pos : les satellites (debts, settings, stock,
 // reports) tournent sur le même poste sans clavier physique.
+// Critique run 3 (harden) — le verrou (manuel, inactivité ou session morte)
+// se rend aussi sur les satellites : avant, isLocked passait à true et l'écran
+// /pos/reports restait pilotable sans overlay. /kds est volontairement exclu
+// (écran cuisine, jamais verrouillé).
 function ProtectedLazy({ children }: { children: ReactNode }) {
+  const isLocked = useAuthStore((s) => s.isLocked);
   return (
     <Protected>
       <VirtualKeypadProvider>
         <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+        {isLocked && <TerminalLockedOverlay />}
       </VirtualKeypadProvider>
     </Protected>
   );

@@ -55,7 +55,7 @@ function friendlyError(err: string): string {
     case 'user_not_found':      return 'User not found.';
     case 'invalid_pin_format':  return 'PIN must be 6 digits.';
     case 'network_timeout':     return 'Network slow — try again.';
-    default:                    return 'Sign in failed.';
+    default:                    return 'Sign in failed — check the connection and try again.';
   }
 }
 
@@ -228,11 +228,17 @@ export default function LoginPage(): JSX.Element {
           </div>
         )}
 
-        {/* PIN dots */}
-        <div className="flex justify-center gap-3" aria-label="PIN dots" role="status">
+        {/* PIN dots — the dots are visual only; the sr-only counter inside the
+            role="status" live region announces progress to screen readers
+            (critique 2026-08-14, a11y: the region used to be silent). */}
+        <div className="flex justify-center gap-3" aria-label="PIN progress" role="status">
+          <span className="sr-only">
+            {pin.length} of {PIN_MAX} digits entered
+          </span>
           {dots.map((_, i) => (
             <span
               key={i}
+              aria-hidden
               data-testid={`login-pin-dot-${i}`}
               className={cn(
                 'h-3 w-3 rounded-full border transition-colors',
