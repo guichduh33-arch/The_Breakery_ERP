@@ -77,7 +77,7 @@ function VoidsBreakdown({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsVoidsRefunds(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading voids &amp; discounts…</p>;
-  if (isError || !data) return <p className="text-red text-sm">Failed to load voids &amp; discounts.</p>;
+  if (isError || !data) return <p className="text-red-as-text text-sm">Failed to load voids &amp; discounts.</p>;
 
   const { reversals: rv, discounts: ds } = data;
   const hasReversals =

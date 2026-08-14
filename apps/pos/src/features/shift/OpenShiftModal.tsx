@@ -38,7 +38,7 @@ import {
   Select,
   cn,
 } from '@breakery/ui';
-import { todayIsoDate, formatTimeWita } from '@breakery/utils';
+import { todayIsoDate, formatTimeWita, formatIdr } from '@breakery/utils';
 import { sumDenominations } from '@breakery/domain';
 import { toast } from 'sonner';
 import { useOpenShift } from './hooks/useShift';
@@ -258,9 +258,11 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                   amount > 0 ? 'border-gold' : 'border-gold-soft',
                 )}
               >
-                <span className="text-text-secondary text-sm font-mono">Rp</span>
+                {/* Critique run 3 (polish) — la saisie s'affichait brute
+                    (« 35000 ») au-dessus du Currency formaté : une seule
+                    graphie, formatée dès la frappe. */}
                 <span className="text-2xl font-mono tabular-nums text-text-primary text-right flex-1">
-                  {amountStr || ' '}
+                  {formatIdr(amount)}
                 </span>
               </div>
               <div className="text-center pt-1">

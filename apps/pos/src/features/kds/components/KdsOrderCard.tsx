@@ -30,7 +30,7 @@
 // Constraints:
 //   - Zero hardcoded hex (D-color). All colours flow through tokens via
 //     Tailwind preset (`bg-bg-elevated`, `text-text-primary`, `border-red`,
-//     `border-amber-warn`, `text-amber-warn`, `text-red`, `text-gold`, …).
+//     `border-amber-warn`, `text-amber-warn`, `text-red-as-text`, `text-gold`, …).
 //   - No raw `style={{}}` — Tailwind classes only.
 //   - StrictMode-safe — no module-scoped mutable state ; the only timer is
 //     the shared `useAgeTimer` hook.

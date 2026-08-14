@@ -49,7 +49,7 @@ export function POSStockCard({
       ? 'border-amber-warn'
       : 'border-border-subtle';
 
-  const stockTextTone = isOut ? 'text-red' : isLow ? 'text-amber-warn' : 'text-text-primary';
+  const stockTextTone = isOut ? 'text-red-as-text' : isLow ? 'text-amber-warn' : 'text-text-primary';
 
   const hasClosure = Boolean(onReturnToKitchen ?? onWaste ?? onAdjust);
 
@@ -95,7 +95,7 @@ export function POSStockCard({
 
       {/* Status banner */}
       {isOut && (
-        <div className="rounded-md border border-red-soft bg-red-soft px-2 py-1.5 text-xs text-red text-center inline-flex items-center justify-center gap-1">
+        <div className="rounded-md border border-red-soft bg-red-soft px-2 py-1.5 text-xs text-red-as-text text-center inline-flex items-center justify-center gap-1">
           <Bell className="h-3 w-3" aria-hidden /> OUT OF STOCK — sales blocked
         </div>
       )}

@@ -87,7 +87,7 @@ export function LiveSessionsModal({ open, onClose }: LiveSessionsModalProps): JS
 
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {sessions.isLoading && <p className="text-text-secondary text-sm">Loading sessions…</p>}
-        {sessions.isError && <p className="text-red text-sm">Failed to load sessions.</p>}
+        {sessions.isError && <p className="text-red-as-text text-sm">Failed to load sessions.</p>}
         {!sessions.isLoading && rows.length === 0 && (
           <EmptyState
             icon={Monitor}

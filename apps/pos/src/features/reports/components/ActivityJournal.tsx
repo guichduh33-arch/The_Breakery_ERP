@@ -111,7 +111,7 @@ function toneOf(e: PosJournalEvent): { bg: string; fg: string; icon: LucideIcon 
     e.event_type === 'cash_drawer_opened' &&
     (e.payload as { trigger?: string }).trigger === 'manual';
   if (HOT_TYPES.has(e.event_type) || manualDrawer) {
-    return { bg: 'bg-red-soft', fg: 'text-red', icon: ShieldAlert };
+    return { bg: 'bg-red-soft', fg: 'text-red-as-text', icon: ShieldAlert };
   }
   switch (fam) {
     case 'control': return { bg: 'bg-gold-soft', fg: 'text-gold', icon: AlertTriangle };
@@ -200,7 +200,7 @@ export function ActivityJournal({ period }: { period: ReportsPeriod }): JSX.Elem
     const denied = q.error.message.includes('42501')
       || q.error.message.toLowerCase().includes('permission');
     return (
-      <p className="text-red text-sm">
+      <p className="text-red-as-text text-sm">
         {denied ? 'You do not have permission to read the audit journal (reports.audit.read).' : 'Failed to load the journal.'}
       </p>
     );
@@ -324,7 +324,7 @@ function JournalRow({
 }): JSX.Element {
   const tone = toneOf(e);
   const Icon = tone.icon;
-  const hot = tone.fg === 'text-red';
+  const hot = tone.fg === 'text-red-as-text';
 
   return (
     <li
@@ -367,7 +367,7 @@ function JournalRow({
       </div>
       <div className="text-right shrink-0">
         {e.amount !== null ? (
-          <Currency amount={e.amount} emphasis="gold" {...(hot ? { className: 'text-red' } : {})} />
+          <Currency amount={e.amount} emphasis="gold" {...(hot ? { className: 'text-red-as-text' } : {})} />
         ) : null}
         <div className="text-xs text-text-muted font-mono">{timeFmt.format(new Date(e.occurred_at))}</div>
       </div>

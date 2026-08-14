@@ -162,7 +162,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
 
               <SectionLabel size="xs" as="h3">Transactions</SectionLabel>
 
-              {history.isError && <div className="text-red text-sm">Failed to load order history</div>}
+              {history.isError && <div className="text-red-as-text text-sm">Failed to load order history</div>}
               {!history.isLoading && history.data?.length === 0 && (
                 <div className="text-text-secondary text-sm py-12 text-center">
                   No orders in this shift yet.
@@ -193,7 +193,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                         <div className="flex-1 min-w-0">
                           <div className="inline-flex items-center gap-2">
                             <span className="font-mono text-base font-bold text-text-primary"># {row.order_number}</span>
-                            {isVoided && <span className="text-xs text-red uppercase font-semibold">VOIDED</span>}
+                            {isVoided && <span className="text-xs text-red-as-text uppercase font-semibold">VOIDED</span>}
                             {partial && <span className="text-xs text-amber-warn uppercase font-semibold">PARTIAL REFUND</span>}
                           </div>
                           <div className="text-xs text-text-secondary mt-1 inline-flex items-center gap-2">
@@ -226,8 +226,8 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                           <div className="text-right">
                             <Currency amount={row.total} emphasis="gold" />
                             {row.total_refunded > 0 && (
-                              <div className="text-xs text-red font-mono">
-                                -<Currency amount={row.total_refunded} className="text-red" />
+                              <div className="text-xs text-red-as-text font-mono">
+                                -<Currency amount={row.total_refunded} className="text-red-as-text" />
                               </div>
                             )}
                           </div>

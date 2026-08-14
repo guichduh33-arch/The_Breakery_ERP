@@ -401,7 +401,7 @@ function KpiChip({
     <span
       className={cn(
         'inline-flex items-center gap-1 px-2 h-7 rounded-md text-xs font-semibold uppercase tracking-widest',
-        tone === 'danger' && 'bg-red-soft text-red',
+        tone === 'danger' && 'bg-red-soft text-red-as-text',
         // `amber-warn` has no alpha outside cat-* — `warning-soft` mirrors
         // the `danger` branch's `-soft` pattern above.
         tone === 'warning' && 'bg-warning-soft text-amber-warn',

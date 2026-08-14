@@ -97,7 +97,7 @@ function ActivityList({ period }: { period: ReportsPeriod }): JSX.Element {
   }, [data, filter]);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading activity…</p>;
-  if (isError) return <p className="text-red text-sm">Failed to load activity.</p>;
+  if (isError) return <p className="text-red-as-text text-sm">Failed to load activity.</p>;
 
   return (
     <div className="space-y-4">

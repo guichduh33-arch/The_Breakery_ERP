@@ -119,7 +119,7 @@ function HeldOrderCard({
             aria-label={`Delete held order ${row.order_number}`}
             className={cn(
               'h-10 w-10 inline-flex items-center justify-center rounded-md',
-              'text-red border border-red bg-red-soft hover:bg-red hover:text-red-on-fill',
+              'text-red-as-text border border-red bg-red-soft hover:bg-red hover:text-red-on-fill',
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
             )}
@@ -249,7 +249,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                 role="alert"
                 data-testid="held-orders-error"
               >
-                <AlertTriangle className="h-12 w-12 text-red opacity-80" aria-hidden />
+                <AlertTriangle className="h-12 w-12 text-red-as-text opacity-80" aria-hidden />
                 <SectionLabel size="sm" className="text-text-primary">
                   Couldn’t load held orders
                 </SectionLabel>

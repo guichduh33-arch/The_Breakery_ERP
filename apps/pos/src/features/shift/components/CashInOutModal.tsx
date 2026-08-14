@@ -88,8 +88,9 @@ export function CashInOutModal({
 
         <section className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-text-secondary">Amount</label>
+          {/* Critique run 3 (polish) — saisie formatée dès la frappe, une seule graphie. */}
           <div className="bg-bg-input border-2 border-gold rounded-md px-4 py-3 text-2xl font-mono text-right tabular-nums">
-            Rp {amountStr || '0'}
+            {formatIdr(amount)}
           </div>
           <div className="text-center">
             <Currency amount={amount} emphasis="gold" className="text-3xl" />

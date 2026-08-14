@@ -61,7 +61,7 @@ function MarginReport({ period }: { period: ReportsPeriod }): JSX.Element {
   const { data, isLoading, isError } = usePOSReportsMargin(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading margin…</p>;
-  if (isError || !data) return <p className="text-red text-sm">Failed to load margin.</p>;
+  if (isError || !data) return <p className="text-red-as-text text-sm">Failed to load margin.</p>;
 
   const s = data.summary;
   const hasLines = data.byProduct.length > 0;

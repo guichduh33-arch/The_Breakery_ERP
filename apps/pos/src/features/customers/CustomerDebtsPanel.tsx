@@ -97,7 +97,7 @@ export default function CustomerDebtsPanel(): JSX.Element {
           <ul className="flex-1 overflow-y-auto p-2 space-y-1">
             {isLoading &&
               Array.from({ length: 5 }).map((_, i) => <DebtSidebarSkeleton key={`debt-skeleton-${i}`} />)}
-            {isError && <li className="text-red text-sm p-3">Failed to load debts.</li>}
+            {isError && <li className="text-red-as-text text-sm p-3">Failed to load debts.</li>}
             {!isLoading && filtered.length === 0 && (
               <li className="p-3">
                 <EmptyState
@@ -197,7 +197,7 @@ function DebtSidebarItem({
           </span>
         </div>
         <div className="mt-1 flex items-center justify-between text-xs">
-          <Currency amount={debt.total_due} className="text-red font-mono" />
+          <Currency amount={debt.total_due} className="text-red-as-text font-mono" />
           <span className="text-text-muted">{debt.oldest_order_days}d oldest</span>
         </div>
       </button>
@@ -279,7 +279,7 @@ function DebtOrderRow({
           <span className="font-mono text-sm font-bold text-text-primary">{order.order_number}</span>
           <span className="text-xs text-text-muted uppercase tracking-widest">{order.order_type}</span>
         </div>
-        <span className="inline-flex items-center gap-1 text-xs px-2 h-6 rounded-md bg-red-soft text-red font-semibold">
+        <span className="inline-flex items-center gap-1 text-xs px-2 h-6 rounded-md bg-red-soft text-red-as-text font-semibold">
           <Clock className="h-3 w-3" aria-hidden /> {order.days_old}d
         </span>
       </div>
@@ -295,7 +295,7 @@ function DebtOrderRow({
         </div>
         <div>
           <div className="text-xs uppercase tracking-widest text-text-muted">Due</div>
-          <Currency amount={order.due} className="font-mono text-red" />
+          <Currency amount={order.due} className="font-mono text-red-as-text" />
         </div>
       </div>
 
