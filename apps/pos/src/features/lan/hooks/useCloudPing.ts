@@ -15,14 +15,17 @@ import { useCloudStatusStore } from '../cloudStatusStore';
 const PING_INTERVAL_MS = 15_000;
 const PING_TIMEOUT_MS = 5_000;
 
-async function pingCloud(supabaseUrl: string): Promise<boolean> {
+async function pingCloud(supabaseUrl: string, anonKey: string): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
   try {
+    // `apikey` est la clé de gateway, pas une auth utilisateur : sans elle,
+    // chaque ping ressort en 401 dans les logs Supabase (backlog 401).
     const res = await fetch(`${supabaseUrl}/auth/v1/health`, {
       method: 'HEAD',
       signal: controller.signal,
       cache: 'no-store',
+      headers: { apikey: anonKey },
     });
     return res.ok || res.status === 401; // 401 = l'hôte a répondu.
   } catch {
@@ -40,6 +43,7 @@ export function useCloudPing(enabled = true): void {
     // serait lent ET non déterministe (cloudOnline par défaut = true).
     if (env.MODE === 'test') return;
     const supabaseUrl = env.VITE_SUPABASE_URL ?? '';
+    const anonKey = env.VITE_SUPABASE_ANON_KEY ?? '';
     if (supabaseUrl === '') return;
 
     let cancelled = false;
@@ -51,7 +55,7 @@ export function useCloudPing(enabled = true): void {
     }
 
     async function doPing(): Promise<void> {
-      const ok = await pingCloud(supabaseUrl);
+      const ok = await pingCloud(supabaseUrl, anonKey);
       if (cancelled) return;
       pingOk = ok;
       publish();

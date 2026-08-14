@@ -4,14 +4,19 @@ import { QueryClient } from '@tanstack/react-query';
 /**
  * Treat auth/permission failures as terminal — retrying them does nothing but
  * hammer the backend (the >700-request storm observed when the PIN bearer was
- * missing on reload). PostgREST surfaces these either as an HTTP status
- * (401/403) or a PostgrestError code (`42501` insufficient_privilege, `PGRST301`
- * JWT expired/invalid), so we check both shapes.
+ * missing on reload). Three shapes reach react-query:
+ *   - EF wrapper errors (pinAuth/kioskAuth fetch helpers): `status` on the error;
+ *   - PostgrestError: no `status`, only `code` (`42501` insufficient_privilege,
+ *     `PGRST301`/`PGRST302` JWT expired/invalid);
+ *   - FunctionsHttpError (supabase.functions.invoke): neither — the HTTP status
+ *     lives on `context` (the raw Response).
  */
 function isAuthError(error: unknown): boolean {
-  const e = error as { status?: number; code?: string } | null;
+  const e = error as { status?: number; code?: string; context?: { status?: number } } | null;
   if (!e) return false;
   if (e.status === 401 || e.status === 403) return true;
+  const ctxStatus = e.context?.status;
+  if (ctxStatus === 401 || ctxStatus === 403) return true;
   return e.code === '42501' || e.code === 'PGRST301' || e.code === 'PGRST302';
 }
 
