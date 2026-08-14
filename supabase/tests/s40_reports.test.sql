@@ -1,19 +1,19 @@
 -- supabase/tests/s40_reports.test.sql
--- S40 Wave A — pgTAP suite (22 assertions T1-T22).
+-- S40 Wave A — pgTAP suite (24 assertions T1-T22 + T23-T24, lot I 2026-08-15).
 --
 -- Covers:
 --   T1  : INSERT role_permissions → audit_logs row action='role.permission_granted'
 --   T2  : DELETE role_permissions → audit_logs row action='role.permission_revoked'
---   T3  : get_daily_sales_v1 CASHIER → 42501 (no reports.sales.read)
---   T4  : get_daily_sales_v1 MANAGER happy path → summary.order_count = 2, by_day length = 2
---   T5  : get_daily_sales_v1 refunds deducted in net (net = gross - refund)
+--   T3  : get_daily_sales_v2 CASHIER → 42501 (no reports.sales.read)
+--   T4  : get_daily_sales_v2 MANAGER happy path → summary.order_count = 2, by_day length = 2
+--   T5  : get_daily_sales_v2 refunds deducted in net (net = gross - refund)
 --   T6  : get_purchase_items_v1 CASHIER → 42501
 --   T7  : get_purchase_items_v1 MANAGER → 2 lines returned; p_supplier_id filter scopes correctly
 --   T8  : get_purchase_by_date_v1 CASHIER → 42501
 --   T9  : get_purchase_by_date_v1 MANAGER → summary.po_count = 1
 --   T10 : get_purchase_by_supplier_v1 CASHIER → 42501
 --   T11 : get_purchase_by_supplier_v1 MANAGER → share_pct = 100 for single supplier
---   T12 : get_daily_sales_v1 end < start → P0001
+--   T12 : get_daily_sales_v2 end < start → P0001
 --   T13 : get_staff_performance_v1 CASHIER → 42501
 --   T14 : get_staff_performance_v1 MANAGER → cashier row orders_served >= 2 ; manager row voids_count >= 1
 --   T15 : get_production_report_v1 CASHIER → 42501
@@ -24,6 +24,10 @@
 --   T20 : get_price_changes_v1 MANAGER → LAG correct (old 1000 → new 1500, delta 50) + p_product_id filter
 --   T21 : get_permission_changes_v1 CASHIER → 42501 (gate reports.audit.read, MANAGER+ — corrective _021)
 --   T22 : get_permission_changes_v1 MANAGER → finds the T2 revoked row
+--   T23 : get_daily_sales_v2 MANAGER → summary.discount_total/discount_orders_count present,
+--         voids_count/voids_value cover the T14 seeded void (ORD-S40-VOID-001, total 33000)
+--   T24 : get_daily_sales_v2 MANAGER → sessions is a non-empty jsonb array, contains the
+--         seeded session with cashier name resolved
 --
 -- Seeded users (from seed.sql):
 --   SUPER_ADMIN : auth_user_id = 00000000-0000-0000-0000-000000000001 (EMP000)
@@ -36,7 +40,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(22);
+SELECT plan(24);
 
 -- ============================================================
 -- FIXTURES
@@ -221,7 +225,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_daily_sales_v1('2026-01-01', '2026-12-31');
+    PERFORM get_daily_sales_v2('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -229,7 +233,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t3_pass')::boolean,
-  'T3: get_daily_sales_v1 CASHIER raises 42501'
+  'T3: get_daily_sales_v2 CASHIER raises 42501'
 );
 
 -- T4 : MANAGER happy path → summary.order_count = 2, by_day length = 2
@@ -241,7 +245,7 @@ DECLARE
   v_by_day_len INT;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v1(
+  v_result := get_daily_sales_v2(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -255,7 +259,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t4_pass')::boolean,
-  'T4: get_daily_sales_v1 MANAGER → summary.order_count >= 2, by_day length >= 2'
+  'T4: get_daily_sales_v2 MANAGER → summary.order_count >= 2, by_day length >= 2'
 );
 
 -- T5 : net = gross - refund_total (refund deducted correctly)
@@ -268,7 +272,7 @@ DECLARE
   v_ok           BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v1(
+  v_result := get_daily_sales_v2(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -282,7 +286,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t5_pass')::boolean,
-  'T5: get_daily_sales_v1 net = gross - refund_total (refund deducted)'
+  'T5: get_daily_sales_v2 net = gross - refund_total (refund deducted)'
 );
 
 -- ============================================================
@@ -475,7 +479,7 @@ SELECT ok(
 -- S40.6 — Input validation (T12)
 -- ============================================================
 
--- T12 : get_daily_sales_v1 end < start → P0001
+-- T12 : get_daily_sales_v2 end < start → P0001
 DO $$
 DECLARE
   v_caught   BOOLEAN := false;
@@ -483,7 +487,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_daily_sales_v1('2026-12-31', '2026-01-01');
+    PERFORM get_daily_sales_v2('2026-12-31', '2026-01-01');
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
     v_caught := (v_sqlstate = 'P0001');
@@ -492,7 +496,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t12_pass')::boolean,
-  'T12: get_daily_sales_v1 end < start raises P0001'
+  'T12: get_daily_sales_v2 end < start raises P0001'
 );
 
 -- ============================================================
@@ -787,6 +791,71 @@ END $$;
 SELECT ok(
   current_setting('breakery.t22_pass')::boolean,
   'T22: get_permission_changes_v1 MANAGER finds the trigger revoked row'
+);
+
+-- ============================================================
+-- S40.13 — get_daily_sales_v2 extension (lot I, T23-T24)
+-- Payload additif : summary +discount_total/discount_orders_count/
+-- voids_count/voids_value, racine +sessions.
+-- ============================================================
+
+-- T23 : MANAGER → summary carries the 4 new keys ; voids_count/voids_value
+-- cover the S40.7 seeded void (ORD-S40-VOID-001, total 33000, voided today).
+DO $$
+DECLARE
+  v_result JSONB;
+  v_ok     BOOLEAN;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_result := get_daily_sales_v2(
+    current_setting('breakery.t_s40_date_start'),
+    current_setting('breakery.t_s40_date_end')
+  );
+  v_ok := (v_result->'summary' ? 'discount_total')
+      AND (v_result->'summary' ? 'discount_orders_count')
+      AND (v_result->'summary' ? 'voids_count')
+      AND (v_result->'summary' ? 'voids_value')
+      AND ((v_result->'summary'->>'voids_count')::int >= 1)
+      AND ((v_result->'summary'->>'voids_value')::numeric >= 33000)
+      AND ((v_result->'summary'->>'discount_total')::numeric >= 0)
+      AND ((v_result->'summary'->>'discount_orders_count')::int >= 0);
+  PERFORM set_config('breakery.t23_pass', v_ok::text, false);
+END $$;
+SELECT ok(
+  current_setting('breakery.t23_pass')::boolean,
+  'T23: get_daily_sales_v2 → summary discount/void keys present, voids cover the seeded void'
+);
+
+-- T24 : MANAGER → sessions is a non-empty jsonb array ; the seeded S40 session's
+-- cashier name resolves via user_profiles (LEFT JOIN, not null for a real opener).
+DO $$
+DECLARE
+  v_result       JSONB;
+  v_sessions     JSONB;
+  v_cashier_name TEXT;
+  v_ok           BOOLEAN;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_result := get_daily_sales_v2(
+    current_setting('breakery.t_s40_date_start'),
+    current_setting('breakery.t_s40_date_end')
+  );
+  v_sessions := v_result->'sessions';
+
+  SELECT full_name INTO v_cashier_name
+    FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000002' LIMIT 1;
+
+  v_ok := (jsonb_typeof(v_sessions) = 'array')
+      AND (jsonb_array_length(v_sessions) >= 1)
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(v_sessions) elem
+         WHERE elem->>'cashier' = v_cashier_name
+      );
+  PERFORM set_config('breakery.t24_pass', v_ok::text, false);
+END $$;
+SELECT ok(
+  current_setting('breakery.t24_pass')::boolean,
+  'T24: get_daily_sales_v2 → sessions non-empty jsonb array, cashier name resolved'
 );
 
 SELECT * FROM finish();

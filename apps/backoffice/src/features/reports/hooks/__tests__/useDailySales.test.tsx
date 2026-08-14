@@ -4,6 +4,11 @@
 // aucun test n'assertait les noms d'arguments RPC, précisément ce qui laisse
 // passer un WRONG_ARG lors d'un futur bump. DailySales est le flagship de la
 // campagne : son contrat { period, summary, by_day } est verrouillé ici.
+//
+// Lot I (2026-08-15) — bump v1 → v2 : payload additif (summary +discount_total/
+// discount_orders_count/voids_count/voids_value, racine +sessions). Les tests
+// v1 restent valables (extension additive) ; on ajoute la couverture des
+// champs neufs + leur tolérance à l'absence (parse défensif).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -25,10 +30,23 @@ function wrapper({ children }: { children: ReactNode }) {
 
 const ENVELOPE = {
   period:  { start: '2026-07-01', end: '2026-07-02' },
-  summary: { total: 8_610_000, order_count: 247, aov: 34_100, refund_total: 186_000, net: 8_424_000 },
+  summary: {
+    total: 8_610_000, order_count: 247, aov: 34_100, refund_total: 186_000, net: 8_424_000,
+    discount_total: 320_000, discount_orders_count: 18, voids_count: 2, voids_value: 145_000,
+  },
   by_day: [
     { date: '2026-07-01', order_count: 120, gross: 4_200_000, refunds: 86_000, net: 4_114_000, aov: 34_283 },
     { date: '2026-07-02', order_count: 127, gross: 4_410_000, refunds: 100_000, net: 4_310_000, aov: 33_937 },
+  ],
+  sessions: [
+    {
+      id: 'session-1', cashier: 'Budi Santoso', opened_at: '2026-07-01T00:30:00Z',
+      opening_cash: 500_000, status: 'closed', closed_at: '2026-07-01T08:00:00Z', variance_total: -5_000,
+    },
+    {
+      id: 'session-2', cashier: null, opened_at: '2026-07-02T00:15:00Z',
+      opening_cash: 500_000, status: 'open', closed_at: null, variance_total: null,
+    },
   ],
 };
 
@@ -38,13 +56,13 @@ beforeEach(() => {
 });
 
 describe('useDailySales', () => {
-  it('appelle get_daily_sales_v1 avec p_date_start / p_date_end', async () => {
+  it('appelle get_daily_sales_v2 avec p_date_start / p_date_end', async () => {
     const { result } = renderHook(
       () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v1', {
+    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v2', {
       p_date_start: '2026-07-01',
       p_date_end:   '2026-07-02',
     });
@@ -61,6 +79,28 @@ describe('useDailySales', () => {
     expect(result.current.data?.by_day[0]?.gross).toBe(4_200_000);
   });
 
+  it('mappe les champs neufs discounts/voids et sessions (lot I, v2)', async () => {
+    const { result } = renderHook(
+      () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.summary.discount_total).toBe(320_000);
+    expect(result.current.data?.summary.discount_orders_count).toBe(18);
+    expect(result.current.data?.summary.voids_count).toBe(2);
+    expect(result.current.data?.summary.voids_value).toBe(145_000);
+    expect(result.current.data?.sessions).toHaveLength(2);
+    expect(result.current.data?.sessions[0]).toEqual({
+      id: 'session-1', cashier: 'Budi Santoso', opened_at: '2026-07-01T00:30:00Z',
+      opening_cash: 500_000, status: 'closed', closed_at: '2026-07-01T08:00:00Z', variance_total: -5_000,
+    });
+    // cashier LEFT JOIN peut être NULL côté serveur — reste null, pas ''.
+    expect(result.current.data?.sessions[1]?.cashier).toBeNull();
+    expect(result.current.data?.sessions[1]?.closed_at).toBeNull();
+    // variance_total est NULL tant que la session est ouverte — jamais coercé à 0.
+    expect(result.current.data?.sessions[1]?.variance_total).toBeNull();
+  });
+
   it('ne casse pas sur une enveloppe vide (période sans vente)', async () => {
     mockRpc.mockResolvedValue({ data: null, error: null });
     const { result } = renderHook(
@@ -69,7 +109,10 @@ describe('useDailySales', () => {
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.by_day).toEqual([]);
+    expect(result.current.data?.sessions).toEqual([]);
     expect(result.current.data?.summary.total).toBe(0);
+    expect(result.current.data?.summary.discount_total).toBe(0);
+    expect(result.current.data?.summary.voids_count).toBe(0);
     expect(result.current.data?.period).toEqual({ start: '2026-07-01', end: '2026-07-02' });
   });
 
@@ -87,5 +130,24 @@ describe('useDailySales', () => {
     expect(row?.gross).toBe(0);
     expect(row?.net).toBe(0);
     expect(row?.order_count).toBe(0);
+  });
+
+  it('normalise une session partielle (champs absents) sans casser', async () => {
+    mockRpc.mockResolvedValue({
+      data: { ...ENVELOPE, sessions: [{ id: 'session-3' }] },
+      error: null,
+    });
+    const { result } = renderHook(
+      () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const session = result.current.data?.sessions[0];
+    expect(session?.id).toBe('session-3');
+    expect(session?.cashier).toBeNull();
+    expect(session?.opening_cash).toBe(0);
+    expect(session?.status).toBe('');
+    expect(session?.closed_at).toBeNull();
+    expect(session?.variance_total).toBeNull();
   });
 });
