@@ -5,6 +5,8 @@ import { ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
+import { useShiftStore } from '@/stores/shiftStore';
+import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useFireToStations } from './hooks/useFireToStations';
 import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
 import { useDineInTableGuard } from '@/features/tables/hooks/useDineInTableGuard';
@@ -13,11 +15,30 @@ interface SendToKitchenButtonProps {
   /** When provided, replaces the default `w-full` styling (e.g. for the bottom bar). */
   className?: string;
   variant?: ComponentProps<typeof Button>['variant'];
+  /**
+   * Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Appelé quand
+   * le geste est tenté sans session de caisse ouverte : l'hôte ouvre le
+   * formulaire d'ouverture de session au lieu de laisser partir l'envoi.
+   */
+  onRequireShift?: () => void;
 }
 
-export function SendToKitchenButton({ className, variant }: SendToKitchenButtonProps = {}) {
+export function SendToKitchenButton({
+  className,
+  variant,
+  onRequireShift,
+}: SendToKitchenButtonProps = {}) {
   const { mutation, firableCount, unroutedCount } = useFireToStations();
   const holdFired = useHoldFiredOrder();
+  // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). La garde lit
+  // EXACTEMENT ce que lit le filet de useFireToStations (`no_open_shift` sur
+  // useShiftStore) : une garde qui consulterait une autre source pourrait
+  // accuser alors que le filet laisse passer, ou l'inverse. useCurrentShift ne
+  // sert qu'à savoir si la réponse est encore inconnue — on n'accuse jamais
+  // pendant que la requête est en vol.
+  const { isLoading: shiftLoading } = useCurrentShift();
+  const currentShift = useShiftStore((s) => s.current);
+  const needsShift = !shiftLoading && !currentShift;
   // Fiche 02 D2.5 — dine-in fires need a table (the KOT prints it). The guard
   // opens the floor plan and resumes the fire once a table is picked.
   const tableGuard = useDineInTableGuard({ onSelected: () => { void handleClick(); } });
@@ -29,6 +50,16 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
 
   async function handleClick() {
     if (disabled) return;
+    // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Composer
+    // reste libre, mais l'ENVOI engage : sans session il mène à l'ouverture de
+    // session au lieu d'échouer plus bas sur `no_open_shift`. La garde de
+    // session passe AVANT celle de table — inutile de faire choisir une table
+    // pour une commande qui ne peut pas partir.
+    if (needsShift) {
+      toast.info('No shift open — opening the shift form.');
+      onRequireShift?.();
+      return;
+    }
     if (!tableGuard.ensureTable()) return;
     // LOT 3 — snapshot the unrouted count BEFORE firing: the fire marks the
     // items printed, which immediately drops the live counter back to 0.
@@ -100,6 +131,10 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
         size="md"
         className={className ?? 'w-full'}
         disabled={disabled}
+        // Tapable-et-explique : le bouton reste vivant sans session, il MÈNE à
+        // l'ouverture de session. `disabled` ferait taire le geste sans rien
+        // enseigner (même contrat que Hold dans la barre).
+        aria-disabled={needsShift}
         onClick={() => { void handleClick(); }}
       >
         <ChefHat className="h-4 w-4" aria-hidden />

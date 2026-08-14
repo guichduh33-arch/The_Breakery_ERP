@@ -254,8 +254,14 @@ export default function PosPage() {
         <ActiveOrderPanel onDetachCustomer={handleDetachCustomer} />
       </div>
 
-      {/* Global action bar — all order actions live here (full width). */}
-      <BottomActionBar onOpenCustomerSearch={() => setCustomerSearchOpen(true)} />
+      {/* Global action bar — all order actions live here (full width).
+          Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15) : la barre
+          reçoit le même chemin de récupération que le terminal de paiement,
+          pour ses deux gestes qui engagent (encaisser, envoyer en cuisine). */}
+      <BottomActionBar
+        onOpenCustomerSearch={() => setCustomerSearchOpen(true)}
+        onOpenShift={() => setOpenShiftOpen(true)}
+      />
 
       <SideMenuDrawer
         open={menuOpen}

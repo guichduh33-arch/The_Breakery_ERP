@@ -43,6 +43,8 @@ import {
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { useShiftStore } from '@/stores/shiftStore';
+import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
@@ -76,9 +78,19 @@ const MENU_ITEM =
 interface BottomActionBarProps {
   /** Opens the customer search/attach modal (owned by the POS shell). */
   onOpenCustomerSearch?: () => void;
+  /**
+   * Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Ouvre le
+   * formulaire d'ouverture de session (possédé par le shell POS, comme pour le
+   * terminal de paiement). Les deux gestes qui ENGAGENT — encaisser, envoyer en
+   * cuisine — y mènent tant qu'aucune session n'est ouverte.
+   */
+  onOpenShift?: () => void;
 }
 
-export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps): JSX.Element {
+export function BottomActionBar({
+  onOpenCustomerSearch,
+  onOpenShift,
+}: BottomActionBarProps): JSX.Element {
   const cart = useCartStore((s) => s.cart);
   const lockedItemIds = useCartStore((s) => s.lockedItemIds);
   const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
@@ -89,6 +101,14 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   const heldCount = useHeldOrdersQuery().data?.length ?? 0;
   const holdFired = useHoldFiredOrder();
+  // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Même source
+  // que le filet client de useCheckout (`no_open_shift` sur useShiftStore) :
+  // la garde ne peut donc jamais contredire ce que le money-path fera.
+  // useCurrentShift ne sert qu'à distinguer « pas de session » de « on ne sait
+  // pas encore » — pendant le vol de la requête, on n'accuse pas.
+  const { isLoading: shiftLoading } = useCurrentShift();
+  const currentShift = useShiftStore((s) => s.current);
+  const needsShift = !shiftLoading && !currentShift;
   // Fiche 02 D2.5 — a dine-in order can be paid directly without a fire; the
   // checkout CTA carries the same mandatory-table guard as Send to Kitchen.
   const checkoutTableGuard = useDineInTableGuard({ onSelected: () => openPayment() });
@@ -169,6 +189,23 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     } catch {
       toast.error('Could not hold order');
     }
+  }
+
+  // Critique run 4 lot 8 — shift-gate (décision C du 2026-08-15). Composer une
+  // commande reste libre pendant que le fond de caisse se compte ; le geste qui
+  // ENGAGE mène à l'ouverture de session au lieu d'ouvrir le terminal pour
+  // échouer sur `no_open_shift` au bout du parcours. Ordre imposé : la garde de
+  // session passe AVANT la garde de table (fiche 02 D2.5) — faire choisir une
+  // table pour une vente qui ne peut pas aboutir serait un détour inutile. La
+  // reprise du plan de salle (`onSelected`) n'est atteignable qu'une fois cette
+  // garde franchie, elle n'a donc pas à la refaire.
+  function handleCheckout(): void {
+    if (needsShift) {
+      toast.info('No shift open — opening the shift form.');
+      onOpenShift?.();
+      return;
+    }
+    if (checkoutTableGuard.ensureTable()) openPayment();
   }
 
   // Void Order (owner decision 2026-07-10) — lives under "More" and ALWAYS
@@ -386,6 +423,9 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <SendToKitchenButton
           variant="outlineGold"
           className="px-4 rounded-md text-sm font-bold uppercase tracking-wide"
+          // Critique run 4 lot 8 — l'envoi en cuisine engage autant que
+          // l'encaissement : même issue, le formulaire d'ouverture de session.
+          {...(onOpenShift ? { onRequireShift: onOpenShift } : {})}
         />
 
         {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
@@ -396,8 +436,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           variant="gold"
           size="lg"
           className="shrink-0 px-7 gap-2.5 text-base font-bold uppercase tracking-wide active:bg-gold-pressed max-md:px-4"
-          onClick={() => { if (checkoutTableGuard.ensureTable()) openPayment(); }}
+          onClick={handleCheckout}
           disabled={!hasItems}
+          // Tapable-et-explique : sans session le bouton reste vivant et MÈNE à
+          // l'ouverture de session ; un `disabled` laisserait le caissier
+          // pousser un bouton mort sans jamais apprendre pourquoi.
+          aria-disabled={needsShift}
           data-testid="checkout-cta"
         >
           <CreditCard className="h-5 w-5" aria-hidden />
