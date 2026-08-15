@@ -1,7 +1,7 @@
 -- supabase/tests/net_revenue_full_void.test.sql
 -- S64 T4 — fix I-1 : les refunds is_full_void (voids même-jour) ne sont plus
 -- soustraits du net (la commande voidée sort déjà du brut — lineage 20260704000018).
--- Pin sur get_dashboard_overview_v3 (kpis.net_revenue.value + revenue_30d) ET get_daily_sales_v1.
+-- Pin sur get_dashboard_overview_v3 (kpis.net_revenue.value + revenue_30d) ET get_daily_sales_v2.
 -- Porté de la v1 le 2026-08-07 : les KPI sont devenus des objets
 -- {value, vs_yesterday, vs_d7}, et `revenue_today` s'appelle `net_revenue`.
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
@@ -38,7 +38,7 @@ BEGIN
 
   -- ── Baseline ──────────────────────────────────────────────────────────
   v_dash_b  := get_dashboard_overview_v3();
-  v_daily_b := get_daily_sales_v1(v_today::text, v_today::text);
+  v_daily_b := get_daily_sales_v2(v_today::text, v_today::text);
   v_rev30_today_b := COALESCE((SELECT (e->>'net')::numeric
                                  FROM jsonb_array_elements(v_dash_b->'revenue_30d') e
                                 WHERE (e->>'date')::date = v_today), 0);
@@ -59,7 +59,7 @@ BEGIN
     VALUES (v_o1, v_prod, 'S64 NetVoid Item', 60000, 1, 60000);
 
   v_dash_1  := get_dashboard_overview_v3();
-  v_daily_1 := get_daily_sales_v1(v_today::text, v_today::text);
+  v_daily_1 := get_daily_sales_v2(v_today::text, v_today::text);
 
   INSERT INTO _r SELECT 'T01_dash_revenue_today_delta_plus_60k',
     (v_dash_1->'kpis'->'net_revenue'->>'value')::numeric - (v_dash_b->'kpis'->'net_revenue'->>'value')::numeric = 60000;
@@ -83,7 +83,7 @@ BEGIN
             v_profile, v_profile, v_session, true);
 
   v_dash_2  := get_dashboard_overview_v3();
-  v_daily_2 := get_daily_sales_v1(v_today::text, v_today::text);
+  v_daily_2 := get_daily_sales_v2(v_today::text, v_today::text);
 
   INSERT INTO _r SELECT 'T03_dash_full_void_net_delta_zero',
     (v_dash_2->'kpis'->'net_revenue'->>'value')::numeric - (v_dash_b->'kpis'->'net_revenue'->>'value')::numeric = 0;
@@ -111,7 +111,7 @@ BEGIN
             v_profile, v_profile, v_session);
 
   v_dash_3  := get_dashboard_overview_v3();
-  v_daily_3 := get_daily_sales_v1(v_today::text, v_today::text);
+  v_daily_3 := get_daily_sales_v2(v_today::text, v_today::text);
   v_rev30_today_3 := COALESCE((SELECT (e->>'net')::numeric
                                  FROM jsonb_array_elements(v_dash_3->'revenue_30d') e
                                 WHERE (e->>'date')::date = v_today), 0);
