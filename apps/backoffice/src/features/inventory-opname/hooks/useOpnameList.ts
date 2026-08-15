@@ -3,6 +3,10 @@
 //
 // The `inventory_counts` table is in types.generated.ts so we use the
 // strongly-typed `.from()` directly.
+//
+// ADR-027 — le comptage est global. `section_id` est devenu nullable et l'embed
+// `section` n'est plus qu'un HISTORIQUE : les comptages d'époque gardent leur
+// section, les nouveaux n'en portent aucune. Plus aucun filtre de section.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -12,7 +16,7 @@ export type OpnameStatus = 'draft' | 'counting' | 'review' | 'finalized' | 'canc
 export interface OpnameListRow {
   id:             string;
   count_number:   string;
-  section_id:     string;
+  section_id:     string | null;
   status:         OpnameStatus;
   started_at:     string;
   finalized_at:   string | null;
@@ -23,8 +27,7 @@ export interface OpnameListRow {
 }
 
 export interface OpnameListFilters {
-  status?:        OpnameStatus;
-  sectionId?:    string;
+  status?:       OpnameStatus;
   limit?:        number;
   offset?:       number;
 }
@@ -47,9 +50,6 @@ export function useOpnameList(filters: OpnameListFilters = {}) {
 
       if (filters.status !== undefined) {
         query = query.eq('status', filters.status);
-      }
-      if (filters.sectionId !== undefined && filters.sectionId !== '') {
-        query = query.eq('section_id', filters.sectionId);
       }
 
       const { data, error } = await query

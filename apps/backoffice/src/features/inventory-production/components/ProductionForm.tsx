@@ -21,7 +21,7 @@ import { checkFeasibility } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
 import { useRecipes } from '../hooks/useRecipes.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
+import { useSections } from '@/hooks/useSections.js';
 import { useRecordProduction, RecordProductionError, type WasteReason } from '../hooks/useRecordProduction.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { FeasibilityBadge } from './FeasibilityBadge.js';

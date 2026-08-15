@@ -3,6 +3,9 @@
 // Single (non-paginated) query over get_stock_movement_ledger_v1: the full filtered
 // date range with a server-side running balance + cap. ref_no / type label are
 // synthesized in the table via @breakery/domain.
+//
+// ADR-027 — `p_section_id` reste dans la signature de la RPC mais devient
+// VESTIGIAL : le stock est global, ce wrapper le passe toujours à null.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -40,7 +43,6 @@ export interface UseStockLedgerParams {
   end:           string;
   productId?:    string | undefined;
   movementType?: string | undefined;
-  sectionId?:    string | undefined;
   limit?:        number | undefined;
 }
 
@@ -57,7 +59,7 @@ export function useStockLedger(params: UseStockLedgerParams) {
         p_end:           params.end,
         p_product_id:    params.productId    ?? null,
         p_movement_type: params.movementType ?? null,
-        p_section_id:    params.sectionId    ?? null,
+        p_section_id:    null,
         p_limit:         params.limit        ?? 5000,
       });
       if (error !== null) throw new Error(error.message);

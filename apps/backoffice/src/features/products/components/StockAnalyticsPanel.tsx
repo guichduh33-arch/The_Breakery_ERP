@@ -1,17 +1,18 @@
 // apps/backoffice/src/features/products/components/StockAnalyticsPanel.tsx
 //
-// Product stock analytics on top of get_product_analytics_v1. Originally one
-// monolithic panel on the product detail "Analytics" tab; since the stock data
-// was dissociated from the product configuration sheet (2026-06-23) the body is
-// split into exported sections so the ProductStockPage can spread them across
-// tabs (Stock / Movements / Purchase / Transfers / Production) instead of one
-// very long scroll.
+// Product stock analytics on top of the get_product_analytics RPC. Originally
+// one monolithic panel on the product detail "Analytics" tab; since the stock
+// data was dissociated from the product configuration sheet (2026-06-23) the
+// body is split into exported sections so the ProductStockPage can spread them
+// across tabs (Stock / Movements / Purchase / Production) instead of one very
+// long scroll.
+//
+// ADR-027 — la section Transferts a disparu avec la feature transferts.
 //
 // Exported sections (each takes the resolved analytics `data`):
 //   - AnalyticsKpiRow       current stock · value · days remaining · status
 //   - MovementsSection      stock timeline · movement breakdown · recent moves
 //   - PurchaseSection       purchase price trend · purchase pattern · incoming POs
-//   - TransfersSection      transfers (date · from→to · qty)
 //   - ProductionLossSection weekly consumption · recipe usage · production · waste · opname
 //
 // `StockAnalyticsPanel` keeps the original all-in-one layout (own window
@@ -101,7 +102,6 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
           <AnalyticsKpiRow data={q.data} />
           <MovementsSection data={q.data} />
           <PurchaseSection data={q.data} />
-          <TransfersSection data={q.data} />
           <ProductionLossSection data={q.data} />
         </div>
       )}
@@ -288,21 +288,6 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
         ))}
       </RecordCard>
     </div>
-  );
-}
-
-export function TransfersSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
-  return (
-    <RecordCard title="Transfers" icon={Truck} count={data.transfers.length} unit="transfers" empty="No transfers for this product" wide>
-      {data.transfers.map((t) => (
-        <Line3 key={t.id}
-          a={t.transfer_number}
-          b={<span className="text-xs text-text-muted">{t.from_section_code ?? '—'} → {t.to_section_code ?? '—'}</span>}
-          c={formatQuantity(t.quantity_received ?? t.quantity_requested, t.unit)}
-          d={fmtDate(t.transferred_at ?? t.created_at)}
-        />
-      ))}
-    </RecordCard>
   );
 }
 

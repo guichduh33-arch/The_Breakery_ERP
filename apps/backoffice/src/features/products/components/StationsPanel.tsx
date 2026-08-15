@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
+import { useSections } from '@/hooks/useSections.js';
 import { useProductSections } from '../hooks/useProductSections.js';
 import { useSetProductSections } from '../hooks/useSetProductSections.js';
 import type { ProductRow } from '../types.js';

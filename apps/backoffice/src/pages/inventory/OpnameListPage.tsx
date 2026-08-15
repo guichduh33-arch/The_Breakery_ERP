@@ -71,6 +71,8 @@ const COLUMNS: readonly DataTableColumn<OpnameListRow>[] = [
     ),
   },
   {
+    // ADR-027 — colonne d'HISTORIQUE : elle nomme la section d'époque des
+    // comptages sectionnés. Un comptage global n'en porte aucune, d'où le tiret.
     id: 'section',
     header: 'Section',
     render: (r) => (
@@ -122,7 +124,7 @@ export default function OpnameListPage(): JSX.Element {
       <PageHeader
         className="items-start gap-4"
         title="Stock counts"
-        subtitle="Periodic counts compared against the section_stock cache. Finalizing emits adjustment movements and balanced journal entries."
+        subtitle="Periodic counts compared against the product stock on hand. Finalizing emits adjustment movements and balanced journal entries."
         actions={canCreate ? (
           <Button variant="ink" onClick={() => { setCreateOpen(true); }}>
             <Plus className="h-4 w-4" aria-hidden /> New count

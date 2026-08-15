@@ -2,13 +2,18 @@
 // Session 14 / Phase 4.C — smoke test for the rewritten SectionsPage.
 //
 // Mocks the data hook + the SectionFormModal to keep the suite focused on
-// the page chrome (header, KPI tiles, DataTable rows, action gating).
+// the page chrome (header, KPI tile, DataTable rows, action gating).
+//
+// ADR-027 — l'écran est recentré sur les STATIONS DE PRODUCTION : la table ne
+// montre que `kind === 'production'`, et une section warehouse d'époque doit
+// donc en être ABSENTE. C'est le sens que fige ce fichier.
 
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import SectionsPage from '@/pages/inventory/SectionsPage.js';
+import type * as SectionsListModule from '@/features/sections/hooks/useSectionsList.js';
 import type { SectionRow } from '@/features/sections/hooks/useSectionsList.js';
 
 const MOCK_SECTIONS: SectionRow[] = [
@@ -25,9 +30,9 @@ const MOCK_SECTIONS: SectionRow[] = [
   },
   {
     id:            's-2',
-    code:          'WHS',
-    name:          'Main Warehouse',
-    kind:          'warehouse',
+    code:          'BAR',
+    name:          'Bar',
+    kind:          'production',
     is_active:     true,
     display_order: 2,
     created_at:    '2026-01-01T00:00:00Z',
@@ -36,12 +41,30 @@ const MOCK_SECTIONS: SectionRow[] = [
   },
 ];
 
+const LEGACY_WAREHOUSE: SectionRow = {
+  id:            's-9',
+  code:          'WHS',
+  name:          'Main Warehouse',
+  kind:          'warehouse',
+  is_active:     true,
+  display_order: 9,
+  created_at:    '2026-01-01T00:00:00Z',
+  updated_at:    '2026-01-01T00:00:00Z',
+  deleted_at:    null,
+};
+
+let withLegacyWarehouse = false;
+
 vi.mock('@/features/sections/hooks/useSectionsList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/sections/hooks/useSectionsList.js')>();
+  const actual = await importOriginal<typeof SectionsListModule>();
   return {
     ...actual,
-    useSectionsList:      () => ({ data: MOCK_SECTIONS, isLoading: false, error: null }),
-    useSoftDeleteSection: () => ({ mutate: () => {}, isPending: false }),
+    useSectionsList: () => ({
+      data: withLegacyWarehouse ? [...MOCK_SECTIONS, LEGACY_WAREHOUSE] : MOCK_SECTIONS,
+      isLoading: false,
+      error: null,
+    }),
+    useSoftDeleteSection: () => ({ mutate: () => { /* noop */ }, isPending: false }),
   };
 });
 
@@ -68,30 +91,35 @@ function renderPage() {
   );
 }
 
-describe('SectionsPage (Phase 4.C rewrite)', () => {
-  it('renders the page header, KPI tiles, and the seeded rows', () => {
+describe('SectionsPage — stations de production (ADR-027)', () => {
+  it('renders the page header, the station KPI, and the seeded rows', () => {
     currentPerms = new Set(['inventory.read', 'inventory.sections.update']);
     renderPage();
-    expect(screen.getByRole('heading', { name: /^Sections$/i })).toBeInTheDocument();
-    // The page contains multiple matches for "Warehouse"/"Production" (KPI
-    // labels + table values) — check that at least one match exists rather
-    // than asserting uniqueness.
-    expect(screen.getAllByText(/Warehouse/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Production/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: /Production stations/i })).toBeInTheDocument();
+    expect(screen.getByText('Stations')).toBeInTheDocument();
     expect(screen.getByText('Kitchen')).toBeInTheDocument();
-    expect(screen.getByText('Main Warehouse')).toBeInTheDocument();
+    expect(screen.getByText('Bar')).toBeInTheDocument();
   });
 
-  it('renders the New section button when permission is granted', () => {
+  it('ne liste PAS une section warehouse d’époque', () => {
+    currentPerms = new Set(['inventory.read', 'inventory.sections.update']);
+    withLegacyWarehouse = true;
+    renderPage();
+    expect(screen.queryByText('Main Warehouse')).not.toBeInTheDocument();
+    expect(screen.getByText('Kitchen')).toBeInTheDocument();
+    withLegacyWarehouse = false;
+  });
+
+  it('renders the New station button when permission is granted', () => {
     currentPerms = new Set(['inventory.read', 'inventory.sections.update']);
     renderPage();
-    expect(screen.getByRole('button', { name: /New section/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New station/i })).toBeInTheDocument();
   });
 
   it('hides write controls when the user lacks inventory.sections.update', () => {
     currentPerms = new Set(['inventory.read']);
     renderPage();
-    expect(screen.queryByRole('button', { name: /New section/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /New station/i })).not.toBeInTheDocument();
     // Reset for other tests in the same worker process.
     currentPerms = new Set(['inventory.read', 'inventory.sections.update']);
   });

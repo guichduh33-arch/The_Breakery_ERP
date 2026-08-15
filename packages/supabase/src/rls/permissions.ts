@@ -85,8 +85,6 @@ export type PermissionCode =
   | 'inventory.adjust'
   | 'inventory.receive'
   | 'inventory.waste'
-  | 'inventory.transfer.create'
-  | 'inventory.transfer.receive'
   | 'inventory.opname.create'
   | 'inventory.opname.finalize'
   | 'inventory.sections.update'

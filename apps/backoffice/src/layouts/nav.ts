@@ -105,7 +105,6 @@ export const NAV_DOMAINS: NavDomain[] = [
         links: [
           { to: '/backoffice/inventory', label: 'Stock & inventory', end: true, permission: 'inventory.read' },
           { to: '/backoffice/inventory/incoming', label: 'Incoming', permission: 'inventory.receive' },
-          { to: '/backoffice/inventory/transfers', label: 'Transfers', permission: 'inventory.read' },
           { to: '/backoffice/inventory/production', label: 'Production', permission: 'inventory.read' },
           { to: '/backoffice/inventory/opname', label: 'Opname', permission: 'inventory.read' },
           { to: '/backoffice/inventory/movements', label: 'Live movements', permission: 'inventory.read' },
@@ -116,7 +115,7 @@ export const NAV_DOMAINS: NavDomain[] = [
         links: [
           { to: '/backoffice/inventory/alerts', label: 'Alerts', permission: 'inventory.read' },
           { to: '/backoffice/inventory/display', label: 'Display stock', permission: 'display.read' },
-          { to: '/backoffice/inventory/sections', label: 'Sections', permission: 'inventory.read' },
+          { to: '/backoffice/inventory/sections', label: 'Stations', permission: 'inventory.read' },
           { to: '/backoffice/inventory/production/margin-watch', label: 'Margin watch', permission: 'reports.inventory.read' },
         ],
       },
@@ -323,7 +322,7 @@ export function routeMatches(to: string, end: boolean | undefined, pathname: str
 /**
  * Id du domaine qui possède la route courante, ou null. Retient le `to` le plus
  * LONG pour qu'un lien profond résolve vers son vrai domaine (par ex.
- * /backoffice/inventory/transfers → Stock, pas Today via /backoffice).
+ * /backoffice/inventory/opname → Stock, pas Today via /backoffice).
  *
  * `end` est délibérément IGNORÉ ici. Ce drapeau sert au surlignage du LIEN dans
  * le drop-panel (« Orders » ne doit pas rester allumé sur le détail d'une

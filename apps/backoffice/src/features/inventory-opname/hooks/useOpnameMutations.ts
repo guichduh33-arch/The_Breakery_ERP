@@ -1,9 +1,13 @@
 // apps/backoffice/src/features/inventory-opname/hooks/useOpnameMutations.ts
 // Session 13 / Phase 2.D — Mutations for the opname lifecycle.
 //
-// All call the RPCs created in migration 20260517000091. RPC return shapes
-// are loose JSONB; we use `unknown` + a thin client-side type for the
-// happy-path payload.
+// RPC return shapes are loose JSONB; we use `unknown` + a thin client-side type
+// for the happy-path payload.
+//
+// ADR-027 — l'opname est GLOBAL : plus de section à la création, l'attendu se
+// lit sur `products.current_stock` et la finalisation corrige le stock qui fait
+// autorité. La famille create / add_item / finalize passe donc en v2 ; set_count,
+// validate et cancel n'ont jamais porté de section et restent en v1.
 
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,12 +25,11 @@ function rpc(): RpcFn {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// create_opname_v1
+// create_opname_v2
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CreateOpnameArgs {
-  sectionId: string;
-  notes?:    string | undefined;
+  notes?: string | undefined;
 }
 
 export interface CreateOpnameResult {
@@ -42,8 +45,7 @@ export function useCreateOpname() {
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<CreateOpnameResult, Error, CreateOpnameArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('create_opname_v1', {
-        p_section_id: args.sectionId,
+      const { data, error } = await rpc()('create_opname_v2', {
         p_idempotency_key: idemKey.current,
         ...(args.notes !== undefined && args.notes.trim() !== '' ? { p_notes: args.notes.trim() } : {}),
       });
@@ -58,7 +60,7 @@ export function useCreateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// add_opname_item_v1
+// add_opname_item_v2
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AddOpnameItemArgs {
@@ -72,7 +74,7 @@ export function useAddOpnameItem() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, AddOpnameItemArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('add_opname_item_v1', {
+      const { data, error } = await rpc()('add_opname_item_v2', {
         p_count_id: args.countId,
         p_product_id: args.productId,
         ...(args.expectedQty !== undefined ? { p_expected_qty: args.expectedQty } : {}),
@@ -136,7 +138,7 @@ export function useValidateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// finalize_opname_v1
+// finalize_opname_v2
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface FinalizeOpnameResult {
@@ -151,12 +153,12 @@ export interface FinalizeOpnameResult {
 
 export function useFinalizeOpname() {
   const qc = useQueryClient();
-  // Idempotency key held across retries; rotated on success. finalize_opname_v1
+  // Idempotency key held across retries; rotated on success. finalize_opname_v2
   // is also status-locked server-side, but a stable key makes the replay explicit.
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<FinalizeOpnameResult, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
-      const { data, error } = await rpc()('finalize_opname_v1', {
+      const { data, error } = await rpc()('finalize_opname_v2', {
         p_count_id: countId,
         p_idempotency_key: idemKey.current,
       });

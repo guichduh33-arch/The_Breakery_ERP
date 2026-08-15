@@ -1,5 +1,8 @@
 // apps/backoffice/src/features/inventory-alerts/hooks/useLowStock.ts
-// Session 13 / Phase 2.D — get_low_stock_v1 wrapper.
+// Session 13 / Phase 2.D — get_low_stock wrapper.
+//
+// ADR-027 — bump v1 → v2 : la RPC ne garde que le mode global, sans argument.
+// Le seuil se compare à `products.current_stock`, l'unique stock.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -11,9 +14,6 @@ export interface LowStockRow {
   current_qty:         number;
   min_stock_threshold: number;
   unit:                string;
-  section_id:          string | null;
-  section_code:        string | null;
-  section_name:        string | null;
   shortfall:           number;
 }
 
@@ -25,16 +25,14 @@ function rpc(): RpcFn {
   return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
-export const LOW_STOCK_KEY = ['low-stock-v1'] as const;
+export const LOW_STOCK_KEY = ['low-stock-v2'] as const;
 
-export function useLowStock(sectionId: string | null = null) {
+export function useLowStock() {
   return useQuery<LowStockRow[]>({
-    queryKey: [...LOW_STOCK_KEY, sectionId ?? 'all'] as const,
+    queryKey: LOW_STOCK_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const args: Record<string, unknown> = {};
-      if (sectionId !== null) args.p_section_id = sectionId;
-      const { data, error } = await rpc()('get_low_stock_v1', args);
+      const { data, error } = await rpc()('get_low_stock_v2');
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

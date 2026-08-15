@@ -1,6 +1,9 @@
 // apps/backoffice/src/features/inventory-dashboard/hooks/useProductDashboard.ts
 // Session 13 / Phase 2.D — get_product_dashboard wrapper.
 // ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
+// ADR-027 — bumped v2 → v3 : le bloc `stock_by_section` disparaît du document
+// (la table qui l'alimentait est droppée) et les mouvements récents ne portent
+// plus de code de section.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -23,22 +26,12 @@ export interface ProductDashboardData {
     avg_daily_units: number;
     last_movement_at: string | null;
   };
-  stock_by_section: {
-    section_id: string;
-    section_code: string;
-    section_name: string;
-    quantity: number;
-    unit: string;
-    value_at_cost: number;
-  }[];
   recent_movements: {
     id: string;
     movement_type: string;
     quantity: number;
     unit: string;
     reason: string | null;
-    from_section_code: string | null;
-    to_section_code: string | null;
     created_at: string;
   }[];
   sales_velocity_daily: {
@@ -74,7 +67,7 @@ export function useProductDashboard(productId: string | null, days = 30) {
     queryFn: async () => {
       if (productId === null) return null;
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_product_dashboard_v2', {
+      const { data, error } = await rpc('get_product_dashboard_v3', {
         p_product_id: productId, p_days: days,
       });
       if (error !== null) throw new Error(error.message);

@@ -5,7 +5,7 @@
 // Layout:
 //   - Page header + CSV export
 //   - KPI tile row (movement_type buckets via get_movement_aggregates)
-//   - Filter bar (section / type / date range)
+//   - Filter bar (item / type / date range) — ADR-027 : plus de filtre section
 //   - StockLedgerTable (full filtered range, server-side running balance + cap)
 
 import { useMemo, useState, type JSX } from 'react';
@@ -61,11 +61,9 @@ export default function StockMovementsPage(): JSX.Element {
     end,
     ...(filters.productId    ? { productId: filters.productId }       : {}),
     ...(filters.movementType ? { movementType: filters.movementType } : {}),
-    ...(filters.sectionId    ? { sectionId: filters.sectionId }       : {}),
   });
 
   const aggs = useMovementAggregates({
-    ...(filters.sectionId ? { sectionId: filters.sectionId } : {}),
     ...(filters.productId ? { productId: filters.productId } : {}),
     dateStart: start,
     dateEnd:   end,

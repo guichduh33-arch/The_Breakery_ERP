@@ -1,7 +1,9 @@
 // apps/backoffice/src/pages/inventory/__tests__/StockMovementsPage.smoke.test.tsx
 // 2026-06-18 — stock-card ledger rewrite. Covers: header + KPI tiles, ledger rows
 // (running balance layout), filter bar, CSV export. Mocks useStockLedger +
-// useMovementAggregates + useSections.
+// useMovementAggregates.
+//
+// ADR-027 — le filtre de section a disparu de la barre : le stock est global.
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -47,13 +49,6 @@ vi.mock('@/features/inventory-movements/hooks/useMovementAggregates.js', () => (
       { movement_type: 'sale',     count: 10, qty_total: -20, value_total: 0 },
       { movement_type: 'purchase', count: 3,  qty_total:  72, value_total: 360000 },
     ],
-    isLoading: false, error: null,
-  }),
-}));
-
-vi.mock('@/features/inventory-transfers/hooks/useSections.js', () => ({
-  useSections: () => ({
-    data: [{ id: 's-1', code: 'KIT', name: 'Kitchen', kind: 'production', display_order: 1 }],
     isLoading: false, error: null,
   }),
 }));
@@ -119,7 +114,8 @@ describe('StockMovementsPage (stock-card rewrite)', () => {
 
   it('renders the filter bar and CSV export', () => {
     renderPage();
-    expect(screen.getByLabelText(/Section/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Section/i)).toBeNull();
+    expect(screen.getByLabelText(/Item/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Type/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/From/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^To$/i)).toBeInTheDocument();

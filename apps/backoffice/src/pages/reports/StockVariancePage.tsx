@@ -3,40 +3,42 @@
 // Lot F (campagne Reports 2026-08-15) — vague Inventory, page 7/10. Migrée sur
 // le socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
-// LA PÉRIODE EST UNE FENÊTRE GLISSANTE, et elle doit le rester. `opened`,
-// `sold` et `adjusted` sont des MOUVEMENTS cumulés sur la fenêtre : les réduire
-// à une seule journée les ramène tous à zéro le plus souvent, et l'écart affiché
-// se dégrade alors en simple relevé de stock — l'écran cesse de mesurer quoi que
-// ce soit. Le contrôle de période est donc celui du socle, en variante `range`,
-// avec son défaut unique de 28 jours (l'ancien défaut maison de 29 jours cède à
-// l'uniformisation ; c'est la SÉMANTIQUE de fenêtre qui compte, pas son
-// cardinal) et sa participation normale à la période partagée de la session.
+// LA PÉRIODE EST UNE FENÊTRE GLISSANTE, et elle doit le rester. Les colonnes de
+// flux sont des MOUVEMENTS cumulés sur la fenêtre : les réduire à une seule
+// journée les ramène tous à zéro le plus souvent, et l'écran se dégrade alors en
+// simple relevé de stock. Le contrôle de période est donc celui du socle, en
+// variante `range`, avec son défaut de 28 jours et sa participation normale à la
+// période partagée de la session.
 //
-// SIGNALEMENT CONNU, NON RÉSOLU ICI — les deux termes de l'écart ne vivent pas
-// dans le même temps : `expected` se déduit des mouvements de la FENÊTRE, tandis
-// que `current_qty` est le stock à l'INSTANT présent. L'écart n'est donc
-// rigoureusement interprétable que sur une fenêtre qui se referme sur
-// aujourd'hui ; sur une fenêtre passée, il mélange un cumul et un instantané.
-// Corriger cela demanderait à `get_stock_variance_v2` de servir un stock daté à
-// la borne de fin — un changement de RPC, hors de cette campagne. On documente,
-// on ne bricole pas côté page : une correction d'affichage masquerait l'écart
-// sans le résoudre.
+// SIGNALEMENT LEVÉ (ADR-027) — l'ancien écran comparait deux termes qui ne
+// vivaient pas dans le même temps : un `expected` déduit des mouvements de la
+// FENÊTRE contre un `current_qty` pris à l'INSTANT présent. `get_stock_variance_v3`
+// résout cela en servant une OUVERTURE reconstruite à la borne basse et une
+// CLÔTURE calculée à la borne haute : `closing = opening + stock_in + sold +
+// consumed + wasted + corrected + other` est une identité comptable, vraie sur
+// n'importe quelle fenêtre, passée ou ouverte. Il n'y a plus d'écart résiduel à
+// mesurer entre théorie et ledger — ce que l'écran mesure désormais, c'est la
+// DÉMARQUE CONSTATÉE : les pertes déclarées et les corrections d'inventaire.
+//
+// Les mouvements sont SIGNÉS : `sold`, `consumed` et `wasted` sont négatifs ou
+// nuls, `corrected` porte son signe (négatif = manque constaté au comptage,
+// positif = surplus trouvé). La démarque d'une ligne vaut donc
+// `-(wasted) + max(0, -corrected)`, le surplus `max(0, corrected)`.
 //
 // PAS DE COMPARAISON : l'écran sert à repérer QUELS produits dérivent, pas à
 // mesurer si la démarque progresse. Le shrinkage d'une fenêtre à l'autre porte
 // sur des produits différents ; un pourcentage global n'y désignerait rien.
 //
-// CE QUI NE CHANGE PAS : les lignes viennent de `get_stock_variance_v2` (v2 et
-// non v1 — la v1 était gatée sur `inventory.read` alors que la route exige
-// `reports.inventory.read`) ; aucun écart n'est recalculé ici. Le filtre section
-// (R-05) et les bornes ANCRÉES AU JOUR (R-01 — des bornes à la milliseconde
-// entraient dans la queryKey et la page bouclait en requêtes) sont conservés.
+// CE QUI NE CHANGE PAS : le socle Report shell v2, les bornes ANCRÉES AU JOUR
+// (R-01 — des bornes à la milliseconde entraient dans la queryKey et la page
+// bouclait en requêtes), l'ExportMenu. Le tri est celui du SERVEUR (pertinence :
+// |corrected| + |wasted| décroissant) — on garde l'ordre reçu.
 //
-// Params URL : `start` / `end` / `section_id` — les bornes portaient déjà les
-// noms du socle, aucun repli legacy n'est nécessaire.
+// Params URL : `start` / `end`. Le filtre `section_id` (R-05) est retiré avec la
+// dimension elle-même (ADR-027).
 
 import { useMemo, type JSX } from 'react';
-import { cn, selectClassName } from '@breakery/ui';
+import { cn } from '@breakery/ui';
 import { toLocalDayStartUTC, toLocalDayEndUTC, type CsvColumn } from '@breakery/domain';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
@@ -46,38 +48,47 @@ import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
 import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { formatCount, periodLabel } from '@/features/reports/utils/reportFigures.js';
-import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   useStockVariance, type StockVarianceRow,
 } from '@/features/reports/hooks/useStockVariance.js';
 
 const csvColumns: CsvColumn<StockVarianceRow>[] = [
-  { header: 'Product',      accessor: (r) => r.product_name,  format: 'text' },
-  { header: 'SKU',          accessor: (r) => r.sku,           format: 'text' },
-  { header: 'Opened',       accessor: (r) => r.opened,        format: 'number' },
-  { header: 'Sold',         accessor: (r) => r.sold,          format: 'number' },
-  { header: 'Adjusted',     accessor: (r) => r.adjusted,      format: 'number' },
-  { header: 'Current',      accessor: (r) => r.current_qty,   format: 'number' },
-  { header: 'Expected',     accessor: (r) => r.expected,      format: 'number' },
-  { header: 'Variance',     accessor: (r) => r.variance,      format: 'number' },
-  { header: 'Variance %',   accessor: (r) => r.variance_pct,  format: 'number' },
+  { header: 'Product',   accessor: (r) => r.product_name, format: 'text'   },
+  { header: 'SKU',       accessor: (r) => r.sku,          format: 'text'   },
+  { header: 'Opening',   accessor: (r) => r.opening,      format: 'number' },
+  { header: 'In',        accessor: (r) => r.stock_in,     format: 'number' },
+  { header: 'Sold',      accessor: (r) => r.sold,         format: 'number' },
+  { header: 'Consumed',  accessor: (r) => r.consumed,     format: 'number' },
+  { header: 'Wasted',    accessor: (r) => r.wasted,       format: 'number' },
+  { header: 'Corrected', accessor: (r) => r.corrected,    format: 'number' },
+  { header: 'Closing',   accessor: (r) => r.closing,      format: 'number' },
+  { header: 'Current',   accessor: (r) => r.current_qty,  format: 'number' },
 ];
 
 const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 
-function varianceTone(v: number): string {
-  if (v === 0) return 'text-text-primary';
-  if (v > 0)   return 'text-success';                 // surplus
-  if (v < -5)  return 'text-danger font-semibold';
-  return 'text-warning';                              // petite perte
+/** Démarque d'une ligne : les pertes déclarées, plus le manque constaté au comptage. */
+function shrinkOf(r: StockVarianceRow): number {
+  return -r.wasted + Math.max(0, -r.corrected);
 }
 
-/** Un écart se lit SIGNÉ : « 5 » et « +5 » ne disent pas la même chose à côté
- *  d'un « −5 » dans la colonne voisine. */
+/** Surplus d'une ligne : ce que le comptage a trouvé EN PLUS de la théorie. */
+function surplusOf(r: StockVarianceRow): number {
+  return Math.max(0, r.corrected);
+}
+
+/** Une correction se lit SIGNÉE : « 5 » et « +5 » ne disent pas la même chose
+ *  à côté d'un « −5 » dans la colonne voisine. */
 function signed(v: number): string {
   return v > 0 ? `+${formatCount(v)}` : formatCount(v);
+}
+
+function correctedTone(v: number): string {
+  if (v === 0) return 'text-text-secondary';
+  if (v > 0)   return 'text-success';                  // surplus trouvé
+  if (v < -5)  return 'text-danger font-semibold';
+  return 'text-warning';                               // petit manque
 }
 
 interface KpiDescriptor { key: string; label: string; value: string; note?: string | undefined }
@@ -88,93 +99,55 @@ export default function StockVariancePage(): JSX.Element {
   const period = useReportPeriod();
   const { start, end } = period;
 
-  const [sectionId, setSectionId] = useUrlState('section_id', '');
-  const { data: sections } = useSections();
-
-  // La RPC attend des TIMESTAMPTZ et compare en BETWEEN (inclusif). On convertit
-  // les dates métier locales en bornes UTC ancrées au JOUR : pour un même couple
-  // (start, end) la valeur est identique d'un render à l'autre, donc la queryKey
-  // est stable — c'est le cœur du correctif R-01.
-  const filters = useMemo(() => {
-    const f: { dateStart: string; dateEnd: string; sectionId?: string } = {
-      dateStart: toLocalDayStartUTC(start).toISOString(),
-      dateEnd:   toLocalDayEndUTC(end).toISOString(),
-    };
-    if (sectionId) f.sectionId = sectionId;
-    return f;
-  }, [start, end, sectionId]);
+  // La RPC attend des TIMESTAMPTZ. On convertit les dates métier locales en
+  // bornes UTC ancrées au JOUR : pour un même couple (start, end) la valeur est
+  // identique d'un render à l'autre, donc la queryKey est stable — c'est le
+  // cœur du correctif R-01.
+  const filters = useMemo(() => ({
+    dateStart: toLocalDayStartUTC(start).toISOString(),
+    dateEnd:   toLocalDayEndUTC(end).toISOString(),
+  }), [start, end]);
 
   const { data, isLoading, error } = useStockVariance(filters);
+  // Ordre SERVEUR conservé : les lignes arrivent déjà triées par pertinence.
   const rows = useMemo(() => data ?? [], [data]);
 
-  const ranked = useMemo(
-    () => rows.slice().sort((a, b) => a.variance - b.variance),
-    [rows],
-  );
-
-  const net       = rows.reduce((s, r) => s + r.variance, 0);
-  const shrinkage = rows.reduce((s, r) => s + (r.variance < 0 ? -r.variance : 0), 0);
-  const surplus   = rows.reduce((s, r) => s + (r.variance > 0 ?  r.variance : 0), 0);
-  const off       = rows.filter((r) => r.variance !== 0).length;
-  const worst     = ranked[0];
-
-  const sectionName = sectionId === ''
-    ? 'all sections'
-    : (sections ?? []).find((s) => s.id === sectionId)?.name ?? 'one section';
+  const losses    = rows.reduce((s, r) => s + shrinkOf(r), 0);
+  const surplus   = rows.reduce((s, r) => s + surplusOf(r), 0);
+  const corrected = rows.filter((r) => r.corrected !== 0).length;
+  const waste     = rows.reduce((s, r) => s - r.wasted, 0);
 
   const tiles: KpiDescriptor[] = [
     {
-      key: 'net', label: 'Net variance',
-      value: rows.length === 0 ? '—' : signed(net),
-      note:  'units, surplus minus shrinkage',
+      key: 'losses', label: 'Losses',
+      value: formatCount(losses),
+      note:  'units — waste declared plus shortfalls found at count',
     },
     {
-      key: 'shrinkage', label: 'Shrinkage',
-      value: formatCount(shrinkage),
-      note:  'units unaccounted for',
-    },
-    {
-      key: 'surplus', label: 'Surplus',
+      key: 'surplus', label: 'Surplus found',
       value: formatCount(surplus),
-      note:  'units above expectation',
+      note:  'units counted above the ledger',
     },
     {
-      key: 'off', label: 'Products off',
-      value: formatCount(off),
+      key: 'corrected', label: 'Products corrected',
+      value: formatCount(corrected),
       note:  rows.length > 0 ? `of ${formatCount(rows.length)} tracked` : undefined,
+    },
+    {
+      key: 'waste', label: 'Waste declared',
+      value: formatCount(waste),
+      note:  'units written off on purpose',
     },
     {
       key: 'tracked', label: 'Products tracked',
       value: formatCount(rows.length),
-      note:  sectionName,
-    },
-    {
-      key: 'worst', label: 'Worst shrinkage',
-      value: worst !== undefined && worst.variance < 0 ? signed(worst.variance) : '—',
-      note:  worst !== undefined && worst.variance < 0
-        ? worst.product_name
-        : 'no shrinkage in this window',
+      note:  'with movement in this window',
     },
   ];
 
   const toolbar = (
     <>
       <PeriodControl period={period} />
-      {/* <select> natif — @breakery/ui n'exporte pas de composant Select. */}
-      <label className="flex items-center gap-2 text-sm text-text-secondary">
-        <span className="sr-only">Section</span>
-        <select
-          className={cn(selectClassName, 'h-8 w-auto')}
-          value={sectionId}
-          onChange={(e) => setSectionId(e.target.value)}
-          aria-label="Filter by section"
-        >
-          <option value="">All sections</option>
-          {(sections ?? []).map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-      </label>
       <ExportMenu
         csv={{ rows, columns: csvColumns, filename: `stock-variance-${start}_${end}` }}
         pdf={{
@@ -191,14 +164,14 @@ export default function StockVariancePage(): JSX.Element {
   return (
     <ReportShell
       title="Stock Variance"
-      subtitle={`${periodLabel(start, end)} · expected vs current stock — positive is surplus, negative is shrinkage`}
+      subtitle={`${periodLabel(start, end)} · declared shrinkage — waste written off and stock-count corrections`}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
       toolbar={toolbar}
       error={error}
       isEmpty={!isLoading && error == null && data !== undefined && rows.length === 0}
       emptyState={{
         title: 'No movement',
-        description: 'No stock movement for the selected period and section.',
+        description: 'No stock movement for the selected period.',
       }}
       kpis={
         <KpiBand isLoading={isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
@@ -214,31 +187,32 @@ export default function StockVariancePage(): JSX.Element {
     >
       <PanelCard
         title="Per product"
-        // Le sous-titre nomme le décalage documenté en tête : les mouvements
-        // sont ceux de la FENÊTRE, le stock courant est celui de MAINTENANT.
-        subtitle="Worst shrinkage first. Opened, sold and adjusted are cumulated over the window; current is today's stock."
+        // Le sous-titre nomme l'identité que la table donne à lire ligne à ligne.
+        subtitle="Biggest corrections first. Closing = opening + in + sold + consumed + wasted + corrected; outflows are negative."
         isLoading={isLoading}
         testId="stock-variance-table"
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <caption className="sr-only">
-              Opening, sold, adjusted, current and expected quantities with the resulting variance per product
+              Opening stock, inflows, sales, production consumption, waste, stock-count
+              corrections, closing stock and current stock per product
             </caption>
             <thead>
               <tr className="border-b border-border-subtle text-text-secondary">
                 <th scope="col" className="py-2 text-left">Product</th>
-                <th scope="col" className="py-2 text-right">Opened</th>
+                <th scope="col" className="py-2 text-right">Opening</th>
+                <th scope="col" className="py-2 text-right">In</th>
                 <th scope="col" className="py-2 text-right">Sold</th>
-                <th scope="col" className="py-2 text-right">Adjusted</th>
+                <th scope="col" className="py-2 text-right">Consumed</th>
+                <th scope="col" className="py-2 text-right">Wasted</th>
+                <th scope="col" className="py-2 text-right">Corrected</th>
+                <th scope="col" className="py-2 text-right">Closing</th>
                 <th scope="col" className="py-2 text-right">Current</th>
-                <th scope="col" className="py-2 text-right">Expected</th>
-                <th scope="col" className="py-2 text-right">Variance</th>
-                <th scope="col" className="py-2 text-right">%</th>
               </tr>
             </thead>
             <tbody>
-              {ranked.map((r) => (
+              {rows.map((r) => (
                 <tr key={r.product_id} className="border-b border-border-subtle">
                   <td className="py-2">
                     <div className="font-medium">
@@ -246,15 +220,16 @@ export default function StockVariancePage(): JSX.Element {
                     </div>
                     <div className="font-data text-xs text-text-secondary">{r.sku}</div>
                   </td>
-                  <td className={NUM_CELL}>{formatCount(r.opened)}</td>
+                  <td className={NUM_CELL}>{formatCount(r.opening)}</td>
+                  <td className={NUM_CELL}>{formatCount(r.stock_in)}</td>
                   <td className={NUM_CELL}>{formatCount(r.sold)}</td>
-                  <td className={NUM_CELL}>{formatCount(r.adjusted)}</td>
-                  <td className={NUM_CELL}>{formatCount(r.current_qty)}</td>
-                  <td className={NUM_CELL}>{formatCount(r.expected)}</td>
-                  <td className={cn(NUM_CELL, varianceTone(r.variance))}>{signed(r.variance)}</td>
-                  <td className={cn(NUM_CELL, varianceTone(r.variance))}>
-                    {r.variance_pct.toFixed(1)}%
+                  <td className={NUM_CELL}>{formatCount(r.consumed)}</td>
+                  <td className={cn(NUM_CELL, r.wasted < 0 ? 'text-warning' : undefined)}>
+                    {formatCount(r.wasted)}
                   </td>
+                  <td className={cn(NUM_CELL, correctedTone(r.corrected))}>{signed(r.corrected)}</td>
+                  <td className={cn(NUM_CELL, 'font-semibold')}>{formatCount(r.closing)}</td>
+                  <td className={NUM_CELL}>{formatCount(r.current_qty)}</td>
                 </tr>
               ))}
             </tbody>

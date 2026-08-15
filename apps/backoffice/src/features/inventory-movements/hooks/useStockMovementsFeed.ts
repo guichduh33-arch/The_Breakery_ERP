@@ -1,5 +1,9 @@
 // apps/backoffice/src/features/inventory-movements/hooks/useStockMovementsFeed.ts
 // Session 13 / Phase 2.D — wrapper around get_stock_movements_v1 RPC (cursor paginated).
+//
+// ADR-027 — le filtre `p_section_id` de la RPC devient VESTIGIAL : le stock est
+// global, l'UI ne le propose plus et ce wrapper ne le passe plus. Les colonnes
+// `from_section_*` / `to_section_*` restent lues — elles portent l'historique.
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -30,7 +34,6 @@ export interface MovementRow {
 }
 
 export interface MovementsFilters {
-  sectionId?:    string;
   productId?:    string;
   movementType?: string;
   dateStart?:    string;
@@ -56,9 +59,6 @@ export function useStockMovementsFeed(filters: MovementsFilters = {}) {
     initialPageParam: { cursor: null as string | null, cursorId: null as string | null },
     queryFn: async ({ pageParam }) => {
       const args: Record<string, unknown> = { p_limit: PAGE_SIZE };
-      if (filters.sectionId !== undefined && filters.sectionId !== '') {
-        args.p_section_id = filters.sectionId;
-      }
       if (filters.productId !== undefined && filters.productId !== '') {
         args.p_product_id = filters.productId;
       }

@@ -6,8 +6,11 @@
 // stock analytics AND the accounting ledger (Inventory / Payable / Cash|Bank).
 //
 // Fields: product (searchable, raw materials only) · purchase unit · quantity ·
-// price/unit · computed total · supplier (required) · landing section ·
-// purchase date · payment method (cash/transfer/unpaid) · amount · payment date.
+// price/unit · computed total · supplier (required) · purchase date · payment
+// method (cash/transfer/unpaid) · amount · payment date.
+//
+// ADR-027 — le sélecteur « Receive into » a disparu : le stock est global, une
+// réception ne demande plus aucun choix d'emplacement.
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
 import { Button, Input, Select } from '@breakery/ui';
@@ -16,7 +19,6 @@ import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useInventoryReferenceData } from '../hooks/useInventoryReferenceData.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import {
   useRecordDirectPurchase,
   DirectPurchaseError,
@@ -32,7 +34,6 @@ export interface DirectPurchaseFormProps {
 export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProps): JSX.Element {
   const products = useAllProductsForPO();
   const refData  = useInventoryReferenceData();
-  const sections = useSections();
   const purchase = useRecordDirectPurchase();
 
   const rid = useId();
@@ -44,7 +45,6 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
   const [qty,          setQty         ] = useState<string>('');
   const [price,        setPrice       ] = useState<string>('');
   const [supplierId,   setSupplierId  ] = useState<string>('');
-  const [sectionId,    setSectionId   ] = useState<string>('');
   const [purchaseDate, setPurchaseDate] = useState<string>(() => toLocalDateStr(new Date()));
   const [pay,          setPay         ] = useState<PayChoice>('cash');
   const [payAmount,    setPayAmount   ] = useState<string>('');
@@ -55,14 +55,6 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (successTimer.current !== null) clearTimeout(successTimer.current); }, []);
-
-  // Default the landing section to the first warehouse, else the first section.
-  useEffect(() => {
-    if (sectionId !== '' || sections.data === undefined) return;
-    const warehouse = sections.data.find((s) => s.kind === 'warehouse');
-    const first = warehouse ?? sections.data[0];
-    if (first !== undefined) setSectionId(first.id);
-  }, [sections.data, sectionId]);
 
   const numQty   = Number.parseFloat(qty);
   const numPrice = Number.parseFloat(price);
@@ -93,7 +85,6 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
     isQtyValid &&
     isPriceValid &&
     supplierId !== '' &&
-    sectionId !== '' &&
     purchaseDate !== '' &&
     isPayValid &&
     !purchase.isPending;
@@ -130,7 +121,6 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         unit,
         unitFactorToBase: factor,
         pricePerUnit:     numPrice,
-        sectionId,
         purchaseDate,
         paymentMethod:    method,
         paymentAmount:    pay === 'unpaid' ? 0 : numPayAmount,
@@ -264,24 +254,14 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         <span className="font-semibold text-text-primary">Total: <span className="font-mono">{formatCurrency(total)}</span></span>
       </div>
 
-      {/* Supplier (required) · landing section */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label htmlFor={`${rid}-supplier`} className="text-xs uppercase tracking-widest text-text-secondary">Supplier</label>
-          <Select id={`${rid}-supplier`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
-            className="w-full" disabled={refData.isLoading || purchase.isPending}>
-            <option value="">Select a supplier…</option>
-            {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <label htmlFor={`${rid}-section`} className="text-xs uppercase tracking-widest text-text-secondary">Receive into</label>
-          <Select id={`${rid}-section`} value={sectionId} onChange={(e) => setSectionId(e.target.value)}
-            className="w-full" disabled={sections.isLoading || purchase.isPending}>
-            <option value="">Select a section…</option>
-            {(sections.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </Select>
-        </div>
+      {/* Supplier (required) */}
+      <div className="space-y-1 sm:max-w-sm">
+        <label htmlFor={`${rid}-supplier`} className="text-xs uppercase tracking-widest text-text-secondary">Supplier</label>
+        <Select id={`${rid}-supplier`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
+          className="w-full" disabled={refData.isLoading || purchase.isPending}>
+          <option value="">Select a supplier…</option>
+          {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+        </Select>
       </div>
 
       {/* Purchase date */}

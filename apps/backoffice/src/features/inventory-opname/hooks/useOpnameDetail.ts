@@ -1,5 +1,8 @@
 // apps/backoffice/src/features/inventory-opname/hooks/useOpnameDetail.ts
 // Session 13 / Phase 2.D — single opname header + item rows.
+//
+// ADR-027 — `section_id` est nullable : l'embed `section` ne renseigne plus que
+// les comptages d'époque, un comptage global n'en porte aucune.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -20,7 +23,7 @@ export interface OpnameItemRow {
 export interface OpnameDetail {
   id:             string;
   count_number:   string;
-  section_id:     string;
+  section_id:     string | null;
   status:         OpnameStatus;
   started_at:     string;
   finalized_at:   string | null;
@@ -58,7 +61,7 @@ export function useOpnameDetail(countId: string | null) {
 
       return {
         ...(header as unknown as Omit<OpnameDetail, 'items'>),
-        items: (items as unknown as OpnameItemRow[]) ?? [],
+        items: (items ?? []) as unknown as OpnameItemRow[],
       };
     },
   });

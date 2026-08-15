@@ -6,6 +6,9 @@
 // (`get_stock_movement_ledger_v1`) le valorise au coût COURANT du produit. Une
 // unique ligne historique au `unit_cost` ×1000 pesait 47 % de la tuile
 // « Value moved ». La v2 aligne l'agrégat sur le tableau.
+//
+// ADR-027 — `p_section_id` reste accepté par la RPC mais devient VESTIGIAL :
+// le stock est global, ce wrapper ne le passe plus.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -18,7 +21,6 @@ export interface MovementAggregate {
 }
 
 export interface AggregateFilters {
-  sectionId?:  string;
   productId?:  string;
   dateStart?:  string;
   dateEnd?:    string;
@@ -39,7 +41,6 @@ export function useMovementAggregates(filters: AggregateFilters = {}) {
     staleTime: 30_000,
     queryFn: async () => {
       const args: Record<string, unknown> = {};
-      if (filters.sectionId !== undefined && filters.sectionId !== '') args.p_section_id = filters.sectionId;
       if (filters.productId !== undefined && filters.productId !== '') args.p_product_id = filters.productId;
       // Bare 'YYYY-MM-DD' bounds would parse as 00:00 in the session timezone, so an
       // end == start (e.g. the "Today" preset) excludes the whole day's movements.

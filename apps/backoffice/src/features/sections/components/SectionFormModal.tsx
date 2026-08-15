@@ -1,6 +1,12 @@
 // apps/backoffice/src/features/sections/components/SectionFormModal.tsx
-// Session 13 / Phase 2.D — create / edit modal for a section.
+// Session 13 / Phase 2.D — create / edit modal for a production station.
 // Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
+//
+// ADR-027 — le `kind` est VERROUILLÉ à 'production' : les sections ne portent
+// plus de stock, on ne crée plus de zone warehouse ni sales. Le champ reste
+// envoyé à la RPC (sa signature ne bouge pas), il n'est simplement plus offert
+// au choix — y compris à l'édition d'une section warehouse/sales d'époque, dont
+// le kind est laissé tel quel.
 
 import { useState, type JSX } from 'react';
 import {
@@ -14,16 +20,10 @@ export interface SectionFormModalProps {
   onClose:  () => void;
 }
 
-const KINDS: { value: 'warehouse' | 'production' | 'sales'; label: string }[] = [
-  { value: 'warehouse',  label: 'Warehouse' },
-  { value: 'production', label: 'Production' },
-  { value: 'sales',      label: 'Sales' },
-];
-
 export function SectionFormModal({ initial, onClose }: SectionFormModalProps): JSX.Element {
   const [code, setCode]   = useState<string>(initial?.code ?? '');
   const [name, setName]   = useState<string>(initial?.name ?? '');
-  const [kind, setKind]   = useState<'warehouse' | 'production' | 'sales'>(initial?.kind ?? 'warehouse');
+  const kind = initial?.kind ?? 'production';
   const [order, setOrder] = useState<string>(String(initial?.display_order ?? 100));
   const [active, setActive] = useState<boolean>(initial?.is_active ?? true);
   const [error, setError]   = useState<string | null>(null);
@@ -63,9 +63,9 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit section' : 'New section'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit station' : 'New station'}</DialogTitle>
           <DialogDescription className="sr-only">
-            {isEdit ? 'Update the details of an existing section.' : 'Create a new inventory section.'}
+            {isEdit ? 'Update the details of an existing production station.' : 'Create a new production station.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -78,7 +78,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
               onChange={(e) => { setCode(e.target.value); }}
               disabled={isEdit}
               className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono uppercase disabled:opacity-60"
-              placeholder="MAIN_WAREHOUSE"
+              placeholder="PASTRY_KITCHEN"
             />
           </div>
 
@@ -90,18 +90,6 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
               onChange={(e) => { setName(e.target.value); }}
               className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
             />
-          </div>
-
-          <div>
-            <label htmlFor="sec-kind" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Kind</label>
-            <select
-              id="sec-kind"
-              value={kind}
-              onChange={(e) => { setKind(e.target.value as 'warehouse' | 'production' | 'sales'); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
-            >
-              {KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
-            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

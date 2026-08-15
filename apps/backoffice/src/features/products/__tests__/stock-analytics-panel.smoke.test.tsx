@@ -7,6 +7,9 @@
 //   T2: Recipe Usage table renders rows with % demand.
 //   T3: Operational cards with no rows render their empty state.
 //
+// ADR-027 — la section Transferts a disparu du panneau avec la feature
+// transferts ; T3 ne l'attend donc plus.
+//
 // useProductAnalytics is mocked with a stable hoisted fixture (see CostingPanel
 // smoke for the why — unstable refs cause infinite render loops).
 
@@ -15,13 +18,14 @@ import { render, screen } from '@testing-library/react';
 
 // recharts' ResponsiveContainer relies on ResizeObserver, absent in jsdom.
 beforeAll(() => {
-  class RO { observe() {} unobserve() {} disconnect() {} }
+  class RO { observe() { /* noop */ } unobserve() { /* noop */ } disconnect() { /* noop */ } }
   (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = RO;
 });
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { StockAnalyticsPanel } from '../components/StockAnalyticsPanel.js';
 import type { ProductRow } from '../types.js';
+import type * as ProductAnalyticsModule from '@/features/products/hooks/useProductAnalytics.js';
 
 const { mockState, ANALYTICS } = vi.hoisted(() => {
   const ANALYTICS = {
@@ -57,7 +61,6 @@ const { mockState, ANALYTICS } = vi.hoisted(() => {
       },
     ],
     production: [],
-    transfers: [],
     wastage: [],
     opname: [],
     recent_movements: [],
@@ -67,7 +70,7 @@ const { mockState, ANALYTICS } = vi.hoisted(() => {
 });
 
 vi.mock('@/features/products/hooks/useProductAnalytics.js', async (orig) => {
-  const actual = await orig() as Record<string, unknown>;
+  const actual = await orig<typeof ProductAnalyticsModule>();
   return {
     ...actual,
     useProductAnalytics: () => mockState,
@@ -89,7 +92,7 @@ function renderPanel() {
 
 describe('StockAnalyticsPanel', () => {
   beforeEach(() => {
-    mockState.data = ANALYTICS as unknown;
+    mockState.data = ANALYTICS;
     mockState.isLoading = false;
     mockState.error = null;
   });
@@ -115,7 +118,6 @@ describe('StockAnalyticsPanel', () => {
   it('T3: empty operational sections render their empty state', () => {
     renderPanel();
     expect(screen.getByText('No production records')).toBeInTheDocument();
-    expect(screen.getByText('No transfers for this product')).toBeInTheDocument();
     expect(screen.getByText('No waste records')).toBeInTheDocument();
     expect(screen.getByText('No stock counts for this product')).toBeInTheDocument();
   });

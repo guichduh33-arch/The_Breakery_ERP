@@ -5,11 +5,13 @@
 // (/backoffice/products/:productId), which now holds only general settings.
 //
 // Tabbed to keep each view light (2026-06-23):
-//   - Stock       live KPIs · stock per station/section · velocity
+//   - Stock       live KPIs · velocity
 //   - Movements   stock timeline · movement breakdown · recent movements
 //   - Purchase    purchase price trend · purchase pattern · incoming POs
-//   - Transfers   transfers (date · from→to · qty)
 //   - Production   weekly consumption · recipe usage · production · waste · opname
+//
+// ADR-027 — l'onglet Transferts et la ventilation de stock par section ont
+// disparu : `products.current_stock` est l'unique niveau de stock.
 //
 // URL: /backoffice/inventory/:productId
 
@@ -23,11 +25,10 @@ import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
 import {
-  MovementsSection, PurchaseSection, TransfersSection, ProductionLossSection,
+  MovementsSection, PurchaseSection, ProductionLossSection,
 } from '@/features/products/components/StockAnalyticsPanel.js';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
-import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
 import { PageHeader } from '@/components/PageHeader.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
@@ -38,12 +39,11 @@ const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 90, label: '90 days' },
 ];
 
-type StockTab = 'stock' | 'movements' | 'purchase' | 'transfers' | 'production';
+type StockTab = 'stock' | 'movements' | 'purchase' | 'production';
 const TABS: readonly { id: StockTab; label: string }[] = [
   { id: 'stock',      label: 'Stock'      },
   { id: 'movements',  label: 'Movements'  },
   { id: 'purchase',   label: 'Purchase'   },
-  { id: 'transfers',  label: 'Transfers'  },
   { id: 'production', label: 'Production' },
 ];
 
@@ -183,16 +183,6 @@ export default function ProductStockPage(): JSX.Element {
       <div data-testid={`stock-tab-${tab}`}>
         {tab === 'stock' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {dash.isLoading ? (
-                <div className="rounded-md border border-border-subtle bg-bg-elevated p-4 text-sm text-text-secondary">
-                  Loading sections…
-                </div>
-              ) : (
-                <StockBySectionList rows={d?.stock_by_section ?? []} />
-              )}
-            </div>
-
             {d !== null && d !== undefined && (
               <SalesVelocityChart data={d.sales_velocity_daily} unit={p.unit} />
             )}
@@ -234,7 +224,6 @@ function AnalyticsTab({ tab, isLoading, error, data }: {
   switch (tab) {
     case 'movements':  return <MovementsSection data={data} />;
     case 'purchase':   return <PurchaseSection data={data} />;
-    case 'transfers':  return <TransfersSection data={data} />;
     case 'production': return <ProductionLossSection data={data} />;
   }
 }

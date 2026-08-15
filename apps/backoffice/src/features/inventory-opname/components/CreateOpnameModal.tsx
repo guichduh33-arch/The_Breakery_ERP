@@ -1,14 +1,15 @@
 // apps/backoffice/src/features/inventory-opname/components/CreateOpnameModal.tsx
 // Session 13 / Phase 2.D — modal to create a new opname session.
 // Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
+//
+// ADR-027 — le comptage est GLOBAL : plus de sélecteur de section, la création
+// n'exige plus rien. Les notes restent facultatives.
 
 import { useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Select,
 } from '@breakery/ui';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { useCreateOpname } from '../hooks/useOpnameMutations.js';
 
 export interface CreateOpnameModalProps {
@@ -17,20 +18,14 @@ export interface CreateOpnameModalProps {
 }
 
 export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps): JSX.Element {
-  const sections = useSections();
-  const [sectionId, setSectionId] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const createOpname = useCreateOpname();
 
   function handleSubmit() {
-    if (sectionId === '') {
-      setError('Pick a section.');
-      return;
-    }
     setError(null);
     createOpname.mutate(
-      { sectionId, notes: notes.trim() === '' ? undefined : notes },
+      { notes: notes.trim() === '' ? undefined : notes },
       {
         onSuccess: (data) => { onCreated(data.count_id); },
         onError: (e) => { setError(e.message); },
@@ -44,26 +39,11 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
         <DialogHeader>
           <DialogTitle>New stock count</DialogTitle>
           <DialogDescription className="sr-only">
-            Create a new stock-count session for the selected section.
+            Create a new stock-count session over the whole stock.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <div>
-            <label htmlFor="opname-section" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Section</label>
-            <Select
-              id="opname-section"
-              value={sectionId}
-              onChange={(e) => { setSectionId(e.target.value); }}
-              className="w-full"
-            >
-              <option value="">— Select a section —</option>
-              {(sections.data ?? []).map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </Select>
-          </div>
-
           <div>
             <label htmlFor="opname-notes" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Notes</label>
             <textarea
