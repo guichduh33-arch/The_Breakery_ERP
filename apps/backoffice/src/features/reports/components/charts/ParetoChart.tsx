@@ -30,13 +30,21 @@ export interface ParetoChartProps {
   cumulativeName?: string;
   xTickFormatter?: (v: string | number) => string;
   valueFormatter?: (v: number) => string;
+  /**
+   * Extension lot E — total du jeu COMPLET quand `data` n'en est qu'une coupe
+   * d'affichage. Le % cumulé du tooltip se rapporte alors au tout : sans lui,
+   * douze barres sur quatre-vingts refermeraient leur courbe à 100 %, ce qui
+   * dirait « ces douze font tout le résultat ». Absent, le total est la somme
+   * des lignes reçues (comportement du lot B).
+   */
+  grandTotal?: number;
   ariaLabel: string;
   className?: string;
 }
 
 export function ParetoChart({
   data, xKey, valueKey, valueName, cumulativeName = 'Cumulative',
-  xTickFormatter, valueFormatter = formatIdrFull,
+  xTickFormatter, valueFormatter = formatIdrFull, grandTotal: grandTotalProp,
   ariaLabel, className,
 }: ParetoChartProps): JSX.Element {
   const reduced = usePrefersReducedMotion();
@@ -47,8 +55,8 @@ export function ParetoChart({
       sum += Number(d[valueKey] ?? 0);
       return { ...d, [CUMULATIVE_KEY]: sum };
     });
-    return { chartData: rows, grandTotal: sum };
-  }, [data, valueKey]);
+    return { chartData: rows, grandTotal: grandTotalProp ?? sum };
+  }, [data, valueKey, grandTotalProp]);
 
   return (
     <div className={cn('h-72 w-full', className)} role="img" aria-label={ariaLabel}>

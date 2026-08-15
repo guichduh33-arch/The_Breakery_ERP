@@ -1,41 +1,50 @@
 // apps/backoffice/src/pages/reports/CashFlowPage.tsx
 //
-// Cash flow statement (indirect method, par contrepartie). Les trois sections
-// sont alimentées depuis `accounts.cash_flow_section` : investing et financing
-// ne sont plus des zéros codés en dur, ils valent zéro quand rien ne les
-// alimente. Aucun compte d'immobilisation n'existe au plan comptable à ce jour,
-// donc investing reste vide tant qu'il n'y en a pas.
+// Lot E (campagne Reports 2026-08-15) — vague Finance, page 5/8. Migrée sur le
+// socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
-// S31 : account cells terminal — la RPC renvoie `code`, pas un UUID, et
-// /accounting/general-ledger attend un UUID. Pre-filled drill deferred (RPC bump).
+// CE QUI NE CHANGE PAS : la méthode indirecte PAR CONTREPARTIE de
+// `get_cash_flow_v3`. Les trois sections, leurs postes explicatifs
+// (net_profit, Δ AR, Δ AP, Δ stocks, ajustements non monétaires) et les deux
+// soldes de trésorerie sont rendus tels quels, dans le même ordre. Les postes
+// de la section opérationnelle EXPLIQUENT son total, ils ne le fondent pas :
+// aucun n'est re-sommé ici.
+//
+// LE CONTRÔLE DE RÉCONCILIATION RESTE, à l'identique. Depuis la v3, l'égalité
+// `operating + investing + financing = cash_end − cash_start` est une identité
+// de la partie double ; l'indicateur n'avoue donc plus un écart connu, il
+// DÉTECTE une régression — écriture déséquilibrée, ou compte mal classé dans
+// `accounts.cash_flow_section`. Le retirer parce qu'il est vert serait retirer
+// le détecteur.
+//
+// Le graphe retenu : les trois sections plus la variation nette, appariées à la
+// période précédente. C'est le seul graphe évident ici — la RPC ne sert aucune
+// série journalière, et une courbe de trésorerie exigerait un autre gisement.
+//
+// Params URL : `start` / `end` / `cmp` (l'ancien drapeau `compare` n'est plus
+// lu — les bornes portaient déjà les noms standards).
 
-import { useMemo } from 'react';
-import { toLocalDateStr, previousPeriod } from '@breakery/domain';
+import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
-import { ReportPage } from '@/features/reports/components/ReportPage.js';
-import { DateRangePickerWithCompare } from '@/features/reports/components/DateRangePickerWithCompare.js';
+import { PanelCard } from '@/components/PanelCard.js';
+import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
+import { Delta } from '@/components/kpi/Delta.js';
+import { ReportShell } from '@/features/reports/components/ReportShell.js';
+import { KpiBand } from '@/features/reports/components/KpiBand.js';
+import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
+import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
-import { useCashFlow } from '@/features/reports/hooks/useCashFlow.js';
-import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
-import type { CashFlow } from '@/features/reports/hooks/useCashFlow.js';
-import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
-import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
+import { PairedBarsChart } from '@/features/reports/components/charts/PairedBarsChart.js';
+import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useCashFlow, type CashFlow } from '@/features/reports/hooks/useCashFlow.js';
+import { formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
+import { pctChange, periodLabel } from '@/features/reports/utils/reportFigures.js';
 
 interface CfRow { section: string; label: string; value: number }
 
 /**
- * Audit R-04 — contrôle de réconciliation.
- *
- * `net_change_in_cash` doit retomber exactement sur `cash_end - cash_start`, lu
- * sur les comptes de trésorerie. Quand cet indicateur a été posé, les deux
- * divergeaient sur juillet 2026 (−515 546 contre +628 554) : la RPC d'alors
- * ignorait la PB1 collectée, encaissée en trésorerie mais créditée en dette.
- *
- * La cause a depuis été traitée — get_cash_flow_v3 calcule par contrepartie, si
- * bien que l'égalité est une identité de la partie double. Ce contrôle reste
- * néanmoins affiché : il tomberait en rouge si une écriture déséquilibrée ou un
- * compte mal classé dans `accounts.cash_flow_section` rompait cette identité.
- * C'est désormais un détecteur de régression, plus un aveu d'écart connu.
+ * Seuil de réconciliation. `net_change_in_cash` doit retomber exactement sur
+ * `cash_end − cash_start`, lu sur les comptes de trésorerie.
  */
 const RECONCILIATION_EPSILON = 0.01;
 
@@ -73,155 +82,262 @@ const cfCsvColumns: CsvColumn<CfRow>[] = [
   { header: 'Value',   accessor: (r) => r.value,   format: 'idr-round100' },
 ];
 
-function defaultStart(): string {
-  return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
-}
-/** Audit R-15 — formatteur monetaire unique du module (etait
- *  `toLocaleString(undefined, ...)`, sans locale ni devise). */
 const fmt = formatIdrFull;
+const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 
-export default function CashFlowPage() {
-  const [start, setStart] = useUrlState('start', defaultStart());
-  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
-  const [compare, setCompare] = useUrlBoolean('compare');
+const OPERATING_ITEMS = [
+  ['Net profit',            'net_profit'],
+  ['Δ accounts receivable', 'delta_ar'],
+  ['Δ accounts payable',    'delta_ap'],
+  ['Δ inventory',           'delta_inventory'],
+  ['Non-cash adjustments',  'non_cash_adjustments'],
+] as const;
 
-  const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
+interface KpiDescriptor {
+  key: string; label: string; value: string; title?: string;
+  delta?: number | null; note?: string;
+}
 
-  const { data, isLoading, error } = useCashFlow(start, end);
-  const { data: prevData } = useCashFlow(
-    prev?.start ?? start,
-    prev?.end   ?? end,
+export default function CashFlowPage(): JSX.Element {
+  const period = useReportPeriod();
+  const { start, end, compareRange } = period;
+
+  const current = useCashFlow(start, end);
+  const compare = useCashFlow(compareRange.start, compareRange.end);
+
+  const data     = current.data;
+  const prevData = compare.data;
+  const showDelta = period.compare && prevData !== undefined;
+
+  const rec = data !== undefined ? reconcile(data) : null;
+
+  const chartData = useMemo(() => {
+    if (data === undefined) return [];
+    return [
+      { item: 'Operating',  current: data.operating.total,   compare: prevData?.operating.total   ?? 0 },
+      { item: 'Investing',  current: data.investing.total,   compare: prevData?.investing.total   ?? 0 },
+      { item: 'Financing',  current: data.financing.total,   compare: prevData?.financing.total   ?? 0 },
+      { item: 'Net change', current: data.net_change_in_cash, compare: prevData?.net_change_in_cash ?? 0 },
+    ];
+  }, [data, prevData]);
+
+  const tiles: KpiDescriptor[] = [
+    {
+      key: 'net-change', label: 'Net change in cash',
+      value: formatIdrCompact(data?.net_change_in_cash ?? 0),
+      title: formatIdrFull(data?.net_change_in_cash ?? 0),
+      delta: pctChange(data?.net_change_in_cash ?? 0, prevData?.net_change_in_cash),
+    },
+    {
+      key: 'operating', label: 'Operating',
+      value: formatIdrCompact(data?.operating.total ?? 0),
+      title: formatIdrFull(data?.operating.total ?? 0),
+      delta: pctChange(data?.operating.total ?? 0, prevData?.operating.total),
+    },
+    {
+      key: 'investing', label: 'Investing',
+      value: formatIdrCompact(data?.investing.total ?? 0),
+      title: formatIdrFull(data?.investing.total ?? 0),
+      delta: pctChange(data?.investing.total ?? 0, prevData?.investing.total),
+    },
+    {
+      key: 'financing', label: 'Financing',
+      value: formatIdrCompact(data?.financing.total ?? 0),
+      title: formatIdrFull(data?.financing.total ?? 0),
+      delta: pctChange(data?.financing.total ?? 0, prevData?.financing.total),
+    },
+    {
+      key: 'cash-start', label: 'Cash, start',
+      value: formatIdrCompact(data?.cash_start ?? 0), title: formatIdrFull(data?.cash_start ?? 0),
+      note:  'balance on cash accounts',
+    },
+    {
+      key: 'cash-end', label: 'Cash, end',
+      value: formatIdrCompact(data?.cash_end ?? 0), title: formatIdrFull(data?.cash_end ?? 0),
+      delta: pctChange(data?.cash_end ?? 0, prevData?.cash_end),
+    },
+  ];
+
+  const meta = [
+    periodLabel(start, end),
+    'indirect method, classified by counterparty',
+  ].join(' · ');
+
+  const toolbar = (
+    <>
+      <PeriodControl period={period} showCompare />
+      <ExportMenu
+        csv={{
+          rows: data !== undefined ? buildCfRows(data) : [],
+          columns: cfCsvColumns,
+          filename: `cash-flow-${start}_${end}`,
+        }}
+        {...(data !== undefined
+          ? {
+              pdf: {
+                template: 'cf' as const,
+                data,
+                period:   { start, end },
+                filename: `cash-flow-${start}_${end}`,
+                ...(showDelta && prevData !== undefined ? { comparePrevious: { data: prevData } } : {}),
+              },
+            }
+          : {})}
+        disabled={data === undefined}
+      />
+    </>
   );
 
-  const showDelta = compare && !!prevData;
-
-  // Audit R-04 — l'ancien sous-titre annonçait des totaux d'investissement et de
-  // financement « account-classified via accounts.cash_flow_section » alors que
-  // la RPC renvoie deux zéros codés en dur et ne lit jamais cette colonne. Le
-  // sous-titre décrit désormais ce que le rapport fait réellement.
   return (
-    <ReportPage
+    <ReportShell
       title="Cash Flow Statement"
-      subtitle="Indirect method. Operating section only — investing and financing are not ventilated yet."
-      isEmpty={!isLoading && !error && data !== undefined && isBlankCashFlow(data)}
+      subtitle={meta}
+      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Financial' }]}
+      toolbar={toolbar}
+      error={current.error}
+      isEmpty={!current.isLoading && data !== undefined && isBlankCashFlow(data)}
       emptyState={{
         title: 'No cash movement',
         description: 'No cash movement in the selected date range.',
       }}
-      filters={
-        <div className="flex items-center gap-3">
-          <DateRangePickerWithCompare
-            start={start}
-            end={end}
-            onStartChange={setStart}
-            onEndChange={setEnd}
-            compare={compare}
-            onCompareChange={setCompare}
-          />
-          {data && (
-            <ExportButtons
-              csv={{ rows: buildCfRows(data), columns: cfCsvColumns, filename: `cash-flow-${start}_${end}` }}
-              pdf={{
-                template: 'cf',
-                data,
-                period: { start, end },
-                filename: `cash-flow-${start}_${end}`,
-                ...(showDelta && prevData ? { comparePrevious: { data: prevData } } : {}),
-              }}
-            />
-          )}
-        </div>
+      kpis={
+        <KpiBand isLoading={current.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
+          {tiles.map((t, i) => (
+            <KpiTile
+              key={t.key}
+              label={t.label}
+              value={t.value}
+              {...(t.title !== undefined ? { valueTitle: t.title } : {})}
+              hero={i === 0}
+              testId={`kpi-${t.key}`}
+            >
+              {t.delta !== undefined && <Delta value={t.delta} period="prev" onInk={i === 0} />}
+              {t.note !== undefined && (
+                <span className={i === 0 ? KPI_NOTE_HERO : KPI_NOTE}>{t.note}</span>
+              )}
+            </KpiTile>
+          ))}
+        </KpiBand>
       }
     >
-      {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
-      {error && (
-        <p className="text-sm text-danger" role="alert">
-          {error.message ?? 'Failed to load report.'}
-        </p>
-      )}
-      {data && (
-        <div className="space-y-6">
-          {(() => {
-            const rec = reconcile(data);
-            return (
-              <div
-                className={
-                  rec.ok
-                    ? 'rounded-md bg-success-soft border border-success text-success px-4 py-2 text-sm'
-                    : 'rounded-md bg-danger-soft border border-danger text-danger px-4 py-2 text-sm'
-                }
-                role={rec.ok ? 'status' : 'alert'}
-                aria-label="Cash reconciliation indicator"
-                data-testid="cf-reconciliation"
-              >
-                {rec.ok
-                  ? `Reconciled: net change matches the movement on cash accounts (delta ${fmt(rec.delta)}).`
-                  : `Not reconciled — the indirect method gives ${fmt(data.net_change_in_cash)} `
-                    + `but cash accounts moved by ${fmt(rec.implied)} over the period `
-                    + `(delta ${fmt(rec.delta)}). Figures below are shown as computed; `
-                    + `the discrepancy is an accounting issue, not a display one.`}
-              </div>
-            );
-          })()}
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Cash flow summary">
-              <tbody>
-                <tr className="border-b border-border-subtle bg-bg-overlay">
-                  <td className="py-2 font-medium uppercase tracking-wider">Operating activities</td>
-                  <td className="py-2 text-right tabular-nums">{fmt(data.operating.total)}</td>
-                </tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Net profit</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.net_profit)}</td></tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ accounts receivable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_ar)}</td></tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ accounts payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_ap)}</td></tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ inventory</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_inventory)}</td></tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Non-cash adjustments</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.non_cash_adjustments)}</td></tr>
-
-                <tr className="border-b border-border-subtle bg-bg-overlay">
-                  <td className="py-2 font-medium uppercase tracking-wider">Investing activities</td>
-                  <td className="py-2 text-right tabular-nums">{fmt(data.investing.total)}</td>
-                </tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Fixed assets &amp; capex (accounts classified investing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.investing.total)}</td></tr>
-
-                <tr className="border-b border-border-subtle bg-bg-overlay">
-                  <td className="py-2 font-medium uppercase tracking-wider">Financing activities</td>
-                  <td className="py-2 text-right tabular-nums">{fmt(data.financing.total)}</td>
-                </tr>
-                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Loans &amp; equity (accounts classified financing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.financing.total)}</td></tr>
-
-                <tr className="border-t-2 border-border-subtle bg-gold-soft">
-                  <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
-                  <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_change_in_cash)}</td>
-                </tr>
-                {showDelta && (
-                  <tr>
-                    <td className="py-1 text-xs text-text-secondary pl-2">Net change vs prev. period</td>
-                    <td className="py-1 text-right">
-                      <DeltaPct current={data.net_change_in_cash} previous={prevData.net_change_in_cash} />
-                    </td>
-                  </tr>
-                )}
-                <tr className="border-b border-border-subtle">
-                  <td className="py-2 text-text-secondary">Cash, start of period</td>
-                  <td className="py-2 text-right tabular-nums">{fmt(data.cash_start)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-text-secondary">Cash, end of period</td>
-                  <td className="py-2 text-right tabular-nums">{fmt(data.cash_end)}</td>
-                </tr>
-                {showDelta && (
-                  <tr>
-                    <td className="py-1 text-xs text-text-secondary pl-2">Ending cash vs prev. period</td>
-                    <td className="py-1 text-right">
-                      <DeltaPct current={data.cash_end} previous={prevData.cash_end} />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+      {rec !== null && (
+        <div
+          className={rec.ok
+            ? 'rounded-sm border border-success bg-success-soft px-4 py-2 text-sm text-success'
+            : 'rounded-sm border border-danger bg-danger-soft px-4 py-2 text-sm text-danger'}
+          role={rec.ok ? 'status' : 'alert'}
+          aria-label="Cash reconciliation indicator"
+          data-testid="cf-reconciliation"
+        >
+          {rec.ok
+            ? `Reconciled: net change matches the movement on cash accounts (delta ${fmt(rec.delta)}).`
+            : `Not reconciled — the indirect method gives ${fmt(data?.net_change_in_cash ?? 0)} `
+              + `but cash accounts moved by ${fmt(rec.implied)} over the period `
+              + `(delta ${fmt(rec.delta)}). Figures below are shown as computed; `
+              + `the discrepancy is an accounting issue, not a display one.`}
         </div>
       )}
-    </ReportPage>
+
+      <PanelCard
+        title="Sections"
+        aside={<span className="text-xs text-text-muted">same scale, one axis</span>}
+        className="mt-3"
+        isLoading={current.isLoading}
+        testId="chart-cash-flow-sections"
+      >
+        <PairedBarsChart
+          data={chartData}
+          xKey="item"
+          currentKey="current"
+          currentName="This period"
+          {...(showDelta ? { compareKey: 'compare', compareName: 'Previous period' } : {})}
+          ariaLabel={`Operating, investing and financing cash flows and the net change in cash from ${start} to ${end}${showDelta ? ', compared with the previous period' : ''}.`}
+        />
+      </PanelCard>
+
+      <PanelCard title="Statement" className="mt-3" isLoading={current.isLoading} testId="cf-statement">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <caption className="sr-only">
+              Cash flow statement, indirect method: operating, investing and financing activities
+            </caption>
+            <tbody>
+              <tr className="border-b border-border-subtle bg-surface-4">
+                <td className="py-2 font-medium uppercase tracking-wider">Operating activities</td>
+                <td className={`${NUM_CELL} font-medium`}>{fmt(data?.operating.total ?? 0)}</td>
+              </tr>
+              {OPERATING_ITEMS.map(([label, key]) => (
+                <tr key={key}>
+                  <td className="py-1 pl-6 text-xs text-text-secondary">{label}</td>
+                  <td className="py-1 text-right font-data text-xs tabular-nums">
+                    {fmt(data?.operating[key] ?? 0)}
+                  </td>
+                </tr>
+              ))}
+
+              <tr className="border-b border-border-subtle bg-surface-4">
+                <td className="py-2 font-medium uppercase tracking-wider">Investing activities</td>
+                <td className={`${NUM_CELL} font-medium`}>{fmt(data?.investing.total ?? 0)}</td>
+              </tr>
+              <tr>
+                <td className="py-1 pl-6 text-xs text-text-secondary">
+                  Fixed assets &amp; capex (accounts classified investing)
+                </td>
+                <td className="py-1 text-right font-data text-xs tabular-nums">
+                  {fmt(data?.investing.total ?? 0)}
+                </td>
+              </tr>
+
+              <tr className="border-b border-border-subtle bg-surface-4">
+                <td className="py-2 font-medium uppercase tracking-wider">Financing activities</td>
+                <td className={`${NUM_CELL} font-medium`}>{fmt(data?.financing.total ?? 0)}</td>
+              </tr>
+              <tr>
+                <td className="py-1 pl-6 text-xs text-text-secondary">
+                  Loans &amp; equity (accounts classified financing)
+                </td>
+                <td className="py-1 text-right font-data text-xs tabular-nums">
+                  {fmt(data?.financing.total ?? 0)}
+                </td>
+              </tr>
+
+              <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
+                <td className={`${NUM_CELL} py-3 font-semibold`}>
+                  {fmt(data?.net_change_in_cash ?? 0)}
+                </td>
+              </tr>
+              {showDelta && prevData !== undefined && (
+                <tr>
+                  <td className="py-1 pl-2 text-xs text-text-secondary">Net change vs prev. period</td>
+                  <td className="py-1 text-right">
+                    <DeltaPct
+                      current={data?.net_change_in_cash ?? 0}
+                      previous={prevData.net_change_in_cash}
+                    />
+                  </td>
+                </tr>
+              )}
+              <tr className="border-b border-border-subtle">
+                <td className="py-2 text-text-secondary">Cash, start of period</td>
+                <td className={NUM_CELL}>{fmt(data?.cash_start ?? 0)}</td>
+              </tr>
+              <tr>
+                <td className="py-2 text-text-secondary">Cash, end of period</td>
+                <td className={NUM_CELL}>{fmt(data?.cash_end ?? 0)}</td>
+              </tr>
+              {showDelta && prevData !== undefined && (
+                <tr>
+                  <td className="py-1 pl-2 text-xs text-text-secondary">Ending cash vs prev. period</td>
+                  <td className="py-1 text-right">
+                    <DeltaPct current={data?.cash_end ?? 0} previous={prevData.cash_end} />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </PanelCard>
+    </ReportShell>
   );
 }

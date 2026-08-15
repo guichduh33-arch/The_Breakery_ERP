@@ -4,9 +4,14 @@
 // T1 : the account code cell is rendered as a <DrilldownLink> whose href
 //      points to /accounting/general-ledger with the account_id UUID and
 //      start/end query params propagated from the page filter state.
+//
+// Lot E (campagne Reports 2026-08-15) — le drill-down survit à la migration sur
+// le socle Report shell v2 : il vit désormais dans la carte « Lines (per
+// account) », et les bornes qu'il propage sont celles du contrôle de période
+// unifié.
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProfitLossPage from '../ProfitLossPage.js';
@@ -39,11 +44,20 @@ vi.mock('@/features/reports/hooks/useProfitLoss.js', () => ({
   }),
 }));
 
+class StubResizeObserver {
+  observe()    { /* no-op */ }
+  unobserve()  { /* no-op */ }
+  disconnect() { /* no-op */ }
+}
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  configurable: true, writable: true, value: StubResizeObserver,
+});
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/backoffice/reports/profit-loss?start=2026-05-01&end=2026-05-26']}>
         <ProfitLossPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -53,7 +67,8 @@ function renderPage() {
 describe('ProfitLossPage drilldown', () => {
   it('T1 wraps account code cell with DrilldownLink to /accounting/general-ledger?account_id=', () => {
     renderPage();
-    const link = screen.getByRole('link', { name: /4100/ });
+    const detail = screen.getByTestId('pnl-account-detail');
+    const link = within(detail).getByRole('link', { name: /4100/ });
     const href = link.getAttribute('href') ?? '';
     expect(href).toContain('/accounting/general-ledger');
     expect(href).toContain('account_id=acc-xyz');

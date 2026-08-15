@@ -100,6 +100,55 @@ export interface UseReportPeriodOptions {
    * liens copiés avant l'unification — ex. `{ start: 'from', end: 'to' }`.
    */
   legacyKeys?: { start?: string; end?: string };
+  /**
+   * Extension lot E — repli legacy NON HOMOMORPHE. `legacyKeys` ne sait que
+   * renommer un param en un autre ; PB1 portait `?month=5&year=2026`, deux
+   * params qui ne SONT pas des bornes et doivent être calculés. Le résolveur
+   * reçoit les params bruts et rend les bornes, ou `null` s'il ne reconnaît
+   * rien. Le passer STABLE (défini au niveau module) : il entre en dépendance
+   * du défaut, une identité neuve à chaque rendu le recalculerait sans fin.
+   */
+  legacyResolve?: (params: URLSearchParams) => { start: string; end: string } | null;
+  /**
+   * Extension lot E — le rapport n'existe qu'au MOIS (PB1, une déclaration
+   * mensuelle au Bapenda). Toute borne résolue — URL, legacy, session, défaut —
+   * est ramenée au mois civil qui contient `end`. Sans ça, une fenêtre de 28 j
+   * héritée d'un autre rapport dans la même session ferait afficher « 19 Jul –
+   * 15 Aug » au-dessus d'un rapport qui couvre, lui, un mois entier.
+   */
+  snapTo?: 'month';
+  /**
+   * Extension lot E — participation à la période PARTAGÉE de la session.
+   *
+   * Par défaut (`true`), la fenêtre consultée devient le défaut du prochain
+   * rapport ouvert : c'est ce qui fait qu'on ne reperd pas sa période en
+   * naviguant d'un rapport à l'autre. Ça n'a de sens qu'entre rapports qui
+   * lisent une FENÊTRE.
+   *
+   * Une PHOTO D'ÉTAT (le bilan) n'en est pas une, et le partage y casse dans
+   * les deux sens : elle héritait d'une date passée que personne n'avait
+   * demandée, et elle réinjectait `start = end` dans la clé — le rapport
+   * suivant s'ouvrait alors sur une seule journée. Posé à `false` : le défaut
+   * est le `defaultPreset`, déterministe, et rien n'est écrit dans la clé.
+   */
+  sharedSession?: boolean;
+}
+
+/** Bornes du mois civil (1-12) — le dernier jour se déduit par le jour 0 du
+ *  mois suivant, qui gère février et les années bissextiles. */
+export function monthRange(year: number, month: number): { start: string; end: string } {
+  const mm = String(month).padStart(2, '0');
+  return {
+    start: `${year}-${mm}-01`,
+    end:   new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10),
+  };
+}
+
+/** Le mois civil qui contient `date` (YYYY-MM-DD). */
+function snapToMonth(date: string): { start: string; end: string } {
+  const m = /^(\d{4})-(\d{2})/.exec(date);
+  if (m === null) return { start: date, end: date };
+  return monthRange(Number(m[1]), Number(m[2]));
 }
 
 export interface ReportPeriod {
@@ -116,35 +165,50 @@ export interface ReportPeriod {
 }
 
 export function useReportPeriod(options: UseReportPeriodOptions = {}): ReportPeriod {
-  const { defaultPreset = '28d', legacyKeys } = options;
+  const {
+    defaultPreset = '28d', legacyKeys, legacyResolve, snapTo, sharedSession = true,
+  } = options;
   const today = toLocalDateStr(new Date());
 
   // Ordre de résolution du défaut : legacy URL > session > preset. `useUrlState`
-  // sert ce défaut tant que le param standard est absent de l'URL.
+  // sert ce défaut tant que le param standard est absent de l'URL. Hors période
+  // partagée, la session est SAUTÉE : le défaut est alors le seul preset, donc
+  // déterministe — un écran d'état ne s'ouvre pas sur une date héritée.
   const [params, setParams] = useSearchParams();
   const defaults = useMemo(() => {
     const legacyStart = legacyKeys?.start !== undefined ? params.get(legacyKeys.start) : null;
     const legacyEnd   = legacyKeys?.end   !== undefined ? params.get(legacyKeys.end)   : null;
     if (legacyStart !== null && legacyEnd !== null) return { start: legacyStart, end: legacyEnd };
-    return readStored() ?? presetRange(defaultPreset, today);
+    const resolved = legacyResolve?.(params) ?? null;
+    if (resolved !== null) return resolved;
+    return (sharedSession ? readStored() : null) ?? presetRange(defaultPreset, today);
     // `params` volontairement hors dépendances : le défaut se fige au montage,
     // ensuite l'URL standard fait foi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultPreset, today, legacyKeys?.start, legacyKeys?.end]);
+  }, [defaultPreset, today, legacyKeys?.start, legacyKeys?.end, legacyResolve, sharedSession]);
 
-  const [start] = useUrlState('start', defaults.start);
-  const [end]   = useUrlState('end',   defaults.end);
+  const [rawStart] = useUrlState('start', defaults.start);
+  const [rawEnd]   = useUrlState('end',   defaults.end);
   const [compare, setCompare] = useUrlBoolean('cmp');
 
+  // La borne de FIN porte le mois : une fenêtre à cheval héritée de la session
+  // (19 juil. → 15 août) doit donner août, le mois en cours, pas juillet.
+  const snapped = snapTo === 'month' ? snapToMonth(rawEnd) : null;
+  const start = snapped?.start ?? rawStart;
+  const end   = snapped?.end   ?? rawEnd;
+
   // La période suit la navigation : chaque fenêtre consultée devient le défaut
-  // du prochain rapport ouvert dans la même session.
+  // du prochain rapport ouvert dans la même session. Hors période partagée, on
+  // n'écrit RIEN : une photo d'état a `start = end`, et la réinjecter ferait
+  // s'ouvrir le rapport suivant sur une seule journée.
   useEffect(() => {
+    if (!sharedSession) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ start, end }));
     } catch {
       // stockage indisponible (navigation privée…) — l'URL suffit.
     }
-  }, [start, end]);
+  }, [start, end, sharedSession]);
 
   // Les DEUX bornes en une seule navigation : deux `setSearchParams` successifs
   // se recouvrent (l'updater fonctionnel part des params du dernier RENDU, pas

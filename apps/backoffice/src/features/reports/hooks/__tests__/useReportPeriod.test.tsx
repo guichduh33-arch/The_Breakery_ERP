@@ -18,7 +18,7 @@ vi.mock('@breakery/domain', async (importOriginal) => {
 });
 
 import {
-  useReportPeriod, presetRange, derivePreset,
+  useReportPeriod, presetRange, derivePreset, monthRange,
 } from '../useReportPeriod.js';
 
 function wrapperAt(initialEntry: string) {
@@ -112,5 +112,120 @@ describe('useReportPeriod', () => {
     });
     // Mois plein → mois précédent plein, pas un décalage de 31 jours.
     expect(result.current.compareRange).toEqual({ start: '2026-06-01', end: '2026-06-30' });
+  });
+});
+
+// --- Extensions lot E ---------------------------------------------------------
+
+describe('monthRange (pur)', () => {
+  it('borne le mois civil, février bissextile compris', () => {
+    expect(monthRange(2026, 8)).toEqual({ start: '2026-08-01', end: '2026-08-31' });
+    expect(monthRange(2026, 2)).toEqual({ start: '2026-02-01', end: '2026-02-28' });
+    expect(monthRange(2024, 2)).toEqual({ start: '2024-02-01', end: '2024-02-29' });
+  });
+});
+
+describe('useReportPeriod — snapTo: month', () => {
+  it('ramène une fenêtre à cheval au mois civil qui contient la FIN', () => {
+    const { result } = renderHook(() => useReportPeriod({ snapTo: 'month' }), {
+      wrapper: wrapperAt('/x?start=2026-07-19&end=2026-08-15'),
+    });
+    // Le mois en cours, pas juillet : c'est la borne de fin qui porte le mois.
+    expect(result.current.start).toBe('2026-08-01');
+    expect(result.current.end).toBe('2026-08-31');
+  });
+
+  it('protège le rapport mensuel d’une fenêtre héritée de la session', () => {
+    sessionStorage.setItem(
+      'breakery.reports.period.v1',
+      JSON.stringify({ start: '2026-08-03', end: '2026-08-10' }),
+    );
+    const { result } = renderHook(() => useReportPeriod({ snapTo: 'month' }), {
+      wrapper: wrapperAt('/x'),
+    });
+    expect(result.current.start).toBe('2026-08-01');
+    expect(result.current.end).toBe('2026-08-31');
+  });
+});
+
+describe('useReportPeriod — legacyResolve', () => {
+  /** Repli PB1 : `?month=&year=` ne se renomme pas en bornes, il se calcule. */
+  function pb1Legacy(params: URLSearchParams): { start: string; end: string } | null {
+    const m = Number(params.get('month'));
+    const y = Number(params.get('year'));
+    if (!Number.isInteger(m) || m < 1 || m > 12) return null;
+    if (!Number.isInteger(y) || y < 2000 || y > 2999) return null;
+    return monthRange(y, m);
+  }
+
+  it('calcule les bornes depuis des params qui n’en sont pas', () => {
+    const { result } = renderHook(
+      () => useReportPeriod({ legacyResolve: pb1Legacy, snapTo: 'month' }),
+      { wrapper: wrapperAt('/x?month=3&year=2025') },
+    );
+    expect(result.current.start).toBe('2025-03-01');
+    expect(result.current.end).toBe('2025-03-31');
+  });
+
+  it('rend la main au défaut quand il ne reconnaît rien', () => {
+    const { result } = renderHook(
+      () => useReportPeriod({ legacyResolve: pb1Legacy, snapTo: 'month' }),
+      { wrapper: wrapperAt('/x?month=13&year=2025') },
+    );
+    expect(result.current.start).toBe('2026-08-01');
+    expect(result.current.end).toBe('2026-08-31');
+  });
+});
+
+describe('useReportPeriod — sharedSession', () => {
+  const STORAGE_KEY = 'breakery.reports.period.v1';
+  /** Une fenêtre laissée par un AUTRE rapport dans la même session. */
+  function seedSession(): void {
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ start: '2026-07-01', end: '2026-07-31' }),
+    );
+  }
+
+  it('`false` : défaut DÉTERMINISTE malgré une clé de session posée', () => {
+    seedSession();
+    const { result } = renderHook(
+      () => useReportPeriod({ defaultPreset: 'today', sharedSession: false }),
+      { wrapper: wrapperAt('/backoffice/reports/balance-sheet') },
+    );
+    // Aujourd'hui, pas le mois de juillet hérité du rapport précédent.
+    expect(result.current.start).toBe('2026-08-15');
+    expect(result.current.end).toBe('2026-08-15');
+  });
+
+  it('`false` : n’écrit RIEN dans la clé partagée, même après un changement', () => {
+    seedSession();
+    const { result } = renderHook(
+      () => useReportPeriod({ defaultPreset: 'today', sharedSession: false }),
+      { wrapper: wrapperAt('/backoffice/reports/balance-sheet') },
+    );
+    act(() => result.current.setRange('2026-03-31', '2026-03-31'));
+    expect(result.current.end).toBe('2026-03-31');
+    // La clé porte toujours la fenêtre du rapport précédent : la photo d'état
+    // n'a pas réinjecté sa journée unique.
+    expect(JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}')).toEqual({
+      start: '2026-07-01',
+      end:   '2026-07-31',
+    });
+  });
+
+  it('défaut (option absente) : hérite ET écrit, comportement inchangé', () => {
+    seedSession();
+    const { result } = renderHook(() => useReportPeriod(), {
+      wrapper: wrapperAt('/backoffice/reports/daily-sales'),
+    });
+    expect(result.current.start).toBe('2026-07-01');
+    expect(result.current.end).toBe('2026-07-31');
+
+    act(() => result.current.setPreset('7d'));
+    expect(JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}')).toEqual({
+      start: '2026-08-09',
+      end:   '2026-08-15',
+    });
   });
 });
