@@ -179,7 +179,8 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T_PO_07 — receive_purchase_order_v1 partial receipt (5 kg of product A only)
+-- T_PO_07 — receive_purchase_order_v4 partial receipt (5 kg of product A only).
+-- ADR-027 (2026-08-16) : bump v3 -> v4, p_section_id supprimé.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -201,9 +202,8 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v3(
+  v_result := receive_purchase_order_v4(
     p_po_id          := v_po_id,
-    p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received
   );
 
@@ -275,9 +275,8 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v3(
+  PERFORM receive_purchase_order_v4(
     p_po_id          := v_po_id,
-    p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received
   );
 END $$;

@@ -27,8 +27,9 @@
 --
 -- Coverage matrix :
 --   1  annulation nominale : stock du fini restauré, matière rendue,
---      section_stock restauré SANS double décrément, contre-passations passées
---      par le helper, charge de raté ADR-008 D2 contre-passée (T1-T6).
+--      contre-passations sans section (ADR-027, T4 — section_stock est
+--      droppée), contre-passations passées par le helper, charge de raté
+--      ADR-008 D2 contre-passée (T1-T6).
 --   2  refus : `already_consumed`, HINT nommant l'ajustement, DETAIL listant la
 --      sortie, production laissée intacte (T7-T10).
 --   3  entrée ultérieure : n'empêche pas l'annulation (T5 du bloc 2 → T10).
@@ -147,14 +148,19 @@ SELECT is(
   current_setting('breakery.mat_before')::numeric,
   'T3: the consumed material is given back, down to the unit');
 
--- Le test du refactor : le helper tient section_stock. Si les UPDATE manuels
--- avaient survécu, la section serait décrémentée deux fois et finirait à -10.
-SELECT is(
-  (SELECT COALESCE(SUM(quantity), 0) FROM section_stock
-    WHERE section_id = current_setting('breakery.section_id')::uuid
-      AND product_id = (SELECT id FROM _ids WHERE label='finA')),
-  0::numeric,
-  'T4: section_stock nets to zero — the primitive owns it, nothing is decremented twice');
+-- ADR-027 (2026-08-16) : section_stock est droppée (mono-section). Le test du
+-- refactor D7 portait sur ce cache ; il devient un test sur le ledger lui-même
+-- — la primitive n'écrit plus aucune section sur les mouvements neufs, contre-
+-- passations comprises (from/to_section_id conservées pour l'historique
+-- antérieur, jamais alimentées désormais).
+SELECT ok(
+  NOT EXISTS (
+    SELECT 1 FROM stock_movements
+     WHERE metadata->>'production_id' = current_setting('breakery.pid_nominal')
+       AND metadata->>'reverse_of_production' = 'true'
+       AND (from_section_id IS NOT NULL OR to_section_id IS NOT NULL)
+  ),
+  'T4: the counter-movements carry no section (from/to_section_id NULL) — mono-section, section_stock dropped');
 
 SELECT is(
   (SELECT DISTINCT reference_type FROM stock_movements

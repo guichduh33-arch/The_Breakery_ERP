@@ -47,9 +47,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
 
     const { data: adminProfile } = await admin.from('user_profiles')
       .select('id').eq('employee_code', 'EMP000').single();
-    // S78 : l'insert direct violait DEUX contraintes du ledger — unit NOT NULL
-    // (migration _019) et la contrainte de section movement-type-aware
-    // (`adjustment` exige au moins une section, _020). Seed conforme.
+    // S78 : l'insert direct violait unit NOT NULL (migration _019). Il violait
+    // aussi la contrainte de section movement-type-aware (`adjustment` exigeait
+    // au moins une section, _020) — cette contrainte est DROPPÉE par ADR-027
+    // (2026-08-16, mono-section) ; to_section_id est conservée ici par confort
+    // (colonne toujours présente, plus aucune contrainte ne l'exige).
     const { data: sec, error: secErr } = await admin.from('sections')
       .select('id').eq('is_active', true).is('deleted_at', null)
       .order('created_at', { ascending: true }).limit(1).single();

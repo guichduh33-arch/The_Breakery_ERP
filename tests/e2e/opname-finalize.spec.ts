@@ -1,7 +1,7 @@
 // tests/e2e/opname-finalize.spec.ts
 //
 // Session 13 / Phase 6.C — E2E: backoffice manager opens an opname session,
-// adds a product, counts it, finalises. The `finalize_opname_v1` RPC creates
+// adds a product, counts it, finalises. The `finalize_opname_v2` RPC creates
 // the adjustment movements + JE; the opname's own status badge flips to
 // "Finalized" on the detail page.
 //
@@ -11,17 +11,22 @@
 // assertion) that don't match the real S14 opname UI. Selectors below are
 // read directly from the live components (see paths in each step).
 //
+// ADR-027 (2026-08-16) : le comptage devient GLOBAL — la création n'a plus de
+// sélecteur de section (CreateOpnameModal ne garde que les notes) ;
+// create_opname_v1/add_opname_item_v1/finalize_opname_v1 sont droppées au
+// profit des _v2.
+//
 // Project: backoffice (baseURL = E2E_BO_URL).
 //
 // Selector strategy:
 //   - openBackofficeSession()      (fixtures/auth.ts) — user-picker + numpad login
-//   - #opname-section, #opname-notes            (CreateOpnameModal.tsx)
+//   - #opname-notes                              (CreateOpnameModal.tsx)
 //   - placeholder "Search by SKU or name…"      (ProductTypeahead.tsx, via AddItemForm.tsx)
 //   - aria-label "Counted quantity for <name>"  (CountItemRow.tsx)
 //   - OpnameStatusBadge text "Finalized"        (OpnameStatusBadge.tsx)
 //
 // Determinism: dev is shared staging — each run creates its OWN opname
-// (fresh count_id from create_opname_v1) tagged with a unique notes suffix,
+// (fresh count_id from create_opname_v2) tagged with a unique notes suffix,
 // and asserts the finalized status on THAT count's own detail page/URL —
 // never a shared total or list `.first()`.
 //
@@ -54,8 +59,7 @@ test.describe('Opname finalize', () => {
     await page.getByRole('button', { name: /new count/i }).click();
     await expect(page.getByText('New stock count')).toBeVisible({ timeout: 10_000 });
 
-    // First real section — placeholder option is index 0.
-    await page.locator('#opname-section').selectOption({ index: 1 });
+    // ADR-027 : plus de sélecteur de section — le comptage est global.
     await page.locator('#opname-notes').fill(`E2E opname-finalize ${RUN_TAG}`);
 
     await page.getByRole('button', { name: /^create count$/i }).click();
