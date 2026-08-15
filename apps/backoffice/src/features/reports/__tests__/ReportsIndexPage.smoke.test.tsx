@@ -53,11 +53,11 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  it('has exactly 34 active card links (33 as of S70; +1 Off-Hours Sales, ADR-006 déc. 9 business hours)', () => {
+  it('has exactly 35 active card links (34 before the lot J wiring of Perishable Turnover)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(34);
+    expect(links).toHaveLength(35);
   });
 
   it('has zero "Soon" disabled tiles after Wave C wiring', () => {

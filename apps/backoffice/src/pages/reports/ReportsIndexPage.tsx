@@ -32,7 +32,7 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
-  ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp,
+  ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
   GitCommitHorizontal,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
@@ -77,6 +77,7 @@ const SECTIONS: ReportSection[] = [
       { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: TrendingDown },
       { to: 'stock-movements',     title: 'Stock Movement',     blurb: 'History of all stock changes.', icon: GitCommitHorizontal },
       { to: 'wastage',             title: 'Wastage & Spoilage', blurb: 'Manual waste + auto spoilage by product & lot.', icon: AlertTriangle },
+      { to: 'perishable-turnover', title: 'Perishable Turnover', blurb: 'Days in stock against shelf life, and the share that expired.', icon: Hourglass },
     ],
   },
   {
