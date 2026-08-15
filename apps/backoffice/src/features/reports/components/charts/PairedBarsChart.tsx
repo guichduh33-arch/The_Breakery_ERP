@@ -34,6 +34,14 @@ export interface PairedBarsChartProps {
   yTickFormatter?: (v: number) => string;
   /** Formatteur du tooltip — défaut IDR complet. */
   valueFormatter?: (v: number) => string;
+  /**
+   * Extension lot D — axe de CATÉGORIES aux libellés longs (noms de catégorie,
+   * noms de caissier). Posé, il incline les ticks de `xTickAngle` degrés, force
+   * `interval={0}` (aucun libellé masqué : sur un axe catégoriel, un tick sauté
+   * est une barre anonyme, alors que sur un axe temporel il reste déductible)
+   * et réserve la marge basse. Absent, l'axe garde le réglage temporel.
+   */
+  xTickAngle?: number;
   ariaLabel: string;
   /** Hauteur par classe — défaut `h-72`. */
   className?: string;
@@ -42,15 +50,20 @@ export interface PairedBarsChartProps {
 export function PairedBarsChart({
   data, xKey, currentKey, currentName, compareKey, compareName,
   xTickFormatter, yTickFormatter = formatIdrCompact, valueFormatter = formatIdrFull,
-  ariaLabel, className,
+  xTickAngle, ariaLabel, className,
 }: PairedBarsChartProps): JSX.Element {
   const reduced = usePrefersReducedMotion();
   const paired = compareKey !== undefined;
+  const angled = xTickAngle !== undefined;
 
   return (
     <div className={cn('h-72 w-full', className)} role="img" aria-label={ariaLabel}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: angled ? 16 : 0, left: 0 }}
+          barGap={2}
+        >
           <CartesianGrid stroke={CHART_GRID_STROKE} vertical={false} />
           <XAxis
             dataKey={xKey}
@@ -58,6 +71,7 @@ export function PairedBarsChart({
             tickLine={false}
             axisLine={{ stroke: CHART_AXIS_STROKE }}
             {...(xTickFormatter !== undefined ? { tickFormatter: xTickFormatter } : {})}
+            {...(angled ? { angle: xTickAngle, textAnchor: 'end' as const, interval: 0, height: 64 } : {})}
           />
           <YAxis
             tick={TICK}

@@ -1,6 +1,15 @@
 // apps/backoffice/src/features/reports/__tests__/SalesByHourPage.smoke.test.tsx
-// Smoke test: renders the page, asserts heading + a RPC call to
-// get_sales_by_hour_v3 happens with the right shape.
+//
+// Smoke au niveau RPC : la page rend son titre et interroge
+// `get_sales_by_hour_v3` sur le BON jour.
+//
+// Lot D (campagne Reports 2026-08-15) — deux propriétés ajoutées, qui tiennent
+// la migration sur la période unifiée :
+//
+//  · le rapport est horaire, donc il lit UN jour : la borne haute de la fenêtre
+//    (`end`), et la veille pour la comparaison ;
+//  · l'ancien paramètre `?date=` est lu en REPLI — un lien copié avant
+//    l'unification doit continuer d'ouvrir la même journée.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -40,27 +49,57 @@ Object.defineProperty(globalThis, 'ResizeObserver', {
   value: StubResizeObserver,
 });
 
-function renderPage() {
+function renderPage(search = '') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><SalesByHourPage /></MemoryRouter>
+      <MemoryRouter initialEntries={[`/backoffice/reports/sales-by-hour${search}`]}>
+        <SalesByHourPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-describe('SalesByHourPage (smoke)', () => {
-  beforeEach(() => { mockRpc.mockReset(); });
+function datesQueried(): string[] {
+  return mockRpc.mock.calls
+    .filter(([fn]) => fn === 'get_sales_by_hour_v3')
+    .map(([, args]) => (args as { p_date: string }).p_date);
+}
 
-  it('renders the heading and queries get_sales_by_hour_v3 with today YYYY-MM-DD', async () => {
+describe('SalesByHourPage (smoke)', () => {
+  beforeEach(() => {
+    mockRpc.mockReset();
+    sessionStorage.clear();
+  });
+
+  it('renders the heading and queries get_sales_by_hour_v3 with a YYYY-MM-DD day', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Sales by Hour', level: 1 })).toBeInTheDocument();
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_hour_v3');
-      expect(call).toBeDefined();
-      const args = (call as [string, { p_date: string }])[1];
-      expect(args.p_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(datesQueried().length).toBeGreaterThan(0);
     });
+    for (const d of datesQueried()) expect(d).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('lit la borne haute de la fenêtre, et la VEILLE pour la comparaison', async () => {
+    renderPage('?start=2026-06-01&end=2026-06-07');
+    await waitFor(() => {
+      expect(datesQueried()).toContain('2026-06-07');
+    });
+    // La comparaison d'un rapport horaire est le jour précédent, pas la fenêtre
+    // précédente : `previousPeriod('2026-06-07','2026-06-07')` → 2026-06-06.
+    expect(datesQueried()).toContain('2026-06-06');
+    // Et jamais le premier jour de la fenêtre : agréger 7 jours d'heures ne
+    // voudrait rien dire.
+    expect(datesQueried()).not.toContain('2026-06-01');
+  });
+
+  it('repli sur l’ancien paramètre `date` — un lien copié ouvre le même jour', async () => {
+    renderPage('?date=2026-05-20');
+    await waitFor(() => {
+      expect(datesQueried()).toContain('2026-05-20');
+    });
+    expect(datesQueried()).toContain('2026-05-19');
   });
 });
