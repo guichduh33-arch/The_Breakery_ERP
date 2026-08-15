@@ -62,9 +62,11 @@ Elle ne porte plus aucune sémantique de stock.
    conservé tel quel.
 5. **Production** : les stations restent l'axe de la page Production ;
    `production_records.section_id` continue de porter la **station** (donnée de routage,
-   pas de stock). Les RPCs de production bumpent pour cesser de passer des sections aux
-   mouvements de stock ; le gate `section_required` sur les mouvements tombe avec le
-   CHECK. La décision ADR-008 D4 (production bloquante, forçage gaté) est inchangée.
+   pas de stock) et les RPCs de production **ne bumpent pas** — leur paramètre de
+   section désigne la station, toujours exigée à la saisie ; les sections qu'elles
+   relaient aux mouvements sont ignorées par la primitive (conséq. 3). Le CHECK qui
+   imposait une section aux mouvements de production tombe avec la conséq. 3. La
+   décision ADR-008 D4 (production bloquante, forçage gaté) est inchangée.
 6. **Réception d'achat et achat direct** : le paramètre de section disparaît des RPCs
    (bumps) et les sélecteurs « Receive into » disparaissent des formulaires. Une
    réception ne demande plus aucun choix d'emplacement.
@@ -76,9 +78,12 @@ Elle ne porte plus aucune sémantique de stock.
    **corrections d'inventaire** (`opname_*`, `adjustment*`) — ces corrections étant,
    une fois l'opname global livré, la mesure réelle de l'écart entre théorie et
    étagère. Sans filtre de section.
-8. **Lectures** : `get_low_stock` ne garde que le mode global ; les RPCs de lecture des
-   mouvements perdent leurs filtres de section (les colonnes de section restent
-   affichables sur les lignes historiques).
+8. **Lectures** : `get_low_stock` ne garde que le mode global (bump) ; seules les
+   lectures qui lisaient un objet droppé bumpent (dashboard produit sans
+   `stock_by_section`, analytics produit sans le bloc transferts). Les filtres de
+   section optionnels des autres RPCs de lecture des mouvements deviennent
+   **vestigiaux** — l'UI cesse de les proposer, les colonnes de section restent
+   affichables sur les lignes historiques.
 9. **Sections hors production** (warehouse/sales) : **soft-delete** (`deleted_at`) — le
    hard delete est impossible, le ledger historique les référence (FK RESTRICT). L'écran
    CRUD Sections se recentre sur les stations de production.
