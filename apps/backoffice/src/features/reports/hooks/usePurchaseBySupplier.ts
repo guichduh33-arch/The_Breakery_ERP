@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { asArray, asRecord, toNum, toStr } from '../utils/parse.js';
 
 export interface PurchaseBySupplierRow {
   supplier_id:     string;
@@ -29,27 +30,31 @@ export function usePurchaseBySupplier(params: UsePurchaseBySupplierParams) {
   return useQuery<PurchaseBySupplierData, Error>({
     queryKey: ['reports', 'purchase-by-supplier', params.start, params.end],
     queryFn:  async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_purchase_by_supplier_v1', {
+      const { data, error } = await supabase.rpc('get_purchase_by_supplier_v1', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (data ?? {}) as any;
+      const raw    = asRecord(data);
+      const period = asRecord(raw.period);
       return {
-        period: raw.period ?? { start: params.start, end: params.end },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        by_supplier: ((raw.by_supplier ?? []) as any[]).map((s) => ({
-          supplier_id:     s.supplier_id     as string,
-          supplier_name:   s.supplier_name   as string,
-          po_count:        Number(s.po_count),
-          total:           Number(s.total),
-          received_count:  Number(s.received_count),
-          cancelled_count: Number(s.cancelled_count),
-          avg_lead_days:   s.avg_lead_days != null ? Number(s.avg_lead_days) : null,
-          share_pct:       Number(s.share_pct),
-        })) as PurchaseBySupplierRow[],
+        period: {
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
+        },
+        by_supplier: asArray(raw.by_supplier).map((s): PurchaseBySupplierRow => {
+          const o = asRecord(s);
+          return {
+            supplier_id:     toStr(o.supplier_id),
+            supplier_name:   toStr(o.supplier_name, '—'),
+            po_count:        toNum(o.po_count),
+            total:           toNum(o.total),
+            received_count:  toNum(o.received_count),
+            cancelled_count: toNum(o.cancelled_count),
+            avg_lead_days:   o.avg_lead_days == null ? null : toNum(o.avg_lead_days),
+            share_pct:       toNum(o.share_pct),
+          };
+        }),
       } satisfies PurchaseBySupplierData;
     },
     enabled: Boolean(params.start && params.end),

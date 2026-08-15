@@ -1,82 +1,85 @@
 // apps/backoffice/src/features/reports/components/AuditLogFilters.tsx
 //
-// Session 59 / Task 6c — filter bar for the Audit Log report (actor / action
-// / entity type). Wires onto filters already supported server-side by
-// get_audit_logs (via useAuditLogs) but never exposed in the UI.
+// Barre de filtres du journal d'audit — acteur / action / type d'entité. Elle
+// câble des filtres que `get_audit_logs_v3` acceptait sans que l'écran ne les
+// expose. Les options d'acteur viennent de `useLoginUsers` (list_login_users_v1),
+// un listing minimal id/display_name/role déjà en place : aucune RPC ni aucun
+// grant neuf pour peupler ce `<select>`.
 //
-// Audit Reports 2026-08-01 (R-10) — ajout de la plage de dates. Elle n'existait
-// nulle part : ni dans cette barre, ni dans la RPC. get_audit_logs_v3 l'accepte
-// désormais (migration 20260801000003). Les deux champs sont des dates métier
-// (YYYY-MM-DD), bornées serveur dans business_config.timezone.
+// Lot G (campagne Reports 2026-08-15) — deux changements :
 //
-// Actor options come from `useLoginUsers` (list_login_users_v1, S58) — a
-// minimal, already-anon-callable id/display_name/role listing reused here
-// purely for populating an admin-only <select> ; no new RPC / grant needed.
+//  · LES BORNES DE DATE SORTENT D'ICI. Elles vivent désormais dans le contrôle
+//    de période du bandeau (`PeriodControl`, params `start`/`end`), comme sur
+//    les trente autres rapports. Garder un second couple « From / To » dans la
+//    barre de filtres aurait posé DEUX contrôles de date sur le même écran, sans
+//    dire lequel gagne.
+//  · Les champs passent sur les primitifs `Input` / `selectClassName` de
+//    @breakery/ui (inventaire n° 11) : c'étaient les derniers `<input>` et
+//    `<select>` nus du module, avec leur propre hauteur et leur propre anneau de
+//    focus. Format de bandeau : 32 px, à la hauteur des boutons d'action.
+//
+// Le débounce et la forme fonctionnelle des commits restent — voir plus bas :
+// ils corrigent deux bugs distincts, et aucun des deux n'est cosmétique.
 
 import { useEffect, useRef, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
+import { Input, cn, selectClassName } from '@breakery/ui';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
 
 export interface AuditLogFilterValues {
   actorId:    string;
   action:     string;
   entityType: string;
-  dateStart:  string;
-  dateEnd:    string;
 }
 
 export const EMPTY_AUDIT_LOG_FILTERS: AuditLogFilterValues = {
-  actorId: '', action: '', entityType: '', dateStart: '', dateEnd: '',
+  actorId: '', action: '', entityType: '',
 };
 
 export interface AuditLogFiltersProps {
   value: AuditLogFilterValues;
-  // Functional-updater form (matches useState's setter, which AuditPage
-  // passes directly). Required — see the review-fix comment below on the
-  // stale-closure bug a plain `(next) => void` signature caused.
+  // Forme « updater fonctionnel » (celle du setter de useState, que AuditPage
+  // passe directement). Obligatoire — voir le commentaire sur la fermeture
+  // périmée que la signature `(next) => void` provoquait.
   onChange: Dispatch<SetStateAction<AuditLogFilterValues>>;
 }
 
-// Known entity_type values written by audit RPCs across the codebase — a
-// <datalist> hint, not an exhaustive enum (entity_type is free text server-side).
+// Valeurs d'`entity_type` écrites par les RPC d'audit du dépôt — un indice de
+// <datalist>, pas un enum exhaustif (`entity_type` est du texte libre serveur).
 const ENTITY_TYPE_HINTS = [
   'product', 'category', 'variant', 'order', 'expense', 'customer', 'user',
   'supplier', 'purchase_order', 'promotion', 'combo', 'account', 'recipe',
 ];
 
-// Review finding (S59 Task 6c) — the two free-text inputs (Action, Entity
-// type) fired `onChange` on every keystroke, which flows straight into
-// useAuditLogs' queryKey and re-fetches the audit RPC per character.
-// No shared useDebounce hook exists in this repo (grepped packages/utils +
-// apps) — mirrors the inline setTimeout+ref idiom used elsewhere (e.g.
-// apps/pos/src/features/cart/CustomerAttachModal.tsx).
+// Constat de revue (S59 Task 6c) — les deux champs libres (Action, Entity type)
+// émettaient `onChange` à chaque frappe, ce qui entre dans la queryKey de
+// useAuditLogs et relance la RPC par CARACTÈRE. Pas de hook useDebounce partagé
+// dans ce dépôt : on reprend l'idiome setTimeout + ref utilisé ailleurs.
 const DEBOUNCE_MS = 300;
 
-// Re-review finding — the first cut of the debounce closed over `value`
-// (and the sibling draft) AT KEYSTROKE TIME. If the user changed Actor (an
-// immediate commit) while a debounced Action/Entity timer was in flight,
-// the timer's callback fired 300ms later with the STALE actorId it had
-// captured, silently reverting the Actor selection the user just made.
-// Fix: every commit uses the functional-updater form (`(prev) => ...`), so
-// React always merges into the freshest state regardless of how long ago
-// the timer/handler closed over its arguments — the whole stale-closure
-// class of bug disappears.
+// Constat de re-revue — la première version du débounce fermait sur `value`
+// (et sur le brouillon voisin) AU MOMENT DE LA FRAPPE. Changer l'acteur (commit
+// immédiat) pendant qu'un timer Action/Entity était en vol faisait revenir
+// l'acteur périmé 300 ms plus tard, annulant en silence le choix qu'on venait
+// de faire. Correctif : chaque commit passe par l'updater fonctionnel
+// (`(prev) => ...`), donc React fusionne toujours dans l'état le plus frais.
+
+const FIELD = 'h-8 w-40';
+const FIELD_LABEL = 'flex items-center gap-2 text-sm text-text-secondary';
 
 export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.Element {
   const users = useLoginUsers();
-  const hasFilters = value.actorId !== '' || value.action !== '' || value.entityType !== ''
-    || value.dateStart !== '' || value.dateEnd !== '';
+  const hasFilters = value.actorId !== '' || value.action !== '' || value.entityType !== '';
 
-  // Local drafts so the input reflects every keystroke immediately while the
-  // commit to the parent (→ RPC re-fetch) is debounced. Actor stays a plain
-  // <select> — a discrete choice, not a stream of keystrokes — so it commits
-  // immediately, no draft needed.
+  // Brouillons locaux : le champ suit chaque frappe pendant que le commit vers
+  // le parent (→ re-fetch RPC) est débouncé. L'acteur reste un `<select>` — un
+  // choix discret, pas un flux de frappe — donc commit immédiat, sans brouillon.
   const [actionDraft, setActionDraft] = useState(value.action);
   const [entityDraft, setEntityDraft] = useState(value.entityType);
   const actionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const entityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Re-sync drafts when `value` changes from OUTSIDE this component (Clear
-  // filters, or any other external reset) — not from our own debounced echo.
+  // Resynchronise les brouillons quand `value` change de L'EXTÉRIEUR (« Clear
+  // filters », ou tout autre reset) — pas sur notre propre écho débouncé.
   useEffect(() => {
     setActionDraft(value.action);
     setEntityDraft(value.entityType);
@@ -88,10 +91,6 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
       if (entityTimer.current) clearTimeout(entityTimer.current);
     };
   }, []);
-
-  function patchNow(p: Partial<AuditLogFilterValues>): void {
-    onChange((prev) => ({ ...prev, ...p }));
-  }
 
   function handleActionChange(next: string): void {
     setActionDraft(next);
@@ -118,42 +117,15 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      {/* Dates : choix discrets (pas un flux de frappe) → commit immédiat, comme
-          le <select> Acteur, pas de draft ni de debounce. */}
-      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
-        From
-        <input
-          type="date" lang="id-ID"
-          value={value.dateStart}
-          max={value.dateEnd || undefined}
-          onChange={(e) => patchNow({ dateStart: e.target.value })}
-          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
-          data-testid="audit-filter-date-start"
-          aria-label="Audit log start date"
-        />
-      </label>
-
-      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
-        To
-        <input
-          type="date" lang="id-ID"
-          value={value.dateEnd}
-          min={value.dateStart || undefined}
-          onChange={(e) => patchNow({ dateEnd: e.target.value })}
-          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
-          data-testid="audit-filter-date-end"
-          aria-label="Audit log end date"
-        />
-      </label>
-
-      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
-        Actor
+    <>
+      <label className={FIELD_LABEL}>
+        <span className="sr-only">Actor</span>
         <select
           value={value.actorId}
-          onChange={(e) => patchNow({ actorId: e.target.value })}
-          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-40"
+          onChange={(e) => { onChange((prev) => ({ ...prev, actorId: e.target.value })); }}
+          className={cn(selectClassName, FIELD)}
           data-testid="audit-filter-actor"
+          aria-label="Filter by actor"
         >
           <option value="">All actors</option>
           {(users.data ?? []).map((u) => (
@@ -162,27 +134,29 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
         </select>
       </label>
 
-      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
-        Action
-        <input
+      <label className={FIELD_LABEL}>
+        <span className="sr-only">Action</span>
+        <Input
           type="text"
           value={actionDraft}
-          onChange={(e) => handleActionChange(e.target.value)}
-          placeholder="e.g. product.update"
-          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          onChange={(e) => { handleActionChange(e.target.value); }}
+          placeholder="Action, e.g. product.update"
+          className={FIELD}
           data-testid="audit-filter-action"
+          aria-label="Filter by action"
         />
       </label>
 
-      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
-        Entity type
-        <input
+      <label className={FIELD_LABEL}>
+        <span className="sr-only">Entity type</span>
+        <Input
           list="audit-entity-type-hints"
           value={entityDraft}
-          onChange={(e) => handleEntityChange(e.target.value)}
-          placeholder="e.g. product"
-          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          onChange={(e) => { handleEntityChange(e.target.value); }}
+          placeholder="Entity, e.g. product"
+          className={FIELD}
           data-testid="audit-filter-entity"
+          aria-label="Filter by entity type"
         />
         <datalist id="audit-entity-type-hints">
           {ENTITY_TYPE_HINTS.map((t) => <option key={t} value={t} />)}
@@ -193,12 +167,12 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
         <button
           type="button"
           onClick={handleClear}
-          className="h-9 rounded-md px-3 text-xs text-text-secondary hover:text-text-primary"
+          className="h-8 rounded-sm px-2 text-xs text-text-secondary hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           data-testid="audit-filter-clear"
         >
           Clear filters
         </button>
       )}
-    </div>
+    </>
   );
 }

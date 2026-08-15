@@ -1,11 +1,19 @@
 // apps/backoffice/src/features/reports/__tests__/CashFlowPage.smoke.test.tsx
-// Phase 6.A smoke for Cash Flow.
+//
+// Lot E (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
+// v2. Ce fichier tient les DEUX invariants qui comptent ici :
+//
+//  · les trois sections de la méthode indirecte restent affichées, y compris
+//    quand investing et financing valent zéro — une section absente se lit
+//    « pas concerné », un zéro se lit « rien ne s'est passé » ;
+//  · LE CONTRÔLE DE RÉCONCILIATION EST TOUJOURS LÀ. Depuis la v3 il est
+//    normalement vert : c'est un détecteur de régression (écriture
+//    déséquilibrée, compte mal classé), pas un aveu d'écart connu.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import CashFlowPage from '@/pages/reports/CashFlowPage.js';
 
 const mockRpc = vi.fn();
 
@@ -25,7 +33,7 @@ function reconciledPayload() {
     net_change_in_cash: 80,
     cash_start:         0,
     cash_end:           80,
-    period:             { start: '2026-04-15', end: '2026-05-14' },
+    period:             { start: '2026-06-01', end: '2026-06-07' },
   };
 }
 
@@ -43,31 +51,66 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
+import CashFlowPage from '@/pages/reports/CashFlowPage.js';
+import { useAuthStore } from '@/stores/authStore.js';
+
+class StubResizeObserver {
+  observe()    { /* no-op */ }
+  unobserve()  { /* no-op */ }
+  disconnect() { /* no-op */ }
+}
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  configurable: true, writable: true, value: StubResizeObserver,
+});
+
+const START = '2026-06-01';
+const END   = '2026-06-07';
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><CashFlowPage /></MemoryRouter>
+      <MemoryRouter initialEntries={[`/backoffice/reports/cash-flow?start=${START}&end=${END}`]}>
+        <CashFlowPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-describe('CashFlowPage (smoke)', () => {
-  beforeEach(() => { mockRpc.mockReset(); payload = reconciledPayload(); });
+function boundsQueried(): { p_date_start: string; p_date_end: string }[] {
+  return mockRpc.mock.calls
+    .filter(([fn]) => fn === 'get_cash_flow_v3')
+    .map(([, args]) => args as { p_date_start: string; p_date_end: string });
+}
 
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+  mockRpc.mockReset();
+  sessionStorage.clear();
+  payload = reconciledPayload();
+});
+
+describe('CashFlowPage (smoke)', () => {
   it('renders the 3 section headings even with zero investing/financing', async () => {
     renderPage();
     expect(
       screen.getByRole('heading', { name: 'Cash Flow Statement', level: 1 }),
     ).toBeInTheDocument();
-    // Wait until data resolves so the table body renders.
-    await screen.findByText(/Operating activities/i);
-    expect(screen.getByText(/Investing activities/i)).toBeInTheDocument();
-    expect(screen.getByText(/Financing activities/i)).toBeInTheDocument();
+    await screen.findByText('Operating activities');
+    const statement = screen.getByTestId('cf-statement');
+    expect(within(statement).getByText('Operating activities')).toBeInTheDocument();
+    expect(within(statement).getByText('Investing activities')).toBeInTheDocument();
+    expect(within(statement).getByText('Financing activities')).toBeInTheDocument();
+    expect(within(statement).getByText('Net change in cash')).toBeInTheDocument();
+  });
+
+  it('interroge la fenêtre ET la période précédente', async () => {
+    renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_cash_flow_v3');
-      expect(call).toBeDefined();
+      expect(boundsQueried().length).toBeGreaterThanOrEqual(2);
     });
+    expect(boundsQueried()).toContainEqual({ p_date_start: START, p_date_end: END });
+    expect(boundsQueried()).toContainEqual({ p_date_start: '2026-05-25', p_date_end: '2026-05-31' });
   });
 
   // Le controle de reconciliation reste affiche apres le passage a la v3 : il
@@ -88,5 +131,20 @@ describe('CashFlowPage (smoke)', () => {
     const ind = await screen.findByTestId('cf-reconciliation');
     expect(ind).toHaveAttribute('role', 'alert');
     expect(ind).toHaveTextContent(/Not reconciled/);
+  });
+
+  it('bande KPI : variation nette en héro, un seul graphe de sections', async () => {
+    renderPage();
+    await screen.findByTestId('kpi-net-change');
+    const band = screen.getByTestId('report-kpi-band');
+    for (const id of [
+      'kpi-net-change', 'kpi-operating', 'kpi-investing',
+      'kpi-financing', 'kpi-cash-start', 'kpi-cash-end',
+    ]) {
+      expect(within(band).getByTestId(id)).toBeInTheDocument();
+    }
+    await screen.findByRole('img', { name: /Operating, investing and financing/ });
+    expect(screen.getByTestId('chart-cash-flow-sections')).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: /Operating, investing and financing/ })).toHaveLength(1);
   });
 });

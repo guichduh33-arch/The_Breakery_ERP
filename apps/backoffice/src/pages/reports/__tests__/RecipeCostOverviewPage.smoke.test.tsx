@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type * as ReactRouterDom from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import RecipeCostOverviewPage from '@/pages/reports/RecipeCostOverviewPage.js';
@@ -102,8 +102,11 @@ describe('RecipeCostOverviewPage smoke', () => {
     });
     expect(screen.getByTestId('overview-row-prod-a')).toBeInTheDocument();
     expect(screen.getByTestId('overview-row-prod-b')).toBeInTheDocument();
-    expect(screen.getByText('Croissant')).toBeInTheDocument();
-    expect(screen.getByText('Baguette')).toBeInTheDocument();
+    // Le nom paraît aussi dans la bande de KPI (« Biggest rise » le NOMME) :
+    // l'assertion se porte donc sur la table.
+    const table = screen.getByTestId('overview-table');
+    expect(within(table).getByText('Croissant')).toBeInTheDocument();
+    expect(within(table).getByText('Baguette')).toBeInTheDocument();
   });
 
   // 3. Row click navigates to drill-down
@@ -133,17 +136,17 @@ describe('RecipeCostOverviewPage smoke', () => {
     expect(deltaCell!.className).toContain('text-danger');
   });
 
-  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
-  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
-  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
-  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
-  // le PDF etant precisement le template qui etait inatteignable.
-  it('hides the exports when 0 rows and offers CSV + PDF when rows are present', async () => {
+  // Lot F — le menu d'export du socle ne DISPARAÎT plus quand il n'y a rien à
+  // sortir : il se DÉSACTIVE. Masquer un contrôle laisse croire que la fonction
+  // n'existe pas ; le désactiver dit qu'il n'y a simplement rien à exporter.
+  // Audit R-13 — les deux formats restent offerts, le PDF `recipe_overview`
+  // étant précisément le gabarit qui était inatteignable.
+  it('disables the export menu when 0 rows and offers CSV + PDF when rows are present', async () => {
     // --- empty case ---
     mockRpc.mockResolvedValue({ data: [], error: null });
     const { unmount } = renderPage();
     await waitFor(() => {
-      expect(screen.queryByTestId('export-csv')).not.toBeInTheDocument();
+      expect(screen.getByTestId('export-menu')).toBeDisabled();
     });
     unmount();
 
@@ -151,9 +154,24 @@ describe('RecipeCostOverviewPage smoke', () => {
     mockRpc.mockResolvedValue({ data: OVERVIEW_ROWS, error: null });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
+      expect(screen.getByTestId('export-menu')).not.toBeDisabled();
     });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
+  });
+
+  // La bande résume le mouvement : un produit en hausse, un en baisse, et les
+  // deux extrêmes nommés — c'est la lecture qu'un classement de deltas doit
+  // ouvrir.
+  it('summarises the movement in the KPI band', async () => {
+    mockRpc.mockResolvedValue({ data: OVERVIEW_ROWS, error: null });
+    renderPage();
+    const up = await screen.findByTestId('kpi-biggest-up');
+    expect(up.textContent).toMatch(/\+25\.00%/);
+    expect(up.textContent).toMatch(/Croissant/);
+    // Aucun produit n'a baissé dans la fixture : on le DIT, on n'affiche pas 0 %.
+    expect(screen.getByTestId('kpi-biggest-down').textContent).toMatch(/no recipe went down/);
   });
 
   // 6. Error state renders alert
@@ -161,8 +179,8 @@ describe('RecipeCostOverviewPage smoke', () => {
     mockRpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByTestId('report-error')).toBeInTheDocument();
     });
-    expect(screen.getByRole('alert').textContent).toContain('permission denied');
+    expect(screen.getByTestId('report-error').textContent).toContain('permission denied');
   });
 });

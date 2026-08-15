@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { asArray, asRecord, toNum, toStr } from '../utils/parse.js';
 
 export interface PurchaseByDayRow {
   date:           string;
@@ -32,30 +33,35 @@ export function usePurchaseByDate(params: UsePurchaseByDateParams) {
   return useQuery<PurchaseByDateData, Error>({
     queryKey: ['reports', 'purchase-by-date', params.start, params.end],
     queryFn:  async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_purchase_by_date_v1', {
+      const { data, error } = await supabase.rpc('get_purchase_by_date_v1', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (data ?? {}) as any;
+      const raw     = asRecord(data);
+      const period  = asRecord(raw.period);
+      const summary = asRecord(raw.summary);
       return {
-        period:  raw.period ?? { start: params.start, end: params.end },
-        summary: {
-          po_count:       Number(raw.summary?.po_count       ?? 0),
-          total:          Number(raw.summary?.total          ?? 0),
-          received_count: Number(raw.summary?.received_count ?? 0),
-          pending_count:  Number(raw.summary?.pending_count  ?? 0),
+        period: {
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        by_day: ((raw.by_day ?? []) as any[]).map((d) => ({
-          date:           String(d.date).slice(0, 10),
-          po_count:       Number(d.po_count),
-          total:          Number(d.total),
-          received_total: Number(d.received_total),
-          pending_total:  Number(d.pending_total),
-        })) as PurchaseByDayRow[],
+        summary: {
+          po_count:       toNum(summary.po_count),
+          total:          toNum(summary.total),
+          received_count: toNum(summary.received_count),
+          pending_count:  toNum(summary.pending_count),
+        },
+        by_day: asArray(raw.by_day).map((d): PurchaseByDayRow => {
+          const o = asRecord(d);
+          return {
+            date:           toStr(o.date).slice(0, 10),
+            po_count:       toNum(o.po_count),
+            total:          toNum(o.total),
+            received_total: toNum(o.received_total),
+            pending_total:  toNum(o.pending_total),
+          };
+        }),
       } satisfies PurchaseByDateData;
     },
     enabled: Boolean(params.start && params.end),

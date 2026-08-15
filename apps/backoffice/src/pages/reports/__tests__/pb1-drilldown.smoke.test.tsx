@@ -1,8 +1,12 @@
 // apps/backoffice/src/pages/reports/__tests__/pb1-drilldown.smoke.test.tsx
 // Session 32 / Wave 3.G — PB1 payable KPI drill-down smoke.
 //
-// T1 : PB1 payable card wraps the amount in a DrilldownLink pointing to
+// T1 : the PB1 payable tile points at
 //      /accounting/general-ledger?account_id=<2110 uuid>&start&end (period).
+//
+// Lot E (campagne Reports 2026-08-15) — la tuile ELLE-MÊME est désormais le
+// lien, au lieu d'un lien niché dans une carte : la zone cliquable couvre la
+// tuile et le focus se dessine autour d'elle (KpiTile `to`).
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -18,7 +22,9 @@ vi.mock('@/features/reports/hooks/usePb1Report.js', () => ({
       pb1_collected: 1_000_000,
       pb1_payable:   1_000_000,
       by_day:        [],
-      period:        { start: '2026-05-01', end: '2026-05-31' },
+      balance_account_code:  '2110',
+      balance_at_period_end: 1_000_000,
+      period:        { month: 5, year: 2026, start: '2026-05-01', end: '2026-05-31' },
     },
     isLoading: false,
     error: null,
@@ -30,11 +36,20 @@ vi.mock('@/features/accounting/hooks/useAccountIdByCode.js', () => ({
   useAccountIdByCode: () => ({ data: 'acc-2110' }),
 }));
 
+class StubResizeObserver {
+  observe()    { /* no-op */ }
+  unobserve()  { /* no-op */ }
+  disconnect() { /* no-op */ }
+}
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  configurable: true, writable: true, value: StubResizeObserver,
+});
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/backoffice/reports/pb1?start=2026-05-01&end=2026-05-31']}>
         <Pb1ReportPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -42,12 +57,11 @@ function renderPage() {
 }
 
 describe('Pb1ReportPage drilldown', () => {
-  it('T1 PB1 payable card wraps amount in DrilldownLink to GL with account_id=2110 uuid', () => {
+  it('T1 the PB1 payable tile is the link to the GL of account 2110', () => {
     renderPage();
-    const card = screen.getByTestId('pb1-payable-card');
-    const link = card.querySelector('a');
-    expect(link).not.toBeNull();
-    const href = link?.getAttribute('href') ?? '';
+    const tile = screen.getByTestId('pb1-payable-card');
+    expect(tile.tagName).toBe('A');
+    const href = tile.getAttribute('href') ?? '';
     expect(href).toContain('/accounting/general-ledger');
     expect(href).toContain('account_id=acc-2110');
     expect(href).toContain('start=2026-05-01');

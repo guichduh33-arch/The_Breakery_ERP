@@ -44,4 +44,21 @@ describe('formatDelta', () => {
   it('returns sign=0 when both zero', () => {
     expect(formatDelta(0, 0)).toEqual({ abs: 0, pct: null, sign: 0 });
   });
+
+  // Lot F — un ratio contre une base NÉGATIVE est un non-sens signé : le signe
+  // du dénominateur inverse la lecture. Une perte qui se réduit de moitié
+  // sortait « −50 % » (rouge, « ça empire ») ; un passage de la perte au profit
+  // sortait un pourcentage qu'aucune phrase ne décrit.
+  it('returns null pct when previous is negative — a signed ratio has no meaning there', () => {
+    expect(formatDelta(-50, -100)).toEqual({ abs: 50, pct: null, sign: 1 });
+    expect(formatDelta(50, -100)).toEqual({ abs: 150, pct: null, sign: 1 });
+    expect(formatDelta(-150, -100)).toEqual({ abs: -50, pct: null, sign: -1 });
+  });
+
+  // …mais l'écart en VALEUR reste servi : c'est lui qui porte la comparaison
+  // quand le ratio se tait.
+  it('keeps abs and sign meaningful on a negative base', () => {
+    expect(formatDelta(-50, -100).abs).toBe(50);
+    expect(formatDelta(-50, -100).sign).toBe(1);
+  });
 });

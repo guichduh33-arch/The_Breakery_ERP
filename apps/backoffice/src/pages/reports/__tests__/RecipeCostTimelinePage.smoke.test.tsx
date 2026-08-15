@@ -12,7 +12,7 @@
 // RPC mock pattern mirrors RecipeCostOverviewPage.smoke.test.tsx (S18 Phase 2.A).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
@@ -83,10 +83,10 @@ const THREE_ROWS = [
 
 // --- Helper ---
 
-function renderPage() {
+function renderPage(search = '') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/backoffice/reports/recipe-cost/test-product-id${search}`]}>
       <QueryClientProvider client={qc}>
         <RecipeCostTimelinePage />
       </QueryClientProvider>
@@ -156,17 +156,13 @@ describe('RecipeCostTimelinePage smoke', () => {
     expect(cellsV3[3]?.textContent).toBe('+25.00%');
   });
 
-  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
-  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
-  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
-  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
-  // le PDF etant precisement le template qui etait inatteignable.
-  it('hides the exports when 0 rows and offers CSV + PDF when rows are present', async () => {
+  // Lot F — le menu d'export du socle se DÉSACTIVE au lieu de disparaître.
+  it('disables the export menu when 0 rows and offers CSV + PDF when rows are present', async () => {
     // Empty case
     mockRpc.mockResolvedValue({ data: [], error: null });
     const { unmount } = renderPage();
     await waitFor(() => {
-      expect(screen.queryByTestId('export-csv')).not.toBeInTheDocument();
+      expect(screen.getByTestId('export-menu')).toBeDisabled();
     });
     unmount();
 
@@ -174,9 +170,23 @@ describe('RecipeCostTimelinePage smoke', () => {
     mockRpc.mockResolvedValue({ data: THREE_ROWS, error: null });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
+      expect(screen.getByTestId('export-menu')).not.toBeDisabled();
     });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
+  });
+
+  // Lot F — l'ancien lien `?from=&to=` reste honoré : les liens copiés avant
+  // l'unification des params ne doivent pas ouvrir une autre fenêtre.
+  it('honours the legacy ?from=&to= link', async () => {
+    mockRpc.mockResolvedValue({ data: THREE_ROWS, error: null });
+    renderPage('?from=2026-01-01&to=2026-03-31');
+    await waitFor(() => {
+      expect(mockRpc).toHaveBeenCalled();
+    });
+    const args = mockRpc.mock.calls.map(([, a]) => a as { p_from: string; p_to: string });
+    expect(args.some((a) => a.p_from === '2026-01-01' && a.p_to === '2026-03-31')).toBe(true);
   });
 
   // 5. Back link href
@@ -194,8 +204,8 @@ describe('RecipeCostTimelinePage smoke', () => {
     mockRpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByTestId('report-error')).toBeInTheDocument();
     });
-    expect(screen.getByRole('alert').textContent).toContain('permission denied');
+    expect(screen.getByTestId('report-error').textContent).toContain('permission denied');
   });
 });

@@ -17,6 +17,11 @@ export interface WastageReportLine {
   value:        number;
   created_at:   string;
   recorded_by?: string | null;
+  // Lot A1 (campagne Reports 2026-08-15) — la RPC émet lot/motif depuis v1 et le
+  // hook les jetait, alors que la tuile du hub promet « by product & lot ».
+  lot_id:           string | null;
+  lot_batch_number: string | null;
+  reason:           string | null;
 }
 
 // Audit R-09 — la RPC calcule déjà cette ventilation (manuel vs péremption, en
@@ -116,6 +121,9 @@ export function useWastageReport(params: UseWastageReportParams) {
               : typeof l.created_by_name === 'string'
                 ? l.created_by_name
                 : null,
+            lot_id:           typeof l.lot_id === 'string' ? l.lot_id : null,
+            lot_batch_number: typeof l.lot_batch_number === 'string' ? l.lot_batch_number : null,
+            reason:           typeof l.reason === 'string' ? l.reason : null,
           };
         }),
         total_value: toNum(summary.total_value),

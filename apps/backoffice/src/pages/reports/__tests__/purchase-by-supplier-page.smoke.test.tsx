@@ -1,8 +1,15 @@
 // apps/backoffice/src/pages/reports/__tests__/purchase-by-supplier-page.smoke.test.tsx
 // S40 Wave B2 — Smoke test: PurchaseBySupplierPage renders heading, supplier rows, CSV button.
 
+//
+// Lot F (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
+// v2 et le DONUT devient une carte de ventilation à pistes : un anneau force à
+// comparer des angles et réclame une légende pour dire quel arc est quel
+// fournisseur. `CostDonut` n'avait plus d'autre consommateur et disparaît avec
+// cette migration.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -79,23 +86,60 @@ beforeEach(() => {
   useAuthStore.setState({ permissions: ['reports.export'] });
 });
 
+async function loadedTable(): Promise<HTMLElement> {
+  await waitFor(() => {
+    expect(within(screen.getByTestId('purchase-by-supplier-table')).getAllByRole('row').length)
+      .toBeGreaterThan(1);
+  });
+  return screen.getByTestId('purchase-by-supplier-table');
+}
+
 describe('PurchaseBySupplierPage (smoke)', () => {
-  it('renders heading, supplier rows, null avg_lead_days as em-dash, share %, and CSV button; no PDF', async () => {
+  it('renders heading, supplier rows, null avg_lead_days as em-dash and the server share', async () => {
     injectRpcError = false;
     renderPage();
-    // Page heading
     expect(screen.getByRole('heading', { name: /Purchase by Supplier/i, level: 1 })).toBeInTheDocument();
-    // Supplier rows — names now appear in BOTH the donut legend and the table,
-    // so assert at least one occurrence rather than exactly one.
-    expect((await screen.findAllByText('Bali Flour')).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Bali Dairy').length).toBeGreaterThanOrEqual(1);
-    // Bali Flour has avg_lead_days 3.5
-    expect(screen.getByText('3.5')).toBeInTheDocument();
+    const table = await loadedTable();
+    expect(within(table).getByText('Bali Flour')).toBeInTheDocument();
+    expect(within(table).getByText('Bali Dairy')).toBeInTheDocument();
+    // Bali Flour porte 3,5 j — et le pied de table porte la même valeur, la
+    // moyenne pondérée étant tirée par ce seul fournisseur mesuré. On cible donc
+    // la LIGNE, pas le document.
+    const flourRow = within(table).getAllByRole('row')
+      .find((r) => r.textContent?.includes('Bali Flour'));
+    expect(flourRow!.textContent).toMatch(/3\.5/);
     // Bali Dairy has avg_lead_days null — rendered as em-dash
-    expect(screen.getByText('—')).toBeInTheDocument();
-    // share_pct with 2 decimals
-    expect(screen.getByText('80.00%')).toBeInTheDocument();
-    // CSV export button (no PDF for purchase reports)
+    expect(within(table).getAllByText('—').length).toBeGreaterThanOrEqual(1);
+    // La part vient du SERVEUR, 2 décimales.
+    expect(within(table).getByText('80.00%')).toBeInTheDocument();
+  });
+
+  it('ventilates the spend by supplier instead of drawing a donut', async () => {
+    injectRpcError = false;
+    renderPage();
+    const card = await screen.findByTestId('breakdown-purchase-suppliers');
+    await waitFor(() => {
+      expect(within(card).getByText('Bali Flour')).toBeInTheDocument();
+    });
+    expect(within(card).getByText('Total purchased')).toBeInTheDocument();
+  });
+
+  // Le délai moyen est pondéré par les commandes : (3,5×4) / 4 = 3,5 j — le
+  // fournisseur sans délai mesuré ne tire pas la moyenne vers zéro.
+  it('weights the average lead time by orders, and ignores the supplier without one', async () => {
+    injectRpcError = false;
+    renderPage();
+    const tile = await screen.findByTestId('kpi-lead');
+    expect(tile.textContent).toMatch(/3\.5 d/);
+  });
+
+  it('offers a CSV export, and no PDF — no template is registered for this report', async () => {
+    injectRpcError = false;
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('export-menu')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('export-menu'));
     expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.queryByTestId('export-pdf')).toBeNull();
   });
@@ -104,9 +148,9 @@ describe('PurchaseBySupplierPage (smoke)', () => {
     injectRpcError = true;
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByTestId('report-error')).toBeInTheDocument();
     });
-    expect(screen.getByRole('alert').textContent).toMatch(/RPC error/i);
+    expect(screen.getByTestId('report-error').textContent).toMatch(/RPC error/i);
     injectRpcError = false;
   });
 });

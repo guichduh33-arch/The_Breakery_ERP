@@ -7,6 +7,13 @@
 // stores FRACTIONS (e.g. -0.5 = -50.00%). The page multiplies by 100 for
 // display. The fixtures here mirror that contract.
 
+//
+// Lot F (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
+// v2 : les `<section>` maison deviennent des PanelCard, et l'export passe par le
+// menu unique. Les acquis tenus ici ne bougent pas — le pire lot en tête, le
+// drill-down clavier du lot A2, et les DEUX exports (le gabarit PDF
+// `production_yield` était inatteignable avant le correctif R-13).
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -116,17 +123,23 @@ describe('ProductionYieldPage smoke', () => {
 
   it('places the worst-variance row first in the outliers table', async () => {
     renderPage();
-    // Wait until the first outlier row is present.
     await waitFor(() => {
       expect(screen.getByText('PROD-001')).toBeInTheDocument();
     });
-    const outliersHeading = screen.getByText(/Top-10 variance outliers/i);
-    // Look up the table directly under the heading's section.
-    const section = outliersHeading.closest('section')!;
-    const rows = within(section).getAllByRole('row');
+    const rows = within(screen.getByTestId('yield-outliers')).getAllByRole('row');
     // First row is <thead> ; second row is the worst outlier (PROD-001 / -50%).
     expect(rows[1]?.textContent ?? '').toMatch(/PROD-001/);
     expect(rows[1]?.textContent ?? '').toMatch(/-50\.00%/);
+  });
+
+  // Les deux mesures dérivées de la bande, sur la fixture : trois lots suivis,
+  // le plus gros écart à 50 %, un seul motif renseigné.
+  it('summarises the window in the KPI band', async () => {
+    renderPage();
+    const swing = await screen.findByTestId('kpi-largest-swing');
+    expect(swing.textContent).toMatch(/50\.00%/);
+    expect(screen.getByTestId('kpi-beyond').textContent).toMatch(/^Beyond ±15%1/);
+    expect(screen.getByTestId('kpi-explained').textContent).toMatch(/1 of 3 with a reason/);
   });
 
   it('reveals the drill-down panel when an outlier row is clicked', async () => {
@@ -144,16 +157,16 @@ describe('ProductionYieldPage smoke', () => {
     expect(drillRows.length).toBe(2);
   });
 
-  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
-  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
-  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
-  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
-  // le PDF etant precisement le template qui etait inatteignable.
+  // Audit R-13 — la page exposait un <Button> maison ; elle passe par le menu
+  // d'export du socle, qui offre les DEUX formats — le PDF étant précisément le
+  // gabarit qui était inatteignable.
   it('exposes CSV and PDF exports once data is available', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
+      expect(screen.getByTestId('export-menu')).not.toBeDisabled();
     });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
   });
 });

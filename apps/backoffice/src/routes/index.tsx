@@ -64,6 +64,7 @@ const BasketAnalysisPage = lazy(() => import('@/pages/reports/BasketAnalysisPage
 const RecipeCostOverviewPage = lazy(() => import('@/pages/reports/RecipeCostOverviewPage.js'));
 const RecipeCostTimelinePage = lazy(() => import('@/pages/reports/RecipeCostTimelinePage.js'));
 const WastagePage = lazy(() => import('@/pages/reports/WastagePage.js'));
+const PerishableTurnoverPage = lazy(() => import('@/pages/reports/PerishableTurnoverPage.js'));
 const PaymentByMethodPage = lazy(() => import('@/pages/reports/PaymentByMethodPage.js'));
 const Pb1ReportPage = lazy(() => import('@/pages/reports/Pb1ReportPage.js'));
 const StockMovementHistoryPage = lazy(() => import('@/pages/reports/StockMovementHistoryPage.js'));
@@ -800,6 +801,16 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <WastagePage />
+            </PermissionGate>
+          }
+        />
+        {/* Gate recopiée de la RPC : `get_perishable_turnover_v1` exige
+            `reports.inventory.read` (migration S30). */}
+        <Route
+          path="reports/perishable-turnover"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <PerishableTurnoverPage />
             </PermissionGate>
           }
         />

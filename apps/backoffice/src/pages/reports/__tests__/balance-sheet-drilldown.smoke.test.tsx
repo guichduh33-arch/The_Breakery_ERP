@@ -2,10 +2,15 @@
 // Session 32 / Wave 3.E — BalanceSheetPage per-account drill-down smoke test.
 //
 // T1 : the per-account detail table renders <DrilldownLink> entries whose href
-//      points to /accounting/general-ledger?account_id=<uuid>&start=<asOf>&end=<asOf>.
+//      points to /accounting/general-ledger?account_id=<uuid>&start&end.
+//
+// Lot E (campagne Reports 2026-08-15) — le drill-down survit à la migration sur
+// le socle Report shell v2, et il ouvre TOUJOURS l'exercice en cours jusqu'à la
+// date du bilan : un solde de bilan est cumulé, l'ouvrir sur la seule journée
+// `asOf` ne montrerait jamais sa composition.
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BalanceSheetPage from '../BalanceSheetPage.js';
@@ -55,7 +60,7 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/backoffice/reports/balance-sheet?start=2026-05-26&end=2026-05-26']}>
         <BalanceSheetPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -65,11 +70,13 @@ function renderPage() {
 describe('BalanceSheetPage drilldown', () => {
   it('T1 renders DrilldownLink for each per-account detail row pointing to GL', () => {
     renderPage();
-    const link = screen.getByRole('link', { name: /1110/ });
+    const detail = screen.getByTestId('bs-account-detail');
+    const link = within(detail).getByRole('link', { name: /1110/ });
     const href = link.getAttribute('href') ?? '';
     expect(href).toContain('/accounting/general-ledger');
     expect(href).toContain('account_id=acc-1110');
-    expect(href).toMatch(/[?&]start=\d{4}-\d{2}-\d{2}/);
-    expect(href).toMatch(/[?&]end=\d{4}-\d{2}-\d{2}/);
+    // L'exercice en cours jusqu'a la date du bilan, et non la seule journee.
+    expect(href).toContain('start=2026-01-01');
+    expect(href).toContain('end=2026-05-26');
   });
 });

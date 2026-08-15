@@ -11,6 +11,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { asArray, asRecord, toNum, toStr } from '../utils/parse.js';
 
 export interface DowCell {
   dow:            number; // 0=Sunday … 6=Saturday
@@ -51,6 +52,68 @@ export interface CashierVarianceReport {
 
 export const CASHIER_VARIANCE_QK = ['reports', 'cashier-variance'] as const;
 
+// Lot A1 (campagne Reports 2026-08-15) — le fallback serveur d'une période sans
+// shift fermé rend `totals` réduit à `{ sessions_count: 0 }`, sans les
+// sous-objets cash/qris/card que l'interface déclare non-optionnels. Le cast
+// aveugle laissait ce TypeError latent traverser ; on normalise champ par champ.
+function parseCounted(v: unknown): { counted_sessions: number; total_variance: number } {
+  const o = asRecord(v);
+  return {
+    counted_sessions: toNum(o.counted_sessions),
+    total_variance:   toNum(o.total_variance),
+  };
+}
+
+function parseReport(data: unknown, start: string, end: string): CashierVarianceReport {
+  const raw       = asRecord(data);
+  const rawTotals = asRecord(raw.totals);
+  const totalsCash = asRecord(rawTotals.cash);
+  return {
+    generated_at: toStr(raw.generated_at),
+    start_date:   toStr(raw.start_date, start),
+    end_date:     toStr(raw.end_date, end),
+    timezone:     toStr(raw.timezone),
+    cashiers: asArray(raw.cashiers).map((entry): CashierVarianceRow => {
+      const c    = asRecord(entry);
+      const cash = asRecord(c.cash);
+      return {
+        cashier_id:     toStr(c.cashier_id),
+        cashier_name:   toStr(c.cashier_name, '—'),
+        sessions_count: toNum(c.sessions_count),
+        cash: {
+          total_variance: toNum(cash.total_variance),
+          avg_variance:   toNum(cash.avg_variance),
+          total_short:    toNum(cash.total_short),
+          short_count:    toNum(cash.short_count),
+          over_count:     toNum(cash.over_count),
+          worst_variance: toNum(cash.worst_variance),
+        },
+        qris: parseCounted(c.qris),
+        card: parseCounted(c.card),
+        dow_cash: asArray(c.dow_cash).map((cell): DowCell => {
+          const d = asRecord(cell);
+          return {
+            dow:            toNum(d.dow),
+            sessions:       toNum(d.sessions),
+            total_variance: toNum(d.total_variance),
+          };
+        }),
+      };
+    }),
+    totals: {
+      sessions_count: toNum(rawTotals.sessions_count),
+      cash: {
+        total_variance: toNum(totalsCash.total_variance),
+        total_short:    toNum(totalsCash.total_short),
+        short_count:    toNum(totalsCash.short_count),
+        over_count:     toNum(totalsCash.over_count),
+      },
+      qris: parseCounted(rawTotals.qris),
+      card: parseCounted(rawTotals.card),
+    },
+  };
+}
+
 export function useCashierVariance(start: string, end: string) {
   return useQuery<CashierVarianceReport>({
     queryKey: [...CASHIER_VARIANCE_QK, start, end] as const,
@@ -64,7 +127,7 @@ export function useCashierVariance(start: string, end: string) {
         if (error.code === '42501') throw new Error('permission_denied');
         throw error;
       }
-      return data as unknown as CashierVarianceReport;
+      return parseReport(data, start, end);
     },
   });
 }

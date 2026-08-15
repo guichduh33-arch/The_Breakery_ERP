@@ -38,6 +38,10 @@ export interface PaymentsByMethodData {
   total:     number;
   totalFees: number;
   totalNet:  number;
+  // Lot A1 (campagne Reports 2026-08-15) — agrégats serveur jetés : le ratio
+  // paiements/commandes (split-tender) était calculé et jamais exposé.
+  totalCount:  number;
+  totalOrders: number;
   period:    { start: string; end: string };
 }
 
@@ -74,6 +78,8 @@ export function usePaymentsByMethod(params: UsePaymentsByMethodParams) {
         total:     Number(summary.total_amount ?? 0),
         totalFees: Number(summary.total_fees_est ?? 0),
         totalNet:  Number(summary.total_net_est ?? 0),
+        totalCount:  Number(summary.total_count ?? 0),
+        totalOrders: Number(summary.total_orders ?? 0),
         period:    (raw.period ?? { start: params.start, end: params.end }) as { start: string; end: string },
       } satisfies PaymentsByMethodData;
     },

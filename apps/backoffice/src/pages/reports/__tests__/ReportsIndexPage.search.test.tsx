@@ -4,6 +4,12 @@
 // Trois comportements sous contrat : la recherche réduit les tuiles ET fait
 // disparaître les sections vides, un cul-de-sac rend un état vide sortable,
 // et la bande « Recently viewed » apparaît après un clic sur une tuile.
+//
+// Lot H (campagne Reports 2026-08-15) — deux contrats de plus : le compte par
+// famille est DÉRIVÉ des tuiles (aucune assertion sur un nombre écrit à la
+// main ici : ajouter un rapport ne doit pas rougir ce fichier) et il suit le
+// filtrage sans entrer dans le nom accessible du titre. Plus aucune tuile
+// inerte : la mécanique « Soon » est retirée.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -32,6 +38,14 @@ function tileCount(): number {
 
 function search(text: string): void {
   fireEvent.change(screen.getByLabelText('Find a report'), { target: { value: text } });
+}
+
+/** La `<section>` d'une famille, désignée par le nom EXACT de son titre. */
+function familySection(name: string): HTMLElement {
+  const heading = screen.getByRole('heading', { level: 2, name });
+  const section = heading.closest('section');
+  if (section === null) throw new Error(`"${name}" heading has no <section> ancestor`);
+  return section;
 }
 
 /** La `<section>` qui porte la bande des récents. */
@@ -100,6 +114,49 @@ describe('ReportsIndexPage — search', () => {
     expect(screen.queryByText('No report matches')).toBeNull();
     expect(tileCount()).toBe(all);
     expect(screen.getByLabelText('Find a report')).toHaveValue('');
+  });
+});
+
+describe('ReportsIndexPage — per-family counts', () => {
+  it('shows a count on every family header, derived from the tiles it holds', () => {
+    renderHub();
+
+    for (const name of [
+      'Sales', 'Inventory', 'Purchases', 'Finance & Payments',
+      'Operations', 'Marketing', 'Logs & Audit',
+    ]) {
+      const section = familySection(name);
+      const tiles = within(section).getAllByRole('link').length;
+      expect(tiles).toBeGreaterThan(0);
+      // Le mot « reports » n'est que pour la lecture vocale, d'où le textContent.
+      expect(within(section).getByTestId('family-count')).toHaveTextContent(
+        new RegExp(`^${String(tiles)} reports$`),
+      );
+    }
+  });
+
+  it('narrows the count to "n of total" under a search, title untouched', () => {
+    renderHub();
+    const total = within(familySection('Inventory')).getAllByRole('link').length;
+
+    search('wastage');
+
+    const section = familySection('Inventory');
+    const shown = within(section).getAllByRole('link').length;
+    expect(shown).toBeLessThan(total);
+    expect(within(section).getByTestId('family-count')).toHaveTextContent(
+      new RegExp(`^${String(shown)} of ${String(total)} reports$`),
+    );
+    // Le compte vit à côté du titre, pas dedans : le nom accessible du `<h2>`
+    // reste le seul libellé de la famille.
+    expect(screen.getByRole('heading', { level: 2, name: 'Inventory' })).toBeInTheDocument();
+  });
+
+  it('has no inert tile left — every card is a link', () => {
+    renderHub();
+
+    expect(document.querySelectorAll('[aria-disabled]')).toHaveLength(0);
+    expect(screen.queryByText('Soon')).toBeNull();
   });
 });
 

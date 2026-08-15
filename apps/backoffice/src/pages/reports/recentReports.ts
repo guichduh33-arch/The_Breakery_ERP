@@ -2,10 +2,10 @@
 //
 // Historique « Recently viewed » du hub Reports — per-poste, localStorage.
 //
-// Le hub compte une trentaine de tuiles ; en pratique un utilisateur en ouvre
-// trois ou quatre, toujours les mêmes. La bande des récents met ces quatre-là
+// Le hub tient plusieurs familles de rapports ; en pratique un utilisateur en
+// ouvre trois ou quatre, toujours les mêmes. La bande des récents met ceux-là
 // au-dessus de la ligne de flottaison pour que le geste habituel ne coûte plus
-// un balayage de sept sections.
+// un balayage de toutes les familles.
 //
 // On ne stocke QUE la cible (`to`) de la tuile, jamais son libellé : le libellé
 // et le blurb restent la propriété de la table des sections, et une entrée dont

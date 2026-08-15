@@ -1,39 +1,70 @@
 // apps/backoffice/src/pages/reports/PriceChangesPage.tsx
-// S40 Wave B3 — Price changes report: product filter, old→new price, delta %, truncated banner.
+//
+// Lot G (campagne Reports 2026-08-15) — vague Journaux, page 3/5. Migrée sur le
+// socle Report shell v2 (archétype maquette 4c, patron : PurchaseItemsPage).
+//
+// C'EST UN JOURNAL DES PRIX DE VENTE, pas un rapport de marge. Chaque ligne est
+// un changement daté, avec son auteur : l'écran répond à « qui a touché à quoi,
+// et de combien », pas à « combien ça rapporte ». D'où : pas de bande de KPI —
+// « 47 changements » n'est ni un objectif ni un signal —, et pas de comparaison,
+// une trace ne se met pas en regard de la trace précédente.
+//
+// CE QUI NE CHANGE PAS : les lignes viennent de `get_price_changes_v1` et sont
+// servies telles quelles ; le FILTRE PRODUIT reste, en URL-state (R-17 : la vue
+// est partageable et survit au rechargement) ; le drill-down produit reste ; la
+// bannière du plafond serveur (500 lignes) reste, alignée sur la forme du lot A2.
+// `old_price` à NULL garde sa mention « first recorded » : c'est le premier prix
+// connu de ce produit, ce n'est PAS un prix de zéro — et c'est pour cette même
+// raison que la colonne « Change » n'a alors pas de pourcentage.
+//
+// Params URL : `start` / `end` / `product_id` — les bornes portaient DÉJÀ les
+// noms du socle (`useUrlState('start'/'end')`), aucun repli legacy n'est
+// nécessaire. Seul le défaut change : 29 jours maison → 28 jours du socle.
 
+import { useMemo, type JSX } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
-import { toLocalDateStr } from '@breakery/domain';
-import type { CsvColumn } from '@breakery/domain';
 import { useQuery } from '@tanstack/react-query';
+import type { CsvColumn } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
-import { ReportPage } from '@/features/reports/components/ReportPage.js';
-import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
-import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { PanelCard } from '@/components/PanelCard.js';
+import { ReportShell } from '@/features/reports/components/ReportShell.js';
+import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
+import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
+import { SortableTh } from '@/features/reports/components/SortableTh.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { useSortedRows, type SortSpec } from '@/features/reports/hooks/useSortedRows.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
+import { periodLabel } from '@/features/reports/utils/reportFigures.js';
 import {
   usePriceChanges,
   type PriceChangeLine,
 } from '@/features/reports/hooks/usePriceChanges.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 const csvColumns: CsvColumn<PriceChangeLine>[] = [
-  { header: 'Date',          accessor: (r) => r.changed_at.slice(0, 10), format: 'text' },
-  { header: 'Product',       accessor: (r) => r.product_name,            format: 'text' },
-  { header: 'Actor',         accessor: (r) => r.actor_name,              format: 'text' },
-  { header: 'Old Price',     accessor: (r) => r.old_price ?? '',         format: 'text' },
-  { header: 'New Price',     accessor: (r) => r.new_price,               format: 'idr-round100' },
-  { header: 'Delta (%)',     accessor: (r) => r.delta_pct ?? '',         format: 'text' },
+  { header: 'Date',      accessor: (r) => r.changed_at.slice(0, 10), format: 'text' },
+  { header: 'Product',   accessor: (r) => r.product_name,            format: 'text' },
+  { header: 'Actor',     accessor: (r) => r.actor_name,              format: 'text' },
+  { header: 'Old Price', accessor: (r) => r.old_price ?? '',         format: 'text' },
+  { header: 'New Price', accessor: (r) => r.new_price,               format: 'idr-round100' },
+  { header: 'Delta (%)', accessor: (r) => r.delta_pct ?? '',         format: 'text' },
 ];
 
-function defaultStart(): string {
-  return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
-}
+type SortKey = 'date' | 'product' | 'actor' | 'old' | 'new' | 'delta';
 
-interface ProductOption {
-  id:   string;
-  name: string;
-}
+const SORT_SPECS: Record<SortKey, SortSpec<PriceChangeLine>> = {
+  date:    { kind: 'date',   value: (r) => r.changed_at },
+  product: { kind: 'string', value: (r) => r.product_name },
+  actor:   { kind: 'string', value: (r) => r.actor_name },
+  // `old_price` et `delta_pct` sont nullables : le hook range les absents en
+  // bas dans les DEUX sens, un premier prix n'est pas un extrême.
+  old:     { kind: 'number', value: (r) => r.old_price },
+  new:     { kind: 'number', value: (r) => r.new_price },
+  delta:   { kind: 'number', value: (r) => r.delta_pct },
+};
+
+interface ProductOption { id: string; name: string }
 
 function useActiveProducts() {
   return useQuery<ProductOption[]>({
@@ -53,122 +84,129 @@ function useActiveProducts() {
   });
 }
 
-// Audit R-15 — ce helper local etait l'une des dix copies du meme formatteur
-// IDR dans le module. Tout passe desormais par `formatIdrFull`.
-const fmtIdr = formatIdrFull;
-
-function deltaBadge(pct: number | null): JSX.Element {
+/** Une hausse est rouge, une baisse est verte : c'est le prix PAYÉ PAR LE
+ *  CLIENT, pas une recette. */
+function DeltaBadge({ pct }: { pct: number | null }): JSX.Element {
   if (pct === null) {
-    return <span className="text-text-secondary text-xs">—</span>;
+    return <span className="text-xs text-text-secondary">—</span>;
   }
-  const cls = pct > 0
-    ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-danger-soft text-danger'
+  const tone = pct > 0
+    ? 'bg-danger-soft text-danger'
     : pct < 0
-      ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-success-soft text-success'
-      : 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-surface-4 text-text-secondary';
-  return <span className={cls}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)}%</span>;
+      ? 'bg-success-soft text-success'
+      : 'bg-surface-4 text-text-secondary';
+  return (
+    <span className={cn('inline-flex rounded px-1 py-0.5 font-data text-xs font-medium', tone)}>
+      {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+    </span>
+  );
 }
 
-export default function PriceChangesPage() {
-  const [start,     setStart]     = useUrlState('start', defaultStart());
-  const [end,       setEnd]       = useUrlState('end', toLocalDateStr(new Date()));
-  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
-  // partageable et survit au rechargement.
+const NUM_CELL = 'py-2 text-right font-data tabular-nums';
+
+export default function PriceChangesPage(): JSX.Element {
+  const period = useReportPeriod();
+  const { start, end } = period;
+  // R-17 — filtre en URL-state (convention S57) : la vue devient partageable et
+  // survit au rechargement.
   const [productId, setProductId] = useUrlState('product_id', '');
 
   const { data, isLoading, error } = usePriceChanges({
-    start,
-    end,
-    product_id: productId || null,
+    start, end, product_id: productId || null,
   });
-
   const { data: products } = useActiveProducts();
 
-  const changes = data?.changes ?? [];
+  const changes = useMemo(() => data?.changes ?? [], [data]);
+  const sorted = useSortedRows(changes, SORT_SPECS);
+  const truncated = data?.truncated === true;
+
+  const toolbar = (
+    <>
+      <PeriodControl period={period} />
+      {/* <select> natif — le module cadre ses filtres de bandeau ainsi. */}
+      <label className="flex items-center gap-2 text-sm text-text-secondary">
+        <span className="sr-only">Product</span>
+        <select
+          className={cn(selectClassName, 'h-8 w-auto')}
+          value={productId}
+          onChange={(e) => { setProductId(e.target.value); }}
+          aria-label="Filter by product"
+        >
+          <option value="">All products</option>
+          {(products ?? []).map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </label>
+      <ExportMenu
+        csv={{ rows: changes, columns: csvColumns, filename: `price-changes-${start}_${end}` }}
+        disabled={changes.length === 0}
+      />
+    </>
+  );
 
   return (
-    <ReportPage
+    <ReportShell
       title="Price Changes"
-      subtitle="Retail price change log for all products across a date range."
-      isEmpty={!isLoading && !error && data !== undefined && changes.length === 0}
+      subtitle={`${periodLabel(start, end)} · retail price change log, newest first`}
+      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Financial' }]}
+      toolbar={toolbar}
+      error={error}
+      isEmpty={!isLoading && error === null && data !== undefined && changes.length === 0}
       emptyState={{
         title: 'No price changes',
-        description: 'No price changes recorded for this period.',
+        description: 'No retail price was changed over this period for this product selection.',
       }}
-      filters={
-        <div className="flex flex-wrap items-center gap-3">
-          <DateRangePicker
-            start={start}
-            end={end}
-            onStartChange={setStart}
-            onEndChange={setEnd}
-          />
-          {/* Native product filter — NOT @breakery/ui Select per task spec */}
-          <label className="flex items-center gap-2 text-sm text-text-secondary">
-            <span>Product</span>
-            <select
-              className={cn(selectClassName, 'h-9 w-auto')}
-              value={productId}
-              onChange={(e) => setProductId(e.target.value)}
-              aria-label="Filter by product"
-            >
-              <option value="">All products</option>
-              {(products ?? []).map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </label>
-          {data && (
-            <ExportButtons
-              csv={{ rows: changes, columns: csvColumns, filename: `price-changes-${start}_${end}` }}
-            />
-          )}
-        </div>
-      }
     >
-      {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
-      {error && (
-        <p className="text-sm text-danger" role="alert">
-          {error.message ?? 'Failed to load report.'}
-        </p>
-      )}
-      {data?.truncated && (
-        <p className="mb-3 rounded border border-warning bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
+      {truncated && (
+        <p role="status" className="rounded-sm border border-warning bg-warning-soft px-4 py-2 text-sm text-warning">
           First 500 rows shown — narrow the date range to see all changes.
         </p>
       )}
-      {data && (
+
+      <PanelCard
+        title="Price change log"
+        className={truncated ? 'mt-3' : ''}
+        subtitle="One line per recorded change, with the author and the resulting move."
+        isLoading={isLoading}
+        testId="price-changes-table"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">
+              Date, product, actor, old price, new price and relative change per price change
+            </caption>
             <thead>
               <tr className="border-b border-border-subtle text-text-secondary">
-                <th className="py-2 text-left">Date</th>
-                <th className="py-2 text-left">Product</th>
-                <th className="py-2 text-left">Actor</th>
-                <th className="py-2 text-right">Old Price</th>
-                <th className="py-2 text-right">New Price</th>
-                <th className="py-2 text-right">Change</th>
+                <SortableTh label="Date"      sortKey="date"    sorted={sorted} />
+                <SortableTh label="Product"   sortKey="product" sorted={sorted} />
+                <SortableTh label="Actor"     sortKey="actor"   sorted={sorted} />
+                <SortableTh label="Old Price" sortKey="old"     sorted={sorted} align="right" />
+                <SortableTh label="New Price" sortKey="new"     sorted={sorted} align="right" />
+                <SortableTh label="Change"    sortKey="delta"   sorted={sorted} align="right" />
               </tr>
             </thead>
             <tbody>
-              {changes.map((r, idx) => (
+              {sorted.rows.map((r, idx) => (
                 <tr key={`${r.product_id}-${r.changed_at}-${idx}`} className="border-b border-border-subtle">
-                  <td className="py-2 text-text-secondary">{r.changed_at.slice(0, 10)}</td>
+                  <td className="py-2 font-data text-xs text-text-secondary">{r.changed_at.slice(0, 10)}</td>
                   <td className="py-2 font-medium">
                     <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
                   </td>
                   <td className="py-2 text-text-secondary">{r.actor_name}</td>
-                  <td className="py-2 text-right tabular-nums text-text-secondary">
-                    {r.old_price === null ? <span className="italic">first recorded</span> : fmtIdr(r.old_price)}
+                  <td className={cn(NUM_CELL, 'text-text-secondary')}>
+                    {r.old_price === null
+                      ? <span className="italic">first recorded</span>
+                      : formatIdrFull(r.old_price)}
                   </td>
-                  <td className="py-2 text-right tabular-nums">{fmtIdr(r.new_price)}</td>
-                  <td className="py-2 text-right tabular-nums">{deltaBadge(r.delta_pct)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(r.new_price)}</td>
+                  <td className={NUM_CELL}><DeltaBadge pct={r.delta_pct} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
-    </ReportPage>
+      </PanelCard>
+    </ReportShell>
   );
 }
