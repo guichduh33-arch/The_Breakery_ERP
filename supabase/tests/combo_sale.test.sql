@@ -88,7 +88,7 @@ SELECT throws_ok($q$ SELECT complete_order_with_payment_v26(
     p_session_id := '00000000-0000-0000-0000-0000000ce001', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb002","quantity":1,"unit_price":30000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fa003","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":30000,"cash_received":30000,"change_given":0}'::jsonb) $q$, 'P0002', NULL, 'T5 insufficient component stock rejected');
-SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v26(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid)','EXECUTE'), 'T6 anon EXECUTE revoked on v17');
+SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v26(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid, text)','EXECUTE'), 'T6 anon EXECUTE revoked on v17');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v16'), 'T7 v16 dropped');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v14'), 'T8 v14 dropped (regression)');
 SELECT * FROM finish();

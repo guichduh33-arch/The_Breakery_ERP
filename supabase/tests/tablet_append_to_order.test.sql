@@ -115,7 +115,7 @@ SELECT throws_ok(format(
 
 -- T9 — defense in depth.
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.create_tablet_order_v7(uuid,uuid,text,order_type,jsonb,text,uuid,boolean)', 'EXECUTE'),
+  NOT has_function_privilege('anon', 'public.create_tablet_order_v7(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text)', 'EXECUTE'),
   'anon ne peut pas executer create_tablet_order_v7');
 
 SELECT * FROM finish();

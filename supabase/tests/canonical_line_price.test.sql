@@ -145,7 +145,7 @@ SELECT is(
 -- Gate anon
 SELECT ok(
   NOT has_function_privilege('anon',
-    'complete_order_with_payment_v26(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
+    'complete_order_with_payment_v26(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid,text)',
     'EXECUTE'),
   'T9 anon EXECUTE revoque sur v17');
 

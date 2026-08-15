@@ -351,7 +351,7 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege(
     'anon',
-    'public.create_tablet_order_v7(uuid, uuid, text, order_type, jsonb, text, uuid, boolean)',
+    'public.create_tablet_order_v7(uuid, uuid, text, order_type, jsonb, text, uuid, boolean, text)',
     'EXECUTE'
   ),
   'T8: anon has NO EXECUTE privilege on create_tablet_order_v7'

@@ -122,7 +122,7 @@ $$, 'P0002', NULL, 'T6: unknown product raises P0002');
 
 -- T7 : anon n'a pas EXECUTE (REVOKE pair canonique S25).
 SELECT is(
-  has_function_privilege('anon', 'public.fire_counter_order_v7(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean)', 'EXECUTE'),
+  has_function_privilege('anon', 'public.fire_counter_order_v7(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text)', 'EXECUTE'),
   false, 'T7: anon revoked');
 
 -- T8 : clamp money-path (corrective _013) — discount > brut est clampé au brut,
