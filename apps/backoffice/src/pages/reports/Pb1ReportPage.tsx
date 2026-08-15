@@ -34,15 +34,10 @@ import { useReportPeriod, monthRange } from '@/features/reports/hooks/useReportP
 import { useAccountIdByCode } from '@/features/accounting/hooks/useAccountIdByCode.js';
 import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
 import { formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
-import { formatCount, shortDate } from '@/features/reports/utils/reportFigures.js';
+import { MONTH_NAMES, formatCount, shortDate } from '@/features/reports/utils/reportFigures.js';
 import {
   usePb1Report, type Pb1ByDay, type Pb1ReportData,
 } from '@/features/reports/hooks/usePb1Report.js';
-
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
 
 const csvColumns: CsvColumn<Pb1ByDay>[] = [
   { header: 'Date',          accessor: (r) => r.day,           format: 'text' },
@@ -93,7 +88,7 @@ export default function Pb1ReportPage(): JSX.Element {
   const { data, isLoading, error } = usePb1Report({ month, year });
   const { data: pb1PayableAccountId } = useAccountIdByCode('2110');
 
-  const titlePeriod = `${MONTHS[month - 1] ?? String(month)} ${year}`;
+  const titlePeriod = `${MONTH_NAMES[month - 1] ?? String(month)} ${year}`;
   const byDay       = data?.by_day ?? [];
   const glUrl       = buildDrilldownUrl('account', pb1PayableAccountId ?? '', {
     start: data?.period.start ?? period.start,

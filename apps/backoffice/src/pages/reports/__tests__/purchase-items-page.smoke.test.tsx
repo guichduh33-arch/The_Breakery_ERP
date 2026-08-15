@@ -1,8 +1,14 @@
 // apps/backoffice/src/pages/reports/__tests__/purchase-items-page.smoke.test.tsx
 // S40 Wave B2 — Smoke test: PurchaseItemsPage renders heading, calls RPC, shows CSV button.
 
+//
+// Lot F (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
+// v2 : le graphe en barres horizontales cède la place à une carte de
+// ventilation (un classement de valeurs étiquetées n'a pas besoin d'un axe), et
+// l'export passe par le menu unique du bandeau.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -97,18 +103,44 @@ beforeEach(() => {
   useAuthStore.setState({ permissions: ['reports.export'] });
 });
 
+async function loadedTable(): Promise<HTMLElement> {
+  await waitFor(() => {
+    expect(within(screen.getByTestId('purchase-items-table')).getAllByRole('row').length)
+      .toBeGreaterThan(1);
+  });
+  return screen.getByTestId('purchase-items-table');
+}
+
 describe('PurchaseItemsPage (smoke)', () => {
-  it('renders heading, product rows, total, and CSV export button; no PDF button', async () => {
+  it('renders heading, line rows and the summary footer', async () => {
     injectRpcError = false;
     renderPage();
-    // Page heading
     expect(screen.getByRole('heading', { name: /Purchase Items/i, level: 1 })).toBeInTheDocument();
-    // Product rows
-    expect(await screen.findByText('All-Purpose Flour')).toBeInTheDocument();
-    expect(screen.getByText('Butter')).toBeInTheDocument();
-    // Summary footer shows line count
-    expect(screen.getByText(/2 lines/i)).toBeInTheDocument();
-    // CSV export button (no PDF for purchase reports)
+    const table = await loadedTable();
+    // Les noms paraissent AUSSI dans la carte de ventilation : on porte
+    // l'assertion sur la table.
+    expect(within(table).getByText('All-Purpose Flour')).toBeInTheDocument();
+    expect(within(table).getByText('Butter')).toBeInTheDocument();
+    expect(within(table).getByText(/2 lines/i)).toBeInTheDocument();
+  });
+
+  it('ventilates the top products instead of drawing a bar axis', async () => {
+    injectRpcError = false;
+    renderPage();
+    const card = await screen.findByTestId('breakdown-purchase-products');
+    await waitFor(() => {
+      expect(within(card).getByText('All-Purpose Flour')).toBeInTheDocument();
+    });
+    expect(within(card).getByText('Total purchased')).toBeInTheDocument();
+  });
+
+  it('offers a CSV export, and no PDF — no template is registered for this report', async () => {
+    injectRpcError = false;
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('export-menu')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('export-menu'));
     expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.queryByTestId('export-pdf')).toBeNull();
   });
@@ -117,9 +149,9 @@ describe('PurchaseItemsPage (smoke)', () => {
     injectRpcError = true;
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByTestId('report-error')).toBeInTheDocument();
     });
-    expect(screen.getByRole('alert').textContent).toMatch(/RPC error/i);
+    expect(screen.getByTestId('report-error').textContent).toMatch(/RPC error/i);
     injectRpcError = false;
   });
 });

@@ -42,9 +42,22 @@ export function previousPeriod(start: string, end: string): { start: string; end
 
 export interface Delta { abs: number; pct: number | null; sign: 1 | -1 | 0 }
 
+/**
+ * Écart absolu, écart relatif et sens du mouvement.
+ *
+ * Lot F (campagne Reports 2026-08-15) — la garde du ratio passe de
+ * `previous === 0` à `previous <= 0`. Un pourcentage de variation contre une
+ * base NÉGATIVE est un non-sens signé : de −100 à −50, `abs / previous` rend
+ * `-0.5`, soit « −50 % » affiché en rouge, alors que la grandeur s'est
+ * AMÉLIORÉE ; le signe du dénominateur inverse silencieusement la lecture. Base
+ * nulle ou négative → `pct: null`, que les consommateurs rendent en tiret.
+ *
+ * `abs` et `sign` restent définis dans tous les cas : la variation en VALEUR a
+ * un sens sur toute la droite réelle, c'est le RATIO qui n'en a pas.
+ */
 export function formatDelta(current: number, previous: number): Delta {
   const abs = current - previous;
   const sign: 1 | -1 | 0 = abs > 0 ? 1 : abs < 0 ? -1 : 0;
-  const pct = previous === 0 ? null : abs / previous;
+  const pct = previous <= 0 ? null : abs / previous;
   return { abs, pct, sign };
 }

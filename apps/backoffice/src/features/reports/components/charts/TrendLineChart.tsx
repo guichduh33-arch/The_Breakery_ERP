@@ -30,6 +30,18 @@ export interface TrendLineChartProps {
   yTickFormatter?: (v: number) => string;
   /** Défaut IDR complet. */
   valueFormatter?: (v: number) => string;
+  /**
+   * Extension lot F — points marqués sur la série courante.
+   *
+   * Une tendance JOURNALIÈRE est un échantillonnage régulier : la ligne suffit,
+   * et un point par jour sur vingt-huit jours n'est que du bruit — d'où le
+   * défaut à `false`. Une série d'ÉVÉNEMENTS (les versions d'une recette) est
+   * l'inverse : chaque point EST un fait daté, il y en a une poignée, et sans
+   * marqueur le lecteur ne sait plus où la mesure a eu lieu ni combien il y en
+   * a eu. La série de comparaison ne prend jamais de points : elle reste en
+   * arrière-plan.
+   */
+  dots?: boolean;
   ariaLabel: string;
   className?: string;
 }
@@ -37,7 +49,7 @@ export interface TrendLineChartProps {
 export function TrendLineChart({
   data, xKey, currentKey, currentName, compareKey, compareName,
   xTickFormatter, yTickFormatter = formatIdrCompact, valueFormatter = formatIdrFull,
-  ariaLabel, className,
+  dots = false, ariaLabel, className,
 }: TrendLineChartProps): JSX.Element {
   const reduced = usePrefersReducedMotion();
   const paired = compareKey !== undefined;
@@ -82,7 +94,9 @@ export function TrendLineChart({
             name={currentName}
             stroke={COGS_BASE}
             strokeWidth={2}
-            dot={false}
+            // ≥ 8 px de diamètre (charte data-viz) et un anneau de la couleur de
+            // la carte, pour que deux points voisins ne fusionnent pas.
+            dot={dots ? { r: 4, fill: COGS_BASE, stroke: 'var(--surface-3)', strokeWidth: 2 } : false}
             isAnimationActive={!reduced}
           />
         </LineChart>

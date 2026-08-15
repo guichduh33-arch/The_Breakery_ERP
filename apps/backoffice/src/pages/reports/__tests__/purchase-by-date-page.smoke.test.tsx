@@ -1,8 +1,15 @@
 // apps/backoffice/src/pages/reports/__tests__/purchase-by-date-page.smoke.test.tsx
 // S40 Wave B2 — Smoke test: PurchaseByDatePage renders heading, KPI cards, calls RPC, shows CSV.
 
+//
+// Lot F (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
+// v2 : bande de KPI comparée, et l'aire empilée devient des barres appariées
+// courant/précédent (une aire interpole entre deux jours et donne à lire une
+// valeur qui n'existe pas). Le partage reçu/en-attente n'est pas perdu — il vit
+// dans deux tuiles et dans les deux colonnes de la table.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -80,23 +87,36 @@ beforeEach(() => {
 });
 
 describe('PurchaseByDatePage (smoke)', () => {
-  it('renders heading, KPI cards, by_day rows, and CSV button; no PDF button', async () => {
+  it('renders heading, the KPI band and the by_day rows', async () => {
     injectRpcError = false;
     renderPage();
-    // Page heading
     expect(screen.getByRole('heading', { name: /Purchase by Date/i, level: 1 })).toBeInTheDocument();
-    // KPI card labels
     await waitFor(() => {
-      expect(screen.getByText('PO count')).toBeInTheDocument();
-      // "Total" appears in KPI card and table header — confirm at least one exists
-      expect(screen.getAllByText('Total').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText('Received')).toBeInTheDocument();
-      expect(screen.getByText('Pending')).toBeInTheDocument();
+      expect(screen.getByTestId('kpi-total')).toBeInTheDocument();
     });
-    // by_day rows
-    expect(screen.getByText('2026-06-01')).toBeInTheDocument();
-    expect(screen.getByText('2026-06-05')).toBeInTheDocument();
-    // CSV export button (no PDF for purchase reports)
+    expect(screen.getByTestId('kpi-po-count')).toBeInTheDocument();
+    // Le partage reçu / en-attente survit à la disparition de l'aire empilée.
+    expect(screen.getByTestId('kpi-received-value')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-pending-value')).toBeInTheDocument();
+
+    const table = screen.getByTestId('purchase-by-date-table');
+    expect(within(table).getByText('2026-06-01')).toBeInTheDocument();
+    expect(within(table).getByText('2026-06-05')).toBeInTheDocument();
+  });
+
+  it('charts the daily value with the paired-bars component', async () => {
+    injectRpcError = false;
+    renderPage();
+    expect(await screen.findByTestId('chart-purchase-by-day')).toBeInTheDocument();
+  });
+
+  it('offers a CSV export, and no PDF — no template is registered for this report', async () => {
+    injectRpcError = false;
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('export-menu')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByTestId('export-menu'));
     expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.queryByTestId('export-pdf')).toBeNull();
   });
@@ -105,9 +125,9 @@ describe('PurchaseByDatePage (smoke)', () => {
     injectRpcError = true;
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByTestId('report-error')).toBeInTheDocument();
     });
-    expect(screen.getByRole('alert').textContent).toMatch(/RPC error/i);
+    expect(screen.getByTestId('report-error').textContent).toMatch(/RPC error/i);
     injectRpcError = false;
   });
 });

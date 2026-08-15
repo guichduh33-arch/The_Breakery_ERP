@@ -9,7 +9,8 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  formatCount, formatPct1, longDate, pctChange, periodLabel, sharePct, shortDate, topSlice,
+  MAX_DAYS, MONTH_NAMES, eachDay, formatCount, formatPct1, longDate, pctChange,
+  periodLabel, sharePct, shortDate, topSlice,
 } from '../reportFigures.js';
 
 describe('pctChange', () => {
@@ -26,8 +27,46 @@ describe('pctChange', () => {
     expect(pctChange(100, Number.POSITIVE_INFINITY)).toBeNull();
   });
 
-  it('une base négative garde le sens du mouvement (dénominateur en valeur absolue)', () => {
-    expect(pctChange(-50, -100)).toBe(50);
+  // Lot F — la règle CHANGE ici, et le test d'avant encodait l'ancienne.
+  // `pctChange(-50, -100)` rendait `+50` : le dénominateur en valeur absolue
+  // faisait lire « +50 % » (vert, « ça monte ») sur une grandeur qui reste un
+  // déficit de 50. Et de la perte au profit, aucun pourcentage ne décrit un
+  // changement de signe. Base négative → pas de ratio.
+  it('rend `null` sur une base NÉGATIVE — un delta signé n’y veut rien dire', () => {
+    expect(pctChange(-50, -100)).toBeNull();
+    expect(pctChange(50, -100)).toBeNull();
+    expect(pctChange(-150, -100)).toBeNull();
+  });
+});
+
+describe('eachDay', () => {
+  it('énumère la fenêtre, bornes comprises', () => {
+    expect(eachDay('2026-06-05', '2026-06-08'))
+      .toEqual(['2026-06-05', '2026-06-06', '2026-06-07', '2026-06-08']);
+    expect(eachDay('2026-06-05', '2026-06-05')).toEqual(['2026-06-05']);
+  });
+
+  it('traverse une fin de mois et une fin d’année', () => {
+    expect(eachDay('2026-02-27', '2026-03-01'))
+      .toEqual(['2026-02-27', '2026-02-28', '2026-03-01']);
+    expect(eachDay('2025-12-31', '2026-01-01')).toEqual(['2025-12-31', '2026-01-01']);
+  });
+
+  it('rend une liste vide sur une fenêtre inversée ou illisible', () => {
+    expect(eachDay('2026-06-08', '2026-06-05')).toEqual([]);
+    expect(eachDay('not-a-date', '2026-06-05')).toEqual([]);
+  });
+
+  it('plafonne une plage absurde', () => {
+    expect(eachDay('2020-01-01', '2030-01-01')).toHaveLength(MAX_DAYS);
+  });
+});
+
+describe('MONTH_NAMES', () => {
+  it('porte les douze mois, janvier en tête', () => {
+    expect(MONTH_NAMES).toHaveLength(12);
+    expect(MONTH_NAMES[0]).toBe('January');
+    expect(MONTH_NAMES[11]).toBe('December');
   });
 });
 

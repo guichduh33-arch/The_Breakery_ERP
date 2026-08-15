@@ -1,37 +1,49 @@
 // apps/backoffice/src/pages/reports/PurchaseByDatePage.tsx
-// S40 Wave B2 — Purchase orders aggregated by date: KPI cards + by_day table.
+//
+// Lot F (campagne Reports 2026-08-15) — vague Inventory, page 9/10. Migrée sur
+// le socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
+//
+// CE QUI NE CHANGE PAS : résumé et série journalière viennent de
+// `get_purchase_by_date_v1` ; rien n'est recalculé ici hormis les deux sommes de
+// valeur reçue / en attente, qui ne sont que des additions de la série servie.
+//
+// Ce qui change :
+//  1. La rangée de quatre encadrés maison devient la BANDE DE KPI du socle, et
+//     la comparaison est méritée sur un écran d'engagement de dépense : chaque
+//     tuile porte sa variation contre la période précédente, et la HAUSSE DE
+//     L'EN-ATTENTE est une mauvaise nouvelle (`invert`) — c'est de la
+//     marchandise payée-ou-promise qui n'est pas encore entrée.
+//  2. L'AIRE EMPILÉE devient des barres appariées. Deux raisons distinctes :
+//     une aire INTERPOLE entre deux jours et donne à lire une valeur au milieu
+//     d'un segment, qui n'existe pas (il n'y a que des relevés journaliers) ; et
+//     l'axe porte désormais la période COURANTE face à la PRÉCÉDENTE, la
+//     lecture que la page promettait sans la servir.
+//     Le partage reçu / en attente n'est pas perdu : il vit dans deux tuiles de
+//     la bande et dans les deux colonnes de la table, qui restent.
+//     Un jour sans bon de commande vaut bien ZÉRO ici — c'est un montant, et
+//     rien n'a été engagé.
+//
+// Params URL : `start` / `end` / `cmp` — les bornes portaient déjà les noms du
+// socle, aucun repli legacy n'est nécessaire.
 
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { toLocalDateStr } from '@breakery/domain';
+import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
-import { ReportPage } from '@/features/reports/components/ReportPage.js';
-import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
-import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
-import { ChartCard } from '@/features/reports/components/ChartCard.js';
+import { PanelCard } from '@/components/PanelCard.js';
+import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
+import { Delta } from '@/components/kpi/Delta.js';
+import { ReportShell } from '@/features/reports/components/ReportShell.js';
+import { KpiBand } from '@/features/reports/components/KpiBand.js';
+import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
+import { ExportMenu } from '@/features/reports/components/ExportMenu.js';
+import { PairedBarsChart } from '@/features/reports/components/charts/PairedBarsChart.js';
+import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { formatIdrCompact, formatIdrFull } from '@/features/reports/utils/chartColors.js';
 import {
-  CHART_AXIS_TICK,
-  CHART_GRID_STROKE,
-  CHART_TOOLTIP_STYLE,
-  COGS_BASE,
-  familyColor,
-  formatIdrCompact,
-  formatIdrFull,
-} from '@/features/reports/utils/chartColors.js';
+  eachDay, formatCount, pctChange, periodLabel, shortDate,
+} from '@/features/reports/utils/reportFigures.js';
 import {
-  usePurchaseByDate,
-  type PurchaseByDayRow,
+  usePurchaseByDate, type PurchaseByDayRow,
 } from '@/features/reports/hooks/usePurchaseByDate.js';
-import { useUrlState } from '@/hooks/useUrlState.js';
-import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<PurchaseByDayRow>[] = [
   { header: 'Date',           accessor: (r) => r.date,           format: 'text' },
@@ -41,151 +53,215 @@ const csvColumns: CsvColumn<PurchaseByDayRow>[] = [
   { header: 'Pending (IDR)',  accessor: (r) => r.pending_total,  format: 'idr-round100' },
 ];
 
-// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
-// dans le module. Tout passe desormais par `formatIdrFull`.
-const IDR = formatIdrFull;
+const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 
-function defaultStart(): string {
-  return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
+interface DailyPoint {
+  date:    string;
+  current: number;
+  compare: number;
+  [k: string]: string | number;
 }
 
-export default function PurchaseByDatePage() {
-  const reduced = usePrefersReducedMotion();
-  const [start, setStart] = useUrlState('start', defaultStart());
-  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
+/** Série journalière alignée : la comparaison suit le RANG du jour dans sa
+ *  propre fenêtre, jamais sa date. */
+function buildDaily(
+  start: string, end: string,
+  cmpStart: string, cmpEnd: string,
+  cur: PurchaseByDayRow[], prev: PurchaseByDayRow[],
+): DailyPoint[] {
+  const cmpDays = eachDay(cmpStart, cmpEnd);
+  const curMap = new Map(cur.map((d) => [d.date, d.total]));
+  const cmpMap = new Map(prev.map((d) => [d.date, d.total]));
+  return eachDay(start, end).map((d, i) => ({
+    date:    d,
+    current: curMap.get(d) ?? 0,
+    compare: cmpMap.get(cmpDays[i] ?? '') ?? 0,
+  }));
+}
 
-  const { data, isLoading, error } = usePurchaseByDate({ start, end });
+const sum = (rows: PurchaseByDayRow[], pick: (r: PurchaseByDayRow) => number): number =>
+  rows.reduce((s, r) => s + pick(r), 0);
 
-  const rows = data?.by_day ?? [];
+interface KpiDescriptor {
+  key: string; label: string; value: string; title?: string;
+  delta?: number | null; invert?: boolean; note?: string | undefined;
+}
+
+export default function PurchaseByDatePage(): JSX.Element {
+  const period = useReportPeriod();
+  const { start, end, compareRange } = period;
+
+  const current = usePurchaseByDate({ start, end });
+  const compare = usePurchaseByDate({ start: compareRange.start, end: compareRange.end });
+
+  const data     = current.data;
+  const prevData = compare.data;
+  const showCompareSeries = period.compare && prevData !== undefined;
+
+  // `?? []` rend un tableau NEUF à chaque render : posé tel quel en dépendance
+  // d'un `useMemo`, il en casse la mémoïsation à chaque fois (c'est la classe de
+  // bug R-01, où une dépendance instable relançait la requête en boucle).
+  const rows     = useMemo(() => data?.by_day ?? [],     [data?.by_day]);
+  const prevRows = useMemo(() => prevData?.by_day ?? [], [prevData?.by_day]);
+  const summary  = data?.summary;
+  const prev     = prevData?.summary;
+
+  const receivedValue = sum(rows, (r) => r.received_total);
+  const pendingValue  = sum(rows, (r) => r.pending_total);
+  const prevReceived  = prevData !== undefined ? sum(prevRows, (r) => r.received_total) : undefined;
+  const prevPending   = prevData !== undefined ? sum(prevRows, (r) => r.pending_total)  : undefined;
+
+  const daily = useMemo(
+    () => buildDaily(start, end, compareRange.start, compareRange.end, rows, prevRows),
+    [start, end, compareRange.start, compareRange.end, rows, prevRows],
+  );
+
+  const tiles: KpiDescriptor[] = [
+    {
+      key: 'total', label: 'Ordered value',
+      value: formatIdrCompact(summary?.total ?? 0),
+      title: formatIdrFull(summary?.total ?? 0),
+      delta: pctChange(summary?.total ?? 0, prev?.total),
+      note:  `${formatCount(rows.length)} ordering day${rows.length === 1 ? '' : 's'}`,
+    },
+    {
+      key: 'po-count', label: 'Purchase orders',
+      value: formatCount(summary?.po_count ?? 0),
+      delta: pctChange(summary?.po_count ?? 0, prev?.po_count),
+    },
+    {
+      key: 'received-count', label: 'Received',
+      value: formatCount(summary?.received_count ?? 0),
+      delta: pctChange(summary?.received_count ?? 0, prev?.received_count),
+      note:  'orders fully in',
+    },
+    {
+      // Une hausse de l'en-attente est une mauvaise nouvelle : de la marchandise
+      // engagée qui n'est pas entrée.
+      key: 'pending-count', label: 'Pending',
+      value: formatCount(summary?.pending_count ?? 0),
+      delta: pctChange(summary?.pending_count ?? 0, prev?.pending_count), invert: true,
+      note:  'orders still open',
+    },
+    {
+      key: 'received-value', label: 'Received value',
+      value: formatIdrCompact(receivedValue), title: formatIdrFull(receivedValue),
+      delta: pctChange(receivedValue, prevReceived),
+    },
+    {
+      key: 'pending-value', label: 'Pending value',
+      value: formatIdrCompact(pendingValue), title: formatIdrFull(pendingValue),
+      delta: pctChange(pendingValue, prevPending), invert: true,
+    },
+  ];
+
+  const toolbar = (
+    <>
+      <PeriodControl period={period} showCompare />
+      <ExportMenu
+        csv={{ rows, columns: csvColumns, filename: `purchase-by-date-${start}_${end}` }}
+        disabled={rows.length === 0}
+      />
+    </>
+  );
 
   return (
-    <ReportPage
+    <ReportShell
       title="Purchase by Date"
-      subtitle="Purchase order volume and value aggregated by order date."
-      isEmpty={!isLoading && !error && data !== undefined && rows.length === 0}
+      subtitle={`${periodLabel(start, end)} · purchase order volume and value by order date`}
+      breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
+      toolbar={toolbar}
+      error={current.error}
+      isEmpty={!current.isLoading && data !== undefined && rows.length === 0}
       emptyState={{
         title: 'No purchase orders',
-        description: 'No purchase orders for this period.',
+        description: 'No purchase order for this period.',
       }}
-      filters={
-        <div className="flex items-center gap-3">
-          <DateRangePicker
-            start={start}
-            end={end}
-            onStartChange={setStart}
-            onEndChange={setEnd}
-          />
-          {data && (
-            <ExportButtons
-              csv={{ rows, columns: csvColumns, filename: `purchase-by-date-${start}_${end}` }}
-            />
-          )}
-        </div>
+      kpis={
+        <KpiBand isLoading={current.isLoading} tiles={tiles.length} labels={tiles.map((t) => t.label)}>
+          {tiles.map((t, i) => (
+            <KpiTile
+              key={t.key}
+              label={t.label}
+              value={t.value}
+              {...(t.title !== undefined ? { valueTitle: t.title } : {})}
+              hero={i === 0}
+              testId={`kpi-${t.key}`}
+            >
+              {t.delta !== undefined && (
+                <Delta value={t.delta} period="prev" invert={t.invert === true} onInk={i === 0} />
+              )}
+              {t.note !== undefined && (
+                <span className={i === 0 ? KPI_NOTE_HERO : KPI_NOTE}>{t.note}</span>
+              )}
+            </KpiTile>
+          ))}
+        </KpiBand>
       }
     >
-      {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
-      {error && (
-        <p className="text-sm text-danger" role="alert">
-          {error.message ?? 'Failed to load report.'}
-        </p>
-      )}
-      {data && (
-        <div className="space-y-6">
-          {/* KPI summary cards */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: 'PO count',  value: String(data.summary.po_count) },
-              { label: 'Total',     value: IDR(data.summary.total) },
-              { label: 'Received',  value: String(data.summary.received_count) },
-              { label: 'Pending',   value: String(data.summary.pending_count) },
-            ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
-                <p className="text-xs text-text-secondary uppercase tracking-wide">{label}</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
-              </div>
-            ))}
-          </div>
+      <PanelCard
+        title="Ordered value by day"
+        subtitle="Value engaged each day, against the same rank in the previous period."
+        isLoading={current.isLoading}
+        testId="chart-purchase-by-day"
+      >
+        <PairedBarsChart
+          data={daily}
+          xKey="date"
+          currentKey="current"
+          currentName="This period"
+          {...(showCompareSeries ? { compareKey: 'compare', compareName: 'Previous period' } : {})}
+          xTickFormatter={(v) => shortDate(String(v))}
+          ariaLabel={`Purchase order value per day, current period compared with the previous one, ${start} to ${end}.`}
+        />
+      </PanelCard>
 
-          {/* Stacked received vs pending value over time */}
-          <ChartCard
-            title="Purchase value over time"
-            subtitle="Received vs pending PO value by day"
-            accent={COGS_BASE}
-          >
-            <div
-              className="h-72 w-full"
-              role="img"
-              aria-label={`Stacked area chart of purchase order value by day, received vs pending, ${start} to ${end}.`}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={rows} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: CHART_AXIS_TICK, fontSize: 12 }}
-                  />
-                  <YAxis
-                    tickFormatter={formatIdrCompact}
-                    tick={{ fill: CHART_AXIS_TICK, fontSize: 12 }}
-                    width={72}
-                  />
-                  <Tooltip
-                    formatter={(v: number, n: string) => [formatIdrFull(v), n]}
-                    contentStyle={CHART_TOOLTIP_STYLE}
-                  />
-                  <Legend />
-                  <Area
-                    isAnimationActive={!reduced}
-                    type="monotone"
-                    dataKey="received_total"
-                    name="Received"
-                    stackId="v"
-                    stroke={COGS_BASE}
-                    fill={COGS_BASE}
-                    fillOpacity={0.85}
-                  />
-                  <Area
-                    isAnimationActive={!reduced}
-                    type="monotone"
-                    dataKey="pending_total"
-                    name="Pending"
-                    stackId="v"
-                    stroke={familyColor('cogs', 2)}
-                    fill={familyColor('cogs', 2)}
-                    fillOpacity={0.7}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartCard>
-
-          {/* By-day table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 text-left">Date</th>
-                  <th className="py-2 text-right">POs</th>
-                  <th className="py-2 text-right">Total</th>
-                  <th className="py-2 text-right">Received total</th>
-                  <th className="py-2 text-right">Pending total</th>
+      <PanelCard
+        title="Day by day"
+        className="mt-3"
+        subtitle="The received / pending split the chart does not carry."
+        isLoading={current.isLoading}
+        testId="purchase-by-date-table"
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <caption className="sr-only">
+              Order count, total, received and pending value per day
+            </caption>
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th scope="col" className="py-2 text-left">Date</th>
+                <th scope="col" className="py-2 text-right">POs</th>
+                <th scope="col" className="py-2 text-right">Total</th>
+                <th scope="col" className="py-2 text-right">Received total</th>
+                <th scope="col" className="py-2 text-right">Pending total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.date} className="border-b border-border-subtle">
+                  <td className="py-2 font-data text-xs text-text-secondary">{r.date}</td>
+                  <td className={NUM_CELL}>{formatCount(r.po_count)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(r.total)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(r.received_total)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(r.pending_total)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.date} className="border-b border-border-subtle">
-                    <td className="py-2 text-text-secondary">{r.date}</td>
-                    <td className="py-2 text-right tabular-nums">{r.po_count}</td>
-                    <td className="py-2 text-right tabular-nums">{IDR(r.total)}</td>
-                    <td className="py-2 text-right tabular-nums">{IDR(r.received_total)}</td>
-                    <td className="py-2 text-right tabular-nums">{IDR(r.pending_total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+            {rows.length > 0 && summary !== undefined && (
+              <tfoot>
+                <tr className="border-t border-border-subtle font-semibold">
+                  <td className="py-2">Total</td>
+                  <td className={NUM_CELL}>{formatCount(summary.po_count)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(summary.total)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(receivedValue)}</td>
+                  <td className={NUM_CELL}>{formatIdrFull(pendingValue)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
         </div>
-      )}
-    </ReportPage>
+      </PanelCard>
+    </ReportShell>
   );
 }

@@ -16,6 +16,7 @@ import {
   PRESET_LABELS, monthRange, presetRange,
   type PeriodPreset, type ReportPeriod,
 } from '../hooks/useReportPeriod.js';
+import { MONTH_NAMES } from '../utils/reportFigures.js';
 import { useDismissablePanel } from './useDismissablePanel.js';
 
 /** « 5 Aug » — la date métier est un YYYY-MM-DD : on formate en UTC pour ne
@@ -25,11 +26,6 @@ function shortDate(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
-
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
 
 /** Mois et année portés par une borne métier. */
 function partsOf(iso: string): { year: number; month: number } {

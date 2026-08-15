@@ -46,6 +46,15 @@ import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js
 import {
   CHART_1, TEXT_INERT, categoricalColor, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
+// Lot F, résiduel de convergence — cette page portait ses propres copies de
+// `pctChange`, `sharePct`, `formatCount`, `formatPct1`, `topSlice`, `shortDate`
+// et `longDate` : elle est écrite AVANT `reportFigures` (lot D), qui a ensuite
+// factorisé les six pages de la vague Sales sans revenir sur le flagship. Le
+// comportement est identique — `topSlice` y a les mêmes défauts (5 lignes,
+// « by revenue ») et `periodLabel` est exactement la ligne de méta d'ici.
+import {
+  eachDay, formatCount, formatPct1, pctChange, periodLabel, sharePct, shortDate, topSlice,
+} from '@/features/reports/utils/reportFigures.js';
 
 type AnnotatedRow = DailySalesRow & { holiday: string | null };
 
@@ -68,67 +77,8 @@ const csvColumns: CsvColumn<AnnotatedRow>[] = [
 
 const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 const INK_LINK = 'text-gold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
-/** Garde-fou : une plage libre absurde ne doit pas générer 10 000 barres. */
-const MAX_DAYS = 400;
-/** Lignes visibles d'une carte de ventilation, et sessions de caisse listées. */
-const TOP_N = 5;
+/** Sessions de caisse listées dans la carte « Register close ». */
 const MAX_SESSIONS = 8;
-
-/** Une comparaison contre une base nulle n'existe pas — `null`, pas `Infinity`. */
-function pctChange(current: number, previous: number | undefined): number | null {
-  if (previous === undefined || !Number.isFinite(previous) || previous === 0) return null;
-  return ((current - previous) / Math.abs(previous)) * 100;
-}
-/** Part en % d'une base — `0` quand la base est nulle (aucune part à montrer). */
-function sharePct(part: number, base: number): number {
-  return base > 0 ? (part / base) * 100 : 0;
-}
-
-function formatCount(v: number): string {
-  return v.toLocaleString('id-ID');
-}
-function formatPct1(v: number): string {
-  return `${v.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-}
-
-/** Les cinq premières lignes, le total du jeu COMPLET, et le sous-titre qui
- *  annonce la coupe : un total calculé sur `.slice(0, 5)` ment dès la 6ᵉ. */
-function topSlice<T>(all: T[], amount: (t: T) => number): {
-  rows: T[]; total: number; note: string | undefined;
-} {
-  return {
-    rows:  all.slice(0, TOP_N),
-    total: all.reduce((s, t) => s + amount(t), 0),
-    note:  all.length > TOP_N ? `Top ${TOP_N} of ${formatCount(all.length)} by revenue.` : undefined,
-  };
-}
-
-// Les dates de ce module sont des dates MÉTIER (YYYY-MM-DD) : on les formate en
-// UTC, sinon un fuseau navigateur négatif les recule d'un jour.
-function shortDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-}
-
-function longDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
-  });
-}
-
-function eachDay(start: string, end: string): string[] {
-  const s = Date.parse(`${start}T00:00:00Z`);
-  const e = Date.parse(`${end}T00:00:00Z`);
-  if (Number.isNaN(s) || Number.isNaN(e) || e < s) return [];
-  const out: string[] = [];
-  for (let t = s; t <= e && out.length < MAX_DAYS; t += 86_400_000) {
-    out.push(new Date(t).toISOString().slice(0, 10));
-  }
-  return out;
-}
 
 function capitalize(s: string): string {
   return s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1);
@@ -273,7 +223,7 @@ export default function DailySalesPage(): JSX.Element {
   ];
 
   const meta = [
-    start === end ? longDate(start) : `${shortDate(start)} – ${shortDate(end)}`,
+    periodLabel(start, end),
     daily.data !== undefined
       ? `${formatCount(sessions.length)} register session${sessions.length === 1 ? '' : 's'}`
       : null,
