@@ -106,7 +106,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
     });
     const body = await res.json();
     expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
-    expect(String(body.order_number)).toMatch(/^#/);
+    // Numérotation par origine (2026-08-16) — <code><DDMMYYYY><NNN>, défaut 'P'
+    // quand le body ne porte pas de source_code.
+    expect(String(body.order_number)).toMatch(/^P[0-9]{8}[0-9]{3,}$/);
     expect(Number(body.subtotal)).toBe(priceA + priceB);
     expect(Number(body.change_given)).toBe(20000);
   });

@@ -6,7 +6,7 @@
 -- restant, celui de la commande déjà tirée en cuisine —
 -- `hold_fired_order_v1` → `reopen_held_order_v1` → `discard_held_order_v1`.
 --
--- Le fixture monte la commande par la vraie porte (`fire_counter_order_v6`) et
+-- Le fixture monte la commande par la vraie porte (`fire_counter_order_v7`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
 -- réellement (lignes verrouillées, envoyées en cuisine, total laissé à 0 par le
 -- fire — c'est le hold qui le renseigne pour la liste des additions).
@@ -57,7 +57,7 @@ BEGIN
   INSERT INTO pos_sessions (opened_by, opening_cash, status)
     VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
 
-  v_env := fire_counter_order_v6(
+  v_env := fire_counter_order_v7(
     p_client_uuid := gen_random_uuid(),
     p_session_id  := v_sess,
     p_items       := jsonb_build_array(jsonb_build_object(

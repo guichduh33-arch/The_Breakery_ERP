@@ -7,7 +7,7 @@
 --   T1-T3  Vente POS — INCHANGÉ. La JE crédite 2110 du montant porté par la
 --          commande, l'équilibre tient. Non-régression du cas nominal.
 --
---   T4-T6  Vente B2B — CHANGÉ, volontairement. `create_b2b_order_v5` écrit
+--   T4-T6  Vente B2B — CHANGÉ, volontairement. `create_b2b_order_v6` écrit
 --          tax_amount = 0 (vente en gros hors champ PBJT, ADR-005, décision
 --          propriétaire du 2026-07-17). AVANT ce correctif, le trigger
 --          recalculait round_idr(total * r/(1+r)) et créditait 2110 malgré tout :

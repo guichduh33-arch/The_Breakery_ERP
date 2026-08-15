@@ -36,12 +36,12 @@ BEGIN
   END IF;
 
   -- Deux ventes cash de 20 000.
-  v_res := complete_order_with_payment_v25(
+  v_res := complete_order_with_payment_v26(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000));
   v_order1 := (v_res->>'order_id')::uuid;
-  v_res := complete_order_with_payment_v25(
+  v_res := complete_order_with_payment_v26(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000));

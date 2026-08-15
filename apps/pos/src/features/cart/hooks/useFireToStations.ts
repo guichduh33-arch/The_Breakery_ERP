@@ -247,6 +247,7 @@ export function useFireToStations(): UseFireToStationsResult {
             // en cuisine nominal, le refus y arrive à temps. Le drapeau n'est
             // posé qu'au rejeu hors-ligne et à l'appoint du checkout.
             const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
+            const sourceCode = getOrderSourceCode();
             const { data, error } = await supabase.rpc('fire_counter_order_v7', {
               p_client_uuid: fireClientUuidRef.current,
               p_session_id: sessionId,
@@ -267,9 +268,7 @@ export function useFireToStations(): UseFireToStationsResult {
               // Numérotation par origine — le code du terminal ne sert qu'à la
               // CRÉATION ; sur un append le numéro existe déjà. Omis si invalide
               // (défaut serveur 'P').
-              ...(!existingOrderId && getOrderSourceCode() !== null
-                ? { p_source_code: getOrderSourceCode() as string }
-                : {}),
+              ...(!existingOrderId && sourceCode !== null ? { p_source_code: sourceCode } : {}),
             });
             if (error) throw Object.assign(new Error(error.message), { details: error });
             const env = data as unknown as {
