@@ -15,6 +15,7 @@ import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
+import { getOrderSourceCode } from '@/stores/posSettingsStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { getKotCopies } from '@/features/settings/hooks/useKotCopies';
 import { isOfflineMode } from '@/features/lan/offlineMode';
@@ -246,7 +247,7 @@ export function useFireToStations(): UseFireToStationsResult {
             // en cuisine nominal, le refus y arrive à temps. Le drapeau n'est
             // posé qu'au rejeu hors-ligne et à l'appoint du checkout.
             const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-            const { data, error } = await supabase.rpc('fire_counter_order_v6', {
+            const { data, error } = await supabase.rpc('fire_counter_order_v7', {
               p_client_uuid: fireClientUuidRef.current,
               p_session_id: sessionId,
               p_items: toPersist.map((i) => ({
@@ -263,6 +264,12 @@ export function useFireToStations(): UseFireToStationsResult {
               ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
               p_order_type: useCartStore.getState().cart.order_type,
               ...(fireAuthorizer ? { p_discount_authorized_by: fireAuthorizer } : {}),
+              // Numérotation par origine — le code du terminal ne sert qu'à la
+              // CRÉATION ; sur un append le numéro existe déjà. Omis si invalide
+              // (défaut serveur 'P').
+              ...(!existingOrderId && getOrderSourceCode() !== null
+                ? { p_source_code: getOrderSourceCode() as string }
+                : {}),
             });
             if (error) throw Object.assign(new Error(error.message), { details: error });
             const env = data as unknown as {

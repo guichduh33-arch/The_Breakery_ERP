@@ -7,6 +7,7 @@
 // to `preparing` so a mis-served ticket can be corrected without re-ringing
 // the whole order.
 
+import { formatOrderNumberShort } from '@breakery/domain';
 import { RecallButton } from './RecallButton';
 import type { KdsServedOrderRow } from '../hooks/useKdsServedOrders';
 
@@ -31,8 +32,8 @@ export function RecentlyServedStrip({ orders }: RecentlyServedStripProps) {
           key={order.order_id}
           className="flex items-center gap-2 rounded-md border border-border-subtle px-2 py-1 shrink-0"
         >
-          <span className="font-mono text-sm text-gold">{order.order_number}</span>
-          <RecallButton orderId={order.order_id} orderNumber={order.order_number} />
+          <span className="font-mono text-sm text-gold">{formatOrderNumberShort(order.order_number)}</span>
+          <RecallButton orderId={order.order_id} orderNumber={formatOrderNumberShort(order.order_number)} />
         </div>
       ))}
     </div>

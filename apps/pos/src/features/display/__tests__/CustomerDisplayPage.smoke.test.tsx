@@ -203,7 +203,7 @@ describe('CustomerDisplayPage — smoke', () => {
           {
             order_id: 'o-2',
             ready_at: new Date().toISOString(),
-            orders: { order_number: '1002', order_type: 'take_out', table_number: null },
+            orders: { order_number: 'T116082026002', order_type: 'take_out', table_number: null },
           },
         ]);
       }
@@ -213,7 +213,7 @@ describe('CustomerDisplayPage — smoke', () => {
       return ordersBuilder([
         {
           id: 'o-1',
-          order_number: '1001',
+          order_number: 'P16082026001',
           status: 'paid',
           order_type: 'dine_in',
           total: 50000,
@@ -246,14 +246,15 @@ describe('CustomerDisplayPage — smoke', () => {
     await waitFor(() => {
       expect(screen.getByTestId('display-current-card')).toBeInTheDocument();
     });
-    expect(screen.getByText('#1001')).toBeInTheDocument();
+    // Numérotation par origine — the display shows the SHORT form.
+    expect(screen.getByText('P-001')).toBeInTheDocument();
 
     // Session 59 (16 D1.2) — "Ready for pickup" section, fed by
     // order_items.kitchen_status='ready', independent of the paid queue.
     await waitFor(() => {
       expect(screen.getByTestId('display-ready-section')).toBeInTheDocument();
     });
-    expect(screen.getByText('#1002')).toBeInTheDocument();
+    expect(screen.getByText('T1-002')).toBeInTheDocument();
   });
 
   it('shows PairDevicePrompt when the device is unpaired', async () => {

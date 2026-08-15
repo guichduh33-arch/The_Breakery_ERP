@@ -6,6 +6,7 @@
 // at the top of the queue. The card surfaces order number + type + a
 // human-readable elapsed time since paid.
 
+import { formatOrderNumberShort } from '@breakery/domain';
 import type { DisplayOrder } from '../hooks/useDisplayOrders';
 
 interface CurrentOrderCardProps {
@@ -46,7 +47,7 @@ export function CurrentOrderCard({ order }: CurrentOrderCardProps) {
       </p>
       <div className="flex items-baseline justify-between gap-6">
         <h2 className="font-serif text-7xl text-gold tracking-tight">
-          #{order.order_number}
+          {formatOrderNumberShort(order.order_number)}
         </h2>
         <div className="text-right">
           <p className="text-text-primary text-xl">

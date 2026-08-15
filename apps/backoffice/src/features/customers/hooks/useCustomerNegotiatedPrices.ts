@@ -4,7 +4,7 @@
 // "Negotiated prices" section of the customer detail Pricing tab. Unlike
 // category overrides (product_category_prices, applied to every customer in
 // a category), these rows are scoped to a single customer_id and take
-// priority server-side: create_b2b_order_v5 resolves negotiated (customer) >
+// priority server-side: create_b2b_order_v6 resolves negotiated (customer) >
 // category > retail.
 //
 // S69 Volet B (Task 8) — the read query is PostgREST-direct (customer_id is

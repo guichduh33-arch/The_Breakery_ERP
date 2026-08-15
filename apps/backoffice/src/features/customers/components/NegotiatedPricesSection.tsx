@@ -3,7 +3,7 @@
 // S69 Volet B (Task 8) — per-customer negotiated product prices. Unlike the
 // category overrides table (PricingTab, applies to every customer sharing a
 // category), these rows are scoped to a single customer and take priority
-// server-side: create_b2b_order_v5 resolves negotiated (customer) >
+// server-side: create_b2b_order_v6 resolves negotiated (customer) >
 // category > retail. Mirrors the editable-table pattern shipped for category
 // overrides in Task 4 (add / inline edit / delete), gated on
 // customer_prices.manage instead of customer_categories.update.

@@ -36,7 +36,7 @@
 //     the shared `useAgeTimer` hook.
 
 import { Button, Badge } from '@breakery/ui';
-import { orderTypeLabel } from '@breakery/domain';
+import { formatOrderNumberShort, orderTypeLabel } from '@breakery/domain';
 import { toast } from 'sonner';
 
 import { useAgeTimer } from '../hooks/useAgeTimer';
@@ -236,10 +236,12 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
           groupe droit d'une ligne au lieu de superposer. */}
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-2 min-w-0">
-          {/* S43 P2-5a — order_number already carries its `#` prefix; do NOT
-              re-prefix here (was rendering `##B-123`). */}
+          {/* S43 P2-5a — never re-prefix `#` (was rendering `##B-123`).
+              Numérotation par origine — forme courte P-001 en cuisine, le
+              numéro complet P16082026001 reste sur reçus/historique/BO ;
+              les formats legacy passent inchangés. */}
           <span className="font-mono text-2xl font-extrabold tabular-nums text-gold truncate">
-            {head.order_number}
+            {formatOrderNumberShort(head.order_number)}
           </span>
           {/* Critique run 2 (2026-08-14 P1) — WHERE the plate goes, at the same
               2-3 m glance distance as the timer: `T12 · Dine-in` for table

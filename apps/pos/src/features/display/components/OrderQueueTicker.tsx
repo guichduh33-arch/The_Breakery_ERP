@@ -21,6 +21,7 @@
 // below), so a caller passing more rows than the hook already capped can't
 // overflow the fixed-height display screen during a rush.
 
+import { formatOrderNumberShort } from '@breakery/domain';
 import type { DisplayOrder } from '../hooks/useDisplayOrders';
 import { DISPLAY_ORDERS_LIMIT } from '../hooks/useDisplayOrders';
 import type { ReadyOrder } from '../hooks/useReadyOrders';
@@ -81,7 +82,7 @@ export function OrderQueueTicker({
                 data-testid="display-ready-row"
               >
                 <span className="text-4xl font-serif text-text-primary">
-                  #{order.order_number}
+                  {formatOrderNumberShort(order.order_number)}
                 </span>
                 <span className="text-text-secondary text-sm">
                   {orderTypeLabel(order.order_type, order.table_number)}
@@ -117,7 +118,7 @@ export function OrderQueueTicker({
                     Order
                   </span>
                   <span className="text-4xl font-serif text-text-primary">
-                    #{order.order_number}
+                    {formatOrderNumberShort(order.order_number)}
                   </span>
                 </div>
 

@@ -45,6 +45,12 @@
 // variantes, jamais vendables) — couvre la fenêtre de cache stale POS. New
 // check_violation codes: `product_inactive`, `product_is_parent`.
 //
+// Numérotation par origine (2026-08-16): RPC bumped v25 → v26. Champ additif
+// `source_code` (P | Tn | BO, défaut 'P' côté RPC) forwardé en p_source_code —
+// le numéro de commande devient <code><DDMMYYYY><NNN> sur la séquence
+// quotidienne partagée. Additif : les intents outbox déjà en file (sans le
+// champ) rejouent avec le défaut 'P'.
+//
 // ADR-013 Lot 3 (2026-07-26): RPC bumped v19 → v20 (gardes étagées D11,
 // search_path durci, ERRCODE P0014 dédié au gate autorisateur — le match
 // substring 'authorizing manager' est supprimé). D15 : (a) barrière
@@ -129,7 +135,14 @@ interface ProcessPaymentPayload {
   // ADR-013 D10 (2026-07-26) — `discount_authorized_by` retiré du contrat : plus
   // aucun money-path ne lit une identité d'autorisateur depuis le body JSON.
   // L'autorisateur est DÉRIVÉ du PIN vérifié in-EF (verifyManagerPin ci-dessous).
+  /**
+   * Numérotation par origine (2026-08-16) : code du poste émetteur (P | Tn | BO).
+   * Optionnel — absent (intents outbox pré-cutover), le RPC applique 'P'.
+   */
+  source_code?: string;
 }
+
+const SOURCE_CODE_REGEX = /^(P|T[0-9]+|BO)$/;
 
 function isValidPaymentEntry(p: PaymentEntry | undefined): p is PaymentEntry {
   if (!p) return false;
@@ -222,6 +235,11 @@ serve(async (req) => {
     return jsonResponse({ error: 'invalid_idempotency_key' }, 400);
   }
 
+  // Optional source code — validated at the boundary (the RPC re-validates).
+  if (body.source_code !== undefined && !SOURCE_CODE_REGEX.test(body.source_code)) {
+    return jsonResponse({ error: 'invalid_source_code' }, 400);
+  }
+
   // Use a per-request client carrying the user JWT so the RPC sees auth.uid()
   const url = Deno.env.get('SUPABASE_URL');
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
@@ -237,7 +255,7 @@ serve(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v25, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v26, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -297,7 +315,7 @@ serve(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v25', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v26', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -322,6 +340,8 @@ serve(async (req) => {
     // (verifyManagerPin) ; plus de fallback sur une identité lue du body JSON.
     ...(discountAuthorizedBy ? { p_discount_authorized_by: discountAuthorizedBy } : {}),
     ...(discountAuthId ? { p_discount_auth_id: discountAuthId } : {}),
+    // Numérotation par origine — absent = défaut 'P' côté RPC.
+    ...(body.source_code ? { p_source_code: body.source_code } : {}),
   });
 
   if (error) {
@@ -364,6 +384,9 @@ serve(async (req) => {
       }
       if (msg.includes('product_is_parent')) {
         return jsonResponse({ error: 'product_is_parent' }, 409);
+      }
+      if (msg.includes('Invalid source code')) {
+        return jsonResponse({ error: 'invalid_source_code' }, 400);
       }
       return jsonResponse({ error: 'check_violation' }, 422);
     }

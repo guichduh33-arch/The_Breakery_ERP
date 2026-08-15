@@ -29,12 +29,18 @@ export interface PosSettingsState {
   // Spec 006x lot 1 — shared secret of the LAN hub bus (bridge HUB_TOKEN).
   // '' = hub without token check. Sent in the WS hello, never in the URL.
   hubToken: string;
+  // Numérotation par origine (2026-08-16) — code du poste dans le numéro de
+  // commande (P = caisse, T1/T2 = tablettes, BO = back office). Envoyé aux
+  // portes de création (`p_source_code` / `source_code`) ; le serveur valide
+  // ^(P|T[0-9]+|BO)$ et applique son défaut quand il est omis.
+  orderSourceCode: string;
   // ── Behavior ────────────────────────────────────────────────────────
   defaultOrderType: OrderType; // order type a fresh cart starts on (cartStore)
   // ── Setters ─────────────────────────────────────────────────────────
   setPrinterUrl: (url: string) => void;
   setDeviceCode: (code: string) => void;
   setHubToken: (token: string) => void;
+  setOrderSourceCode: (code: string) => void;
   setDefaultOrderType: (t: OrderType) => void;
   /** Restore every field to its factory default (Advanced → Reset). */
   resetToDefaults: () => void;
@@ -44,8 +50,32 @@ const DEFAULTS = {
   printerUrl: '',
   deviceCode: '',
   hubToken: '',
+  orderSourceCode: 'P',
   defaultOrderType: 'take_out' as OrderType,
 } as const;
+
+/** Mirror of the server-side gate — an invalid local value is never sent. */
+export const ORDER_SOURCE_CODE_REGEX = /^(P|T[0-9]+|BO)$/;
+
+/**
+ * This terminal's order source code, or null when unset/invalid — callers omit
+ * the RPC arg and let the server default apply. Non-hook accessor for modules
+ * outside React (offline replay).
+ */
+export function getOrderSourceCode(): string | null {
+  const code = usePosSettingsStore.getState().orderSourceCode;
+  return ORDER_SOURCE_CODE_REGEX.test(code) ? code : null;
+}
+
+/**
+ * Tablet flavor: only a T-code (T1, T2, …) is forwarded — a tablet left on the
+ * factory default 'P' omits the arg and gets the server default 'T1' instead
+ * of minting counter-labelled numbers.
+ */
+export function getTabletSourceCode(): string | null {
+  const code = getOrderSourceCode();
+  return code !== null && /^T[0-9]+$/.test(code) ? code : null;
+}
 
 export const usePosSettingsStore = create<PosSettingsState>()(
   persist(
@@ -54,6 +84,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       setPrinterUrl: (url) => set({ printerUrl: url.trim() }),
       setDeviceCode: (code) => set({ deviceCode: code.trim() }),
       setHubToken: (token) => set({ hubToken: token.trim() }),
+      setOrderSourceCode: (code) => set({ orderSourceCode: code.trim().toUpperCase() }),
       setDefaultOrderType: (t) => set({ defaultOrderType: t }),
       resetToDefaults: () => set({ ...DEFAULTS }),
     }),
@@ -64,6 +95,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
         printerUrl: s.printerUrl,
         deviceCode: s.deviceCode,
         hubToken: s.hubToken,
+        orderSourceCode: s.orderSourceCode,
         defaultOrderType: s.defaultOrderType,
       }),
     },

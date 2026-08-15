@@ -10,7 +10,7 @@
 // would_exceed_by so the operator can either adjust the basket or escalate.
 //
 // S69 Volet B (Task 8) — the line unit_price field is a display convenience
-// only: create_b2b_order_v5 resolves the authoritative price server-side
+// only: create_b2b_order_v6 resolves the authoritative price server-side
 // (negotiated customer price > category price > retail), ignoring whatever
 // is sent here. To avoid showing a stale retail price for customers with a
 // negotiated deal, prefill from useCustomerNegotiatedPrices(customerId) when
@@ -94,7 +94,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     [customers.data, customerId],
   );
 
-  // Display-only prefill: create_b2b_order_v5 re-resolves the authoritative
+  // Display-only prefill: create_b2b_order_v6 re-resolves the authoritative
   // price server-side (negotiated > category > retail) regardless of what's
   // sent, but showing a stale retail default when this customer has a
   // negotiated deal would be confusing for the operator.
