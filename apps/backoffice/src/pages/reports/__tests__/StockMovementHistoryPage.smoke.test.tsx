@@ -1,6 +1,11 @@
 // apps/backoffice/src/pages/reports/__tests__/StockMovementHistoryPage.smoke.test.tsx
-// 2026-06-18 — stock-card ledger layout: heading, RPC call, 13 columns, generated
-// ref_no + type label, CSV export (no PDF).
+// Fiche de stock : titre, appel RPC, colonnes humaines, ref_no + libellé de
+// type générés, export CSV (pas de PDF — DEV-S30-4.X-01).
+//
+// Lot G (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
+// v2 : bandeau, contrôle de période et menu d'export unique. Le TABLEAU, lui,
+// est `StockLedgerTable` — partagé avec la page Inventory, hors périmètre du
+// lot : il garde son propre tri de colonne, déjà pourvu d'`aria-sort`.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
@@ -61,10 +66,10 @@ function renderPage() {
   );
 }
 
-// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
-// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
-// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+// L'export est gouverné par `reports.export`. Ce test vérifie le CÂBLAGE de
+// l'export, pas le RBAC : on seede la permission.
 beforeEach(() => {
+  sessionStorage.clear();
   useAuthStore.setState({ permissions: ['reports.export'] });
 });
 
@@ -113,9 +118,26 @@ describe('StockMovementHistoryPage (smoke)', () => {
     expect(screen.getByText('Stock in')).toBeInTheDocument();           // origin label
   });
 
-  it('shows CSV export button but NOT PDF', async () => {
+  it('offers a CSV export through the toolbar menu, but NOT a PDF', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByTestId('export-csv')).toBeInTheDocument());
+    await waitFor(() => { expect(screen.getByTestId('export-menu')).not.toBeDisabled(); });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     expect(screen.queryByTestId('export-pdf')).toBeNull();
+  });
+
+  it('garde son filtre par type de mouvement dans le bandeau', async () => {
+    renderPage();
+    await screen.findByText('Flour');
+    expect(screen.getByLabelText('Filter by movement type')).toBeInTheDocument();
+  });
+
+  it('le tri de colonne du tableau partagé reste en place (aria-sort)', async () => {
+    renderPage();
+    await screen.findByText('Flour');
+    const header = screen.getByRole('columnheader', { name: 'Product' });
+    expect(header).toHaveAttribute('aria-sort', 'none');
+    fireEvent.click(screen.getByRole('button', { name: 'Product' }));
+    expect(screen.getByRole('columnheader', { name: 'Product' })).toHaveAttribute('aria-sort', 'ascending');
   });
 });
