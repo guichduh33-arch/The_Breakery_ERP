@@ -7492,6 +7492,16 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
+      get_product_sales_lines_v1: {
+        Args: {
+          p_cursor?: string
+          p_end_date: string
+          p_limit?: number
+          p_product_id: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
       get_production_efficiency_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
@@ -7590,6 +7600,14 @@ export type Database = {
           order_count: number
           total: number
         }[]
+      }
+      get_sales_by_product_v1: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
       }
       get_sales_by_staff_v3: {
         Args: { p_date_end: string; p_date_start: string }

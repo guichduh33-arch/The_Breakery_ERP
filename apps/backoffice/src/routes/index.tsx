@@ -50,6 +50,7 @@ const PermissionsMatrixPage = lazy(() => import('@/pages/users/PermissionsMatrix
 const ReportsIndexPage = lazy(() => import('@/pages/reports/ReportsIndexPage.js'));
 const SalesByHourPage = lazy(() => import('@/pages/reports/SalesByHourPage.js'));
 const SalesByCategoryPage = lazy(() => import('@/pages/reports/SalesByCategoryPage.js'));
+const SalesByProductPage = lazy(() => import('@/pages/reports/SalesByProductPage.js'));
 const SalesByStaffPage = lazy(() => import('@/pages/reports/SalesByStaffPage.js'));
 const CashierVariancePage = lazy(() => import('@/pages/reports/CashierVariancePage.js'));
 const StockVariancePage = lazy(() => import('@/pages/reports/StockVariancePage.js'));
@@ -689,6 +690,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.sales.read">
               <SalesByCategoryPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-product"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByProductPage />
             </PermissionGate>
           }
         />

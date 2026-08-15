@@ -32,7 +32,7 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
-  ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
+  Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
   GitCommitHorizontal,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
@@ -61,6 +61,7 @@ const SECTIONS: ReportSection[] = [
     cards: [
       { to: 'sales-by-hour',     title: 'Sales by Hour',     blurb: 'Hourly revenue distribution.',                  icon: Clock },
       { to: 'sales-by-category', title: 'Sales by Category', blurb: 'Revenue + qty per product category.',           icon: PieChart },
+      { to: 'sales-by-product',  title: 'Sales by Product',  blurb: 'Qty, revenue and counter/B2B split per product, down to each sale.', icon: Package },
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
       { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
