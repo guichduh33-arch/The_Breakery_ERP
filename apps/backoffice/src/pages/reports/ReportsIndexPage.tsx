@@ -1,42 +1,48 @@
 // apps/backoffice/src/pages/reports/ReportsIndexPage.tsx
 //
-// Session 14 / Phase 6.A — categorized hub matching the "Reports & Analytics"
-// screenshot family (`report.jpg`, `report finance.jpg`, `inventory report.jpg`,
-// `operations report.jpg`, `purshase report.jpg`, `log report.jpg`).
+// Le hub des rapports : une tuile par rapport, groupées par famille (Sales,
+// Inventory, Purchases, Finance, Operations, Marketing, Logs). Les tuiles ne
+// portent AUCUNE valeur — le hub-à-valeurs de la direction est le tableau de
+// bord, pas Reports.
 //
-// Cards link to the existing report routes; reports we have not yet built are
-// rendered as disabled tiles labelled "Soon" so the user can SEE the planned
-// surface area without being able to navigate to a 404. Permission gating
-// stays at the route level — clicking through still routes through the
-// PermissionGate.
-//
-// Audit UX/UI 2026-08-13, lot 5 — trente tuiles réparties sur sept sections se
-// balayaient à l'œil, section par section. Deux ajouts pour ramener le hub à
-// une lecture de quatre-vingt-dix secondes :
-//   · un champ de recherche qui filtre titre ET blurb (casse et accents
-//     indifférents) ; une section dont plus aucune tuile ne correspond
-//     disparaît, et un cul-de-sac se dit avec un état vide, pas avec du blanc ;
+// Trois choses le rendent balayable sans le lire en entier :
+//   · une recherche qui filtre titre ET blurb (casse et accents indifférents) ;
+//     une famille dont plus aucune tuile ne correspond disparaît, et un
+//     cul-de-sac se dit avec un état vide, pas avec du blanc ;
+//   · un compte par famille, DÉRIVÉ de la table ci-dessous et jamais écrit à la
+//     main, qui suit le filtrage (« 3 of 6 ») — l'œil sait avant de descendre
+//     ce que la recherche a laissé dans chaque groupe ;
 //   · une bande « Recently viewed » en tête, alimentée au clic sur une tuile et
 //     persistée par poste (`bo:reports:recent`).
-// Les tuiles ne portent PAS de valeur : le hub-à-valeurs de la direction est
-// Settings, pas Reports.
+//
+// Le gating par permission reste au niveau des ROUTES : le hub montre tout, la
+// PermissionGate refuse à l'entrée. C'est intentionnel — un hub qui se réduit
+// en silence ne dit pas à un gérant qu'un rapport existe mais lui est fermé.
+//
+// Lot H (campagne Reports 2026-08-15) — la page rejoint l'archétype du socle :
+// tuile-lien composée sur `cardVariants` (le lien EST la boîte, donc la zone
+// cliquable couvre la tuile et le focus se dessine autour d'elle), gouttières et
+// coins du module, plus de titre serif. La mécanique « Soon » — tuile inerte
+// pour un rapport annoncé mais non construit — est retirée : plus aucune tuile
+// ne s'en servait, et une branche morte sur le chemin de rendu se paie au
+// premier ajout. Ajouter un rapport = ajouter une ligne dans `SECTIONS`.
 
 import { useCallback, useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
-  Calendar, Clock, FileSpreadsheet, ListChecks, Receipt, ShoppingCart, Truck,
-  AlertTriangle, TrendingUp, GitCommitHorizontal,
+  Calendar, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
+  ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp,
+  GitCommitHorizontal,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
-import {
-  Card, CardContent, CardHeader, CardTitle, EmptyState, Input, SectionLabel,
-} from '@breakery/ui';
+import { cardVariants, cn, EmptyState, Input, SectionLabel } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useRecentReports } from './recentReports.js';
 
 interface ReportCard {
-  to?:    string;          // omitted when the report isn't built yet
+  to:     string;
   title:  string;
   blurb:  string;
   icon:   LucideIcon;
@@ -68,7 +74,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'stock-variance',    title: 'Stock Variance',     blurb: 'Expected vs current per product.', icon: Boxes },
       { to: 'production-yield',  title: 'Production Yield',   blurb: 'Top-10 batch variance outliers + per-recipe trend.', icon: BarChart3 },
       { to: 'recipe-cost',       title: 'Recipe Cost',        blurb: 'History of per-recipe unit cost.',                  icon: TrendingUp },
-      { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: AlertTriangle },
+      { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: TrendingDown },
       { to: 'stock-movements',     title: 'Stock Movement',     blurb: 'History of all stock changes.', icon: GitCommitHorizontal },
       { to: 'wastage',             title: 'Wastage & Spoilage', blurb: 'Manual waste + auto spoilage by product & lot.', icon: AlertTriangle },
     ],
@@ -92,7 +98,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'operating-expenses', title: 'Operating Expenses', blurb: 'Expense ledger by category, status & trend.', icon: Receipt },
       { to: 'balance-sheet', title: 'Balance Sheet',   blurb: 'Assets vs liabilities + equity snapshot.',   icon: Scale },
       { to: 'cash-flow',     title: 'Cash Flow',       blurb: 'Indirect-method cash movement statement.',   icon: Banknote },
-      { to: 'payment-by-method', title: 'Payment by Method', blurb: 'Cash, Card, QRIS split + daily trend.',  icon: Receipt },
+      { to: 'payment-by-method', title: 'Payment by Method', blurb: 'Cash, Card, QRIS split + daily trend.',  icon: CreditCard },
       { to: 'pb1',           title: 'VAT / PB1 Report',  blurb: 'Monthly PB1 collected, payable & ledger balance.', icon: FileSpreadsheet },
     ],
   },
@@ -122,16 +128,14 @@ const SECTIONS: ReportSection[] = [
       { to: 'audit',                 title: 'Audit Log',         blurb: 'System-wide audit trail.',         icon: Shield },
       { to: 'off-hours-sales',       title: 'Off-Hours Sales',   blurb: 'Payments taken outside business hours (fraud signal).', icon: Clock },
       { to: 'price-changes',         title: 'Price Changes',     blurb: 'History of product price updates.', icon: ListChecks },
-      { to: 'permission-changes',    title: 'Permission Change Log', blurb: 'Role & permission modifications.',  icon: Shield },
+      { to: 'permission-changes',    title: 'Permission Change Log', blurb: 'Role & permission modifications.',  icon: KeyRound },
     ],
   },
 ];
 
-/** Toutes les tuiles construites, indexées par cible — résolution des récents. */
+/** Toutes les tuiles, indexées par cible — résolution des récents. */
 const CARDS_BY_TARGET: ReadonlyMap<string, ReportCard> = new Map(
-  SECTIONS.flatMap((s) => s.cards)
-    .filter((c): c is ReportCard & { to: string } => c.to !== undefined)
-    .map((c) => [c.to, c]),
+  SECTIONS.flatMap((s) => s.cards).map((c) => [c.to, c]),
 );
 
 const TOTAL_CARDS = SECTIONS.reduce((n, s) => n + s.cards.length, 0);
@@ -149,7 +153,21 @@ function fold(s: string): string {
 }
 
 const GRID_CLASS =
-  'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+  'grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+
+/**
+ * La tuile EST le lien : `cardVariants` plutôt qu'un `<Card>` enveloppé dans un
+ * `<Link>`, sinon la zone cliquable ne couvre pas la boîte et l'anneau de focus
+ * se dessine autour d'un conteneur vide (même parti que `KpiTile`). Le seul
+ * signal au survol est le cran de surface que le thème réserve à ça — pas de
+ * bleu, pas de soulignement.
+ */
+const TILE_CLASS = cn(
+  cardVariants({ variant: 'default', padding: 'none' }),
+  'flex h-full flex-col gap-1 p-3.5 shadow-none',
+  'motion-safe:transition-colors hover:bg-surface-4',
+  FOCUS_RING,
+);
 
 function ReportTile({
   card,
@@ -159,38 +177,17 @@ function ReportTile({
   onOpen: (to: string) => void;
 }): JSX.Element {
   const Icon = card.icon;
-  const inner = (
-    <Card
-      className={`h-full ${card.to !== undefined ? 'hover:bg-bg-overlay transition-colors' : 'opacity-60'}`}
-    >
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Icon className="h-4 w-4 text-gold" aria-hidden />
-          {card.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-text-secondary">{card.blurb}</p>
-      </CardContent>
-    </Card>
-  );
-
-  if (card.to === undefined) {
-    return (
-      <div className="block rounded-lg cursor-not-allowed" aria-disabled="true">
-        {inner}
-      </div>
-    );
-  }
-
-  const to = card.to;
   return (
     <Link
-      to={to}
-      onClick={() => { onOpen(to); }}
-      className="block focus:outline-none focus:ring-2 focus:ring-gold rounded-lg"
+      to={card.to}
+      onClick={() => { onOpen(card.to); }}
+      className={TILE_CLASS}
     >
-      {inner}
+      <span className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+        <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+        {card.title}
+      </span>
+      <span className="text-xs leading-snug text-text-muted">{card.blurb}</span>
     </Link>
   );
 }
@@ -207,13 +204,16 @@ export default function ReportsIndexPage() {
     [needle],
   );
 
-  // Une section vide disparaît : sept en-têtes sans contenu sous une recherche
-  // coûtent plus à lire que la liste elle-même.
+  // Une famille vide disparaît : une colonne d'en-têtes sans contenu sous une
+  // recherche coûte plus à lire que la liste elle-même. `total` est le compte
+  // AVANT filtrage — c'est ce qui permet à l'en-tête de dire « 3 of 6 ».
   const sections = useMemo(
     () =>
-      SECTIONS.map((s) => ({ ...s, cards: s.cards.filter(matches) })).filter(
-        (s) => s.cards.length > 0,
-      ),
+      SECTIONS.map((s) => ({
+        ...s,
+        cards: s.cards.filter(matches),
+        total: s.cards.length,
+      })).filter((s) => s.cards.length > 0),
     [matches],
   );
 
@@ -232,7 +232,7 @@ export default function ReportsIndexPage() {
   const searching = needle !== '';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Reports & Analytics"
         subtitle="Pick a report. Filters and exports are per-report."
@@ -262,7 +262,7 @@ export default function ReportsIndexPage() {
       </p>
 
       {recentCards.length > 0 && (
-        <section className="space-y-3">
+        <section className="space-y-2.5">
           <SectionLabel as="h2" size="sm">
             <span className="inline-flex items-center gap-1.5">
               <History className="h-3.5 w-3.5" aria-hidden />
@@ -278,8 +278,22 @@ export default function ReportsIndexPage() {
       )}
 
       {sections.map((section) => (
-        <section key={section.id} className="space-y-3">
-          <SectionLabel as="h2" size="sm">{section.title}</SectionLabel>
+        <section key={section.id} className="space-y-2.5">
+          <div className="flex items-baseline gap-2">
+            <SectionLabel as="h2" size="sm">{section.title}</SectionLabel>
+            {/* Le compte reste HORS du `<h2>` : son nom accessible doit rester
+                le seul titre de la famille. Le mot « reports » est rendu en
+                sr-only pour qu'un nombre nu ne soit pas lu sans son unité. */}
+            <span
+              className="font-data text-xs tabular-nums text-text-muted"
+              data-testid="family-count"
+            >
+              {searching
+                ? `${String(section.cards.length)} of ${String(section.total)}`
+                : String(section.total)}
+              <span className="sr-only"> reports</span>
+            </span>
+          </div>
           <div className={GRID_CLASS}>
             {section.cards.map((c) => (
               <ReportTile key={`${section.id}-${c.title}`} card={c} onOpen={record} />
