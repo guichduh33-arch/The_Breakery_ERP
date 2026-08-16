@@ -1,7 +1,7 @@
 -- supabase/tests/adr012_d1_combo_component_parent.test.sql
 -- ADR-012 déc. 1 — le refus des produits-parents s'étend aux composants de combo.
 --
--- Money-path (complete_order_with_payment_v25) :
+-- Money-path (complete_order_with_payment_v26) :
 --   T1 : combo dont un composant est un produit-PARENT → refus 'product_is_parent'
 --   T2 : le même combo en ligne cadeau (is_promo_gift) → refusé AUSSI, et par la
 --        garde parent, pas par le contrôle de promotion. La garde vit dans la
@@ -96,7 +96,7 @@ END $$;
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v25(
+    PERFORM complete_order_with_payment_v26(
       p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,
@@ -117,7 +117,7 @@ SELECT ok(current_setting('a12d1.t1')::boolean,
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v25(
+    PERFORM complete_order_with_payment_v26(
       p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,
@@ -135,7 +135,7 @@ SELECT ok(current_setting('a12d1.t2')::boolean,
 -- T3 : la variante à la place du parent → vente OK (la garde ne sur-bloque pas).
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v25(
+  v_env := complete_order_with_payment_v26(
     p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,

@@ -9,7 +9,7 @@ import { useState, type JSX } from 'react';
 import { Plug, Printer, Inbox, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, Input, SectionLabel } from '@breakery/ui';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { ORDER_SOURCE_CODE_REGEX, usePosSettingsStore } from '@/stores/posSettingsStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { ScopeBadge } from './ScopeBadge';
 import {
@@ -41,6 +41,9 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
   const setDeviceCode = usePosSettingsStore((s) => s.setDeviceCode);
   const hubToken = usePosSettingsStore((s) => s.hubToken);
   const setHubToken = usePosSettingsStore((s) => s.setHubToken);
+  const orderSourceCode = usePosSettingsStore((s) => s.orderSourceCode);
+  const setOrderSourceCode = usePosSettingsStore((s) => s.setOrderSourceCode);
+  const sourceCodeValid = ORDER_SOURCE_CODE_REGEX.test(orderSourceCode);
 
   const [probe, setProbe] = useState<Probe>('idle');
   const [printBusy, setPrintBusy] = useState(false);
@@ -158,6 +161,38 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
             Must match the bridge&apos;s HUB_TOKEN. Leave blank if the hub runs
             without a token.
           </p>
+        </div>
+      </Card>
+
+      <Card variant="default" padding="md" className="space-y-3">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
+          Order numbering
+        </SectionLabel>
+        <div className="space-y-2">
+          <label
+            htmlFor="devices-source-code"
+            className="block font-bold uppercase tracking-widest text-text-muted text-xs"
+          >
+            Order source code
+          </label>
+          <Input
+            id="devices-source-code"
+            aria-label="Order source code"
+            placeholder="P, T1, T2…"
+            value={orderSourceCode}
+            disabled={readOnly}
+            onChange={(e) => setOrderSourceCode(e.target.value)}
+          />
+          <p className="text-xs text-text-muted">
+            Prefix stamped on this device&apos;s order numbers (P = counter,
+            T1/T2 = tablets). Format: P16082026001.
+          </p>
+          {!sourceCodeValid && (
+            <p className="text-xs text-danger">
+              Invalid code — use P, T1, T2… or BO. The server default applies
+              until this is fixed.
+            </p>
+          )}
         </div>
       </Card>
 

@@ -1,7 +1,7 @@
 -- supabase/tests/b2b_negotiated_price.test.sql
 -- S69 Volet B — server-authoritative B2B negotiated pricing.
 -- Proves _resolve_b2b_line_price_v1 order (customer > category-custom > retail)
--- and that create_b2b_order_v5 bills the resolved price, ignoring the client unit_price.
+-- and that create_b2b_order_v6 bills the resolved price, ignoring the client unit_price.
 -- Run via MCP execute_sql (BEGIN/ROLLBACK).
 
 BEGIN;
@@ -59,11 +59,11 @@ SELECT is(_resolve_b2b_line_price_v1(
   'b2b69002-0000-0000-0000-000000000001','b2b69001-0000-0000-0000-000000000001')::int,
   5000, 'retail fallback');
 
--- 4. create_b2b_order_v5 ignores the client unit_price (send 999999, expect billed at resolved retail 5000)
+-- 4. create_b2b_order_v6 ignores the client unit_price (send 999999, expect billed at resolved retail 5000)
 DO $mk$
 DECLARE v_res jsonb;
 BEGIN
-  v_res := create_b2b_order_v5(
+  v_res := create_b2b_order_v6(
     p_customer_id => 'b2b69002-0000-0000-0000-000000000001',
     p_items => jsonb_build_array(jsonb_build_object(
       'product_id','b2b69001-0000-0000-0000-000000000001','quantity',1,'unit_price',999999)));

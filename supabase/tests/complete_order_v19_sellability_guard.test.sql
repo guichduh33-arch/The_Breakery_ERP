@@ -1,5 +1,5 @@
 -- supabase/tests/complete_order_v19_sellability_guard.test.sql
--- ADR-011 déc. 2 — gardes vendabilité de complete_order_with_payment_v25 :
+-- ADR-011 déc. 2 — gardes vendabilité de complete_order_with_payment_v26 :
 --   T1 : produit is_active=false  → refus 'product_inactive'
 --   T2 : produit-PARENT (variantes actives) → refus 'product_is_parent'
 --   T3 : produit soft-deleted → 'Product not found'
@@ -60,7 +60,7 @@ END $$;
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v25(
+    PERFORM complete_order_with_payment_v26(
       p_session_id := current_setting('v19g.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('v19g.inactive')::uuid, 'quantity', 1, 'unit_price', 10000, 'modifiers', '[]'::jsonb)),
       p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0));
@@ -73,7 +73,7 @@ SELECT ok(current_setting('v19g.t1')::boolean, 'T1 inactive product refused (pro
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v25(
+    PERFORM complete_order_with_payment_v26(
       p_session_id := current_setting('v19g.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('v19g.parent')::uuid, 'quantity', 1, 'unit_price', 10000, 'modifiers', '[]'::jsonb)),
       p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0));
@@ -86,7 +86,7 @@ SELECT ok(current_setting('v19g.t2')::boolean, 'T2 parent product refused (produ
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v25(
+    PERFORM complete_order_with_payment_v26(
       p_session_id := current_setting('v19g.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('v19g.deleted')::uuid, 'quantity', 1, 'unit_price', 10000, 'modifiers', '[]'::jsonb)),
       p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0));
@@ -98,7 +98,7 @@ SELECT ok(current_setting('v19g.t3')::boolean, 'T3 soft-deleted product treated 
 -- T4 : variante active d'un parent → vente OK.
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v25(
+  v_env := complete_order_with_payment_v26(
     p_session_id := current_setting('v19g.sess')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('v19g.variant')::uuid, 'quantity', 1, 'unit_price', 12000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',12000,'cash_received',12000,'change_given',0));
@@ -109,7 +109,7 @@ SELECT ok(current_setting('v19g.t4')::boolean, 'T4 active variant sells fine');
 -- T5 : standalone actif → vente OK (happy path intact).
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v25(
+  v_env := complete_order_with_payment_v26(
     p_session_id := current_setting('v19g.sess')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('v19g.ok')::uuid, 'quantity', 1, 'unit_price', 10000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0));

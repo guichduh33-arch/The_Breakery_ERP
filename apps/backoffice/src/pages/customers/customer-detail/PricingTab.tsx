@@ -11,7 +11,7 @@
 //
 // S69 Volet B (Task 8) — mounts NegotiatedPricesSection below the category
 // overrides table: per-customer negotiated prices, which take priority over
-// the category rule server-side (create_b2b_order_v5). Rendered for every
+// the category rule server-side (create_b2b_order_v6). Rendered for every
 // customer (empty by default) — not gated on category/modifier type.
 
 import { useState, type ChangeEvent, type JSX } from 'react';

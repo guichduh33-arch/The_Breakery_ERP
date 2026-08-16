@@ -6763,7 +6763,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v25: {
+      complete_order_with_payment_v26: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6780,6 +6780,7 @@ export type Database = {
           p_payments?: Json
           p_promotions?: Json
           p_session_id: string
+          p_source_code?: string
           p_table_number?: string
         }
         Returns: Json
@@ -6813,7 +6814,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v5: {
+      create_b2b_order_v6: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -7002,13 +7003,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v6: {
+      create_tablet_order_v7: {
         Args: {
           p_client_uuid: string
           p_items: Json
           p_notes?: string
           p_order_id?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
+          p_source_code?: string
           p_table_number: string
           p_tolerate_unsellable?: boolean
           p_waiter_id: string
@@ -7148,7 +7150,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v6: {
+      fire_counter_order_v7: {
         Args: {
           p_client_uuid: string
           p_discount_authorized_by?: string
@@ -7156,6 +7158,7 @@ export type Database = {
           p_order_id?: string
           p_order_type?: Database["public"]["Enums"]["order_type"]
           p_session_id: string
+          p_source_code?: string
           p_table_number?: string
           p_tolerate_unsellable?: boolean
         }

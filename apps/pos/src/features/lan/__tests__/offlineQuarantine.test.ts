@@ -61,10 +61,10 @@ beforeEach(() => {
 describe('ADR-018 — quarantaine des intents définitivement rejetés', () => {
   it("la commande de salle refusée part en quarantaine et les encaissements derrière remontent", async () => {
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'create_tablet_order_v6') {
+      if (fn === 'create_tablet_order_v7') {
         return Promise.resolve(rpcError('P0011', 'table_required_for_dine_in'));
       }
-      if (fn === 'fire_counter_order_v6') {
+      if (fn === 'fire_counter_order_v7') {
         return Promise.resolve({
           data: { order_id: 'db-1', order_number: '#0001', idempotent_replay: false },
           error: null,
@@ -127,7 +127,7 @@ describe('ADR-018 — quarantaine des intents définitivement rejetés', () => {
 
   it('la quarantaine cascade sur la racine : le règlement suit son fire (D3)', async () => {
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v6') {
+      if (fn === 'fire_counter_order_v7') {
         return Promise.resolve(rpcError('23514', 'Order must contain at least one item'));
       }
       return Promise.resolve({ data: null, error: null });
@@ -158,7 +158,7 @@ describe('ADR-018 — quarantaine des intents définitivement rejetés', () => {
 
   it('toute mise en quarantaine laisse une trace, et un règlement crie (D5)', async () => {
     rpcMock.mockImplementation((fn: string) =>
-      fn === 'fire_counter_order_v6'
+      fn === 'fire_counter_order_v7'
         ? Promise.resolve(rpcError('23514', 'Order must contain at least one item'))
         : Promise.resolve({ data: null, error: null }),
     );

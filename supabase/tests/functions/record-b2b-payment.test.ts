@@ -72,7 +72,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       customerId = c!.id;
     }
 
-    // S78 (D-6) : BEV-AMER est soft-deleted — create_b2b_order_v5 le refusait
+    // S78 (D-6) : BEV-AMER est soft-deleted — create_b2b_order_v6 le refusait
     // (résolution de prix S69 : no_data_found/P0002 sur produit soft-deleted,
     // dette S69 D-4 démasquée). Produit dédié avec retail_price garanti.
     productId = await ensureTestProduct(admin, {
@@ -112,7 +112,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       .update({ b2b_current_balance: 0 } as any)
       .eq('id', customerId);
 
-    const { data: orderResult, error: orderErr } = await rpc(sb)('create_b2b_order_v5', {
+    const { data: orderResult, error: orderErr } = await rpc(sb)('create_b2b_order_v6', {
       p_customer_id: customerId,
       p_items: [{ product_id: productId, quantity: 2, unit_price: 25000 }],
     });
@@ -185,7 +185,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       .eq('id', customerId);
 
     // 1) Create order 100K
-    const { data: orderRes, error: orderErr } = await rpc(sb)('create_b2b_order_v5', {
+    const { data: orderRes, error: orderErr } = await rpc(sb)('create_b2b_order_v6', {
       p_customer_id: customerId,
       p_items: [{ product_id: productId, quantity: 4, unit_price: 25000 }],
     });

@@ -74,7 +74,7 @@ BEGIN
   INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_cashier_prof, 0, 'open') RETURNING id INTO v_sess;
 
   -- R : refund store_credit cross-shift (paye cash, client rattache).
-  r := complete_order_with_payment_v25(
+  r := complete_order_with_payment_v26(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_p1, 'quantity', 1, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0),
@@ -84,7 +84,7 @@ BEGIN
   PERFORM set_config('lot6b.oi_r', oi::text, false);
 
   -- C : cible des refus (tender cash cross-shift, acteur CASHIER).
-  r := complete_order_with_payment_v25(
+  r := complete_order_with_payment_v26(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_p1, 'quantity', 1, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0));
@@ -93,14 +93,14 @@ BEGIN
   PERFORM set_config('lot6b.oi_c', oi::text, false);
 
   -- V1 : void cross-shift refuse (paiement cash).
-  r := complete_order_with_payment_v25(
+  r := complete_order_with_payment_v26(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_p2, 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',30000,'cash_received',30000,'change_given',0));
   PERFORM set_config('lot6b.order_v1', r->>'order_id', false);
 
   -- V2 : void cross-shift accepte (paiement qris, aucun cash).
-  r := complete_order_with_payment_v25(
+  r := complete_order_with_payment_v26(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_p2, 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','qris','amount',30000));
@@ -242,7 +242,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_cashier_auth)::text, true);
   INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_cashier_prof, 0, 'open') RETURNING id INTO v_sess2;
-  r := complete_order_with_payment_v25(
+  r := complete_order_with_payment_v26(
     p_session_id := v_sess2, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_p1, 'quantity', 1, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0));

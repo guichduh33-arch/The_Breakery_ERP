@@ -156,7 +156,7 @@ describe('ajout à une commande de salle existante', () => {
 
     await waitFor(() => {
       expect(mocks.rpc).toHaveBeenCalledWith(
-        'create_tablet_order_v6',
+        'create_tablet_order_v7',
         expect.objectContaining({ p_order_id: 'order-open-1' }),
       );
     });

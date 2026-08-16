@@ -1,6 +1,6 @@
 -- supabase/tests/hub_lan_offline_replay.test.sql
 -- Spec 006x lot 5 — chaos « double replay » côté serveur (§7.5) : rejouer
--- fire_counter_order_v6 / pay_existing_order_v17 avec les clés d'idempotence
+-- fire_counter_order_v7 / pay_existing_order_v17 avec les clés d'idempotence
 -- D'ORIGINE est un no-op strict (une seule commande, un seul encaissement),
 -- l'encaissement différé est accepté même rejoué (A4) et tracé
 -- offline_replay:true dans audit_logs. Fixture jwt-claims pattern
@@ -60,7 +60,7 @@ END $$;
 
 -- T1 : le fire offline rejoué (client_uuid d'origine) crée la commande.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v6(
+  SELECT fire_counter_order_v7(
     '5a000000-0000-4000-8000-000000000001'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -115,7 +115,7 @@ SELECT is(
 
 -- T7 : DOUBLE REPLAY fire — même client_uuid ⇒ idempotent_replay, même commande.
 SELECT is(
-  ((SELECT fire_counter_order_v6(
+  ((SELECT fire_counter_order_v7(
     '5a000000-0000-4000-8000-000000000001'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -142,7 +142,7 @@ SELECT is(
 DO $$
 DECLARE v_ord UUID;
 BEGIN
-  v_ord := (SELECT (fire_counter_order_v6(
+  v_ord := (SELECT (fire_counter_order_v7(
     '5a000000-0000-4000-8000-000000000003'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -168,7 +168,7 @@ $$, 'P0015', NULL,
 DO $$
 DECLARE v_ord UUID;
 BEGIN
-  v_ord := (SELECT (fire_counter_order_v6(
+  v_ord := (SELECT (fire_counter_order_v7(
     '5a000000-0000-4000-8000-000000000005'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(

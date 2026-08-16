@@ -3,6 +3,7 @@ import { buildSubmitPayload } from '@breakery/domain';
 import type { TabletCart } from '@breakery/domain';
 import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase';
+import { getTabletSourceCode } from '@/stores/posSettingsStore';
 import { isOfflineMode } from '@/features/lan/offlineMode';
 import { hubBus } from '@/features/lan/hubBusClient';
 import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
@@ -110,7 +111,8 @@ export function useCreateTabletOrder() {
 
       // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
       // le refus y arrive à temps. Seul le rejeu hors-ligne pose le drapeau.
-      const { data, error } = await supabase.rpc('create_tablet_order_v6', {
+      const tabletSourceCode = getTabletSourceCode();
+      const { data, error } = await supabase.rpc('create_tablet_order_v7', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',
@@ -123,6 +125,10 @@ export function useCreateTabletOrder() {
         // explicit null.
         ...(payload.p_notes != null ? { p_notes: payload.p_notes } : {}),
         ...(appendToOrderId !== undefined ? { p_order_id: appendToOrderId } : {}),
+        // Numérotation par origine — identifiant T1/T2 de CETTE tablette
+        // (réglages appareil). Seul un code T-… est envoyé ; sinon le serveur
+        // applique son défaut 'T1'. Inutile sur un append (numéro déjà posé).
+        ...(!isAppend && tabletSourceCode !== null ? { p_source_code: tabletSourceCode } : {}),
       });
       if (error) throw Object.assign(new Error(error.message), { details: error });
       return { orderId: data, localNumber: null };

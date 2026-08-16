@@ -17,6 +17,7 @@ interface PromotionWirePayload {
 import { supabase, supabaseUrl } from '@/lib/supabase';
 import { getAccessToken } from '@/lib/accessToken';
 import { useShiftStore } from '@/stores/shiftStore';
+import { getOrderSourceCode } from '@/stores/posSettingsStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { clearManagerPin, getManagerPin } from '@/features/discounts/managerPinHolder';
 
@@ -119,7 +120,7 @@ export function useCheckout() {
           // on an authorizing manager (sales.discount). Hoist the first
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v6', {
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v7', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
@@ -274,7 +275,12 @@ export function useCheckout() {
           Authorization: `Bearer ${accessToken}`,
           ...(hasDiscount && managerPin ? { 'x-manager-pin': managerPin } : {}),
         },
-        body: JSON.stringify(payload),
+        // Numérotation par origine — champ additif du body EF ; omis si le
+        // réglage terminal est invalide (défaut serveur 'P').
+        body: JSON.stringify({
+          ...payload,
+          ...(getOrderSourceCode() !== null ? { source_code: getOrderSourceCode() } : {}),
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as CheckoutResponse;

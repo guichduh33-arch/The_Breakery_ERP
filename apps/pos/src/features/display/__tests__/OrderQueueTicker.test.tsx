@@ -12,10 +12,12 @@ import type { DisplayOrder } from '../hooks/useDisplayOrders';
 import type { ReadyOrder } from '../hooks/useReadyOrders';
 import { READY_ORDERS_LIMIT } from '../hooks/useReadyOrders';
 
+// Numérotation par origine (2026-08-16) — realistic stored numbers are
+// <code><DDMMYYYY><NNN>; the ticker renders the SHORT form (T1-001 / P-001).
 function fakeReadyOrder(n: number, overrides: Partial<ReadyOrder> = {}): ReadyOrder {
   return {
     order_id: `ro-${n}`,
-    order_number: String(2000 + n),
+    order_number: `T116082026${String(n).padStart(3, '0')}`,
     order_type: 'dine_in',
     table_number: String(n),
     ready_at: new Date().toISOString(),
@@ -26,7 +28,7 @@ function fakeReadyOrder(n: number, overrides: Partial<ReadyOrder> = {}): ReadyOr
 function fakeOrder(n: number, overrides: Partial<DisplayOrder> = {}): DisplayOrder {
   return {
     id: `o-${n}`,
-    order_number: String(1000 + n),
+    order_number: `P16082026${String(n).padStart(3, '0')}`,
     status: 'paid',
     order_type: 'dine_in',
     total: 50_000,
@@ -51,9 +53,10 @@ describe('OrderQueueTicker', () => {
     const rows = screen.getAllByTestId('display-queue-row');
     expect(rows).toHaveLength(5);
 
-    // First 5 rendered in order (the slice does not reverse the array).
-    expect(rows[0]).toHaveTextContent('#1001');
-    expect(rows[4]).toHaveTextContent('#1005');
+    // First 5 rendered in order (the slice does not reverse the array),
+    // shown in the short form (customer screen).
+    expect(rows[0]).toHaveTextContent('P-001');
+    expect(rows[4]).toHaveTextContent('P-005');
   });
 
   it('shows a "Ready" pill for completed orders and order_type label', () => {
@@ -87,7 +90,7 @@ describe('OrderQueueTicker', () => {
     // queue (`orders`) is empty — no payment precondition.
     const readySection = screen.getByTestId('display-ready-section');
     expect(readySection).toBeInTheDocument();
-    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('#2001');
+    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('T1-001');
     expect(screen.getByTestId('display-ready-row')).toHaveTextContent('Pickup');
 
     // The paid-queue empty state still renders, untouched (section distincte).
@@ -101,8 +104,8 @@ describe('OrderQueueTicker', () => {
 
     expect(screen.getAllByTestId('display-ready-row')).toHaveLength(1);
     expect(screen.getAllByTestId('display-queue-row')).toHaveLength(1);
-    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('#2001');
-    expect(screen.getByTestId('display-queue-row')).toHaveTextContent('#1001');
+    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('T1-001');
+    expect(screen.getByTestId('display-queue-row')).toHaveTextContent('P-001');
   });
 
   // Session 59 (review finding) — the ready section must not overflow the
@@ -116,7 +119,7 @@ describe('OrderQueueTicker', () => {
 
     const rows = screen.getAllByTestId('display-ready-row');
     expect(rows).toHaveLength(READY_ORDERS_LIMIT);
-    expect(rows[0]).toHaveTextContent('#2001');
-    expect(rows[rows.length - 1]).toHaveTextContent(`#${2000 + READY_ORDERS_LIMIT}`);
+    expect(rows[0]).toHaveTextContent('T1-001');
+    expect(rows[rows.length - 1]).toHaveTextContent(`T1-${String(READY_ORDERS_LIMIT).padStart(3, '0')}`);
   });
 });
