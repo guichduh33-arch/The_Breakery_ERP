@@ -211,8 +211,9 @@ BEGIN
   SELECT order_id INTO v_oid FROM counter_fire_idempotency_keys WHERE client_uuid='60000000-0000-0000-0000-000000000012';
   SELECT oi.discount_amount::int INTO v_disc FROM order_items oi WHERE oi.order_id=v_oid;
   -- ADR-022 : v5 écrivait encore 'fire_v4' dans la métadonnée d'audit, résidu
-  -- figé d'un bump antérieur. v6 y écrit sa propre version ; l'assertion suit.
-  SELECT count(*) INTO v_au FROM audit_logs WHERE entity_id=v_oid AND action='order.discount_applied' AND metadata->>'rpc_version'='fire_v6';
+  -- figé d'un bump antérieur. Depuis v6 la RPC y écrit sa propre version ;
+  -- l'assertion suit (fire_v7 depuis la numérotation par origine).
+  SELECT count(*) INTO v_au FROM audit_logs WHERE entity_id=v_oid AND action='order.discount_applied' AND metadata->>'rpc_version'='fire_v7';
   PERFORM set_config('breakery.t12', (v_disc=5000 AND v_au=1)::text, true);
 END $$;
 SELECT ok(current_setting('breakery.t12')::boolean, 'T12: authorized line discount applied + audited');
