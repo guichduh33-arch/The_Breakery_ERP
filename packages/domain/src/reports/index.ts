@@ -23,3 +23,12 @@ export {
 
 export * from './csv.js';
 export * from './period.js';
+
+export {
+  PURCHASE_PRICE_RISE_THRESHOLD_PCT,
+  classifyPriceDelta,
+  weightedInflationPct,
+  risingSpendSharePct,
+  type PriceTrendClass,
+  type PurchasePriceRowLite,
+} from './purchasePrices.js';

@@ -71,6 +71,7 @@ const StaffPerformancePage = lazy(() => import('@/pages/reports/StaffPerformance
 const PurchaseItemsPage = lazy(() => import('@/pages/reports/PurchaseItemsPage.js'));
 const PurchaseByDatePage = lazy(() => import('@/pages/reports/PurchaseByDatePage.js'));
 const PurchaseBySupplierPage = lazy(() => import('@/pages/reports/PurchaseBySupplierPage.js'));
+const PurchasePriceTrendsPage = lazy(() => import('@/pages/reports/PurchasePriceTrendsPage.js'));
 const ProductionReportPage = lazy(() => import('@/pages/reports/ProductionReportPage.js'));
 const ProductionEfficiencyPage = lazy(() => import('@/pages/reports/ProductionEfficiencyPage.js'));
 const PriceChangesPage = lazy(() => import('@/pages/reports/PriceChangesPage.js'));
@@ -857,6 +858,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <PurchaseBySupplierPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/purchase-price-trends"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <PurchasePriceTrendsPage />
             </PermissionGate>
           }
         />

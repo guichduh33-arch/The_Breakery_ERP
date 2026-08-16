@@ -89,6 +89,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'purchase-items',     title: 'Purchase Items',     blurb: 'All purchased items with prices and dates.',  icon: ShoppingCart },
       { to: 'purchase-by-date',   title: 'Purchase by Date',   blurb: 'Purchase history timeline.',                  icon: Calendar },
       { to: 'purchase-by-supplier', title: 'Purchase by Supplier', blurb: 'Supplier performance and costs.',         icon: Truck },
+      { to: 'purchase-price-trends', title: 'Purchase Price Trends', blurb: 'Unit purchase price per article over time — who raised, what to renegotiate.', icon: TrendingUp },
     ],
   },
   {

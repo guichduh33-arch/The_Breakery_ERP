@@ -7208,6 +7208,23 @@ export type Database = {
         }
         Returns: Json
       }
+      get_purchase_price_points_v1: {
+        Args: {
+          p_end_date: string
+          p_product_id: string
+          p_start_date: string
+          p_supplier_id?: string
+        }
+        Returns: Json
+      }
+      get_purchase_price_trends_v1: {
+        Args: {
+          p_end_date: string
+          p_start_date: string
+          p_supplier_id?: string
+        }
+        Returns: Json
+      }
       get_reorder_suggestions_v1: {
         Args: { p_buffer_days?: number; p_lookback_days?: number }
         Returns: {
