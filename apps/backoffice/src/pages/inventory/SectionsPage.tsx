@@ -1,12 +1,16 @@
 // apps/backoffice/src/pages/inventory/SectionsPage.tsx
-// Session 14 / Phase 4.C — sections CRUD page, rewritten on top of DataTable
-// + KpiTile primitives. Sections back every section-aware stock movement so
-// we surface a quick health pulse (active count by kind) at the top.
+// Session 14 / Phase 4.C — sections CRUD page, on top of DataTable + KpiTile.
+//
+// ADR-027 — l'écran est recentré sur les STATIONS DE PRODUCTION. Les sections
+// ne portent plus de stock : elles ne servent qu'au routage de la page
+// Production et à l'affectation produit↔station. La liste ne montre donc que
+// `kind === 'production'` ; les sections warehouse / sales d'époque survivent en
+// base (le ledger historique les référence, FK RESTRICT) mais n'ont plus rien à
+// faire ici, et il n'est plus possible d'en créer.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Edit2, Layers, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Factory, Plus, Trash2 } from 'lucide-react';
 import {
-  Badge,
   Button,
   DataTable,
   KpiTile,
@@ -21,21 +25,15 @@ import {
 import { SectionFormModal } from '@/features/sections/components/SectionFormModal.js';
 import { PageHeader } from '@/components/PageHeader.js';
 
-interface SectionKpi {
-  total:      number;
-  active:     number;
-  warehouse:  number;
-  production: number;
-  sales:      number;
+interface StationKpi {
+  total:  number;
+  active: number;
 }
 
-function aggregate(rows: readonly SectionRow[]): SectionKpi {
-  const acc: SectionKpi = { total: rows.length, active: 0, warehouse: 0, production: 0, sales: 0 };
+function aggregate(rows: readonly SectionRow[]): StationKpi {
+  const acc: StationKpi = { total: rows.length, active: 0 };
   for (const r of rows) {
     if (r.is_active) acc.active += 1;
-    if (r.kind === 'warehouse')  acc.warehouse  += 1;
-    if (r.kind === 'production') acc.production += 1;
-    if (r.kind === 'sales')      acc.sales      += 1;
   }
   return acc;
 }
@@ -49,12 +47,15 @@ export default function SectionsPage(): JSX.Element {
   const [editing,  setEditing ] = useState<SectionRow | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
 
-  const rows = list.data ?? [];
-  const kpi  = useMemo(() => aggregate(rows), [rows]);
+  const rows = useMemo(
+    () => (list.data ?? []).filter((r) => r.kind === 'production'),
+    [list.data],
+  );
+  const kpi = useMemo(() => aggregate(rows), [rows]);
 
   function handleDelete(id: string): void {
     // eslint-disable-next-line no-alert
-    if (!confirm('Soft-delete this section? Existing references stay intact; the section just stops appearing in pickers.')) return;
+    if (!confirm('Soft-delete this station? Existing references stay intact; the station just stops appearing in pickers.')) return;
     softDelete.mutate({ id });
   }
 
@@ -70,16 +71,6 @@ export default function SectionsPage(): JSX.Element {
         id: 'name',
         header: 'Name',
         render: (r) => <span className="font-medium text-text-primary">{r.name}</span>,
-      },
-      {
-        id: 'kind',
-        header: 'Kind',
-        width: '140px',
-        render: (r) => (
-          <Badge variant={r.kind === 'production' ? 'default' : r.kind === 'warehouse' ? 'outline' : 'secondary'}>
-            {r.kind}
-          </Badge>
-        ),
       },
       {
         id: 'order',
@@ -126,33 +117,30 @@ export default function SectionsPage(): JSX.Element {
     <div className="space-y-6">
       <PageHeader
         className="items-start gap-4"
-        title="Sections"
-        subtitle="Physical zones (warehouse, production kitchen, sales front) referenced by every section-aware stock movement."
+        title="Production stations"
+        subtitle="Where production is recorded — kitchen, pastry, bar. Stations route the Production screen and carry the product↔station assignment; they hold no stock."
         actions={canWrite ? (
           <Button variant="ink" onClick={() => { setCreating(true); }}>
-            <Plus className="h-4 w-4" aria-hidden /> New section
+            <Plus className="h-4 w-4" aria-hidden /> New station
           </Button>
         ) : undefined}
       />
 
       <section
-        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
-        aria-label="Section totals"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2"
+        aria-label="Station totals"
       >
         <KpiTile
-          label="Sections"
+          label="Stations"
           value={kpi.total}
-          icon={Layers}
+          icon={Factory}
           footer={`${kpi.active} active`}
         />
-        <KpiTile label="Warehouse"  value={kpi.warehouse}  />
-        <KpiTile label="Production" value={kpi.production} />
-        <KpiTile label="Sales"      value={kpi.sales}      />
       </section>
 
       {list.error !== null ? (
         <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed to load sections: {String(list.error)}
+          Failed to load stations: {String(list.error)}
         </div>
       ) : (
         <DataTable
@@ -161,11 +149,11 @@ export default function SectionsPage(): JSX.Element {
           rows={rows}
           getRowKey={(r) => r.id}
           isLoading={list.isLoading}
-          emptyTitle="No sections defined"
+          emptyTitle="No stations defined"
           emptyDescription={
             canWrite
-              ? 'Add a section to start posting stock movements against a physical zone.'
-              : 'A manager must add sections before stock can be tracked.'
+              ? 'Add a station to start recording production against it.'
+              : 'A manager must add stations before production can be recorded.'
           }
         />
       )}

@@ -6,7 +6,9 @@
 --   T_RPT_04..05  Refresh wrapper functions exist and run.
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
 --   T_RPT_07      get_sales_by_category_v3 returns 0 rows on empty data, accepts date range.
---   T_RPT_08      get_stock_variance_v2 returns one row per non-deleted product.
+--   T_RPT_08      get_stock_variance_v3 (ADR-027 : démarque constatée, sans
+--                 section) returns one row per tracked product with either a
+--                 movement in the default 30-day window or a non-zero stock.
 --   T_RPT_09      get_audit_logs_v3 cursor pagination (limit clamp at 200).
 --   T_RPT_10      4 new reports.* permission codes exist + are granted to ADMIN.
 --
@@ -20,6 +22,8 @@ SELECT plan(10);
 
 -- S58 repair: get_sales_by_hour_v1 → v2 (gate reports.read) and get_stock_variance_v2
 -- gained an inventory.read gate. Set an auth context holding both permissions.
+-- ADR-027 (2026-08-16) : get_stock_variance_v2 -> v3 (démarque constatée, sans
+-- filtre section) ; le gate reports.inventory.read est inchangé.
 DO $fixture$
 DECLARE v_auth UUID;
 BEGIN
@@ -77,12 +81,28 @@ SELECT lives_ok(
 );
 
 -- ============================================================
--- T_RPT_08 — stock-variance row per product
+-- T_RPT_08 — ADR-027 : démarque constatée. get_stock_variance_v3() n'émet
+-- plus une ligne par produit non supprimé — la sémantique devient : un produit
+-- SUIVI (track_inventory=true) avec, sur la fenêtre par défaut (30 jours), soit
+-- un mouvement de stock, soit un stock courant non nul. `now()` est stable dans
+-- la transaction (BEGIN…ROLLBACK), donc la fenêtre calculée ici et celle
+-- calculée par le RPC coïncident.
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v2()),
-  (SELECT COUNT(*)::INT FROM products WHERE deleted_at IS NULL),
-  'T_RPT_08 — get_stock_variance_v2 emits one row per non-deleted product'
+  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v3()),
+  (SELECT COUNT(*)::INT FROM products p
+    WHERE p.deleted_at IS NULL
+      AND p.track_inventory = true
+      AND (
+        EXISTS (
+          SELECT 1 FROM stock_movements sm
+           WHERE sm.product_id = p.id
+             AND sm.created_at BETWEEN (now() - INTERVAL '30 days') AND now()
+        )
+        OR p.current_stock <> 0
+      )
+  ),
+  'T_RPT_08 — get_stock_variance_v3 emits one row per tracked product with a movement in the default window or a non-zero stock'
 );
 
 -- ============================================================

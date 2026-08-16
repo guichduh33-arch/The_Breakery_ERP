@@ -110,9 +110,11 @@ export default function OpnameDetailPage(): JSX.Element {
         className="grid grid-cols-1 gap-4 md:grid-cols-3"
         aria-label="Count progress"
       >
+        {/* ADR-027 — le comptage est global. La tuile ne nomme plus qu'une
+            section d'ÉPOQUE, pour les comptages sectionnés d'avant l'ADR. */}
         <KpiTile
           label="Section"
-          value={d.section?.name ?? '—'}
+          value={d.section?.name ?? 'Global'}
           icon={Layers}
           footer={d.section?.code ?? undefined}
         />

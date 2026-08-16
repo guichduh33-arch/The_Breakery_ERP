@@ -25,7 +25,7 @@ export interface AlertsCount {
 }
 
 export function useAlertsCount(): AlertsCount {
-  const low = useLowStock(null);
+  const low = useLowStock();
   const reorder = useReorderSuggestions(30, 14);
 
   const lowStock = low.data?.length ?? 0;

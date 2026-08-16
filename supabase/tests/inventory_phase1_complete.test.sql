@@ -18,8 +18,10 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- Plan counts EVERY pgTAP assertion (some T-blocks emit multiple assertions
--- e.g. T9 has 2, T10 has 4). Total = 19.
-SELECT plan(19);
+-- e.g. T9 has 2, T10 has 4). Total = 17.
+-- ADR-027 (2026-08-16) : T3 (stock_locations FK — table droppée) et T11
+-- (section_stock RLS — table droppée) supprimés. Numéros laissés vacants.
+SELECT plan(17);
 
 -- ---------------------------------------------------------------------------
 -- T1 — 5 sections seedées avec les bons codes
@@ -42,15 +44,8 @@ SELECT throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- T3 — stock_locations.section_id FK enforce (pas d''insert vers section orphan)
+-- T3 — ADR-027 : stock_locations est droppée (table inutilisée, mono-section).
 -- ---------------------------------------------------------------------------
-SELECT throws_ok(
-  $$INSERT INTO stock_locations (section_id, code, name)
-       VALUES ('00000000-0000-0000-0000-000000000000'::uuid, 'TEST', 'Test loc')$$,
-  '23503',
-  NULL,
-  'T3: stock_locations.section_id FK violation on orphan UUID'
-);
 
 -- ---------------------------------------------------------------------------
 -- T4 — unit_conversions seedée avec ≥14 lignes (6 identités + 8 conversions)
@@ -132,35 +127,14 @@ SELECT col_not_null('stock_movements', 'metadata',
 );
 
 -- ---------------------------------------------------------------------------
--- T11 — section_stock RLS : INSERT direct par authenticated → denied
+-- T11 — ADR-027 : section_stock est droppée (cache dérivé, mono-section).
 -- ---------------------------------------------------------------------------
-DO $$
-DECLARE v_blocked BOOLEAN := false;
-BEGIN
-  -- Switch role to authenticated, attempt direct INSERT
-  SET LOCAL ROLE authenticated;
-  BEGIN
-    INSERT INTO section_stock (section_id, product_id, quantity, unit)
-    VALUES (
-      (SELECT id FROM sections WHERE code='MAIN_WAREHOUSE'),
-      gen_random_uuid(),
-      0, 'pcs'
-    );
-  EXCEPTION
-    WHEN insufficient_privilege THEN v_blocked := true;
-    WHEN OTHERS THEN v_blocked := true;  -- RLS denial / FK violation also count
-  END;
-  RESET ROLE;
-  PERFORM set_config('breakery.t11_blocked', v_blocked::text, true);
-END $$;
-
-SELECT ok(
-  current_setting('breakery.t11_blocked', true)::BOOLEAN,
-  'T11: section_stock direct INSERT par role authenticated bloqué (RLS lockdown)'
-);
 
 -- ---------------------------------------------------------------------------
--- T12 — has_permission v8 : MANAGER a transfer.create / receive / opname.create / production.create
+-- T12 — has_permission v8 : MANAGER a opname.create / production.create.
+-- ADR-027 : inventory.transfer.create / inventory.transfer.receive retirées
+-- de l'assertion — ces permissions sont SUPPRIMÉES des tables
+-- permissions/role_permissions (feature transferts droppée).
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE v_uid UUID;
@@ -169,8 +143,6 @@ BEGIN
    WHERE role_code='MANAGER' AND deleted_at IS NULL LIMIT 1;
   PERFORM set_config('breakery.t12_pass',
     (
-      has_permission(v_uid, 'inventory.transfer.create')  AND
-      has_permission(v_uid, 'inventory.transfer.receive') AND
       has_permission(v_uid, 'inventory.opname.create')    AND
       has_permission(v_uid, 'inventory.production.create')
     )::text, true);
@@ -178,7 +150,7 @@ END $$;
 
 SELECT ok(
   current_setting('breakery.t12_pass', true)::BOOLEAN,
-  'T12: MANAGER a les 4 perms inventory Phase 1 standard (transfer.*, opname.create, production.create)'
+  'T12: MANAGER a les perms inventory Phase 1 standard restantes (opname.create, production.create)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -224,7 +196,6 @@ BEGIN
    ORDER BY employee_code LIMIT 1;
   PERFORM set_config('breakery.t14_pass',
     (
-      has_permission(v_uid, 'inventory.transfer.create')  AND
       has_permission(v_uid, 'inventory.opname.finalize')  AND
       has_permission(v_uid, 'inventory.production.delete')AND
       has_permission(v_uid, 'inventory.recipes.update')   AND
@@ -234,21 +205,23 @@ END $$;
 
 SELECT ok(
   current_setting('breakery.t14_pass', true)::BOOLEAN,
-  'T14: ADMIN/SUPER_ADMIN a les 5 perms ADMIN+ inventory Phase 1 (via unconditional-true branch)'
+  'T14: ADMIN/SUPER_ADMIN a les perms ADMIN+ inventory Phase 1 restantes (via unconditional-true branch)'
 );
 
 -- ---------------------------------------------------------------------------
--- T15 — 8 nouvelles permissions seedées dans la table permissions
+-- T15 — permissions inventory.* Phase 1 seedées dans la table permissions.
+-- ADR-027 : inventory.transfer.create / inventory.transfer.receive retirées
+-- de la liste et du compte attendu (8 -> 6) — SUPPRIMÉES des tables
+-- permissions/role_permissions (feature transferts droppée).
 -- ---------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::INT FROM permissions WHERE code IN (
-    'inventory.transfer.create','inventory.transfer.receive',
     'inventory.opname.create','inventory.opname.finalize',
     'inventory.production.create','inventory.production.delete',
     'inventory.recipes.update','inventory.sections.update'
   )),
-  8,
-  'T15: 8 nouvelles permissions inventory.* Phase 1 seedées dans la table permissions'
+  6,
+  'T15: 6 permissions inventory.* Phase 1 restantes seedées dans la table permissions'
 );
 
 -- ---------------------------------------------------------------------------

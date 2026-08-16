@@ -20,8 +20,12 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
--- plan(19): split has_column / col_not_null counts as multiple pgTAP assertions.
-SELECT plan(19);
+-- plan(22): recompte 2026-08-16 — 22 assertions top-level (has_table/has_column
+-- ×3, col_not_null ×4, ok ×2, is ×10, PERFORM ok de T_PO_12 ×1 — le IF/ELSE en
+-- émet exactement une —, throws_ok ×2). Le plan disait 19 depuis des ajouts non
+-- recomptés ; le mismatch « planned 19 but ran 22 » est sorti au pgTAP de la PR
+-- ADR-027, sans lien avec elle.
+SELECT plan(22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: a supplier T_PO_SUPP and 2 products T_PO_PROD_A (no shelf life)
@@ -179,7 +183,8 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T_PO_07 — receive_purchase_order_v1 partial receipt (5 kg of product A only)
+-- T_PO_07 — receive_purchase_order_v4 partial receipt (5 kg of product A only).
+-- ADR-027 (2026-08-16) : bump v3 -> v4, p_section_id supprimé.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -201,9 +206,8 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v3(
+  v_result := receive_purchase_order_v4(
     p_po_id          := v_po_id,
-    p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received
   );
 
@@ -275,9 +279,8 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v3(
+  PERFORM receive_purchase_order_v4(
     p_po_id          := v_po_id,
-    p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received
   );
 END $$;

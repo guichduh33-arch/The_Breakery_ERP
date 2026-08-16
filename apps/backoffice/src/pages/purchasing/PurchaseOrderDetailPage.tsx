@@ -63,7 +63,6 @@ import {
   validatePOFormDraft,
   type POFormDraftValue,
 } from '@/features/purchasing/components/POFormDraft.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
@@ -91,7 +90,6 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const canEdit       = hasPermission('purchasing.po.edit');
 
   const detail   = usePurchaseOrderDetail(id);
-  const sections = useSections();
   const receive  = useReceivePurchaseOrder();
   const cancel   = useCancelPurchaseOrder();
   const payments = usePoPayments(id);
@@ -150,7 +148,6 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const editable      = canEdit && status === 'pending' && !hasGrn && !hasPayments;
 
   async function handleReceive(args: {
-    sectionId: string;
     items: { poItemId: string; receivedQuantity: number }[];
     idempotencyKey: string;
   }): Promise<void> {
@@ -158,7 +155,6 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     try {
       await receive.mutateAsync({
         poId:           po!.id,
-        sectionId:      args.sectionId,
         items:          args.items,
         idempotencyKey: args.idempotencyKey,
       });
@@ -526,7 +522,6 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
       {showReceive && (
         <ReceiveDialog
           po={po}
-          sections={(sections.data ?? []).map((s) => ({ id: s.id, code: s.code, name: s.name }))}
           onCancel={() => setShowReceive(false)}
           onConfirm={handleReceive}
           submitting={receive.isPending}

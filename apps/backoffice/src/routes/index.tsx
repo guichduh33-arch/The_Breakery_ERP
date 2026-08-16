@@ -22,9 +22,6 @@ const PromotionsPage = lazy(() => import('@/pages/Promotions.js'));
 const LoyaltyPage = lazy(() => import('@/pages/Loyalty.js'));
 const InventoryPage = lazy(() => import('@/pages/Inventory.js'));
 const IncomingStockPage = lazy(() => import('@/pages/IncomingStock.js'));
-const TransfersListPage = lazy(() => import('@/pages/TransfersList.js'));
-const TransferFormPage = lazy(() => import('@/pages/TransferForm.js'));
-const TransferDetailPage = lazy(() => import('@/pages/TransferDetail.js'));
 const SuppliersPage = lazy(() => import('@/pages/Suppliers.js'));
 const SupplierDetailPage = lazy(() => import('@/pages/suppliers/SupplierDetailPage.js'));
 const ProductionPage = lazy(() => import('@/pages/inventory/ProductionPage.js'));
@@ -289,30 +286,6 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.receive">
               <IncomingStockPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="inventory/transfers"
-          element={
-            <PermissionGate required="inventory.read">
-              <TransfersListPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="inventory/transfers/new"
-          element={
-            <PermissionGate required="inventory.transfer.create">
-              <TransferFormPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="inventory/transfers/:id"
-          element={
-            <PermissionGate required="inventory.read">
-              <TransferDetailPage />
             </PermissionGate>
           }
         />

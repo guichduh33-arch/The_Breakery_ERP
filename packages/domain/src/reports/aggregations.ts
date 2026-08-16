@@ -113,7 +113,7 @@ export interface StockMovementLite {
   product_name:  string;
   movement_type: string; // 'opening'|'sale'|'adjustment'|'purchase'|'waste'|...
   quantity:      number; // signed
-  current_qty:   number; // from products.current_stock or section_stock
+  current_qty:   number; // from products.current_stock
 }
 
 export interface StockVarianceRow {
@@ -130,7 +130,12 @@ export interface StockVarianceRow {
 
 /**
  * Compute (opened + delta movements) = expected, then variance = current - expected.
- * Used as both the offline fallback and a deterministic spec for the SQL RPC.
+ *
+ * Helper OFFLINE, sans consommateur applicatif. Il ne décrit PLUS le rapport
+ * Stock Variance servi par le back-office : depuis l'ADR-027 celui-ci lit une
+ * identité comptable (`closing = opening + flux`) et mesure la démarque
+ * constatée, pas un écart théorique. À garder comme primitive de calcul, pas
+ * comme spécification de la RPC.
  */
 export function computeStockVariance(rows: StockMovementLite[]): StockVarianceRow[] {
   const map = new Map<string, StockVarianceRow>();

@@ -1,33 +1,44 @@
 // supabase/functions/_shared/pdf-templates/stock_variance.ts
-// S29 Wave 3.A.2 — Stock Variance PDF template
-// Table: Product | Expected | Current | Variance | % — sorted by |variance| desc
+// ADR-027 — Stock Variance = démarque constatée (get_stock_variance_v3).
+// Table: Product | Opening | In | Out | Wasted | Corrected | Closing — sorted by
+// (|corrected| + |wasted|) desc, comme le rapport à l'écran. `Out` agrège les
+// sorties de vente et la consommation de production (signées négatives).
 import { rgb } from 'https://esm.sh/pdf-lib@1.17.1';
-import { drawFooter, drawHeader, formatNumber, formatPct, type LayoutContext } from '../pdf-layout.ts';
+import { drawFooter, drawHeader, formatNumber, type LayoutContext } from '../pdf-layout.ts';
 
 export interface StockVarianceRow {
-  product_name:  string;
-  expected:      number;
-  current:       number;
-  variance:      number;
-  variance_pct:  number; // ratio, e.g. -0.05 = -5%
+  product_name: string;
+  opening:      number;
+  stock_in:     number;
+  sold:         number;
+  consumed:     number;
+  wasted:       number;
+  corrected:    number;
+  other:        number;
+  closing:      number;
+  current_qty:  number;
 }
 
 export type StockVarianceData = StockVarianceRow[];
 
-const COL_PRODUCT  = 40;
-const COL_EXPECTED = 210;
-const COL_CURRENT  = 290;
-const COL_VARIANCE = 370;
-const COL_PCT      = 460;
+const COL_PRODUCT   = 40;
+const COL_OPENING   = 185;
+const COL_IN        = 250;
+const COL_OUT       = 315;
+const COL_WASTED    = 380;
+const COL_CORRECTED = 445;
+const COL_CLOSING   = 505;
 const ROWS_PER_PAGE = 38;
-const ROW_H        = 14;
+const ROW_H         = 14;
 
 function drawTableHeader(page: ReturnType<typeof Object.assign>, ctx: LayoutContext, y: number): number {
-  page.drawText('Product',   { x: COL_PRODUCT,  y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('Expected',  { x: COL_EXPECTED, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('Current',   { x: COL_CURRENT,  y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('Variance',  { x: COL_VARIANCE, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText('%',         { x: COL_PCT,      y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Product',   { x: COL_PRODUCT,   y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Opening',   { x: COL_OPENING,   y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('In',        { x: COL_IN,        y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Out',       { x: COL_OUT,       y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Wasted',    { x: COL_WASTED,    y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Corrected', { x: COL_CORRECTED, y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText('Closing',   { x: COL_CLOSING,   y, size: 9, font: ctx.fontBold, color: rgb(0.2, 0.2, 0.2) });
   y -= 4;
   page.drawLine({ start: { x: 40, y }, end: { x: 555, y }, thickness: 0.3, color: rgb(0.7, 0.7, 0.7) });
   return y - 10;
@@ -42,8 +53,10 @@ export async function render(
   data:   StockVarianceData,
   period: { start: string; end: string } | null,
 ): Promise<void> {
-  // Sort by absolute variance descending
-  const sorted = [...data].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+  // Même pertinence que l'écran : corrections d'inventaire + pertes d'abord.
+  const sorted = [...data].sort(
+    (a, b) => (Math.abs(b.corrected) + Math.abs(b.wasted)) - (Math.abs(a.corrected) + Math.abs(a.wasted)),
+  );
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / ROWS_PER_PAGE));
   let pageNum  = 0;
@@ -70,13 +83,17 @@ export async function render(
     const bg = rowIndex % 2 === 0 ? rgb(0.97, 0.97, 0.97) : rgb(1, 1, 1);
     page.drawRectangle({ x: 40, y: y - 2, width: 515, height: ROW_H, color: bg });
 
-    const varColor = row.variance < 0 ? rgb(0.7, 0, 0) : row.variance > 0 ? rgb(0, 0.5, 0) : rgb(0.1, 0.1, 0.1);
+    const out = row.sold + row.consumed;
+    const corColor = row.corrected < 0 ? rgb(0.7, 0, 0) : row.corrected > 0 ? rgb(0, 0.5, 0) : rgb(0.1, 0.1, 0.1);
+    const wasteColor = row.wasted < 0 ? rgb(0.7, 0, 0) : rgb(0.1, 0.1, 0.1);
 
-    page.drawText(truncate(row.product_name, 24),  { x: COL_PRODUCT,  y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
-    page.drawText(formatNumber(row.expected),       { x: COL_EXPECTED, y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
-    page.drawText(formatNumber(row.current),        { x: COL_CURRENT,  y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
-    page.drawText(formatNumber(row.variance),       { x: COL_VARIANCE, y, size: 8, font: ctx.font, color: varColor });
-    page.drawText(formatPct(row.variance_pct),      { x: COL_PCT,      y, size: 8, font: ctx.font, color: varColor });
+    page.drawText(truncate(row.product_name, 26), { x: COL_PRODUCT,   y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(formatNumber(row.opening),      { x: COL_OPENING,   y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(formatNumber(row.stock_in),     { x: COL_IN,        y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(formatNumber(out),              { x: COL_OUT,       y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(formatNumber(row.wasted),       { x: COL_WASTED,    y, size: 8, font: ctx.font, color: wasteColor });
+    page.drawText(formatNumber(row.corrected),    { x: COL_CORRECTED, y, size: 8, font: ctx.font, color: corColor });
+    page.drawText(formatNumber(row.closing),      { x: COL_CLOSING,   y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
 
     y -= ROW_H;
     rowIndex++;

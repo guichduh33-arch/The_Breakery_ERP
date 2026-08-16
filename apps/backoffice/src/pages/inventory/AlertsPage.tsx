@@ -59,7 +59,7 @@ function TabCount({ value, tone }: { value: number; tone: 'danger' | 'warning' |
 export default function AlertsPage(): JSX.Element {
   const [tab, setTab] = useState('low');
 
-  const lowStock = useLowStock(null);
+  const lowStock = useLowStock();
   const reorder = useReorderSuggestions(30, 14);
   const production = useProductionSuggestions();
   const configIssues = useStockConfigIssues();

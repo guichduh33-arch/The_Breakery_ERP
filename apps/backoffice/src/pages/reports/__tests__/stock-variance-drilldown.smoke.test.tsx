@@ -4,22 +4,26 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import StockVariancePage from '../StockVariancePage.js';
 
+// ADR-027 — la ligne suit la forme de `get_stock_variance_v3` : ouverture,
+// flux signes, correction d'inventaire, cloture.
 vi.mock('@/features/reports/hooks/useStockVariance.js', () => ({
   useStockVariance: () => ({
     isLoading: false,
     error: null,
     data: [
       {
-        product_id: 'p-1',
+        product_id:   'p-1',
         product_name: 'Croissant',
-        sku: 'CRO-001',
-        opened: 10,
-        sold: 8,
-        adjusted: 0,
-        current_qty: 2,
-        expected: 2,
-        variance: 0,
-        variance_pct: 0,
+        sku:          'CRO-001',
+        opening:      10,
+        stock_in:     0,
+        sold:         -8,
+        consumed:     0,
+        wasted:       0,
+        corrected:    0,
+        other:        0,
+        closing:      2,
+        current_qty:  2,
       },
     ],
   }),

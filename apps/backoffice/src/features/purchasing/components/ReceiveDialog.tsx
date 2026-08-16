@@ -1,30 +1,24 @@
 // apps/backoffice/src/features/purchasing/components/ReceiveDialog.tsx
 //
-// Session 13 — Phase 3.A — Modal for entering received qty per line + a
-// section selector. Submits to receive_purchase_order_v1 via the parent's
-// onConfirm callback.
+// Session 13 — Phase 3.A — Modal for entering received qty per line. Submits to
+// the receive_purchase_order RPC via the parent's onConfirm callback.
 //
 // Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
+//
+// ADR-027 — plus de sélecteur « Receive into section » : le stock est global,
+// une réception ne demande plus aucun choix d'emplacement.
 
-import { useId, useMemo, useRef, useState, type JSX } from 'react';
+import { useMemo, useRef, useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 
-export interface Section {
-  id:   string;
-  code: string;
-  name: string;
-}
-
 export interface ReceiveDialogProps {
   po:        PurchaseOrderDetail;
-  sections:  Section[];
   onCancel:  () => void;
   onConfirm: (args: {
-    sectionId: string;
     items: { poItemId: string; receivedQuantity: number }[];
     idempotencyKey: string;
   }) => Promise<void>;
@@ -33,14 +27,12 @@ export interface ReceiveDialogProps {
 }
 
 export function ReceiveDialog({
-  po, sections, onCancel, onConfirm,
+  po, onCancel, onConfirm,
   submitting = false, error,
 }: ReceiveDialogProps): JSX.Element {
-  const reactId = useId();
   // Stable idempotency key for this dialog session (survives retries / re-renders).
   // A lost response + re-click replays the same GRN server-side instead of doubling it.
   const idempotencyKey = useRef<string>(crypto.randomUUID());
-  const [sectionId, setSectionId] = useState<string>('');
   const [qtyByItem, setQtyByItem] = useState<Record<string, number>>(() => {
     const m: Record<string, number> = {};
     for (const it of po.purchase_order_items) {
@@ -61,7 +53,7 @@ export function ReceiveDialog({
     .map((it) => ({ poItemId: it.id, receivedQuantity: qtyByItem[it.id] ?? 0 }))
     .filter((it) => it.receivedQuantity > 0);
 
-  const canSubmit = sectionId !== '' && itemsWithQty.length > 0 && !submitting;
+  const canSubmit = itemsWithQty.length > 0 && !submitting;
 
   function patchQty(itemId: string, qty: number): void {
     setQtyByItem((m) => ({ ...m, [itemId]: qty }));
@@ -69,7 +61,7 @@ export function ReceiveDialog({
 
   async function handleConfirm(): Promise<void> {
     if (!canSubmit) return;
-    await onConfirm({ sectionId, items: itemsWithQty, idempotencyKey: idempotencyKey.current });
+    await onConfirm({ items: itemsWithQty, idempotencyKey: idempotencyKey.current });
   }
 
   return (
@@ -81,23 +73,6 @@ export function ReceiveDialog({
         </DialogHeader>
 
         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-          <div className="space-y-1">
-            <label htmlFor={`${reactId}-section`} className="text-xs uppercase tracking-widest text-text-secondary">
-              Receive into section
-            </label>
-            <select
-              id={`${reactId}-section`}
-              value={sectionId}
-              onChange={(e) => setSectionId(e.target.value)}
-              disabled={submitting}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
-            >
-              <option value="">— Select section —</option>
-              {sections.map((s) => (
-                <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-              ))}
-            </select>
-          </div>
           <div className="overflow-x-auto border border-border-subtle rounded-md">
             <table className="w-full text-sm">
               <thead className="bg-bg-overlay text-text-secondary text-xs uppercase tracking-widest">

@@ -6,14 +6,14 @@
 // through the battle-tested Purchasing money-path so the purchase is fully
 // integrated:
 //   1. create_purchase_order_v2  → a 1-line PO (payment_terms='credit')
-//   2. receive_purchase_order_v3 → GRN ⇒ DR Inventory / CR Purchase Payable JE
+//   2. receive_purchase_order_v4 → GRN ⇒ DR Inventory / CR Purchase Payable JE
 //                                  + movement_type='purchase' (WAC + price trend)
 //   3. record_po_payment_v1      → DR Payable / CR Cash|Bank JE (only when paid)
 //
 // Each step is idempotent (deterministic sub-keys derived from one base key) so
 // a retry after a partial failure re-uses the same PO/GRN/payment.
 //
-// Accounting note: receive_purchase_order_v3 hardcodes received_date=current_date
+// Accounting note: receive_purchase_order_v4 hardcodes received_date=current_date
 // and the payment posts paid_at=now(), so the JEs land on TODAY. The user's
 // chosen purchase date is stored on the PO (order_date) and echoed in the
 // payment reference; back-dating the JE itself would require an RPC bump.
@@ -36,8 +36,6 @@ export interface DirectPurchaseArgs {
   unitFactorToBase:  number;
   /** Price per purchase unit (supplier price). */
   pricePerUnit:      number;
-  /** Section the stock lands in (warehouse / kitchen). */
-  sectionId:         string;
   /** Purchase date (YYYY-MM-DD) — stored as PO order_date. */
   purchaseDate:      string;
   /** Omit / null when the purchase is left unpaid (on credit). */
@@ -138,9 +136,8 @@ export function useRecordDirectPurchase() {
       if (poItemId === undefined) throw new DirectPurchaseError('lookup', 'PO line not found after create');
 
       // ── 3. Receive → GRN (DR Inventory / CR Payable JE) + purchase movement ──
-      const recvRes = await rpc('receive_purchase_order_v3', {
+      const recvRes = await rpc('receive_purchase_order_v4', {
         p_po_id:       po.po_id,
-        p_section_id:  args.sectionId,
         p_received_items: [{ po_item_id: poItemId, received_quantity: args.quantity }],
         p_idempotency_key: subKey(args.idempotencyKey, 'receive'),
       });

@@ -5,8 +5,9 @@
 //
 //   T1 — /inventory/movements : feed table loads, no "Failed to load" alert
 //   T2 — /inventory/alerts    : page renders, Status tile is NOT 'Unavailable'
-//   T3 — /inventory/opname    : New count → section → Create → detail page,
-//                               then Cancel so the dev DB is not polluted
+//   T3 — /inventory/opname    : New count → Create (global, no section since
+//                               ADR-027) → detail page, then Cancel so the
+//                               dev DB is not polluted
 //   T4 — /products/:id/dashboard : product title renders, no error alert
 //
 // Every test also fails if the browser console logs the C1 signature
@@ -106,10 +107,7 @@ test('T3: opname — create a count, land on detail, cancel it', async () => {
   await page.getByRole('button', { name: /new count/i }).click();
   await expect(page.getByText('New stock count')).toBeVisible({ timeout: 10_000 });
 
-  // Pick the first real section in the select (index 0 is the placeholder).
-  const sectionSelect = page.locator('#opname-section');
-  await sectionSelect.selectOption({ index: 1 });
-
+  // ADR-027 : plus de sélecteur de section — le comptage est global.
   await page.getByRole('button', { name: /^create count$/i }).click();
 
   // useCreateOpname onSuccess navigates to the detail page (post-C1 the RPC

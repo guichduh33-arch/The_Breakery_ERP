@@ -62,15 +62,11 @@ vi.mock('@/features/purchasing/hooks/usePurchaseOrderDetail.js', () => ({
 }));
 
 vi.mock('@/features/purchasing/hooks/useReceivePurchaseOrder.js', () => ({
-  useReceivePurchaseOrder: () => ({ mutateAsync: async () => ({}), isPending: false }),
+  useReceivePurchaseOrder: () => ({ mutateAsync: () => Promise.resolve({}), isPending: false }),
 }));
 
 vi.mock('@/features/purchasing/hooks/useCancelPurchaseOrder.js', () => ({
-  useCancelPurchaseOrder: () => ({ mutateAsync: async () => ({}), isPending: false }),
-}));
-
-vi.mock('@/features/inventory-transfers/hooks/useSections.js', () => ({
-  useSections: () => ({ data: [], isLoading: false, error: null }),
+  useCancelPurchaseOrder: () => ({ mutateAsync: () => Promise.resolve({}), isPending: false }),
 }));
 
 vi.mock('@/features/purchasing/components/ReceiveDialog.js', () => ({

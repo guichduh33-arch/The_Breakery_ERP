@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 6.C — E2E: create a Purchase Order, receive it. Asserts
 // the PO's own status badge flips draft→pending→received and no JE-error
-// text appears (the `receive_purchase_order_v3` RPC posts stock + JE
+// text appears (the `receive_purchase_order_v4` RPC posts stock + JE
 // atomically — see PurchaseOrderDetailPage.tsx).
 //
 // Rewritten S71 — the original spec used inline `/login` + digit-button
@@ -12,6 +12,10 @@
 // real S14 purchasing UI. Selectors below are read directly from the live
 // components (see paths in each step).
 //
+// ADR-027 (2026-08-16) : receive_purchase_order_v3 -> v4, plus de sélecteur
+// « Receive into section » dans ReceiveDialog.tsx — la réception ne demande
+// plus aucun choix d'emplacement (stock global).
+//
 // Project: backoffice (baseURL = E2E_BO_URL).
 //
 // Selector strategy:
@@ -20,7 +24,7 @@
 //   - #po-form-items select (product) / input[type=number] (qty)  (POFormDraft.tsx line-item row)
 //   - button "Create purchase order"       (POFormDraft.tsx submitLabel)
 //   - [data-status="pending"|"received"]   (POStatusBadge.tsx — own badge, not the shared list)
-//   - button "Receive" / getByLabel('Receive into section') / "Confirm receipt"  (ReceiveDialog.tsx)
+//   - button "Receive" / "Confirm receipt"  (ReceiveDialog.tsx)
 //
 // Determinism: dev is shared staging — each run CREATES its own PO
 // (fresh po_id from create_purchase_order_v2) and pins every assertion to
@@ -31,8 +35,7 @@
 // Fixture data (verified live, 2026-07-09): supplier picked by first real
 // <option> (any active supplier works — the RPC doesn't care which), raw
 // material "Agar-Agar" (SKU CON-002, cost_price 600) — same stable fixture
-// product already relied on by opname-finalize.spec.ts — receiving section
-// picked by first real <option> (any section works for a plain receive).
+// product already relied on by opname-finalize.spec.ts.
 
 import { test, expect } from '@playwright/test';
 import { openBackofficeSession } from './fixtures/auth';
@@ -75,21 +78,19 @@ test.describe('PO create + receive', () => {
     // This PO's own status badge — pending right after create (create_purchase_order_v2).
     await expect(page.locator('[data-status="pending"]')).toBeVisible({ timeout: 15_000 });
 
-    // ---- Step 5: receive the full ordered quantity into the first section ----
+    // ---- Step 5: receive the full ordered quantity ----
+    // ADR-027 : plus de sélecteur de section — la réception ne demande plus
+    // aucun choix d'emplacement. The per-line "receive now" qty is pre-filled
+    // with the full remaining quantity (ReceiveDialog useState initializer) —
+    // no edit needed for a full receipt.
     await page.getByRole('button', { name: 'Receive', exact: true }).click();
     await expect(page.getByText('Receive goods')).toBeVisible({ timeout: 10_000 });
-
-    // Index 0 is the "— Select section —" placeholder; index 1 is the first
-    // real section. The per-line "receive now" qty is pre-filled with the
-    // full remaining quantity (ReceiveDialog useState initializer) — no
-    // edit needed for a full receipt.
-    await page.getByLabel('Receive into section').selectOption({ index: 1 });
     await page.getByRole('button', { name: 'Confirm receipt', exact: true }).click();
 
     // ---- Step 6: this PO's own status badge reaches "Received" ----
     await expect(page.locator('[data-status="received"]')).toBeVisible({ timeout: 20_000 });
 
-    // No JE error surfaced (receive_purchase_order_v3 posts stock + JE atomically).
+    // No JE error surfaced (receive_purchase_order_v4 posts stock + JE atomically).
     await expect(page.getByText(/je_unbalanced|trigger_failed/i)).not.toBeVisible();
   });
 });

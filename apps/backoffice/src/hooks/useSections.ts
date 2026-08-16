@@ -1,7 +1,9 @@
-// apps/backoffice/src/features/inventory-transfers/hooks/useSections.ts
+// apps/backoffice/src/hooks/useSections.ts
 //
-// Session 12 — Phase 3 — list active sections (kitchen / bar / pastry / etc.)
-// for the transfer From/To selects.
+// Liste des sections actives. ADR-027 — les sections ne portent plus de stock :
+// elles ne sont plus qu'un registre de STATIONS DE PRODUCTION (routage de la
+// page Production, affectation produit↔station). Le hook vivait sous la feature
+// transferts, supprimée par le même ADR ; il remonte ici, partagé.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';

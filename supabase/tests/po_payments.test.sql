@@ -281,9 +281,8 @@ BEGIN
 
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
 
-  PERFORM receive_purchase_order_v3(
+  PERFORM receive_purchase_order_v4(
     p_po_id          := v_po_id,
-    p_section_id     := current_setting('t46p.section', true)::uuid,
     p_received_items := jsonb_build_array(
       jsonb_build_object('po_item_id', v_item_id, 'received_quantity', 50)
     ),

@@ -24,9 +24,6 @@ const MOCK_LOW: LowStockRow[] = [
     current_qty:         0,
     min_stock_threshold: 10,
     unit:                'pcs',
-    section_id:          's-1',
-    section_code:        'KIT',
-    section_name:        'Kitchen',
     shortfall:           10,
   },
   {
@@ -36,9 +33,6 @@ const MOCK_LOW: LowStockRow[] = [
     current_qty:         3,
     min_stock_threshold: 12,
     unit:                'pcs',
-    section_id:          's-1',
-    section_code:        'KIT',
-    section_name:        'Kitchen',
     shortfall:           9,
   },
 ];

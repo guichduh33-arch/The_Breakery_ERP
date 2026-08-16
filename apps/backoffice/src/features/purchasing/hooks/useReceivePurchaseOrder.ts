@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/purchasing/hooks/useReceivePurchaseOrder.ts
 //
-// Session 13 — Phase 3.A — calls receive_purchase_order_v1 atomic RPC.
+// Session 13 — Phase 3.A — calls the receive_purchase_order atomic RPC.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -12,8 +12,6 @@ export type ReceivePOErrorCode =
   | 'po_id_required'
   | 'po_not_found'
   | 'po_invalid_status'
-  | 'section_required'
-  | 'section_not_found'
   | 'items_required'
   | 'po_item_id_required'
   | 'po_item_not_found'
@@ -36,7 +34,6 @@ export interface ReceivePOLineArgs {
 
 export interface ReceivePOArgs {
   poId:           string;
-  sectionId:      string;
   items:          ReceivePOLineArgs[];
   idempotencyKey: string;   // UUID v4, stable across retries (caller owns it)
 }
@@ -58,8 +55,6 @@ function classify(message: string): ReceivePOErrorCode {
   if (message.includes('po_id_required'))             return 'po_id_required';
   if (message.includes('po_not_found'))               return 'po_not_found';
   if (message.includes('po_invalid_status'))          return 'po_invalid_status';
-  if (message.includes('section_required'))           return 'section_required';
-  if (message.includes('section_not_found'))          return 'section_not_found';
   if (message.includes('items_required'))             return 'items_required';
   if (message.includes('po_item_id_required'))        return 'po_item_id_required';
   if (message.includes('po_item_not_found'))          return 'po_item_not_found';
@@ -75,7 +70,6 @@ export function useReceivePurchaseOrder() {
     mutationFn: async (args) => {
       const rpcArgs: Record<string, unknown> = {
         p_po_id:           args.poId,
-        p_section_id:      args.sectionId,
         p_received_items:  args.items.map((it) => ({
           po_item_id:        it.poItemId,
           received_quantity: it.receivedQuantity,
@@ -90,8 +84,9 @@ export function useReceivePurchaseOrder() {
         // Session 46 — bumped to v2 (base-unit conversion via unit_factor_to_base).
         // Audit stock 2026-07-27 — bumped to v3 : le rejeu idempotent comptait les
         // mouvements sur un reference_type jamais stampé et renvoyait toujours 0.
-        // Signature is identical (p_po_id, p_section_id, p_received_items, p_idempotency_key).
-        'receive_purchase_order_v3',
+        // ADR-027 — bumped to v4 : `p_section_id` disparaît, une réception ne
+        // demande plus aucun choix d'emplacement.
+        'receive_purchase_order_v4',
         rpcArgs,
       );
 

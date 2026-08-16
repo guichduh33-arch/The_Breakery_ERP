@@ -1,6 +1,9 @@
 // supabase/tests/functions/purchasing-po.test.ts
 // Session 13 / Phase 3.A — Live integration tests for the purchasing PO flow.
 //
+// ADR-027 (2026-08-16) : receive_purchase_order_v3 -> v4, p_section_id
+// supprimé de la signature (plus de choix d'emplacement à la réception).
+//
 // Coverage:
 //   - Manager creates a PO → status='pending'.
 //   - Manager partially receives → status='partial', balanced JE posted,
@@ -71,7 +74,6 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
   let prodA:        ProdRow;
   let prodB:        ProdRow;
   let supplier:     { id: string };
-  let sectionId:    string;
 
   beforeAll(async () => {
     managerToken = await loginAs('EMP003', '111111');
@@ -81,10 +83,6 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     prodA = await ensureProduct(admin, 'VT_PO_PROD_A', 'Vitest PO Product A', 'kg', 3000, null);
     prodB = await ensureProduct(admin, 'VT_PO_PROD_B', 'Vitest PO Product B', 'pcs', 4000, 48);
     supplier = await ensureSupplier(admin, 'VT_PO_SUPP', 'Vitest PO Supplier');
-
-    const { data: section } = await admin.from('sections')
-      .select('id').is('deleted_at', null).order('display_order').limit(1).single();
-    sectionId = (section as { id: string }).id;
   });
 
   it('full cycle: create → partial receive → full receive', async () => {
@@ -117,9 +115,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     const itemA = (items as { id: string; product_id: string }[]).find(it => it.product_id === prodA.id)!;
     const itemB = (items as { id: string; product_id: string }[]).find(it => it.product_id === prodB.id)!;
 
-    const { data: rcv1, error: rcv1Err } = await sb.rpc('receive_purchase_order_v3', {
+    const { data: rcv1, error: rcv1Err } = await sb.rpc('receive_purchase_order_v4', {
       p_po_id:          po.po_id,
-      p_section_id:     sectionId,
       p_received_items: [{ po_item_id: itemA.id, received_quantity: 5 }],
       p_idempotency_key: crypto.randomUUID(),
     });
@@ -154,9 +151,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     expect(purchaseMovs.length).toBeGreaterThanOrEqual(1);
 
     // 6. Full receipt of remainder — 5 more of A and 20 of B.
-    const { data: rcv2, error: rcv2Err } = await sb.rpc('receive_purchase_order_v3', {
+    const { data: rcv2, error: rcv2Err } = await sb.rpc('receive_purchase_order_v4', {
       p_po_id:          po.po_id,
-      p_section_id:     sectionId,
       p_received_items: [
         { po_item_id: itemA.id, received_quantity: 5 },
         { po_item_id: itemB.id, received_quantity: 20 },

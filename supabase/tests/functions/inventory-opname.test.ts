@@ -1,13 +1,20 @@
 // supabase/tests/functions/inventory-opname.test.ts
 // Session 13 / Phase 2.D — Vitest live RPC tests for the full opname cycle.
 //
+// ADR-027 (2026-08-16) : opname devient mono-section — create_opname_v1 /
+// add_opname_item_v1 / finalize_opname_v1 sont droppées au profit des _v2
+// (plus d'argument section). L'attendu se charge désormais depuis
+// products.current_stock (le stock qui fait autorité), plus depuis
+// section_stock (table droppée dans le même chantier).
+//
 // Covers :
-//   - create_opname_v1 happy path + idempotency.
-//   - add_opname_item_v1 auto-loads expected_qty from section_stock when NULL.
+//   - create_opname_v2 happy path + idempotency (sans section).
+//   - add_opname_item_v2 auto-loads expected_qty from products.current_stock
+//     when p_expected_qty is omitted.
 //   - set_opname_count_v1 records counted_qty ; variance is GENERATED.
 //   - validate_opname_v1 transitions counting → review (rejects with missing counts).
-//   - finalize_opname_v1 emits opname_in / opname_out stock_movements +
-//     tr_20_je_emit posts a balanced JE for each non-zero variance row.
+//   - finalize_opname_v2 emits opname_in / opname_out stock_movements (sans
+//     section) + tr_20_je_emit posts a balanced JE for each non-zero variance row.
 //   - cancel_opname_v1 succeeds pre-finalize, refused post-finalize.
 //   - MANAGER allowed to create, ADMIN required to finalize.
 
@@ -28,7 +35,6 @@ function rpc(sb: SupabaseClient) {
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — full cycle', () => {
   let adminToken: string;
   let managerToken: string;
-  let sectionId: string;
   let productId: string;
   const createdCountIds: string[] = [];
 
@@ -37,21 +43,15 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     managerToken = await loginAs('EMP003', '111111');
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: s } = await admin.from('sections')
-      .select('id').eq('code', 'MAIN_WAREHOUSE').single();
-    sectionId = s!.id;
 
     // S78 (D-6) : BEV-AMER est soft-deleted sur la DB vivante (P0002 dans les
     // RPCs opname). Produit de test dédié, upsert-restauré par sku fixe.
+    // ADR-027 : current_stock=100 remplace le seed section_stock — c'est
+    // désormais la seule source de l'attendu auto-chargé (T_OPN_LIVE_02).
     productId = await ensureTestProduct(admin, {
       sku: 'ZZ-TEST-OPNAME', name: '[TEST] Opname live spec', cost_price: 5000,
+      current_stock: 100,
     });
-
-    // Seed section_stock = 100 so expected_qty auto-load works.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('section_stock').upsert({
-      section_id: sectionId, product_id: productId, quantity: 100, unit: 'pcs',
-    } as any, { onConflict: 'section_id,product_id' });
   });
 
   afterAll(async () => {
@@ -64,12 +64,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     }
   });
 
-  it('T_OPN_LIVE_01: create_opname_v1 happy path + idempotent replay', async () => {
+  it('T_OPN_LIVE_01: create_opname_v2 happy path + idempotent replay', async () => {
     const sb = jwtClient(managerToken);
     const idemKey = crypto.randomUUID();
 
-    const { data: r1, error: e1 } = await rpc(sb)('create_opname_v1', {
-      p_section_id: sectionId,
+    const { data: r1, error: e1 } = await rpc(sb)('create_opname_v2', {
       p_notes: 'live test count',
       p_idempotency_key: idemKey,
     });
@@ -81,8 +80,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     createdCountIds.push(r1.count_id);
 
     // Replay with same key → idempotent_replay=true, same count_id.
-    const { data: r2, error: e2 } = await rpc(sb)('create_opname_v1', {
-      p_section_id: sectionId,
+    const { data: r2, error: e2 } = await rpc(sb)('create_opname_v2', {
       p_notes: 'live test count (replay)',
       p_idempotency_key: idemKey,
     });
@@ -91,17 +89,17 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     expect(r2.idempotent_replay).toBe(true);
   });
 
-  it('T_OPN_LIVE_02: add_opname_item_v1 auto-loads expected_qty from section_stock', async () => {
+  it('T_OPN_LIVE_02: add_opname_item_v2 auto-loads expected_qty from products.current_stock', async () => {
     const sb = jwtClient(managerToken);
-    const { data: created } = await rpc(sb)('create_opname_v1', {
-      p_section_id: sectionId, p_idempotency_key: crypto.randomUUID(),
+    const { data: created } = await rpc(sb)('create_opname_v2', {
+      p_idempotency_key: crypto.randomUUID(),
     });
     createdCountIds.push(created.count_id);
 
-    const { data: item, error } = await rpc(sb)('add_opname_item_v1', {
+    const { data: item, error } = await rpc(sb)('add_opname_item_v2', {
       p_count_id: created.count_id,
       p_product_id: productId,
-      // p_expected_qty omitted → auto-load from section_stock.quantity=100
+      // p_expected_qty omitted → auto-load from products.current_stock=100
     });
     expect(error).toBeNull();
     expect(item.item_id).toBeTruthy();
@@ -112,15 +110,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
   it('T_OPN_LIVE_03: full cycle — set_count → validate → finalize → JE balanced', async () => {
     const sb = jwtClient(adminToken); // ADMIN to allow finalize
 
-    const { data: created } = await rpc(sb)('create_opname_v1', {
-      p_section_id: sectionId,
+    const { data: created } = await rpc(sb)('create_opname_v2', {
       p_notes: 'full-cycle',
       p_idempotency_key: crypto.randomUUID(),
     });
     const countId = created.count_id as string;
     createdCountIds.push(countId);
 
-    const { data: item } = await rpc(sb)('add_opname_item_v1', {
+    const { data: item } = await rpc(sb)('add_opname_item_v2', {
       p_count_id: countId,
       p_product_id: productId,
       p_expected_qty: 100,
@@ -146,7 +143,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
 
     // Finalize.
-    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v1', {
+    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v2', {
       p_count_id: countId,
       p_idempotency_key: crypto.randomUUID(),
     });
@@ -174,8 +171,16 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
     expect((jeAfter ?? 0) - (jeBefore ?? 0)).toBe(1);
 
+    // ADR-027 : finalize_opname_v2 émet ses mouvements sans section.
+    const { data: mvt } = await admin.from('stock_movements')
+      .select('from_section_id, to_section_id')
+      .eq('id', movementId)
+      .single();
+    expect(mvt!.from_section_id).toBeNull();
+    expect(mvt!.to_section_id).toBeNull();
+
     // Replay finalize → idempotent_replay=true.
-    const { data: replay } = await rpc(sb)('finalize_opname_v1', {
+    const { data: replay } = await rpc(sb)('finalize_opname_v2', {
       p_count_id: countId,
     });
     expect(replay.idempotent_replay).toBe(true);
@@ -184,12 +189,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
 
   it('T_OPN_LIVE_04: validate_opname_v1 raises missing_counts when counted_qty is NULL', async () => {
     const sb = jwtClient(managerToken);
-    const { data: created } = await rpc(sb)('create_opname_v1', {
-      p_section_id: sectionId, p_idempotency_key: crypto.randomUUID(),
+    const { data: created } = await rpc(sb)('create_opname_v2', {
+      p_idempotency_key: crypto.randomUUID(),
     });
     createdCountIds.push(created.count_id);
 
-    await rpc(sb)('add_opname_item_v1', {
+    await rpc(sb)('add_opname_item_v2', {
       p_count_id: created.count_id,
       p_product_id: productId,
       p_expected_qty: 100,
@@ -201,8 +206,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
 
   it('T_OPN_LIVE_05: cancel allowed before finalize, refused after', async () => {
     const sb = jwtClient(adminToken);
-    const { data: created } = await rpc(sb)('create_opname_v1', {
-      p_section_id: sectionId, p_idempotency_key: crypto.randomUUID(),
+    const { data: created } = await rpc(sb)('create_opname_v2', {
+      p_idempotency_key: crypto.randomUUID(),
     });
     const countId = created.count_id as string;
     createdCountIds.push(countId);
@@ -224,17 +229,17 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     const adminSb = jwtClient(adminToken);
     const managerSb = jwtClient(managerToken);
 
-    const { data: created } = await rpc(adminSb)('create_opname_v1', {
-      p_section_id: sectionId, p_idempotency_key: crypto.randomUUID(),
+    const { data: created } = await rpc(adminSb)('create_opname_v2', {
+      p_idempotency_key: crypto.randomUUID(),
     });
     const countId = created.count_id as string;
     createdCountIds.push(countId);
 
-    await rpc(adminSb)('add_opname_item_v1', {
+    await rpc(adminSb)('add_opname_item_v2', {
       p_count_id: countId, p_product_id: productId, p_expected_qty: 100,
     });
 
-    const { error: fErr } = await rpc(managerSb)('finalize_opname_v1', { p_count_id: countId });
+    const { error: fErr } = await rpc(managerSb)('finalize_opname_v2', { p_count_id: countId });
     expect(fErr?.message ?? '').toMatch(/forbidden/);
   });
 });

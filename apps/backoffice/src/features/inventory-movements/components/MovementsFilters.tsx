@@ -1,12 +1,15 @@
 // apps/backoffice/src/features/inventory-movements/components/MovementsFilters.tsx
 // Session 13 / Phase 2.D — filter row above MovementsTable.
 // 2026-06-23 — added an Item (product typeahead) filter + period presets.
+//
+// ADR-027 — le filtre de section a disparu : le stock est global. Les types
+// `transfer_in` / `transfer_out` restent proposés, l'enum DB les conserve pour
+// l'historique et les lignes d'époque doivent rester filtrables.
 
 import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { useProductsForInventory } from '@/features/inventory/hooks/useProductsForInventory.js';
 import type { MovementsFilters as Filters } from '../hooks/useStockMovementsFeed.js';
 
@@ -142,8 +145,6 @@ export interface MovementsFiltersProps {
 }
 
 export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) {
-  const sections = useSections();
-
   const activePreset = PRESETS.find((p) => {
     const r = p.range();
     return r.dateStart === value.dateStart && r.dateEnd === value.dateEnd;
@@ -160,21 +161,6 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           onChange(next);
         }}
       />
-
-      <div>
-        <label htmlFor="mvt-section" className="block text-xs uppercase text-text-secondary mb-1">Section</label>
-        <select
-          id="mvt-section"
-          value={value.sectionId ?? ''}
-          onChange={(e) => { onChange({ ...value, sectionId: e.target.value }); }}
-          className="px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"
-        >
-          <option value="">All sections</option>
-          {(sections.data ?? []).map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-      </div>
 
       <div>
         <label htmlFor="mvt-type" className="block text-xs uppercase text-text-secondary mb-1">Type</label>

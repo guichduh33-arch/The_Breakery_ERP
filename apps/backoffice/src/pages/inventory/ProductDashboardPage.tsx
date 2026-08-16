@@ -2,8 +2,10 @@
 // Session 14 / Phase 4.C — product dashboard rewritten on top of KpiTile +
 // EmptyState primitives. Mirrors `product stock detail.jpg`: header with back
 // link → window selector → KPI tile row (current stock / value / units sold /
-// avg per day) → sales velocity chart → 2×2 of stock-by-section, expiring
-// lots, recent movements, top customers.
+// avg per day) → sales velocity chart → recent movements + top customers.
+//
+// ADR-027 — la carte « Stock by section » a disparu : `products.current_stock`
+// est l'unique niveau de stock, la tuile « Current stock » le porte déjà.
 
 import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -19,7 +21,6 @@ import { EmptyState, KpiTile } from '@breakery/ui';
 import { formatDateTimeShortWita, formatCurrency } from '@breakery/utils';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
-import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
 import { PageHeader } from '@/components/PageHeader.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
@@ -115,10 +116,6 @@ export default function ProductDashboardPage(): JSX.Element {
       </section>
 
       <SalesVelocityChart data={d.sales_velocity_daily} unit={d.product.unit} />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <StockBySectionList rows={d.stock_by_section} />
-      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Panel title="Recent movements">

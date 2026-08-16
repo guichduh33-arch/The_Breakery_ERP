@@ -65,7 +65,7 @@ export function useUpsertSection() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: SECTIONS_FULL_KEY });
-      await qc.invalidateQueries({ queryKey: ['sections'] }); // shared with transfers
+      await qc.invalidateQueries({ queryKey: ['sections'] }); // shared with useSections
     },
   });
 }

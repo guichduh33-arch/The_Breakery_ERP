@@ -28,11 +28,6 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
     render: (r) => <ProductCell productId={r.product_id} name={r.product_name} secondary={r.product_sku} />,
   },
   {
-    id: 'section',
-    header: 'Location',
-    render: (r) => <span className="text-xs text-text-secondary">{r.section_name ?? '—'}</span>,
-  },
-  {
     id: 'current',
     header: 'On hand',
     align: 'right',
@@ -59,7 +54,7 @@ const COLUMNS: DataTableColumn<LowStockRow>[] = [
 ];
 
 export function LowStockTab(): JSX.Element {
-  const q = useLowStock(null);
+  const q = useLowStock();
 
   if (q.error !== null) {
     return <p className="text-sm text-danger" role="alert">Failed to load low stock: {q.error.message}</p>;

@@ -5,7 +5,9 @@
 //   - get_sales_by_hour_v1 returns 24 zero-filled rows for today.
 //   - get_sales_by_category_v3 runs and is non-error on a 7-day window.
 //   - get_sales_by_staff_v3 runs and is non-error on a 7-day window.
-//   - get_stock_variance_v2 emits one row per non-deleted product.
+//   - get_stock_variance_v3 (ADR-027 : démarque constatée, sans filtre
+//     section) emits one row per tracked product with either a movement in
+//     the default 30-day window or a non-zero current stock.
 //
 // Pattern mirrors `adjust-stock.test.ts`: PIN-login → JWT-bearing client → rpc().
 // Requires env vars: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
@@ -75,19 +77,35 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs 
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_stock_variance_v2 returns one row per non-deleted product',
+    // ADR-027 : la sémantique change avec la v3 — plus "un produit non
+    // supprimé = une ligne", mais "un produit SUIVI avec, sur la fenêtre par
+    // défaut (30j), soit un mouvement, soit un stock courant non nul". La
+    // fenêtre est recalculée côté client (clock skew négligeable sur 30j).
+    'get_stock_variance_v3 emits one row per tracked product with a movement in the window or a non-zero stock',
     async () => {
       const sb = jwtClient(adminToken);
-      const { data, error } = await sb.rpc('get_stock_variance_v2', {});
+      const { data, error } = await sb.rpc('get_stock_variance_v3', {});
       expect(error).toBeNull();
       expect(Array.isArray(data)).toBe(true);
 
       const admin = createClient(SUPABASE_URL, SERVICE);
-      const { count } = await admin.from('products')
-        .select('id', { count: 'exact', head: true })
-        .is('deleted_at', null);
+      const { data: products } = await admin.from('products')
+        .select('id, current_stock')
+        .is('deleted_at', null)
+        .eq('track_inventory', true);
+
+      const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
+      const { data: movements } = await admin.from('stock_movements')
+        .select('product_id')
+        .gte('created_at', since);
+      const movedProductIds = new Set((movements ?? []).map((m: { product_id: string }) => m.product_id));
+
+      const expected = (products ?? []).filter((p: { id: string; current_stock: number }) =>
+        movedProductIds.has(p.id) || Number(p.current_stock) !== 0,
+      );
+
       const rows = (data ?? []) as unknown[];
-      expect(rows.length).toBe(count ?? 0);
+      expect(rows.length).toBe(expected.length);
     },
   );
 });

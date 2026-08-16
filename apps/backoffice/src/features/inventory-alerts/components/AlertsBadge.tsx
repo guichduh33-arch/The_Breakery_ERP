@@ -2,7 +2,7 @@
 // Session 13 / Phase 2.D — topbar badge showing total active alerts.
 //
 // Sum of :
-//   - get_low_stock_v1 row count (global mode)
+//   - get_low_stock row count (global — l'unique mode depuis l'ADR-027)
 //   - get_reorder_suggestions_v1 row count
 //
 // Clicks → /backoffice/inventory/alerts.
@@ -13,7 +13,7 @@ import { useLowStock } from '../hooks/useLowStock.js';
 import { useReorderSuggestions } from '../hooks/useReorderSuggestions.js';
 
 export function AlertsBadge() {
-  const low      = useLowStock(null);
+  const low      = useLowStock();
   const reorder  = useReorderSuggestions(30, 14);
 
   const total = (low.data?.length ?? 0) + (reorder.data?.length ?? 0);

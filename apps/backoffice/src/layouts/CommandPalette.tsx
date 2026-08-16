@@ -41,7 +41,6 @@ interface PaletteEntry {
 const ACTIONS: { to: string; label: string; permission: PermissionCode }[] = [
   { to: '/backoffice/expenses/new', label: 'New expense', permission: 'expenses.create' },
   { to: '/backoffice/purchasing/purchase-orders/new', label: 'New purchase order', permission: 'purchasing.po.create' },
-  { to: '/backoffice/inventory/transfers/new', label: 'New stock transfer', permission: 'inventory.transfer.create' },
   { to: '/backoffice/products/combos/new', label: 'New combo', permission: 'combos.create' },
   { to: '/backoffice/users/new', label: 'New user', permission: 'users.create' },
 ];

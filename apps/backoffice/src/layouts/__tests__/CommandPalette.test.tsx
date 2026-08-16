@@ -20,7 +20,6 @@ const ALL_PERMS = [
   'inventory.read', 'expenses.read', 'expenses.create', 'reports.read',
   'reports.sales.read', 'reports.financial.read', 'reports.inventory.read',
   'users.read', 'users.create', 'combos.create', 'purchasing.po.create',
-  'inventory.transfer.create',
 ];
 
 function setAuthState(perms: string[]) {

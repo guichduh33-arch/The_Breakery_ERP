@@ -41,7 +41,6 @@ const LEGACY_DESTINATIONS = [
   '/backoffice/categories',
   '/backoffice/inventory',
   '/backoffice/inventory/incoming',
-  '/backoffice/inventory/transfers',
   '/backoffice/inventory/production',
   '/backoffice/inventory/opname',
   '/backoffice/inventory/movements',
@@ -175,7 +174,7 @@ describe('nav model', () => {
     });
 
     it('préfère le `to` le plus long — un lien profond ne retombe pas sur Today', () => {
-      expect(activeDomainId(NAV_DOMAINS, '/backoffice/inventory/transfers')).toBe('stock');
+      expect(activeDomainId(NAV_DOMAINS, '/backoffice/inventory/opname')).toBe('stock');
       expect(activeDomainId(NAV_DOMAINS, '/backoffice/reports/cash-flow')).toBe('reports');
       expect(activeDomainId(NAV_DOMAINS, '/backoffice/settings/kds')).toBe('admin');
     });

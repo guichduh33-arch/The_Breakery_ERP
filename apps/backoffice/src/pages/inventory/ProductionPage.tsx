@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@breakery/ui';
 import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
-import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
+import { useSections } from '@/hooks/useSections.js';
 import { ProductionEntryCard } from '@/features/inventory-production/components/ProductionEntryCard.js';
 import { ProductionTodayPanel } from '@/features/inventory-production/components/ProductionTodayPanel.js';
 

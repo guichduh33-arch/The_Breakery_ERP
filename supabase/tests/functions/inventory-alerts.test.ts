@@ -1,10 +1,14 @@
 // supabase/tests/functions/inventory-alerts.test.ts
 // Session 13 / Phase 2.D — Vitest live RPC tests for alerts + product dashboard.
 //
+// ADR-027 (2026-08-16) : get_low_stock_v1 -> get_low_stock_v2 (mode global
+// uniquement, sans arg) ; get_product_dashboard_v2 -> _v3 (JSON sans
+// stock_by_section) ; view_section_stock_details droppée (cache par section).
+//
 // Covers :
-//   - get_low_stock_v1 returns products below min_stock_threshold.
+//   - get_low_stock_v2 returns products below min_stock_threshold.
 //   - get_reorder_suggestions_v1 returns a sorted list with derived columns.
-//   - get_product_dashboard_v2 returns a complete JSONB document.
+//   - get_product_dashboard_v3 returns a complete JSONB document.
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -35,9 +39,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + prod
     });
   });
 
-  it('T_ALERT_LIVE_01: get_low_stock_v1 includes the seeded low-stock product', async () => {
+  it('T_ALERT_LIVE_01: get_low_stock_v2 includes the seeded low-stock product', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_low_stock_v1', {});
+    const { data, error } = await rpc(sb)('get_low_stock_v2', {});
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
     const found = (data ?? []).find((r: { product_id: string }) => r.product_id === lowStockProductId);
@@ -58,16 +62,17 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + prod
     }
   });
 
-  it('T_ALERT_LIVE_03: get_product_dashboard_v2 returns the JSONB document', async () => {
+  it('T_ALERT_LIVE_03: get_product_dashboard_v3 returns the JSONB document', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_product_dashboard_v2', {
+    const { data, error } = await rpc(sb)('get_product_dashboard_v3', {
       p_product_id: lowStockProductId, p_days: 30,
     });
     expect(error).toBeNull();
     expect(data).toBeTruthy();
     expect(data.product.id).toBe(lowStockProductId);
     expect(data.summary).toHaveProperty('window_days', 30);
-    expect(Array.isArray(data.stock_by_section)).toBe(true);
+    // ADR-027 : stock_by_section retiré du document (cache par section droppé).
+    expect(data.stock_by_section).toBeUndefined();
     expect(Array.isArray(data.recent_movements)).toBe(true);
     expect(Array.isArray(data.sales_velocity_daily)).toBe(true);
     expect(Array.isArray(data.expiring_lots)).toBe(true);
@@ -77,22 +82,23 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + prod
     expect(data.sales_velocity_daily.length).toBeLessThanOrEqual(32);
   });
 
-  it('T_ALERT_LIVE_04: get_product_dashboard_v2 raises on missing product', async () => {
+  it('T_ALERT_LIVE_04: get_product_dashboard_v3 raises on missing product', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await rpc(sb)('get_product_dashboard_v2', {
+    const { error } = await rpc(sb)('get_product_dashboard_v3', {
       p_product_id: '00000000-0000-0000-0000-000000000000',
     });
     expect(error?.message ?? '').toMatch(/product_not_found/);
   });
 
-  it('T_ALERT_LIVE_05: view_section_stock_details is queryable', async () => {
+  it('T_ALERT_LIVE_05: ADR-027 — view_section_stock_details is dropped (mono-section)', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await sb
+    const { error } = await sb
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('view_section_stock_details' as any)
       .select('section_code, product_sku, quantity, stock_value')
       .limit(5);
-    expect(error).toBeNull();
-    expect(Array.isArray(data)).toBe(true);
+    // PostgREST reports an unknown relation (schema-cache miss) — exact wording
+    // is PostgREST-version-sensitive, so we only assert on the negative shape.
+    expect(error).toBeTruthy();
   });
 });

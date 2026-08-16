@@ -1,9 +1,12 @@
 // apps/backoffice/src/features/products/hooks/useProductAnalytics.ts
 //
-// Wrapper around the get_product_analytics_v1 RPC powering the product detail
+// Wrapper around the get_product_analytics RPC powering the product detail
 // "Stock / Analytics" tab. Mirrors the useProductDashboard pattern: the RPC
 // returns a single JSONB document, so we declare the shape locally and cast the
 // bound rpc (no generated types — the cloud schema lags local migrations).
+//
+// ADR-027 — bumped v1 → v2 : le bloc `transfers` disparaît du document, la
+// feature transferts et ses tables ayant été supprimées.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -77,18 +80,6 @@ export interface ProductionRow {
   production_date: string;
   reverted: boolean;
 }
-export interface TransferRow {
-  id: string;
-  transfer_number: string;
-  quantity_requested: number;
-  quantity_received: number | null;
-  unit: string;
-  status: string;
-  from_section_code: string | null;
-  to_section_code: string | null;
-  transferred_at: string | null;
-  created_at: string;
-}
 export interface WastageRow {
   id: string;
   quantity: number;
@@ -132,7 +123,6 @@ export interface ProductAnalyticsData {
   recipe_usage: RecipeUsageRow[];
   incoming_pos: IncomingPoRow[];
   production: ProductionRow[];
-  transfers: TransferRow[];
   wastage: WastageRow[];
   opname: OpnameRow[];
   recent_movements: RecentMovementRow[];
@@ -150,7 +140,7 @@ export function useProductAnalytics(productId: string | null, days = 30) {
     queryFn: async () => {
       if (productId === null) return null;
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_product_analytics_v1', {
+      const { data, error } = await rpc('get_product_analytics_v2', {
         p_product_id: productId, p_days: days,
       });
       if (error !== null) throw new Error(error.message);
