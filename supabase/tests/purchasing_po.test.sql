@@ -20,8 +20,12 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
--- plan(19): split has_column / col_not_null counts as multiple pgTAP assertions.
-SELECT plan(19);
+-- plan(22): recompte 2026-08-16 — 22 assertions top-level (has_table/has_column
+-- ×3, col_not_null ×4, ok ×2, is ×10, PERFORM ok de T_PO_12 ×1 — le IF/ELSE en
+-- émet exactement une —, throws_ok ×2). Le plan disait 19 depuis des ajouts non
+-- recomptés ; le mismatch « planned 19 but ran 22 » est sorti au pgTAP de la PR
+-- ADR-027, sans lien avec elle.
+SELECT plan(22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: a supplier T_PO_SUPP and 2 products T_PO_PROD_A (no shelf life)
