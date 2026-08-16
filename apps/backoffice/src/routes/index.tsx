@@ -73,6 +73,7 @@ const PurchaseByDatePage = lazy(() => import('@/pages/reports/PurchaseByDatePage
 const PurchaseBySupplierPage = lazy(() => import('@/pages/reports/PurchaseBySupplierPage.js'));
 const PurchasePriceTrendsPage = lazy(() => import('@/pages/reports/PurchasePriceTrendsPage.js'));
 const RefundsVoidsPage = lazy(() => import('@/pages/reports/RefundsVoidsPage.js'));
+const SalesByCustomerPage = lazy(() => import('@/pages/reports/SalesByCustomerPage.js'));
 const ProductionReportPage = lazy(() => import('@/pages/reports/ProductionReportPage.js'));
 const ProductionEfficiencyPage = lazy(() => import('@/pages/reports/ProductionEfficiencyPage.js'));
 const PriceChangesPage = lazy(() => import('@/pages/reports/PriceChangesPage.js'));
@@ -875,6 +876,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.sales.read">
               <RefundsVoidsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-customer"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByCustomerPage />
             </PermissionGate>
           }
         />

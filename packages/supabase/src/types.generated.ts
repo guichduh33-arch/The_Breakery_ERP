@@ -7255,6 +7255,15 @@ export type Database = {
           total: number
         }[]
       }
+      get_sales_by_customer_v1: {
+        Args: {
+          p_churn_min_orders?: number
+          p_customer_type?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
       get_sales_by_hour_v3: {
         Args: { p_date: string }
         Returns: {

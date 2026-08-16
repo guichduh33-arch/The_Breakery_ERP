@@ -24,6 +24,8 @@ export {
 export * from './csv.js';
 export * from './period.js';
 
+export { CUSTOMER_CHURN_MIN_PREV_ORDERS } from './customerSales.js';
+
 export {
   PURCHASE_PRICE_RISE_THRESHOLD_PCT,
   classifyPriceDelta,

@@ -62,6 +62,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'sales-by-hour',     title: 'Sales by Hour',     blurb: 'Hourly revenue distribution.',                  icon: Clock },
       { to: 'sales-by-category', title: 'Sales by Category', blurb: 'Revenue + qty per product category.',           icon: PieChart },
       { to: 'sales-by-product',  title: 'Sales by Product',  blurb: 'Qty, revenue and counter/B2B split per product, down to each sale.', icon: Package },
+      { to: 'sales-by-customer', title: 'Sales by Customer', blurb: 'Who matters and who is churning — identified vs anonymous capture.', icon: Users },
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
       { to: 'refunds-voids',     title: 'Refunds & Voids',   blurb: 'Money going back out — voids, partial refunds, reasons and double signature.', icon: Undo2 },
       { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
