@@ -53,11 +53,11 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  it('has exactly 37 active card links (36 before Purchase Price Trends joined the Purchases family)', () => {
+  it('has exactly 38 active card links (37 before Refunds & Voids joined the Sales family)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(37);
+    expect(links).toHaveLength(38);
   });
 
   it('has zero "Soon" disabled tiles after Wave C wiring', () => {

@@ -7225,6 +7225,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_refunds_report_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_reorder_suggestions_v1: {
         Args: { p_buffer_days?: number; p_lookback_days?: number }
         Returns: {
