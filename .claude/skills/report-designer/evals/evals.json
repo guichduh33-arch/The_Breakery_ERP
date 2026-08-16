@@ -1,0 +1,54 @@
+{
+  "skill_name": "report-designer",
+  "evals": [
+    {
+      "id": 0,
+      "name": "purchase-gap-analysis",
+      "prompt": "il manque des reports importants concernant les achats : quantité achetée par article, l'évolution des prix d'achat, etc. regarde ce qui existe déjà dans le module reports du backoffice et propose ce qui manque, avec une maquette du rapport prioritaire alimentée par les vraies données de la base dev. ne code rien dans l'app, ne commite rien.",
+      "expected_output": "Gap analysis citant les rapports achats existants (purchase_by_date / purchase_by_supplier / purchase_items), identification du trou (évolution prix d'achat unitaire, quantités dans le temps), 1-3 rapports candidats priorisés avec question métier + KPIs + graphiques mappés sur la stack existante, et une maquette HTML avec vraies données dev.",
+      "files": [],
+      "assertions": [
+        "Gap analysis: cite au moins deux des trois rapports achats existants (purchase_by_date, purchase_by_supplier, purchase_items) avant de proposer du neuf",
+        "Identifie explicitement l'évolution du prix d'achat unitaire (par article et/ou fournisseur) comme un manque à combler",
+        "SQL cité: la spec contient le texte d'au moins une requête SQL SELECT exécutée sur la base dev",
+        "Provenance des chiffres: les chiffres réels de la maquette sont traçables aux requêtes citées, et tout élément synthétique est explicitement marqué comme tel",
+        "Mapping composants: chaque graphique proposé est mappé sur un composant existant nommé (TrendLineChart, ParetoChart, StackedBarsChart, PairedBarsChart, HeatmapGrid, BreakdownCard) quand une forme existante porte la donnée — reprendre seulement les couleurs ne suffit pas",
+        "KPIs avec comparaison: dans la spec, chaque KPI porte un niveau ET un delta vs période de comparaison, sauf métrique instantanée explicitement étiquetée snapshot",
+        "Maquette autonome: le HTML ne référence aucun CDN ni ressource externe"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "loyalty-report-design",
+      "prompt": "je veux un rapport fidélité clients dans le backoffice : points distribués, top clients, fréquence de visite. conçois-le — quelles métriques, quels graphiques, avec quelles données — et fais-moi une maquette. ne code rien dans l'app, ne commite rien.",
+      "expected_output": "Conception ancrée dans les tables réelles (customers, loyalty_transactions), KPIs avec comparaison de période (ou snapshot étiqueté), constantes fidélité tirées de packages/domain, graphiques mappés sur la stack existante, maquette HTML numériquement cohérente avec données réelles (ou synthétiques signalées).",
+      "files": [],
+      "assertions": [
+        "Ancrage schéma: la conception cite les tables réelles customers et loyalty_transactions et vérifie leurs colonnes (pas de colonnes inventées)",
+        "Honnêteté sur les volumes: signale le faible volume de données fidélité en dev, et marque toute donnée synthétique de la maquette comme telle",
+        "Mapping composants: chaque graphique proposé est mappé sur un composant existant nommé (TrendLineChart, ParetoChart, HeatmapGrid, StackedBarsChart, PairedBarsChart, BreakdownCard) quand une forme existante porte la donnée",
+        "KPIs disciplinés: 3 à 5 tuiles maximum, chacune avec comparaison/delta OU une étiquette snapshot explicite pour une métrique instantanée (encours, passif)",
+        "Constantes métier du domaine: le barème fidélité (points par montant, multiplicateurs, seuils de palier, valeur de rachat) est tiré de packages/domain ou d'une RPC live et cité comme tel — pas déduit des données de l'échantillon",
+        "Cohérence numérique interne: les séries des graphiques de la maquette recoupent les KPIs affichés (les flux somment au total, les pourcentages somment à 100)",
+        "Question métier: la spec formule la question/décision à laquelle le rapport répond",
+        "Maquette autonome: le HTML ne référence aucun CDN ni ressource externe"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "sales-by-hour-improve",
+      "prompt": "le rapport sales by hour du backoffice est un peu pauvre — on voit juste le total par heure sur une journée. propose une meilleure analyse et une meilleure visualisation. ne code rien dans l'app, ne commite rien.",
+      "expected_output": "Lecture du rapport existant (hook get_sales_by_hour, page), propositions analytiques (heatmap heure×jour, comparaison de période, panier moyen par heure...), graphiques mappés sur les composants existants, SQL cité, maquette ancrée ou repli synthétique documenté.",
+      "files": [],
+      "assertions": [
+        "Lecture de l'existant: cite le hook useSalesByHour ou la RPC get_sales_by_hour (famille) et décrit ce que le rapport actuel montre",
+        "Profondeur analytique: propose au moins une analyse au-delà du bar chart par heure (heure x jour de semaine, comparaison de période, panier moyen par heure, ventilation par catégorie...)",
+        "Mapping composants: chaque visualisation proposée est mappée sur un composant existant nommé (HeatmapGrid, TrendLineChart, StackedBarsChart, PairedBarsChart, BreakdownCard) quand une forme existante porte la donnée — reprendre seulement les couleurs de chartColors.ts ne suffit pas",
+        "SQL cité: la spec contient le texte d'au moins une requête SQL SELECT exécutée sur la base dev",
+        "Ancrage ou repli documenté: la maquette reprend les chiffres réels OU, si la base dev est trop clairsemée, utilise du synthétique explicitement marqué EN présentant les chiffres réels obtenus (volumes, bornes de dates, constats) dans la spec ou un encart provenance",
+        "Fuseau métier: aucune manipulation de timezone erronée — les dates/heures sont lues telles que rendues par la session Asia/Makassar (pas de conversion UTC ad hoc)",
+        "Maquette autonome: le HTML ne référence aucun CDN ni ressource externe"
+      ]
+    }
+  ]
+}
