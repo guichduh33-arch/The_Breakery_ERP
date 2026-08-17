@@ -186,8 +186,17 @@ export function DataTable<TRow>({
                         ? 'none'
                         : undefined
                   }
+                  // `font-data` est posé sur la CELLULE, pas sur SectionLabel :
+                  // la famille s'hérite, donc l'unique déclaration couvre les
+                  // deux branches de rendu (en-tête triable en <button> et
+                  // en-tête inerte) sans toucher SectionLabel, qui est partagé
+                  // avec la caisse. Sans elle, l'en-tête de colonne — l'élément
+                  // le plus répété du back-office — rendait en Instrument Sans,
+                  // à rebours de la règle Mono-Carries-Data et de la section
+                  // Tableaux de DESIGN.md (« libellés en label mono capitales »).
                   className={cn(
                     cellPad,
+                    'font-data',
                     col.align === 'right' && 'text-right',
                     col.align === 'center' && 'text-center',
                     col.headerClassName,
