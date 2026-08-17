@@ -7411,6 +7411,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_stock_position_v1: { Args: { p_as_of?: string }; Returns: Json }
       get_stock_variance_v3: {
         Args: { p_date_end?: string; p_date_start?: string }
         Returns: {

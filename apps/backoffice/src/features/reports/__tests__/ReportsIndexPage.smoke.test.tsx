@@ -53,11 +53,11 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  it('has exactly 41 active card links (40 before AR Aging joined the Finance family)', () => {
+  it('has exactly 42 active card links (40 before AR Aging and Stock Position joined)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(41);
+    expect(links).toHaveLength(42);
   });
 
   it('has zero "Soon" disabled tiles after Wave C wiring', () => {

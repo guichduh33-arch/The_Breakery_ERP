@@ -76,6 +76,7 @@ const RefundsVoidsPage = lazy(() => import('@/pages/reports/RefundsVoidsPage.js'
 const SalesByCustomerPage = lazy(() => import('@/pages/reports/SalesByCustomerPage.js'));
 const DiscountsLoyaltyPage = lazy(() => import('@/pages/reports/DiscountsLoyaltyPage.js'));
 const ArAgingPage = lazy(() => import('@/pages/reports/ArAgingPage.js'));
+const StockPositionPage = lazy(() => import('@/pages/reports/StockPositionPage.js'));
 const ProductionReportPage = lazy(() => import('@/pages/reports/ProductionReportPage.js'));
 const ProductionEfficiencyPage = lazy(() => import('@/pages/reports/ProductionEfficiencyPage.js'));
 const PriceChangesPage = lazy(() => import('@/pages/reports/PriceChangesPage.js'));
@@ -902,6 +903,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.financial.read">
               <ArAgingPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/stock-position"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <StockPositionPage />
             </PermissionGate>
           }
         />

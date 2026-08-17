@@ -199,6 +199,7 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Inventory',
         links: [
+          { to: '/backoffice/reports/stock-position', label: 'Stock position at date', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/stock-variance', label: 'Stock variance', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/stock-movements', label: 'Stock movement history', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/wastage', label: 'Wastage & spoilage', permission: 'reports.inventory.read' },

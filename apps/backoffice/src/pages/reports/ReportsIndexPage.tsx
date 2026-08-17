@@ -75,6 +75,7 @@ const SECTIONS: ReportSection[] = [
     id: 'inventory',
     title: 'Inventory',
     cards: [
+      { to: 'stock-position',    title: 'Stock Position at Date', blurb: 'End-of-day quantity & value rebuilt from the ledger — the inventory sheet.', icon: Package },
       { to: 'stock-variance',    title: 'Stock Variance',     blurb: 'Expected vs current per product.', icon: Boxes },
       { to: 'production-yield',  title: 'Production Yield',   blurb: 'Top-10 batch variance outliers + per-recipe trend.', icon: BarChart3 },
       { to: 'recipe-cost',       title: 'Recipe Cost',        blurb: 'History of per-recipe unit cost.',                  icon: TrendingUp },
