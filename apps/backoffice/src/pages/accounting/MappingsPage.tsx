@@ -2,8 +2,8 @@
 //
 // Session 13 / Phase 6.C / module 10-012 — Accounting mappings admin.
 // Table of all rows in `accounting_mappings`. ADMIN+ can edit each row;
-// MANAGER+ can read. Audit log row written per change via the RPC
-// `update_accounting_mapping_v1`.
+// MANAGER+ can read. Audit log row written per change via the
+// `update_accounting_mapping` RPC family.
 
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
