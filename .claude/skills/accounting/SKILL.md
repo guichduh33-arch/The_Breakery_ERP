@@ -99,8 +99,10 @@ changement fiscal.
 - **`current_pb1_rate()`** lit `business_config.tax_rate`. Toujours l'utiliser — pas de
   hardcode `10/110`.
 - **`calculate_pb1_payable`** : `pb1_payable = pb1_output` (pas de soustraction
-  `vat_input`). `get_pb1_report` est la variante mensuelle, gatée
-  `reports.financial.read`.
+  `vat_input`). Gatée `reports.financial.read` depuis le bump v2 du 2026-08-18
+  (qui corrige aussi le résidu ADR-005 : `tax_regime` renvoie
+  `NON_PKP_LOMBOK_PBJT`, plus `NON_PKP_BALI_PB1`). `get_pb1_report` est la
+  variante mensuelle, même gate.
 
 ---
 
@@ -149,6 +151,13 @@ une JE, **datée `CURRENT_DATE`** et non de la date de session :
 
 ### JE de vente (`create_sale_journal_entry`)
 
+- **Garde B2B (migration 20260818000006, 2026-08-18)** : `order_type='b2b'` OU une JE
+  `reference_type='b2b_order'` préexistante référençant la commande → le trigger
+  n'émet **rien** (ni `sale` ni `sale_void`) et ne touche pas au fiscal guard. Le
+  revenu B2B vit exclusivement dans la JE `b2b_order` (DR 1132 / CR 4131) posée par
+  `create_b2b_order`. Avant cette garde, une commande B2B passée `paid` par
+  `record_b2b_payment` (qui n'écrit jamais de `order_payments`) tombait dans le
+  fallback cash et **doublait le revenu** (4100 + 4131).
 - CR `SALE_POS_REVENUE` → **4100** pour `total − tax_amount`, CR `SALE_PB1_TAX` → **2110**
   pour `tax_amount` (PB1 inclusive déjà splitée sur la commande).
 - DR une ligne **par ligne de `order_payments`** (split tender), compte résolu par le
@@ -156,7 +165,8 @@ une JE, **datée `CURRENT_DATE`** et non de la date de session :
 - `orders.is_historical_import = true` → **aucune JE** (reprise d'historique).
 - Aucune ligne `order_payments` → **fallback cash** sur la totalité + `audit_logs` action
   `je.payment_fallback_cash`. Un pic sur cette action = money-path qui n'écrit plus ses
-  paiements.
+  paiements. Sur dev, les fixtures E2E (`order_number` en `#TEST-`) polluent ce signal —
+  filtrer avant de conclure.
 - Le void émet **exactement une** contre-passation `sale_void` (ADR-013 D2) ; la ligne
   `refunds(is_full_void=true)` est un miroir audit et n'émet rien.
 
@@ -269,11 +279,11 @@ Toutes `SECURITY DEFINER`, la plupart perm-gatées et audit-logged.
 | `get_profit_loss` | dates, section_id | `reports.financial.read` | dédup `sale_void`/refund |
 | `get_balance_sheet` | as_of_date | `reports.financial.read` | dédup `sale_void`/refund |
 | `get_cash_flow` | dates | `reports.financial.read` | réconcilié par construction |
-| `calculate_pb1_payable` | period start/end | — (aucune) | `pb1_payable = pb1_output` |
+| `calculate_pb1_payable` | period start/end | `reports.financial.read` (depuis v2, 2026-08-18) | `pb1_payable = pb1_output` |
 | `get_pb1_report` | month, year | `reports.financial.read` | rapport mensuel PB1 |
 | `update_account_active` | account_id, is_active | `accounting.coa.write` SUPER_ADMIN | pas d'UPDATE direct sur `accounts` |
 | `update_accounting_mapping` | mapping_key, account_code, is_active, reason | `accounting.mapping.update` | repointe un mapping sans migration |
-| `get_cash_wallet_balances` / `_ledger` / `_analysis` | — / account_code+dates / dates | ⚠️ aucune gate SQL — seul le `PermissionGate` de route protège | coffres 1110/1111/1117 |
+| `get_cash_wallet_balances` / `_ledger` / `_analysis` | — / account_code+dates / dates | `accounting.cash.read` (gate SQL vérifiée 2026-08-17 sur les versions live) | coffres 1110/1111/1117 |
 | `record_cash_wallet_movement` | type, amount, date, remark, idempotency_key, wallet_code | `accounting.cash.write` | idempotent |
 | `retry_sale_journal_entry` | order_id | `pos.sale.create` | ré-émet la JE d'une vente dont le trigger a échoué |
 
