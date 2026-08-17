@@ -140,6 +140,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/purchase-by-supplier', label: 'Purchase by supplier', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/purchase-price-trends', label: 'Purchase price trends', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/cost-spend', label: 'Cost & spend analytics', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/supplier-payments', label: 'Supplier payments', permission: 'reports.financial.read' },
         ],
       },
     ],
@@ -187,6 +188,9 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/sales-by-category', label: 'Sales by category', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-product', label: 'Sales by product', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-customer', label: 'Sales by customer', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/sales-by-origin', label: 'Sales by origin', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/combo-sales', label: 'Combo sales', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/sales-by-table', label: 'Sales by table', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-staff', label: 'Sales by staff', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/staff-performance', label: 'Staff performance', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/basket-analysis', label: 'Basket analysis', permission: 'reports.sales.read' },
@@ -199,6 +203,7 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Inventory',
         links: [
+          { to: '/backoffice/reports/stock-position', label: 'Stock position at date', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/stock-variance', label: 'Stock variance', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/stock-movements', label: 'Stock movement history', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/wastage', label: 'Wastage & spoilage', permission: 'reports.inventory.read' },
@@ -218,6 +223,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/cash-flow', label: 'Cash flow', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/payment-by-method', label: 'Payment by method', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/pb1', label: 'VAT / PB1', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/ar-aging', label: 'AR aging (B2B)', permission: 'reports.financial.read' },
         ],
       },
       {

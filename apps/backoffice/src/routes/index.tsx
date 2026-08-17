@@ -75,6 +75,12 @@ const PurchasePriceTrendsPage = lazy(() => import('@/pages/reports/PurchasePrice
 const RefundsVoidsPage = lazy(() => import('@/pages/reports/RefundsVoidsPage.js'));
 const SalesByCustomerPage = lazy(() => import('@/pages/reports/SalesByCustomerPage.js'));
 const DiscountsLoyaltyPage = lazy(() => import('@/pages/reports/DiscountsLoyaltyPage.js'));
+const ArAgingPage = lazy(() => import('@/pages/reports/ArAgingPage.js'));
+const StockPositionPage = lazy(() => import('@/pages/reports/StockPositionPage.js'));
+const SalesByOriginPage = lazy(() => import('@/pages/reports/SalesByOriginPage.js'));
+const SupplierPaymentsPage = lazy(() => import('@/pages/reports/SupplierPaymentsPage.js'));
+const ComboSalesPage = lazy(() => import('@/pages/reports/ComboSalesPage.js'));
+const SalesByTablePage = lazy(() => import('@/pages/reports/SalesByTablePage.js'));
 const ProductionReportPage = lazy(() => import('@/pages/reports/ProductionReportPage.js'));
 const ProductionEfficiencyPage = lazy(() => import('@/pages/reports/ProductionEfficiencyPage.js'));
 const PriceChangesPage = lazy(() => import('@/pages/reports/PriceChangesPage.js'));
@@ -893,6 +899,54 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.sales.read">
               <DiscountsLoyaltyPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/ar-aging"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <ArAgingPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/stock-position"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <StockPositionPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-origin"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByOriginPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/supplier-payments"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <SupplierPaymentsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/combo-sales"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <ComboSalesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-table"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByTablePage />
             </PermissionGate>
           }
         />

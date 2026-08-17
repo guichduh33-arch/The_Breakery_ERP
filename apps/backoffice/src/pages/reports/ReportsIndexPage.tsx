@@ -31,7 +31,7 @@ import { useCallback, useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
-  Calendar, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
+  Calendar, CalendarClock, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
   Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
   GitCommitHorizontal, Undo2, BadgePercent,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
@@ -66,6 +66,9 @@ const SECTIONS: ReportSection[] = [
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
       { to: 'refunds-voids',     title: 'Refunds & Voids',   blurb: 'Money going back out — voids, partial refunds, reasons and double signature.', icon: Undo2 },
       { to: 'discounts-loyalty', title: 'Discounts & Loyalty', blurb: 'Money given away — four levers, PIN signatures, points issued vs burned.', icon: BadgePercent },
+      { to: 'sales-by-origin',   title: 'Sales by Origin',     blurb: 'Counter, floor tablets or back-office — read from the source-coded number.', icon: GitCommitHorizontal },
+      { to: 'combo-sales',       title: 'Combo Sales',         blurb: 'Do combos sell, which ones — and do they lift the ticket. Component picks included.', icon: Layers3 },
+      { to: 'sales-by-table',    title: 'Sales by Table',      blurb: 'Which tables turn, which sleep — orders per table × weekday, revenue per seat.', icon: Users },
       { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
       { to: 'daily-sales',       title: 'Daily Sales',       blurb: 'Sales breakdown by day.',                       icon: Calendar },
@@ -75,6 +78,7 @@ const SECTIONS: ReportSection[] = [
     id: 'inventory',
     title: 'Inventory',
     cards: [
+      { to: 'stock-position',    title: 'Stock Position at Date', blurb: 'End-of-day quantity & value rebuilt from the ledger — the inventory sheet.', icon: Package },
       { to: 'stock-variance',    title: 'Stock Variance',     blurb: 'Expected vs current per product.', icon: Boxes },
       { to: 'production-yield',  title: 'Production Yield',   blurb: 'Top-10 batch variance outliers + per-recipe trend.', icon: BarChart3 },
       { to: 'recipe-cost',       title: 'Recipe Cost',        blurb: 'History of per-recipe unit cost.',                  icon: TrendingUp },
@@ -93,6 +97,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'purchase-by-date',   title: 'Purchase by Date',   blurb: 'Purchase history timeline.',                  icon: Calendar },
       { to: 'purchase-by-supplier', title: 'Purchase by Supplier', blurb: 'Supplier performance and costs.',         icon: Truck },
       { to: 'purchase-price-trends', title: 'Purchase Price Trends', blurb: 'Unit purchase price per article over time — who raised, what to renegotiate.', icon: TrendingUp },
+      { to: 'supplier-payments', title: 'Supplier Payments', blurb: 'Paid out over the period + what is still owed, per supplier — debt, not commitment.', icon: Banknote },
     ],
   },
   {
@@ -106,6 +111,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'cash-flow',     title: 'Cash Flow',       blurb: 'Indirect-method cash movement statement.',   icon: Banknote },
       { to: 'payment-by-method', title: 'Payment by Method', blurb: 'Cash, Card, QRIS split + daily trend.',  icon: CreditCard },
       { to: 'pb1',           title: 'VAT / PB1 Report',  blurb: 'Monthly PB1 collected, payable & ledger balance.', icon: FileSpreadsheet },
+      { to: 'ar-aging',      title: 'AR Aging (B2B)',    blurb: 'Money outstanding by lateness — who to chase, DSO, credit exposure.', icon: CalendarClock },
     ],
   },
   {
