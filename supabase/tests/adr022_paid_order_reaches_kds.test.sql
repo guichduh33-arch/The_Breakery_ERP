@@ -71,7 +71,7 @@ BEGIN
   v_items_total := 20000 + 15000;
   SELECT s.total INTO v_total FROM _pb1_split_v1(v_items_total) s;
 
-  v_env := complete_order_with_payment_v26(
+  v_env := complete_order_with_payment_v27(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(

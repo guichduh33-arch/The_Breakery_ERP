@@ -6419,7 +6419,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v26: {
+      complete_order_with_payment_v27: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number

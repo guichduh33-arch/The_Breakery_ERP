@@ -97,6 +97,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       body: JSON.stringify({
         session_id: sessionId,
         order_type: 'dine_in',
+        // v27 — table obligatoire en dine-in (garde P0011) : le payload de test la porte.
+        table_number: 'T-TEST',
         items: [
           { product_id: productIds[0], quantity: 1, unit_price: priceA },
           { product_id: productIds[1], quantity: 1, unit_price: priceB },
@@ -136,6 +138,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
         body: JSON.stringify({
           session_id: sessionId,
           order_type: 'dine_in',
+          table_number: 'T-TEST',
+        // v27 — table obligatoire en dine-in (garde P0011) : le payload de test la porte.
+        table_number: 'T-TEST',
           items: [{ product_id: productIds[0], quantity: 99999, unit_price: priceA }],
           payment: { method: 'cash', amount: priceA * 99999, cash_received: priceA * 99999 },
         }),
@@ -156,6 +161,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
     const payload = {
       session_id: sessionId,
       order_type: 'dine_in' as const,
+      table_number: 'T-TEST',
       items: [
         { product_id: productIds[0], quantity: 1, unit_price: priceA },
         { product_id: productIds[1], quantity: 1, unit_price: priceB },
@@ -194,6 +200,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       body: JSON.stringify({
         session_id: sessionId,
         order_type: 'dine_in',
+        // v27 — table obligatoire en dine-in (garde P0011) : le payload de test la porte.
+        table_number: 'T-TEST',
         items: [{ product_id: productIds[0], quantity: 1, unit_price: priceA }],
         payment: { method: 'cash', amount: priceA, cash_received: priceA },
         idempotency_key: 'not-a-uuid',
@@ -222,6 +230,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       body: JSON.stringify({
         session_id: sessionId,
         order_type: 'dine_in',
+        // v27 — table obligatoire en dine-in (garde P0011) : le payload de test la porte.
+        table_number: 'T-TEST',
         items: [{ product_id: productIds[0], quantity: 1, unit_price: priceA }],
         payment: { method: 'cash', amount: priceA, cash_received: priceA },
         customer_id: customer.id,
