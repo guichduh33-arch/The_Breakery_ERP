@@ -80,6 +80,7 @@ const StockPositionPage = lazy(() => import('@/pages/reports/StockPositionPage.j
 const SalesByOriginPage = lazy(() => import('@/pages/reports/SalesByOriginPage.js'));
 const SupplierPaymentsPage = lazy(() => import('@/pages/reports/SupplierPaymentsPage.js'));
 const ComboSalesPage = lazy(() => import('@/pages/reports/ComboSalesPage.js'));
+const SalesByTablePage = lazy(() => import('@/pages/reports/SalesByTablePage.js'));
 const ProductionReportPage = lazy(() => import('@/pages/reports/ProductionReportPage.js'));
 const ProductionEfficiencyPage = lazy(() => import('@/pages/reports/ProductionEfficiencyPage.js'));
 const PriceChangesPage = lazy(() => import('@/pages/reports/PriceChangesPage.js'));
@@ -938,6 +939,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.sales.read">
               <ComboSalesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-table"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByTablePage />
             </PermissionGate>
           }
         />

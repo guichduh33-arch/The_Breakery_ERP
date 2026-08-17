@@ -68,6 +68,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'discounts-loyalty', title: 'Discounts & Loyalty', blurb: 'Money given away — four levers, PIN signatures, points issued vs burned.', icon: BadgePercent },
       { to: 'sales-by-origin',   title: 'Sales by Origin',     blurb: 'Counter, floor tablets or back-office — read from the source-coded number.', icon: GitCommitHorizontal },
       { to: 'combo-sales',       title: 'Combo Sales',         blurb: 'Do combos sell, which ones — and do they lift the ticket. Component picks included.', icon: Layers3 },
+      { to: 'sales-by-table',    title: 'Sales by Table',      blurb: 'Which tables turn, which sleep — orders per table × weekday, revenue per seat.', icon: Users },
       { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
       { to: 'daily-sales',       title: 'Daily Sales',       blurb: 'Sales breakdown by day.',                       icon: Calendar },

@@ -7303,6 +7303,10 @@ export type Database = {
           total: number
         }[]
       }
+      get_sales_by_table_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_settings_by_category_v10: {
         Args: { p_category: string }
         Returns: Json
