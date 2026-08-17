@@ -514,12 +514,23 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- T28 — calculate_vat_payable returns the correct shape
+-- T28 — calculate_pb1_payable returns the correct shape
+-- Lot D1 : _v1 → _v2 (gate reports.financial.read ajouté) — poser un contexte
+-- auth (profil autorisé) avant l'appel direct.
 -- ---------------------------------------------------------------------------
+DO $$
+DECLARE v_auth UUID;
+BEGIN
+  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+END $$;
 SELECT ok(
-  (SELECT (calculate_pb1_payable_v1(DATE '2026-01-01', DATE '2026-12-31'))
+  (SELECT (calculate_pb1_payable_v2(DATE '2026-01-01', DATE '2026-12-31'))
           ? 'pb1_payable'),
-  'T28: calculate_pb1_payable_v1 returns object with pb1_payable key (VAT→PB1, ADR-003)'
+  'T28: calculate_pb1_payable_v2 returns object with pb1_payable key (VAT→PB1, ADR-005)'
 );
 
 -- ---------------------------------------------------------------------------

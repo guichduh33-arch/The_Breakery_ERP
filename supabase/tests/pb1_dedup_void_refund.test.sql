@@ -1,14 +1,28 @@
--- S50 Vague 2a-i · T1 — calculate_pb1_payable_v1 dédup void+refund
+-- S50 Vague 2a-i · T1 — calculate_pb1_payable_v2 dédup void+refund
 -- Prouve que la JE sale_void est exclue du calcul PB1 quand un refund existe pour le
--- même order (sinon double contre-passement de 2110 → PB1 sous-déclaré PEMDA Bali).
+-- même order (sinon double contre-passement de 2110 → PB1 sous-déclaré Bapenda).
 -- Fixtures en insert direct, isolés dans des fenêtres de date futures (2099) pour ne pas
 -- capter de données réelles. orders en 'draft' (pas de trigger JE de vente) ; triggers
 -- USER désactivés sur refunds dans la transaction (sinon fn_create_je_for_refund crée une
 -- JE refund auto datée du jour, hors fenêtre) — la contrainte FK order_id reste active.
+-- Lot D1 : calculate_pb1_payable_v1 → _v2 (gate reports.financial.read ajouté) — un
+-- contexte auth est posé (profil MANAGER/ADMIN/SUPER_ADMIN) avant les appels directs.
 -- Run : execute_sql MCP sous BEGIN ... ROLLBACK.
 
 BEGIN;
 SELECT plan(3);
+
+-- Lot D1 : calculate_pb1_payable_v2 exige has_permission(reports.financial.read) —
+-- résoudre un profil autorisé et poser son contexte auth avant les appels directs.
+DO $fixture$
+DECLARE v_auth UUID;
+BEGIN
+  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+END $fixture$;
 
 ALTER TABLE refunds DISABLE TRIGGER USER;
 
@@ -47,11 +61,11 @@ INSERT INTO journal_entry_lines (id, journal_entry_id, account_id, debit, credit
  (gen_random_uuid(),'bbbb0005-0000-0000-0000-000000000005','07d638db-baac-4cda-ab75-8515702c26d1',0,3000),
  (gen_random_uuid(),'bbbb0006-0000-0000-0000-000000000006','07d638db-baac-4cda-ab75-8515702c26d1',3000,0);
 
-SELECT is((calculate_pb1_payable_v1('2099-01-01','2099-01-31')->>'pb1_output')::numeric, 7000::numeric,
+SELECT is((calculate_pb1_payable_v2('2099-01-01','2099-01-31')->>'pb1_output')::numeric, 7000::numeric,
   'T1 happy path — crédit 2110 sur vente compté intégralement');
-SELECT is((calculate_pb1_payable_v1('2099-02-01','2099-02-28')->>'pb1_output')::numeric, 0::numeric,
+SELECT is((calculate_pb1_payable_v2('2099-02-01','2099-02-28')->>'pb1_output')::numeric, 0::numeric,
   'T2 dédup — sale_void exclue car refund existe (sans dédup = -5000)');
-SELECT is((calculate_pb1_payable_v1('2099-03-01','2099-03-31')->>'pb1_output')::numeric, 0::numeric,
+SELECT is((calculate_pb1_payable_v2('2099-03-01','2099-03-31')->>'pb1_output')::numeric, 0::numeric,
   'T3 void-only — contre-passement compté quand aucun refund');
 
 SELECT * FROM finish();
