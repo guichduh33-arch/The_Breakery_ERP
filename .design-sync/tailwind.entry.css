@@ -1,0 +1,8 @@
+/* design-sync — entrée Tailwind pour la feuille compilée des aperçus.
+ * Les tokens (variables CSS) sont inlinés ici : ils vivent DANS le package
+ * (src/tokens), pas dans un tokensPkg séparé, donc la cascade complète doit
+ * voyager dans la feuille compilée pour atteindre la fermeture de styles.css. */
+@import '../packages/ui/src/tokens/index.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
