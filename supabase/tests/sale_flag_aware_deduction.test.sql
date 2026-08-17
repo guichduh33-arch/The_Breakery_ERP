@@ -54,6 +54,7 @@ BEGIN
   v_price := get_customer_product_price(v_coffee, NULL);
   PERFORM complete_order_with_payment_v27(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
+    p_table_number := 'SFA-T1',  -- v27: garde table_required_for_dine_in (v_otype = 1er label de l'enum = dine_in)
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_coffee,'quantity',1,'unit_price',v_price)),
     p_payment := jsonb_build_object('method','cash','amount',v_price,'cash_received',v_price,'change_given',0));
   INSERT INTO _r VALUES ('beans',(SELECT current_stock FROM products WHERE id=v_beans));
@@ -63,6 +64,7 @@ BEGIN
   v_price := get_customer_product_price(v_crois, NULL);
   PERFORM complete_order_with_payment_v27(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
+    p_table_number := 'SFA-T1',
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_crois,'quantity',1,'unit_price',v_price)),
     p_payment := jsonb_build_object('method','cash','amount',v_price,'cash_received',v_price,'change_given',0));
   INSERT INTO _r VALUES ('crois',(SELECT current_stock FROM products WHERE id=v_crois));
@@ -72,6 +74,7 @@ BEGIN
   v_price := get_customer_product_price(v_service, NULL);
   PERFORM complete_order_with_payment_v27(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
+    p_table_number := 'SFA-T1',
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_service,'quantity',1,'unit_price',v_price)),
     p_payment := jsonb_build_object('method','cash','amount',v_price,'cash_received',v_price,'change_given',0));
   INSERT INTO _r VALUES ('service',(SELECT current_stock FROM products WHERE id=v_service));
@@ -82,6 +85,7 @@ BEGIN
   BEGIN
     PERFORM complete_order_with_payment_v27(
       p_session_id := v_sess, p_order_type := v_otype::order_type,
+      p_table_number := 'SFA-T1',
       p_items := jsonb_build_array(jsonb_build_object('product_id',v_latte,'quantity',1,'unit_price',v_price)),
       p_payment := jsonb_build_object('method','cash','amount',v_price,'cash_received',v_price,'change_given',0));
     v_blocked := false;
@@ -93,6 +97,7 @@ BEGIN
   UPDATE business_config SET allow_negative_stock=true WHERE id=1;
   PERFORM complete_order_with_payment_v27(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
+    p_table_number := 'SFA-T1',
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_latte,'quantity',1,'unit_price',v_price)),
     p_payment := jsonb_build_object('method','cash','amount',v_price,'cash_received',v_price,'change_given',0));
   INSERT INTO _r VALUES ('milk',(SELECT current_stock FROM products WHERE id=v_milk));
