@@ -6,7 +6,7 @@
 - **Tokens inlinés dans la feuille compilée** (import du barrel `src/tokens/index.css` en tête de `tailwind.entry.css`) : `copyTokens` exige un `tokensPkg` sous node_modules, or les tokens vivent dans le package. `ds-bundle/tokens/` reste vide — c'est voulu.
 - **Thèmes** : `:root` = luxe-dark (POS). `.theme-backoffice` = thème ivoire BO. `.dark` = alias du défaut. Les aperçus posent le fond explicitement (les cartes rendent sinon sur fond blanc avec des tokens luxe-dark).
 - **Fonts** : via `extraFonts` → fontsource des apps (Inter Variable, JetBrains Mono Variable, Playfair Display 400/400i/600/700, Instrument Sans Variable depuis apps/backoffice).
-- **Playwright** : cache local chromium-1223 → `playwright@1.60.0` installé dans `.ds-sync/` (le repo épingle 1.62.1/chromium-1234, non caché — ne pas laisser npx télécharger 200 Mo sans demander).
+- **Playwright** : `playwright@1.61.0` installé dans `.ds-sync/`, lié au cache local chromium-1228 (le 1223 a disparu ; le repo épingle 1.62.1/chromium-1234, non caché — ne pas laisser npx télécharger 200 Mo sans demander). Sur un autre poste, re-résoudre la version contre le cache local via `browsers.json`.
 - npm bloque les postinstall (`install-scripts`) : esbuild fonctionne quand même (binaire via dépendance optionnelle `@esbuild/win32-x64`).
 
 ## Known render warns (triagés légitimes)
@@ -53,5 +53,19 @@
 ## Re-sync risks
 
 - La feuille Tailwind compilée dépend du preset ET des content-globs : un nouveau répertoire de sources UI (hors `packages/ui/src` et `.design-sync/previews/`) n'y serait pas scanné.
-- `playwright@1.60.0` dans `.ds-sync/` est lié au cache chromium-1223 de CE poste ; sur un autre poste, re-résoudre la version contre le cache local.
 - Les fonts viennent des node_modules des apps (chemins `extraFonts`) : un bump fontsource ou un déplacement de dépendance casse silencieusement la copie (`[FONT_DANGLING]` le signalerait).
+- **CRLF vs l'ancre (vécu au re-sync du 2026-08-18)** : le repo n'a pas de `.gitattributes` et un
+  checkout Windows avec `core.autocrlf=true` pose des CRLF dans l'arbre de travail — TOUS les hashes
+  de contenu divergent alors de l'ancre (55 sourceKeys « changed », re-grading complet menacé) sans
+  qu'aucun octet signifiant n'ait changé (les renderHashes, eux, restaient identiques). Le fix :
+  restaurer les octets exacts des blobs avant de builder —
+  `git -c core.autocrlf=false checkout -- .design-sync packages/ui` — puis rebuild ; les grades
+  se re-portent alors intégralement. Ne PAS normaliser à la main en LF : certains blobs contiennent
+  des CR historiques committés (fins de ligne mixtes) et une normalisation aveugle crée l'écart
+  inverse. Un `.gitattributes` réglerait le problème à la racine mais imposerait une renormalisation
+  massive du repo — écarté le 2026-08-18 (choix délégué par Mamat) ; la commande de restauration
+  ci-dessus suffit.
+- L'ancre uploadée le 2026-08-18 est stampée par CE poste Windows (esbuild/tailwind locaux) : un
+  re-sync depuis un autre environnement peut re-signaler `bundle`/`styling` différents au niveau
+  octet — si les renderHashes matchent, c'est du bruit d'environnement, l'upload de convergence
+  suffit, aucun re-grading.
