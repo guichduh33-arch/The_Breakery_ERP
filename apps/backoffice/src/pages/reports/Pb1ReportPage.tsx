@@ -4,8 +4,8 @@
 // socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
 // CE QUI NE CHANGE PAS, ET NE DOIT PAS : aucun montant PB1 n'est calculé ici.
-// `get_pb1_report_v1` sert le taux, la base taxable, la PB1 collectée, la PB1
-// due et le solde du compte de dette ; la page les rend. The Breakery est
+// La famille `get_pb1_report` sert le taux, la base taxable, la PB1 collectée,
+// la PB1 due et le solde du compte de dette ; la page les rend. The Breakery est
 // NON-PKP (ADR-003, juridiction corrigée par ADR-005 : PBJT municipale, Lombok/
 // NTB) et la PB1 est INCLUSIVE — elle se dé-cumule serveur, jamais ici.
 //

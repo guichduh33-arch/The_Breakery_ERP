@@ -6278,7 +6278,7 @@ export type Database = {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
-      calculate_pb1_payable_v1: {
+      calculate_pb1_payable_v2: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
@@ -7043,7 +7043,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pb1_report_v1: {
+      get_pb1_report_v2: {
         Args: { p_period_month: number; p_period_year: number }
         Returns: Json
       }

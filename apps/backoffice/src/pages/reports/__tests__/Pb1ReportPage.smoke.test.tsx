@@ -31,7 +31,7 @@ vi.mock('@/lib/supabase.js', () => ({
     from: () => accountsQuery(),
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_pb1_report_v1') {
+      if (fn === 'get_pb1_report_v2') {
         return Promise.resolve({
           data: {
             period: { month: args.p_period_month, year: args.p_period_year, start: '2026-05-01', end: '2026-05-31' },
@@ -79,7 +79,7 @@ function renderPage(search = '?start=2026-05-01&end=2026-05-31') {
 
 function pb1Args(): { p_period_month: number; p_period_year: number }[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_pb1_report_v1')
+    .filter(([fn]) => fn === 'get_pb1_report_v2')
     .map(([, args]) => args as { p_period_month: number; p_period_year: number });
 }
 

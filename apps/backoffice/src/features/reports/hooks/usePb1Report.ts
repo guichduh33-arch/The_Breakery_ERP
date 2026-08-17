@@ -1,7 +1,9 @@
 // apps/backoffice/src/features/reports/hooks/usePb1Report.ts
-// S30 Wave 4.1 — Query hook for get_pb1_report_v1 RPC (month/year selector).
+// S30 Wave 4.1 — Query hook for get_pb1_report RPC (month/year selector).
 // Lot A1 (campagne Reports 2026-08-15) — le cast aveugle `data as Pb1ReportData`
 // laissait passer n'importe quelle forme ; parse défensif champ par champ.
+// Lot D1 : _v1 → _v2 (gate reports.financial.read ajouté sur calculate_pb1_payable,
+// cascade forcée sur get_pb1_report — seul appelant).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -38,7 +40,7 @@ export function usePb1Report(params: UsePb1ReportParams) {
   return useQuery<Pb1ReportData, Error>({
     queryKey: ['reports', 'pb1', params.month, params.year],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_pb1_report_v1', {
+      const { data, error } = await supabase.rpc('get_pb1_report_v2', {
         p_period_month: params.month,
         p_period_year:  params.year,
       });

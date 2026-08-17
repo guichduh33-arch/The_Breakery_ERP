@@ -1,7 +1,7 @@
 -- supabase/tests/audit_medium_db_fixes.test.sql
 -- Regression guards for the 2026-06-01 back-office integrity audit DB Medium fixes:
 --   M1 : update_account_active_v1 blocks re-activating account 1151 (ADR-003 NON-PKP)
---   M2 : calculate_pb1_payable_v1 sums status IN ('posted','locked')
+--   M2 : calculate_pb1_payable_v2 sums status IN ('posted','locked') (Lot D1 : _v1 → _v2)
 --   M8 : create_variant_v1 raises a clean sku_taken on duplicate SKU
 --
 -- Run via MCP execute_sql wrapped in BEGIN/ROLLBACK.
@@ -25,10 +25,12 @@ SELECT is(
   'M1 : deactivate 1151 still allowed (no-op, already inactive)'
 );
 
--- M2: calculate_pb1_payable_v1 body sums status IN (posted, locked)
+-- M2: calculate_pb1_payable_v2 body sums status IN (posted, locked)
+-- pg_get_functiondef introspecte la définition sans l'exécuter — aucun contexte
+-- auth requis même si _v2 est désormais gatée reports.financial.read.
 SELECT ok(
-  pg_get_functiondef('calculate_pb1_payable_v1(date,date)'::regprocedure) LIKE '%''posted'', ''locked''%',
-  'M2 : calculate_pb1_payable_v1 sums status IN (posted, locked)'
+  pg_get_functiondef('calculate_pb1_payable_v2(date,date)'::regprocedure) LIKE '%''posted'', ''locked''%',
+  'M2 : calculate_pb1_payable_v2 sums status IN (posted, locked)'
 );
 
 -- M8: duplicate SKU on create_variant_v1 raises sku_taken (P0004)
