@@ -75,7 +75,8 @@ export default function SalesByOriginPage(): JSX.Element {
 
   const report = useSalesByOrigin({ start, end });
   const summary = report.data?.summary;
-  const origins = report.data?.by_origin ?? [];
+  // Stabilisée : consommée par le useMemo de l'ordre d'identité.
+  const origins = useMemo(() => report.data?.by_origin ?? [], [report.data]);
 
   // Ordre stable : les origines connues d'abord, l'inattendu à la suite.
   const orderedOrigins = useMemo(() => {

@@ -63,7 +63,8 @@ export default function SalesByTablePage(): JSX.Element {
 
   const report = useSalesByTable({ start, end });
   const summary = report.data?.summary;
-  const tables  = report.data?.by_table ?? [];
+  // Stabilisée : consommée par les useMemo de la matrice et du Pareto.
+  const tables  = useMemo(() => report.data?.by_table ?? [], [report.data]);
 
   // Matrice table × jour ISO — cellules { orders, revenue }.
   const matrix = useMemo(() => {

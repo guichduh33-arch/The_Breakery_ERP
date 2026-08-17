@@ -78,8 +78,9 @@ export default function StockPositionPage(): JSX.Element {
 
   const report = useStockPosition(asOf !== '' ? asOf : undefined);
   const summary  = report.data?.summary;
-  const products = report.data?.products ?? [];
   const servedAsOf = report.data?.as_of;
+  // Stabilisée : consommée par le useMemo du Pareto.
+  const products = useMemo(() => report.data?.products ?? [], [report.data]);
 
   const categoryRows: BreakdownRow[] = useMemo(
     () => (report.data?.by_category ?? []).map((c, i) => ({

@@ -100,8 +100,9 @@ export default function ArAgingPage(): JSX.Element {
   const report = useArAging();
   const summary   = report.data?.summary;
   const invoices  = report.data?.invoices ?? [];
-  const customers = report.data?.by_customer ?? [];
   const asOf      = report.data?.as_of;
+  // Stabilisée : consommée par le useMemo de l'exposition par client.
+  const customers = useMemo(() => report.data?.by_customer ?? [], [report.data]);
 
   const bucketRows: BreakdownRow[] = useMemo(() => {
     const byKey = new Map((report.data?.by_bucket ?? []).map((b) => [b.bucket, b]));
