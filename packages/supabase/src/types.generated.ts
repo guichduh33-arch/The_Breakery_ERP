@@ -6936,6 +6936,10 @@ export type Database = {
       get_dashboard_action_queue_v1: { Args: never; Returns: Json }
       get_dashboard_open_orders_v1: { Args: never; Returns: Json }
       get_dashboard_overview_v3: { Args: never; Returns: Json }
+      get_discounts_loyalty_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_display_stock_activity_v1: { Args: never; Returns: Json }
       get_expenses_by_category_v1: {
         Args: {

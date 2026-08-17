@@ -33,7 +33,7 @@ import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
   Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
-  GitCommitHorizontal, Undo2,
+  GitCommitHorizontal, Undo2, BadgePercent,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
 import { cardVariants, cn, EmptyState, Input, SectionLabel } from '@breakery/ui';
@@ -65,6 +65,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'sales-by-customer', title: 'Sales by Customer', blurb: 'Who matters and who is churning — identified vs anonymous capture.', icon: Users },
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
       { to: 'refunds-voids',     title: 'Refunds & Voids',   blurb: 'Money going back out — voids, partial refunds, reasons and double signature.', icon: Undo2 },
+      { to: 'discounts-loyalty', title: 'Discounts & Loyalty', blurb: 'Money given away — four levers, PIN signatures, points issued vs burned.', icon: BadgePercent },
       { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
       { to: 'daily-sales',       title: 'Daily Sales',       blurb: 'Sales breakdown by day.',                       icon: Calendar },
