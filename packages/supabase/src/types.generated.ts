@@ -6885,6 +6885,10 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_combo_sales_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
       get_customer_cohort_v1: {

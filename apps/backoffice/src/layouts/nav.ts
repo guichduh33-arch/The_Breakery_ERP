@@ -189,6 +189,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/sales-by-product', label: 'Sales by product', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-customer', label: 'Sales by customer', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-origin', label: 'Sales by origin', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/combo-sales', label: 'Combo sales', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-staff', label: 'Sales by staff', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/staff-performance', label: 'Staff performance', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/basket-analysis', label: 'Basket analysis', permission: 'reports.sales.read' },
