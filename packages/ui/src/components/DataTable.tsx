@@ -206,8 +206,20 @@ export function DataTable<TRow>({
                     <button
                       type="button"
                       onClick={() => handleHeaderClick(col)}
+                      // L'anneau de focus canonique du design system, écrit avec
+                      // le même vocabulaire que Button / Input / Badge / Tabs.
+                      // Sans lui, trier au clavier retombait sur l'anneau natif
+                      // du navigateur — mesuré entre 2,09:1 et 2,40:1 sur le
+                      // remplissage inerte de l'en-tête, sous le seuil de 3:1
+                      // des objets graphiques (WCAG 1.4.11). `outline` + offset
+                      // 2 px déborde de 4 px : moins que les 10 px de padding
+                      // vertical de la cellule la plus dense, donc rien n'est
+                      // rogné par l'`overflow-x-auto` / `overflow-y-hidden` du
+                      // conteneur. `:focus-visible` et non `:focus` — le survol
+                      // souris n'allume pas l'anneau.
                       className={cn(
                         'inline-flex items-center gap-1.5 select-none',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                         col.align === 'right' && 'ml-auto',
                       )}
                     >

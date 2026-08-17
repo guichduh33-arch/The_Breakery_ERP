@@ -51,5 +51,13 @@
   --shadow-inset-sm: inset 0 1px 2px rgba(45, 34, 15, 0.06);
   --shadow-inset-md: inset 0 2px 6px rgba(45, 34, 15, 0.10);
 
-  --shadow-focus:  0 0 0 3px rgba(138, 104, 32, 0.32);
+  /* DÉRIVÉ de --gold-base, jamais recopié. Le liseré (--border-focus, qui vaut
+   * var(--gold-base)) et le halo sont toujours de la même couleur — DESIGN.md,
+   * § Elevation & Depth. Le rgb figé rgba(138,104,32,·), l'or d'AVANT son
+   * assombrissement du 2026-08-13, avait fait diverger les deux une seconde
+   * fois, après la correction relatée en tête de ce fichier. color-mix rend la
+   * divergence impossible : qui change --gold-base n'a plus rien à suivre ici.
+   * Un moteur sans color-mix perd le halo, pas l'anneau : les 2 px de focus
+   * sont portés par `outline`, pas par cette ombre. */
+  --shadow-focus:  0 0 0 3px color-mix(in srgb, var(--gold-base) 32%, transparent);
 }
