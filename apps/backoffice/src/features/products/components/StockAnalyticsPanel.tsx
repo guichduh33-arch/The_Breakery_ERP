@@ -79,7 +79,9 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
               onClick={() => setDays(w.value)}
               className={cn(
                 'rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
-                days === w.value ? 'bg-gold text-bg-base' : 'text-text-muted hover:text-text-primary',
+                // Segment ACTIF, pas bouton d'action : l'or reste une encre de
+                // sens sur un fond `gold-soft` — le motif de ProductsFilters.
+                days === w.value ? 'bg-gold-soft text-gold' : 'text-text-muted hover:text-text-primary',
               )}
             >
               {w.label}

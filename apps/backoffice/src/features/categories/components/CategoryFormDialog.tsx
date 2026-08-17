@@ -255,7 +255,9 @@ function ToggleRow({ checked, onChange, label, description }: ToggleRowProps): J
         aria-label={label}
         onClick={() => onChange(!checked)}
         className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${FOCUS_RING} ${
-          checked ? 'bg-gold' : 'bg-border-strong'
+          // Piste ENCRE, pas or : The Ink-Not-Gold Rule — l'or ne remplit pas,
+          // l'encre est le poids du système.
+          checked ? 'bg-ink' : 'bg-border-strong'
         }`}
       >
         <span

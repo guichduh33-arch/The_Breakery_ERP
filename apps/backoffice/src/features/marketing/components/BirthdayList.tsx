@@ -39,7 +39,7 @@ export function BirthdayList({ upcoming, log }: BirthdayListProps) {
                     {' · '}
                     {c.marketing_consent
                       ? <span className="text-info">opted in</span>
-                      : <span className="text-warn">no consent</span>}
+                      : <span className="text-warning">no consent</span>}
                   </div>
                 </div>
                 <div className="text-right">
@@ -83,7 +83,7 @@ export function BirthdayList({ upcoming, log }: BirthdayListProps) {
                     row.status === 'sent'
                       ? 'text-xs px-2 py-0.5 rounded-md bg-info-soft text-info'
                       : row.status === 'queued' || row.status === 'retry'
-                      ? 'text-xs px-2 py-0.5 rounded-md bg-warn/20 text-warn'
+                      ? 'text-xs px-2 py-0.5 rounded-md bg-warning-soft text-warning'
                       : 'text-xs px-2 py-0.5 rounded-md bg-bg-overlay text-text-secondary'
                   }
                 >

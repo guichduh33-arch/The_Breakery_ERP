@@ -171,7 +171,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                       onClick={() => toggleStepRole(idx, role)}
                       className={`px-2 py-1 text-xs rounded transition-colors ${
                         step.role_codes.includes(role)
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-gold-soft text-gold'
                           : 'bg-surface-inert text-text-secondary hover:bg-surface-4'
                       }`}
                     >

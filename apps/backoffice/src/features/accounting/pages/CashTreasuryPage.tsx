@@ -50,7 +50,7 @@ export default function CashTreasuryPage() {
 
       <div className="flex flex-wrap gap-3">
         {isLoading && (
-          <span className="text-sm text-muted-foreground">Loading wallets…</span>
+          <span className="text-sm text-text-muted">Loading wallets…</span>
         )}
         {ordered.map((w) => (
           <WalletCard
@@ -69,14 +69,14 @@ export default function CashTreasuryPage() {
             type="date" lang="id-ID"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className="rounded-md border border-input bg-background px-2 py-1"
+            className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
           />
           <span>→</span>
           <input
             type="date" lang="id-ID"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className="rounded-md border border-input bg-background px-2 py-1"
+            className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
           />
           <Button
             variant="secondary"

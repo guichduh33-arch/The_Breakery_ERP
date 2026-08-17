@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useProductUnits, type ProductUnitAlt, type ProductUnitContexts } from '../hooks/useProductUnits.js';
 import { useSetProductUnits } from '../hooks/useSetProductUnits.js';
 import { useSetProductBaseUnit } from '../hooks/useSetProductBaseUnit.js';
@@ -248,7 +249,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                 onClick={applyBaseUnit}
                 disabled={setBaseUnit.isPending}
                 data-testid="base-unit-apply"
-                className="rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+                className={TOOLBAR_BTN_SECONDARY}
               >
                 {setBaseUnit.isPending ? 'Changing…' : 'Change base unit'}
               </button>
@@ -269,9 +270,9 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             disabled={!canWrite}
             onClick={addAlt}
             data-testid="add-alt-unit-btn"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+            className={TOOLBAR_BTN_SECONDARY}
           >
-            <Plus className="h-4 w-4" aria-hidden />
+            <Plus className={TOOLBAR_ICON} aria-hidden />
             New Unit
           </button>
         </div>
@@ -388,7 +389,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             disabled={!isDirty || !isValid || setUnits.isPending}
             onClick={handleSave}
             data-testid="units-save-btn"
-            className="rounded-sm bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+            className={TOOLBAR_BTN_SECONDARY}
           >
             {setUnits.isPending ? 'Saving…' : 'Save Units'}
           </button>

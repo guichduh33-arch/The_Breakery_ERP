@@ -7,7 +7,7 @@
 import { useState, useRef, type JSX } from 'react';
 import { toast } from 'sonner';
 import {
-  Dialog, DialogContent, DialogTitle, DialogDescription,
+  Button, Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import {
@@ -107,15 +107,21 @@ export function ConvertLoyaltyModal({
           <p className="text-sm text-danger" data-testid="convert-error">{formError}</p>
         )}
         <div className="flex justify-end gap-2">
-          <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="convert-cancel">Cancel</button>
-          <button
+          {/* L'action terminale de la modale est ENCRE, pas or : l'or ne
+              remplit pas (The Ink-Not-Gold Rule) et le premier plan `text-bg-base`
+              ne valait que 4,47:1 sur l'aplat doré. */}
+          <Button variant="secondary" size="sm" onClick={handleClose} data-testid="convert-cancel">
+            Cancel
+          </Button>
+          <Button
+            variant="ink"
+            size="sm"
             onClick={() => { void handleSubmit(); }}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm bg-gold text-bg-base rounded disabled:opacity-50"
             data-testid="convert-submit"
           >
             {m.isPending ? 'Converting…' : 'Convert'}
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

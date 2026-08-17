@@ -29,12 +29,12 @@ export function WalletCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`text-left transition ${selected ? 'ring-2 ring-primary' : ''}`}
+      className={`text-left transition ${selected ? 'ring-2 ring-gold' : ''}`}
       aria-pressed={selected}
     >
       <Card className="p-4 min-w-[200px]">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className="text-sm text-text-muted">{label}</span>
           {fixedFloat != null && (
             <Badge variant={lentOut ? 'destructive' : 'secondary'}>
               {lentOut ? 'Lent out' : 'Float OK'}
@@ -43,7 +43,7 @@ export function WalletCard({
         </div>
         <div className="mt-2 text-2xl font-semibold tabular-nums">{idr.format(wallet.balance)}</div>
         {fixedFloat != null && (
-          <div className="mt-1 text-xs text-muted-foreground">
+          <div className="mt-1 text-xs text-text-muted">
             Fixed float: {idr.format(fixedFloat)}
           </div>
         )}

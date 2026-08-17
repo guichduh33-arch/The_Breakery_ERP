@@ -12,12 +12,7 @@
 # Le drapeau ne sait que descendre un compte ; il ne peut pas faire passer une
 # violation.
 #
-# Dernier resserrement : 2026-08-13
-1	apps/backoffice/src/features/marketing/components/CohortHeatmap.tsx	bg-gold-soft/30
-1	apps/backoffice/src/features/marketing/components/CohortHeatmap.tsx	bg-gold-soft/60
-1	apps/backoffice/src/features/marketing/components/CohortHeatmap.tsx	bg-gold/70
-1	apps/backoffice/src/features/marketing/components/SegmentList.tsx	bg-gold/30
-1	apps/backoffice/src/features/marketing/components/SegmentList.tsx	bg-info/30
+# Dernier resserrement : 2026-08-17
 1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	bg-red-as-text/5
 1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	border-red-as-text/40
 2	apps/pos/src/features/payment/split/__tests__/SplitPaymentFlow.smoke.test.tsx	to-payment

@@ -384,7 +384,8 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
       <span
         aria-hidden
         className={`inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
-          enabled ? 'border-gold bg-gold' : 'border-text-subtle bg-surface-4'
+          // Piste ENCRE, pas or : The Ink-Not-Gold Rule — l'or ne remplit pas.
+          enabled ? 'border-ink bg-ink' : 'border-text-subtle bg-surface-4'
         }`}
       >
         <span

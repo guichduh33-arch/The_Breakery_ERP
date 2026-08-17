@@ -13,6 +13,7 @@ import { DollarSign, Percent, Tag } from 'lucide-react';
 import { Card, EmptyState } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
+import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';
 import { CorrectCostDialog } from './CorrectCostDialog.js';
 import { ModifierCostBreakdown } from './ModifierCostBreakdown.js';
@@ -124,7 +125,11 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
               type="button"
               data-testid="correct-cost-btn"
               onClick={() => setDialogOpen(true)}
-              className="inline-flex items-center gap-2 rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base"
+              // The Ink-Not-Gold Rule : l'or ne remplit pas. Et l'encre est déjà
+              // prise sur cet écran par « Save changes » du bandeau de fiche
+              // (ProductDetailHeader) — un panneau ne peut donc pas la reprendre
+              // sans poser un second aplat encré (The One Ink Fill Rule).
+              className={TOOLBAR_BTN_SECONDARY}
             >
               Correct cost price
             </button>

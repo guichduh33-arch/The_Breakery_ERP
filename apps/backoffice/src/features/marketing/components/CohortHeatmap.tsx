@@ -16,18 +16,27 @@ export interface CohortHeatmapProps {
   buckets: readonly CohortBucket[];
 }
 
+// Rampe de data-viz, pas d'or. Une heatmap est une SÉRIE : DESIGN.md § Data-viz
+// donne `chart-1..4` aux séries et réserve les teintes `cat-*` à l'identité
+// d'une catégorie de produit. L'or, lui, ne remplit jamais dans le back-office.
+//
+// L'ancienne rampe annonçait cinq crans et n'en rendait que trois : les trois
+// autres portaient un alpha sur un token `var()` nu (`bg-gold-soft/30`,
+// `bg-gold-soft/60`, `bg-gold/70`), que Tailwind supprime en silence. Les
+// quatre crans de `chart-*` la remplacent, du plus clair au plus soutenu, plus
+// le fond nu pour le zéro.
+//
+// Premiers plans mesurés sur chaque cran (thème back-office) :
+//   chart-4 #c9dcea / chart-3 #8cc3e0 / chart-2 #4f93bf → `text-primary`
+//     (#1a1917) : 9,2:1 sur chart-3, 5,2:1 sur chart-2, au-dessus partout.
+//   chart-1 #2b6c9c → l'encre y tombe à 3,1:1 ; le cran le plus soutenu prend
+//     donc l'ivoire du thème (#fffdf9), 5,6:1.
 function heatColour(pct: number): string {
-  // 0   -> bg-bg-overlay (cold)
-  // 25  -> bg-gold-soft
-  // 50  -> bg-gold
-  // 75  -> bg-gold + ring
-  // 100 -> bg-gold + ring-strong
-  if (pct <= 0) return 'bg-bg-overlay text-text-secondary';
-  if (pct < 10) return 'bg-gold-soft/30 text-text-primary';
-  if (pct < 25) return 'bg-gold-soft/60 text-text-primary';
-  if (pct < 50) return 'bg-gold-soft text-text-primary';
-  if (pct < 75) return 'bg-gold/70 text-bg-base';
-  return 'bg-gold text-bg-base';
+  if (pct <= 0)  return 'bg-bg-overlay text-text-secondary';
+  if (pct < 25)  return 'bg-chart-4 text-text-primary';
+  if (pct < 50)  return 'bg-chart-3 text-text-primary';
+  if (pct < 75)  return 'bg-chart-2 text-text-primary';
+  return 'bg-chart-1 text-ink-fg';
 }
 
 export function CohortHeatmap({ buckets }: CohortHeatmapProps) {

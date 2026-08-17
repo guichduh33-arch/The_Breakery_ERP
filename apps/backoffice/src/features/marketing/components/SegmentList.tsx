@@ -30,12 +30,18 @@ const SEGMENT_HINTS: Record<SegmentBucket['segment'], string> = {
   lost:      'No visit 180d+',
 };
 
+// Un cran par segment, et SIX crans réellement distincts. L'alpha sur un token
+// `var()` nu ne rendait rien (`bg-gold/30`, `bg-info/30`) et `warn` n'est pas
+// une famille du preset : quatre des six pastilles n'avaient donc aucun fond.
+// Une fois les tokens `-soft` posés, `at_risk` et `dormant` retombaient tous
+// deux sur l'ambre — ils portent maintenant deux sémantiques d'alerte
+// distinctes : l'ambre attire l'attention, le rouge signale la perte proche.
 const SEGMENT_BADGES: Record<SegmentBucket['segment'], string> = {
-  champions: 'bg-gold/30 text-gold',
+  champions: 'bg-gold-soft text-gold',
   loyal:     'bg-gold-soft text-text-primary',
-  new:       'bg-info/30 text-info',
-  at_risk:   'bg-warn/30 text-warn',
-  dormant:   'bg-warn/20 text-text-secondary',
+  new:       'bg-info-soft text-info',
+  at_risk:   'bg-warning-soft text-warning',
+  dormant:   'bg-danger-soft text-danger',
   lost:      'bg-bg-overlay text-text-secondary',
 };
 

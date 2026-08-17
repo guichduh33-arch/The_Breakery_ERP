@@ -187,7 +187,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     {l.name_snapshot}
                     {l.isPending && <span className="ml-1 text-xs text-info">(new)</span>}
                     {l.isLocked && (
-                      <span className="ml-1 text-xs text-muted-foreground" title="Sent to kitchen — decrease only, removal via POS cancel flow">
+                      <span className="ml-1 text-xs text-text-muted" title="Sent to kitchen — decrease only, removal via POS cancel flow">
                         🔒
                       </span>
                     )}
@@ -216,7 +216,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     </button>
                   ) : l.isLocked ? (
                     <span
-                      className="text-xs text-muted-foreground"
+                      className="text-xs text-text-muted"
                       data-testid={`locked-${l.id}`}
                       title="Removal forbidden on a kitchen-sent line — use the POS cancel flow (mandatory waste declaration)"
                     >
@@ -239,7 +239,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             <p className="mt-3 text-sm border-t pt-2">
               Subtotal preview: <strong className="tabular-nums">{formatCurrency(previewSubtotal)}</strong>
             </p>
-            <p className="text-xs text-muted-foreground">Tax + total recalculated server-side at apply.</p>
+            <p className="text-xs text-text-muted">Tax + total recalculated server-side at apply.</p>
           </div>
         </div>
         {hasLockedUpdate && (
@@ -267,14 +267,14 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                 data-testid="locked-waste-reason"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-text-muted">
               The removed delta is declared as waste and deducted through the recipe-aware waste circuit.
             </p>
           </div>
         )}
         {m.error && <p className="mt-3 text-sm text-danger">{m.error.message}</p>}
         <div className="mt-4 flex items-center justify-between border-t pt-3">
-          <span className="text-sm text-muted-foreground">{pendingCount} changes pending</span>
+          <span className="text-sm text-text-muted">{pendingCount} changes pending</span>
           <div className="flex gap-2">
             <button onClick={handleCancel} className="px-4 py-2 text-sm">Cancel</button>
             <button

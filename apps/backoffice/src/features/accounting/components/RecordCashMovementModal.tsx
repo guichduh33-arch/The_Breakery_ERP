@@ -29,7 +29,7 @@ const ADJUST_TYPES = new Set<CashMovementType>(['adjustment_gain', 'adjustment_l
 const DEFAULT_TYPE: CashMovementType = 'undepo_to_petty';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-const inputCls = 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
+const inputCls = 'w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm';
 
 export function RecordCashMovementModal({
   open,
@@ -145,7 +145,7 @@ export function RecordCashMovementModal({
           </label>
 
           {mut.isError && (
-            <p className="text-sm text-destructive">{(mut.error).message}</p>
+            <p className="text-sm text-danger">{(mut.error).message}</p>
           )}
 
           <div className="flex justify-end gap-2 pt-2">

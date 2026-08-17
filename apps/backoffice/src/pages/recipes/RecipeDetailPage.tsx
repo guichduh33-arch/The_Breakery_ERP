@@ -38,14 +38,14 @@ export function RecipeDetailPage(): JSX.Element {
           <Badge variant="info">Semi-finished</Badge>
         )}
         {active_version_number != null && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-text-muted">
             v{active_version_number} ({version_count} versions)
           </span>
         )}
       </div>
 
       <Card className="p-4 space-y-1">
-        <h2 className="text-sm font-medium text-muted-foreground">Output product</h2>
+        <h2 className="text-sm font-medium text-text-muted">Output product</h2>
         <div className="text-sm">
           SKU : {product.sku ?? '—'} · Unit : {product.unit ?? '—'}
         </div>
@@ -59,7 +59,7 @@ export function RecipeDetailPage(): JSX.Element {
 
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-muted-foreground">
+          <h2 className="text-sm font-medium text-text-muted">
             Ingredients (cascade flat, depth ≤ 5)
           </h2>
           <div className="text-sm">
@@ -67,12 +67,12 @@ export function RecipeDetailPage(): JSX.Element {
           </div>
         </div>
         {bom.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No ingredients recorded.</div>
+          <div className="text-sm text-text-muted">No ingredients recorded.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-muted-foreground">
+                <tr className="text-left text-xs text-text-muted">
                   <th className="pb-2">Material</th>
                   <th className="pb-2 text-right">Qty / unit</th>
                   <th className="pb-2">Unit</th>

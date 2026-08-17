@@ -12,16 +12,16 @@ export function WalletLedgerTable({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="p-4 text-sm text-muted-foreground">Loading ledger…</div>;
+    return <div className="p-4 text-sm text-text-muted">Loading ledger…</div>;
   }
   if (rows.length === 0) {
-    return <div className="p-4 text-sm text-muted-foreground">No movements in this period.</div>;
+    return <div className="p-4 text-sm text-text-muted">No movements in this period.</div>;
   }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-muted-foreground border-b">
+          <tr className="text-left text-text-muted border-b">
             <th className="py-2">Date</th>
             <th>Remark</th>
             <th>Category</th>

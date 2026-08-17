@@ -456,14 +456,19 @@ export function RecipeBuilder({
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <button
+                  {/* Secondaire : ajouter une ligne n'est pas l'action
+                      terminale du formulaire. L'aplat d'or violait
+                      The Ink-Not-Gold Rule et `rounded-full`
+                      The Tight-Corner Rule (6 px au maximum). */}
+                  <Button
                     type="submit"
+                    variant="secondary"
                     disabled={!canAdd}
-                    className="inline-flex h-touch-min w-full items-center justify-center gap-2 rounded-full bg-gold px-4 text-xs font-semibold uppercase tracking-widest text-bg-base hover:bg-gold-hover disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
+                    className="h-touch-min w-full text-xs uppercase tracking-widest"
                   >
                     <Plus className="h-4 w-4" aria-hidden />
                     {upsertMut.isPending ? 'Saving…' : 'Add ingredient'}
-                  </button>
+                  </Button>
                 </div>
                 {formError !== null && (
                   <div role="alert" className="md:col-span-12 rounded-md border border-red bg-red-soft px-3 py-2 text-xs text-red">

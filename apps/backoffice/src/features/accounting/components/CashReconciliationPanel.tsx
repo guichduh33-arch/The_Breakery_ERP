@@ -35,13 +35,13 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
   return (
     <Card className="p-4 space-y-2">
       <h3 className="font-medium">Reconcile {wallet.account_name}</h3>
-      <div className="text-sm text-muted-foreground">GL balance: {idr.format(wallet.balance)}</div>
+      <div className="text-sm text-text-muted">GL balance: {idr.format(wallet.balance)}</div>
       <input
         type="number"
         placeholder="Counted (physical)"
         value={counted}
         onChange={(e) => setCounted(e.target.value)}
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm"
       />
       {counted !== '' && (
         <div className={`text-sm ${diff === 0 ? 'text-success' : 'text-warning'}`}>
@@ -49,13 +49,13 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
         </div>
       )}
       {mut.isError && (
-        <p className="text-sm text-destructive">{(mut.error).message}</p>
+        <p className="text-sm text-danger">{(mut.error).message}</p>
       )}
       <Button variant="ink" disabled={diff === 0 || mut.isPending || !canAdjust} onClick={book}>
         {diff === 0 ? 'Balanced' : `Book ${diff > 0 ? 'overage' : 'shortage'}`}
       </Button>
       {!canAdjust && (
-        <p className="text-xs text-muted-foreground">Requires cash-adjust permission</p>
+        <p className="text-xs text-text-muted">Requires cash-adjust permission</p>
       )}
     </Card>
   );
