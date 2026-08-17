@@ -7,18 +7,35 @@
 --   T1-T3  Vente POS — INCHANGÉ. La JE crédite 2110 du montant porté par la
 --          commande, l'équilibre tient. Non-régression du cas nominal.
 --
---   T4-T6  Vente B2B — CHANGÉ, volontairement. `create_b2b_order_v6` écrit
---          tax_amount = 0 (vente en gros hors champ PBJT, ADR-005, décision
---          propriétaire du 2026-07-17). AVANT ce correctif, le trigger
---          recalculait round_idr(total * r/(1+r)) et créditait 2110 malgré tout :
---          81 600 IDR de PB1 fantôme sur la V3 dev, soit 9,38 % du PB1 déclaré,
---          remontant jusqu'au Bapenda via calculate_pb1_payable_v1 (qui somme les
---          crédits de 2110). T4 est le test de non-retour de ce bug.
+--   T4-T6  Vente B2B — CHANGÉ deux fois, l'un renforçant l'autre :
 --
---          T6 couvre aussi une régression trouvée EN ÉCRIVANT ce test : avec
---          tax_amount = 0, la ligne PB1 devenait (debit=0, credit=0) et violait
---          `journal_entry_lines_check` — le trigger levait une exception et le
---          paiement B2B échouait. D'où la garde `IF v_vat > 0` dans le trigger.
+--          (1) 2026-07-17 — `create_b2b_order_v6` écrit tax_amount = 0 (vente
+--          en gros hors champ PBJT, ADR-005, décision propriétaire). AVANT ce
+--          correctif, le trigger recalculait round_idr(total * r/(1+r)) et
+--          créditait 2110 malgré tout : 81 600 IDR de PB1 fantôme sur la V3
+--          dev, soit 9,38 % du PB1 déclaré, remontant jusqu'au Bapenda via
+--          calculate_pb1_payable_v1 (qui somme les crédits de 2110). Une
+--          régression trouvée en écrivant CE correctif : avec tax_amount = 0,
+--          la ligne PB1 devenait (debit=0, credit=0) et violait
+--          `journal_entry_lines_check` — le trigger levait une exception et
+--          le paiement B2B échouait. D'où la garde `IF v_vat > 0` dans le
+--          trigger (toujours en vigueur, elle protège encore la vente POS
+--          normale à tax_amount = 0 le cas échéant).
+--
+--          (2) 2026-08-18 (migration 20260818000006) — le point (1) ne
+--          suffisait pas : les commandes B2B passées `paid` par
+--          `record_b2b_payment` (SANS aucune ligne `order_payments` — le
+--          règlement B2B vit dans `b2b_payments`, pas `order_payments`)
+--          retombaient dans le fallback cash du trigger et faisaient émettre
+--          une SECONDE JE de revenu (reference_type='sale', CR 4100 sur
+--          SALE_POS_REVENUE) en plus de la JE `b2b_order` déjà posée à la
+--          création (DR 1132 / CR 4131) — revenu doublé, confirmé sur 10
+--          commandes dev. Le correctif ajoute une garde en tête du trigger :
+--          `order_type = 'b2b'` (ou une JE `reference_type='b2b_order'`
+--          préexistante référençant la commande) court-circuite tout le
+--          trigger — AUCUNE JE 'sale' n'est plus émise pour une commande B2B,
+--          quel que soit son contenu. T4-T6 vérifient maintenant cette
+--          absence totale, pas seulement l'absence de la ligne PB1.
 --
 -- Les JE B2B antérieures au 2026-07-17 ne sont PAS corrigées (sujet fiscal
 -- séparé) — ce test ne porte que sur les écritures nouvelles.
@@ -96,12 +113,16 @@ SELECT is(
 );
 
 ---------------------------------------------------------------------------
--- T4-T6 : vente B2B — comportement CHANGÉ (correction du PB1 fantôme)
+-- T4-T6 : vente B2B — AUCUNE JE 'sale' n'est plus émise du tout (garde
+-- 20260818000006). Le revenu B2B vit exclusivement dans la JE
+-- reference_type='b2b_order' (DR 1132 AR-B2B / CR 4131 SALE_B2B_REVENUE)
+-- posée par create_b2b_order au moment de la création de la commande — ce
+-- fixture n'en insère pas ici, seul le comportement du trigger sur `orders`
+-- est sous test.
 ---------------------------------------------------------------------------
--- COALESCE : il n'y a désormais AUCUNE ligne 2110 pour une vente hors champ —
--- `journal_entry_lines_check` interdit une ligne nulle, donc pas de taxe ⇒ pas
--- de ligne. C'est aussi le test de non-retour : avant le correctif, 2110 était
--- crédité de round_idr(100000 * 0.1/1.1) = 9100 sur cette vente B2B.
+-- T4 : aucune ligne 2110 — reste vrai (COALESCE 0), mais pour une raison plus
+-- large qu'avant 2026-08-18 : il n'y a maintenant AUCUNE JE 'sale' du tout
+-- pour cette commande, PB1 fantôme y compris.
 SELECT is(
   (SELECT COALESCE(sum(l.credit), 0) FROM journal_entry_lines l
      JOIN journal_entries je ON je.id = l.journal_entry_id
@@ -109,26 +130,31 @@ SELECT is(
       AND je.reference_type = 'sale'
       AND l.account_id = resolve_mapping_account('SALE_PB1_TAX')),
   0::NUMERIC,
-  'B2B T4 : aucune ligne 2110 — la vente en gros ne génère PLUS de PB1 fantôme'
+  'B2B T4 : aucune ligne 2110 — plus de PB1 fantôme (renforcé : plus aucune JE ''sale'' du tout)'
 );
 
+-- T5 : CHANGÉ 2026-08-18 — avant la garde, la commande B2B se voyait créditer
+-- SALE_POS_REVENUE de 100000 (revenu doublé avec la JE b2b_order de création).
+-- Depuis la garde, il n'y a plus de ligne 4100 non plus : COALESCE(sum,0) = 0.
 SELECT is(
-  (SELECT sum(l.credit) FROM journal_entry_lines l
+  (SELECT COALESCE(sum(l.credit), 0) FROM journal_entry_lines l
      JOIN journal_entries je ON je.id = l.journal_entry_id
     WHERE je.reference_id = current_setting('breakery.je_b2b')::uuid
       AND je.reference_type = 'sale'
       AND l.account_id = resolve_mapping_account('SALE_POS_REVENUE')),
-  100000::NUMERIC,
-  'B2B T5 : revenue net == total — aucune taxe extraite du chiffre d''affaires'
+  0::NUMERIC,
+  'B2B T5 : aucune ligne 4100 SALE_POS_REVENUE — le trigger n''émet plus de JE ''sale'' pour une commande B2B (fix revenu doublé)'
 );
 
+-- T6 : CHANGÉ 2026-08-18 — avant la garde, une JE 'sale' équilibrée existait
+-- bel et bien pour cette commande (c'était le bug : équilibrée mais en trop).
+-- Le test de non-retour porte maintenant sur l'ABSENCE totale de cette JE.
 SELECT is(
-  (SELECT sum(l.debit) - sum(l.credit) FROM journal_entry_lines l
-     JOIN journal_entries je ON je.id = l.journal_entry_id
+  (SELECT count(*) FROM journal_entries je
     WHERE je.reference_id = current_setting('breakery.je_b2b')::uuid
       AND je.reference_type = 'sale'),
-  0::NUMERIC,
-  'B2B T6 : JE équilibrée malgré tax = 0 (revenue net == total)'
+  0::BIGINT,
+  'B2B T6 : zéro JE ''sale'' pour la commande B2B — le revenu ne vit que dans la JE ''b2b_order'''
 );
 
 SELECT * FROM finish();
