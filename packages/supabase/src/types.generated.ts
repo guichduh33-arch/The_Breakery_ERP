@@ -8276,7 +8276,7 @@ export type Database = {
         Args: { p_account_id: string; p_is_active: boolean }
         Returns: Json
       }
-      update_accounting_mapping_v1: {
+      update_accounting_mapping_v2: {
         Args: {
           p_account_code: string
           p_is_active: boolean
