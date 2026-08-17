@@ -66,6 +66,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
       { to: 'refunds-voids',     title: 'Refunds & Voids',   blurb: 'Money going back out — voids, partial refunds, reasons and double signature.', icon: Undo2 },
       { to: 'discounts-loyalty', title: 'Discounts & Loyalty', blurb: 'Money given away — four levers, PIN signatures, points issued vs burned.', icon: BadgePercent },
+      { to: 'sales-by-origin',   title: 'Sales by Origin',     blurb: 'Counter, floor tablets or back-office — read from the source-coded number.', icon: GitCommitHorizontal },
       { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
       { to: 'daily-sales',       title: 'Daily Sales',       blurb: 'Sales breakdown by day.',                       icon: Calendar },

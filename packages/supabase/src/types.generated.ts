@@ -7277,6 +7277,10 @@ export type Database = {
           total: number
         }[]
       }
+      get_sales_by_origin_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_sales_by_product_v1: {
         Args: {
           p_category_id?: string
