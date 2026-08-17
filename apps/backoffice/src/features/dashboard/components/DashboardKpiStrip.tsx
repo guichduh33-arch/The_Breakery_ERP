@@ -55,6 +55,7 @@ const NOTE_HERO = KPI_NOTE_HERO;
  *  encore en `KpiTarget | null` (cible filtrée par permission). */
 function Tile({
   label, value, children, testId, hero = false, valueTitle, tone = 'neutral', target = null,
+  unavailable = false, unavailableLabel,
 }: {
   label: string;
   value: string;
@@ -64,6 +65,13 @@ function Tile({
   valueTitle?: string;
   tone?: 'neutral' | 'danger';
   target?: KpiTarget | null;
+  /**
+   * La mesure est absente — le formatteur a rendu un tiret cadratin. L'état
+   * vient du KPI (`.value === null`), jamais de la chaîne affichée : le tiret
+   * est un caractère, pas un fait.
+   */
+  unavailable?: boolean;
+  unavailableLabel?: string;
 }): JSX.Element {
   return (
     <KpiTile
@@ -73,6 +81,8 @@ function Tile({
       hero={hero}
       tone={tone}
       {...(target !== null ? { to: target.href, srHint: target.hint } : {})}
+      unavailable={unavailable}
+      {...(unavailableLabel !== undefined ? { unavailableLabel } : {})}
       testId={testId}
     >
       {children}
@@ -192,6 +202,7 @@ export function DashboardKpiStrip({
         label="Net revenue"
         value={formatIdrShort(kpis.net_revenue.value)}
         valueTitle={formatIdr(kpis.net_revenue.value)}
+        unavailable={kpis.net_revenue.value === null}
         testId="kpi-net-revenue"
         target={target('net_revenue')}
         hero
@@ -207,6 +218,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Orders"
         value={formatCount(kpis.orders.value)}
+        unavailable={kpis.orders.value === null}
         testId="kpi-orders"
         target={target('orders')}
       >
@@ -226,6 +238,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Customers"
         value={formatCount(kpis.customers.value)}
+        unavailable={kpis.customers.value === null}
         testId="kpi-customers"
         target={target('customers')}
       >
@@ -240,6 +253,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Items sold"
         value={formatCount(kpis.items_sold.value)}
+        unavailable={kpis.items_sold.value === null}
         testId="kpi-items-sold"
         target={target('items_sold')}
       >
@@ -258,6 +272,7 @@ export function DashboardKpiStrip({
         label="Avg basket"
         value={formatIdrShort(kpis.avg_basket.value)}
         valueTitle={formatIdr(kpis.avg_basket.value)}
+        unavailable={kpis.avg_basket.value === null}
         testId="kpi-avg-basket"
         target={target('avg_basket')}
       >
@@ -272,6 +287,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Gross margin"
         value={formatPct(margin.value)}
+        unavailable={margin.value === null}
         testId="kpi-gross-margin"
         target={target('gross_margin')}
       >
@@ -290,6 +306,10 @@ export function DashboardKpiStrip({
         label="Cash on hand"
         value={cash.restricted === true ? '—' : formatIdrShort(cash.value)}
         {...(cash.restricted === true ? {} : { valueTitle: formatIdr(cash.value) })}
+        // Deux absences distinctes : la donnée n'existe pas, ou le rôle n'a pas
+        // le droit de la voir. Le tiret était le même pour les deux.
+        unavailable={cash.restricted === true || cash.value === null}
+        {...(cash.restricted === true ? { unavailableLabel: 'restricted' } : {})}
         // Une trésorerie NÉGATIVE est un solde à découvert — donc, dans un
         // commerce qui n'a pas de découvert, une erreur de saisie ou un coffre
         // non compté. Elle s'affichait comme une trésorerie saine. La tuile est

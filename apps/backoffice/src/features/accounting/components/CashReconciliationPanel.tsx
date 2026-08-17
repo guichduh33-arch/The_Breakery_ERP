@@ -36,9 +36,18 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
     <Card className="p-4 space-y-2">
       <h3 className="font-medium">Reconcile {wallet.account_name}</h3>
       <div className="text-sm text-text-muted">GL balance: {idr.format(wallet.balance)}</div>
+      {/* Le `placeholder` portait déjà le bon texte — mais il s'efface à la
+          première frappe, et ce champ décide d'un écart de caisse imputé au
+          grand livre. Promu en `<label>` persistant (WCAG 1.3.1 / 4.1.2). */}
+      <label
+        htmlFor={`cash-counted-${wallet.account_code}`}
+        className="block text-xs uppercase tracking-widest text-text-secondary"
+      >
+        Counted (physical)
+      </label>
       <input
+        id={`cash-counted-${wallet.account_code}`}
         type="number"
-        placeholder="Counted (physical)"
         value={counted}
         onChange={(e) => setCounted(e.target.value)}
         className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm"
@@ -49,7 +58,7 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
         </div>
       )}
       {mut.isError && (
-        <p className="text-sm text-danger">{(mut.error).message}</p>
+        <p className="text-sm text-danger" role="alert">{(mut.error).message}</p>
       )}
       {/* `secondary`, pas `ink` : ce panneau vit sur CashTreasuryPage, dont le
         * bandeau porte déjà « New movement » en encre. Le bouton était encre et

@@ -159,12 +159,14 @@ export default function ProductStockPage(): JSX.Element {
         <KpiTile
           label="Units sold"
           value={d ? formatQuantity(d.summary.units_sold, null) : '—'}
+          unavailable={!d}
         >
           <span className={KPI_NOTE}>{days}-day window</span>
         </KpiTile>
         <KpiTile
           label="Avg per day"
           value={d ? formatQuantity(d.summary.avg_daily_units, null) : '—'}
+          unavailable={!d}
         />
       </section>
 

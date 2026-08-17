@@ -55,8 +55,11 @@ export default function ChartOfAccountsPage(): JSX.Element {
     <div className="space-y-6">
       <PageHeader
         title="Chart of Accounts"
+        // Le compteur se recalcule à chaque frappe du filtre, sans que le focus
+        // bouge : hors région live, le changement de résultat n'était annoncé
+        // nulle part (WCAG 4.1.3, AA).
         subtitle={
-          <span className="italic">
+          <span className="italic" role="status">
             {filtered.length} of {accounts.data?.length ?? 0} accounts
             {canWrite ? ' — toggle active inline' : ' — read-only (no write permission)'}
           </span>
@@ -67,6 +70,7 @@ export default function ChartOfAccountsPage(): JSX.Element {
         <Input
           type="search"
           placeholder="Search code or name…"
+          aria-label="Search accounts by code or name"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -77,6 +81,7 @@ export default function ChartOfAccountsPage(): JSX.Element {
           onChange={(e) =>
             setClassFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
           }
+          aria-label="Account class"
           className="rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm"
           data-testid="coa-class-filter"
         >

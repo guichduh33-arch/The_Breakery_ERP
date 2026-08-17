@@ -88,9 +88,13 @@ export function ConvertToParentDialog({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            {/* `<label>` orphelin : il ne désignait AUCUN contrôle (le groupe
+                d'axes est un jeu de boutons, déjà nommé par son
+                `role="group" aria-label`). Un `<label>` sans `for` ni contrôle
+                imbriqué est du HTML invalide — c'est un titre, pas un libellé. */}
+            <span className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Axis
-            </label>
+            </span>
             <div role="group" aria-label="Variant axis" className="inline-flex gap-1 rounded-sm border border-border-subtle bg-bg-elevated p-1">
               {AXES.map((a) => (
                 <button
@@ -136,15 +140,27 @@ export function ConvertToParentDialog({
               />
               <span>Override the first variant&apos;s name (default: keep "{productName}")</span>
             </label>
+            {/* Le champ n'était nommé que par son `placeholder`, qui s'efface à
+                la première frappe (WCAG 1.3.1 / 4.1.2) — et le `<label>` juste
+                au-dessus nomme la CASE À COCHER, pas ce champ. */}
             {overrideName && (
-              <input
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                placeholder={`${productName} ${label.length > 0 ? label : '<label>'}`}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
-                maxLength={120}
-                data-testid="convert-custom-name"
-              />
+              <>
+                <label
+                  htmlFor="convert-custom-name"
+                  className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+                >
+                  Variant name
+                </label>
+                <input
+                  id="convert-custom-name"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder={`${productName} ${label.length > 0 ? label : '<label>'}`}
+                  className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+                  maxLength={120}
+                  data-testid="convert-custom-name"
+                />
+              </>
             )}
           </div>
 

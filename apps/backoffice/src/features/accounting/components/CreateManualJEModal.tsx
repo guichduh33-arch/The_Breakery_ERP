@@ -174,12 +174,19 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                   </tr>
                 </thead>
                 <tbody>
-                  {lines.map((line) => (
+                  {/* Les en-têtes de colonne d'un tableau ne nomment PAS les
+                      contrôles qu'il contient : chaque champ porte donc son
+                      propre nom accessible, indexé par la ligne (WCAG 1.3.1 /
+                      4.1.2). Un libellé visible se dupliquerait à chaque
+                      ligne — c'est le patron aria-label indexé du dépôt
+                      (cf. POFormDraft, « Unit for line N »). */}
+                  {lines.map((line, idx) => (
                     <tr key={line.key} className="border-t border-border-subtle">
                       <td className="px-2 py-2">
                         <select
                           value={line.account_id}
                           onChange={(e) => updateLine(line.key, { account_id: e.target.value })}
+                          aria-label={`Account for line ${idx + 1}`}
                           className="w-full rounded border border-border-subtle bg-bg-elevated px-2 py-1 text-sm"
                           data-testid={`je-modal-line-account-${line.key}`}
                         >
@@ -198,6 +205,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                           step="0.01"
                           value={line.debit}
                           onChange={(e) => updateLine(line.key, { debit: e.target.value })}
+                          aria-label={`Debit for line ${idx + 1}`}
                           className="w-28 text-right font-mono"
                         />
                       </td>
@@ -208,6 +216,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                           step="0.01"
                           value={line.credit}
                           onChange={(e) => updateLine(line.key, { credit: e.target.value })}
+                          aria-label={`Credit for line ${idx + 1}`}
                           className="w-28 text-right font-mono"
                         />
                       </td>
@@ -216,6 +225,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                           value={line.description}
                           onChange={(e) => updateLine(line.key, { description: e.target.value })}
                           placeholder="(optional)"
+                          aria-label={`Description for line ${idx + 1}`}
                         />
                       </td>
                       <td className="px-2 py-2 text-right">
@@ -224,7 +234,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                           size="sm"
                           onClick={() => removeLine(line.key)}
                           disabled={lines.length <= 2}
-                          aria-label="Remove line"
+                          aria-label={`Remove line ${idx + 1}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

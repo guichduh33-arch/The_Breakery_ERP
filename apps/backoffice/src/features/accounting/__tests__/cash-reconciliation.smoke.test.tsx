@@ -1,13 +1,26 @@
+// Le champ « Counted (physical) » n'était nommé que par son `placeholder` —
+// effacé à la première frappe. Il porte désormais un vrai `<label>` : les
+// requêtes passent de `getByPlaceholderText` à `getByLabelText`, qui est aussi
+// ce que ferait un lecteur d'écran.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-const mockRpc = vi.fn().mockResolvedValue({ data: 'je-1', error: null });
+// Les deux doublures étaient typées `any` : toucher ce fichier fait entrer ses
+// erreurs préexistantes dans le lint-ratchet, on les solde ici. Le typage ne
+// change RIEN au comportement des mocks.
+interface RpcResult { data: string | null; error: { message: string } | null }
+const mockRpc = vi.fn<(...args: unknown[]) => Promise<RpcResult>>()
+  .mockResolvedValue({ data: 'je-1', error: null });
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: (...a: unknown[]) => mockRpc(...a) } }));
 
 let mockCanAdjust = true;
-vi.mock('@/stores/authStore.js', () => ({ useAuthStore: (sel: any) => sel({ hasPermission: () => mockCanAdjust }) }));
+interface AuthSlice { hasPermission: () => boolean }
+vi.mock('@/stores/authStore.js', () => ({
+  useAuthStore: <T,>(sel: (s: AuthSlice) => T): T => sel({ hasPermission: () => mockCanAdjust }),
+}));
 
 import { CashReconciliationPanel } from '../components/CashReconciliationPanel.js';
 
@@ -29,7 +42,7 @@ describe('CashReconciliationPanel', () => {
       />,
       { wrapper },
     );
-    fireEvent.change(screen.getByPlaceholderText(/Counted/i), { target: { value: '50000' } });
+    fireEvent.change(screen.getByLabelText(/Counted/i), { target: { value: '50000' } });
     expect(screen.getByText(/Difference/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Book overage/i })).toBeEnabled();
   });
@@ -41,7 +54,7 @@ describe('CashReconciliationPanel', () => {
       />,
       { wrapper },
     );
-    fireEvent.change(screen.getByPlaceholderText(/Counted/i), { target: { value: '47200' } });
+    fireEvent.change(screen.getByLabelText(/Counted/i), { target: { value: '47200' } });
     expect(screen.getByRole('button', { name: /Balanced/i })).toBeDisabled();
   });
 
@@ -52,7 +65,7 @@ describe('CashReconciliationPanel', () => {
       />,
       { wrapper },
     );
-    fireEvent.change(screen.getByPlaceholderText(/Counted/i), { target: { value: '90000' } });
+    fireEvent.change(screen.getByLabelText(/Counted/i), { target: { value: '90000' } });
     expect(screen.getByRole('button', { name: /Book shortage/i })).toBeEnabled();
   });
 
@@ -64,7 +77,7 @@ describe('CashReconciliationPanel', () => {
       />,
       { wrapper },
     );
-    fireEvent.change(screen.getByPlaceholderText(/Counted/i), { target: { value: '50000' } });
+    fireEvent.change(screen.getByLabelText(/Counted/i), { target: { value: '50000' } });
     expect(screen.getByRole('button', { name: /Book overage/i })).toBeDisabled();
     expect(screen.getByText(/Requires cash-adjust permission/i)).toBeInTheDocument();
   });

@@ -92,8 +92,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           Grants store credit to this customer, authorized by a manager PIN. Creates an accounting entry.
         </DialogDescription>
         <div>
-          <label className="block text-sm font-medium">Amount (Rp)</label>
+          <label htmlFor="grant-credit-amount" className="block text-sm font-medium">Amount (Rp)</label>
           <input
+            id="grant-credit-amount"
             type="number"
             min={1}
             step="any"
@@ -108,8 +109,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium">Reason</label>
+          <label htmlFor="grant-credit-reason" className="block text-sm font-medium">Reason</label>
           <textarea
+            id="grant-credit-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
@@ -123,8 +125,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium">Manager PIN</label>
+          <label htmlFor="grant-credit-pin" className="block text-sm font-medium">Manager PIN</label>
           <input
+            id="grant-credit-pin"
             type="password"
             inputMode="numeric"
             maxLength={6}
@@ -135,7 +138,7 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           />
         </div>
         {formError !== null && (
-          <p className="text-sm text-danger" data-testid="grant-error">{formError}</p>
+          <p className="text-sm text-danger" role="alert" data-testid="grant-error">{formError}</p>
         )}
         <div className="flex justify-end gap-2">
           {/* L'action terminale de la modale est ENCRE, pas or : l'or ne

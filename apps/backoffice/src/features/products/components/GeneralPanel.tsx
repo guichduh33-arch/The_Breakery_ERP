@@ -83,9 +83,23 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Product Identity</h2>
 
           <div className="space-y-4">
+            {/* Les libellés de ce panneau sont rendus par `SectionLabel`, dont
+                `SectionLabelTag` n'admet pas `'label'` : posés en `as="div"`,
+                ils ne pouvaient être associés à AUCUN contrôle (WCAG 1.3.1 /
+                4.1.2, niveau A). `SectionLabel` vit dans `packages/ui`, partagé
+                avec la caisse — hors périmètre. Le `<label htmlFor>` ENVELOPPE
+                donc le primitif passé en `as="span"` : la signature
+                typographique (font-bold, text-text-muted, 11 px) est conservée
+                telle quelle, sans recopier ses tokens au call-site et sans
+                toucher le rythme `mt-1.5` du panneau — ce que `FormField`, avec
+                son propre `labelClassName` (text-text-secondary, non gras) et
+                son `space-y-1`, aurait déplacé sur sept champs. */}
             <div>
-              <SectionLabel as="div" size="xs">Product name</SectionLabel>
+              <label htmlFor="product-name" className="block">
+                <SectionLabel as="span" size="xs">Product name</SectionLabel>
+              </label>
               <Input
+                id="product-name"
                 value={draft.name}
                 disabled={readOnly}
                 onChange={(e) => update('name', e.target.value)}
@@ -95,8 +109,11 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <SectionLabel as="div" size="xs">SKU code</SectionLabel>
+                <label htmlFor="product-sku" className="block">
+                  <SectionLabel as="span" size="xs">SKU code</SectionLabel>
+                </label>
                 <Input
+                  id="product-sku"
                   value={draft.sku}
                   disabled={readOnly}
                   onChange={(e) => update('sku', e.target.value)}
@@ -104,8 +121,11 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                 />
               </div>
               <div>
-                <SectionLabel as="div" size="xs">Category</SectionLabel>
+                <label htmlFor="product-category" className="block">
+                  <SectionLabel as="span" size="xs">Category</SectionLabel>
+                </label>
                 <Select
+                  id="product-category"
                   value={draft.category_id}
                   disabled={readOnly}
                   onChange={(e) => update('category_id', e.target.value)}
@@ -119,8 +139,11 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             </div>
 
             <div>
-              <SectionLabel as="div" size="xs">Product description</SectionLabel>
+              <label htmlFor="product-description" className="block">
+                <SectionLabel as="span" size="xs">Product description</SectionLabel>
+              </label>
               <textarea
+                id="product-description"
                 rows={4}
                 value={draft.description ?? ''}
                 disabled={readOnly}
@@ -169,10 +192,13 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
           <div className="space-y-4">
             <div>
-              <SectionLabel as="div" size="xs">Retail price (IDR)</SectionLabel>
+              <label htmlFor="product-retail-price" className="block">
+                <SectionLabel as="span" size="xs">Retail price (IDR)</SectionLabel>
+              </label>
               <div className={`mt-1.5 flex items-center gap-2 rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm ${FOCUS_WITHIN_RING}`}>
                 <span className="text-gold">Rp</span>
                 <input
+                  id="product-retail-price"
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -297,16 +323,18 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <SectionLabel as="h3" size="xs">Inventory levels</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">Current stock</div>
+              <label htmlFor="product-current-stock" className="block text-xs uppercase tracking-widest text-text-secondary">Current stock</label>
               <Input
+                id="product-current-stock"
                 value={draft.current_stock}
                 disabled
                 className="mt-1.5 font-mono"
               />
             </div>
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">Alert threshold</div>
+              <label htmlFor="product-min-stock-threshold" className="block text-xs uppercase tracking-widest text-text-secondary">Alert threshold</label>
               <Input
+                id="product-min-stock-threshold"
                 type="number"
                 inputMode="numeric"
                 min={0}

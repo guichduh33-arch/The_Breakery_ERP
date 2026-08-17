@@ -163,6 +163,7 @@ export default function B2BPaymentsPage(): JSX.Element {
           label="Total received"
           value={payments.data === undefined ? '—' : formatIdrShort(totalReceived)}
           {...(payments.data !== undefined ? { valueTitle: formatIdr(totalReceived) } : {})}
+          unavailable={payments.data === undefined}
           testId="kpi-b2b-total-received"
         >
           <span className={KPI_NOTE}>{PERIOD_LABEL[period]}</span>
@@ -171,16 +172,19 @@ export default function B2BPaymentsPage(): JSX.Element {
           label="Outstanding"
           value={dash.data === undefined ? '—' : formatIdrShort(totalOutstanding)}
           {...(dash.data !== undefined ? { valueTitle: formatIdr(totalOutstanding) } : {})}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-outstanding"
         />
         <KpiTile
           label="Payments received"
           value={payments.data === undefined ? '—' : formatCount(filteredPayments.length)}
+          unavailable={payments.data === undefined}
           testId="kpi-b2b-payments-count"
         />
         <KpiTile
           label="Overdue"
           value={dash.data === undefined ? '—' : formatCount(overdueCount)}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-overdue"
         />
       </div>

@@ -92,8 +92,9 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
         <div className="space-y-4">
           {/* Category selector */}
           <div>
-            <label className={LABEL_CLS}>Category</label>
+            <label htmlFor="threshold-category" className={LABEL_CLS}>Category</label>
             <select
+              id="threshold-category"
               className={SELECT_CLS}
               value={categoryId ?? '__all__'}
               onChange={(e) => setCategoryId(e.target.value === '__all__' ? null : e.target.value)}
@@ -108,8 +109,9 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
           {/* Amount range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={LABEL_CLS}>Amount min (IDR)</label>
+              <label htmlFor="threshold-amount-min" className={LABEL_CLS}>Amount min (IDR)</label>
               <input
+                id="threshold-amount-min"
                 type="number"
                 className={INPUT_CLS}
                 value={amountMin}
@@ -118,8 +120,9 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
               />
             </div>
             <div>
-              <label className={LABEL_CLS}>Amount max (IDR, exclusive)</label>
+              <label htmlFor="threshold-amount-max" className={LABEL_CLS}>Amount max (IDR, exclusive)</label>
               <input
+                id="threshold-amount-max"
                 type="number"
                 className={INPUT_CLS}
                 value={amountMax}
@@ -132,7 +135,10 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
           {/* Approval steps builder */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className={LABEL_CLS}>Approval steps</label>
+              {/* `<label>` orphelin : il ne désigne aucun contrôle, c'est le
+                  titre du constructeur d'étapes. Un `<label>` sans `for` ni
+                  contrôle imbriqué est du HTML invalide. */}
+              <span className={LABEL_CLS}>Approval steps</span>
               <Button variant="secondary" size="sm" onClick={addStep} data-testid="add-step-btn">
                 <Plus className="w-4 h-4 mr-1" />
                 Add step
@@ -153,6 +159,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                     value={step.label}
                     onChange={(e) => updateStepLabel(idx, e.target.value)}
                     placeholder="Step label"
+                    aria-label={`Label for step ${idx + 1}`}
                   />
                   <button
                     type="button"

@@ -141,6 +141,7 @@ export default function B2BDashboardPage(): JSX.Element {
         <KpiTile
           label="Active clients"
           value={formatCount(dash.data?.activeClients)}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-active-clients"
         >
           <span className={KPI_NOTE}>With at least one order</span>
@@ -149,6 +150,7 @@ export default function B2BDashboardPage(): JSX.Element {
           label="Monthly B2B revenue"
           value={formatIdrShort(dash.data?.monthlyRevenue)}
           {...(dash.data !== undefined ? { valueTitle: formatIdr(dash.data.monthlyRevenue) } : {})}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-monthly-revenue"
         >
           {dash.data !== undefined && (
@@ -159,6 +161,7 @@ export default function B2BDashboardPage(): JSX.Element {
           label="Outstanding AR"
           value={formatIdrShort(dash.data?.outstandingAr)}
           {...(dash.data !== undefined ? { valueTitle: formatIdr(dash.data.outstandingAr) } : {})}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-outstanding-ar"
         >
           <span className={KPI_NOTE}>Across all wholesale clients</span>
@@ -166,6 +169,7 @@ export default function B2BDashboardPage(): JSX.Element {
         <KpiTile
           label="Pending orders"
           value={formatCount(dash.data?.pendingOrders)}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-pending-orders"
         >
           <span className={KPI_NOTE}>Processing</span>
@@ -173,6 +177,7 @@ export default function B2BDashboardPage(): JSX.Element {
         <KpiTile
           label="Total orders"
           value={formatCount(dash.data?.totalOrders)}
+          unavailable={dash.data === undefined}
           testId="kpi-b2b-total-orders"
         >
           <span className={KPI_NOTE}>All time</span>

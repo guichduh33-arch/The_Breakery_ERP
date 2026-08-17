@@ -19,6 +19,7 @@ import {
   ListPagination,
   pageSlice,
 } from '@/components/ListPagination.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { classifyProduct, type ProductRow } from '../types.js';
 import { formatCurrency } from '@breakery/utils';
 
@@ -48,7 +49,10 @@ export function ProductsGrid({
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-border-subtle bg-bg-elevated py-16 text-center">
-        <h3 className="text-xl font-semibold text-text-primary">No products to show</h3>
+        {/* `<h3>` sous le `<h1>` de PageHeader, sans aucun `<h2>` sur la page :
+            le niveau sautait de 1 à 3 (WCAG 1.3.1). Même défaut que l'état vide
+            des dépenses. */}
+        <h2 className="text-xl font-semibold text-text-primary">No products to show</h2>
         <p className="mt-1 text-sm text-text-secondary">Try adjusting your filters.</p>
       </div>
     );
@@ -63,8 +67,21 @@ export function ProductsGrid({
           // Polish — Border-Before-Shadow : une carte de grille ne quitte pas le
           // plan de la page, elle n'a donc pas à dépenser une ombre pour se
           // distinguer. Le survol se dit par la bordure, comme partout ailleurs.
-          className="group cursor-pointer overflow-hidden border-border-subtle transition-colors duration-base hover:border-border-strong"
+          // La carte n'ouvrait la fiche que par un `onClick` de `<div>` : la vue
+          // grille du catalogue était STRICTEMENT souris, et elle ne contient
+          // aucun autre contrôle (WCAG 2.1.1, niveau A). Patron recopié de
+          // SupplierCard, la même carte-lien ailleurs dans le dépôt.
+          className={`group cursor-pointer overflow-hidden border-border-subtle transition-colors duration-base hover:border-border-strong ${FOCUS_RING}`}
           onClick={() => onCardClick?.(r)}
+          role="button"
+          tabIndex={0}
+          aria-label={`Open ${r.name}`}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onCardClick?.(r);
+            }
+          }}
         >
           <div className="relative aspect-[4/3] w-full overflow-hidden bg-bg-overlay">
             {r.image_url === null ? (

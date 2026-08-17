@@ -72,6 +72,23 @@ export interface KpiTileProps {
   to?: string;
   /** Complément `sr-only` annonçant la destination quand `to` est posé. */
   srHint?: string;
+  /**
+   * La mesure est ABSENTE. Les formatteurs du dashboard rendent alors un tiret
+   * cadratin, que la tuile posait sans aucune sémantique : le nom accessible se
+   * réduisait à « Gross margin — », c'est-à-dire à rien.
+   *
+   * La prop est pilotée par l'APPELANT — jamais par un reniflage de la chaîne
+   * `'—'` : le tiret est un caractère d'affichage, pas un état, et un libellé
+   * légitime qui en contiendrait un basculerait à tort.
+   *
+   * Forme imposée : la valeur passe `aria-hidden` et un `<span class="sr-only">`
+   * porte le texte. PAS un `aria-label` — un `<span>` sans rôle est exposé en
+   * `role="generic"`, sur lequel ARIA 1.2 INTERDIT `aria-label` ; et un
+   * `aria-label` écraserait le chiffre les jours où il existe.
+   */
+  unavailable?: boolean;
+  /** Texte lu à la place de la valeur absente. Défaut : `no data`. */
+  unavailableLabel?: string;
   testId?: string;
   /** Ligne(s) sous la valeur : `<Delta>` ×2, ou une note neutre. */
   children?: ReactNode;
@@ -79,6 +96,7 @@ export interface KpiTileProps {
 
 export function KpiTile({
   label, value, valueTitle, hero = false, tone = 'neutral', to, srHint, testId, children,
+  unavailable = false, unavailableLabel = 'no data',
 }: KpiTileProps): JSX.Element {
   // `neutral` laisse la couleur de la constante de valeur (text-text-primary /
   // text-ink-fg) : le barème n'écrase la teinte que lorsqu'il a quelque chose
@@ -92,7 +110,14 @@ export function KpiTile({
   const body = (
     <>
       <SectionLabel as="h3" className={hero ? KPI_LABEL_HERO : KPI_LABEL}>{label}</SectionLabel>
-      <span className={cn(hero ? KPI_VALUE_HERO : KPI_VALUE, toneClass)} title={valueTitle}>{value}</span>
+      <span
+        className={cn(hero ? KPI_VALUE_HERO : KPI_VALUE, toneClass)}
+        title={valueTitle}
+        {...(unavailable ? { 'aria-hidden': true } : {})}
+      >
+        {value}
+      </span>
+      {unavailable && <span className="sr-only">{unavailableLabel}</span>}
       <div className="flex min-h-[16px] flex-wrap items-baseline gap-x-3 gap-y-0.5">
         {children}
       </div>

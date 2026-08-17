@@ -349,7 +349,9 @@ export function ProductsTable({
     emptyState: (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
         <Package className="h-10 w-10 text-text-subtle" aria-hidden />
-        <h3 className="text-base font-semibold text-text-primary">No products match these filters</h3>
+        {/* `<h3>` sous le `<h1>` de PageHeader, sans `<h2>` sur la page : saut
+            de niveau (WCAG 1.3.1). */}
+        <h2 className="text-base font-semibold text-text-primary">No products match these filters</h2>
         <p className="max-w-prose text-sm text-text-secondary">
           Clear a counter or widen the search to see the catalogue again.
         </p>

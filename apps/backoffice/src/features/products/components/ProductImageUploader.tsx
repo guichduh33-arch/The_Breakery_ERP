@@ -100,6 +100,12 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
         className="sr-only"
         disabled={readOnly || busy}
         onChange={onInputChange}
+        // Le vrai contrôle est le `div role="button"` ci-dessous, qui porte le
+        // nom et le clavier. Ce champ n'est qu'un déclencheur mécanique : laissé
+        // exposé, il doublait la commande d'un second arrêt de tabulation ANONYME
+        // (WCAG 1.3.1 / 4.1.2). Même patron que ImportDropzone.
+        tabIndex={-1}
+        aria-hidden
       />
 
       <div

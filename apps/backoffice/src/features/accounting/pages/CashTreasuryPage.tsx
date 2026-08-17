@@ -78,14 +78,27 @@ export default function CashTreasuryPage() {
 
       <Card className="p-4">
         <div className="flex items-center gap-3 mb-3 text-sm flex-wrap">
+          {/* Deux dates nues séparées d'une flèche : rien ne disait laquelle
+              borne le début. La flèche est décorative — elle ne porte le sens
+              que pour l'œil, et disparaît de la lecture vocale. Les libellés
+              sont donc VISIBLES (WCAG 1.3.1 / 4.1.2, niveau A) : ils servent
+              aussi le lecteur voyant qui revient sur l'écran. */}
+          <label htmlFor="treasury-range-from" className="text-xs uppercase tracking-widest text-text-secondary">
+            From
+          </label>
           <input
+            id="treasury-range-from"
             type="date" lang="id-ID"
             value={start}
             onChange={(e) => setStart(e.target.value)}
             className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
           />
-          <span>→</span>
+          <span aria-hidden="true">→</span>
+          <label htmlFor="treasury-range-to" className="text-xs uppercase tracking-widest text-text-secondary">
+            To
+          </label>
           <input
+            id="treasury-range-to"
             type="date" lang="id-ID"
             value={end}
             onChange={(e) => setEnd(e.target.value)}

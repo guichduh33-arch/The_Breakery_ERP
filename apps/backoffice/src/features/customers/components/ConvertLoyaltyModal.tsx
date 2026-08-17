@@ -81,8 +81,9 @@ export function ConvertLoyaltyModal({
           Available: <span className="font-medium tabular-nums">{loyaltyPoints.toLocaleString('id-ID')}</span> points
         </p>
         <div>
-          <label className="block text-sm font-medium">Points to convert</label>
+          <label htmlFor="convert-points" className="block text-sm font-medium">Points to convert</label>
           <input
+            id="convert-points"
             type="number"
             min={100}
             step={100}
@@ -104,7 +105,7 @@ export function ConvertLoyaltyModal({
           )}
         </div>
         {formError !== null && (
-          <p className="text-sm text-danger" data-testid="convert-error">{formError}</p>
+          <p className="text-sm text-danger" role="alert" data-testid="convert-error">{formError}</p>
         )}
         <div className="flex justify-end gap-2">
           {/* L'action terminale de la modale est ENCRE, pas or : l'or ne

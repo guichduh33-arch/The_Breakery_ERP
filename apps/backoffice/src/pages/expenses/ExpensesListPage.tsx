@@ -327,7 +327,9 @@ export default function ExpensesListPage(): JSX.Element {
               emptyState={
                 <div className="px-6 py-12 text-center">
                   <Receipt className="mx-auto h-10 w-10 text-text-muted" aria-hidden />
-                  <h3 className="mt-3 font-display italic text-xl text-text-primary">No expenses found</h3>
+                  {/* `<h3>` sous le `<h1>` de PageHeader : la page n'a pas de
+                      `<h2>`, le niveau sautait de 1 à 3 (WCAG 1.3.1). */}
+                  <h2 className="mt-3 font-display italic text-xl text-text-primary">No expenses found</h2>
                   <p className="mx-auto mt-1 max-w-prose text-sm text-text-secondary">
                     {canCreate
                       ? 'Capture your first operational expense to start tracking spend.'

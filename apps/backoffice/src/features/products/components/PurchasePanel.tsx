@@ -92,6 +92,7 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
           label="Last Unit Price"
           value={summary.lastPrice !== null ? formatIdrShort(summary.lastPrice) : '—'}
           {...(summary.lastPrice !== null ? { valueTitle: formatIdr(summary.lastPrice) } : {})}
+          unavailable={summary.lastPrice === null}
           testId="kpi-last-unit-price"
         >
           {summary.lastDate !== null && <span className={KPI_NOTE}>{fmtDate(summary.lastDate)}</span>}

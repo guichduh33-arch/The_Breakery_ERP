@@ -4,7 +4,9 @@
 //
 // Couvre ce qui remplace l'ancien Sidebar.test.tsx : présence des 7 onglets,
 // ouverture/fermeture des drop-panels, marqueur de section active, filtrage par
-// permission en cascade, et la navigation clavier de menubar (← → ↓ Échap).
+// permission en cascade, et la navigation clavier du disclosure (← → ↓ Échap).
+// « Menubar » était un abus de langage : le panneau est une grille de LIENS,
+// pas un `role="menu"` — cf. l'en-tête de TopBar.tsx.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';

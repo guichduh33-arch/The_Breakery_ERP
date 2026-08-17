@@ -88,11 +88,24 @@ export function ListPagination({
             ))}
           </Select>
         </label>
+        {/* Le compteur change à chaque filtre et à chaque page SANS que le focus
+            bouge : hors région live, celui qui n'y voit pas n'apprenait jamais
+            que le résultat avait changé (WCAG 4.1.3, AA). `role="status"`
+            implique `aria-live="polite"` — l'annonce attend une pause, elle ne
+            coupe pas la frappe.
+
+            Le texte s'étoffe pour se suffire hors contexte : lu seul, « 1–15 of
+            373 » ne dit ni de quoi ni de quelle liste. Les deux mots ajoutés
+            partent en `sr-only` — l'œil lit déjà le tableau juste au-dessus, et
+            les poser à l'écran alourdirait un pied volontairement discret. */}
         <span
           className="font-data text-xs tabular-nums text-text-muted"
+          role="status"
           data-testid="list-page-range"
         >
+          <span className="sr-only">Showing </span>
           {from}–{to} of {total.toLocaleString('id-ID')}
+          <span className="sr-only"> rows</span>
         </span>
         <div className="flex items-center gap-1">
           <PageButton label="Previous page" disabled={current <= 1} onClick={() => { onPage?.(current - 1); }}>

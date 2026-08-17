@@ -200,6 +200,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     onChange={(e) =>
                       handleUpdateQty(l, Math.max(1, Number(e.target.value) || 1))
                     }
+                    aria-label={`Quantity for ${l.name_snapshot}`}
                     className="w-16 border rounded px-1 py-0.5 text-sm"
                     data-testid={`qty-${l.id}`}
                   />
@@ -247,25 +248,43 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             <p className="text-sm font-medium">
               🔒 Locked line decrease — manager authorization &amp; mandatory waste (ADR-010)
             </p>
+            {/* Les deux champs n'étaient nommés que par leur `placeholder` —
+                un nom de dernier recours qui S'EFFACE à la première frappe.
+                Sur une autorisation manager doublée d'une déclaration de
+                perte, celui qui revient sur le champ n'avait plus rien
+                (WCAG 1.3.1 / 4.1.2, niveau A). Le libellé passe en `<label>`
+                persistant, le `placeholder` ne garde que l'exemple. */}
             <div className="flex gap-2">
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Manager PIN (6 digits)"
-                value={managerPin}
-                onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
-                className="border rounded px-2 py-1 text-sm w-44"
-                data-testid="locked-manager-pin"
-              />
-              <input
-                type="text"
-                placeholder="Waste reason (e.g. burnt dish, customer left…)"
-                value={wasteReason}
-                onChange={(e) => setWasteReason(e.target.value)}
-                className="border rounded px-2 py-1 text-sm flex-1"
-                data-testid="locked-waste-reason"
-              />
+              <div className="space-y-1">
+                <label htmlFor="locked-manager-pin" className="block text-xs uppercase tracking-widest text-text-secondary">
+                  Manager PIN
+                </label>
+                <input
+                  id="locked-manager-pin"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="6 digits"
+                  value={managerPin}
+                  onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
+                  className="border rounded px-2 py-1 text-sm w-44"
+                  data-testid="locked-manager-pin"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <label htmlFor="locked-waste-reason" className="block text-xs uppercase tracking-widest text-text-secondary">
+                  Waste reason
+                </label>
+                <input
+                  id="locked-waste-reason"
+                  type="text"
+                  placeholder="e.g. burnt dish, customer left…"
+                  value={wasteReason}
+                  onChange={(e) => setWasteReason(e.target.value)}
+                  className="border rounded px-2 py-1 text-sm w-full"
+                  data-testid="locked-waste-reason"
+                />
+              </div>
             </div>
             <p className="text-xs text-text-muted">
               The removed delta is declared as waste and deducted through the recipe-aware waste circuit.
