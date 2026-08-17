@@ -1,16 +1,22 @@
 ---
 name: accounting
 description: >-
-  Accounting cockpit expert — COA, journal entries, PB1/PBJT (NON-PKP, ADR-005), fiscal periods
-  & year close, general ledger, trial balance, P&L, balance sheet, cash flow, cash wallets,
-  mapping accounts. Audits JE balance/mapping/fiscal-guard AND guides accounting changes.
-  Use this skill whenever the task mentions journal entry / écriture comptable / JE, COA /
-  plan comptable, PB1, PPN, TVA, NON-PKP, fiscal period / période fiscale, clôture annuelle /
-  year close, general ledger / grand livre, trial balance / balance, cash flow / flux de
-  trésorerie, cash wallet / coffre / petty cash, COGS, retained earnings, mapping account,
-  compta / comptabilité — or touches apps/backoffice accounting features/pages, or supabase
-  migrations/tests around journal/fiscal/ledger/pb1/cash_flow.
-  Invoke it BEFORE editing any JE-emitting RPC or accounting report, even for a one-line fix.
+  Senior master accountant — mécanique ET conseil du module accounting. Côté mécanique :
+  COA, journal entries, PB1/PBJT (NON-PKP, ADR-005), périodes fiscales & clôture annuelle,
+  grand livre, balance, P&L, bilan, cash flow, coffres. Côté conseil : concevoir/faire
+  évoluer le plan comptable (benchmark F&B même taille), auditer la couverture des
+  automatisations POS/BO→JE (zéro double saisie), revoir la qualité/lisibilité des pages,
+  générer et vérifier les rapports comptables, optimisation fiscale LÉGALE (cadre
+  NON-PKP/PBJT). Use this skill whenever the task mentions journal entry / écriture
+  comptable / JE, COA / plan comptable / chart of accounts, PB1, PPN, TVA, NON-PKP, PBJT,
+  fiscal period / période fiscale, clôture annuelle / year close, general ledger / grand
+  livre, trial balance / balance, bilan / balance sheet, P&L / compte de résultat,
+  cash flow / flux de trésorerie, cash wallet / coffre / petty cash, COGS, retained
+  earnings, mapping account, double saisie / double input, optimisation fiscale / impôts /
+  PPh / UMKM, rapport comptable, audit comptable, compta / comptabilité — or touches
+  apps/backoffice accounting features/pages, or supabase migrations/tests around
+  journal/fiscal/ledger/pb1/cash_flow. Invoke it BEFORE editing any JE-emitting RPC or
+  accounting report, even for a one-line fix.
 pathPatterns:
   - 'apps/backoffice/src/features/accounting/**'
   - 'apps/backoffice/src/pages/accounting/**'
@@ -20,16 +26,17 @@ pathPatterns:
   - 'supabase/migrations/*pb1*.sql'
   - 'supabase/migrations/*cash_flow*.sql'
   - 'supabase/migrations/*cash_wallet*.sql'
+  - 'supabase/migrations/*account*.sql'
   - 'supabase/tests/*accounting*.test.sql'
   - 'supabase/tests/*fiscal*.test.sql'
   - 'supabase/tests/*pb1*.test.sql'
   - 'supabase/tests/*cash*.test.sql'
-  - 'supabase/tests/*s26*.test.sql'
 promptSignals:
   phrases:
     - 'journal entry'
     - 'COA'
     - 'chart of accounts'
+    - 'plan comptable'
     - 'PB1'
     - 'PPN'
     - 'NON-PKP'
@@ -42,83 +49,147 @@ promptSignals:
     - 'COGS'
     - 'retained earnings'
     - 'mapping account'
+    - 'double saisie'
+    - 'optimisation fiscale'
+    - 'rapport comptable'
 ---
 
-# Accounting — The Breakery ERP
+# Accounting — senior master accountant, The Breakery ERP
 
-Expert on the accounting cockpit: chart of accounts, journal entries, PB1 fiscal reporting, general ledger, trial balance, cash flow, fiscal periods and year close.
+Deux casquettes, un seul skill :
 
-**`CLAUDE.md` est la source de vérité** for project-wide patterns (RPC versioning, REVOKE pairs, PIN header, audit_logs). This skill adds the accounting-specific mental model, verified account codes, RPC families, and audit checklists that CLAUDE.md doesn't carry.
+1. **Mécanique (garde-fou)** — triggers JE, mappings, pièges du COA, checklists avant
+   d'éditer toute RPC émettrice. À invoquer avant chaque modification du module.
+2. **Conseil (senior)** — concevoir le plan comptable, auditer la couverture des
+   automatisations (zéro double saisie), revoir la qualité des pages, générer/vérifier les
+   rapports, optimiser fiscalement dans la légalité. Voir « Missions advisory ».
+
+**`CLAUDE.md` est la source de vérité** pour les patterns projet (RPC versioning, REVOKE
+pairs, PIN header, audit_logs). Ce skill ajoute le modèle mental comptable, les faits
+vérifiés et les méthodes de conseil.
 
 > **Conventions de lecture.** Les RPC sont citées par **famille** (`get_general_ledger`,
-> `close_fiscal_period`) : les versions bumpent, la version live se lit dans
+> `close_fiscal_year`) : les versions bumpent, la version live se lit dans
 > `supabase/migrations/` ou `pg_proc` **avant** tout call-site. Les chiffres datés
-> (`au 2026-08-02`) sont des relevés, pas des invariants : re-vérifier contre la base.
+> (`au 2026-08-17`) sont des relevés, pas des invariants : re-vérifier contre la base.
+> Tout ce qui suit a été re-vérifié contre la base dev live le 2026-08-17.
 
 ---
 
 ## Mental model NON-PKP (ADR-003 ratifié 2026-05-20, juridiction corrigée par ADR-005 le 2026-07-16)
 
-**The Breakery est NON-PKP.** Décision irrévocable — re-read `docs/adr/005-juridiction-fiscale-lombok-pbjt.md` (supersedes ADR-003) before any fiscal change.
+**The Breakery est NON-PKP.** Décision irrévocable — relire
+`docs/adr/005-juridiction-fiscale-lombok-pbjt.md` (supersedes ADR-003) avant tout
+changement fiscal.
 
-- **Output tax** : **taxe F&B locale 10%** — **PBJT Makanan dan Minuman** (UU HKPD 1/2022), niveau **kabupaten/kota**, perçue par le **Bapenda** de la commune (The Breakery est à **Lombok, NTB** — pas Bali, cf. ADR-005). « PB1 » reste le label usuel dans le code. Pas de PPN sortant, pas d'e-Faktur, pas d'export DJP.
-- **Input tax** : PPN 11% fournisseurs PKP est **non-récupérable** → **folded** dans le coût d'acquisition (achats de stock → `INVENTORY_GENERAL` 1141) ou dans la charge (dépenses → compte de catégorie). Le compte `1151 VAT Input` est **désactivé** et sa réactivation est refusée par la RPC. Ne jamais chercher à le rouvrir sans un nouvel ADR supersedant ADR-005.
-- **PB1 est INCLUSIVE** : `business_config.tax_inclusive = true` (relevé 2026-08-02). Le prix affiché est TTC ; la taxe se **dé-cumule** (`total × rate / (1 + rate)`) via le helper `_pb1_split`, seul endroit qui connaît la formule. Ne jamais recalculer une PB1 à la main dans une RPC ou un rapport — appeler le helper, ou lire `orders.tax_amount` déjà splité.
-- **`current_pb1_rate()`** : helper stable lit `business_config.tax_rate`. Toujours l'utiliser — pas de hardcode `10/110`.
-- **`calculate_pb1_payable`** : formule simplifiée `pb1_payable = pb1_output` (pas de soustraction `vat_input`). Remplace l'ancien `calculate_vat_payable` (droppé en migration le 2026-06-03). `get_pb1_report` est la variante mensuelle (mois/année) gatée `reports.financial.read`.
+- **Output tax** : **taxe F&B locale 10%** — **PBJT Makanan dan Minuman** (UU HKPD
+  1/2022), niveau kabupaten/kota, perçue par le **Bapenda** de la commune (The Breakery
+  est à **Lombok, NTB** — pas Bali, cf. ADR-005). « PB1 » reste le label usuel dans le
+  code. Pas de PPN sortant, pas d'e-Faktur, pas d'export DJP.
+- **Input tax** : PPN 11% fournisseurs PKP **non-récupérable** → **folded** dans le coût
+  d'acquisition (achats de stock → `INVENTORY_GENERAL` 1141) ou dans la charge (dépenses
+  → compte de catégorie). Le compte `1151 VAT Input` est **désactivé** et sa réactivation
+  refusée par la RPC. Ne jamais chercher à le rouvrir sans un nouvel ADR supersedant
+  ADR-005.
+- **PB1 est INCLUSIVE** : `business_config.tax_inclusive = true`, `tax_rate = 0.1`
+  (relevé 2026-08-17). Le prix affiché est TTC ; la taxe se dé-cumule
+  (`total × rate / (1 + rate)`) via le helper `_pb1_split`, seul endroit qui connaît la
+  formule. Ne jamais recalculer une PB1 à la main — appeler le helper ou lire
+  `orders.tax_amount` déjà splité.
+- **`current_pb1_rate()`** lit `business_config.tax_rate`. Toujours l'utiliser — pas de
+  hardcode `10/110`.
+- **`calculate_pb1_payable`** : `pb1_payable = pb1_output` (pas de soustraction
+  `vat_input`). `get_pb1_report` est la variante mensuelle, gatée
+  `reports.financial.read`.
 
 ---
 
-## JE backbone (triggers automatiques)
+## Carte des automatisations — zéro double saisie
 
-Toutes les JE passent par des **triggers** ou des RPC dédiées — ne jamais INSERT dans `journal_entries` directement.
+**Invariant : un événement d'argent = exactement UN émetteur automatique de JE.** La
+saisie manuelle (`create_manual_je`) est l'exception documentée, jamais le rattrapage
+d'un flux qui aurait dû être automatique. Toute JE passe par un trigger ou une RPC
+dédiée — jamais d'INSERT direct dans `journal_entries`.
+
+### Émetteurs par trigger (relevé pg_trigger 2026-08-17)
 
 | Trigger | Table / événement | Fonction |
 |---|---|---|
 | `trg_create_sale_journal_entry_ins` | `orders` AFTER INSERT WHEN `status='paid'` | `create_sale_journal_entry()` |
 | `trg_create_sale_journal_entry_upd` | `orders` AFTER UPDATE OF `status` → `paid` ou `voided` | `create_sale_journal_entry()` |
-| `trg_create_je_for_refund` | `refunds` AFTER INSERT — **CONSTRAINT trigger, DEFERRABLE INITIALLY DEFERRED** | `fn_create_je_for_refund()` |
+| `trg_create_je_for_refund` | `refunds` AFTER INSERT — CONSTRAINT trigger, DEFERRABLE INITIALLY DEFERRED | `fn_create_je_for_refund()` |
 | `trg_create_purchase_je` | `goods_receipt_notes` AFTER INSERT | `create_purchase_journal_entry()` |
 | `tr_20_je_emit` | `stock_movements` AFTER INSERT — types `waste`, `adjustment`, `adjustment_in/out`, `opname_in/out`, `production_in/out` | `tr_stock_movement_je()` |
 
-Les autres types de mouvement sont **silencieux par décision** : `transfer_*`, et `cost_price_correction` / recalcul WAC (ADR-014 — ne jamais les ajouter au CASE ; l'écart GL vs valorisation se résorbe à l'opname).
+### Émetteurs par RPC (la RPC émet elle-même sa JE ou ses lignes)
 
-Hors triggers : `record_cash_wallet_movement` (coffres BO) et `record_cash_movement` (événements de caisse du shift POS) émettent leurs JE eux-mêmes.
+| Famille RPC | Événement métier | Mappings résolus (relevé 2026-08-17) |
+|---|---|---|
+| `complete_order_with_payment`, `pay_existing_order` | remise POS, points loyalty | `SALE_DISCOUNT` → 4900, `LOYALTY_LIABILITY` → 2210 |
+| `_emit_expense_je` (appelée par le workflow expenses) | dépense approuvée | charge TTC (PPN foldé) ; `EXPENSE_AP` 2141 / `EXPENSE_CASH_OUT` 1111 |
+| `create_b2b_order`, `cancel_b2b_order` | vente / annulation B2B | `SALE_B2B_REVENUE` → 4131, `B2B_AR` → 1132 |
+| `record_b2b_payment` | règlement B2B | `B2B_PAYMENT_BANK` → 1112 |
+| `adjust_b2b_balance` | write-off créance B2B | `B2B_AR_ADJUSTMENT` → 6520 |
+| `close_shift` | écart de caisse à la clôture | `SHIFT_CASH_VARIANCE_EXPENSE` → 5910 / `_INCOME` → 4910 |
+| `grant_store_credit`, `expire_store_credit` | avoir accordé / expiré | `STORE_CREDIT_GRANT_EXPENSE` → 6117, `STORE_CREDIT_EXPIRY_INCOME` → 4920 |
+| `convert_loyalty_to_store_credit` | points → avoir | `LOYALTY_LIABILITY` → 2210 |
+| `record_cash_wallet_movement` | coffres BO, owner drawing | `CASH_WALLET_*`, `OWNER_DRAWING` → 3110 |
+| `record_cash_movement` | événements de caisse du shift POS | voir ci-dessous |
 
-**JE de vente** (`create_sale_journal_entry`) :
-- CR `SALE_POS_REVENUE` → **4100** pour `total − tax_amount`, CR `SALE_PB1_TAX` → **2110** pour `tax_amount` (lu sur la commande, PB1 inclusive déjà splitée).
-- DR une ligne **par ligne de `order_payments`** (split tender), compte résolu par le helper `_sale_payment_mapping_key`.
+**Silencieux par décision** (ne JAMAIS les « corriger ») : `transfer_*` et
+`cost_price_correction` / recalcul WAC (ADR-014 — l'écart GL vs valorisation se résorbe
+à l'opname).
+
+**Cash movements du shift POS** (`record_cash_movement`, gate `shift.cash_movement`,
+idempotent, session `open` obligatoire) — seuls deux `reason_code` sur quatre émettent
+une JE, **datée `CURRENT_DATE`** et non de la date de session :
+- `apport_owner` → DR 1110 / CR 3100 Owner Capital
+- `bank_transfer` → DR/CR 1110 ↔ 1112 (sens selon `direction`)
+- `replenishment`/`misc`/NULL → mouvement enregistré, **pas de JE**
+
+### JE de vente (`create_sale_journal_entry`)
+
+- CR `SALE_POS_REVENUE` → **4100** pour `total − tax_amount`, CR `SALE_PB1_TAX` → **2110**
+  pour `tax_amount` (PB1 inclusive déjà splitée sur la commande).
+- DR une ligne **par ligne de `order_payments`** (split tender), compte résolu par le
+  helper `_sale_payment_mapping_key`.
 - `orders.is_historical_import = true` → **aucune JE** (reprise d'historique).
-- Aucune ligne `order_payments` → **fallback cash** sur la totalité + `audit_logs` action `je.payment_fallback_cash`. Un pic sur cette action = money-path qui n'écrit plus ses paiements.
-- Le void émet **exactement une** contre-passation `sale_void` (ADR-013 D2) ; la ligne `refunds(is_full_void=true)` est un miroir audit et n'émet rien.
+- Aucune ligne `order_payments` → **fallback cash** sur la totalité + `audit_logs` action
+  `je.payment_fallback_cash`. Un pic sur cette action = money-path qui n'écrit plus ses
+  paiements.
+- Le void émet **exactement une** contre-passation `sale_void` (ADR-013 D2) ; la ligne
+  `refunds(is_full_void=true)` est un miroir audit et n'émet rien.
 
-**Mapping méthode → compte** — helper `_sale_payment_mapping_key`, **partagé par la vente et les reversals** (ADR-013 D3). L'enum Postgres est la seule source ; `debit_card`/`credit_card` **n'existent pas** :
+**Mapping méthode → compte** — helper `_sale_payment_mapping_key`, **partagé vente et
+reversals** (ADR-013 D3). L'enum Postgres est la seule source ; `debit_card`/`credit_card`
+n'existent pas dans l'enum :
 
 | Méthode | Mapping key | Compte |
 |---|---|---|
 | `cash` | `SALE_PAYMENT_CASH` | 1110 Cash on Hand |
 | `qris`, `gopay`, `ovo`, `dana` | `SALE_PAYMENT_QRIS` | 1115 QRIS Clearing |
-| `card`, `edc` | `SALE_PAYMENT_DEBIT` | 1116 Card Clearing |
+| `card`, `edc` | `SALE_PAYMENT_DEBIT` (clé `SALE_PAYMENT_CREDIT_CARD` pointe aussi 1116) | 1116 Card Clearing |
 | `transfer` | `SALE_PAYMENT_TRANSFER` | 1112 Bank Operating |
 | `store_credit` | `SALE_PAYMENT_STORE_CREDIT` | 2220 Customer Store Credit Payable (ADR-013 D4) |
 | (inconnue) | `SALE_PAYMENT_CASH` | fallback silencieux — un nouveau moyen de paiement non ajouté au helper part en caisse |
 
-**Idempotence** : index `journal_entries_je_idempotency_uniq` sur `(reference_type, reference_id, COALESCE(metadata->>'movement_type',''))` **WHERE `reference_id IS NOT NULL`**. Les JE sans référence (clôture annuelle) ne sont donc PAS couvertes : elles portent leur propre garde anti-rejeu.
+**Idempotence JE** : index `journal_entries_je_idempotency_uniq` sur
+`(reference_type, reference_id, COALESCE(metadata->>'movement_type',''))` WHERE
+`reference_id IS NOT NULL`. Les JE sans référence (clôture annuelle) portent leur propre
+garde anti-rejeu.
 
-**Fiscal guard, fail-closed** : chaque émetteur appelle `check_fiscal_period_open(date)`, qui lève `P0004` dans **deux** cas — `period_locked` (période `closed`/`locked`) **et `period_undefined` (aucune période ne couvre la date)**. Conséquence : si les périodes de l'année suivante ne sont pas seedées, la vente s'arrête au 1ᵉʳ janvier. C'est voulu ; la clôture annuelle seede N+1 pour cette raison.
-
-**Cash movements du shift POS** (`record_cash_movement`, gate `shift.cash_movement`, idempotent par `p_idempotency_key`, session `open` obligatoire) — seuls deux `reason_code` sur quatre émettent une JE, **datée `CURRENT_DATE`** et non de la date de session :
-- `apport_owner` → DR 1110 / CR **3100** Owner Capital
-- `bank_transfer` → DR/CR 1110 ↔ **1112** Bank Operating (sens selon `direction`)
-- `replenishment`/`misc`/NULL → mouvement enregistré, **pas de JE**
+**Fiscal guard, fail-closed** : chaque émetteur appelle `check_fiscal_period_open(date)`,
+qui lève `P0004` dans deux cas — `period_locked` ET `period_undefined` (aucune période ne
+couvre la date). Si les périodes de N+1 ne sont pas seedées, la vente s'arrête au
+1ᵉʳ janvier. C'est voulu ; la clôture annuelle seede N+1 pour cette raison.
 
 ---
 
 ## COA — extrait de lecture
 
-⚠️ **Ce tableau est un EXTRAIT** des comptes qu'on rencontre le plus. Le plan comptable
-complet comptait **52 comptes (dont 1 inactif) au 2026-08-02**. Ne jamais conclure
-« ce compte n'existe pas » depuis cet extrait — lire le COA live :
+⚠️ **EXTRAIT** des comptes les plus rencontrés. Le plan complet comptait **53 comptes
+(dont 1 inactif, 10 non-postables) au 2026-08-17**. Ne jamais conclure « ce compte
+n'existe pas » depuis cet extrait — lire le COA live :
 
 ```sql
 SELECT code, name, account_class, is_active, is_postable, cash_flow_section
@@ -133,154 +204,209 @@ SELECT code, name, account_class, is_active, is_postable, cash_flow_section
 | **1115** | Cash - QRIS Clearing | 1 asset | `SALE_PAYMENT_QRIS` |
 | **1116** | Cash - Card Clearing | 1 asset | `SALE_PAYMENT_DEBIT` |
 | **1117** | Small Money (Change Float) | 1 asset | `CASH_WALLET_SMALL_MONEY` |
-| **1131** | Accounts Receivable | 1 asset | Créances hors B2B ; **aucun mapping, zéro ligne** au 2026-08-02 |
+| **1131** | Accounts Receivable | 1 asset | Créances hors B2B ; aucun mapping, zéro ligne au 2026-08-17 |
 | **1132** | AR - B2B | 1 asset | `B2B_AR` — c'est ICI que vit l'AR réel |
-| **1141** | Inventory - General | 1 asset | `INVENTORY_GENERAL` ; reçoit le PPN supplier (folded, NON-PKP) |
-| **1142** | Inventory - Raw Material | 1 asset | `INVENTORY_RAW_MATERIAL` |
-| **1143** | Inventory - Finished Goods | 1 asset | `INVENTORY_FINISHED_GOODS` |
-| **1151** | VAT Input — RESERVED | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003/005), réactivation hard-bloquée ; 1 ligne historique antérieure. Les mappings `EXPENSE_VAT_INPUT`/`PURCHASE_VAT_INPUT` y pointent encore mais **aucune fonction ne les résout** |
-| **2110** | PB1 (10%) Payable | 2 liability | `SALE_PB1_TAX` — sortie mensuelle Bapenda (Lombok, ADR-005) |
+| **1141** | Inventory - General | 1 asset | `INVENTORY_GENERAL` ; reçoit le PPN supplier foldé |
+| **1142/1143** | Inventory Raw / Finished | 1 asset | `INVENTORY_RAW_MATERIAL` / `INVENTORY_FINISHED_GOODS` |
+| **1151** | VAT Input — RESERVED | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003/005), réactivation hard-bloquée. Les mappings `EXPENSE_VAT_INPUT`/`PURCHASE_VAT_INPUT` y pointent encore mais **aucune fonction ne les résout** |
+| **2110** | PB1 (10%) Payable | 2 liability | `SALE_PB1_TAX` — sortie mensuelle Bapenda |
 | **2141** | Accounts Payable | 2 liability | `PURCHASE_PAYABLE`, `EXPENSE_AP` |
+| **2210** | Loyalty Liability | 2 liability | `LOYALTY_LIABILITY` — dette de points |
 | **2220** | Customer Store Credit Payable | 2 liability | Avoirs client (ADR-013 D4) |
-| **3100** | Owner Capital | 3 equity | `CASH_MOVEMENT_OWNER_CAPITAL` |
+| **3100 / 3110** | Owner Capital / Owner's Drawing | 3 equity | `CASH_MOVEMENT_OWNER_CAPITAL` / `OWNER_DRAWING` |
 | **3200** | Retained Earnings | 3 equity | Cible du carry-forward de la clôture annuelle |
-| **3300** | Current Year Earnings | 3 equity | **`is_postable=false`, jamais mouvementé** — agrégat d'affichage |
+| **3300** | Current Year Earnings | 3 equity | `is_postable=false`, jamais mouvementé — agrégat d'affichage |
 | **4100** | Sales Revenue | 4 revenue | `SALE_POS_REVENUE` — **pas 4111**, qui existe mais n'est mappé nulle part |
-| **5910** | Cash Variance Loss | 6 opex | Code « classe 5 » mais `account_class = 6` — renommage en 6910 différé |
+| **4131** | B2B Revenue | 4 revenue | `SALE_B2B_REVENUE` |
+| **4900** | Sales Discounts | 4 contra-rev | `SALE_DISCOUNT` (le mappé) |
+| **4910 / 5910** | Cash Variance Gain / Loss | 4 / 6 | variance de shift ; 5910 a un code « classe 5 » mais `account_class = 6` |
+| **4920 / 6117** | Store Credit Breakage / Grant | 4 / 6 opex | expiration / octroi d'avoirs |
+| **5110** | Production COGS - Direct | 5 cogs | `PRODUCTION_COGS` |
+| **5210** | Waste Expense | 5 cogs | `WASTE_EXPENSE` |
+| **6520** | Bad Debt / AR Write-off | 6 opex | `B2B_AR_ADJUSTMENT` |
 
 **Pièges du plan de comptes :**
 
 > ⚠️ **`113x` = créances, `114x` = stocks.** Plusieurs RPC financières filtrent sur
 > `code LIKE '113%'` / `'114%'` : les confondre fait lire un rapport juste comme un
-> rapport faux. Il n'existe **aucun** compte `1130`.
+> rapport faux. Il n'existe aucun compte `1130`.
 
-> ⚠️ **Doublons dormants.** `2143 PB1 Restaurant Tax Payable` fait doublon avec `2110`,
-> et `2142 VAT Output (PPN Keluaran)` est un résidu PKP. Les deux sont `is_active=true`
-> mais à **zéro mouvement** au 2026-08-02, et aucun mapping n'y pointe. **Ne router aucun
-> mapping vers eux** : la PB1 collectée vit en 2110, et 2142 contredirait le statut NON-PKP.
+> ⚠️ **Doublons dormants** (zéro mouvement au 2026-08-17, aucun mapping) :
+> `2143 PB1 Restaurant Tax Payable` double 2110 ; `2142 VAT Output (PPN Keluaran)` est un
+> résidu PKP ; `4190 Sales Discount (Promo)` double 4900. **Ne router aucun mapping vers
+> eux** — la PB1 vit en 2110, la remise en 4900, et 2142 contredirait NON-PKP.
 
 > ⚠️ **Ne jamais inférer la classe depuis le code.** 5910 est en classe 6.
 
 ### `accounts.cash_flow_section` — invariant du cash flow
 
-Enum `operating | investing | financing | none`. **`none` signifie « ce compte EST de la
-trésorerie »** : son solde alimente `cash_start`/`cash_end`. Les autres valeurs classent la
-**contrepartie**. Classification en vigueur : `111x` → `none`, `3xxx` → `financing`, tout le
-reste → `operating` (une dette d'exploitation comme 2110 n'est PAS du financement).
+Enum `operating | investing | financing | none`. **`none` = « ce compte EST de la
+trésorerie »** : son solde alimente `cash_start`/`cash_end`. Les autres valeurs classent
+la **contrepartie**. Classification en vigueur : `111x` → `none`, `3xxx` → `financing`,
+tout le reste → `operating`.
 
 `get_cash_flow` calcule les trois sections **par contrepartie**, ce qui rend
-`operating + investing + financing = cash_end − cash_start` vrai **par identité de la partie
-double**, sans énumérer aucun code de compte. Les postes détaillés de la section
-opérationnelle (`net_profit`, `delta_ar`, `delta_ap`, `delta_inventory`,
-`non_cash_adjustments`) sont **informatifs** : ils expliquent le total, ils ne le fondent pas.
+`operating + investing + financing = cash_end − cash_start` vrai **par identité de la
+partie double**. Les postes détaillés de la section opérationnelle sont informatifs.
 
-> 🚨 **Le piège** : la colonne a un `DEFAULT 'operating'`. Un compte créé sans
-> `cash_flow_section` explicite est donc classé opérationnel **en silence**. Créer un compte
-> de trésorerie (`111x`) sans le mettre à `none` le fait compter **deux fois** — comme flux
-> et comme solde — et rouvre l'écart de réconciliation que la v3 a fermé. Un compte de
-> capitaux propres oublié en `operating` fausse la ventilation des trois sections.
+> 🚨 **Le piège** : la colonne a un `DEFAULT 'operating'`. Un compte de trésorerie créé
+> sans `cash_flow_section='none'` compte **deux fois** (flux + solde) et rouvre l'écart
+> de réconciliation. Toujours poser la section explicitement dans l'INSERT.
 
 ---
 
 ## Cockpit RPCs (familles — vérifier la version live avant tout call-site)
 
-Toutes sont `SECURITY DEFINER`, la plupart perm-gatées et audit-logged.
+Toutes `SECURITY DEFINER`, la plupart perm-gatées et audit-logged.
 
-| Famille | Signature (args) | Gate | Notes |
+| Famille | Args | Gate | Notes |
 |-----|-----------|------|-------|
-| `close_fiscal_period` | `(p_period_id UUID, p_manager_pin TEXT, p_lock BOOLEAN DEFAULT FALSE)` | `accounting.period.close` + PIN | Status `closed` ou `locked` |
-| `close_fiscal_year` | `(p_fiscal_year INT, p_manager_pin TEXT)` | `accounting.year.close` + PIN | Voir section clôture annuelle |
-| `create_manual_je` | `(p_description TEXT, p_entry_date DATE, p_lines JSONB, p_manager_pin TEXT)` | `accounting.je.create_manual` + PIN | lines ≥ 2, Σdebit=Σcredit, debit XOR credit, comptes `is_active`+`is_postable`, fiscal guard |
-| `get_general_ledger` | `(p_account_id UUID, p_date_start DATE, p_date_end DATE, p_limit INT, p_cursor JSONB)` | `accounting.gl.read` | Cursor-paginé : `opening_balance` + `lines` + `next_cursor` |
-| `get_trial_balance` | `(p_date_start DATE, p_date_end DATE)` | `accounting.tb.read` | Flag `balanced` + tous comptes actifs |
-| `get_profit_loss` | `(p_date_start DATE, p_date_end DATE, p_section_id UUID)` | `reports.financial.read` | Dédup `sale_void`/refund |
-| `get_balance_sheet` | `(p_as_of_date DATE)` | `reports.financial.read` | Dédup `sale_void`/refund |
-| `get_cash_flow` | `(p_date_start DATE, p_date_end DATE)` | `reports.financial.read` | Réconcilié par construction (voir `cash_flow_section`) |
-| `calculate_pb1_payable` | `(p_period_start DATE, p_period_end DATE)` | — (aucune) | `pb1_payable = pb1_output` |
-| `get_pb1_report` | `(p_period_month INT, p_period_year INT)` | `reports.financial.read` | Rapport mensuel PB1 |
-| `update_account_active` | `(p_account_id UUID, p_is_active BOOLEAN)` | `accounting.coa.write` SUPER_ADMIN | audit_logs ; pas d'UPDATE direct sur `accounts` |
-| `update_accounting_mapping` | `(p_mapping_key TEXT, p_account_code TEXT, p_is_active BOOLEAN, p_reason TEXT)` | `accounting.mapping.update` | Repointe un mapping sans migration |
-| `get_cash_wallet_balances` / `get_cash_wallet_ledger` / `get_cash_wallet_analysis` | `()` / `(p_account_code, p_date_start, p_date_end)` / `(p_date_start, p_date_end)` | ⚠️ **aucune gate SQL** — seul le `PermissionGate` de la route BO protège | Coffres 1110/1111/1117 |
-| `record_cash_wallet_movement` | `(p_movement_type, p_amount, p_movement_date, p_remark, p_idempotency_key, p_wallet_code)` | `accounting.cash.write` | Idempotent par `p_idempotency_key` |
-| `retry_sale_journal_entry` | `(p_order_id UUID)` | `pos.sale.create` | Ré-émet la JE d'une vente dont le trigger a échoué |
+| `close_fiscal_period` | period_id, manager_pin, lock | `accounting.period.close` + PIN | `closed` ou `locked` |
+| `close_fiscal_year` | fiscal_year, manager_pin | `accounting.year.close` + PIN | voir clôture annuelle |
+| `create_manual_je` | description, entry_date, lines JSONB, manager_pin | `accounting.je.create_manual` + PIN | lines ≥ 2, Σdebit=Σcredit, debit XOR credit, comptes actifs+postables, fiscal guard |
+| `get_general_ledger` | account_id, dates, limit, cursor | `accounting.gl.read` | cursor-paginé : `opening_balance` + `lines` + `next_cursor` |
+| `get_trial_balance` | dates | `accounting.tb.read` | flag `balanced` + tous comptes actifs |
+| `get_profit_loss` | dates, section_id | `reports.financial.read` | dédup `sale_void`/refund |
+| `get_balance_sheet` | as_of_date | `reports.financial.read` | dédup `sale_void`/refund |
+| `get_cash_flow` | dates | `reports.financial.read` | réconcilié par construction |
+| `calculate_pb1_payable` | period start/end | — (aucune) | `pb1_payable = pb1_output` |
+| `get_pb1_report` | month, year | `reports.financial.read` | rapport mensuel PB1 |
+| `update_account_active` | account_id, is_active | `accounting.coa.write` SUPER_ADMIN | pas d'UPDATE direct sur `accounts` |
+| `update_accounting_mapping` | mapping_key, account_code, is_active, reason | `accounting.mapping.update` | repointe un mapping sans migration |
+| `get_cash_wallet_balances` / `_ledger` / `_analysis` | — / account_code+dates / dates | ⚠️ aucune gate SQL — seul le `PermissionGate` de route protège | coffres 1110/1111/1117 |
+| `record_cash_wallet_movement` | type, amount, date, remark, idempotency_key, wallet_code | `accounting.cash.write` | idempotent |
+| `retry_sale_journal_entry` | order_id | `pos.sale.create` | ré-émet la JE d'une vente dont le trigger a échoué |
 
-**Idempotency** : `create_manual_je` génère un `entry_no` interne — pas d'arg idempotency client. Si replay nécessaire, vérifier l'existence par description+date+montant.
+### Clôture annuelle
 
-### Clôture annuelle — implémentée
+`close_fiscal_year(fiscal_year, manager_pin)`, gate `accounting.year.close` + PIN :
 
-`close_fiscal_year(p_fiscal_year, p_manager_pin)`, gate `accounting.year.close` + PIN :
-
-1. Exige les **12 périodes de l'année toutes `closed`/`locked`** (`FOR UPDATE` sérialise) ; refuse si l'une manque ou reste ouverte.
-2. Refuse un second passage : une JE `reference_type='year_close'` posted/locked au 31/12 → `year_already_closed` (l'index d'idempotence ne couvre pas ces JE, `reference_id` étant NULL).
-3. Agrège les comptes de classes **4/5/6** sur l'exercice (dédup canonique `sale_void`+refund), écrit **une** JE de zérotage datée du 31/12 et porte le résultat net **directement en 3200 Retained Earnings**.
-4. **Seede les 12 périodes de N+1** — c'est ce qui empêche le fail-closed `period_undefined` de bloquer les ventes au 1ᵉʳ janvier.
-5. Audit `accounting.year.closed` avec `net_result`, `line_count`, `periods_seeded_next_year`.
-
-> `3300 Current Year Earnings` est `is_postable=false` et n'a **jamais** de ligne : il n'y a pas de virage 3300→3200, le carry-forward va des comptes de résultat vers 3200.
+1. Exige les **12 périodes toutes `closed`/`locked`** (`FOR UPDATE` sérialise).
+2. Refuse un second passage (JE `reference_type='year_close'` posted/locked au 31/12 →
+   `year_already_closed` ; l'index d'idempotence ne couvre pas ces JE).
+3. Agrège classes **4/5/6** (dédup `sale_void`+refund), écrit **une** JE de zérotage au
+   31/12, porte le résultat **directement en 3200** (pas de virage par 3300).
+4. **Seede les 12 périodes de N+1** — c'est ce qui évite le blocage des ventes au 1ᵉʳ janvier.
+5. Audit `accounting.year.closed`.
 
 ---
 
-## Permissions (relevé `role_permissions` au 2026-08-02)
+## Permissions (relevé `role_permissions` au 2026-08-17)
 
 | Code | Roles |
 |------|-------|
-| `accounting.read` | MANAGER, ADMIN, SUPER_ADMIN |
-| `accounting.coa.read` / `gl.read` / `tb.read` / `cash.read` | MANAGER, ADMIN, SUPER_ADMIN |
+| `accounting.read` / `coa.read` / `gl.read` / `tb.read` / `cash.read` | MANAGER, ADMIN, SUPER_ADMIN |
 | `accounting.period.close` / `year.close` / `cash.write` | MANAGER, ADMIN, SUPER_ADMIN |
 | `accounting.je.create_manual` / `post` / `reverse` / `mapping.update` / `cash.adjust` | ADMIN, SUPER_ADMIN |
-| `accounting.coa.write` | SUPER_ADMIN **uniquement** |
-
----
+| `accounting.coa.write` | SUPER_ADMIN uniquement |
+| `reports.financial.read` | MANAGER, ADMIN, SUPER_ADMIN |
 
 ## Surface BO
 
-Tout vit dans `apps/backoffice/src/features/accounting/` (pages, hooks, components, utils, `__tests__`) — sauf `pages/accounting/MappingsPage.tsx`.
-
-Routes (`apps/backoffice/src/routes/index.tsx`), chacune sous `PermissionGate` :
-`accounting` (hub, `accounting.read`) · `accounting/chart-of-accounts` (`coa.read`) ·
-`accounting/journal-entries` + `accounting/general-ledger` (`gl.read`, la page GL accepte `?account_id=&start=&end=`) ·
-`accounting/trial-balance` (`tb.read`) · `accounting/cash` (`cash.read`) ·
-`accounting/mappings` (`accounting.read`) · `settings/accounting` (`period.close`, périodes fiscales + clôture annuelle).
-
-Modales/panneaux notables : `CreateManualJEModal` (stepper, PIN header), `FiscalPeriodModal`, `AnnualCloseModal`, `RecordCashMovementModal`, `JournalEntryDetailDrawer`, `CashReconciliationPanel`, `CashAnalysisPanel`, `WalletCard`/`WalletLedgerTable`.
-Helpers domaine : `exportTrialBalanceCsv`, `exportCashWalletCsv` (UTF-8 BOM + locale id-ID IDR), `resolveJeSourceEntity`.
+Tout vit dans `apps/backoffice/src/features/accounting/` (pages, components, hooks,
+`__tests__`) — sauf `pages/accounting/MappingsPage.tsx`. Routes sous `PermissionGate` :
+`accounting` (hub) · `accounting/chart-of-accounts` · `accounting/journal-entries` ·
+`accounting/general-ledger` (`?account_id=&start=&end=`) · `accounting/trial-balance` ·
+`accounting/cash` · `accounting/mappings` · `settings/accounting` (périodes + clôture).
 
 ---
 
-## Audit checklist (avant de toucher le module accounting)
+## Missions advisory (casquette senior)
 
-- [ ] **JE balanced** — pour tout `journal_entries` row : `Σ journal_entry_lines.debit = Σ credit` (colonnes `debit`/`credit`, pas `*_amount`). Toute divergence = trigger bogué ou INSERT direct.
-- [ ] **Mapping account existe + postable** — `resolve_mapping_account(key)` lève `P0002 mapping_key_unknown` si la key est absente **ou** si le compte est inactif/supprimé : le message ne distingue pas les deux cas, vérifier `accounts.is_active` avant de conclure.
-- [ ] **Fiscal guard actif et fail-closed** — `check_fiscal_period_open` appelé par chaque émetteur, et les périodes de l'année en cours **existent** (sinon `period_undefined` bloque les ventes).
-- [ ] **Compte 1151 reste inactif** — `SELECT is_active FROM accounts WHERE code='1151'` → `false`. `update_account_active` refuse explicitement sa réactivation (`account_1151_reserved_non_pkp`, P0001) ; contourner ce garde = violation ADR-005.
-- [ ] **Dedupe sale_void/sale_refund** — `get_profit_loss`, `get_balance_sheet` et `close_fiscal_year` excluent `sale_void` quand un refund existe pour le même `order_id`. Vérifier que les bumps futurs préservent cette logique **dans les trois**.
-- [ ] **Cash flow réconcilié** — `operating + investing + financing = cash_end − cash_start` doit être vrai au centime sur n'importe quelle période. Un écart = un compte mal classé en `cash_flow_section`.
-- [ ] **PPN fournisseur foldé, pas de ligne 1151** — depuis le 2026-07-10, `_emit_expense_je` DR la charge pour le montant **total TTC** (le PPN non récupérable y est inclus) et n'émet plus de ligne vers `EXPENSE_VAT_INPUT`. Son seul garde est un sanity-check `0 ≤ vat_amount ≤ amount` (ERRCODE 22023). Aucune fonction live ne route vers 1151 : si un jour l'une le fait, c'est une régression NON-PKP, pas un « trap » attendu.
-- [ ] **REVOKE pair complet** sur toute nouvelle RPC accounting — 3 lignes : `REVOKE FROM PUBLIC` + `FROM anon` + `ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`. Et une RPC `SECURITY DEFINER` sans `has_permission` est lisible par **tout compte authentifié** — un `PermissionGate` de route n'est pas une protection.
+Chaque mission rend ses findings **en conversation** (jamais en fichier de rapport,
+règle documentaire n°1) et toute proposition de changement passe par Mamat AVANT action.
+
+### 1. Concevoir / faire évoluer le plan comptable
+
+Méthode : lire le COA live → comparer au benchmark F&B même taille
+(`references/coa-benchmark-fnb.md`) → classer chaque écart en (a) manque réel,
+(b) choix assumé du projet, (c) doublon/résidu à neutraliser → proposer à Mamat, avec
+pour chaque compte : code respectant les plages existantes, classe, `is_postable`,
+`cash_flow_section` **explicite**, mapping éventuel. Jamais de création de compte sans
+son usage émetteur identifié — un compte sans flux est un doublon dormant de plus.
+
+### 2. Auditer la couverture des automatisations (zéro double saisie)
+
+Point de départ : la « Carte des automatisations » ci-dessus. Vérifier que **tout
+événement d'argent** (vente, remise, loyalty, avoir, B2B, achat, stock, dépense, écart
+de caisse, coffres) a exactement un émetteur ; croiser
+`SELECT DISTINCT reference_type FROM journal_entries` avec la carte ; toute JE manuelle
+récurrente = un flux qui aurait dû être automatisé (finding). Tout mapping non résolu
+par au moins une fonction live = candidat à la désactivation (finding, pas d'action).
+
+### 3. Revoir structure, cohérence et lisibilité des pages
+
+Standards attendus d'un module compta d'entreprise de cette taille : chiffres en
+`tabular-nums`, IDR formaté locale id-ID, débits/crédits alignés à droite, totaux et
+équilibrage visibles (badge balanced), drill-down JE → GL → pièce d'origine
+(`resolveJeSourceEntity`), périodes/filtres persistants entre pages, exports CSV
+UTF-8 BOM, terminologie unique (une seule façon de nommer « écriture », « période »,
+« solde » dans toute la surface). Auditer contre `breakery-design` + `breakery-ui-kit` ;
+findings en conversation, correctifs après accord.
+
+### 4. Générer et vérifier les rapports comptables
+
+Générer via les familles cockpit (`get_profit_loss`, `get_balance_sheet`,
+`get_cash_flow`, `get_trial_balance`, `get_pb1_report`). **Aucun rapport n'est rendu
+sans ses contrôles de cohérence** :
+- Balance : `Σdebit = Σcredit` (flag `balanced`).
+- Bilan : `assets = liabilities + equity` — et le résultat de la période dans equity
+  correspond au net du P&L de la même période.
+- Cash flow : `operating + investing + financing = cash_end − cash_start` au centime.
+- P&L vs PB1 : `revenue 4100 × rate ≈ pb1_output` de la même période (écart = remises,
+  B2B non taxé, dédup void/refund — l'expliquer, pas le masquer).
+- Croiser deux sources quand elles existent (ex. valorisation stock vs soldes 114x).
+
+### 5. Optimisation fiscale — légale uniquement
+
+Cadre gravé : NON-PKP + PBJT (ADR-005, irrévocable). Leviers et méthode dans
+`references/fiscal-optimization-nonpkp.md`. Principes non négociables :
+- **La PB1 est un pass-through** collecté pour le Bapenda — elle ne s'« optimise » pas,
+  elle se reverse juste et à l'heure.
+- Le levier n°1 est la **capture exhaustive des charges légitimes** (une dépense non
+  saisie = du résultat surtaxé), pas la minoration du revenu.
+- Tout choix de régime (PPh final UMKM vs régime réel, statut juridique) = décision de
+  Mamat avec un conseil fiscal local ; le skill prépare les chiffrages comparatifs.
+- Rien qui déguise, anti-date, fractionne artificiellement ou omet un flux. Une
+  optimisation qui ne survit pas à un contrôle Bapenda/DJP n'en est pas une.
 
 ---
+
+## Audit checklist (avant de toucher le module)
+
+- [ ] **JE balanced** — pour tout `journal_entries` : `Σ journal_entry_lines.debit =
+  Σ credit` (colonnes `debit`/`credit`). Divergence = trigger bogué ou INSERT direct.
+- [ ] **Mapping existe + postable** — `resolve_mapping_account(key)` lève `P0002` si key
+  absente OU compte inactif : vérifier `accounts.is_active` avant de conclure.
+- [ ] **Fiscal guard fail-closed** — `check_fiscal_period_open` appelé par chaque
+  émetteur, périodes de l'année courante seedées.
+- [ ] **1151 reste inactif** — `update_account_active` refuse sa réactivation
+  (`account_1151_reserved_non_pkp`) ; contourner = violation ADR-005.
+- [ ] **Dédup sale_void/refund** préservée dans les TROIS : `get_profit_loss`,
+  `get_balance_sheet`, `close_fiscal_year`.
+- [ ] **Cash flow réconcilié** au centime — sinon un compte est mal classé en
+  `cash_flow_section`.
+- [ ] **PPN foldé, pas de ligne 1151** — `_emit_expense_je` DR la charge TTC ; toute
+  fonction routant vers 1151 = régression NON-PKP.
+- [ ] **REVOKE pair complet** sur toute nouvelle RPC (PUBLIC + anon + default
+  privileges) ; une `SECURITY DEFINER` sans `has_permission` est lisible par tout
+  compte authentifié — un `PermissionGate` de route n'est pas une protection.
 
 ## Preventive checklists
 
-### Avant de modifier un trigger JE
-- [ ] Mapping keys concernés présents dans `accounting_mappings` + comptes `is_active=true`.
-- [ ] `current_pb1_rate()` / `_pb1_split` utilisés (pas de hardcode, pas de recalcul maison).
-- [ ] Idempotence : index `journal_entries_je_idempotency_uniq` préservé, ou garde explicite si `reference_id` est NULL.
-- [ ] `check_fiscal_period_open` appelé.
-- [ ] Vente et reversal continuent de partager `_sale_payment_mapping_key` (ADR-013 D3).
-- [ ] pgTAP couvre : happy path + période fermée → exception + JE balanced.
+**Avant de modifier un trigger/émetteur JE** : mappings présents + comptes actifs ·
+`current_pb1_rate()`/`_pb1_split` (pas de hardcode) · idempotence préservée ·
+`check_fiscal_period_open` appelé · vente et reversal partagent
+`_sale_payment_mapping_key` (ADR-013 D3) · pgTAP happy path + période fermée + balanced.
 
-### Avant d'ajouter/modifier un compte COA
-- [ ] **`cash_flow_section` explicite dans l'INSERT** — le DEFAULT `operating` est silencieux et casse la réconciliation du cash flow.
-- [ ] `is_postable=false` sur les comptes synthétiques (agrégats, ex. 3300).
-- [ ] Classe = type économique correct (asset=1, liability=2, equity=3, revenue=4, cogs=5, opex=6).
-- [ ] Si désactivation : `update_account_active` via BO (gate `accounting.coa.write` SUPER_ADMIN) — pas d'UPDATE direct.
-- [ ] Ne jamais DROP un compte qui a des `journal_entry_lines` historiques.
+**Avant d'ajouter/modifier un compte COA** : `cash_flow_section` explicite dans l'INSERT ·
+`is_postable=false` sur les synthétiques · classe = type économique (1 asset, 2 liab,
+3 equity, 4 revenue, 5 cogs, 6 opex) · désactivation via `update_account_active`
+uniquement · jamais de DROP d'un compte avec lignes historiques.
 
-### Avant de toucher la clôture (période ou année)
-- [ ] États d'une période : `open` → `closed` → `locked` (irréversible, aucun RPC de déverrouillage n'existe).
-- [ ] La clôture annuelle **seede N+1** : toute réécriture qui perd ce seed bloque les ventes au 1ᵉʳ janvier.
-- [ ] La garde anti-rejeu de l'année ne repose PAS sur l'index d'idempotence — la préserver explicitement.
+**Avant de toucher la clôture** : états `open` → `closed` → `locked` (irréversible,
+aucun RPC de déverrouillage) · la clôture annuelle seede N+1 · sa garde anti-rejeu ne
+repose PAS sur l'index d'idempotence.
 
 ---
 
@@ -288,52 +414,44 @@ Helpers domaine : `exportTrialBalanceCsv`, `exportCashWalletCsv` (UTF-8 BOM + lo
 
 ```
 ADR
-  docs/adr/005-juridiction-fiscale-lombok-pbjt.md   # ACTUEL — Lombok/NTB, PBJT municipale (supersedes ADR-003)
-  docs/adr/003-pkp-status-non-pkp.md                # historique — NON-PKP rationale + conséquences
-  docs/adr/013-comptabilite-integrite-void-refund-remise.md  # void/refund/remise, avoir client 2220
-  docs/adr/014-pas-de-je-reevaluation-cost-price-correction.md  # pas de JE sur changement de coût / WAC
+  docs/adr/005-juridiction-fiscale-lombok-pbjt.md   # ACTUEL — Lombok/NTB, PBJT (supersedes ADR-003)
+  docs/adr/003-pkp-status-non-pkp.md                # historique — NON-PKP rationale
+  docs/adr/013-comptabilite-integrite-void-refund-remise.md
+  docs/adr/014-pas-de-je-reevaluation-cost-price-correction.md
 
-Migrations                       # chercher par mot-clé, la numérotation bouge
-  supabase/migrations/*cash_flow*, *fiscal*, *journal*, *pb1*, *cash_wallet*
+Références du skill
+  references/coa-benchmark-fnb.md            # benchmark COA F&B même taille + méthode d'écart
+  references/fiscal-optimization-nonpkp.md   # leviers fiscaux légaux, cadre indonésien
 
-Tests pgTAP                      # supabase/tests/
-  accounting.test.sql · close_fiscal_year_v1.test.sql · fiscal_guard_fail_closed.test.sql
-  pb1_dedup_void_refund.test.sql · pb1_split_helper.test.sql · recalc_order_totals_pb1_inclusive.test.sql
-  ledger_appendonly_and_balance.test.sql · update_account_active_v1.test.sql
-  cash_wallets.test.sql · cash_register.test.sql · s26_db_hardening.test.sql
-
-CLAUDE.md                        # patterns canoniques du projet
+Migrations   supabase/migrations/*cash_flow*, *fiscal*, *journal*, *pb1*, *cash_wallet*, *account*
+Tests pgTAP  supabase/tests/ : accounting · close_fiscal_year · fiscal_guard_fail_closed
+             pb1_dedup_void_refund · pb1_split_helper · ledger_appendonly_and_balance
+             update_account_active · cash_wallets · cash_register · s26_db_hardening
+CLAUDE.md    patterns canoniques du projet
 ```
-
----
 
 ## Verification before claiming a fix is complete
 
 ```bash
-# Type-check (cheap, run first)
 pnpm typecheck
-
-# Smoke BO accounting (le filtre vitest matche le CHEMIN : features/accounting/**)
 pnpm --filter @breakery/app-backoffice test accounting
-
-# pgTAP via MCP execute_sql (enveloppe BEGIN/ROLLBACK) — lancer les fichiers
-# touchés par le changement, listés ci-dessus.
-
-# Si RPC modifiée → types regen OBLIGATOIRE :
-# mcp__claude_ai_Supabase__generate_typescript_types → packages/supabase/src/types.generated.ts
+# pgTAP via MCP execute_sql (BEGIN/ROLLBACK) — lancer les fichiers touchés.
+# RPC modifiée → types regen OBLIGATOIRE (MCP generate_typescript_types).
 ```
 
-> Les suites BO comportent des échecs pré-existants **env-gated** (`VITE_SUPABASE_URL Required`)
-> quand `apps/backoffice/.env.local` est absent. Comparer au run sur `master` avant de conclure
-> à une régression — ne pas se fier à un décompte mémorisé.
-
----
+> Les suites BO ont des échecs pré-existants env-gated (`VITE_SUPABASE_URL Required`)
+> sans `apps/backoffice/.env.local`. Comparer au run sur `master` avant de conclure à
+> une régression.
 
 ## When to escalate
 
-- **Toucher le taux PB1 ou `tax_inclusive`** (`business_config`) → impact sur toutes les JE futures et sur les rapports PB1 — flag, décision business owner.
-- **Réactiver le compte 1151** → violation ADR-005, nécessite un nouvel ADR supersedant + plan de migration PKP complet.
-- **Router un mapping vers 2142 ou 2143** → contredit NON-PKP / duplique 2110 ; décision explicite requise.
-- **Verrouiller (`locked`) une période fiscale**, ou **clôturer une année** → irréversible, aucun RPC de retour. Confirmer avec l'owner.
-- **Ajouter un moyen de paiement** sans l'ajouter à `_sale_payment_mapping_key` → il tombe en caisse en silence. Le helper et l'enum Postgres bougent ensemble.
-- **Bump majeur d'une RPC cockpit** (`_vN+1`) → drop `_vN` dans la même migration (RPC versioning monotone CLAUDE.md), + REVOKE pair + types regen + pgTAP.
+- **Taux PB1 ou `tax_inclusive`** (`business_config`) → décision business owner.
+- **Réactiver 1151, router vers 2142/2143/4190** → violation ADR-005 / doublon — nouvel
+  ADR requis.
+- **Verrouiller une période, clôturer une année** → irréversible, confirmer avec l'owner.
+- **Choix de régime fiscal (UMKM final vs réel), statut juridique, seuils PKP** →
+  décision Mamat + conseil fiscal local ; le skill chiffre, il ne tranche pas.
+- **Nouveau moyen de paiement** sans mise à jour de `_sale_payment_mapping_key` → il
+  tombe en caisse en silence ; l'enum et le helper bougent ensemble.
+- **Bump d'une RPC cockpit** → `_vN+1` + DROP `_vN` même migration + REVOKE pair +
+  types regen + pgTAP.
