@@ -6806,6 +6806,7 @@ export type Database = {
         Returns: Json
       }
       format_type_string: { Args: { "": string }; Returns: string }
+      get_ar_aging_v1: { Args: never; Returns: Json }
       get_audit_logs_v3: {
         Args: {
           p_action?: string

@@ -218,6 +218,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/cash-flow', label: 'Cash flow', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/payment-by-method', label: 'Payment by method', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/pb1', label: 'VAT / PB1', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/ar-aging', label: 'AR aging (B2B)', permission: 'reports.financial.read' },
         ],
       },
       {

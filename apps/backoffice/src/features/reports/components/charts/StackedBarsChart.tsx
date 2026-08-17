@@ -50,35 +50,73 @@ export interface StackedBarsChartProps {
   ariaLabel: string;
   /** Hauteur par classe — défaut `h-72`. */
   className?: string;
+  /** `columns` (défaut) : le temps en X, une colonne par relevé.
+   *  `horizontal-bars` : une barre par ENTITÉ (client, fournisseur…), la
+   *  mesure en X — la forme juste quand la catégorie porte un nom long et
+   *  qu'il n'y a pas d'axe temporel. Ajout AR aging (maquette 2026-08-17). */
+  layout?: 'columns' | 'horizontal-bars';
+  /** Largeur de l'axe des libellés en mode `horizontal-bars` — défaut 120. */
+  categoryAxisWidth?: number;
 }
 
 export function StackedBarsChart({
   data, xKey, series,
   xTickFormatter, yTickFormatter = formatIdrCompact, valueFormatter = formatIdrFull,
-  ariaLabel, className,
+  ariaLabel, className, layout = 'columns', categoryAxisWidth = 120,
 }: StackedBarsChartProps): JSX.Element {
   const reduced = usePrefersReducedMotion();
   const last = series.length - 1;
+  const bars = layout === 'horizontal-bars';
+  // Le coin arrondi ne va qu'au segment de tête, seul à toucher le bout de la
+  // pile — en barres horizontales, le bout est à DROITE.
+  const headRadius: [number, number, number, number] = bars ? [0, 2, 2, 0] : [2, 2, 0, 0];
 
   return (
     <div className={cn('h-72 w-full', className)} role="img" aria-label={ariaLabel}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke={CHART_GRID_STROKE} vertical={false} />
-          <XAxis
-            dataKey={xKey}
-            tick={TICK}
-            tickLine={false}
-            axisLine={{ stroke: CHART_AXIS_STROKE }}
-            {...(xTickFormatter !== undefined ? { tickFormatter: xTickFormatter } : {})}
-          />
-          <YAxis
-            tick={TICK}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={yTickFormatter}
-            width={68}
-          />
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+          {...(bars ? { layout: 'vertical' as const } : {})}
+        >
+          <CartesianGrid stroke={CHART_GRID_STROKE} vertical={bars} horizontal={!bars} />
+          {bars ? (
+            <>
+              <XAxis
+                type="number"
+                tick={TICK}
+                tickLine={false}
+                axisLine={{ stroke: CHART_AXIS_STROKE }}
+                tickFormatter={yTickFormatter}
+              />
+              <YAxis
+                type="category"
+                dataKey={xKey}
+                tick={TICK}
+                tickLine={false}
+                axisLine={false}
+                width={categoryAxisWidth}
+                {...(xTickFormatter !== undefined ? { tickFormatter: xTickFormatter } : {})}
+              />
+            </>
+          ) : (
+            <>
+              <XAxis
+                dataKey={xKey}
+                tick={TICK}
+                tickLine={false}
+                axisLine={{ stroke: CHART_AXIS_STROKE }}
+                {...(xTickFormatter !== undefined ? { tickFormatter: xTickFormatter } : {})}
+              />
+              <YAxis
+                tick={TICK}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={yTickFormatter}
+                width={68}
+              />
+            </>
+          )}
           <Tooltip
             contentStyle={CHART_TOOLTIP_STYLE}
             formatter={(v: number, name: string) => [valueFormatter(v), name]}
@@ -93,7 +131,7 @@ export function StackedBarsChart({
               fill={s.color}
               stroke="var(--surface-3)"
               strokeWidth={1}
-              {...(i === last ? { radius: [2, 2, 0, 0] as [number, number, number, number] } : {})}
+              {...(i === last ? { radius: headRadius } : {})}
               isAnimationActive={!reduced}
             />
           ))}

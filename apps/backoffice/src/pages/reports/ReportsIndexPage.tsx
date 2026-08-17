@@ -31,7 +31,7 @@ import { useCallback, useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
-  Calendar, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
+  Calendar, CalendarClock, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
   Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
   GitCommitHorizontal, Undo2, BadgePercent,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
@@ -106,6 +106,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'cash-flow',     title: 'Cash Flow',       blurb: 'Indirect-method cash movement statement.',   icon: Banknote },
       { to: 'payment-by-method', title: 'Payment by Method', blurb: 'Cash, Card, QRIS split + daily trend.',  icon: CreditCard },
       { to: 'pb1',           title: 'VAT / PB1 Report',  blurb: 'Monthly PB1 collected, payable & ledger balance.', icon: FileSpreadsheet },
+      { to: 'ar-aging',      title: 'AR Aging (B2B)',    blurb: 'Money outstanding by lateness — who to chase, DSO, credit exposure.', icon: CalendarClock },
     ],
   },
   {
