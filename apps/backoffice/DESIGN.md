@@ -12,9 +12,9 @@ colors:
   ink-fg-sub: "#a09789"
   ink-gold: "#d3ab5c"
   gold: "#7a5c1c"
-  gold-hover: "#745719"
-  gold-strong: "#5e4614"
-  gold-soft: "rgba(138, 104, 32, 0.12)"
+  gold-hover: "#684d18"
+  gold-strong: "#574112"
+  gold-soft: "rgba(122, 92, 28, 0.12)"
   paper: "#f0efec"
   sheet: "#ffffff"
   paper-pressed: "#e9e7e2"
@@ -446,6 +446,12 @@ froide tirerait vers le bleu-gris et trahirait l'axe de teinte du système.
 - **Modale** (`0 20px 56px rgba(45,34,15,0.22)`) : dialogues.
 - **Focus** (`0 0 0 3px rgba(138,104,32,0.32)`) : halo, dérivé de l'accent — le
   liseré et le halo sont toujours de la même couleur.
+  **Le code enfreint cette règle depuis le 2026-08-13** (relevé du 2026-08-18) :
+  `--border-focus` suit bien `--gold-base`, passé à `#7a5c1c`, mais
+  `--shadow-focus` est resté figé sur le rgb de l'or d'avant. La valeur citée
+  ci-dessus est donc exacte contre le code et fausse contre la règle. L'en-tête
+  d'`elevation.css` raconte que ce même écart a déjà été corrigé une fois : c'est
+  une régression, pas un oubli d'origine.
 
 ### Named Rules
 
@@ -476,7 +482,7 @@ plus.
 Deux familles coexistent, et c'est délibéré — mais la frontière doit être tenue.
 
 - **Bouton de bandeau de page** (`TOOLBAR_BTN_*`) : hauteur 32 px, rayon 3 px,
-  12,5 px semi-gras. Le primaire est **encre** sur `#201d19`, un seul par
+  14 px (`--type-sm`) en graisse 500. Le primaire est **encre** sur `#201d19`, un seul par
   bandeau, celui qui crée. Le secondaire est une feuille blanche bordée de
   `#cdcac2` qui vire au papier pressé au survol. L'icône d'un bouton secondaire
   est grise : elle ne concurrence pas le libellé.
@@ -526,7 +532,8 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
   soulignement or interne de 2 px pour « vous êtes ici », fond relevé pour « ce
   menu est déployé ».
 - Panneau déroulant : feuille blanche, coins bas à 6 px, colonnes coiffées d'un
-  label mono, liens en 13 px qui virent à l'or au survol et à l'état actif.
+  label mono, liens en 14 px (`--type-sm`) qui virent à l'or au survol et à
+  l'état actif.
 - Comportement de menubar : clic pour ouvrir, survol pour basculer une fois la
   barre ouverte, ←/→ entre onglets, ↓ pour entrer dans le panneau, Échap pour
   fermer et rendre le focus à l'onglet.
