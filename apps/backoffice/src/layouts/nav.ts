@@ -140,6 +140,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/purchase-by-supplier', label: 'Purchase by supplier', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/purchase-price-trends', label: 'Purchase price trends', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/cost-spend', label: 'Cost & spend analytics', permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/supplier-payments', label: 'Supplier payments', permission: 'reports.financial.read' },
         ],
       },
     ],

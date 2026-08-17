@@ -53,11 +53,11 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  it('has exactly 43 active card links (40 before the batch-2 completion reports joined)', () => {
+  it('has exactly 44 active card links (40 before the batch-2 completion reports joined)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(43);
+    expect(links).toHaveLength(44);
   });
 
   it('has zero "Soon" disabled tiles after Wave C wiring', () => {

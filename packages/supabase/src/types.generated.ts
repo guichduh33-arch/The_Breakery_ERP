@@ -7433,6 +7433,10 @@ export type Database = {
           wasted: number
         }[]
       }
+      get_supplier_payments_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_trial_balance_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json

@@ -95,6 +95,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'purchase-by-date',   title: 'Purchase by Date',   blurb: 'Purchase history timeline.',                  icon: Calendar },
       { to: 'purchase-by-supplier', title: 'Purchase by Supplier', blurb: 'Supplier performance and costs.',         icon: Truck },
       { to: 'purchase-price-trends', title: 'Purchase Price Trends', blurb: 'Unit purchase price per article over time — who raised, what to renegotiate.', icon: TrendingUp },
+      { to: 'supplier-payments', title: 'Supplier Payments', blurb: 'Paid out over the period + what is still owed, per supplier — debt, not commitment.', icon: Banknote },
     ],
   },
   {
