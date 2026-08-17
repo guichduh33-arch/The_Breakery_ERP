@@ -56,7 +56,7 @@ import { exportDashboardCsv } from '@/features/dashboard/utils/dashboardCsv.js';
 import { revenue30dTarget } from '@/features/dashboard/utils/kpiTargets.js';
 import { useTodayHours } from '@/features/dashboard/hooks/useTodayHours.js';
 import {
-  TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON,
+  TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON,
 } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -169,15 +169,22 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 {label}
               </Link>
             ))}
+            {/* Export est SECONDAIRE, pas primaire. Deux raisons qui se cumulent :
+                l'encre du bandeau est réservée au bouton qui CRÉE (cf. l'en-tête
+                de toolbarButton.ts), et Export n'ouvre rien — il télécharge ;
+                et la tuile héro de la bande de KPI est déjà encrée, donc un
+                second aplat encre viole The One Ink Fill Rule et fait désigner
+                par le poids maximal de la page d'accueil une action secondaire
+                plutôt que la réponse à la question qu'on vient y poser. */}
             {canExport && (
               <button
                 type="button"
-                className={TOOLBAR_BTN_PRIMARY}
+                className={TOOLBAR_BTN_SECONDARY}
                 disabled={overview === null}
                 onClick={() => { if (overview !== null) exportDashboardCsv(overview); }}
                 data-testid="dashboard-export"
               >
-                <FileDown className="h-3.5 w-3.5" aria-hidden />
+                <FileDown className={TOOLBAR_ICON} aria-hidden />
                 Export
               </button>
             )}
