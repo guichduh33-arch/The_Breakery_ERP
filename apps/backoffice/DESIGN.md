@@ -11,7 +11,7 @@ colors:
   ink-fg-dim: "#c4bcae"
   ink-fg-sub: "#a09789"
   ink-gold: "#d3ab5c"
-  gold: "#8a6820"
+  gold: "#7a5c1c"
   gold-hover: "#745719"
   gold-strong: "#5e4614"
   gold-soft: "rgba(138, 104, 32, 0.12)"
@@ -52,7 +52,7 @@ typography:
     letterSpacing: "-0.015em"
   title:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
-    fontSize: "11px"
+    fontSize: "12px"
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "0.14em"
@@ -64,7 +64,7 @@ typography:
     letterSpacing: "normal"
   label:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
-    fontSize: "10px"
+    fontSize: "12px"
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "0.14em"
@@ -192,7 +192,10 @@ même accent, même vocabulaire d'état, même échelle.
   n'est pas un cran de la rampe de surfaces — c'est un fond sombre dans un thème
   clair, avec sa propre famille de premiers plans (`ink-fg`, `ink-fg-muted`,
   `ink-fg-dim`, `ink-fg-sub`) parce que le contraste s'y inverse.
-- **Or d'encre** (`#8a6820`) : 5,1:1 sur la feuille blanche. Liens, prix retail,
+- **Or d'encre** (`#7a5c1c`) : 6,22:1 sur la feuille blanche, et AA clos sur les
+  quatre fonds du thème — papier 5,41:1, en-tête inerte 5,95:1, état pressé
+  5,03:1. La valeur a été assombrie le 2026-08-13 : l'ancien `#8a6820` tombait à
+  4,47:1 sur le papier de page, sous le seuil. Liens, prix retail,
   liseré de focus, état actif dans les panneaux de navigation. Jamais un
   remplissage de bouton.
 - **Or éclairci** (`#d3ab5c`) : la même couleur remontée en luminosité, valable
@@ -273,13 +276,34 @@ corps.
   encre. Le plus grand texte réellement rendu dans le back-office.
 - **Headline** (sans, 600, 23 px, `-0.015em`) : le titre de page, unique `<h1>`
   de la vue, servi par un seul composant partagé.
-- **Title** (mono, 600, 11 px, `0.14em`, capitales) : le titre d'une carte de
+- **Title** (mono, 600, 12 px, `0.14em`, capitales) : le titre d'une carte de
   dashboard. Un titre de carte est un libellé, pas une phrase.
 - **Body** (sans, 400, 16 px, interligne 1,5) : la prose de l'interface,
   descriptions, messages d'état.
-- **Label** (mono, 600, 10 px, `0.14em`, capitales) : en-tête de colonne de
+- **Label** (mono, 600, 12 px, `0.14em`, capitales) : en-tête de colonne de
   tableau, en-tête de colonne de panneau de navigation, libellé de tuile.
 - **Valeur KPI ordinaire** (mono, 600, 23 px, `-0.02em`, tabulaire).
+
+**L'échelle du code fait loi (arbitré le 2026-08-18).** Ce document a longtemps
+décrit une rampe relevée sur la planche de référence — {10, 11, 14, 16, 23,
+26} px — qui ne partageait que deux valeurs avec celle que les tokens portent
+réellement, `--type-*` dans `packages/ui/src/tokens/typography.css` : {12, 14,
+16, 19, 24, 30, 34, 56} px. Deux conséquences opposables, à ne pas relire comme
+des approximations :
+
+- **Title et Label ne sont pas deux paliers, c'est un seul.** Tous deux rendent
+  par `--type-xs`, à 12 px. Un écran ne peut pas s'appuyer sur un contraste de
+  taille entre le titre d'une carte et un en-tête de colonne : la distinction
+  passe par la graisse, la couleur et la position, jamais par le corps.
+- **Display et Headline n'ont pas de token.** 26 px et 23 px sont exacts, mais
+  ils sont écrits en valeurs arbitraires — `text-[26px]`, `text-[1.4375rem]` —
+  parce qu'aucun cran de la rampe ne les porte. Les reprendre ailleurs se fait
+  en recopiant la constante partagée (`KPI_VALUE_HERO`, `PageHeader`), jamais en
+  réécrivant le nombre.
+
+La graisse, elle, se lit sur l'appelant et non ici : `SectionLabel` pose 700 par
+défaut, les constantes de tuile (`KPI_LABEL`) redescendent à 600. C'est un écart
+réel, pas une tolérance.
 
 ### Named Rules
 
@@ -565,25 +589,53 @@ une réserve fait passer une estimation pour un relevé.
 
 ---
 
-**État de propagation (relevé du 2026-08-07).** Ce document décrit la direction
-telle qu'elle est **décidée** et telle que les tokens la portent. Le code ne l'a
-pas encore rattrapée sur deux points, et les nommer ici évite de prendre une
-règle pour un constat :
+**État de propagation (relevé du 2026-08-18).** Ce document décrit la direction
+telle qu'elle est **décidée** et telle que les tokens la portent. Les écarts
+restants sont nommés ici pour qu'on ne prenne pas une règle pour un constat.
 
-- **Le bouton de bandeau encre** n'est appliqué que sur deux écrans — le
-  dashboard et le catalogue produits. Environ soixante autres fichiers portant
-  une action primaire utilisent encore le bouton vert du primitif partagé.
-- **Playfair Display survit hors du monogramme.** Le titre de page l'a perdu le
-  2026-08-05, mais `font-serif` / `font-display` restent présents dans près de
-  quatre-vingt-dix fichiers du back-office (titres de carte, en-têtes de
-  section). La règle du monogramme unique est la cible, pas l'état.
+Les trois dettes déclarées au relevé précédent (2026-08-07) ont été mesurées à
+nouveau et sont **soldées ou très largement résorbées**. On les nomme parce
+qu'un chiffre périmé dans un document de direction est plus nuisible qu'un
+chiffre absent :
 
-- **Deux tokens de ce document n'existent pas encore dans le code.** Le gris
-  inerte (`#c2beb5`) et la rampe de data-viz (`chart-1..4`) sont employés dans la
-  planche de référence et documentés ici comme normatifs ; ils restent à créer
-  dans `packages/ui/src/tokens/colors.css` et à exposer dans le preset Tailwind.
+- **Le bouton de bandeau encre est la norme, pas l'exception.** Les chaînes
+  `TOOLBAR_BTN_*` sont employées dans quarante-quatre fichiers du back-office, et
+  le bouton vert du primitif partagé n'a **aucun appelant explicite** —
+  `variant="primary"` ne se rencontre nulle part. Le relevé du 2026-08-07 annonçait
+  l'inverse (« deux écrans conformes, environ soixante en retard ») ; il est faux.
+  L'écart qui subsiste est d'une autre nature : `Button` porte encore
+  `defaultVariants: { variant: 'primary' }`, donc un `<Button>` écrit **sans prop**
+  rend vert et en capitales. Deux occurrences, dans `SettingsFloorPlanPage`.
+- **Playfair Display survit hors du monogramme, mais dans vingt-et-un fichiers**,
+  pour vingt-huit occurrences de `font-serif` / `font-display` — pas dans les
+  quatre-vingt-dix annoncés. Réserve à ne pas confondre avec une victoire : sous
+  ce thème `--font-display` est remappé sur le corps, donc la plupart de ces
+  classes ne rendent **pas** de serif ; elles nomment le contraire de ce qu'elles
+  font. La règle du monogramme unique reste la cible.
+- **Les deux tokens annoncés manquants existent.** Le gris inerte est
+  `--text-inert` (`#c2beb5`) et la rampe de data-viz est `--chart-1..4`
+  (`#2b6c9c` → `#c9dcea`), tous deux dans `packages/ui/src/tokens/colors.css` et
+  exposés par le preset Tailwind. Reliquat réel : `features/reports/utils/chartColors.ts`
+  redéclare ces mêmes valeurs en dur au lieu de consommer les tokens.
 
-Les trois sont des chantiers de propagation, pas des exceptions au système.
+**Écarts ouverts, relevés le 2026-08-18.** Ceux-là sont des constats, pas des
+règles :
+
+- **Les primitives partagées portent le contraire de trois règles de ce
+  document.** `Card` rend `shadow-sm` par défaut, à rebours de
+  **Border-Before-Shadow** ; `Button` rend vert par défaut, à rebours de la
+  doctrine encre ; les quatre paliers d'espacement sémantique exposés par le
+  preset n'ont aucun appelant dans le back-office. Conséquence structurelle : la
+  conformité s'obtient par un opt-out que chaque auteur doit connaître, donc un
+  fichier neuf naît non conforme en silence.
+- **Six classes de couleur ne peignent rien.** `bg-warn` / `text-warn` désignent
+  une famille qui n'existe pas dans le preset — la déclaration est supprimée sans
+  bruit. Elles vivent dans `features/marketing` (`SegmentList`, `BirthdayList`).
+  La garde CI `tailwind-dead-classes.mjs` ne les attrape pas : elle sait détecter
+  une classe morte d'une famille connue, pas une famille inventée.
+- **The Value-Width Rule est enfreinte sur une tuile de la liste B2B.** Mesuré à
+  1280 px, la largeur cible du produit : une valeur monétaire de dix caractères
+  rend sur deux lignes. C'est précisément la coupure que la règle nomme.
 
 **État du corpus.** La planche de référence couvre quinze écrans pour neuf
 archétypes. Trois sont construits — Today (shell + landing), Products (List) et
