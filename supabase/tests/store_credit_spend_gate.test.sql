@@ -1,5 +1,5 @@
 -- supabase/tests/store_credit_spend_gate.test.sql
--- ADR-013 Lot 4 (D8) — gate paiement par avoir dans complete_order_with_payment_v26 :
+-- ADR-013 Lot 4 (D8) — gate paiement par avoir dans complete_order_with_payment_v27 :
 --   P0015 client requis, P0016 solde insuffisant (agrégé multi-tender, sous
 --   verrou), débit ledger unique par commande, replay idempotent sans re-débit,
 --   append-only du ledger + colonne cache verrouillée + CHECK >= 0.
@@ -47,7 +47,7 @@ END $$;
 
 -- T1 — tender store_credit SANS client rattaché → P0015.
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v26(
+  SELECT complete_order_with_payment_v27(
     p_session_id := current_setting('scg.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -58,7 +58,7 @@ $q$, 'P0015', 'Store credit payment requires a customer',
 
 -- T2 — solde insuffisant (60 000 > 50 000) → P0016.
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v26(
+  SELECT complete_order_with_payment_v27(
     p_session_id := current_setting('scg.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -70,7 +70,7 @@ $q$, 'P0016', NULL,
 
 -- T3 — agrégation multi-tender : 30 000 + 30 000 > 50 000 → P0016.
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v26(
+  SELECT complete_order_with_payment_v27(
     p_session_id := current_setting('scg.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -86,7 +86,7 @@ $q$, 'P0016', NULL,
 DO $$
 DECLARE v_res JSONB; v_n INT; v_bal NUMERIC; v_ledger_bal NUMERIC;
 BEGIN
-  v_res := complete_order_with_payment_v26(
+  v_res := complete_order_with_payment_v27(
     p_session_id := current_setting('scg.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -114,7 +114,7 @@ SELECT ok(current_setting('scg.t4')::boolean,
 DO $$
 DECLARE v_res JSONB; v_n INT; v_bal NUMERIC;
 BEGIN
-  v_res := complete_order_with_payment_v26(
+  v_res := complete_order_with_payment_v27(
     p_session_id := current_setting('scg.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
