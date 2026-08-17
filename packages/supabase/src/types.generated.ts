@@ -6419,7 +6419,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v26: {
+      complete_order_with_payment_v27: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6806,6 +6806,7 @@ export type Database = {
         Returns: Json
       }
       format_type_string: { Args: { "": string }; Returns: string }
+      get_ar_aging_v1: { Args: never; Returns: Json }
       get_audit_logs_v3: {
         Args: {
           p_action?: string
@@ -6881,6 +6882,10 @@ export type Database = {
         }[]
       }
       get_cashier_variance_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_combo_sales_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -7276,6 +7281,10 @@ export type Database = {
           total: number
         }[]
       }
+      get_sales_by_origin_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_sales_by_product_v1: {
         Args: {
           p_category_id?: string
@@ -7293,6 +7302,10 @@ export type Database = {
           staff_name: string
           total: number
         }[]
+      }
+      get_sales_by_table_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
       }
       get_settings_by_category_v10: {
         Args: { p_category: string }
@@ -7410,6 +7423,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_stock_position_v1: { Args: { p_as_of?: string }; Returns: Json }
       get_stock_variance_v3: {
         Args: { p_date_end?: string; p_date_start?: string }
         Returns: {
@@ -7426,6 +7440,10 @@ export type Database = {
           stock_in: number
           wasted: number
         }[]
+      }
+      get_supplier_payments_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
       }
       get_trial_balance_v3: {
         Args: { p_date_end: string; p_date_start: string }
