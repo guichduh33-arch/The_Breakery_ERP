@@ -18,9 +18,12 @@
 --
 -- S57 B-D4 : repointed v1 -> v2 (v1 dropped, 20260710000094 — UTC bucketing
 -- fixed to business_config.timezone, no assertion here depends on the tz fix).
---   T7  : get_pb1_report_v1 happy month — 8-key JSONB
---   T8  : get_pb1_report_v1 CASHIER denied (42501)
---   T9  : get_pb1_report_v1 month=13 raises 22023
+-- Lot D1 (2026-08-18) : T7-T9 repointés get_pb1_report _v1 -> _v2 (cascade du
+-- bump calculate_pb1_payable_v2 gatée, 20260818000007 — v1 droppée ; même
+-- signature, même gate, aucune assertion ne dépend du changement).
+--   T7  : get_pb1_report_v2 happy month — 8-key JSONB
+--   T8  : get_pb1_report_v2 CASHIER denied (42501)
+--   T9  : get_pb1_report_v2 month=13 raises 22023
 --   T10 : get_stock_movements_v2 returns lines[] + next_cursor
 --   T11 : get_stock_movements_v2 movement_type filter returns only matching rows
 --   T12 : get_stock_movements_v2 p_limit=999 clamps to <= 200
@@ -241,7 +244,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_pb1_report_v1(5, 2026);
+  v_result := get_pb1_report_v2(5, 2026);
   v_ok := (v_result->'period'->>'month')::int = 5
       AND (v_result->'period'->>'year')::int  = 2026
       AND (v_result ? 'pb1_rate')
@@ -255,7 +258,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t7_pass')::boolean,
-  'T7: get_pb1_report_v1 happy month returns 8-key JSONB with balance_account_code=2110'
+  'T7: get_pb1_report_v2 happy month returns 8-key JSONB with balance_account_code=2110'
 );
 
 -- T8 CASHIER perm denied → 42501
@@ -265,7 +268,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_pb1_report_v1(5, 2026);
+    PERFORM get_pb1_report_v2(5, 2026);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -274,7 +277,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t8_pass')::boolean,
-  'T8: get_pb1_report_v1 CASHIER raises 42501'
+  'T8: get_pb1_report_v2 CASHIER raises 42501'
 );
 
 -- T9 invalid month (13) rejected with 22023
@@ -285,7 +288,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_pb1_report_v1(13, 2026);
+    PERFORM get_pb1_report_v2(13, 2026);
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
     v_caught := (v_sqlstate = '22023');
@@ -295,7 +298,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t9_pass')::boolean,
-  'T9: get_pb1_report_v1 month=13 raises 22023'
+  'T9: get_pb1_report_v2 month=13 raises 22023'
 );
 
 -- ============================================================
