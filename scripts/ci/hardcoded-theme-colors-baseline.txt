@@ -1,0 +1,23 @@
+# Plafond compté des couleurs du thème recopiées en dur, hérité au 2026-08-18.
+#
+# Format : <compte>\t<chemin>\t<hex normalisé>
+#
+# PLAFOND, JAMAIS PLANCHER. Cette liste ne peut que DÉCROÎTRE : elle recense ce
+# qui existait le jour où la garde 4 est née, pour qu'elle puisse être allumée
+# sans réécrire le module d'un coup. Toute occurrence NOUVELLE échoue.
+#
+# La résorption se fait au fil des éditions : quand tu touches un de ces
+# fichiers, remplace ses hex par le token et resserre le plafond avec
+#   node scripts/ci/hardcoded-theme-colors.mjs --update-baseline
+# Le drapeau ne sait que descendre un compte ; il ne peut pas faire passer une
+# violation.
+#
+# CE QUI N'EST PAS ICI, et pourquoi : les quatorze crans des deux rampes de coût
+# de apps/backoffice/src/features/reports/utils/chartColors.ts. La garde attrape
+# le DOUBLON d'un token, jamais la couleur inconnue — et ces quatorze valeurs
+# n'égalent aucun token du thème. Elles sont hors de sa portée par construction,
+# pas tolérées par cette liste. Les cinq crans qui, eux, dupliquaient un token
+# (#2b6c9c, #4f93bf, #8cc3e0, #8a5a10) sont passés en `var()` le 2026-08-18.
+#
+# Dernier resserrement : 2026-08-18
+2	apps/backoffice/src/index.css	#ffffff

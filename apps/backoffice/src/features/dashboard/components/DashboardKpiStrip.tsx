@@ -54,7 +54,7 @@ const NOTE_HERO = KPI_NOTE_HERO;
 /** Adaptateur local : la tuile partagée prend `to`/`srHint`, la bande raisonne
  *  encore en `KpiTarget | null` (cible filtrée par permission). */
 function Tile({
-  label, value, children, testId, hero = false, valueTitle, target = null,
+  label, value, children, testId, hero = false, valueTitle, tone = 'neutral', target = null,
 }: {
   label: string;
   value: string;
@@ -62,6 +62,7 @@ function Tile({
   testId: string;
   hero?: boolean;
   valueTitle?: string;
+  tone?: 'neutral' | 'danger';
   target?: KpiTarget | null;
 }): JSX.Element {
   return (
@@ -70,6 +71,7 @@ function Tile({
       value={value}
       {...(valueTitle !== undefined ? { valueTitle } : {})}
       hero={hero}
+      tone={tone}
       {...(target !== null ? { to: target.href, srHint: target.hint } : {})}
       testId={testId}
     >
@@ -234,9 +236,13 @@ export function DashboardKpiStrip({
         )}
       </Tile>
 
+      {/* Seule tuile de montant de la bande à rendre en NON compacté : « Rp
+          1.250.000 » fait onze caractères mono, la tuile en tient huit. Elle
+          s'aligne sur ses voisines — compact dans la tuile, exact en infobulle. */}
       <Tile
         label="Avg basket"
-        value={formatIdr(kpis.avg_basket.value)}
+        value={formatIdrShort(kpis.avg_basket.value)}
+        valueTitle={formatIdr(kpis.avg_basket.value)}
         testId="kpi-avg-basket"
         target={target('avg_basket')}
       >
@@ -269,6 +275,12 @@ export function DashboardKpiStrip({
         label="Cash on hand"
         value={cash.restricted === true ? '—' : formatIdrShort(cash.value)}
         {...(cash.restricted === true ? {} : { valueTitle: formatIdr(cash.value) })}
+        // Une trésorerie NÉGATIVE est un solde à découvert — donc, dans un
+        // commerce qui n'a pas de découvert, une erreur de saisie ou un coffre
+        // non compté. Elle s'affichait comme une trésorerie saine. La tuile est
+        // CLAIRE (le héro n'est posé que sur la première de la bande) : le ton
+        // s'y résout en `--danger`, pas en `--ink-danger`.
+        tone={cash.restricted !== true && cash.value !== null && cash.value < 0 ? 'danger' : 'neutral'}
         testId="kpi-cash-on-hand"
         target={cash.restricted === true ? null : target('cash_on_hand')}
       >
@@ -279,6 +291,8 @@ export function DashboardKpiStrip({
             className={NOTE}
             title={`drawer ${formatIdr(cash.drawer)} · safe ${formatIdr(cash.safe)} — drawer is derived from open POS sessions, not a dedicated ledger account.`}
           >
+            {/* Le MOT, deuxième signal : la couleur ne porte jamais seule. */}
+            {cash.value !== null && cash.value < 0 && 'overdrawn · '}
             drawer {formatIdrShort(cash.drawer)} · safe {formatIdrShort(cash.safe)}
             {cash.is_derived === true && ' (derived)'}
           </span>

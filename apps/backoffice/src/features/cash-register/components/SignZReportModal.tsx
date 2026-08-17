@@ -9,7 +9,11 @@ import {
   Button,
 } from '@breakery/ui';
 import { formatCurrency, roundIdr } from '@breakery/utils';
+import { cn } from '@breakery/ui';
 import { Loader2 } from 'lucide-react';
+import {
+  VARIANCE_TONE_TEXT, varianceToneSigned,
+} from '@/features/reports/utils/varianceScale.js';
 import { useZReport } from '../hooks/useZReport.js';
 import { useSignZReport } from '../hooks/useSignZReport.js';
 import { useGenerateZReportPdf } from '../hooks/useGenerateZReportPdf.js';
@@ -28,6 +32,51 @@ export interface SignZReportModalProps {
 function formatIDR(v: number | null | undefined): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return '—';
   return formatCurrency(roundIdr(v));
+}
+
+/**
+ * Seuil du barème signé, ici. Zéro et non un montant : cette modale est celle
+ * où un responsable ENGAGE SA SIGNATURE sur une coupure de caisse. Tout manquant
+ * mérite qu'il le voie, sans qu'on ait à inventer un plancher métier que rien
+ * ne fonde. Un excédent reste `watch` — trop d'argent dans un tiroir est aussi
+ * une anomalie, c'est la sémantique même de `varianceToneSigned`.
+ */
+const SIGNED = { bad: 0 } as const;
+
+/**
+ * Une ligne d'écart SIGNÉ. Le manquant qu'on contresigne rendait exactement
+ * comme un excédent : même graisse, même encre, seul le signe les séparait.
+ *
+ * Trois signaux, dont DEUX non colorés (WCAG 1.4.1 — la couleur seule ne suffit
+ * jamais) : le signe, que `formatIDR` produit déjà ; le mot (« shortfall » /
+ * « overage ») ; la couleur en renfort. Le barème est celui du dépôt, pas un
+ * `v < 0 ? rouge : vert` local — c'est ce que `varianceScale.ts` a fondu.
+ *
+ * Le montant rend en mono tabulaire : c'est un chiffre qu'on lit pour décider
+ * (The Mono-Carries-Data Rule).
+ */
+function VarianceLine({
+  label, value, testId,
+}: {
+  label: string;
+  value: number | null | undefined;
+  testId?: string;
+}): JSX.Element {
+  const known = value !== null && value !== undefined && Number.isFinite(value);
+  const tone  = varianceToneSigned(known ? value : null, SIGNED);
+  const word  = !known ? null : value < 0 ? 'shortfall' : value > 0 ? 'overage' : null;
+
+  return (
+    <div {...(testId !== undefined ? { 'data-testid': testId } : {})}>
+      <span className="text-text-secondary">{label}: </span>
+      <span className={cn('font-data tabular-nums', VARIANCE_TONE_TEXT[tone])}>
+        {formatIDR(value)}
+      </span>
+      {word !== null && (
+        <span className={cn('ml-1.5 font-data text-xs', VARIANCE_TONE_TEXT[tone])}>{word}</span>
+      )}
+    </div>
+  );
 }
 
 export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: SignZReportModalProps): JSX.Element {
@@ -110,21 +159,20 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
               <span className="text-text-secondary">Sales total: </span>
               {formatIDR(sales)}
             </div>
-            <div>
-              <span className="text-text-secondary">Cash variance: </span>
-              {formatIDR(variance)}
-            </div>
+            <VarianceLine label="Cash variance" value={variance} />
             {reconciliation?.qris?.counted != null && (
-              <div data-testid="sign-qris-variance">
-                <span className="text-text-secondary">QRIS variance: </span>
-                {formatIDR(reconciliation.qris.variance)}
-              </div>
+              <VarianceLine
+                label="QRIS variance"
+                value={reconciliation.qris.variance}
+                testId="sign-qris-variance"
+              />
             )}
             {reconciliation?.card?.counted != null && (
-              <div data-testid="sign-card-variance">
-                <span className="text-text-secondary">Card+EDC variance: </span>
-                {formatIDR(reconciliation.card.variance)}
-              </div>
+              <VarianceLine
+                label="Card+EDC variance"
+                value={reconciliation.card.variance}
+                testId="sign-card-variance"
+              />
             )}
             <DialogFooter className="pt-4">
               <Button variant="ghost" onClick={() => onOpenChange(false)} data-testid="sign-cancel">Cancel</Button>

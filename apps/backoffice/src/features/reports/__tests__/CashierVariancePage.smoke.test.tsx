@@ -115,7 +115,9 @@ describe('CashierVariancePage (smoke)', () => {
     }
     const cash = screen.getByTestId('kpi-cash-variance');
     expect(within(cash).getByTitle('-Rp 50.000')).toBeInTheDocument();
-    expect(within(cash).getByText('2 short · 0 over')).toBeInTheDocument();
+    // Le MOT précède les comptes dès que le total est négatif : la couleur ne
+    // porte jamais seule (lot F, campagne design 2026-08-18).
+    expect(within(cash).getByText('shortfall · 2 short · 0 over')).toBeInTheDocument();
 
     const qris = screen.getByTestId('kpi-qris-variance');
     expect(within(qris).getByText('—')).toBeInTheDocument();

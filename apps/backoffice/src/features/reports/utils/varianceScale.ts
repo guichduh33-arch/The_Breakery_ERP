@@ -23,6 +23,26 @@ export const VARIANCE_TONE_TEXT: Record<VarianceTone, string> = {
   neutral: 'text-text-secondary',
 };
 
+/**
+ * Texte seul, POSÉ SUR L'ENCRE — la tuile héro (`KPI_CARD_HERO`, fond #201d19).
+ * DESIGN.md, The Ink Semantics Rule : le vert et le rouge du thème sont taillés
+ * pour un fond blanc. Mesuré sur l'encre, `--danger` tombe à 2,77:1 — un rouge
+ * qu'on ne distingue plus est pire qu'un texte neutre, parce qu'il PRÉTEND
+ * signaler. Les équivalents remontés en luminosité tiennent : `--ink-danger`
+ * 8,84:1, `--ink-success` 11,95:1.
+ *
+ * `watch` n'a PAS d'équivalent encre — le thème n'expose aucun `--ink-warning`,
+ * et l'ambre du papier vaut 2,84:1 sur l'encre. Il retombe donc sur le neutre :
+ * une valeur à surveiller se dit alors par le MOT, jamais par la couleur seule
+ * (WCAG 1.4.1, qui vaut de toute façon pour les quatre tons).
+ */
+export const VARIANCE_TONE_TEXT_INK: Record<VarianceTone, string> = {
+  good:    'text-ink-success',
+  watch:   'text-ink-fg-sub',
+  bad:     'text-ink-danger font-semibold',
+  neutral: 'text-ink-fg-sub',
+};
+
 /** Fond + texte — cellules de heatmap. Fonds soft du thème, texte sémantique. */
 export const VARIANCE_TONE_CELL: Record<VarianceTone, string> = {
   good:    'bg-success-soft text-success',

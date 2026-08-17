@@ -191,7 +191,10 @@ export default function ExpensesListPage(): JSX.Element {
       header: 'Amount',
       width: '140px',
       align: 'right',
-      render: (r) => <span className="tabular-nums">{formatCurrency(Number(r.amount ?? 0))}</span>,
+      // `tabular-nums` sans `font-data` ne fait que demander des chiffres de
+      // chasse égale À INSTRUMENT SANS : le montant sortait en sans-serif.
+      // The Mono-Carries-Data Rule — un montant rend en mono tabulaire.
+      render: (r) => <span className="font-data tabular-nums">{formatCurrency(Number(r.amount ?? 0))}</span>,
     },
     {
       id:    'method',

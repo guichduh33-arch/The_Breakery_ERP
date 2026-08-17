@@ -103,6 +103,8 @@ function oneMonthEarlier(asOf: string): string {
 interface KpiDescriptor {
   key: string; label: string; value: string; title?: string;
   delta?: number | null; note?: string | undefined;
+  /** Valeur signée négative — voir `tone` sur KpiTile. */
+  tone?: 'neutral' | 'danger';
 }
 
 export default function BalanceSheetPage(): JSX.Element {
@@ -142,9 +144,16 @@ export default function BalanceSheetPage(): JSX.Element {
       delta: pctChange(data?.liabilities.total ?? 0, prevData?.liabilities.total),
     },
     {
+      // Des capitaux propres NÉGATIFS — le passif dépasse l'actif — rendaient
+      // comme des capitaux propres sains. Le mot est celui du métier : un
+      // déficit de capitaux propres se dit « deficit », pas « loss » (qui
+      // appartient au compte de résultat, cf. ProfitLossPage).
       key: 'equity', label: 'Total equity',
       value: formatIdrCompact(data?.equity.total ?? 0), title: formatIdrFull(data?.equity.total ?? 0),
       delta: pctChange(data?.equity.total ?? 0, prevData?.equity.total),
+      ...(data !== undefined && data.equity.total < 0
+        ? { tone: 'danger' as const, note: 'deficit' }
+        : {}),
     },
     {
       key: 'cash', label: 'Cash',
@@ -235,6 +244,7 @@ export default function BalanceSheetPage(): JSX.Element {
               value={t.value}
               {...(t.title !== undefined ? { valueTitle: t.title } : {})}
               hero={i === 0}
+              {...(t.tone !== undefined ? { tone: t.tone } : {})}
               testId={`kpi-${t.key}`}
             >
               {t.delta !== undefined && <Delta value={t.delta} period="1 mo" onInk={i === 0} />}

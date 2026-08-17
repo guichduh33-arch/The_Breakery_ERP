@@ -105,6 +105,22 @@ export type ProductCounter =
 export type ProductColumnId =
   | 'type' | 'category' | 'stock' | 'cost' | 'retail' | 'wholesale' | 'margin' | 'status';
 
+/**
+ * Colonnes masquées À L'OUVERTURE de la table catalogue.
+ *
+ * Onze colonnes ne tiennent pas dans les 1219 px utiles d'un écran 1280 : le
+ * budget calibré (voir l'en-tête de `ProductsTable`) demande 1212 px à DIX
+ * colonnes, une fois les trois colonnes monétaires portées à la largeur qu'un
+ * montant à neuf chiffres exige. Il fallait donc en retirer une.
+ *
+ * C'est `type` — la seule dont le contenu est REDONDANT avec le reste de la
+ * ligne : un produit fini, une matière première ou un semi-fini se lisent déjà
+ * dans sa catégorie, son SKU et la présence ou non d'un prix de vente. Rien
+ * n'est perdu : le menu Columns la rappelle en un clic, et l'utilisateur qui
+ * l'affiche accepte le défilement horizontal en connaissance de cause.
+ */
+export const PRODUCT_DEFAULT_HIDDEN_COLUMNS: readonly ProductColumnId[] = ['type'];
+
 export const PRODUCT_COLUMNS: readonly { id: ProductColumnId; label: string }[] = [
   { id: 'type',      label: 'Type' },
   { id: 'category',  label: 'Category' },

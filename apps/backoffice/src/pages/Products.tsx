@@ -35,6 +35,7 @@ import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   classifyProduct,
+  PRODUCT_DEFAULT_HIDDEN_COLUMNS,
   type ProductColumnId,
   type ProductCounter,
   type ProductView,
@@ -142,7 +143,12 @@ export default function ProductsPage(): JSX.Element {
     patchParams({ sort: columnId, dir: direction === 'asc' ? null : 'desc', page: null });
   };
 
-  const [hiddenColumns, setHiddenColumns] = useState<ReadonlySet<ProductColumnId>>(new Set());
+  // Le défaut n'est pas « tout montrer » : onze colonnes débordent des 1219 px
+  // utiles d'un 1280. `type` s'ouvre masquée — voir le pourquoi du choix sur
+  // PRODUCT_DEFAULT_HIDDEN_COLUMNS. Le menu Columns la rend en un clic.
+  const [hiddenColumns, setHiddenColumns] = useState<ReadonlySet<ProductColumnId>>(
+    () => new Set(PRODUCT_DEFAULT_HIDDEN_COLUMNS),
+  );
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
 

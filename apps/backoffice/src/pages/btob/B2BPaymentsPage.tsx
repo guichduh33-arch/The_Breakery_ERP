@@ -15,13 +15,11 @@ import {
   FileText,
   Plus,
   Search,
-  TrendingUp,
 } from 'lucide-react';
 import {
   Button,
   Card,
   EmptyState,
-  KpiTile,
   Select,
   Tabs,
   TabsContent,
@@ -30,6 +28,11 @@ import {
 } from '@breakery/ui';
 import { formatCurrency, formatDateTime } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+// Voir B2BDashboardPage : la tuile du back-office (23 px + `valueTitle`) et non
+// celle de `@breakery/ui` (34 px), qui coupe tout montant au-delà de huit
+// caractères. Un encours d'AR en fait neuf.
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { formatCount, formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -156,10 +159,30 @@ export default function B2BPaymentsPage(): JSX.Element {
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile icon={TrendingUp}  label="Total received"     value={payments.data === undefined ? '—' : formatCurrency(totalReceived)}     valueFormat="currency" footer={PERIOD_LABEL[period]} />
-        <KpiTile icon={Clock}       label="Outstanding"        value={dash.data === undefined ? '—' : formatCurrency(totalOutstanding)}  valueFormat="currency" />
-        <KpiTile icon={CheckCircle2} label="Payments received" value={payments.data === undefined ? '—' : filteredPayments.length} valueFormat="number" />
-        <KpiTile icon={AlertCircle} label="Overdue"            value={dash.data === undefined ? '—' : overdueCount}         valueFormat="number" />
+        <KpiTile
+          label="Total received"
+          value={payments.data === undefined ? '—' : formatIdrShort(totalReceived)}
+          {...(payments.data !== undefined ? { valueTitle: formatIdr(totalReceived) } : {})}
+          testId="kpi-b2b-total-received"
+        >
+          <span className={KPI_NOTE}>{PERIOD_LABEL[period]}</span>
+        </KpiTile>
+        <KpiTile
+          label="Outstanding"
+          value={dash.data === undefined ? '—' : formatIdrShort(totalOutstanding)}
+          {...(dash.data !== undefined ? { valueTitle: formatIdr(totalOutstanding) } : {})}
+          testId="kpi-b2b-outstanding"
+        />
+        <KpiTile
+          label="Payments received"
+          value={payments.data === undefined ? '—' : formatCount(filteredPayments.length)}
+          testId="kpi-b2b-payments-count"
+        />
+        <KpiTile
+          label="Overdue"
+          value={dash.data === undefined ? '—' : formatCount(overdueCount)}
+          testId="kpi-b2b-overdue"
+        />
       </div>
 
       <Card variant="default" padding="none">

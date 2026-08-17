@@ -340,7 +340,14 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => <span className="font-data tabular-nums">{o.items_count}</span>,
     },
     {
-      id: 'amount', header: 'Amount', align: 'right', width: '8.5rem', sortable: true,
+      // 9,25rem et non 8,5. Cellule `text-sm` (14 px) en JetBrains Mono, chasse
+      // 0,6 em → 8,4 px par caractère, plus 28 px de padding compact :
+      // « Rp 150.000.000 » (14 car.) demande 145,6 px, « Rp 12.500.000 » 137,2.
+      // À 136 px la colonne était sous les deux — et la cellule étant
+      // `whitespace-nowrap`, le débordement ne se repliait pas : il poussait la
+      // table entière en défilement horizontal. Même calibre que les trois
+      // colonnes monétaires du catalogue produits.
+      id: 'amount', header: 'Amount', align: 'right', width: '9.25rem', sortable: true,
       render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(o.total)}</span>,
     },
     {

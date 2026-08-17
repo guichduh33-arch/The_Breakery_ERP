@@ -96,6 +96,8 @@ const OPERATING_ITEMS = [
 interface KpiDescriptor {
   key: string; label: string; value: string; title?: string;
   delta?: number | null; note?: string;
+  /** Valeur signée négative — voir `tone` sur KpiTile. */
+  tone?: 'neutral' | 'danger';
 }
 
 export default function CashFlowPage(): JSX.Element {
@@ -123,10 +125,16 @@ export default function CashFlowPage(): JSX.Element {
 
   const tiles: KpiDescriptor[] = [
     {
+      // La trésorerie qui SORT plus qu'elle n'entre est le fait que cette page
+      // existe pour montrer ; elle se lisait comme une entrée. Tuile héro, donc
+      // sur encre : le ton se résout en `--ink-danger` (The Ink Semantics Rule).
       key: 'net-change', label: 'Net change in cash',
       value: formatIdrCompact(data?.net_change_in_cash ?? 0),
       title: formatIdrFull(data?.net_change_in_cash ?? 0),
       delta: pctChange(data?.net_change_in_cash ?? 0, prevData?.net_change_in_cash),
+      ...(data !== undefined && data.net_change_in_cash < 0
+        ? { tone: 'danger' as const, note: 'cash outflow' }
+        : {}),
     },
     {
       key: 'operating', label: 'Operating',
@@ -209,6 +217,7 @@ export default function CashFlowPage(): JSX.Element {
               value={t.value}
               {...(t.title !== undefined ? { valueTitle: t.title } : {})}
               hero={i === 0}
+              {...(t.tone !== undefined ? { tone: t.tone } : {})}
               testId={`kpi-${t.key}`}
             >
               {t.delta !== undefined && <Delta value={t.delta} period="prev" onInk={i === 0} />}
