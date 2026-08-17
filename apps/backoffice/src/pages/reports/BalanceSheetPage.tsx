@@ -169,9 +169,19 @@ export default function BalanceSheetPage(): JSX.Element {
     },
     {
       // Un équilibre n'a pas de variation : il tient ou il ne tient pas.
+      //
+      // « Off » rendait SANS TON — exactement de la même encre que
+      // « Balanced » — alors qu'un bilan qui ne boucle pas est le seul fait de
+      // cette page qui invalide toutes les autres tuiles. La prop `tone` du lot
+      // D+F existait déjà et était plombée jusqu'ici (ligne du déficit d'équité
+      // plus haut) : c'est la même famille, il ne manquait que l'appel.
+      //
+      // La couleur reste le TROISIÈME signal (WCAG 1.4.1) : le mot « Off » dit
+      // le fait, la note chiffre l'écart, la teinte ne fait que le hiérarchiser.
       key: 'balance-check', label: 'Balance check',
       value: data === undefined ? '—' : data.balanced ? 'Balanced' : 'Off',
       note:  data === undefined ? undefined : `delta ${fmt(data.delta)}`,
+      ...(data !== undefined && !data.balanced ? { tone: 'danger' as const } : {}),
     },
   ];
 

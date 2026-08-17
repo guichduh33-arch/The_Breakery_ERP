@@ -10,9 +10,8 @@
 import { Factory, Star } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Card } from '@breakery/ui';
+import { Button, Card } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
-import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useSections } from '@/hooks/useSections.js';
 import { useProductSections } from '../hooks/useProductSections.js';
 import { useSetProductSections } from '../hooks/useSetProductSections.js';
@@ -166,15 +165,16 @@ export function StationsPanel({ product }: Props): JSX.Element {
 
       {canWrite && (
         <div className="flex justify-end">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             type="button"
             disabled={!isDirty || setSections.isPending}
             onClick={handleSave}
             data-testid="stations-save-btn"
-            className={TOOLBAR_BTN_SECONDARY}
           >
             {setSections.isPending ? 'Saving…' : 'Save Stations'}
-          </button>
+          </Button>
         </div>
       )}
     </div>

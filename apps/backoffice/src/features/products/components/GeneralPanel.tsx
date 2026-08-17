@@ -384,8 +384,18 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
       <span
         aria-hidden
         className={`inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
-          // Piste ENCRE, pas or : The Ink-Not-Gold Rule — l'or ne remplit pas.
-          enabled ? 'border-ink bg-ink' : 'border-text-subtle bg-surface-4'
+          // Piste OR — exception « piste d'interrupteur » de The Ink-Not-Gold
+          // Rule (DESIGN.md § Colors). Sur une piste, le remplissage EST
+          // l'information d'état : le retirer ne fait pas que refroidir la
+          // lecture, il efface le fait. La règle vise le décor, pas le signal.
+          //
+          // L'encre avait été essayée ici et posait cinq aplats #201d19 sur le
+          // seul onglet General, en plus de « Save changes » du bandeau —
+          // The One Ink Fill Rule, la règle même au nom de laquelle les panneaux
+          // avaient été vidés. Mesures : curseur blanc 6,22:1 sur l'or allumé,
+          // 3,83:1 sur la piste éteinte — les deux au-dessus des 3:1 de WCAG
+          // 1.4.11, l'état restant porté par la POSITION du curseur.
+          enabled ? 'border-gold bg-gold' : 'border-text-subtle bg-surface-4'
         }`}
       >
         <span

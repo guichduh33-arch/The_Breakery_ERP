@@ -207,8 +207,13 @@ export function DataTable<TRow>({
                       type="button"
                       onClick={() => handleHeaderClick(col)}
                       // L'anneau de focus canonique du design system, écrit avec
-                      // le même vocabulaire que Button / Input / Badge / Tabs.
-                      // Sans lui, trier au clavier retombait sur l'anneau natif
+                      // le même vocabulaire que Button et Input — anneau ET halo
+                      // (`shadow-focus`), la chaîne complète. Le halo manquait
+                      // ici : `boxShadow` mesurait `none` au focus alors que
+                      // DESIGN.md § Elevation le dérive du même token que
+                      // l'anneau (« le liseré et le halo sont toujours de la
+                      // même couleur »).
+                      // Sans l'anneau, trier au clavier retombait sur l'anneau natif
                       // du navigateur — mesuré entre 2,09:1 et 2,40:1 sur le
                       // remplissage inerte de l'en-tête, sous le seuil de 3:1
                       // des objets graphiques (WCAG 1.4.11). `outline` + offset
@@ -219,7 +224,7 @@ export function DataTable<TRow>({
                       // souris n'allume pas l'anneau.
                       className={cn(
                         'inline-flex items-center gap-1.5 select-none',
-                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold focus-visible:shadow-focus',
                         col.align === 'right' && 'ml-auto',
                       )}
                     >

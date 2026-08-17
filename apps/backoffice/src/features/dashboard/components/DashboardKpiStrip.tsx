@@ -95,7 +95,22 @@ export function DashboardKpiStrip({
    *  chargement et la bande pulsait indéfiniment en affirmant qu'elle charge. */
   error?: Error | null;
 }): JSX.Element {
-  const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-7';
+  // QUATRE colonnes en extra-large, pas sept (arbitré le 2026-08-18).
+  //
+  // À sept colonnes la tuile offrait 134 px de contenu, alors que la valeur
+  // héro `Rp 8,42 jt` en demande 148,2 px à 26 px de corps et une valeur
+  // ordinaire `-Rp 3,85 jt` 146,8 px à 23 px : les deux coupaient, ce que The
+  // Value-Width Rule interdit explicitement. Réduire les corps aurait fait
+  // tenir les chaînes en détruisant la hiérarchie héro/ordinaire, qui est
+  // l'information ; élargir la tuile la préserve. À quatre colonnes la tuile
+  // vaut ≈ 297 px pour ≈ 268 px de contenu — toutes les chaînes tiennent avec
+  // de la marge, sur deux rangées. Deux rangées lisibles valent mieux que sept
+  // tuiles qui coupent.
+  //
+  // Le palier `md` descend de 4 à 3 pour que la progression reste monotone
+  // (2 → 3 → 4) : à 4 colonnes dès `md`, la tuile y était plus étroite qu'en
+  // `xl`, et le palier `xl` n'aurait rien changé au rendu.
+  const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4';
 
   // Hooks avant toute sortie anticipée — les branches squelette et « données
   // indisponibles » plus bas rendent sans eux, mais ne peuvent pas les sauter.

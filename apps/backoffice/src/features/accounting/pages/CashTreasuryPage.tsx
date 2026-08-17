@@ -2,7 +2,9 @@
 // Cash Wallets module — main treasury page.
 // Shows wallet cards, ledger table, reconciliation panel, analysis panel, and CSV export.
 import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Button, Card } from '@breakery/ui';
+import { TOOLBAR_BTN_PRIMARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useCashWallets } from '../hooks/useCashWallets.js';
 import { useCashWalletLedger } from '../hooks/useCashWalletLedger.js';
 import { WalletCard } from '../components/WalletCard.js';
@@ -45,7 +47,18 @@ export default function CashTreasuryPage() {
       <PageHeader
         className="items-center"
         title="Cash Treasury"
-        actions={<Button variant="ink" onClick={() => setModalOpen(true)}>New movement</Button>}
+        // Le bandeau de page prend `TOOLBAR_BTN_*` — c'est SON contrat
+        // (DESIGN.md § Components : « Bouton de bandeau de page », 32 px,
+        // rayon 3 px), contrairement aux boutons de panneau qui, eux, prennent
+        // le primitif partagé. Le primitif rendait ici 56 px : la hauteur
+        // canonique de 32 px n'apparaissait nulle part sur la page, qui
+        // cumulait trois hauteurs différentes.
+        actions={
+          <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setModalOpen(true)}>
+            <Plus className={TOOLBAR_ICON} aria-hidden />
+            New movement
+          </button>
+        }
       />
 
       <div className="flex flex-wrap gap-3">

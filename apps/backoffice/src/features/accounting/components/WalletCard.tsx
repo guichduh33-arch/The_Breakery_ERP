@@ -29,7 +29,15 @@ export function WalletCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`text-left transition ${selected ? 'ring-2 ring-gold' : ''}`}
+      // `rounded-md` sur le PORTEUR de l'anneau : le `<button>` n'avait aucun
+      // rayon (0 px) autour d'une `Card` qui en a 4 px, donc `ring-2` traçait un
+      // rectangle vif qui coupait les quatre coins arrondis de la carte. Le
+      // rayon du porteur doit suivre celui de ce qu'il entoure — `--radius-md`
+      // et `--radius-lg` valent tous deux 4 px dans ce thème, la carte et
+      // l'anneau tombent donc exactement l'un sur l'autre.
+      className={`rounded-md text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+        selected ? 'ring-2 ring-gold' : ''
+      }`}
       aria-pressed={selected}
     >
       <Card className="p-4 min-w-[200px]">

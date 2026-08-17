@@ -9,7 +9,7 @@ import {
   Button,
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Check } from 'lucide-react';
 import { useSetExpenseThreshold } from './hooks/useSetExpenseThreshold.js';
 import type { ApprovalStep, ExpenseThresholdRow } from './hooks/useExpenseThresholds.js';
 
@@ -163,21 +163,46 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+                {/* Puces de rôle — un groupe de bascules, pas des boutons d'action.
+                  *
+                  * `aria-pressed` porte l'état coché : sans lui le DOM ne disait
+                  * NULLE PART quels rôles sont sélectionnés (ni role, ni
+                  * aria-checked) et un lecteur d'écran annonçait quatre boutons
+                  * identiques — WCAG 4.1.2, niveau A.
+                  *
+                  * L'état visuel est porté par le LISERÉ, pas par le fond : les
+                  * deux fonds d'origine (gold-soft composé sur blanc = #efebe4
+                  * contre l'inerte #fafaf8) ne valaient que 1,137:1, et les deux
+                  * textes 1,251:1. Le liseré or vaut 6,22:1 contre la feuille
+                  * blanche et 5,95:1 contre le fond de la puce voisine — les 3:1
+                  * de WCAG 1.4.11 sont clos des deux côtés du trait.
+                  *
+                  * Un remplissage encre aurait mieux contrasté encore (16,52:1)
+                  * mais aurait posé jusqu'à quatre aplats encre par étape dans
+                  * une modale qui en a déjà un sur « Save » : c'est exactement
+                  * The One Ink Fill Rule. Le coche redonde la couleur par une
+                  * forme (WCAG 1.4.1) et reste en place, invisible, à l'état
+                  * décoché — la puce ne change donc pas de largeur en basculant. */}
                 <div className="flex flex-wrap gap-1">
-                  {ROLE_OPTIONS.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => toggleStepRole(idx, role)}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
-                        step.role_codes.includes(role)
-                          ? 'bg-gold-soft text-gold'
-                          : 'bg-surface-inert text-text-secondary hover:bg-surface-4'
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ))}
+                  {ROLE_OPTIONS.map((role) => {
+                    const isOn = step.role_codes.includes(role);
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        aria-pressed={isOn}
+                        onClick={() => toggleStepRole(idx, role)}
+                        className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+                          isOn
+                            ? 'border-gold bg-gold-soft font-semibold text-gold'
+                            : 'border-border-subtle bg-surface-inert text-text-muted hover:bg-surface-4'
+                        }`}
+                      >
+                        <Check aria-hidden="true" className={`h-3 w-3 ${isOn ? '' : 'invisible'}`} />
+                        {role}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

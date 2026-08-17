@@ -195,14 +195,17 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       header: 'Order date',
       width: '120px',
       align: 'left',
-      render: (r) => <span className="tabular-nums text-text-secondary">{r.order_date !== null ? formatDate(r.order_date) : '—'}</span>,
+      // The Mono-Carries-Data Rule nomme l'horodatage : la colonne de montant
+      // juste en dessous porte déjà `font-data`, les deux colonnes de DATE
+      // avaient été oubliées par le même lot.
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.order_date !== null ? formatDate(r.order_date) : '—'}</span>,
     },
     {
       id:    'expected_date',
       header: 'Expected',
       width: '120px',
       align: 'left',
-      render: (r) => <span className="tabular-nums text-text-secondary">{r.expected_date !== null ? formatDate(r.expected_date) : '—'}</span>,
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.expected_date !== null ? formatDate(r.expected_date) : '—'}</span>,
     },
     {
       id:    'total',

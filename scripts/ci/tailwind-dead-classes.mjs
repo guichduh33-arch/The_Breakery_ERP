@@ -17,11 +17,30 @@
 // Ajouter un token au preset suffit donc à le rendre légitime : rien à mettre à
 // jour ici, et aucune liste à faire pourrir.
 //
-// CE QUI N'EST PAS VÉRIFIÉ, volontairement :
-//   · un nom qui n'appartient à AUCUNE famille connue (`ring-accent-primary`
-//     après coup) — impossible à distinguer d'un utilitaire non-couleur
-//     (`ring-2`, `text-sm`, `border-b`) sans réimplémenter Tailwind. La garde
-//     attrape la clé inconnue DANS une famille connue, pas la famille inventée.
+// L'ANGLE MORT, ET CE QU'ON EN FAIT (2026-08-18).
+//
+// La garde savait juger une clé inconnue DANS une famille connue
+// (`bg-bg-card`), pas une FAMILLE inventée : `bg-warn` n'a jamais été examiné,
+// parce que `warn` n'est pas une famille du preset et que la regex principale
+// exige `PREFIX-FAMILLE`. Impossible à fermer dans le cas général — on ne
+// distingue pas `text-warn` de `text-sm` sans réimplémenter Tailwind.
+//
+// Ce qu'on PEUT fermer, c'est le cas nommé : le vocabulaire shadcn/ui. Ces noms
+// arrivent par copier-coller depuis un exemple de la doc ou depuis un
+// générateur, ils désignent des familles que ce dépôt n'a jamais déclarées, et
+// ils sont donc TOUJOURS morts. La liste noire ci-dessous est fermée et
+// explicite : elle n'essaie pas de deviner, elle refuse treize noms connus.
+//
+// Elle est consultée APRÈS la regex de familles et sur des positions
+// disjointes : `bg-input` est refusé, `bg-bg-input` (la vraie classe du token
+// `--bg-input`) ne l'est pas, parce que le lookbehind interdit qu'un candidat
+// soit précédé d'un tiret. Même chose pour `text-primary` (mort) contre
+// `text-text-primary` (vivant).
+//
+// CE QUI N'EST TOUJOURS PAS VÉRIFIÉ, volontairement :
+//   · une famille inventée HORS liste noire (`ring-accent-primary` après coup) —
+//     indistinguable d'un utilitaire non-couleur (`ring-2`, `text-sm`,
+//     `border-b`) sans réimplémenter Tailwind.
 //   · les clés numériques (`red-500`, `blue-50`) : la palette Tailwind par
 //     défaut survit à `extend`, elles sont donc légitimes, alpha compris.
 //   · les lignes de commentaire : une explication cite le défaut, elle ne le
@@ -119,6 +138,37 @@ const FAMILY_RE = new RegExp(
   'g',
 );
 
+// LISTE NOIRE shadcn/ui — treize noms de famille que ce dépôt n'a jamais
+// déclarés. Contrôlés au démarrage contre le preset : si l'un d'eux DEVENAIT
+// une vraie famille, la garde s'arrête au lieu de crier au loup.
+const SHADCN_FAMILIES = [
+  'muted-foreground', 'border-input', 'background', 'destructive', 'foreground',
+  'secondary', 'popover', 'primary', 'accent', 'card', 'input', 'warn', 'ring',
+];
+
+for (const name of SHADCN_FAMILIES) {
+  if (families.has(name)) {
+    console.error(`::error::GARDE 3 — « ${name} » est sur la liste noire shadcn ET déclaré comme famille dans ${PRESET}.`);
+    console.error(`Les deux ne peuvent pas être vrais. Retire le nom de SHADCN_FAMILIES, ou retire la famille du preset.`);
+    process.exit(1);
+  }
+}
+
+// `(?<![\w-])` : un candidat précédé d'un tiret est un MORCEAU d'une classe
+// légitime — `bg-input` dans `bg-bg-input`, `text-primary` dans
+// `text-text-primary`. Sans ce lookbehind la liste noire condamnerait les deux
+// classes les plus répandues du dépôt. `(?![\w-])` ferme l'autre bout : on ne
+// veut pas de `bg-card-foo`, qui n'est pas le nom shadcn.
+// Les noms sont triés du plus LONG au plus court pour que l'alternance préfère
+// `border-input` à `input` et `muted-foreground` à un préfixe plus court.
+const SHADCN_RE = new RegExp(
+  `(?<![\\w-])${PREFIX}-(${[...SHADCN_FAMILIES]
+    .sort((a, b) => b.length - a.length)
+    .map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')})(?:\\/(\\d+))?(?![\\w-])`,
+  'g',
+);
+
 const isNumericKey = (k) => k !== undefined && /^\d+$/.test(k);
 const isComment = (l) => /^\s*(\/\/|\*|\/\*)/.test(l);
 
@@ -176,18 +226,28 @@ for (const file of tracked) {
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     if (isComment(lines[i])) continue;
+    const record = (token, verdict) => {
+      const key = `${file}\t${token.replace(/^[a-z-]*:/, '')}`;
+      const e = counted.get(key) ?? { count: 0, hits: [] };
+      e.count++;
+      e.hits.push({
+        file, line: i + 1, token: token.replace(/^[a-z-]*:/, ''), verdict,
+        text: lines[i].trim().slice(0, 160),
+      });
+      counted.set(key, e);
+    };
     FAMILY_RE.lastIndex = 0;
     let m;
     while ((m = FAMILY_RE.exec(lines[i])) !== null) {
       const verdict = judge(m[1], m[2], m[3]);
       if (verdict === null) continue;
-      const token = m[0].replace(/^[a-z-]*:/, '');
-      const key = `${file}\t${token}`;
-      const e = counted.get(key) ?? { count: 0, hits: [] };
-      e.count++;
-      e.hits.push({ file, line: i + 1, token, verdict, text: lines[i].trim().slice(0, 160) });
-      counted.set(key, e);
+      record(m[0], verdict);
     }
+    // Liste noire shadcn — positions disjointes de FAMILY_RE par construction :
+    // le segment qui suit le préfixe est soit une famille du preset, soit un nom
+    // de la liste noire, jamais les deux (vérifié au démarrage).
+    SHADCN_RE.lastIndex = 0;
+    while ((m = SHADCN_RE.exec(lines[i])) !== null) record(m[0], 'famille-shadcn');
   }
 }
 
@@ -254,7 +314,9 @@ console.error('');
 for (const v of violations) {
   const why = v.verdict === 'alpha-mort'
     ? 'modificateur alpha sur une couleur déclarée `var()` nue — Tailwind supprime la déclaration'
-    : 'cette clé n\'existe dans aucune famille du preset — la classe n\'est jamais générée';
+    : v.verdict === 'famille-shadcn'
+      ? 'nom de famille shadcn/ui — ce dépôt ne l\'a jamais déclaré, la classe n\'est jamais générée'
+      : 'cette clé n\'existe dans aucune famille du preset — la classe n\'est jamais générée';
   console.error(`  ${v.file}:${v.line}  « ${v.token} »  (plafond ${v.overBaseline})`);
   console.error(`    ${why}`);
   console.error(`    ${v.text}`);
@@ -269,7 +331,13 @@ console.error('  2. ALPHA MORT sur une BORDURE ou un ANNEAU : retire le modifica
 console.error('     (`border-danger/40` → `border-danger`). L\'alpha ne rendait déjà rien ;');
 console.error('     le retirer ne change pas le pixel, il rend le code honnête.');
 console.error('');
-console.error('  3. CLÉ INCONNUE : ouvre packages/ui/tailwind-preset.ts et prends le nom réel.');
+console.error('  3. FAMILLE SHADCN (`bg-background`, `text-muted-foreground`, `ring-ring`…) :');
+console.error('     ce vocabulaire vient d\'un exemple de doc, pas de ce dépôt. Traduis vers le');
+console.error('     token du système — fond `bg-bg-elevated` / `bg-surface-N`, texte');
+console.error('     `text-text-muted`, bordure `border-border-subtle`, anneau `outline-gold`.');
+console.error('     N\'ajoute JAMAIS le nom au preset pour faire taire la garde.');
+console.error('');
+console.error('  4. CLÉ INCONNUE : ouvre packages/ui/tailwind-preset.ts et prends le nom réel.');
 console.error('     Si le token MANQUE vraiment au système, ajoute-le au preset ET aux deux');
 console.error('     thèmes de packages/ui/src/tokens/colors.css — la garde l\'acceptera seule.');
 console.error('');
@@ -277,7 +345,7 @@ console.error('  4. Besoin d\'un vrai fond translucide ? Seule la famille `cat-*
 console.error('     (déclarée en triplet RGB). Une teinte catégorielle reste réservée à');
 console.error('     l\'identité d\'une catégorie de produit — pas à un état.');
 console.error('');
-console.error(`  5. N'AJOUTE PAS l'occurrence à ${BASELINE} :`);
+console.error(`  6. N'AJOUTE PAS l'occurrence à ${BASELINE} :`);
 console.error('     cette liste est un plafond gelé, elle ne peut que décroître.');
 reportSlack();
 process.exit(1);

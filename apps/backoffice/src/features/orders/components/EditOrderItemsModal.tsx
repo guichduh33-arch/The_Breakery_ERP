@@ -19,7 +19,7 @@
 // update_order_item_qty déduit la perte sur le delta.
 
 import { useState, useMemo } from 'react';
-import { CenterModal } from '@breakery/ui';
+import { Button, CenterModal } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useEditOrderItems } from '@/features/orders/hooks/useEditOrderItems.js';
 import { ProductPicker } from '@/features/orders/components/ProductPicker.js';
@@ -276,15 +276,22 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
         <div className="mt-4 flex items-center justify-between border-t pt-3">
           <span className="text-sm text-text-muted">{pendingCount} changes pending</span>
           <div className="flex gap-2">
-            <button onClick={handleCancel} className="px-4 py-2 text-sm">Cancel</button>
-            <button
+            {/* Alignées sur les deux modales clients : `secondary` / `ink` en
+              * taille sm. L'action terminale rendait `bg-info text-white` —
+              * `text-white` est une couleur EN DUR (DESIGN.md, dernier Don't) et
+              * `bg-info` est un token d'ÉTAT employé en remplissage de bouton,
+              * ce qui n'existe nulle part ailleurs dans le back-office : le bleu
+              * y signale une information, il ne porte pas un geste. */}
+            <Button variant="secondary" size="sm" onClick={handleCancel}>Cancel</Button>
+            <Button
+              variant="ink"
+              size="sm"
               onClick={() => { void handleApply(); }}
               disabled={pendingCount === 0 || m.isPending || lockedAuthMissing}
-              className="px-4 py-2 text-sm bg-info text-white rounded disabled:opacity-50"
               data-testid="apply-changes"
             >
               {m.isPending ? 'Applying…' : 'Apply changes'}
-            </button>
+            </Button>
           </div>
         </div>
     </CenterModal>

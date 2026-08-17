@@ -158,7 +158,11 @@ export default function ExpensesListPage(): JSX.Element {
       id:    'date',
       header: 'Date',
       width: '120px',
-      render: (r) => <span className="tabular-nums text-text-secondary">{formatDate(r.expense_date)}</span>,
+      // The Mono-Carries-Data Rule nomme explicitement l'HORODATAGE. Le lot qui
+      // a corrigé les montants de cette table s'est arrêté aux montants :
+      // `tabular-nums` seul demande des chiffres de largeur fixe à Instrument
+      // Sans, il ne le remplace pas par du mono.
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{formatDate(r.expense_date)}</span>,
     },
     {
       id:    'number',

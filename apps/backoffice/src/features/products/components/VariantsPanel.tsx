@@ -39,7 +39,6 @@ import { ConvertToParentDialog } from './ConvertToParentDialog.js';
 import { AddVariantDialog } from './AddVariantDialog.js';
 import { DissolveParentDialog } from './DissolveParentDialog.js';
 import { DeleteVariantDialog } from './DeleteVariantDialog.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 export interface VariantsPanelProduct {
   id:                 string;
@@ -173,15 +172,23 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           data-testid="variants-empty-state"
           action={
             canWrite ? (
-              <button
+              // The One Ink Fill Rule : le bandeau de la fiche produit
+              // (ProductDetailHeader) porte déjà « Save changes » en encre sur
+              // les SIX onglets. Cet appel à l'action mesurait 294 × 32 px —
+              // le plus large aplat #201d19 de l'écran, il volait la hiérarchie
+              // que le bouton du bandeau installe. Un panneau de fiche prend le
+              // primitif partagé (DESIGN.md § Components : « le bouton des
+              // modales et des formulaires »), pas les chaînes de bandeau.
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
-                className={TOOLBAR_BTN_PRIMARY}
                 onClick={() => setConvertOpen(true)}
                 data-testid="convert-to-parent-cta"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" aria-hidden />
                 Convert to parent + create first variant
-              </button>
+              </Button>
             ) : null
           }
         />
@@ -212,15 +219,20 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           </span>
         </div>
         {canWrite && (
-          <button
+          // Même arbitrage : l'encre de l'écran appartient au bandeau de page.
+          // Cette branche et celle de l'état vide s'excluent — un seul des deux
+          // rend à la fois — mais chacune ajoutait un SECOND aplat encre à
+          // celui du bandeau.
+          <Button
+            variant="secondary"
+            size="sm"
             type="button"
-            className={TOOLBAR_BTN_PRIMARY}
             onClick={() => setAddOpen(true)}
             data-testid="add-variant-cta"
           >
             <Plus className="h-3.5 w-3.5 mr-1" aria-hidden />
             Add variant
-          </button>
+          </Button>
         )}
       </div>
 

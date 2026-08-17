@@ -51,7 +51,18 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
       {mut.isError && (
         <p className="text-sm text-danger">{(mut.error).message}</p>
       )}
-      <Button variant="ink" disabled={diff === 0 || mut.isPending || !canAdjust} onClick={book}>
+      {/* `secondary`, pas `ink` : ce panneau vit sur CashTreasuryPage, dont le
+        * bandeau porte déjà « New movement » en encre. Le bouton était encre et
+        * DÉSACTIVÉ tant que l'écart valait zéro — donc neutralisé, invisible
+        * comme aplat — mais il redevenait un second #201d19 dès qu'un écart
+        * apparaissait, c'est-à-dire exactement quand la page compte. The One
+        * Ink Fill Rule ne se mesure pas sur l'état au repos. */}
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={diff === 0 || mut.isPending || !canAdjust}
+        onClick={book}
+      >
         {diff === 0 ? 'Balanced' : `Book ${diff > 0 ? 'overage' : 'shortage'}`}
       </Button>
       {!canAdjust && (

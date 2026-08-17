@@ -149,8 +149,12 @@ export function RecordCashMovementModal({
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button variant="ink" onClick={submit} disabled={!valid || mut.isPending}>
+            {/* `secondary size="sm"` (36 px) et non `ghost` par défaut (56 px) :
+              * les modales du back-office déjà corrigées alignent leur paire sur
+              * ce cran, et un « Cancel » plus HAUT que l'action terminale
+              * inversait la hiérarchie de la paire. */}
+            <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+            <Button variant="ink" size="sm" onClick={submit} disabled={!valid || mut.isPending}>
               {mut.isPending ? 'Saving…' : 'Record'}
             </Button>
           </div>

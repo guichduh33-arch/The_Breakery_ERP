@@ -21,7 +21,7 @@ colors:
   paper-inert: "#fafaf8"
   grid-dot: "#dfddd6"
   border-subtle: "#e3e1db"
-  border-strong: "#cdcac2"
+  border-strong: "#86827a"
   border-row: "#f3f1ec"
   text-primary: "#1a1917"
   text-secondary: "#55524c"
@@ -215,8 +215,15 @@ même accent, même vocabulaire d'état, même échelle.
 - **Papier inerte** (`#fafaf8`) : en-tête et pied de tableau, champ non éditable.
   Hors rampe : ce n'est pas une distance à l'œil, c'est un fond qui dit « ce bloc
   ne se lit pas ».
-- **Bordures** : filet de carte (`#e3e1db`), bordure de contrôle (`#cdcac2`),
+- **Bordures** : filet de carte (`#e3e1db`), bordure de contrôle (`#86827a`),
   séparateur de ligne de tableau (`#f3f1ec`).
+  La bordure de contrôle est le **seul** trait qui délimite un bouton secondaire
+  ou un champ : elle porte donc le seuil de **3:1 des objets graphiques**
+  (WCAG 1.4.11), pas celui du texte. Elle a été assombrie le 2026-08-18 pour
+  cette raison — l'ancien `#cdcac2` ne valait que 1,42:1 contre le papier de
+  page, et un bouton secondaire y était une limite invisible. `#86827a` clôt le
+  seuil sur les quatre fonds du thème : 3,83:1 feuille blanche, 3,33:1 papier,
+  3,66:1 en-tête inerte, 3,10:1 état pressé.
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
   (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
   plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
@@ -248,6 +255,21 @@ là.
 back-office. Il souligne, il colore un texte, il marque un focus. Un bouton doré
 appartient à la caisse, pas ici. Test : si vous retirez tous les aplats d'or de
 l'écran, rien ne doit disparaître — seul le sens de lecture s'appauvrit.
+
+*Exception — la piste d'interrupteur et le point d'état.* Ces deux-là remplissent
+en or à l'état allumé, et c'est le test de la règle elle-même qui les en excuse :
+retirez le remplissage d'une piste d'interrupteur et ce n'est pas le sens de
+lecture qui s'appauvrit, c'est **l'information d'état qui disparaît**. Le
+remplissage n'y est donc pas un décor, c'est le signal — la règle ne le vise pas.
+L'exception est **bornée à ces deux objets** : une piste d'interrupteur et un
+point d'état. Elle ne s'étend pas aux badges, aux pastilles, aux puces de
+sélection ni à « les petits éléments » — tous ceux-là portent leur état par le
+liseré et par le texte, où le retrait de l'or laisse la forme intacte. Elle ne
+s'obtient pas non plus en repliant sur l'encre : essayée en encre, la piste
+posait cinq aplats `#201d19` sur le seul onglet General de la fiche produit, en
+plus du bouton du bandeau, ce qui enfreint **The One Ink Fill Rule** (arbitré le
+2026-08-18). Contrainte de mesure : le curseur doit tenir 3:1 sur la piste dans
+**les deux** états — 6,22:1 sur l'or, 3,83:1 sur la piste éteinte.
 
 **The One Ink Fill Rule.** Un seul bloc encré par écran en plus de la barre de
 navigation : soit le bouton qui crée, soit la tuile qui répond à la question
@@ -334,7 +356,16 @@ panneau. Le reste de l'échelle est en base 4 px, avec quatre paliers sémantiqu
 — compact (12 px, densité de rush), carte (20 px), page (28 px), section (48 px).
 
 Les grilles de dashboard descendent en marches franches : 2 colonnes en petit
-écran, 4 en medium, 7 en extra-large pour la bande de KPI. Les tableaux ont deux
+écran, 3 en medium, **4 en extra-large** pour la bande de KPI — donc deux
+rangées pour ses sept tuiles. Le chiffre n'est pas un réglage de densité, il est
+tenu par **The Value-Width Rule** : à sept colonnes la tuile n'offrait que
+134 px de contenu, quand la valeur héro `Rp 8,42 jt` en demande 148,2 px à 26 px
+de corps et une valeur ordinaire `-Rp 3,85 jt` 146,8 px à 23 px. Les deux
+coupaient. Réduire les corps aurait fait tenir les chaînes en détruisant la
+hiérarchie héro/ordinaire — or c'est elle qui porte l'information. À quatre
+colonnes la tuile vaut ≈ 297 px pour ≈ 268 px de contenu, et toute la bande
+tient sur une ligne chacune (arbitré le 2026-08-18). Deux rangées de tuiles
+lisibles valent mieux que sept tuiles qui coupent. Les tableaux ont deux
 densités, la compacte resserrant les cellules à 14/10 px pour les écrans de
 travail où trois lignes de plus valent mieux que de l'air.
 
@@ -484,8 +515,13 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
 - **Bouton de bandeau de page** (`TOOLBAR_BTN_*`) : hauteur 32 px, rayon 3 px,
   14 px (`--type-sm`) en graisse 500. Le primaire est **encre** sur `#201d19`, un seul par
   bandeau, celui qui crée. Le secondaire est une feuille blanche bordée de
-  `#cdcac2` qui vire au papier pressé au survol. L'icône d'un bouton secondaire
+  `#86827a` qui vire au papier pressé au survol. L'icône d'un bouton secondaire
   est grise : elle ne concurrence pas le libellé.
+  **Ces chaînes appartiennent au bandeau de page, et à lui seul.** Une action de
+  panneau, de carte, de modale ou de formulaire prend le primitif partagé. La
+  frontière a été franchie une fois dans les deux sens — des boutons de panneau
+  en `TOOLBAR_BTN_*`, un bouton de bandeau en primitif — et les deux fois le
+  résultat a été deux hauteurs de bouton sur le même écran (2026-08-18).
 - **Bouton primitif partagé** (`@breakery/ui`) : hauteur 56 px, rayon 4 px,
   capitales interlettrées. Son variant `primary` est **vert** — couleur réservée
   au chemin de l'argent — et son variant `gold` remplit en or. C'est le bouton

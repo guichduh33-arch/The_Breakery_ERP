@@ -459,12 +459,27 @@ export function RecipeBuilder({
                   {/* Secondaire : ajouter une ligne n'est pas l'action
                       terminale du formulaire. L'aplat d'or violait
                       The Ink-Not-Gold Rule et `rounded-full`
-                      The Tight-Corner Rule (6 px au maximum). */}
+                      The Tight-Corner Rule (6 px au maximum).
+
+                      Le `className` RÉÉCRIVAIT le primitif par tailwind-merge :
+                      `text-xs` ramenait le corps de 14 à 12 px et
+                      `uppercase tracking-widest` ajoutait des capitales
+                      interlettrées que `variant="secondary"` ne porte pas — le
+                      bouton parlait la langue du variant `primary`, qu'il n'est
+                      pas. Les trois sont retirés.
+
+                      `h-touch-min` (44 px) RESTE, et c'est un alignement, pas un
+                      restylage : ce bouton partage sa rangée de grille avec
+                      l'`Input` de quantité et le `Select` d'unité, tous deux à
+                      44 px par le primitif. Aucun cran de `size` ne vaut 44 —
+                      `sm` 36, `md` 56, `lg` 80 — donc laisser le primitif
+                      décider poserait un bouton de 56 px au milieu de champs de
+                      44 px. La contrainte vient de la rangée, pas du goût. */}
                   <Button
                     type="submit"
                     variant="secondary"
                     disabled={!canAdd}
-                    className="h-touch-min w-full text-xs uppercase tracking-widest"
+                    className="h-touch-min w-full"
                   >
                     <Plus className="h-4 w-4" aria-hidden />
                     {upsertMut.isPending ? 'Saving…' : 'Add ingredient'}

@@ -30,19 +30,38 @@ const SEGMENT_HINTS: Record<SegmentBucket['segment'], string> = {
   lost:      'No visit 180d+',
 };
 
-// Un cran par segment, et SIX crans réellement distincts. L'alpha sur un token
-// `var()` nu ne rendait rien (`bg-gold/30`, `bg-info/30`) et `warn` n'est pas
-// une famille du preset : quatre des six pastilles n'avaient donc aucun fond.
-// Une fois les tokens `-soft` posés, `at_risk` et `dormant` retombaient tous
-// deux sur l'ambre — ils portent maintenant deux sémantiques d'alerte
-// distinctes : l'ambre attire l'attention, le rouge signale la perte proche.
+// La distinction est portée par le LISERÉ, pas par le fond.
+//
+// Tous les tokens `-soft` du thème sont le même alpha 12 % sur du blanc : les
+// six fonds tenaient donc dans une plage de 1,000 à 1,201:1, et `champions` /
+// `loyal` étaient STRICTEMENT identiques (1,000:1, tous deux `bg-gold-soft`).
+// À 12 % d'opacité la teinte est écrasée avec la luminosité — un fond soft ne
+// peut pas porter une catégorie. À pleine saturation, le liseré et le texte le
+// peuvent.
+//
+// Ce que la mesure permet, et ce qu'elle ne permet pas. Chaque liseré clôt les
+// 3:1 de WCAG 1.4.11 contre la feuille blanche de la ligne — 6,22 / 5,32 /
+// 5,63 / 5,91 / 5,56 / 6,06:1 — ce qui est le seuil réellement opposable : un
+// objet graphique se mesure contre sa couleur ADJACENTE, la page. En revanche
+// les six liserés ne sont PAS à 3:1 les uns des autres (plage 1,013→1,169:1) et
+// ne peuvent pas l'être : six couleurs deux à deux à 3:1 exigeraient un écart
+// de luminance de 3^5 ≈ 243:1, davantage que la plage entière du sRGB dans un
+// thème clair. Ce qui les sépare est la TEINTE, pas la luminance — et le
+// libellé du segment, qui reste écrit en toutes lettres, fait que la couleur
+// n'est jamais le seul porteur (WCAG 1.4.1).
+//
+// Escalade sémantique. Elle redescendait au dernier cran : `dormant` était
+// rouge et `lost` — l'état TERMINAL — un blanc neutre, ce qui se lisait comme
+// une rémission. Le ton d'alarme va maintenant jusqu'au bout (`lost` en rouge)
+// et `dormant` prend le gris : un client en sommeil est une ABSENCE, pas une
+// alarme plus forte que `at_risk`.
 const SEGMENT_BADGES: Record<SegmentBucket['segment'], string> = {
-  champions: 'bg-gold-soft text-gold',
-  loyal:     'bg-gold-soft text-text-primary',
-  new:       'bg-info-soft text-info',
-  at_risk:   'bg-warning-soft text-warning',
-  dormant:   'bg-danger-soft text-danger',
-  lost:      'bg-bg-overlay text-text-secondary',
+  champions: 'border-gold bg-gold-soft text-gold',
+  loyal:     'border-success bg-success-soft text-success',
+  new:       'border-info bg-info-soft text-info',
+  at_risk:   'border-warning bg-warning-soft text-warning',
+  dormant:   'border-text-muted bg-surface-4 text-text-secondary',
+  lost:      'border-danger bg-danger-soft text-danger',
 };
 
 export function SegmentList({ segments }: SegmentListProps) {
@@ -71,7 +90,7 @@ export function SegmentList({ segments }: SegmentListProps) {
             <tr key={s.segment} className="border-b border-border-subtle">
               <td className="px-3 py-3">
                 <span
-                  className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${SEGMENT_BADGES[s.segment]}`}
+                  className={`inline-block rounded-sm border px-2 py-0.5 text-xs font-medium ${SEGMENT_BADGES[s.segment]}`}
                 >
                   {SEGMENT_LABELS[s.segment]}
                 </span>

@@ -13,10 +13,11 @@
 # violation.
 #
 # Dernier resserrement : 2026-08-17
+1	apps/backoffice/src/__tests__/loyalty-list.smoke.test.tsx	accent-primary
 1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	bg-red-as-text/5
 1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	border-red-as-text/40
-2	apps/pos/src/features/payment/split/__tests__/SplitPaymentFlow.smoke.test.tsx	to-payment
 1	apps/pos/src/features/payment/split/SplitPaymentFlow.tsx	to-payment
+2	apps/pos/src/features/payment/split/__tests__/SplitPaymentFlow.smoke.test.tsx	to-payment
 1	packages/ui/src/components/IdleWarningToast.tsx	border-warning/40
 1	packages/ui/src/components/ModifierModal.tsx	bg-bg-input/80
 1	packages/ui/src/components/ModifierModal.tsx	text-danger/80
