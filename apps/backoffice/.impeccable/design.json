@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-07T14:40:07Z",
+  "generatedAt": "2026-08-17T18:17:20Z",
   "title": "Design System: The Breakery Backoffice",
   "extensions": {
     "colorMeta": {
@@ -13,8 +13,8 @@
       "gold": {
         "role": "primary",
         "displayName": "Or d'encre",
-        "canonical": "#8a6820",
-        "tonalRamp": ["#3d2e0e", "#5e4614", "#745719", "#8a6820", "#a88332", "#c4a25a", "#ddc78e", "#f2e9d4"]
+        "canonical": "#7a5c1c",
+        "tonalRamp": ["#2e230a", "#43320f", "#574112", "#684d18", "#7a5c1c", "#9a7423", "#c7a357", "#e2d2b1"]
       },
       "ink-gold": {
         "role": "secondary",
@@ -52,7 +52,7 @@
         "role": "neutral",
         "displayName": "Encre de texte",
         "canonical": "#1a1917",
-        "tonalRamp": ["#1a1917", "#39362f", "#55524c", "#7a766e", "#9b968d", "#b3afa7", "#cdcac2", "#e3e1db"]
+        "tonalRamp": ["#1a1917", "#39362f", "#55524c", "#6b6861", "#88847c", "#b3afa7", "#c2beb5", "#e3e1db"]
       },
       "text-inert": {
         "role": "neutral",
@@ -101,7 +101,7 @@
       },
       "title": {
         "displayName": "Titre de carte",
-        "purpose": "Le libellé d'une carte de dashboard — un libellé mono capitales, pas une phrase."
+        "purpose": "Le libellé d'une carte de dashboard — un libellé mono capitales, pas une phrase. Rend --type-xs (12 px) : le même palier que Label, pas un cran au-dessus."
       },
       "body": {
         "displayName": "Prose d'interface",
@@ -109,7 +109,7 @@
       },
       "label": {
         "displayName": "Label mono",
-        "purpose": "En-tête de colonne de tableau, en-tête de colonne du panneau de navigation, libellé de tuile."
+        "purpose": "En-tête de colonne de tableau, en-tête de colonne du panneau de navigation, libellé de tuile. Rend --type-xs (12 px). La graisse dépend de l'appelant : SectionLabel pose 700, les constantes de tuile redescendent à 600."
       },
       "brand": {
         "displayName": "Monogramme",
@@ -121,7 +121,7 @@
       { "name": "carte", "value": "0 2px 8px rgba(45, 34, 15, 0.09)", "purpose": "Carte en état survolé. Jamais au repos sur un dashboard." },
       { "name": "flottant", "value": "0 18px 40px rgba(28, 23, 18, 0.20)", "purpose": "Panneau de navigation déroulant, menu utilisateur." },
       { "name": "modale", "value": "0 20px 56px rgba(45, 34, 15, 0.22)", "purpose": "Dialogues et feuilles." },
-      { "name": "focus", "value": "0 0 0 3px rgba(138, 104, 32, 0.32)", "purpose": "Halo de focus, dérivé de l'accent — liseré et halo de la même teinte." },
+      { "name": "focus", "value": "0 0 0 3px rgba(138, 104, 32, 0.32)", "purpose": "Halo de focus, dérivé de l'accent — liseré et halo de la même teinte. ÉCART CONNU (relevé du 2026-08-18) : cette valeur est celle du code (elevation.css), mais son rgb dérive de l'or d'AVANT l'assombrissement du 2026-08-13, alors que --border-focus suit --gold-base. Le liseré et son halo ne sont donc plus de la même couleur, contrairement à la règle." },
       { "name": "inset", "value": "inset 0 1px 2px rgba(45, 34, 15, 0.06)", "purpose": "Surface en creux (carte inset)." }
     ],
     "motion": [
@@ -271,7 +271,7 @@
       "refersTo": "toolbar-button-primary",
       "description": "L'action qui crée quelque chose. Un seul par bandeau de page, rempli d'encre.",
       "html": "<button class=\"ds-toolbar-primary\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>New product</button>",
-      "css": ".ds-toolbar-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: none; border-radius: 3px; background: #201d19; color: #fffdf9; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-primary:hover { background: #2e2925; } .ds-toolbar-primary:focus-visible { outline: 2px solid #8a6820; outline-offset: 2px; } .ds-toolbar-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+      "css": ".ds-toolbar-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: none; border-radius: 3px; background: #201d19; color: #fffdf9; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-primary:hover { background: #2e2925; } .ds-toolbar-primary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-toolbar-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
     },
     {
       "name": "Bouton de bandeau — secondaire",
@@ -279,7 +279,7 @@
       "refersTo": "toolbar-button-secondary",
       "description": "Toutes les autres actions du bandeau. Feuille blanche bordée ; son icône est grise pour ne pas concurrencer le libellé.",
       "html": "<button class=\"ds-toolbar-secondary\"><svg class=\"ds-toolbar-icon\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3\"/></svg>Export</button>",
-      "css": ".ds-toolbar-secondary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #cdcac2; border-radius: 3px; background: #ffffff; color: #1a1917; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-secondary:hover { background: #e9e7e2; } .ds-toolbar-secondary:focus-visible { outline: 2px solid #8a6820; outline-offset: 2px; } .ds-toolbar-icon { color: #7a766e; }"
+      "css": ".ds-toolbar-secondary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #cdcac2; border-radius: 3px; background: #ffffff; color: #1a1917; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-secondary:hover { background: #e9e7e2; } .ds-toolbar-secondary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-toolbar-icon { color: #6b6861; }"
     },
     {
       "name": "Tuile de KPI — héroïque",
@@ -287,7 +287,7 @@
       "refersTo": "kpi-tile-hero",
       "description": "La première tuile de la bande, remplie d'encre. Une seule par écran : une deuxième détruirait la hiérarchie qu'elle installe.",
       "html": "<div class=\"ds-kpi-hero\"><h3 class=\"ds-kpi-hero-label\">Net revenue</h3><span class=\"ds-kpi-hero-value\">Rp 8,42 jt</span><div class=\"ds-kpi-hero-deltas\"><span class=\"ds-kpi-delta-up\">▲ 12,4% <em>yest</em></span><span class=\"ds-kpi-delta-down\">▼ 3,1% <em>D-7</em></span></div></div>",
-      "css": ".ds-kpi-hero { display: flex; flex-direction: column; gap: 5px; padding: 13px 15px; border: 1px solid #201d19; border-radius: 4px; background: #201d19; } .ds-kpi-hero-label { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #a09789; } .ds-kpi-hero-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: #fffdf9; } .ds-kpi-hero-deltas { display: flex; flex-wrap: wrap; gap: 0 12px; min-height: 16px; align-items: baseline; } .ds-kpi-delta-up, .ds-kpi-delta-down { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 10px; font-variant-numeric: tabular-nums; } .ds-kpi-delta-up { color: #86efac; } .ds-kpi-delta-down { color: #fca5a5; } .ds-kpi-hero-deltas em { font-style: normal; color: #a09789; }"
+      "css": ".ds-kpi-hero { display: flex; flex-direction: column; gap: 5px; padding: 13px 15px; border: 1px solid #201d19; border-radius: 4px; background: #201d19; } .ds-kpi-hero-label { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #a09789; } .ds-kpi-hero-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: #fffdf9; } .ds-kpi-hero-deltas { display: flex; flex-wrap: wrap; gap: 0 12px; min-height: 16px; align-items: baseline; } .ds-kpi-delta-up, .ds-kpi-delta-down { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-variant-numeric: tabular-nums; } .ds-kpi-delta-up { color: #86efac; } .ds-kpi-delta-down { color: #fca5a5; } .ds-kpi-hero-deltas em { font-style: normal; color: #a09789; }"
     },
     {
       "name": "Carte de dashboard",
@@ -295,7 +295,7 @@
       "refersTo": "card",
       "description": "Feuille blanche sans ombre, titre en label mono, slot droit pour le marqueur live ou la période.",
       "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-title\">Open orders</h2><span class=\"ds-live\"><i></i>live</span></div><p class=\"ds-card-sub\">Unpaid tickets across every terminal</p><div class=\"ds-card-body\"><span class=\"ds-card-value\">7</span></div><div class=\"ds-card-foot\">3 older than 2 hours</div></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-live { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #7a766e; } .ds-live i { width: 6px; height: 6px; border-radius: 50%; background: #187a52; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: #7a766e; } .ds-card-body { margin-top: 12px; flex: 1; } .ds-card-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 23px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #1a1917; } .ds-card-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid #eceae5; font-size: 12.5px; color: #7a766e; }"
+      "css": ".ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6861; } .ds-live i { width: 6px; height: 6px; border-radius: 50%; background: #187a52; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: #6b6861; } .ds-card-body { margin-top: 12px; flex: 1; } .ds-card-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 23px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #1a1917; } .ds-card-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid #eceae5; font-size: 12px; color: #6b6861; }"
     },
     {
       "name": "Carte restreinte",
@@ -303,7 +303,7 @@
       "refersTo": "card",
       "description": "L'état d'une carte quand le rôle n'a pas le droit sur sa donnée. La page dégrade carte par carte, sans erreur rouge.",
       "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-title\">Cash treasury</h2></div><div class=\"ds-restricted\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"/></svg>Restricted — your role does not have access to this data.</div></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-restricted { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 0; font-size: 12.5px; color: #7a766e; }"
+      "css": ".ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-restricted { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 0; font-size: 12px; color: #6b6861; }"
     },
     {
       "name": "Champ de saisie",
@@ -311,7 +311,7 @@
       "refersTo": "input",
       "description": "Hauteur 44 px, bordure ferme, focus or — liseré et halo de la même teinte.",
       "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search products, SKU…\" />",
-      "css": ".ds-input { display: flex; width: 100%; height: 44px; padding: 8px 12px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; color: #1a1917; } .ds-input::placeholder { color: #7a766e; } .ds-input:focus-visible { outline: 2px solid #8a6820; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(138, 104, 32, 0.32); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+      "css": ".ds-input { display: flex; width: 100%; height: 44px; padding: 8px 12px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; color: #1a1917; } .ds-input::placeholder { color: #6b6861; } .ds-input:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(138, 104, 32, 0.32); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
     },
     {
       "name": "Tableau de données",
@@ -319,7 +319,7 @@
       "refersTo": "table-header",
       "description": "En-tête et pied sur papier inerte, labels mono capitales, colonnes numériques tabulaires alignées à droite. Le pied se rend même quand la table est vide.",
       "html": "<div class=\"ds-table-wrap\"><table class=\"ds-table\"><thead><tr><th>Product</th><th>SKU</th><th class=\"ds-num\">Stock</th><th class=\"ds-num\">Retail</th></tr></thead><tbody><tr><td>Croissant beurre</td><td class=\"ds-mono\">VIE-001</td><td class=\"ds-num\">42</td><td class=\"ds-num ds-price\">Rp 18,000</td></tr><tr class=\"ds-zebra\"><td>Pain au chocolat</td><td class=\"ds-mono\">VIE-002</td><td class=\"ds-num\">18</td><td class=\"ds-num ds-price\">Rp 22,000</td></tr><tr><td>Baguette tradition</td><td class=\"ds-mono\">BOU-004</td><td class=\"ds-num\">6</td><td class=\"ds-num ds-price\">Rp 35,000</td></tr></tbody></table><div class=\"ds-table-foot\">3 of 318</div></div>",
-      "css": ".ds-table-wrap { width: 100%; overflow: hidden; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-table { width: 100%; border-collapse: collapse; } .ds-table thead { background: #fafaf8; border-bottom: 1px solid #e3e1db; } .ds-table th { padding: 10px 14px; text-align: left; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #7a766e; } .ds-table td { padding: 10px 14px; border-top: 1px solid #f3f1ec; font-size: 14px; color: #1a1917; } .ds-table .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-table .ds-mono { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12.5px; color: #55524c; } .ds-table .ds-price { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; color: #8a6820; } .ds-table tbody tr:hover { background: rgba(233, 231, 226, 0.6); } .ds-table .ds-zebra { background: #f0efec; } .ds-table-foot { padding: 10px 14px; border-top: 1px solid #e3e1db; background: #fafaf8; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 11px; color: #7a766e; }"
+      "css": ".ds-table-wrap { width: 100%; overflow: hidden; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-table { width: 100%; border-collapse: collapse; } .ds-table thead { background: #fafaf8; border-bottom: 1px solid #e3e1db; } .ds-table th { padding: 10px 14px; text-align: left; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6861; } .ds-table td { padding: 10px 14px; border-top: 1px solid #f3f1ec; font-size: 14px; color: #1a1917; } .ds-table .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-table .ds-mono { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 14px; color: #55524c; } .ds-table .ds-price { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; color: #7a5c1c; } .ds-table tbody tr:hover { background: rgba(233, 231, 226, 0.6); } .ds-table .ds-zebra { background: #f0efec; } .ds-table-foot { padding: 10px 14px; border-top: 1px solid #e3e1db; background: #fafaf8; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; color: #6b6861; }"
     },
     {
       "name": "Barre de navigation",
@@ -327,7 +327,7 @@
       "refersTo": "nav-tab",
       "description": "52 px d'encre fermés par un filet or. L'onglet actif porte un soulignement or interne ; l'onglet ouvert porte un fond relevé. Les deux états se cumulent.",
       "html": "<header class=\"ds-nav\"><a class=\"ds-nav-brand\"><span class=\"ds-nav-mark\">B</span>The Breakery</a><nav class=\"ds-nav-tabs\"><a class=\"ds-tab ds-tab-active\">Today</a><a class=\"ds-tab\">Sales</a><a class=\"ds-tab ds-tab-open\">Stock</a><a class=\"ds-tab\">Purchase</a><a class=\"ds-tab\">Finance</a><a class=\"ds-tab\">Reports</a><a class=\"ds-tab\">Admin</a></nav></header>",
-      "css": ".ds-nav { display: flex; align-items: center; gap: 22px; height: 52px; padding: 0 22px; background: #201d19; border-bottom: 1px solid rgba(138, 104, 32, 0.35); font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-nav-brand { display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 600; color: #fffdf9; text-decoration: none; } .ds-nav-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 3px; background: #8a6820; font-family: 'Playfair Display', Georgia, serif; font-size: 14px; line-height: 1; color: #fffdf9; } .ds-nav-tabs { display: flex; align-items: center; } .ds-tab { display: flex; align-items: center; height: 52px; padding: 0 13px; font-size: 13.5px; color: #c4bcae; text-decoration: none; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: #fffdf9; } .ds-tab-active { font-weight: 500; color: #fffdf9; box-shadow: inset 0 -2px 0 #d3ab5c; } .ds-tab-open { background: #2e2925; color: #fffdf9; } .ds-tab:focus-visible { outline: 2px solid #d3ab5c; outline-offset: -2px; }"
+      "css": ".ds-nav { display: flex; align-items: center; gap: 22px; height: 52px; padding: 0 22px; background: #201d19; border-bottom: 1px solid rgba(122, 92, 28, 0.35); font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-nav-brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #fffdf9; text-decoration: none; } .ds-nav-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 3px; background: #7a5c1c; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; line-height: 1; color: #fffdf9; } .ds-nav-tabs { display: flex; align-items: center; } .ds-tab { display: flex; align-items: center; height: 52px; padding: 0 13px; font-size: 14px; color: #c4bcae; text-decoration: none; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: #fffdf9; } .ds-tab-active { font-weight: 500; color: #fffdf9; box-shadow: inset 0 -2px 0 #d3ab5c; } .ds-tab-open { background: #2e2925; color: #fffdf9; } .ds-tab:focus-visible { outline: 2px solid #d3ab5c; outline-offset: -2px; }"
     },
     {
       "name": "Badge d'état",
@@ -335,7 +335,7 @@
       "refersTo": "toolbar-button-secondary",
       "description": "Pastille de statut sur fond teinté à 12 % — la couleur porte le sens, jamais un remplissage plein.",
       "html": "<span class=\"ds-badge ds-badge-ok\">Received</span> <span class=\"ds-badge ds-badge-warn\">Partial</span> <span class=\"ds-badge ds-badge-danger\">Overdue</span> <span class=\"ds-badge ds-badge-gold\">Retail</span>",
-      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; } .ds-badge-ok { background: rgba(24, 122, 82, 0.12); color: #187a52; } .ds-badge-warn { background: rgba(138, 90, 16, 0.12); color: #8a5a10; } .ds-badge-danger { background: rgba(180, 52, 44, 0.12); color: #b4342c; } .ds-badge-gold { background: rgba(138, 104, 32, 0.12); color: #8a6820; }"
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; } .ds-badge-ok { background: rgba(24, 122, 82, 0.12); color: #187a52; } .ds-badge-warn { background: rgba(138, 90, 16, 0.12); color: #8a5a10; } .ds-badge-danger { background: rgba(180, 52, 44, 0.12); color: #b4342c; } .ds-badge-gold { background: rgba(122, 92, 28, 0.12); color: #7a5c1c; }"
     }
   ],
   "narrative": {
