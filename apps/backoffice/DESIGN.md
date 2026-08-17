@@ -397,8 +397,39 @@ corps propre à l'archétype.
 
 **1. List** — *ce qui presse d'abord.* Une bande de compteurs qui **sont** les
 filtres, une table dense, un pied toujours rendu. Trié par urgence et non par
-ordre alphabétique ; la dernière colonne porte l'action de ligne ; la sélection
-alimente une action groupée annoncée dans le bandeau.
+ordre alphabétique ; la dernière colonne porte l'action de ligne. L'état de liste
+— filtre actif, recherche, tri, progression — vit dans l'**URL** : un lien vers
+« les six produits sans prix de revient » doit pouvoir se coller dans une
+conversation, et le retour arrière depuis une fiche doit rendre la liste qu'on
+regardait.
+
+*Pas de sélection multiple ni d'action groupée.* L'archétype les a promises
+jusqu'au 2026-08-18 ; aucune instance ne les a jamais tenues, et le catalogue
+produits les a retirées avec son motif : elles réclament des RPC de masse gatées
+et auditées qui n'existent pas, et une case à cocher qui n'ouvre sur rien promet
+une capacité que l'écran n'a pas. Un archétype qui décrit une capacité
+inexistante fabrique de la fausse dette à chaque nouvelle instance. Elles
+reviendront ici avec les RPC, pas avant.
+
+**L'axe de variation : le régime de récupération.** Il ne fait pas deux
+archétypes — l'ossature, la bande, la table et le pied sont les mêmes — mais il
+décide du pied et du lieu du filtrage. Une instance nomme son régime avant d'être
+dessinée.
+
+| | **Borné** — chargé en entier | **Non borné** — fenêtré |
+|---|---|---|
+| Filtre, recherche, tri | en mémoire | **serveur** |
+| Progression | pagination numérotée | curseur, « Load more » |
+| Fenêtre temporelle | aucune | oui, quand le flux la porte |
+| Compteurs | dérivés des lignes reçues | **comptés serveur** |
+| Pied | « 1–15 of 373 » | *chargé* contre *existant* |
+| Instances | Products, Customers | Orders, B2B orders |
+
+Le critère n'est pas la taille du jour, c'est la **borne**. Un catalogue est borné
+par le travail de celui qui le tient ; un registre de commandes croît tant que le
+commerce tourne. « Page 7 » d'un flux qui bouge n'est pas une adresse stable, et
+un pied qui compte les lignes reçues en les présentant comme le tout ment en
+silence dès que le plafond de lecture est atteint.
 *Instances : Stock alerts, B2B orders, Products.*
 
 **2. Report** — *une question, une réponse, ses ventilations.* Contrôle de

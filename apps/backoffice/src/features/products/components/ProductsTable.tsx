@@ -21,7 +21,7 @@
 // n'ouvre sur rien promet une capacité que l'écran n'a pas. Les cases
 // reviendront avec les RPC, pas avant.
 
-import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
+import { DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
@@ -341,22 +341,20 @@ export function ProductsTable({
     getRowKey: (r) => r.id,
     isLoading,
     loadingRowCount: pageSize,
-    striped: false,
+    // `striped: false` était un HAPAX — la seule occurrence de cette prop dans
+    // tout `apps/backoffice/src`. Une table du catalogue qui ne zèbre pas quand
+    // les quinze autres zèbrent n'exprime aucune intention : elle exprime deux
+    // dates d'écriture. Le défaut du primitif reprend la main.
     density: 'compact',
     sort,
     footer,
+    // L'état vide passe par le primitif (`emptyTitle`/`emptyDescription`), comme
+    // la quinzaine d'autres pages. Le nœud custom qu'il remplace redessinait à
+    // la main ce qu'`EmptyState` fait déjà — même icône générique, même
+    // structure — au prix d'un `<h2>` posé sous le `<h1>` du bandeau sans `<h2>`
+    // intermédiaire ailleurs sur la page.
     emptyTitle: 'No products match these filters',
-    emptyState: (
-      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-        <Package className="h-10 w-10 text-text-subtle" aria-hidden />
-        {/* `<h3>` sous le `<h1>` de PageHeader, sans `<h2>` sur la page : saut
-            de niveau (WCAG 1.3.1). */}
-        <h2 className="text-base font-semibold text-text-primary">No products match these filters</h2>
-        <p className="max-w-prose text-sm text-text-secondary">
-          Clear a counter or widen the search to see the catalogue again.
-        </p>
-      </div>
-    ),
+    emptyDescription: 'Clear a counter or widen the search to see the catalogue again.',
   };
   if (onRowClick !== undefined) tableProps.onRowClick = onRowClick;
   if (onSortChange !== undefined) tableProps.onSortChange = onSortChange;

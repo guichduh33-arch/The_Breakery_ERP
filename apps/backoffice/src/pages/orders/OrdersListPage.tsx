@@ -10,12 +10,14 @@
 
 import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import {
   useOrdersList,
   type OrdersListFilters,
@@ -95,17 +97,11 @@ export default function OrdersListPage(): JSX.Element {
   // (« le SEUL point de contrôle possible pour le CSV », audit reports).
   const canExport   = useAuthStore((s) => s.hasPermission('reports.export'));
 
-  const [params, setParams] = useSearchParams();
-  const patchParams = useCallback((patch: Record<string, string | null>): void => {
-    setParams((prev) => {
-      const p = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null || v === '') p.delete(k);
-        else p.set(k, v);
-      }
-      return p;
-    }, { replace: true });
-  }, [setParams]);
+  // Le bloc `patchParams` est PARTAGÉ (`useListParams`) : il était dupliqué mot
+  // pour mot avec `Products.tsx`. Le récit du bug de review — un `pick` figé qui
+  // capturait un `setSearchParams` périmé — vit désormais dans le hook, avec la
+  // forme fonctionnelle qui le ferme.
+  const [params, patchParams] = useListParams();
 
   const start = params.get('start') ?? defaultStart();
   const end   = params.get('end')   ?? todayIsoDate();
@@ -460,13 +456,13 @@ export default function OrdersListPage(): JSX.Element {
       />
 
       {countersDown && (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+        <QueryErrorBanner
+          onRetry={() => { void counters.refetch(); }}
+          data-testid="orders-counters-error"
+        >
           Order counts could not be loaded — the strip shows dashes rather than
-          numbers that would be wrong.{' '}
-          <button type="button" className="underline" onClick={() => { void counters.refetch(); }}>
-            Try again
-          </button>
-        </p>
+          numbers that would be wrong.
+        </QueryErrorBanner>
       )}
 
       <ListCounterStrip
@@ -559,15 +555,17 @@ export default function OrdersListPage(): JSX.Element {
       </span>
 
       {/* L'erreur SURPLOMBE la table : un refetch raté ne doit pas effacer les
-          lignes que l'opérateur lisait (review PR #367). */}
+          lignes que l'opérateur lisait (review PR #367). Le bandeau est
+          désormais le composant partagé `QueryErrorBanner`, dont ce bloc était
+          le patron. */}
       {query.error !== null && (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+        <QueryErrorBanner
+          detail={query.error.message}
+          onRetry={() => { void query.refetch(); }}
+          data-testid="orders-error"
+        >
           Orders could not be refreshed — the rows below may be out of date.
-          <span className="ml-1 font-data text-xs">{query.error.message}</span>{' '}
-          <button type="button" className="underline" onClick={() => { void query.refetch(); }}>
-            Try again
-          </button>
-        </p>
+        </QueryErrorBanner>
       )}
       {(query.error === null || loadedLines.length > 0) && (
         <DataTable<OrdersListLine>

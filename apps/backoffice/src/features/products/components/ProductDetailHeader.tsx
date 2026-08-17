@@ -34,9 +34,11 @@ export function ProductDetailHeader({
   return (
     <div className="space-y-2">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        {/* « Catalogue » retiré avec celui de `ProductsHeader` : c'est le titre
+            d'une colonne du méga-menu, pas une page, et le laisser ici en
+            faisait le seul segment de la flotte qui ne renvoie à rien. La forme
+            est celle de `CustomerDetailPage` — domaine › liste › objet. */}
         <span>Stock</span>
-        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
-        <span>Catalogue</span>
         <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
         <Link to="/backoffice/products" className="hover:text-text-secondary">Products</Link>
       </nav>

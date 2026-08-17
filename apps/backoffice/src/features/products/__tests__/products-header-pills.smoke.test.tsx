@@ -4,7 +4,7 @@
 //
 // Component-level assertions (ProductsHeader):
 //   1. Import pill is present and fires onImport when provided.
-//   2. Import pill is NOT rendered when onImport is undefined.
+//   2. Import pill is DISABLED and says why when catalog.import is missing.
 //   3. Recipes pill is present and fires onRecipes when provided.
 //   4. No Modifiers button rendered.
 //   5. Products pill carries aria-current="page" and is not a button/link.
@@ -12,7 +12,19 @@
 // Page-level assertions (Products.tsx via mocked deps):
 //   6. Import pill navigates to /backoffice/products/import-export.
 //   7. Recipes pill navigates to /backoffice/inventory/recipes.
-//   8. Import pill is NOT rendered when catalog.import permission is absent.
+//   8. Import pill is DISABLED, not absent, when catalog.import is absent.
+//
+// ── CHANGEMENT DE RÈGLE (campagne design 2026-08-18, lot E) ─────────────────
+//
+// Deux assertions de ce fichier gravaient l'ABSENCE d'un bouton non autorisé.
+// La règle est inversée pour tout le back-office : une action gatée se
+// DÉSACTIVE et dit pourquoi, elle ne disparaît pas. Masquer un contrôle laisse
+// l'utilisateur croire que la fonction n'existe pas — il ne sait pas qu'il lui
+// manque un droit, donc il ne peut pas le demander ; le désactiver nomme la
+// règle. DESIGN.md l'exige déjà de l'archétype Bulk entry (« reste verrouillée…
+// et dit pourquoi ») et `ExportMenu` l'applique depuis la campagne Reports. Ces
+// deux tests tiennent donc désormais la NOUVELLE règle : bouton présent,
+// `disabled`, `title` + `aria-describedby` pointant sur la raison.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -28,6 +40,8 @@ function renderHeader(props: {
   onImport?: (() => void) | undefined;
   onRecipes?: (() => void) | undefined;
   onNew?: (() => void) | undefined;
+  canCreate?: boolean;
+  canImport?: boolean;
 }) {
   return render(
     <MemoryRouter>
@@ -46,11 +60,36 @@ describe('ProductsHeader pills [S45 W-D]', () => {
     expect(onImport).toHaveBeenCalledTimes(1);
   });
 
-  it('Import pill is NOT rendered when onImport is not provided', () => {
-    renderHeader({});
-    // The component conditionally renders {onImport && <PillButton ...>} —
-    // no onImport means no Import button in the DOM at all.
-    expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
+  it('Import pill is DISABLED and names the missing permission', () => {
+    const onImport = vi.fn();
+    renderHeader({ onImport, canImport: false });
+    const btn = screen.getByRole('button', { name: /^import$/i });
+    // Présent, pas absent : l'utilisateur voit que la fonction existe.
+    expect(btn).toBeInTheDocument();
+    expect(btn).toBeDisabled();
+    // La raison est portée DEUX fois — `title` pour la souris,
+    // `aria-describedby` pour le clavier et les lecteurs d'écran, qui ne
+    // reçoivent pas de `title` sur un contrôle non focalisable.
+    expect(btn).toHaveAttribute('title', 'Requires the catalog.import permission.');
+    const describedBy = btn.getAttribute('aria-describedby');
+    expect(describedBy).not.toBeNull();
+    expect(document.getElementById(describedBy!)?.textContent)
+      .toBe('Requires the catalog.import permission.');
+    fireEvent.click(btn);
+    expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('New product is DISABLED and names the missing permission', () => {
+    const onNew = vi.fn();
+    renderHeader({ onNew, canCreate: false });
+    const btn = screen.getByRole('button', { name: /new product/i });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('title', 'Requires the products.create permission.');
+    const describedBy = btn.getAttribute('aria-describedby');
+    expect(document.getElementById(describedBy!)?.textContent)
+      .toBe('Requires the products.create permission.');
+    fireEvent.click(btn);
+    expect(onNew).not.toHaveBeenCalled();
   });
 
   it('Recipes pill is present and calls onRecipes when clicked', () => {
@@ -167,11 +206,16 @@ describe('ProductsPage — header pill navigation [S45 W-D]', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/backoffice/inventory/recipes');
   });
 
-  it('Import pill is NOT rendered when catalog.import permission is absent', async () => {
+  it('Import pill is DISABLED — not absent — when catalog.import is missing', async () => {
     permRef.current = new Set(['products.create']); // no catalog.import
     mockNavigate.mockClear();
     await renderPage();
-    // Products.tsx passes onImport only when canImport — so the pill is fully absent.
-    expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
+    // La page passe désormais `canImport` au bandeau au lieu d'omettre
+    // `onImport` : le bouton reste dans le DOM, verrouillé, et nomme la règle.
+    const btn = screen.getByRole('button', { name: /^import$/i });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('title', 'Requires the catalog.import permission.');
+    fireEvent.click(btn);
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

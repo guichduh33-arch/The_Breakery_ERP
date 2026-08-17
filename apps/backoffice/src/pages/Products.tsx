@@ -15,8 +15,8 @@
 // 2026-08-13) : elles réclament des RPC de masse gatées et auditées qui
 // n'existent pas, et une case à cocher sans action est une promesse fausse.
 
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useState, type JSX } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ProductsHeader } from '@/features/products/components/ProductsHeader.js';
 import { ProductsPageTabs } from '@/features/products/components/ProductsPageTabs.js';
 import { ProductsFilters } from '@/features/products/components/ProductsFilters.js';
@@ -29,13 +29,16 @@ import {
   coercePageSize,
 } from '@/components/ListPagination.js';
 import { ListCounterStrip } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { buildProductCounters } from '@/features/products/counters.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   classifyProduct,
-  PRODUCT_DEFAULT_HIDDEN_COLUMNS,
+  parseHiddenColumns,
+  serializeHiddenColumns,
   type ProductColumnId,
   type ProductCounter,
   type ProductView,
@@ -92,18 +95,10 @@ export default function ProductsPage(): JSX.Element {
   // Les écritures passent par `patchParams` et non par plusieurs `useUrlState` :
   // `setSearchParams` reçoit les paramètres COURANTS, donc deux appels dans le
   // même geste s'écrasent l'un l'autre — et changer un filtre doit écrire le
-  // filtre ET remettre la page à 1 d'un seul mouvement.
-  const [params, setParams] = useSearchParams();
-  const patchParams = useCallback((patch: Record<string, string | null>): void => {
-    setParams((prev) => {
-      const p = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null || v === '') p.delete(k);
-        else p.set(k, v);
-      }
-      return p;
-    }, { replace: true });
-  }, [setParams]);
+  // filtre ET remettre la page à 1 d'un seul mouvement. Le bloc vit désormais
+  // dans `useListParams` (il était dupliqué mot pour mot avec OrdersListPage) ;
+  // les deux pièges qu'il ferme y sont gravés.
+  const [params, patchParams] = useListParams();
 
   const counterParamRaw = params.get('counter') ?? 'all';
   const counter: ProductCounter = COUNTERS.has(counterParamRaw as ProductCounter)
@@ -146,8 +141,14 @@ export default function ProductsPage(): JSX.Element {
   // Le défaut n'est pas « tout montrer » : onze colonnes débordent des 1219 px
   // utiles d'un 1280. `type` s'ouvre masquée — voir le pourquoi du choix sur
   // PRODUCT_DEFAULT_HIDDEN_COLUMNS. Le menu Columns la rend en un clic.
-  const [hiddenColumns, setHiddenColumns] = useState<ReadonlySet<ProductColumnId>>(
-    () => new Set(PRODUCT_DEFAULT_HIDDEN_COLUMNS),
+  //
+  // Le choix REJOINT l'URL (`?hide=`), dernier état de liste qui lui échappait.
+  // Le sentinel `none` distingue « je n'ai rien choisi » de « j'ai tout
+  // affiché » — sans lui, le défaut écraserait au retour le choix de celui qui
+  // vient de rappeler la colonne `type`. Voir `parseHiddenColumns`.
+  const hiddenColumns = useMemo(
+    () => parseHiddenColumns(params.get('hide')),
+    [params],
   );
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
@@ -231,12 +232,12 @@ export default function ProductsPage(): JSX.Element {
     });
   }, [filtered, sortCol, sortDir]);
 
+  // Masquer/afficher une colonne ne touche PAS la page : la tranche de lignes
+  // est la même, seules ses colonnes changent.
   function toggleColumn(id: ProductColumnId): void {
-    setHiddenColumns((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+    const next = new Set(hiddenColumns);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    patchParams({ hide: serializeHiddenColumns(next) });
   }
 
   function openProduct(row: ProductRow): void {
@@ -247,21 +248,26 @@ export default function ProductsPage(): JSX.Element {
     void navigate(`/backoffice/products/${row.id}?tab=general`);
   }
 
-  if (products.error !== null && products.error !== undefined) {
-    return (
-      <div className="rounded-md border border-danger bg-red-soft p-4 text-sm text-danger" role="alert">
-        Failed to load products: {products.error.message}
-      </div>
-    );
-  }
+  // Le RETOUR ANTICIPÉ sur erreur est retiré. Il faisait disparaître la page
+  // entière — fil d'Ariane, titre, onglets, bande de compteurs — pour un
+  // rafraîchissement raté : l'opérateur perdait jusqu'à l'endroit où il se
+  // trouvait, et n'avait d'autre issue qu'un rechargement qui lui coûtait ses
+  // filtres. Le bandeau SURPLOMBE désormais la table (patron d'OrdersListPage),
+  // et les lignes déjà chargées restent lisibles.
+  const productsError = products.error ?? null;
 
+  // 13 px de gouttière, le module de DESIGN.md, appliqué par toute la flotte
+  // (OrdersListPage, ZReportsListPage, CustomersListPage, Inventory). Cette
+  // page était la seule à 14 px (`space-y-3.5`).
   return (
-    <div className="space-y-3.5">
+    <div className="flex flex-col gap-[13px]">
       <ProductsHeader
         count={kpis.total}
         isLoading={products.isLoading}
-        onNew={canCreate ? () => { setShowNew(true); } : undefined}
-        {...(canImport ? { onImport: () => { void navigate('/backoffice/products/import-export'); } } : {})}
+        canCreate={canCreate}
+        canImport={canImport}
+        onNew={() => { setShowNew(true); }}
+        onImport={() => { void navigate('/backoffice/products/import-export'); }}
         onRecipes={() => { void navigate('/backoffice/inventory/recipes'); }}
       />
       <ProductsPageTabs />
@@ -305,33 +311,49 @@ export default function ProductsPage(): JSX.Element {
         onToggleColumn={toggleColumn}
       />
 
-      {view === 'list' ? (
-        <ProductsTable
-          rows={sorted}
-          isLoading={products.isLoading}
-          parentIds={parentIds}
-          hiddenColumns={hiddenColumns}
-          page={page}
-          onPage={setPage}
-          pageSize={pageSize}
-          onPageSize={setPageSize}
-          sort={sortCol === null ? null : { columnId: sortCol, direction: sortDir }}
-          onSortChange={(next) => { setSort(next.columnId, next.direction); }}
-          onRowClick={openProduct}
-          onView={openProduct}
-          {...(canEditPricing ? { onPricing: openPricing } : {})}
-          {...(canDelete ? { onDelete: (row: ProductRow) => { setToDelete(row); } } : {})}
-        />
-      ) : (
-        <ProductsGrid
-          rows={sorted}
-          parentIds={parentIds}
-          onCardClick={openProduct}
-          page={page}
-          onPage={setPage}
-          pageSize={pageSize}
-          onPageSize={setPageSize}
-        />
+      {productsError !== null && (
+        <QueryErrorBanner
+          detail={productsError.message}
+          onRetry={() => { void products.refetch(); }}
+          data-testid="products-error"
+        >
+          The catalogue could not be loaded — the rows below may be out of date.
+        </QueryErrorBanner>
+      )}
+
+      {/* Erreur ET aucune ligne : on ne rend pas la table, dont l'état vide
+          dirait « aucun produit ne correspond à ces filtres » — une phrase
+          fausse quand c'est la requête qui a échoué. Même garde
+          qu'OrdersListPage. */}
+      {(productsError === null || rows.length > 0) && (
+        view === 'list' ? (
+          <ProductsTable
+            rows={sorted}
+            isLoading={products.isLoading}
+            parentIds={parentIds}
+            hiddenColumns={hiddenColumns}
+            page={page}
+            onPage={setPage}
+            pageSize={pageSize}
+            onPageSize={setPageSize}
+            sort={sortCol === null ? null : { columnId: sortCol, direction: sortDir }}
+            onSortChange={(next) => { setSort(next.columnId, next.direction); }}
+            onRowClick={openProduct}
+            onView={openProduct}
+            {...(canEditPricing ? { onPricing: openPricing } : {})}
+            {...(canDelete ? { onDelete: (row: ProductRow) => { setToDelete(row); } } : {})}
+          />
+        ) : (
+          <ProductsGrid
+            rows={sorted}
+            parentIds={parentIds}
+            onCardClick={openProduct}
+            page={page}
+            onPage={setPage}
+            pageSize={pageSize}
+            onPageSize={setPageSize}
+          />
+        )
       )}
     </div>
   );
