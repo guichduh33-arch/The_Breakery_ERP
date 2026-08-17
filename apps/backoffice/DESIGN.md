@@ -444,14 +444,14 @@ froide tirerait vers le bleu-gris et trahirait l'axe de teinte du système.
 - **Carte** (`0 2px 8px rgba(45,34,15,0.09)`) : carte en état survolé.
 - **Flottant** (`0 18px 40px rgba(28,23,18,0.20)`) : panneau de navigation, menu.
 - **Modale** (`0 20px 56px rgba(45,34,15,0.22)`) : dialogues.
-- **Focus** (`0 0 0 3px rgba(138,104,32,0.32)`) : halo, dérivé de l'accent — le
-  liseré et le halo sont toujours de la même couleur.
-  **Le code enfreint cette règle depuis le 2026-08-13** (relevé du 2026-08-18) :
-  `--border-focus` suit bien `--gold-base`, passé à `#7a5c1c`, mais
-  `--shadow-focus` est resté figé sur le rgb de l'or d'avant. La valeur citée
-  ci-dessus est donc exacte contre le code et fausse contre la règle. L'en-tête
-  d'`elevation.css` raconte que ce même écart a déjà été corrigé une fois : c'est
-  une régression, pas un oubli d'origine.
+- **Focus** (`0 0 0 3px color-mix(in srgb, var(--gold-base) 32%, transparent)`) :
+  halo, dérivé de l'accent — le liseré et le halo sont toujours de la même
+  couleur. La valeur est **calculée depuis le token, jamais recopiée** : c'est ce
+  qui rend la règle tenable. Elle avait divergé deux fois d'un rgb figé, la
+  seconde au moment de l'assombrissement de l'or du 2026-08-13 ; la forme dérivée
+  ferme la classe de défaut au lieu de la corriger une fois de plus (2026-08-18).
+  Un moteur sans `color-mix` perd le halo, pas l'anneau : les 2 px de focus sont
+  portés par `outline`.
 
 ### Named Rules
 
@@ -612,7 +612,10 @@ chiffre absent :
   l'inverse (« deux écrans conformes, environ soixante en retard ») ; il est faux.
   L'écart qui subsiste est d'une autre nature : `Button` porte encore
   `defaultVariants: { variant: 'primary' }`, donc un `<Button>` écrit **sans prop**
-  rend vert et en capitales. Deux occurrences, dans `SettingsFloorPlanPage`.
+  rendrait vert et en capitales. **Aucune surface d'interface n'est dans ce cas
+  aujourd'hui** (relevé du 2026-08-18, parseur équilibrant les accolades) : le seul
+  `<Button>` sans variant du back-office vit dans une fixture de test. Le risque est
+  donc entièrement devant nous, porté par le défaut du primitif, pas derrière.
 - **Playfair Display survit hors du monogramme, mais dans vingt-et-un fichiers**,
   pour vingt-huit occurrences de `font-serif` / `font-display` — pas dans les
   quatre-vingt-dix annoncés. Réserve à ne pas confondre avec une victoire : sous
