@@ -1,0 +1,49 @@
+# Plafond compté de la garde — gold-fills, hérité au 2026-08-18.
+#
+# Format : <compte>\t<chemin>
+#
+# PLAFOND, JAMAIS PLANCHER. Cette liste recense ce qui existait le jour où la
+# garde est née, pour qu elle puisse être allumée sans réécrire le dépôt. Elle ne
+# peut que DÉCROÎTRE : --update-baseline refuse de tourner s il reste une
+# violation, il ne sait que descendre un compte.
+#
+# Dernier resserrement : 2026-08-18
+1	apps/backoffice/src/components/ListCounterStrip.tsx
+1	apps/backoffice/src/features/catalog-import/components/ImportDropzone.tsx
+2	apps/backoffice/src/features/categories/components/CategoryFormDialog.tsx
+1	apps/backoffice/src/features/combos/components/ComboBuilderPage.tsx
+1	apps/backoffice/src/features/combos/components/ComboCard.tsx
+2	apps/backoffice/src/features/combos/components/ComboOptionRow.tsx
+1	apps/backoffice/src/features/combos/components/PricePreview.tsx
+1	apps/backoffice/src/features/expenses/components/ReceiptUploader.tsx
+1	apps/backoffice/src/features/floor-plan/components/SectionGridEditor.tsx
+1	apps/backoffice/src/features/marketing/components/SegmentList.tsx
+1	apps/backoffice/src/features/products/components/CategoryChip.tsx
+1	apps/backoffice/src/features/products/components/ConvertToParentDialog.tsx
+1	apps/backoffice/src/features/products/components/CostingPanel.tsx
+2	apps/backoffice/src/features/products/components/GeneralPanel.tsx
+1	apps/backoffice/src/features/products/components/NewProductDialog.tsx
+1	apps/backoffice/src/features/products/components/ProductImageUploader.tsx
+1	apps/backoffice/src/features/products/components/ProductsFilters.tsx
+1	apps/backoffice/src/features/products/components/ProductTypeBadge.tsx
+2	apps/backoffice/src/features/products/components/StationsPanel.tsx
+1	apps/backoffice/src/features/products/components/StockAnalyticsPanel.tsx
+2	apps/backoffice/src/features/products/components/UnitsPanel.tsx
+1	apps/backoffice/src/features/products/components/VariantsPanel.tsx
+1	apps/backoffice/src/features/recipes/components/RecipeBuilder.tsx
+1	apps/backoffice/src/features/settings/components/BrandLogoUploader.tsx
+1	apps/backoffice/src/features/settings/expense-thresholds/ThresholdFormDialog.tsx
+1	apps/backoffice/src/features/suppliers/components/SupplierCard.tsx
+1	apps/backoffice/src/layouts/CommandPalette.tsx
+1	apps/backoffice/src/layouts/TopBar.tsx
+1	apps/backoffice/src/pages/Dashboard.tsx
+1	apps/backoffice/src/pages/inventory/ProductionPage.tsx
+1	apps/backoffice/src/pages/inventory/ProductStockPage.tsx
+1	apps/backoffice/src/pages/reports/BalanceSheetPage.tsx
+1	apps/backoffice/src/pages/reports/CashFlowPage.tsx
+1	apps/backoffice/src/pages/reports/DailySalesPage.tsx
+1	apps/backoffice/src/pages/reports/Pb1ReportPage.tsx
+1	apps/backoffice/src/pages/reports/ProfitLossPage.tsx
+1	apps/backoffice/src/pages/settings/SettingsHolidaysPage.tsx
+1	apps/backoffice/src/pages/settings/SettingsReceiptTemplatesPage.tsx
+1	apps/backoffice/src/pages/suppliers/SupplierDetailPage.tsx

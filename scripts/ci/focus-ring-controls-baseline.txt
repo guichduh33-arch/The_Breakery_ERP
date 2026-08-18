@@ -1,0 +1,11 @@
+# Plafond compté de la garde 5 — contrôles sans anneau de focus, né le 2026-08-18.
+#
+# Format : <compte>\t<chemin>
+#
+# CETTE LISTE EST VIDE, ET C EST LE POINT. La PR #415 a corrigé les 170 contrôles
+# et les 43 placeholders relevés le 2026-08-18 ; la garde ne gèle donc aucune dette
+# et refuse la PREMIÈRE régression. Si une ligne apparaît ici un jour, c est que
+# quelqu un a fait remonter le plafond — ce que --update-baseline REFUSE de faire.
+#
+# PLAFOND, JAMAIS PLANCHER.
+# Dernier resserrement : 2026-08-18

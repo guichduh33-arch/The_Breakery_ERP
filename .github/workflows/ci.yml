@@ -72,6 +72,55 @@ jobs:
         if: always()
         run: node scripts/ci/hardcoded-theme-colors.mjs
 
+      # Gardes 5 à 8 — les RÈGLES NOMMÉES de apps/backoffice/DESIGN.md.
+      #
+      # Pourquoi elles arrivent ensemble, le 2026-08-18. L'audit de ce jour-là a
+      # mesuré une corrélation qui n'en est pas une : les deux seuls invariants du
+      # dépôt tenus à ZÉRO — hex du thème recopié, classe de couleur morte — sont
+      # exactement les deux qui avaient un script dans scripts/ci/. Les quatre
+      # règles nommées qui n'en avaient aucune étaient enfreintes de 19 à 44 fois
+      # chacune, alors qu'elles sont écrites, datées et citées dans le code lui-même.
+      # Ce n'est pas un problème de savoir-faire : une règle sans exécuteur est une
+      # règle enfreinte, et le rendement des gardes 3 et 4 est la preuve de ce que
+      # coûtait leur absence ailleurs.
+      #
+      # Elles partagent scripts/ci/_guard-lib.mjs — même régime de plafond, même
+      # masque de commentaires, même refus de relever la baseline. Recopier cette
+      # mécanique quatre fois, c'était quatre endroits où elle peut diverger.
+      - name: Garde 5 — aucun contrôle sans anneau de focus ni placeholder tokenisé
+        if: always()
+        # Baseline VIDE, et c'est le point : la PR #415 a corrigé les 170 contrôles
+        # relevés, donc cette garde ne gèle aucune dette et refuse la PREMIÈRE
+        # régression. Un champ sans anneau ne tombe pas dans le vide — il retombe
+        # sur celui du navigateur, à 2,398:1, sous les 3:1 de WCAG 1.4.11. C'est
+        # ce « quelque chose s'affiche » qui rend le défaut invisible en relecture.
+        run: node scripts/ci/focus-ring-controls.mjs
+
+      - name: Garde 6 — aucun aplat d'or hors baseline
+        if: always()
+        # The Ink-Not-Gold Rule. Trois exceptions nommées et closes — piste
+        # d'interrupteur, point d'état, plaque du monogramme — et DESIGN.md dit
+        # que « la liste ne s'allonge pas d'elle-même ». La baseline est ce
+        # non-allongement rendu opposable. Angle mort assumé : un primitif
+        # PARTAGÉ qui remplit en or dans son propre code (EmptyState) échappe à
+        # une garde qui ne balaye que apps/backoffice/.
+        run: node scripts/ci/gold-fills.mjs
+
+      - name: Garde 7 — aucune classe de police qui nomme le contraire de ce qu'elle fait
+        if: always()
+        # `font-serif` / `font-display` ne produisent AUCUN serif sous
+        # .theme-backoffice : le rendu est correct, le mot est faux. Un auteur qui
+        # les lit croit la règle enfreinte et corrige ce qui va bien ; un auteur
+        # qui les recopie propage le mensonge. Cible : zéro.
+        run: node scripts/ci/lying-font-classes.mjs
+
+      - name: Garde 8 — aucune chaîne TOOLBAR_BTN_* hors d'un bandeau de page
+        if: always()
+        # Les deux familles de boutons n'ont pas la même hauteur : franchir la
+        # frontière met deux hauteurs sur le même écran — cinq rangées mesurées le
+        # 2026-08-18, et un « Load more » qui existait en 32, 36 et 56 px.
+        run: node scripts/ci/toolbar-button-scope.mjs
+
   lint-typecheck-test-build:
     runs-on: ubuntu-latest
     # 25 (was 15): the suite runs 11-13 min on a healthy runner, so a slow
