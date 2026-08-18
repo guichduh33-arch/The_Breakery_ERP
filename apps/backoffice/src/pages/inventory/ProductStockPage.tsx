@@ -17,11 +17,11 @@
 
 import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  ArrowLeft, CalendarRange, Coins, Package, Settings2, TrendingUp,
-} from 'lucide-react';
-import { EmptyState, KpiTile, cn } from '@breakery/ui';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { ArrowLeft, Package, Settings2 } from 'lucide-react';
+import { EmptyState, cn } from '@breakery/ui';
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
+import { formatQuantity } from '@breakery/utils';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
 import {
@@ -130,28 +130,43 @@ export default function ProductStockPage(): JSX.Element {
       </header>
 
       {/* Live stock KPIs — always visible above the tabs */}
+      {/* Rangée ENTIÈRE basculée sur la tuile du back-office — le lot D+F avait
+          converti les autres bandes et manqué celle-ci. La tuile de
+          `@breakery/ui` porte une icône et un corps qui ne sont pas ceux de la
+          direction « Instrument » (DESIGN.md § Tuile de KPI : « Sans icône —
+          six pastilles d'icône côte à côte donnaient une frise décorative où
+          l'œil ne trouvait plus le chiffre »).
+
+          « Value at cost » débordait : `formatCurrency` rendait `Rp 12.500.000`
+          soit 248 px de contenu mesuré dans une tuile qui en offre 34 de haut et
+          bien moins de large — The Value-Width Rule. La notation compacte
+          (`formatIdrShort`) tient sur une ligne, et `valueTitle` porte le
+          montant EXACT en infobulle : un compact tronque, sans lui le chiffre
+          précis ne serait lisible nulle part sur la page. */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
         <KpiTile
           label="Current stock"
           value={p.track_inventory || p.is_display_item ? formatQuantity(p.current_stock, p.unit) : 'Not tracked'}
-          icon={Package}
         />
-        <KpiTile label="Value at cost" value={formatCurrency(valueAtCost)} valueFormat="currency" icon={Coins} />
-        {/* Les deux tuiles de vente passent une CHAÎNE déjà formatée : le
-            `valueFormat="number"` par défaut de KpiTile fait un
-            `toLocaleString()` sans locale, dont le séparateur dépend du
-            navigateur — soit, à côté de la tuile de stock ci-dessus, deux
-            notations de milliers sur une même rangée. */}
+        <KpiTile
+          label="Value at cost"
+          value={formatIdrShort(valueAtCost)}
+          valueTitle={formatIdr(valueAtCost)}
+        />
+        {/* Les deux tuiles de vente passent une CHAÎNE déjà formatée par
+            `formatQuantity` : sans elle le séparateur de milliers dépendrait du
+            navigateur, soit deux notations sur une même rangée. */}
         <KpiTile
           label="Units sold"
           value={d ? formatQuantity(d.summary.units_sold, null) : '—'}
-          icon={TrendingUp}
-          footer={`${days}-day window`}
-        />
+          unavailable={!d}
+        >
+          <span className={KPI_NOTE}>{days}-day window</span>
+        </KpiTile>
         <KpiTile
           label="Avg per day"
           value={d ? formatQuantity(d.summary.avg_daily_units, null) : '—'}
-          icon={CalendarRange}
+          unavailable={!d}
         />
       </section>
 

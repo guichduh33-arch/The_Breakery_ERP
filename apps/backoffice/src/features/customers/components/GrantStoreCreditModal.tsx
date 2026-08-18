@@ -8,7 +8,7 @@
 import { useState, useRef, type JSX } from 'react';
 import { toast } from 'sonner';
 import {
-  Dialog, DialogContent, DialogTitle, DialogDescription,
+  Button, Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import {
@@ -92,8 +92,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           Grants store credit to this customer, authorized by a manager PIN. Creates an accounting entry.
         </DialogDescription>
         <div>
-          <label className="block text-sm font-medium">Amount (Rp)</label>
+          <label htmlFor="grant-credit-amount" className="block text-sm font-medium">Amount (Rp)</label>
           <input
+            id="grant-credit-amount"
             type="number"
             min={1}
             step="any"
@@ -108,8 +109,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium">Reason</label>
+          <label htmlFor="grant-credit-reason" className="block text-sm font-medium">Reason</label>
           <textarea
+            id="grant-credit-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
@@ -123,8 +125,9 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium">Manager PIN</label>
+          <label htmlFor="grant-credit-pin" className="block text-sm font-medium">Manager PIN</label>
           <input
+            id="grant-credit-pin"
             type="password"
             inputMode="numeric"
             maxLength={6}
@@ -135,18 +138,24 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
           />
         </div>
         {formError !== null && (
-          <p className="text-sm text-danger" data-testid="grant-error">{formError}</p>
+          <p className="text-sm text-danger" role="alert" data-testid="grant-error">{formError}</p>
         )}
         <div className="flex justify-end gap-2">
-          <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="grant-cancel">Cancel</button>
-          <button
+          {/* L'action terminale de la modale est ENCRE, pas or : l'or ne
+              remplit pas (The Ink-Not-Gold Rule) et le premier plan `text-bg-base`
+              ne valait que 4,47:1 sur l'aplat doré. */}
+          <Button variant="secondary" size="sm" onClick={handleClose} data-testid="grant-cancel">
+            Cancel
+          </Button>
+          <Button
+            variant="ink"
+            size="sm"
             onClick={() => { void handleSubmit(); }}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm bg-gold text-bg-base rounded disabled:opacity-50"
             data-testid="grant-submit"
           >
             {m.isPending ? 'Granting…' : 'Grant credit'}
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

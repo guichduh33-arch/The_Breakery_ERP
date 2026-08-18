@@ -14,7 +14,7 @@
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Download } from 'lucide-react';
+import { ChevronRight, Download } from 'lucide-react';
 import { Card, cn } from '@breakery/ui';
 // formatDateTimeShortWita : le format de lecture des tables du BO (24 h, mois
 // en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
@@ -50,11 +50,11 @@ function Crumbs({ leaf }: { leaf?: string }): JSX.Element {
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
       <span>Sales</span>
-      <span className="text-text-inert" aria-hidden>›</span>
+      <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
       <Link to="/backoffice/orders" className="hover:text-text-primary">Orders</Link>
       {leaf !== undefined && (
         <>
-          <span className="text-text-inert" aria-hidden>›</span>
+          <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
           <span className="font-data text-text-secondary">{leaf}</span>
         </>
       )}

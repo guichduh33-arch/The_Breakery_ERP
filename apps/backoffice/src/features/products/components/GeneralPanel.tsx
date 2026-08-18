@@ -83,9 +83,23 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Product Identity</h2>
 
           <div className="space-y-4">
+            {/* Les libellés de ce panneau sont rendus par `SectionLabel`, dont
+                `SectionLabelTag` n'admet pas `'label'` : posés en `as="div"`,
+                ils ne pouvaient être associés à AUCUN contrôle (WCAG 1.3.1 /
+                4.1.2, niveau A). `SectionLabel` vit dans `packages/ui`, partagé
+                avec la caisse — hors périmètre. Le `<label htmlFor>` ENVELOPPE
+                donc le primitif passé en `as="span"` : la signature
+                typographique (font-bold, text-text-muted, 11 px) est conservée
+                telle quelle, sans recopier ses tokens au call-site et sans
+                toucher le rythme `mt-1.5` du panneau — ce que `FormField`, avec
+                son propre `labelClassName` (text-text-secondary, non gras) et
+                son `space-y-1`, aurait déplacé sur sept champs. */}
             <div>
-              <SectionLabel as="div" size="xs">Product name</SectionLabel>
+              <label htmlFor="product-name" className="block">
+                <SectionLabel as="span" size="xs">Product name</SectionLabel>
+              </label>
               <Input
+                id="product-name"
                 value={draft.name}
                 disabled={readOnly}
                 onChange={(e) => update('name', e.target.value)}
@@ -95,8 +109,11 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <SectionLabel as="div" size="xs">SKU code</SectionLabel>
+                <label htmlFor="product-sku" className="block">
+                  <SectionLabel as="span" size="xs">SKU code</SectionLabel>
+                </label>
                 <Input
+                  id="product-sku"
                   value={draft.sku}
                   disabled={readOnly}
                   onChange={(e) => update('sku', e.target.value)}
@@ -104,8 +121,11 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                 />
               </div>
               <div>
-                <SectionLabel as="div" size="xs">Category</SectionLabel>
+                <label htmlFor="product-category" className="block">
+                  <SectionLabel as="span" size="xs">Category</SectionLabel>
+                </label>
                 <Select
+                  id="product-category"
                   value={draft.category_id}
                   disabled={readOnly}
                   onChange={(e) => update('category_id', e.target.value)}
@@ -119,8 +139,11 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             </div>
 
             <div>
-              <SectionLabel as="div" size="xs">Product description</SectionLabel>
+              <label htmlFor="product-description" className="block">
+                <SectionLabel as="span" size="xs">Product description</SectionLabel>
+              </label>
               <textarea
+                id="product-description"
                 rows={4}
                 value={draft.description ?? ''}
                 disabled={readOnly}
@@ -169,10 +192,13 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
           <div className="space-y-4">
             <div>
-              <SectionLabel as="div" size="xs">Retail price (IDR)</SectionLabel>
+              <label htmlFor="product-retail-price" className="block">
+                <SectionLabel as="span" size="xs">Retail price (IDR)</SectionLabel>
+              </label>
               <div className={`mt-1.5 flex items-center gap-2 rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm ${FOCUS_WITHIN_RING}`}>
                 <span className="text-gold">Rp</span>
                 <input
+                  id="product-retail-price"
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -297,16 +323,18 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <SectionLabel as="h3" size="xs">Inventory levels</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">Current stock</div>
+              <label htmlFor="product-current-stock" className="block text-xs uppercase tracking-widest text-text-secondary">Current stock</label>
               <Input
+                id="product-current-stock"
                 value={draft.current_stock}
                 disabled
                 className="mt-1.5 font-mono"
               />
             </div>
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">Alert threshold</div>
+              <label htmlFor="product-min-stock-threshold" className="block text-xs uppercase tracking-widest text-text-secondary">Alert threshold</label>
               <Input
+                id="product-min-stock-threshold"
                 type="number"
                 inputMode="numeric"
                 min={0}
@@ -384,6 +412,27 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
       <span
         aria-hidden
         className={`inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
+          // Piste OR — exception « piste d'interrupteur » de The Ink-Not-Gold
+          // Rule (DESIGN.md § Colors). Sur une piste, le remplissage EST
+          // l'information d'état : le retirer ne fait pas que refroidir la
+          // lecture, il efface le fait. La règle vise le décor, pas le signal.
+          //
+          // L'encre avait été essayée ici et posait cinq aplats #201d19 sur le
+          // seul onglet General, en plus de « Save changes » du bandeau —
+          // The One Ink Fill Rule, la règle même au nom de laquelle les panneaux
+          // avaient été vidés.
+          //
+          // MESURES REFAITES le 2026-08-18 — la ligne précédente annonçait
+          // « 3,83:1 sur la piste éteinte », qui est le ratio de `--border-strong`
+          // contre le BLANC et non contre la piste. Ce qui est réellement
+          // opposable ici :
+          //   · piste allumée — curseur blanc sur l'or `#7a5c1c` : 6,222:1 ✓
+          //   · piste éteinte — le remplissage du curseur (#ffffff) ne vaut que
+          //     1,236:1 sur `--surface-4` (#e9e7e2) ; c'est son LISERÉ
+          //     `--border-strong` qui porte le seuil, à 3,097:1 — au-dessus des
+          //     3:1 de WCAG 1.4.11, mais de 3 % seulement. Toute retouche de
+          //     `--surface-4` ou de `--border-strong` doit être remesurée ici.
+          // L'état reste de toute façon porté par la POSITION du curseur.
           enabled ? 'border-gold bg-gold' : 'border-text-subtle bg-surface-4'
         }`}
       >

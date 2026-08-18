@@ -255,6 +255,13 @@ function ToggleRow({ checked, onChange, label, description }: ToggleRowProps): J
         aria-label={label}
         onClick={() => onChange(!checked)}
         className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${FOCUS_RING} ${
+          // Piste OR — exception « piste d'interrupteur » de The Ink-Not-Gold
+          // Rule (DESIGN.md § Colors) : ici le remplissage n'est pas un décor,
+          // c'est le porteur de l'état. L'encre aurait posé un second aplat
+          // #201d19 dans une modale qui en a déjà un sur son action terminale.
+          // Le curseur blanc vaut 6,22:1 sur l'or allumé et 3,83:1 sur la piste
+          // éteinte (--border-strong remonté à #86827a) : l'état se lit par la
+          // position du curseur, perceptible sur les deux fonds.
           checked ? 'bg-gold' : 'bg-border-strong'
         }`}
       >

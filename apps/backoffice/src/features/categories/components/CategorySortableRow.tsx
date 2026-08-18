@@ -1,5 +1,10 @@
 // apps/backoffice/src/features/categories/components/CategorySortableRow.tsx
 // Session 27b — Sortable row for the Categories management page.
+//
+// Corps de texte — 2026-08-18. La pastille de type portait `text-[0.625rem]`
+// (10 px), sous le plancher de la rampe (`--type-xs` = 12 px). Remontée à
+// `text-xs`, comme les trois autres 10 px du même relevé (ChoiceGroupCard ×2,
+// GeneralInfoSection).
 
 import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
@@ -65,7 +70,7 @@ export function CategorySortableRow({
       <td className="px-3 py-2">{category.name}</td>
       <td className="px-3 py-2 font-mono text-xs text-text-secondary">{category.slug}</td>
       <td className="px-3 py-2">
-        <span className={`inline-flex rounded-full px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
           {TYPE_META[category.category_type].label}
         </span>
       </td>

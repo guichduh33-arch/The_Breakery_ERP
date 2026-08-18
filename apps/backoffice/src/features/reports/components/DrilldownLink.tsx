@@ -22,8 +22,10 @@ export interface DrilldownLinkProps {
   className?: string;
 }
 
+// `text-foreground` n'est pas une famille du preset : le lien héritait donc de
+// la couleur du texte courant. DESIGN.md § Colors donne l'or aux liens.
 const BASE_CLS =
-  'inline-flex items-center gap-1 text-foreground underline-offset-2 hover:underline';
+  'inline-flex items-center gap-1 text-gold underline-offset-2 hover:underline';
 
 export function DrilldownLink({
   entity,

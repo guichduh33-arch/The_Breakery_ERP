@@ -9,13 +9,15 @@
 // commises en débounce ; export CSV gaté `reports.export` via buildCsv.
 
 import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { ChevronRight, Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button, DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { useListParams } from '@/hooks/useListParams.js';
 import {
   useOrdersList,
   type OrdersListFilters,
@@ -95,17 +97,11 @@ export default function OrdersListPage(): JSX.Element {
   // (« le SEUL point de contrôle possible pour le CSV », audit reports).
   const canExport   = useAuthStore((s) => s.hasPermission('reports.export'));
 
-  const [params, setParams] = useSearchParams();
-  const patchParams = useCallback((patch: Record<string, string | null>): void => {
-    setParams((prev) => {
-      const p = new URLSearchParams(prev);
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null || v === '') p.delete(k);
-        else p.set(k, v);
-      }
-      return p;
-    }, { replace: true });
-  }, [setParams]);
+  // Le bloc `patchParams` est PARTAGÉ (`useListParams`) : il était dupliqué mot
+  // pour mot avec `Products.tsx`. Le récit du bug de review — un `pick` figé qui
+  // capturait un `setSearchParams` périmé — vit désormais dans le hook, avec la
+  // forme fonctionnelle qui le ferme.
+  const [params, patchParams] = useListParams();
 
   const start = params.get('start') ?? defaultStart();
   const end   = params.get('end')   ?? todayIsoDate();
@@ -340,7 +336,14 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => <span className="font-data tabular-nums">{o.items_count}</span>,
     },
     {
-      id: 'amount', header: 'Amount', align: 'right', width: '8.5rem', sortable: true,
+      // 9,25rem et non 8,5. Cellule `text-sm` (14 px) en JetBrains Mono, chasse
+      // 0,6 em → 8,4 px par caractère, plus 28 px de padding compact :
+      // « Rp 150.000.000 » (14 car.) demande 145,6 px, « Rp 12.500.000 » 137,2.
+      // À 136 px la colonne était sous les deux — et la cellule étant
+      // `whitespace-nowrap`, le débordement ne se repliait pas : il poussait la
+      // table entière en défilement horizontal. Même calibre que les trois
+      // colonnes monétaires du catalogue produits.
+      id: 'amount', header: 'Amount', align: 'right', width: '9.25rem', sortable: true,
       render: (o) => <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(o.total)}</span>,
     },
     {
@@ -406,7 +409,7 @@ export default function OrdersListPage(): JSX.Element {
     <div className="flex flex-col gap-[13px]">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>Sales</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Orders</span>
       </nav>
 
@@ -453,13 +456,13 @@ export default function OrdersListPage(): JSX.Element {
       />
 
       {countersDown && (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red-as-text">
+        <QueryErrorBanner
+          onRetry={() => { void counters.refetch(); }}
+          data-testid="orders-counters-error"
+        >
           Order counts could not be loaded — the strip shows dashes rather than
-          numbers that would be wrong.{' '}
-          <button type="button" className="underline" onClick={() => { void counters.refetch(); }}>
-            Try again
-          </button>
-        </p>
+          numbers that would be wrong.
+        </QueryErrorBanner>
       )}
 
       <ListCounterStrip
@@ -552,15 +555,17 @@ export default function OrdersListPage(): JSX.Element {
       </span>
 
       {/* L'erreur SURPLOMBE la table : un refetch raté ne doit pas effacer les
-          lignes que l'opérateur lisait (review PR #367). */}
+          lignes que l'opérateur lisait (review PR #367). Le bandeau est
+          désormais le composant partagé `QueryErrorBanner`, dont ce bloc était
+          le patron. */}
       {query.error !== null && (
-        <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
+        <QueryErrorBanner
+          detail={query.error.message}
+          onRetry={() => { void query.refetch(); }}
+          data-testid="orders-error"
+        >
           Orders could not be refreshed — the rows below may be out of date.
-          <span className="ml-1 font-data text-xs">{query.error.message}</span>{' '}
-          <button type="button" className="underline" onClick={() => { void query.refetch(); }}>
-            Try again
-          </button>
-        </p>
+        </QueryErrorBanner>
       )}
       {(query.error === null || loadedLines.length > 0) && (
         <DataTable<OrdersListLine>
@@ -591,15 +596,20 @@ export default function OrdersListPage(): JSX.Element {
                     ? `${loadedLines.length} loaded`
                     : `${lines.length} of ${activeTotal.toLocaleString('id-ID')}`}
               </span>
+              {/* Primitif partagé en `sm`, PAS `TOOLBAR_BTN_SECONDARY` : ces
+                  chaînes appartiennent au bandeau de page et à lui seul
+                  (DESIGN.md § Boutons). Un pied de table prend le primitif —
+                  c'est aussi le cran unique de « Load more ». */}
               {query.hasNextPage && (
-                <button
+                <Button
                   type="button"
-                  className={TOOLBAR_BTN_SECONDARY}
+                  variant="secondary"
+                  size="sm"
                   onClick={() => { void query.fetchNextPage(); }}
                   disabled={query.isFetchingNextPage}
                 >
                   {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
-                </button>
+                </Button>
               )}
             </div>
           }

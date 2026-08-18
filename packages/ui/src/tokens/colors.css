@@ -232,7 +232,15 @@
 
   /* Borders — neutres froides, fermes. */
   --border-subtle: #e3e1db;    /* bordure de carte */
-  --border-strong: #cdcac2;    /* bordure de contrôle */
+  /* Bordure de CONTRÔLE — c'est la limite d'un composant d'interface, elle est
+   * donc soumise aux 3:1 de WCAG 1.4.11, pas au seuil décoratif. L'ancien
+   * #cdcac2 valait 1,638:1 sur la feuille blanche, 1,424:1 sur le papier de
+   * page, 1,567:1 sur l'en-tête inerte et 1,325:1 sur l'état pressé : la
+   * bordure d'un bouton secondaire ne délimitait rien. Mesuré sur les QUATRE
+   * fonds que ce token peut avoir sous lui, comme les tokens de texte —
+   * un bouton bordé vit sur le papier de page ET vire au pressé au survol,
+   * donc les deux extrêmes comptent. */
+  --border-strong: #86827a;    /* 3,83:1 blanc — 3,33:1 papier — 3,66:1 inerte — 3,10:1 pressé */
   --border-muted:  #eceae5;    /* filet interne */
   --border-row:    #f3f1ec;    /* séparateur de ligne de tableau */
   --border-focus:  var(--gold-base);

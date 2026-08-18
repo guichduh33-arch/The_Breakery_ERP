@@ -50,7 +50,24 @@ export function CustomerDeleteConfirm({ customer, onClose }: CustomerDeleteConfi
             {formError}
           </div>
         )}
-        <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={customer?.name ?? ''} />
+        {/* Le champ n'était nommé que par son `placeholder` — le nom du client,
+            qui S'EFFACE dès la première frappe. Sur un geste destructif dont la
+            garde EST la consigne, celui qui revient sur le champ n'avait plus
+            rien à quoi se raccrocher (WCAG 1.3.1 / 4.1.2, niveau A). */}
+        <div className="space-y-1">
+          <label
+            htmlFor="customer-delete-confirm"
+            className="block text-xs uppercase tracking-widest text-text-secondary"
+          >
+            Type the customer name to confirm
+          </label>
+          <Input
+            id="customer-delete-confirm"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder={customer?.name ?? ''}
+          />
+        </div>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={handleClose}>Cancel</Button>
           <Button variant="ink" disabled={!canConfirm} onClick={() => { void handleConfirm(); }}>Delete</Button>

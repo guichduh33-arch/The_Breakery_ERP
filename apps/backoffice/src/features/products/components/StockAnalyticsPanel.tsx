@@ -20,19 +20,24 @@
 
 import { useState, type JSX, type ReactNode } from 'react';
 import {
-  AlertTriangle, ArrowDownRight, ArrowUpRight, Boxes, ClipboardCheck, Clock,
-  DollarSign, Factory, Inbox, Minus, Package, Trash2, TrendingUp, Truck, Utensils,
+  ArrowDownRight, ArrowUpRight, Boxes, ClipboardCheck,
+  Factory, Inbox, Minus, Trash2, TrendingUp, Truck, Utensils,
 } from 'lucide-react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { Badge, Card, EmptyState, KpiTile, SectionLabel, cn } from '@breakery/ui';
+import { Badge, Card, EmptyState, SectionLabel, cn } from '@breakery/ui';
 import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
+// La tuile du back-office (23 px, `valueTitle`) et non celle de `@breakery/ui`
+// (34 px) : « Stock value » porte une valorisation de stock, qui atteint
+// couramment neuf chiffres et ne tient pas dans la tuile à 34 px.
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
 
 export type ProductAnalyticsData = NonNullable<ReturnType<typeof useProductAnalytics>['data']>;
 
@@ -79,7 +84,9 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
               onClick={() => setDays(w.value)}
               className={cn(
                 'rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
-                days === w.value ? 'bg-gold text-bg-base' : 'text-text-muted hover:text-text-primary',
+                // Segment ACTIF, pas bouton d'action : l'or reste une encre de
+                // sens sur un fond `gold-soft` — le motif de ProductsFilters.
+                days === w.value ? 'bg-gold-soft text-gold' : 'text-text-muted hover:text-text-primary',
               )}
             >
               {w.label}
@@ -118,33 +125,29 @@ export function AnalyticsKpiRow({ data }: { data: ProductAnalyticsData }): JSX.E
 
   return (
     <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
-      <KpiTile
-        label="Current stock"
-        value={formatQuantity(k.current_stock, k.unit)}
-        icon={Package}
-        footer={`Min: ${k.min_stock_threshold > 0 ? formatQuantity(k.min_stock_threshold, k.unit) : 'N/A'}`}
-      />
+      <KpiTile label="Current stock" value={formatQuantity(k.current_stock, k.unit)} testId="kpi-current-stock">
+        <span className={KPI_NOTE}>
+          Min: {k.min_stock_threshold > 0 ? formatQuantity(k.min_stock_threshold, k.unit) : 'N/A'}
+        </span>
+      </KpiTile>
       <KpiTile
         label="Stock value"
-        value={formatCurrency(Math.round(Number(k.stock_value)))}
-        valueFormat="currency"
-        icon={DollarSign}
-        footer={`@${formatCurrency(Number(k.unit_cost))}/unit`}
-      />
-      <KpiTile
-        label="Days remaining"
-        value={daysRemaining}
-        icon={Clock}
-        // Une conso moyenne par jour est un débit, pas un stock : sans unité,
-        // pour ne pas l'arrondir à l'entier comme le serait un stock en pièces.
-        footer={`Avg ${formatQuantity(k.avg_daily_consumption, null)}/day`}
-      />
-      <KpiTile
-        label="Stock status"
-        value={statusLabel}
-        icon={AlertTriangle}
-        footer={k.min_stock_threshold > 0 ? `Threshold ${formatQuantity(k.min_stock_threshold, k.unit)}` : 'No min level set'}
-      />
+        value={formatIdrShort(Math.round(Number(k.stock_value)))}
+        valueTitle={formatIdr(Math.round(Number(k.stock_value)))}
+        testId="kpi-stock-value"
+      >
+        <span className={KPI_NOTE}>@{formatCurrency(Number(k.unit_cost))}/unit</span>
+      </KpiTile>
+      <KpiTile label="Days remaining" value={daysRemaining} testId="kpi-days-remaining">
+        {/* Une conso moyenne par jour est un débit, pas un stock : sans unité,
+            pour ne pas l'arrondir à l'entier comme le serait un stock en pièces. */}
+        <span className={KPI_NOTE}>Avg {formatQuantity(k.avg_daily_consumption, null)}/day</span>
+      </KpiTile>
+      <KpiTile label="Stock status" value={statusLabel} testId="kpi-stock-status">
+        <span className={KPI_NOTE}>
+          {k.min_stock_threshold > 0 ? `Threshold ${formatQuantity(k.min_stock_threshold, k.unit)}` : 'No min level set'}
+        </span>
+      </KpiTile>
     </section>
   );
 }

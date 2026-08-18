@@ -456,14 +456,34 @@ export function RecipeBuilder({
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <button
+                  {/* Secondaire : ajouter une ligne n'est pas l'action
+                      terminale du formulaire. L'aplat d'or violait
+                      The Ink-Not-Gold Rule et `rounded-full`
+                      The Tight-Corner Rule (6 px au maximum).
+
+                      Le `className` RÉÉCRIVAIT le primitif par tailwind-merge :
+                      `text-xs` ramenait le corps de 14 à 12 px et
+                      `uppercase tracking-widest` ajoutait des capitales
+                      interlettrées que `variant="secondary"` ne porte pas — le
+                      bouton parlait la langue du variant `primary`, qu'il n'est
+                      pas. Les trois sont retirés.
+
+                      `h-touch-min` (44 px) RESTE, et c'est un alignement, pas un
+                      restylage : ce bouton partage sa rangée de grille avec
+                      l'`Input` de quantité et le `Select` d'unité, tous deux à
+                      44 px par le primitif. Aucun cran de `size` ne vaut 44 —
+                      `sm` 36, `md` 56, `lg` 80 — donc laisser le primitif
+                      décider poserait un bouton de 56 px au milieu de champs de
+                      44 px. La contrainte vient de la rangée, pas du goût. */}
+                  <Button
                     type="submit"
+                    variant="secondary"
                     disabled={!canAdd}
-                    className="inline-flex h-touch-min w-full items-center justify-center gap-2 rounded-full bg-gold px-4 text-xs font-semibold uppercase tracking-widest text-bg-base hover:bg-gold-hover disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
+                    className="h-touch-min w-full"
                   >
                     <Plus className="h-4 w-4" aria-hidden />
                     {upsertMut.isPending ? 'Saving…' : 'Add ingredient'}
-                  </button>
+                  </Button>
                 </div>
                 {formError !== null && (
                   <div role="alert" className="md:col-span-12 rounded-md border border-red bg-red-soft px-3 py-2 text-xs text-red">

@@ -68,7 +68,17 @@ describe('ProductionPage smoke', () => {
     expect(screen.getByTestId('station-tab-STN_HOT_KITCHEN')).toBeInTheDocument();
     // Sales section must NOT appear as a production station.
     expect(screen.queryByTestId('station-tab-COFFEE_STATION')).not.toBeInTheDocument();
-    expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'true');
+    // La sélection arrive UN CYCLE APRÈS le rendu des onglets : `activeId` part
+    // vide et c'est un `useEffect` qui le pose une fois les stations chargées
+    // (ProductionPage.tsx, « Default to the first station once they load »).
+    // Attendre la présence de l'onglet ne suffit donc pas — il existe d'abord à
+    // `aria-selected="false"`. Sur une machine rapide l'effet retombe dans le
+    // même lot que le rendu et l'assertion passe ; sous charge elle échoue.
+    // C'est ce qui a fait rougir la CI de la PR #414 alors que la suite passait
+    // en local, sur un test et un composant que cette PR n'a pas touchés.
+    await waitFor(() => {
+      expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'true');
+    });
   });
 
   it('renders the entry card for the active station + empty production log', async () => {

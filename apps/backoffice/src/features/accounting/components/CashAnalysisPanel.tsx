@@ -37,14 +37,14 @@ export function CashAnalysisPanel({ start, end }: { start: string; end: string }
       <Card className="p-4">
         <h3 className="font-medium mb-2">Top Petty Cash categories</h3>
         {data.top_petty_categories.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No petty-cash expenses in this period.</p>
+          <p className="text-sm text-text-muted">No petty-cash expenses in this period.</p>
         ) : (
           <ul className="text-sm space-y-1">
             {data.top_petty_categories.map((c) => (
               <li key={c.category} className="flex justify-between">
                 <span>
                   {c.category}{' '}
-                  <span className="text-muted-foreground">×{c.occurrences}</span>
+                  <span className="text-text-muted">×{c.occurrences}</span>
                 </span>
                 <span className="tabular-nums">{idr.format(c.total)}</span>
               </li>

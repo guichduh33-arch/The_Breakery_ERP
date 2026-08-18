@@ -7,10 +7,27 @@
 // désormais dans 52 px de haut : 7 onglets de domaine, chacun ouvrant un
 // drop-panel (`DomainPanel`). La largeur entière de la page revient aux données.
 //
-// Comportement de menubar standard :
+// Le patron est un DISCLOSURE, pas un menubar. Le commentaire qui annonçait
+// ici un « comportement de menubar standard » avait fait poser un
+// `aria-haspopup="true"` sur les onglets — valeur SYNONYME de `"menu"`, qui
+// promet un `role="menu"` et des `role="menuitem"` que `DomainPanel` n'a
+// jamais eus : c'est une grille de colonnes de `<ul>/<li>/<a>`. L'attribut est
+// retiré ; `aria-expanded` + `aria-controls` décrivent exactement ce qui se
+// passe. C'est le patron « Disclosure Navigation Menu » de l'APG, conçu pour
+// un panneau de LIENS — et qui laisse aux liens leur rôle `link`, ce que la
+// structure de menu leur ferait perdre (au prix, en plus, d'un tabindex
+// tournant, de ↑/↓ internes, de Début/Fin et de la saisie prédictive).
+//
+// Ce que le code fait réellement :
 //   · clic sur un onglet → ouvre son panneau ; re-clic, Échap ou clic extérieur → ferme
 //   · la barre étant DÉJÀ ouverte, le survol d'un autre onglet bascule le panneau sans clic
 //   · ← / → déplacent le focus entre onglets, ↓ entre dans le panneau ouvert
+//     (ces trois flèches sont un SUPPLÉMENT au disclosure, pas une obligation
+//     du patron)
+//
+// Le panneau est rendu DANS le `<nav aria-label="Primary">` : posé en dehors,
+// ses ~85 destinations n'appartenaient à aucun repère, et la « liste des
+// repères » d'un lecteur d'écran ne trouvait que les 7 onglets.
 //
 // L'onglet ACTIF (section courante) et l'onglet OUVERT (panneau affiché) sont
 // deux états distincts qui se cumulent : le soulignement or dit « vous êtes
@@ -210,8 +227,16 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           to="/backoffice"
           className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
         >
+          {/* `font-brand` et non `font-display` : sous `.theme-backoffice`,
+              `--font-display` est remappé sur la pile du CORPS (colors.css), et
+              le monogramme rendait donc en Instrument Sans — le seul endroit du
+              back-office où Playfair devait survivre était précisément celui qui
+              ne le rendait pas (relevé du 2026-08-18). `--font-brand` n'est
+              jamais remappé ; l'utilitaire qui l'expose a été ajouté au preset
+              le même jour. L'APLAT d'or reste un arbitrage du propriétaire,
+              consigné en exception dans DESIGN.md. */}
           <span
-            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-display text-sm leading-none text-ink-fg"
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-brand text-sm leading-none text-ink-fg"
             aria-hidden
           >
             B
@@ -253,7 +278,6 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
                 ref={(el) => { tabRefs.current.set(domain.id, el); }}
                 aria-expanded={isOpen}
                 aria-controls={isOpen ? `domain-panel-${domain.id}` : undefined}
-                aria-haspopup="true"
                 onClick={(e) => {
                   if (isOpen) close();
                   else openAt(domain, e.currentTarget);
@@ -270,6 +294,20 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
               </button>
             );
           })}
+
+          {/* Le panneau vit DANS le repère de navigation (voir l'en-tête). Il
+              reste en `position: absolute` : ni `<header>` ni `<nav>` ne crée
+              de contexte d'empilement (aucun z-index, aucune transformation),
+              son ancêtre positionné demeure le shell `relative` — la mise en
+              page et le `z-40` sont inchangés. */}
+          {openDomain?.columns !== undefined && (
+            <DomainPanel
+              domain={openDomain}
+              anchorLeft={anchorLeft}
+              onClose={close}
+              id={`domain-panel-${openDomain.id}`}
+            />
+          )}
         </nav>
 
         {/* La nav horizontale disparaît sous lg : ce ressort garde le bloc
@@ -292,15 +330,6 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           <UserChip />
         </div>
       </header>
-
-      {openDomain?.columns !== undefined && (
-        <DomainPanel
-          domain={openDomain}
-          anchorLeft={anchorLeft}
-          onClose={close}
-          id={`domain-panel-${openDomain.id}`}
-        />
-      )}
     </div>
   );
 }

@@ -154,12 +154,18 @@ export default function SettingsBusinessHoursPage() {
                     </label>
                     {d.open ? (
                       <div className="flex items-center gap-2 text-sm">
+                        {/* Le `<label>` de la ligne nomme la CASE À COCHER du
+                            jour, pas les deux heures : sans nom propre, sept
+                            paires de champs horaires étaient annoncées à
+                            l'identique (WCAG 1.3.1 / 4.1.2). Le mot « to »
+                            entre les deux n'est lu par personne. */}
                         <input
                           type="time"
                           data-testid={`bh-from-${key}`}
                           value={d.from}
                           disabled={!canUpdate}
                           onChange={(e) => patchDay(key, { from: e.target.value })}
+                          aria-label={`${label} opens at`}
                           className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
                         />
                         <span className="text-text-secondary">to</span>
@@ -169,6 +175,7 @@ export default function SettingsBusinessHoursPage() {
                           value={d.until}
                           disabled={!canUpdate}
                           onChange={(e) => patchDay(key, { until: e.target.value })}
+                          aria-label={`${label} closes at`}
                           className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
                         />
                         {rowInvalid && (

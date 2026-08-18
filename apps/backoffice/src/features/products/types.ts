@@ -105,6 +105,22 @@ export type ProductCounter =
 export type ProductColumnId =
   | 'type' | 'category' | 'stock' | 'cost' | 'retail' | 'wholesale' | 'margin' | 'status';
 
+/**
+ * Colonnes masquées À L'OUVERTURE de la table catalogue.
+ *
+ * Onze colonnes ne tiennent pas dans les 1219 px utiles d'un écran 1280 : le
+ * budget calibré (voir l'en-tête de `ProductsTable`) demande 1212 px à DIX
+ * colonnes, une fois les trois colonnes monétaires portées à la largeur qu'un
+ * montant à neuf chiffres exige. Il fallait donc en retirer une.
+ *
+ * C'est `type` — la seule dont le contenu est REDONDANT avec le reste de la
+ * ligne : un produit fini, une matière première ou un semi-fini se lisent déjà
+ * dans sa catégorie, son SKU et la présence ou non d'un prix de vente. Rien
+ * n'est perdu : le menu Columns la rappelle en un clic, et l'utilisateur qui
+ * l'affiche accepte le défilement horizontal en connaissance de cause.
+ */
+export const PRODUCT_DEFAULT_HIDDEN_COLUMNS: readonly ProductColumnId[] = ['type'];
+
 export const PRODUCT_COLUMNS: readonly { id: ProductColumnId; label: string }[] = [
   { id: 'type',      label: 'Type' },
   { id: 'category',  label: 'Category' },
@@ -115,6 +131,49 @@ export const PRODUCT_COLUMNS: readonly { id: ProductColumnId; label: string }[] 
   { id: 'margin',    label: 'Margin' },
   { id: 'status',    label: 'Status' },
 ];
+
+/**
+ * Le choix de colonnes, lu et écrit dans l'URL (`?hide=`).
+ *
+ * C'était le SEUL état de liste du catalogue resté hors URL : on réglait ses
+ * colonnes, on ouvrait une fiche, on revenait — les filtres, la page et le tri
+ * étaient restaurés, les colonnes non. Une restauration partielle est la pire
+ * des trois options : elle rend la page presque comme on l'a laissée, donc on
+ * ne remarque pas ce qui manque.
+ *
+ * Trois états, et le troisième est la raison du sentinel :
+ *
+ *   · paramètre ABSENT      → le défaut (`PRODUCT_DEFAULT_HIDDEN_COLUMNS`) ;
+ *   · `hide=none`           → RIEN de masqué, choix explicite de l'utilisateur ;
+ *   · `hide=type,margin`    → cette liste, bornée aux colonnes connues.
+ *
+ * Sans `none`, « je n'ai rien choisi » et « j'ai tout affiché » s'écriraient
+ * tous deux paramètre vide — et le défaut (qui masque `type`, faute de budget
+ * de largeur) écraserait au rechargement le choix de celui qui vient
+ * précisément de la rappeler.
+ */
+export const PRODUCT_HIDE_NONE = 'none';
+
+/** Borne une valeur d'URL sur les colonnes connues — `?hide=lol` ne casse rien. */
+export function parseHiddenColumns(raw: string | null): ReadonlySet<ProductColumnId> {
+  if (raw === null || raw === '') return new Set(PRODUCT_DEFAULT_HIDDEN_COLUMNS);
+  if (raw === PRODUCT_HIDE_NONE) return new Set();
+  const known = new Set<string>(PRODUCT_COLUMNS.map((c) => c.id));
+  const kept = raw.split(',').filter((id): id is ProductColumnId => known.has(id));
+  // Aucun jeton reconnu = valeur bricolée : on retombe sur le défaut plutôt que
+  // sur « tout afficher », qui est un choix que personne n'a fait.
+  return kept.length === 0 ? new Set(PRODUCT_DEFAULT_HIDDEN_COLUMNS) : new Set(kept);
+}
+
+/** Valeur d'URL pour un jeu de colonnes masquées — `null` quand c'est le défaut. */
+export function serializeHiddenColumns(hidden: ReadonlySet<ProductColumnId>): string | null {
+  // Ordre CANONIQUE (celui de PRODUCT_COLUMNS) et non celui du Set : sans lui,
+  // deux clics inverses produiraient deux URL différentes pour le même écran.
+  const ids = PRODUCT_COLUMNS.map((c) => c.id).filter((id) => hidden.has(id));
+  const def = [...PRODUCT_DEFAULT_HIDDEN_COLUMNS];
+  if (ids.length === def.length && ids.every((id, i) => id === def[i])) return null;
+  return ids.length === 0 ? PRODUCT_HIDE_NONE : ids.join(',');
+}
 
 /**
  * Marge unitaire d'un produit, en pourcentage du prix de vente.

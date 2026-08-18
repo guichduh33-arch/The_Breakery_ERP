@@ -157,6 +157,16 @@ const preset: Partial<Config> = {
         data:    ['var(--font-data)'],
         display: ['var(--font-display)'],
         mono:    ['var(--font-mono)'],
+        // --font-brand existait depuis typography.css mais AUCUN utilitaire ne
+        // l'exposait : le monogramme du back-office portait `font-display`, que
+        // `.theme-backoffice` remappe sur la pile du corps — il rendait donc en
+        // Instrument Sans, quand trois énoncés du dépôt affirmaient Playfair
+        // (relevé du 2026-08-18). `font-brand` est le SEUL utilitaire qui sorte
+        // Playfair sous ce thème ; il est réservé aux surfaces de MARQUE — le
+        // monogramme de la barre de navigation, et rien d'autre (DESIGN.md,
+        // The Playfair-Is-Brand-Only Rule). `BrandMark` lit --font-brand
+        // directement, en attribut SVG, sans passer par cet utilitaire.
+        brand:   ['var(--font-brand)'],
       },
       fontSize: {
         // Session 14 — explicit type scale so callers stop using ad-hoc Tailwind defaults.

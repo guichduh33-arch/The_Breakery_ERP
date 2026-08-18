@@ -30,6 +30,7 @@ export function ProductPicker({ onPick }: Props) {
       <input
         type="text"
         placeholder="Search by name or SKU…"
+        aria-label="Search products to add to the order"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="border rounded px-2 py-1 text-sm w-full"
@@ -37,7 +38,7 @@ export function ProductPicker({ onPick }: Props) {
       />
 
       {isLoading && (
-        <p className="text-sm text-muted-foreground">Loading products…</p>
+        <p className="text-sm text-text-muted">Loading products…</p>
       )}
 
       {isError && (
@@ -45,7 +46,7 @@ export function ProductPicker({ onPick }: Props) {
       )}
 
       {!isLoading && !isError && filtered.length === 0 && (
-        <p className="text-sm text-muted-foreground">No products match.</p>
+        <p className="text-sm text-text-muted">No products match.</p>
       )}
 
       {!isLoading && !isError && filtered.length > 0 && (

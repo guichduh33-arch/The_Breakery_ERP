@@ -15,22 +15,57 @@ import { formatCurrency } from '@breakery/utils';
 // seule la phrase était restée.
 //
 // Recharts pose ses couleurs en props JS, pas en classes : ce fichier est le
-// SEUL endroit où une couleur du thème est recopiée côté Backoffice. Les
-// NEUTRES ci-dessous consomment désormais les variables CSS directement — un
-// `var()` est valide dans un attribut de présentation SVG, et CATEGORICAL_SERIES
-// l'utilise déjà. Les deux rampes de coût restent en dur : elles comptent huit
-// pas chacune et le thème n'expose qu'une rampe de data-viz à quatre pas
-// (--chart-1..4), monochrome bleue. Les mapper dessus fusionnerait les familles
-// COGS et OpEx, qui existent justement pour se distinguer — c'est un arbitrage
-// de data-viz, pas un remplacement mécanique.
+// SEUL endroit où une couleur du thème est recopiée côté Backoffice. Un `var()`
+// est valide dans un attribut de présentation SVG (`fill`, `stroke`) — les
+// neutres, CATEGORICAL_SERIES et les onze graphes livrés le prouvent — vérifié
+// en direct le 2026-08-18 : `var(--info)` posé en `fill` rend
+// `rgb(43, 108, 156)`, soit le #2b6c9c qu'il remplace, à l'octet près. On ne
+// passe donc JAMAIS par `getComputedStyle`, qui exige la feuille chargée et un
+// élément portant `.theme-backoffice` : en test (jsdom) il rend `''`, et une
+// couleur vide emporte les snapshots.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// LA RÈGLE DU FICHIER (lot F, campagne design 2026-08-18)
+//
+// Un littéral hexadécimal n'est légitime ici QUE s'il ne duplique aucun token
+// du thème. Les cinq qui en dupliquaient un sont passés en `var()` :
+//   #2b6c9c → var(--info) (ancrage sémantique de la famille COGS) puis
+//             var(--chart-1) dans les rampes · #4f93bf → var(--chart-2)
+//   #8cc3e0 → var(--chart-3) · #8a5a10 → var(--warning)
+//
+// Les QUATORZE valeurs restantes sont en dur DÉLIBÉRÉMENT. Ce sont deux rampes
+// ANALYTIQUES de huit pas, locales au module reports. Le thème n'expose qu'une
+// rampe séquentielle de quatre pas (--chart-1..4), monochrome bleue : y mapper
+// les deux rampes fusionnerait les familles COGS et OpEx, qui existent
+// justement pour se distinguer d'un coup d'œil. C'est un arbitrage de data-viz,
+// pas une dette. La garde `scripts/ci/hardcoded-theme-colors.mjs` les porte en
+// baseline et refuse toute recopie NEUVE d'un hex du thème.
+//
+// CONTRASTE MESURÉ sur la carte blanche (--surface-2/3 = #ffffff), calculé au
+// 2026-08-18 :
+//   COGS_RAMP  5,63 · 10,00 · 3,36 · 6,95 · 2,37 · 4,88 · 11,44 · 1,91
+//   OPEX_RAMP  5,91 ·  4,20 · 3,09 · 8,63 · 2,24 · 11,83 ·  4,27 · 1,79
+// Deux crans sont sous le plancher 3:1 des objets graphiques (WCAG 1.4.11) —
+// #d9a44a à 2,24:1 et #e0bd7d à 1,79:1, plus #6fb0d6 à 2,37:1 et #8cc3e0 à
+// 1,91:1 côté bleus. Un troisième PASSE mais à 3 % du seuil : #c2872a, 3,09:1,
+// et rien ne le surveille. Ils restent légaux parce que chaque graphe du module
+// garde des étiquettes directes et une table sous le graphe : la couleur n'y
+// porte jamais seule l'identité d'une série.
+//
+// ⚠️ NON PORTABLE VERS LA CAISSE. Les tokens --chart-1..4 sont INVERSÉS entre
+// les deux thèmes (backoffice #2b6c9c → #c9dcea, POS #8cc3e0 → #3f7096) : en
+// sombre la lisibilité monte avec la clarté. Un graphe POS qui importerait ce
+// fichier verrait sa rampe COGS se retourner. Vérifié le 2026-08-18 : les 52
+// fichiers qui importent `chartColors` vivent tous sous `apps/backoffice/`.
+// ─────────────────────────────────────────────────────────────────────────────
 
 /** Headline color for each cost bucket. */
 // Audit cohérence 2026-08-01 — les deux familles s'ancrent désormais sur les
 // teintes sémantiques du thème (--info et --amber-warn) au lieu du bleu royal
 // #1e55d6, qui n'était là que parce qu'il était l'ancien accent Backoffice.
 // L'accent, lui, est l'or encre (#8a6820) : il ne porte aucune famille de coût.
-export const COGS_BASE = '#2b6c9c'; // --info — famille COGS / achats matière
-export const OPEX_BASE = '#8a5a10'; // --amber-warn — famille OpEx
+export const COGS_BASE = 'var(--info)';    // famille COGS / achats matière
+export const OPEX_BASE = 'var(--warning)'; // famille OpEx
 
 /**
  * Category ramps — family-coherent but mutually distinguishable. Used for
@@ -39,12 +74,12 @@ export const OPEX_BASE = '#8a5a10'; // --amber-warn — famille OpEx
  * sur un fond clair.
  */
 const COGS_RAMP = [
-  '#2b6c9c', '#17456b', '#4f93bf', '#0d5f8a',
-  '#6fb0d6', '#1e78a8', '#0a3d5c', '#8cc3e0',
+  'var(--chart-1)', '#17456b', 'var(--chart-2)', '#0d5f8a',
+  '#6fb0d6', '#1e78a8', '#0a3d5c', 'var(--chart-3)',
 ] as const;
 
 const OPEX_RAMP = [
-  '#8a5a10', '#a8701c', '#c2872a', '#6b430a',
+  'var(--warning)', '#a8701c', '#c2872a', '#6b430a',
   '#d9a44a', '#4f3106', '#b06a15', '#e0bd7d',
 ] as const;
 
@@ -82,7 +117,7 @@ export function familyBase(family: CostFamily): string {
 // clair #d9a44a est sous 3:1 sur blanc → légal parce que chaque graphe du
 // module garde étiquettes directes + table.
 export const CATEGORICAL_SERIES = [
-  '#2b6c9c', // bleu — COGS_BASE
+  'var(--chart-1)', // bleu #2b6c9c — même cran que COGS_BASE
   '#a8701c', // ambre — OPEX_RAMP[1]
   '#3f92cc', // bleu clair (chroma remonté depuis COGS_RAMP[2])
   '#c2872a', // ambre clair — OPEX_RAMP[2]

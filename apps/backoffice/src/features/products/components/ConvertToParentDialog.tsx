@@ -7,7 +7,7 @@
 
 import { useState, type JSX } from 'react';
 import {
-  Button,
+  Button, Input,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useConvertProductToParent } from '../hooks/useConvertProductToParent.js';
@@ -88,9 +88,13 @@ export function ConvertToParentDialog({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            {/* `<label>` orphelin : il ne désignait AUCUN contrôle (le groupe
+                d'axes est un jeu de boutons, déjà nommé par son
+                `role="group" aria-label`). Un `<label>` sans `for` ni contrôle
+                imbriqué est du HTML invalide — c'est un titre, pas un libellé. */}
+            <span className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Axis
-            </label>
+            </span>
             <div role="group" aria-label="Variant axis" className="inline-flex gap-1 rounded-sm border border-border-subtle bg-bg-elevated p-1">
               {AXES.map((a) => (
                 <button
@@ -115,13 +119,19 @@ export function ConvertToParentDialog({
             <label htmlFor="convert-first-label" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               First variant label
             </label>
-            <input
+            {/* Primitif partagé (2026-08-18). Ces deux champs portaient un
+                `rounded` NU — hors de la rampe `--radius-*`, il retombe sur le
+                défaut Tailwind — et `bg-bg-base`, c'est-à-dire le papier de page
+                #f0efec, là où DESIGN.md § Champs veut la feuille blanche. Ils
+                rendaient aussi ~37 px sans anneau de focus. `Input` porte les
+                quatre : 44 px, rayon 4 px, `bg-bg-input` (#ffffff), anneau or. */}
+            <Input
               id="convert-first-label"
               data-testid="first-variant-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder={axis === 'flavor' ? 'ex: Nature' : axis === 'size' ? 'ex: 250g' : 'ex: Whole'}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className="w-full"
               maxLength={64}
             />
           </div>
@@ -136,15 +146,27 @@ export function ConvertToParentDialog({
               />
               <span>Override the first variant&apos;s name (default: keep "{productName}")</span>
             </label>
+            {/* Le champ n'était nommé que par son `placeholder`, qui s'efface à
+                la première frappe (WCAG 1.3.1 / 4.1.2) — et le `<label>` juste
+                au-dessus nomme la CASE À COCHER, pas ce champ. */}
             {overrideName && (
-              <input
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                placeholder={`${productName} ${label.length > 0 ? label : '<label>'}`}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
-                maxLength={120}
-                data-testid="convert-custom-name"
-              />
+              <>
+                <label
+                  htmlFor="convert-custom-name"
+                  className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+                >
+                  Variant name
+                </label>
+                <Input
+                  id="convert-custom-name"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder={`${productName} ${label.length > 0 ? label : '<label>'}`}
+                  className="w-full"
+                  maxLength={120}
+                  data-testid="convert-custom-name"
+                />
+              </>
             )}
           </div>
 

@@ -223,6 +223,10 @@ export default function GeneralLedgerPage(): JSX.Element {
       {gl.data?.next_cursor && (
         <Button
           variant="secondary"
+          // `sm` (36 px) : le cran unique de « Load more » dans tout le
+          // back-office. Sans lui ce bouton rendait au défaut `md`, soit 56 px —
+          // le même contrôle existait en 32, 36 et 56 px sur six pages.
+          size="sm"
           onClick={handleLoadMore}
           disabled={gl.isFetching}
           data-testid="gl-load-more"

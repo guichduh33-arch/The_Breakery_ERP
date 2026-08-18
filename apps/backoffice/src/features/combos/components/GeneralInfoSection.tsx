@@ -35,7 +35,11 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
   // Toute donnée qu'on lit pour décider rend en mono tabulaire — ici un montant
   // en IDR à sept chiffres et un rang d'affichage.
   const numCls = `${inputCls} font-mono tabular-nums`;
-  const labelCls = 'block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1';
+  // `text-xs` (`--type-xs`, 12 px) et non `text-[0.625rem]` : la rampe ne
+  // descend pas sous 12 px depuis la décompression de l'échelle, et 10 px sur un
+  // poste de BUREAU est le plus petit corps du produit. Même geste que
+  // `ComboCard` du 2026-08-18, qui avait laissé ce fichier derrière lui.
+  const labelCls = 'block text-xs uppercase tracking-wider text-text-secondary mb-1';
 
   return (
     <section className="space-y-4" data-testid="general-info-section">

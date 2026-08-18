@@ -3,39 +3,58 @@
 // Session 47 — Header strip on the Combo Management page.
 // "Create New Combo" gated on combos.create; navigates to /combos/new.
 
-import { Box, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { JSX } from 'react';
+import { PageHeader } from '@/components/PageHeader.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Props {
-  /** Provided when the user has combos.create permission. */
-  onCreate?: () => void;
+  onCreate?: (() => void) | undefined;
+  /** `combos.create`. Faux = bouton RENDU, désactivé, et disant pourquoi. */
+  canCreate?: boolean;
 }
 
-export function CombosHeader({ onCreate }: Props): JSX.Element {
+const CREATE_REASON = 'You need the combos.create permission to build a combo.';
+
+// Trois corrections d'un coup (campagne design, lot B2) :
+//   · le `<h1>` était recopié à la main — DESIGN.md § Do's fait de `PageHeader`
+//     la source unique du bandeau de titre. La pastille d'icône décorative part
+//     avec : le composant partagé n'a pas de fente pour elle, et une frise
+//     d'icônes est précisément ce que la direction a retiré.
+//   · le bouton était un APLAT D'OR (The Ink-Not-Gold Rule). C'est le bouton
+//     QUI CRÉE, sur un bandeau de page : c'est le cas d'école de l'encre.
+//   · `rounded-full` violait The Tight-Corner Rule (6 px au maximum) ;
+//     `TOOLBAR_BTN_PRIMARY` porte le rayon de 3 px du système.
+//
+// Quatrième correction (2026-08-18) : le bouton était MASQUÉ quand la permission
+// manquait. La doctrine du dépôt — celle que `ProductsHeader` et `B2BOrdersPage`
+// tiennent — est de le RENDRE, désactivé, en disant pourquoi : un bouton absent
+// se lit « cette page ne sait pas créer de combo », un bouton grisé assorti de sa
+// raison se lit « demande ce droit ». Un bouton désactivé n'étant pas focalisable,
+// le `title` seul n'atteindrait ni le clavier ni le lecteur d'écran : la raison
+// est aussi un texte `sr-only` référencé par `aria-describedby`.
+export function CombosHeader({ onCreate, canCreate = true }: Props): JSX.Element {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
-          <Box className="h-5 w-5" aria-hidden />
-        </div>
-        <div>
-          <h1 className="text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Combo Management</h1>
-          <p className="text-sm italic text-text-secondary">
-            Create artisan bundles and curated sets at premium value
-          </p>
-        </div>
-      </div>
-      {onCreate !== undefined && (
-        <button
-          type="button"
-          onClick={onCreate}
-          className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-gold-fg hover:bg-gold-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
-          data-testid="create-combo-btn"
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Create New Combo
-        </button>
-      )}
-    </div>
+    <PageHeader
+      className="items-center"
+      title="Combo Management"
+      subtitle="Create artisan bundles and curated sets at premium value"
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={onCreate}
+            className={TOOLBAR_BTN_PRIMARY}
+            disabled={!canCreate}
+            {...(canCreate ? {} : { title: CREATE_REASON, 'aria-describedby': 'combos-create-reason' })}
+            data-testid="create-combo-btn"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            Create New Combo
+          </button>
+          {!canCreate && <span id="combos-create-reason" className="sr-only">{CREATE_REASON}</span>}
+        </>
+      }
+    />
   );
 }

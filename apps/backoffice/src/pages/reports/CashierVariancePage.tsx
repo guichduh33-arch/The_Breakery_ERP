@@ -69,11 +69,31 @@ const INK_LINK = 'text-gold underline-offset-2 hover:underline focus-visible:out
 
 interface KpiDescriptor {
   key: string; label: string; value: string; title?: string; note: string;
+  /** Valeur signée négative — voir `tone` sur KpiTile. */
+  tone?: 'neutral' | 'danger';
 }
 
 /** Cellule signée : le barème PARTAGÉ, jamais un `v < 0 ? rouge : vert` local. */
 function signedCell(v: number): string {
   return cn(NUM_CELL, VARIANCE_TONE_TEXT[varianceToneSigned(v, SIGNED)]);
+}
+
+/**
+ * Ton de TUILE, tiré du MÊME barème que les cellules et la heatmap. La page
+ * colorait correctement sa grille, sous légende, et laissait ses tuiles muettes :
+ * un manquant de caisse s'y affichait exactement comme un excédent.
+ *
+ * La tuile n'a que deux tons ; `watch` (un manquant sous le seuil de la légende)
+ * y retombe donc en neutre. Il n'est pas perdu pour autant : le MOT, lui,
+ * apparaît dès que le signe est négatif.
+ */
+function signedTileTone(v: number): 'neutral' | 'danger' {
+  return varianceToneSigned(v, SIGNED) === 'bad' ? 'danger' : 'neutral';
+}
+
+/** Le mot, deuxième signal — la couleur ne porte jamais seule (WCAG 1.4.1). */
+function shortfallNote(v: number, rest: string): string {
+  return v < 0 ? `shortfall · ${rest}` : rest;
 }
 
 export default function CashierVariancePage(): JSX.Element {
@@ -109,7 +129,11 @@ export default function CashierVariancePage(): JSX.Element {
       key: 'cash-variance', label: 'Cash variance',
       value: formatIdrCompact(totals?.cash.total_variance ?? 0),
       title: formatIdrFull(totals?.cash.total_variance ?? 0),
-      note:  `${formatCount(totals?.cash.short_count ?? 0)} short · ${formatCount(totals?.cash.over_count ?? 0)} over`,
+      note:  shortfallNote(
+        totals?.cash.total_variance ?? 0,
+        `${formatCount(totals?.cash.short_count ?? 0)} short · ${formatCount(totals?.cash.over_count ?? 0)} over`,
+      ),
+      tone:  signedTileTone(totals?.cash.total_variance ?? 0),
     },
     {
       key: 'cash-short', label: 'Total short',
@@ -133,16 +157,25 @@ export default function CashierVariancePage(): JSX.Element {
       value: qrisCounted ? formatIdrCompact(totals?.qris.total_variance ?? 0) : '—',
       ...(qrisCounted ? { title: formatIdrFull(totals?.qris.total_variance ?? 0) } : {}),
       note:  qrisCounted
-        ? `${formatCount(totals?.qris.counted_sessions ?? 0)} sessions counted`
+        ? shortfallNote(
+            totals?.qris.total_variance ?? 0,
+            `${formatCount(totals?.qris.counted_sessions ?? 0)} sessions counted`,
+          )
         : 'not counted at close',
+      // Non comptée, la tuile n'a pas de valeur : elle n'a donc pas de ton.
+      tone:  qrisCounted ? signedTileTone(totals?.qris.total_variance ?? 0) : 'neutral',
     },
     {
       key: 'card-variance', label: 'Card variance',
       value: cardCounted ? formatIdrCompact(totals?.card.total_variance ?? 0) : '—',
       ...(cardCounted ? { title: formatIdrFull(totals?.card.total_variance ?? 0) } : {}),
       note:  cardCounted
-        ? `${formatCount(totals?.card.counted_sessions ?? 0)} sessions counted`
+        ? shortfallNote(
+            totals?.card.total_variance ?? 0,
+            `${formatCount(totals?.card.counted_sessions ?? 0)} sessions counted`,
+          )
         : 'not counted at close',
+      tone:  cardCounted ? signedTileTone(totals?.card.total_variance ?? 0) : 'neutral',
     },
   ];
 
@@ -185,6 +218,7 @@ export default function CashierVariancePage(): JSX.Element {
               value={t.value}
               {...(t.title !== undefined ? { valueTitle: t.title } : {})}
               hero={i === 0}
+              {...(t.tone !== undefined ? { tone: t.tone } : {})}
               testId={`kpi-${t.key}`}
             >
               <span className={i === 0 ? KPI_NOTE_HERO : KPI_NOTE}>{t.note}</span>

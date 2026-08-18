@@ -19,7 +19,7 @@
 // update_order_item_qty déduit la perte sur le delta.
 
 import { useState, useMemo } from 'react';
-import { CenterModal } from '@breakery/ui';
+import { Button, CenterModal, Input } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useEditOrderItems } from '@/features/orders/hooks/useEditOrderItems.js';
 import { ProductPicker } from '@/features/orders/components/ProductPicker.js';
@@ -187,7 +187,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     {l.name_snapshot}
                     {l.isPending && <span className="ml-1 text-xs text-info">(new)</span>}
                     {l.isLocked && (
-                      <span className="ml-1 text-xs text-muted-foreground" title="Sent to kitchen — decrease only, removal via POS cancel flow">
+                      <span className="ml-1 text-xs text-text-muted" title="Sent to kitchen — decrease only, removal via POS cancel flow">
                         🔒
                       </span>
                     )}
@@ -200,6 +200,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     onChange={(e) =>
                       handleUpdateQty(l, Math.max(1, Number(e.target.value) || 1))
                     }
+                    aria-label={`Quantity for ${l.name_snapshot}`}
                     className="w-16 border rounded px-1 py-0.5 text-sm"
                     data-testid={`qty-${l.id}`}
                   />
@@ -216,7 +217,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     </button>
                   ) : l.isLocked ? (
                     <span
-                      className="text-xs text-muted-foreground"
+                      className="text-xs text-text-muted"
                       data-testid={`locked-${l.id}`}
                       title="Removal forbidden on a kitchen-sent line — use the POS cancel flow (mandatory waste declaration)"
                     >
@@ -239,7 +240,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             <p className="mt-3 text-sm border-t pt-2">
               Subtotal preview: <strong className="tabular-nums">{formatCurrency(previewSubtotal)}</strong>
             </p>
-            <p className="text-xs text-muted-foreground">Tax + total recalculated server-side at apply.</p>
+            <p className="text-xs text-text-muted">Tax + total recalculated server-side at apply.</p>
           </div>
         </div>
         {hasLockedUpdate && (
@@ -247,44 +248,78 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             <p className="text-sm font-medium">
               🔒 Locked line decrease — manager authorization &amp; mandatory waste (ADR-010)
             </p>
+            {/* Les deux champs n'étaient nommés que par leur `placeholder` —
+                un nom de dernier recours qui S'EFFACE à la première frappe.
+                Sur une autorisation manager doublée d'une déclaration de
+                perte, celui qui revient sur le champ n'avait plus rien
+                (WCAG 1.3.1 / 4.1.2, niveau A). Le libellé passe en `<label>`
+                persistant, le `placeholder` ne garde que l'exemple.
+
+                Et les deux champs passent au primitif partagé (2026-08-18).
+                Ils portaient `border rounded px-2 py-1` : un `border` NU de
+                Tailwind, c'est-à-dire `#e5e7eb` — une couleur froide, hors
+                token, à 1,238:1 sur la feuille blanche —, ~29 px de haut au lieu
+                des 44 de DESIGN.md § Champs, et AUCUN anneau de focus. Sur le
+                PIN d'un manager, dans un chemin d'argent. `Input` porte les
+                quatre : h-44, rayon 4 px, `border-border-subtle`, anneau or de
+                2 px décalé de 2 px avec son halo. */}
             <div className="flex gap-2">
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Manager PIN (6 digits)"
-                value={managerPin}
-                onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
-                className="border rounded px-2 py-1 text-sm w-44"
-                data-testid="locked-manager-pin"
-              />
-              <input
-                type="text"
-                placeholder="Waste reason (e.g. burnt dish, customer left…)"
-                value={wasteReason}
-                onChange={(e) => setWasteReason(e.target.value)}
-                className="border rounded px-2 py-1 text-sm flex-1"
-                data-testid="locked-waste-reason"
-              />
+              <div className="space-y-1">
+                <label htmlFor="locked-manager-pin" className="block text-xs uppercase tracking-widest text-text-secondary">
+                  Manager PIN
+                </label>
+                <Input
+                  id="locked-manager-pin"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="6 digits"
+                  value={managerPin}
+                  onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-44"
+                  data-testid="locked-manager-pin"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <label htmlFor="locked-waste-reason" className="block text-xs uppercase tracking-widest text-text-secondary">
+                  Waste reason
+                </label>
+                <Input
+                  id="locked-waste-reason"
+                  type="text"
+                  placeholder="e.g. burnt dish, customer left…"
+                  value={wasteReason}
+                  onChange={(e) => setWasteReason(e.target.value)}
+                  className="w-full"
+                  data-testid="locked-waste-reason"
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-text-muted">
               The removed delta is declared as waste and deducted through the recipe-aware waste circuit.
             </p>
           </div>
         )}
         {m.error && <p className="mt-3 text-sm text-danger">{m.error.message}</p>}
         <div className="mt-4 flex items-center justify-between border-t pt-3">
-          <span className="text-sm text-muted-foreground">{pendingCount} changes pending</span>
+          <span className="text-sm text-text-muted">{pendingCount} changes pending</span>
           <div className="flex gap-2">
-            <button onClick={handleCancel} className="px-4 py-2 text-sm">Cancel</button>
-            <button
+            {/* Alignées sur les deux modales clients : `secondary` / `ink` en
+              * taille sm. L'action terminale rendait `bg-info text-white` —
+              * `text-white` est une couleur EN DUR (DESIGN.md, dernier Don't) et
+              * `bg-info` est un token d'ÉTAT employé en remplissage de bouton,
+              * ce qui n'existe nulle part ailleurs dans le back-office : le bleu
+              * y signale une information, il ne porte pas un geste. */}
+            <Button variant="secondary" size="sm" onClick={handleCancel}>Cancel</Button>
+            <Button
+              variant="ink"
+              size="sm"
               onClick={() => { void handleApply(); }}
               disabled={pendingCount === 0 || m.isPending || lockedAuthMissing}
-              className="px-4 py-2 text-sm bg-info text-white rounded disabled:opacity-50"
               data-testid="apply-changes"
             >
               {m.isPending ? 'Applying…' : 'Apply changes'}
-            </button>
+            </Button>
           </div>
         </div>
     </CenterModal>

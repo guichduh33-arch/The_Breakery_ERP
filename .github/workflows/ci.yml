@@ -15,8 +15,9 @@ concurrency:
 
 jobs:
   # Les gardes anti-dérive : deux sur la gouvernance documentaire (audit du
-  # 2026-07-27/28, PR #306) et une sur les classes de couleur mortes (audit
-  # design du 2026-08-09). Job SÉPARÉ et volontairement nu : pas de pnpm
+  # 2026-07-27/28, PR #306), une sur les classes de couleur mortes (audit
+  # design du 2026-08-09) et une sur les couleurs du thème recopiées en dur
+  # (campagne design du 2026-08-18). Job SÉPARÉ et volontairement nu : pas de pnpm
   # install, pas de cache, juste node + le dépôt. Il rend son verdict en
   # quelques secondes au lieu d'attendre les 11-13 min de la suite, et une
   # dérive n'a aucune raison d'être masquée par un build rouge.
@@ -53,6 +54,23 @@ jobs:
       - name: Garde 3 — aucune classe de couleur morte hors baseline
         if: always()
         run: node scripts/ci/tailwind-dead-classes.mjs
+
+      # Garde 4 — la garde 3 voit une CLASSE morte ; celle-ci voit une VALEUR
+      # recopiée. Elles ne se recouvrent pas : `bg-[#7a5c1c]` échappe à la
+      # première (la famille est valide, c'est la valeur qui est en dur), et
+      # `text-muted-foreground` échappe à la seconde (aucune couleur littérale).
+      # Un token dupliqué ne casse rien le jour où on l'écrit — il casse le jour
+      # où le token bouge et que la copie ne suit pas. C'est exactement ce qui
+      # est arrivé au halo de focus, deux fois. Ce halo vit dans
+      # `packages/ui/src/tokens/elevation.css`, que la garde ne balayait PAS à sa
+      # naissance : son périmètre couvre `packages/ui/src/` depuis le
+      # 2026-08-18, et elle reconnaît désormais `rgba(r, g, b, a)` autant que
+      # `#rrggbb` — c'est sous cette forme que la moitié POS du halo était encore
+      # recopiée. Deux tables de tokens, une par thème, pour qu'un littéral
+      # légitime de l'autre thème ne la fasse pas crier au loup.
+      - name: Garde 4 — aucune couleur du thème recopiée en dur hors baseline
+        if: always()
+        run: node scripts/ci/hardcoded-theme-colors.mjs
 
   lint-typecheck-test-build:
     runs-on: ubuntu-latest

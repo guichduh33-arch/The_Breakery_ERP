@@ -10,7 +10,7 @@
 
 import { useRef, useState, type JSX } from 'react';
 import { DollarSign, Percent, Tag } from 'lucide-react';
-import { Card, EmptyState } from '@breakery/ui';
+import { Button, Card, EmptyState } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';
@@ -120,14 +120,32 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             </p>
           </div>
           {canCorrect && (
-            <button
+            // The Ink-Not-Gold Rule : l'or ne remplit pas. Et l'encre est déjà
+            // prise sur cet écran par « Save changes » du bandeau de fiche
+            // (ProductDetailHeader) — un panneau ne peut donc pas la reprendre
+            // sans poser un second aplat encré (The One Ink Fill Rule).
+            //
+            // Le primitif partagé, PAS `TOOLBAR_BTN_*` : DESIGN.md § Components
+            // réserve les chaînes de bandeau au « bouton de bandeau de PAGE » et
+            // donne le primitif comme « le bouton des modales et des
+            // FORMULAIRES ». Un panneau de fiche est un formulaire.
+            //
+            // La justification qui tenait ici — « le fond du bouton se distingue
+            // déjà du papier, sa bordure n'a donc pas à tenir les 3:1 » — était
+            // FAUSSE et a été retirée le 2026-08-18 : `--bg-overlay` et la carte
+            // qui porte ce panneau valent tous deux `#ffffff`, le bouton n'avait
+            // aucun fond propre. Le liseré est bien son seul délimiteur, comme
+            // pour `TOOLBAR_BTN_SECONDARY` ; le primitif est passé à
+            // `border-strong` (3,827:1 sur le blanc) pour cette raison.
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               data-testid="correct-cost-btn"
               onClick={() => setDialogOpen(true)}
-              className="inline-flex items-center gap-2 rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base"
             >
               Correct cost price
-            </button>
+            </Button>
           )}
         </div>
 

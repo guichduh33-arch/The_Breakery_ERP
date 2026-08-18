@@ -78,6 +78,8 @@ function capitalize(s: string): string {
 interface KpiDescriptor {
   key: string; label: string; value: string;
   title?: string; delta?: number | null; unit?: 'pct' | 'pt'; invert?: boolean; note?: string;
+  /** Valeur signée négative — voir `tone` sur KpiTile. */
+  tone?: 'neutral' | 'danger';
 }
 
 export default function ProfitLossPage(): JSX.Element {
@@ -117,9 +119,16 @@ export default function ProfitLossPage(): JSX.Element {
 
   const tiles: KpiDescriptor[] = [
     {
+      // Une PERTE s'affichait exactement comme un bénéfice : même corps, même
+      // encre, seul le signe du formatteur les séparait — et il se perd au bout
+      // d'un « Rp -12,4 jt » lu de loin. Trois signaux désormais : le signe, le
+      // mot, la couleur (ici `--ink-danger`, la tuile étant l'unique héro).
       key: 'net-profit', label: 'Net profit',
       value: formatIdrCompact(data?.net_profit ?? 0), title: formatIdrFull(data?.net_profit ?? 0),
       delta: pctChange(data?.net_profit ?? 0, prevData?.net_profit),
+      ...(data !== undefined && data.net_profit < 0
+        ? { tone: 'danger' as const, note: 'loss' }
+        : {}),
     },
     {
       key: 'revenue', label: 'Revenue',
@@ -208,6 +217,7 @@ export default function ProfitLossPage(): JSX.Element {
               value={t.value}
               {...(t.title !== undefined ? { valueTitle: t.title } : {})}
               hero={i === 0}
+              {...(t.tone !== undefined ? { tone: t.tone } : {})}
               testId={`kpi-${t.key}`}
             >
               {t.delta !== undefined && (

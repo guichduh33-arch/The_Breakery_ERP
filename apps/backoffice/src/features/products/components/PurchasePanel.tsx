@@ -5,7 +5,12 @@
 // status). Read-only over useProductPurchaseItems; no new RPC.
 
 import { useMemo, type JSX } from 'react';
-import { Badge, Card, EmptyState, KpiTile, SectionLabel } from '@breakery/ui';
+import { Badge, Card, EmptyState, SectionLabel } from '@breakery/ui';
+// La tuile du back-office (23 px, `valueTitle`) et non celle de `@breakery/ui`
+// (34 px) : « Total Spent » cumule des achats fournisseur et déborde dès huit
+// chiffres. Le prix unitaire, sa voisine, suit pour que la rangée reste une.
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
 import { ShoppingCart } from 'lucide-react';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import {
@@ -76,13 +81,22 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <KpiTile label="Purchases" value={String(summary.count)} />
-        <KpiTile label="Total Spent" value={formatCurrency(summary.totalSpent)} />
+        <KpiTile label="Purchases" value={String(summary.count)} testId="kpi-purchases-count" />
+        <KpiTile
+          label="Total Spent"
+          value={formatIdrShort(summary.totalSpent)}
+          valueTitle={formatIdr(summary.totalSpent)}
+          testId="kpi-total-spent"
+        />
         <KpiTile
           label="Last Unit Price"
-          value={summary.lastPrice !== null ? formatCurrency(summary.lastPrice) : '—'}
-          footer={summary.lastDate !== null ? fmtDate(summary.lastDate) : undefined}
-        />
+          value={summary.lastPrice !== null ? formatIdrShort(summary.lastPrice) : '—'}
+          {...(summary.lastPrice !== null ? { valueTitle: formatIdr(summary.lastPrice) } : {})}
+          unavailable={summary.lastPrice === null}
+          testId="kpi-last-unit-price"
+        >
+          {summary.lastDate !== null && <span className={KPI_NOTE}>{fmtDate(summary.lastDate)}</span>}
+        </KpiTile>
       </div>
 
       <Card variant="default" padding="none">

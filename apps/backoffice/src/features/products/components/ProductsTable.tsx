@@ -21,7 +21,7 @@
 // n'ouvre sur rien promet une capacité que l'écran n'a pas. Les cases
 // reviendront avec les RPC, pas avant.
 
-import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
+import { DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
@@ -41,6 +41,12 @@ import {
 export const PRODUCTS_PAGE_SIZE = LIST_PAGE_SIZE_DEFAULT;
 
 const MONO = 'font-data tabular-nums';
+// Les montants ne se coupent PAS. Sans cette classe, le navigateur est libre de
+// renvoyer « Rp » seul sur une première ligne et le nombre sur la seconde, dans
+// une colonne alignée à droite : mesuré sur la table AVANT correction, une
+// cellule « Rp 5.000 » rendait 36 px de haut pour une ligne de 18. On rend la
+// coupure IMPOSSIBLE plutôt qu'improbable, et on calibre la colonne pour.
+const NOWRAP = 'whitespace-nowrap';
 const DASH = <span className="text-text-subtle">—</span>;
 
 // Le helper `num` unique est mort (audit UX/UI 2026-08-13) : il rendait un
@@ -95,11 +101,33 @@ export function ProductsTable({
 
   const shown = (id: ProductColumnId): boolean => hiddenColumns?.has(id) !== true;
 
+  // ── BUDGET DE LARGEUR ──────────────────────────────────────────────────────
+  // Les onze colonnes étaient déclarées en POURCENTAGES (99,9 % au total) plus
+  // 72 px d'actions. Un pourcentage ne se somme pas avec un pixel : à 1219 px
+  // utiles (mesuré, viewport 1280), le rendu réel faisait 1239 px — 20 px de
+  // débordement AVANT même de regarder le texte. Et `table-layout` étant `auto`
+  // dans DataTable, une largeur déclarée n'est qu'une PRÉFÉRENCE : la largeur
+  // minimale du contenu gagne. `actions`, déclarée 72 px, rendait 112.
+  //
+  // Tout passe donc en rem — la convention du reste du dépôt (OrdersListPage,
+  // Inventory, ExpensesListPage) — et chaque colonne est calibrée sur son
+  // minimum RÉEL : en-tête (`SectionLabel` xs, 12 px mono, interlettrage
+  // 0,14 em, plus le chevron de tri) ou contenu, le plus grand des deux.
+  // Pas de `ch` : l'unité se résout sur le `<th>`, qui n'a AUCUNE classe de
+  // taille et hérite donc 16 px, quand les `<td>` sont en `text-sm` (14 px) —
+  // un `ch` y mentirait de 14 %.
+  //
+  //   product 9 · sku 8 · category 7,5 · stock 6 · cost/retail/wholesale 9,25
+  //   · margin 5,25 · status 5,25 · actions 7        = 75,75rem = 1212 px ≤ 1219
+  //
+  // La colonne `type` (6rem) est HORS de cette somme : elle est masquée par
+  // défaut (`PRODUCT_DEFAULT_HIDDEN_COLUMNS`, features/products/types.ts), parce
+  // que sans elle le budget ne bouclait pas. Le menu Columns la rend en un clic.
   const columns: DataTableColumn<ProductRow>[] = [
     {
       id: 'product',
       header: 'Product',
-      width: '18%',
+      width: '9rem',
       sortable: true,
       // Les badges Variant/Parent passent SOUS le nom : inline, ils poussaient un
       // nom long à la ligne, si bien qu'un produit à trois mots occupait deux
@@ -109,7 +137,13 @@ export function ProductsTable({
         const isParent = parentIds?.has(r.id) ?? false;
         return (
           <div className={cn('flex flex-col gap-0.5', isVariant && 'pl-4')}>
-            <span className="truncate font-medium text-text-primary">{r.name}</span>
+            {/* `max-w` explicite : `truncate` pose `white-space: nowrap`, donc
+                la largeur MINIMALE de la cellule devient celle du nom entier et
+                la colonne s'élargit sans fin — c'est ce qui la faisait rendre
+                225,7 px pour 9rem demandés. Le plafond vaut la colonne moins ses
+                28 px de padding compact. Même geste que la colonne Customer
+                d'OrdersListPage, qui borne déjà la sienne. */}
+            <span className="max-w-[7.25rem] truncate font-medium text-text-primary" title={r.name}>{r.name}</span>
             {(isVariant || isParent) && (
               <div className="flex items-center gap-1">
                 {isVariant && (
@@ -127,7 +161,7 @@ export function ProductsTable({
     {
       id: 'sku',
       header: 'SKU',
-      width: '12.2%',
+      width: '8rem',
       sortable: true,
       // `whitespace-nowrap` : un SKU alphanumérique long se cassait sur trois
       // lignes dans une colonne trop étroite. Il reste sur une ligne, la colonne
@@ -137,24 +171,31 @@ export function ProductsTable({
     ...(shown('type') ? [{
       id: 'type',
       header: 'Type',
-      width: '11.4%',
+      width: '6rem',
       render: (r: ProductRow) => <ProductTypeBadge type={classifyProduct(r)} />,
     }] : []),
     ...(shown('category') ? [{
       id: 'category',
       header: 'Category',
-      width: '10.4%',
+      width: '7.5rem',
       sortable: true,
       // La pilule de catégorie tombe en vue liste : quinze pilules colorées
       // empilées font un vitrail où la couleur ne distingue plus rien.
+      // `truncate` + plafond : un nom de catégorie long repliait la cellule sur
+      // trois lignes. Le plancher de la colonne reste son en-tête (« Category »
+      // + chevron de tri ≈ 117 px), pas son contenu.
       render: (r: ProductRow) =>
-        r.category_name === null ? DASH : <span className="text-xs text-text-secondary">{r.category_name}</span>,
+        r.category_name === null ? DASH : (
+          <span className="block max-w-[5.75rem] truncate text-xs text-text-secondary" title={r.category_name}>
+            {r.category_name}
+          </span>
+        ),
     }] : []),
     ...(shown('stock') ? [{
       id: 'stock',
       header: 'Stock',
       align: 'right' as const,
-      width: '8.3%',
+      width: '6rem',
       sortable: true,
       render: (r: ProductRow) => {
         if (!r.track_inventory) return DASH;
@@ -179,41 +220,46 @@ export function ProductsTable({
       id: 'cost',
       header: 'Cost',
       align: 'right' as const,
-      width: '8.3%',
+      // 9,25rem = 148 px : « Rp 150.000.000 » fait 14 caractères, à 8,4 px
+      // (JetBrains Mono, chasse 0,6 em, cellule `text-sm`) = 117,6 px, plus
+      // 28 px de padding compact. Les trois colonnes monétaires partagent ce
+      // calibre — un alignement décimal de colonne à colonne suppose la même
+      // largeur. Mesuré AVANT : cost 86,8 px, retail 99,3, wholesale 107,9.
+      width: '9.25rem',
       sortable: true,
       // Coût manquant EN ROUGE : c'est la population du compteur « No cost
       // price », et la cause d'une marge qu'on ne peut pas calculer.
       render: (r: ProductRow) =>
         r.cost_price > 0
-          ? <span className={cn(MONO, 'text-text-secondary')}>{formatCurrency(r.cost_price)}</span>
+          ? <span className={cn(MONO, NOWRAP, 'text-text-secondary')}>{formatCurrency(r.cost_price)}</span>
           : <span className={cn(MONO, 'font-semibold text-danger')}>—</span>,
     }] : []),
     ...(shown('retail') ? [{
       id: 'retail',
       header: 'Retail',
       align: 'right' as const,
-      width: '8.3%',
+      width: '9.25rem',
       sortable: true,
       render: (r: ProductRow) =>
         r.retail_price > 0
-          ? <span className={cn(MONO, 'font-semibold text-gold')}>{formatCurrency(r.retail_price)}</span>
+          ? <span className={cn(MONO, NOWRAP, 'font-semibold text-gold')}>{formatCurrency(r.retail_price)}</span>
           : DASH,
     }] : []),
     ...(shown('wholesale') ? [{
       id: 'wholesale',
       header: 'Wholesale',
       align: 'right' as const,
-      width: '8.8%',
+      width: '9.25rem',
       render: (r: ProductRow) =>
         r.wholesale_price !== null && r.wholesale_price > 0
-          ? <span className={cn(MONO, 'text-text-secondary')}>{formatCurrency(r.wholesale_price)}</span>
+          ? <span className={cn(MONO, NOWRAP, 'text-text-secondary')}>{formatCurrency(r.wholesale_price)}</span>
           : DASH,
     }] : []),
     ...(shown('margin') ? [{
       id: 'margin',
       header: 'Margin',
       align: 'right' as const,
-      width: '7.1%',
+      width: '5.25rem',
       // Marge NÉGATIVE en rouge, comme le coût manquant : un produit vendu à
       // perte rendait jusqu'ici en noir ordinaire, typographiquement identique à
       // un produit à 87 % de marge — seul le signe moins portait l'information.
@@ -237,7 +283,7 @@ export function ProductsTable({
       id: 'status',
       header: 'Status',
       align: 'center' as const,
-      width: '7.1%',
+      width: '5.25rem',
       render: (r: ProductRow) => (
         <span className={cn('text-xs font-semibold', r.is_active ? 'text-success' : 'text-text-muted')}>
           {r.is_active ? 'Active' : 'Inactive'}
@@ -248,7 +294,11 @@ export function ProductsTable({
       id: 'actions',
       header: 'Actions',
       align: 'right',
-      width: '72px',
+      // 7rem = 112 px, la largeur RÉELLEMENT rendue : les trois boutons d'action
+      // plus les 28 px de padding. Les 72 px déclarés jusqu'ici étaient une
+      // fiction que `table-layout: auto` corrigeait en silence — et 40 px de
+      // fiction dans un budget qui débordait de 20.
+      width: '7rem',
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5">
           <RowAction label={`View ${r.name}`} onClick={(e) => { e.stopPropagation(); onView?.(r); }}>
@@ -291,20 +341,20 @@ export function ProductsTable({
     getRowKey: (r) => r.id,
     isLoading,
     loadingRowCount: pageSize,
-    striped: false,
+    // `striped: false` était un HAPAX — la seule occurrence de cette prop dans
+    // tout `apps/backoffice/src`. Une table du catalogue qui ne zèbre pas quand
+    // les quinze autres zèbrent n'exprime aucune intention : elle exprime deux
+    // dates d'écriture. Le défaut du primitif reprend la main.
     density: 'compact',
     sort,
     footer,
+    // L'état vide passe par le primitif (`emptyTitle`/`emptyDescription`), comme
+    // la quinzaine d'autres pages. Le nœud custom qu'il remplace redessinait à
+    // la main ce qu'`EmptyState` fait déjà — même icône générique, même
+    // structure — au prix d'un `<h2>` posé sous le `<h1>` du bandeau sans `<h2>`
+    // intermédiaire ailleurs sur la page.
     emptyTitle: 'No products match these filters',
-    emptyState: (
-      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-        <Package className="h-10 w-10 text-text-subtle" aria-hidden />
-        <h3 className="text-base font-semibold text-text-primary">No products match these filters</h3>
-        <p className="max-w-prose text-sm text-text-secondary">
-          Clear a counter or widen the search to see the catalogue again.
-        </p>
-      </div>
-    ),
+    emptyDescription: 'Clear a counter or widen the search to see the catalogue again.',
   };
   if (onRowClick !== undefined) tableProps.onRowClick = onRowClick;
   if (onSortChange !== undefined) tableProps.onSortChange = onSortChange;

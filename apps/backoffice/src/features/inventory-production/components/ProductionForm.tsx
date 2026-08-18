@@ -253,8 +253,9 @@ export default function ProductionForm(): JSX.Element {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1 col-span-2">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Finished product</label>
+            <label htmlFor="production-product" className="text-xs uppercase tracking-widest text-text-secondary">Finished product</label>
             <Select
+              id="production-product"
               className="w-full"
               value={productId} onChange={(e) => setProductId(e.target.value)}
               disabled={recordMut.isPending}
@@ -267,13 +268,13 @@ export default function ProductionForm(): JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Expected yield</label>
-            <Input type="number" inputMode="decimal" min={0.001} step="0.001"
+            <label htmlFor="production-expected-yield" className="text-xs uppercase tracking-widest text-text-secondary">Expected yield</label>
+            <Input id="production-expected-yield" type="number" inputMode="decimal" min={0.001} step="0.001"
               value={expectedQty} onChange={(e) => setExpectedQty(e.target.value)}
               disabled={recordMut.isPending} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary flex items-center gap-2">
+            <label htmlFor="production-actual-yield" className="text-xs uppercase tracking-widest text-text-secondary flex items-center gap-2">
               <span>Actual yield</span>
               {hasValidExpected && (
                 <span
@@ -284,7 +285,7 @@ export default function ProductionForm(): JSX.Element {
                 </span>
               )}
             </label>
-            <Input type="number" inputMode="decimal" min={0} step="0.001"
+            <Input id="production-actual-yield" type="number" inputMode="decimal" min={0} step="0.001"
               value={actualQty} onChange={(e) => setActualQty(e.target.value)}
               disabled={recordMut.isPending} />
             {variancePct !== null && (
@@ -299,16 +300,17 @@ export default function ProductionForm(): JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Waste (optional)</label>
-            <Input type="number" inputMode="decimal" min={0} step="0.001"
+            <label htmlFor="production-waste" className="text-xs uppercase tracking-widest text-text-secondary">Waste (optional)</label>
+            <Input id="production-waste" type="number" inputMode="decimal" min={0} step="0.001"
               value={waste} onChange={(e) => setWaste(e.target.value)} disabled={recordMut.isPending} />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor="production-waste-reason" className="text-xs uppercase tracking-widest text-text-secondary">
               Waste reason{numericWaste > 0 ? '' : ' (optional)'}
             </label>
             <Select
+              id="production-waste-reason"
               className="w-full"
               data-testid="waste-reason-select"
               value={wasteReason}
@@ -327,8 +329,9 @@ export default function ProductionForm(): JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Section</label>
+            <label htmlFor="production-section" className="text-xs uppercase tracking-widest text-text-secondary">Section</label>
             <Select
+              id="production-section"
               className="w-full"
               value={sectionId} onChange={(e) => setSectionId(e.target.value)} disabled={recordMut.isPending}
               required
@@ -340,14 +343,14 @@ export default function ProductionForm(): JSX.Element {
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Batch number (optional)</label>
-            <Input type="text" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)}
+            <label htmlFor="production-batch-number" className="text-xs uppercase tracking-widest text-text-secondary">Batch number (optional)</label>
+            <Input id="production-batch-number" type="text" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)}
               disabled={recordMut.isPending} maxLength={64} />
           </div>
 
           <div className="space-y-1 col-span-2">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Notes (optional)</label>
-            <Input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+            <label htmlFor="production-notes" className="text-xs uppercase tracking-widest text-text-secondary">Notes (optional)</label>
+            <Input id="production-notes" type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
               disabled={recordMut.isPending} maxLength={500} />
           </div>
         </div>

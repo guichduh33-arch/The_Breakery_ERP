@@ -10,7 +10,7 @@
 import { AlertTriangle, BookOpen, Box, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Card, SectionLabel } from '@breakery/ui';
+import { Button, Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductUnits, type ProductUnitAlt, type ProductUnitContexts } from '../hooks/useProductUnits.js';
 import { useSetProductUnits } from '../hooks/useSetProductUnits.js';
@@ -234,24 +234,33 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                 stock and no stock movements.
               </span>
             </div>
+            {/* La PAIRE parle une seule langue — même primitif, même taille,
+              * même rayon — et garde sa hiérarchie par le poids : le confirmatif
+              * est bordé (`secondary`), l'annulation est plate (`ghost`).
+              * L'annulation était auparavant un bouton bordé écrit à la main, en
+              * capitales interlettrées de 12 px, que rien dans le système ne
+              * produit : à poids égal avec le confirmatif, les deux se lisaient
+              * comme deux options équivalentes. */}
             <div className="flex shrink-0 gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 type="button"
                 onClick={() => setBaseDraft(baseUnit)}
                 disabled={setBaseUnit.isPending}
-                className="rounded-sm border border-border-subtle px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-secondary disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
                 onClick={applyBaseUnit}
                 disabled={setBaseUnit.isPending}
                 data-testid="base-unit-apply"
-                className="rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {setBaseUnit.isPending ? 'Changing…' : 'Change base unit'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -264,16 +273,21 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Alternative Units</h2>
             <p className="text-xs italic text-text-secondary">Define purchase or consumption units</p>
           </div>
-          <button
+          {/* « New Unit » ajoute une LIGNE, « Save Units » enregistre le panneau.
+            * Les deux rendaient strictement identiques : l'ajout prend donc le
+            * cran plat (`ghost`), l'enregistrement garde le bordé. L'ajout est
+            * subordonné à l'enregistrement — sans lui il ne produit rien. */}
+          <Button
+            variant="ghost"
+            size="sm"
             type="button"
             disabled={!canWrite}
             onClick={addAlt}
             data-testid="add-alt-unit-btn"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" aria-hidden />
+            <Plus className="h-3.5 w-3.5 text-text-muted" aria-hidden />
             New Unit
-          </button>
+          </Button>
         </div>
 
         {draftAlts.length === 0 ? (
@@ -383,15 +397,16 @@ export function UnitsPanel({ product }: Props): JSX.Element {
       {/* ── Save bar ── */}
       {canWrite && (
         <div className="flex justify-end">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             type="button"
             disabled={!isDirty || !isValid || setUnits.isPending}
             onClick={handleSave}
             data-testid="units-save-btn"
-            className="rounded-sm bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             {setUnits.isPending ? 'Saving…' : 'Save Units'}
-          </button>
+          </Button>
         </div>
       )}
     </div>

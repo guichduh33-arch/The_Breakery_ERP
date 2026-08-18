@@ -19,7 +19,7 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useMemo, useState, type JSX } from 'react';
-import { Download, FileText, Plus, Tag, Upload } from 'lucide-react';
+import { ChevronRight, Download, FileText, Plus, Tag, Upload } from 'lucide-react';
 import {
   DataTable,
   Input,
@@ -303,7 +303,7 @@ export default function CustomersListPage(): JSX.Element {
     <div className="flex flex-col gap-[13px]">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>Sales</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Customers</span>
       </nav>
 

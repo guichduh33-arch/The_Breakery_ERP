@@ -11,17 +11,17 @@ colors:
   ink-fg-dim: "#c4bcae"
   ink-fg-sub: "#a09789"
   ink-gold: "#d3ab5c"
-  gold: "#8a6820"
-  gold-hover: "#745719"
-  gold-strong: "#5e4614"
-  gold-soft: "rgba(138, 104, 32, 0.12)"
+  gold: "#7a5c1c"
+  gold-hover: "#684d18"
+  gold-strong: "#574112"
+  gold-soft: "rgba(122, 92, 28, 0.12)"
   paper: "#f0efec"
   sheet: "#ffffff"
   paper-pressed: "#e9e7e2"
   paper-inert: "#fafaf8"
   grid-dot: "#dfddd6"
   border-subtle: "#e3e1db"
-  border-strong: "#cdcac2"
+  border-strong: "#86827a"
   border-row: "#f3f1ec"
   text-primary: "#1a1917"
   text-secondary: "#55524c"
@@ -38,21 +38,27 @@ colors:
   chart-3: "#8cc3e0"
   chart-4: "#c9dcea"
 typography:
+  # La RAMPE du code — `--type-*` dans packages/ui/src/tokens/typography.css.
+  # C'est elle qui fait loi ; les rôles ci-dessous s'y rattachent, sauf les deux
+  # marqués `offRamp` qui sont écrits en valeurs arbitraires faute de cran.
+  scale: [12, 14, 16, 19, 24, 30, 34, 56]
   display:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
     fontSize: "26px"
+    offRamp: true
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.03em"
   headline:
     fontFamily: "Instrument Sans Variable, Instrument Sans, Inter Variable, system-ui, sans-serif"
     fontSize: "23px"
+    offRamp: true
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.015em"
   title:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
-    fontSize: "11px"
+    fontSize: "12px"
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "0.14em"
@@ -64,10 +70,16 @@ typography:
     letterSpacing: "normal"
   label:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
-    fontSize: "10px"
+    fontSize: "12px"
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "0.14em"
+  data:
+    fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "19px"
+    fontWeight: 600
+    lineHeight: 1.3
+    fontFeature: "tabular-nums"
   brand:
     fontFamily: "Playfair Display, Times New Roman, Georgia, serif"
     fontSize: "14px"
@@ -166,9 +178,10 @@ Ce que le système a délibérément écarté est aussi net que ce qu'il a reten
 L'ivoire chaud et Playfair Display sur les titres de page ont été retirés le
 2026-08-05 : ils étaient le signal « boulangerie artisanale » le plus fort dans
 un outil de gestion, et ils faisaient lire la page comme un site vitrine.
-Playfair survit au seul monogramme de marque. Les coins arrondis sont tombés de
-12 px à 4 px pour la même raison — la rondeur lisait « application grand
-public », la serre lit « instrument ».
+Playfair survit à la seule **marque** — le monogramme de la barre de navigation
+et la marque du splash de démarrage, qui lisent tous deux `--font-brand`. Les
+coins arrondis sont tombés de 12 px à 4 px pour la même raison — la rondeur
+lisait « application grand public », la serre lit « instrument ».
 
 **Key Characteristics:**
 
@@ -192,7 +205,10 @@ même accent, même vocabulaire d'état, même échelle.
   n'est pas un cran de la rampe de surfaces — c'est un fond sombre dans un thème
   clair, avec sa propre famille de premiers plans (`ink-fg`, `ink-fg-muted`,
   `ink-fg-dim`, `ink-fg-sub`) parce que le contraste s'y inverse.
-- **Or d'encre** (`#8a6820`) : 5,1:1 sur la feuille blanche. Liens, prix retail,
+- **Or d'encre** (`#7a5c1c`) : 6,22:1 sur la feuille blanche, et AA clos sur les
+  quatre fonds du thème — papier 5,41:1, en-tête inerte 5,95:1, état pressé
+  5,03:1. La valeur a été assombrie le 2026-08-13 : l'ancien `#8a6820` tombait à
+  4,47:1 sur le papier de page, sous le seuil. Liens, prix retail,
   liseré de focus, état actif dans les panneaux de navigation. Jamais un
   remplissage de bouton.
 - **Or éclairci** (`#d3ab5c`) : la même couleur remontée en luminosité, valable
@@ -212,8 +228,20 @@ même accent, même vocabulaire d'état, même échelle.
 - **Papier inerte** (`#fafaf8`) : en-tête et pied de tableau, champ non éditable.
   Hors rampe : ce n'est pas une distance à l'œil, c'est un fond qui dit « ce bloc
   ne se lit pas ».
-- **Bordures** : filet de carte (`#e3e1db`), bordure de contrôle (`#cdcac2`),
+- **Bordures** : filet de carte (`#e3e1db`), bordure de contrôle (`#86827a`),
   séparateur de ligne de tableau (`#f3f1ec`).
+  La bordure de contrôle est le **seul** trait qui délimite un bouton
+  secondaire : elle porte donc le seuil de **3:1 des objets graphiques**
+  (WCAG 1.4.11), pas celui du texte. Elle a été assombrie le 2026-08-18 pour
+  cette raison — l'ancien `#cdcac2` ne valait que 1,42:1 contre le papier de
+  page, et un bouton secondaire y était une limite invisible. `#86827a` clôt le
+  seuil sur les quatre fonds du thème : 3,83:1 feuille blanche, 3,33:1 papier,
+  3,66:1 en-tête inerte, 3,10:1 état pressé.
+  **Le champ, lui, est encore bordé du filet de carte** (`#e3e1db`) — c'est ce
+  que rend le primitif `Input` et ce que décrit § Champs. Ce trait vaut 1,308:1
+  sur la feuille blanche : un champ n'a donc, à ce jour, pas de limite qui tienne
+  1.4.11. Ce paragraphe l'annonçait comme réglé en rangeant le champ avec le
+  bouton ; c'est un écart ouvert, pas un constat (relevé le 2026-08-18).
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
   (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
   plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
@@ -246,6 +274,31 @@ back-office. Il souligne, il colore un texte, il marque un focus. Un bouton dor�
 appartient à la caisse, pas ici. Test : si vous retirez tous les aplats d'or de
 l'écran, rien ne doit disparaître — seul le sens de lecture s'appauvrit.
 
+*Exception — la piste d'interrupteur et le point d'état.* Ces deux-là remplissent
+en or à l'état allumé, et c'est le test de la règle elle-même qui les en excuse :
+retirez le remplissage d'une piste d'interrupteur et ce n'est pas le sens de
+lecture qui s'appauvrit, c'est **l'information d'état qui disparaît**. Le
+remplissage n'y est donc pas un décor, c'est le signal — la règle ne le vise pas.
+L'exception est **bornée à ces deux objets** : une piste d'interrupteur et un
+point d'état. Elle ne s'étend pas aux badges, aux pastilles, aux puces de
+sélection ni à « les petits éléments » — tous ceux-là portent leur état par le
+liseré et par le texte, où le retrait de l'or laisse la forme intacte. Elle ne
+s'obtient pas non plus en repliant sur l'encre : essayée en encre, la piste
+posait cinq aplats `#201d19` sur le seul onglet General de la fiche produit, en
+plus du bouton du bandeau, ce qui enfreint **The One Ink Fill Rule** (arbitré le
+2026-08-18). Contrainte de mesure : le curseur doit tenir 3:1 sur la piste dans
+**les deux** états — 6,22:1 sur l'or, 3,83:1 sur la piste éteinte.
+
+*Troisième aplat — la plaque du monogramme, et ce n'est PAS le test de la règle
+qui l'excuse.* Le carré de 26 px qui porte le « B » dans la barre de navigation
+est rempli en `bg-gold`. Il échoue au test énoncé plus haut : retirez le
+remplissage et le monogramme reste lisible, seule la marque perd sa plaque —
+c'est donc bien un décor, pas un signal. Il est **maintenu par arbitrage du
+propriétaire**, et nommé ici pour qu'on ne le prenne ni pour un oubli ni pour
+une extension de l'exception précédente : la liste des aplats d'or du
+back-office est *piste d'interrupteur, point d'état, plaque du monogramme*, et
+elle ne s'allonge pas d'elle-même (relevé du 2026-08-18).
+
 **The One Ink Fill Rule.** Un seul bloc encré par écran en plus de la barre de
 navigation : soit le bouton qui crée, soit la tuile qui répond à la question
 qu'on pose en ouvrant la page. Un second détruit la hiérarchie que le premier
@@ -259,7 +312,10 @@ teintes remontées en luminosité — et nulle part ailleurs.
 
 **Body Font:** Instrument Sans Variable (repli Inter Variable, puis system-ui)
 **Data Font:** JetBrains Mono Variable (repli ui-monospace)
-**Brand Font:** Playfair Display — **monogramme de marque uniquement**
+**Brand Font:** Playfair Display — **marque uniquement**, et le seul utilitaire
+qui la sorte sous ce thème est `font-brand` (`--font-brand`). `font-display` et
+`font-serif` **ne rendent pas de serif ici** : le thème remappe `--font-display`
+sur la pile du corps, et `--font-serif` n'en est qu'un alias.
 
 **Character:** Instrument Sans a un œil étroit et une allure technique sans
 raideur ; il porte tout ce qui s'explique. JetBrains Mono, tabulaire, porte tout
@@ -273,13 +329,45 @@ corps.
   encre. Le plus grand texte réellement rendu dans le back-office.
 - **Headline** (sans, 600, 23 px, `-0.015em`) : le titre de page, unique `<h1>`
   de la vue, servi par un seul composant partagé.
-- **Title** (mono, 600, 11 px, `0.14em`, capitales) : le titre d'une carte de
+- **Title** (mono, 600, 12 px, `0.14em`, capitales) : le titre d'une carte de
   dashboard. Un titre de carte est un libellé, pas une phrase.
 - **Body** (sans, 400, 16 px, interligne 1,5) : la prose de l'interface,
   descriptions, messages d'état.
-- **Label** (mono, 600, 10 px, `0.14em`, capitales) : en-tête de colonne de
+- **Label** (mono, 600, 12 px, `0.14em`, capitales) : en-tête de colonne de
   tableau, en-tête de colonne de panneau de navigation, libellé de tuile.
 - **Valeur KPI ordinaire** (mono, 600, 23 px, `-0.02em`, tabulaire).
+
+**L'échelle du code fait loi (arbitré le 2026-08-18).** Ce document a longtemps
+décrit une rampe relevée sur la planche de référence — {10, 11, 14, 16, 23,
+26} px — qui ne partageait que deux valeurs avec celle que les tokens portent
+réellement, `--type-*` dans `packages/ui/src/tokens/typography.css` : {12, 14,
+16, 19, 24, 30, 34, 56} px. Deux conséquences opposables, à ne pas relire comme
+des approximations :
+
+- **Title et Label ne sont pas deux paliers, c'est un seul.** Tous deux rendent
+  par `--type-xs`, à 12 px. Un écran ne peut pas s'appuyer sur un contraste de
+  taille entre le titre d'une carte et un en-tête de colonne : la distinction
+  passe par la graisse, la couleur et la position, jamais par le corps.
+- **Display et Headline n'ont pas de token.** 26 px et 23 px sont exacts, mais
+  ils sont écrits en valeurs arbitraires — `text-[26px]`, `text-[1.4375rem]` —
+  parce qu'aucun cran de la rampe ne les porte. Les reprendre ailleurs se fait
+  en recopiant la constante partagée (`KPI_VALUE_HERO`, `PageHeader`), jamais en
+  réécrivant le nombre. Ils sont les **deux seuls** rôles hors rampe, et le
+  front-matter les marque désormais `offRamp: true` : jusqu'au 2026-08-18 il
+  n'énumérait que {12, 14, 16, 23, 26} et faisait donc de ces deux exceptions le
+  contrat, pendant que le corps décrivait la rampe. Un `font-size: 19px` de
+  `src/index.css` — la cellule de PIN de l'écran de connexion, `--type-lg` — se
+  faisait signaler comme un écart alors qu'il est un cran officiel. Le
+  front-matter porte maintenant la rampe entière sous `scale`.
+- **Le cran de données courant est 19 px, pas 23.** `--type-lg` en mono tabulaire
+  porte les montants des tiroirs et des panneaux (`AgingBucketsGrid`,
+  `OrderDetailDrawer`, `CostingPanel` — quatorze fichiers) ; c'est lui que le
+  front-matter déclare sous `data`. Les 23 px de la valeur de tuile sont, eux,
+  le rôle `headline` hors rampe.
+
+La graisse, elle, se lit sur l'appelant et non ici : `SectionLabel` pose 700 par
+défaut, les constantes de tuile (`KPI_LABEL`) redescendent à 600. C'est un écart
+réel, pas une tolérance.
 
 ### Named Rules
 
@@ -287,9 +375,26 @@ corps.
 tabulaire. Un montant, un compteur, un pourcentage ou un horodatage en
 sans-serif est un défaut, pas une variante.
 
-**The Playfair-Is-Brand-Only Rule.** Playfair Display ne rend que le monogramme
-de la barre de navigation. Un titre de page en serif fait relire la boulangerie
-au lieu de l'outil — c'est le geste que la refonte a explicitement défait.
+**The Playfair-Is-Brand-Only Rule.** Playfair Display ne rend que la **marque** :
+le monogramme de la barre de navigation et la marque du splash de démarrage. Un
+titre de page en serif fait relire la boulangerie au lieu de l'outil — c'est le
+geste que la refonte a explicitement défait.
+
+*Ce que la règle exige en pratique, et ce qu'elle n'exige pas.* La règle porte
+sur ce qui **rend**, pas sur ce qui est **écrit**. Deux corollaires opposables :
+
+- **Une surface de marque prend `font-brand`, jamais `font-display`.** Jusqu'au
+  2026-08-18 le monogramme portait `font-display` et rendait donc en Instrument
+  Sans : le seul endroit où Playfair devait survivre était précisément le seul
+  qui ne le rendait pas, pendant que ce document, la règle ci-dessus et un
+  commentaire de `colors.css` affirmaient l'inverse. `--font-brand` existait,
+  mais aucun utilitaire Tailwind ne l'exposait — il a été ajouté au preset ce
+  jour-là.
+- **Un `font-serif` / `font-display` restant n'est pas une violation de cette
+  règle**, puisqu'il ne produit aucun serif sous ce thème ; c'est une classe qui
+  nomme le contraire de ce qu'elle fait, et le défaut est là. Le relevé se fait
+  par `grep -E '\bfont-(serif|display)\b'` sur `apps/backoffice/src`, commentaires
+  et tests exclus — pas de compte gravé ici, il pourrit à chaque édition.
 
 **The Value-Width Rule.** Le corps de la valeur KPI est tendu contre la largeur
 de tuile : `Rp 4,850,000` doit tenir sur une ligne. Toute remontée du corps
@@ -310,7 +415,16 @@ panneau. Le reste de l'échelle est en base 4 px, avec quatre paliers sémantiqu
 — compact (12 px, densité de rush), carte (20 px), page (28 px), section (48 px).
 
 Les grilles de dashboard descendent en marches franches : 2 colonnes en petit
-écran, 4 en medium, 7 en extra-large pour la bande de KPI. Les tableaux ont deux
+écran, 3 en medium, **4 en extra-large** pour la bande de KPI — donc deux
+rangées pour ses sept tuiles. Le chiffre n'est pas un réglage de densité, il est
+tenu par **The Value-Width Rule** : à sept colonnes la tuile n'offrait que
+134 px de contenu, quand la valeur héro `Rp 8,42 jt` en demande 148,2 px à 26 px
+de corps et une valeur ordinaire `-Rp 3,85 jt` 146,8 px à 23 px. Les deux
+coupaient. Réduire les corps aurait fait tenir les chaînes en détruisant la
+hiérarchie héro/ordinaire — or c'est elle qui porte l'information. À quatre
+colonnes la tuile vaut ≈ 297 px pour ≈ 268 px de contenu, et toute la bande
+tient sur une ligne chacune (arbitré le 2026-08-18). Deux rangées de tuiles
+lisibles valent mieux que sept tuiles qui coupent. Les tableaux ont deux
 densités, la compacte resserrant les cellules à 14/10 px pour les écrans de
 travail où trois lignes de plus valent mieux que de l'air.
 
@@ -342,8 +456,39 @@ corps propre à l'archétype.
 
 **1. List** — *ce qui presse d'abord.* Une bande de compteurs qui **sont** les
 filtres, une table dense, un pied toujours rendu. Trié par urgence et non par
-ordre alphabétique ; la dernière colonne porte l'action de ligne ; la sélection
-alimente une action groupée annoncée dans le bandeau.
+ordre alphabétique ; la dernière colonne porte l'action de ligne. L'état de liste
+— filtre actif, recherche, tri, progression — vit dans l'**URL** : un lien vers
+« les six produits sans prix de revient » doit pouvoir se coller dans une
+conversation, et le retour arrière depuis une fiche doit rendre la liste qu'on
+regardait.
+
+*Pas de sélection multiple ni d'action groupée.* L'archétype les a promises
+jusqu'au 2026-08-18 ; aucune instance ne les a jamais tenues, et le catalogue
+produits les a retirées avec son motif : elles réclament des RPC de masse gatées
+et auditées qui n'existent pas, et une case à cocher qui n'ouvre sur rien promet
+une capacité que l'écran n'a pas. Un archétype qui décrit une capacité
+inexistante fabrique de la fausse dette à chaque nouvelle instance. Elles
+reviendront ici avec les RPC, pas avant.
+
+**L'axe de variation : le régime de récupération.** Il ne fait pas deux
+archétypes — l'ossature, la bande, la table et le pied sont les mêmes — mais il
+décide du pied et du lieu du filtrage. Une instance nomme son régime avant d'être
+dessinée.
+
+| | **Borné** — chargé en entier | **Non borné** — fenêtré |
+|---|---|---|
+| Filtre, recherche, tri | en mémoire | **serveur** |
+| Progression | pagination numérotée | curseur, « Load more » |
+| Fenêtre temporelle | aucune | oui, quand le flux la porte |
+| Compteurs | dérivés des lignes reçues | **comptés serveur** |
+| Pied | « 1–15 of 373 » | *chargé* contre *existant* |
+| Instances | Products, Customers | Orders, B2B orders |
+
+Le critère n'est pas la taille du jour, c'est la **borne**. Un catalogue est borné
+par le travail de celui qui le tient ; un registre de commandes croît tant que le
+commerce tourne. « Page 7 » d'un flux qui bouge n'est pas une adresse stable, et
+un pied qui compte les lignes reçues en les présentant comme le tout ment en
+silence dès que le plafond de lecture est atteint.
 *Instances : Stock alerts, B2B orders, Products.*
 
 **2. Report** — *une question, une réponse, ses ventilations.* Contrôle de
@@ -420,8 +565,14 @@ froide tirerait vers le bleu-gris et trahirait l'axe de teinte du système.
 - **Carte** (`0 2px 8px rgba(45,34,15,0.09)`) : carte en état survolé.
 - **Flottant** (`0 18px 40px rgba(28,23,18,0.20)`) : panneau de navigation, menu.
 - **Modale** (`0 20px 56px rgba(45,34,15,0.22)`) : dialogues.
-- **Focus** (`0 0 0 3px rgba(138,104,32,0.32)`) : halo, dérivé de l'accent — le
-  liseré et le halo sont toujours de la même couleur.
+- **Focus** (`0 0 0 3px color-mix(in srgb, var(--gold-base) 32%, transparent)`) :
+  halo, dérivé de l'accent — le liseré et le halo sont toujours de la même
+  couleur. La valeur est **calculée depuis le token, jamais recopiée** : c'est ce
+  qui rend la règle tenable. Elle avait divergé deux fois d'un rgb figé, la
+  seconde au moment de l'assombrissement de l'or du 2026-08-13 ; la forme dérivée
+  ferme la classe de défaut au lieu de la corriger une fois de plus (2026-08-18).
+  Un moteur sans `color-mix` perd le halo, pas l'anneau : les 2 px de focus sont
+  portés par `outline`.
 
 ### Named Rules
 
@@ -452,16 +603,55 @@ plus.
 Deux familles coexistent, et c'est délibéré — mais la frontière doit être tenue.
 
 - **Bouton de bandeau de page** (`TOOLBAR_BTN_*`) : hauteur 32 px, rayon 3 px,
-  12,5 px semi-gras. Le primaire est **encre** sur `#201d19`, un seul par
+  14 px (`--type-sm`) en graisse 500. Le primaire est **encre** sur `#201d19`, un seul par
   bandeau, celui qui crée. Le secondaire est une feuille blanche bordée de
-  `#cdcac2` qui vire au papier pressé au survol. L'icône d'un bouton secondaire
+  `#86827a` qui vire au papier pressé au survol. L'icône d'un bouton secondaire
   est grise : elle ne concurrence pas le libellé.
-- **Bouton primitif partagé** (`@breakery/ui`) : hauteur 56 px, rayon 4 px,
-  capitales interlettrées. Son variant `primary` est **vert** — couleur réservée
-  au chemin de l'argent — et son variant `gold` remplit en or. C'est le bouton
-  des modales et des formulaires.
+  **Ces chaînes appartiennent au bandeau de page, et à lui seul.** Une action de
+  panneau, de carte, de modale ou de formulaire prend le primitif partagé. La
+  frontière a été franchie une fois dans les deux sens — des boutons de panneau
+  en `TOOLBAR_BTN_*`, un bouton de bandeau en primitif — et les deux fois le
+  résultat a été deux hauteurs de bouton sur le même écran (2026-08-18).
+- **Bouton primitif partagé** (`@breakery/ui`) : rayon 4 px. C'est le bouton des
+  modales, des formulaires, des panneaux et des pieds de table — tout ce qui
+  n'est pas le bandeau de page. Son variant `primary` est **vert** — couleur
+  réservée au chemin de l'argent — et son variant `gold` remplit en or. Les
+  capitales interlettrées ne sont **pas** portées par le primitif : elles
+  appartiennent aux trois variants `primary`, `gold` et `outlineGold`. Les six
+  autres (`ink`, `secondary`, `ghost`, `ghostDestructive`, `link`) rendent en
+  casse de phrase — c'est ce que le back-office emploie.
+  **Quatre crans de hauteur, pas un** — ce document annonçait « 56 px » comme
+  s'il n'y en avait qu'un. Relevé du 2026-08-18, parseur équilibrant les
+  accolades (un `>` de `() =>` ne ferme pas une balise) :
+  - `sm` — **36 px** (`h-9`). **113 emplois** dans 60 fichiers : les paires
+    d'action des modales, et le « Load more » de tout pied de table.
+  - `md` — **56 px** (`--touch-comfy`), le **défaut du primitif**. 2 emplois
+    explicites, mais **180 implicites** dans 87 fichiers — un `<Button>` écrit
+    sans `size` rend 56 px.
+  - `lg` — 80 px : 1 emploi. `icon` — 56 × 56 : aucun.
+
+  Autrement dit le back-office n'a pas un cran dominant mais **deux populations
+  comparables**, 113 contre 182, et la plus grosse est obtenue par omission. Ce
+  n'est pas un choix, c'est un défaut de primitif — le même que
+  `defaultVariants: { variant: 'primary' }` déjà nommé plus bas : la conformité
+  s'obtient par un opt-out que chaque auteur doit connaître.
+
+  **Le secondaire est bordé `border-strong`, jamais `border-subtle`.** Son
+  remplissage (`--bg-overlay`) vaut exactement la feuille blanche qui le porte :
+  son trait est le seul objet qui le délimite, il tient donc les 3:1 de WCAG
+  1.4.11 (3,827:1). Le `border-subtle` qu'il a porté un temps valait 1,308:1 — le
+  bouton n'avait plus de limite visible (corrigé le 2026-08-18).
+  **Et il vire au papier pressé au survol**, comme la chaîne de bandeau : son
+  survol visait `--bg-input`, qui vaut lui aussi `#ffffff` sous ce thème — repos
+  et survol étaient à 1,000:1, ΔL 0, le bouton ne réagissait pas à la souris.
+  `--surface-4` donne 1,236:1, ΔL 0,20034 (corrigé le 2026-08-18, le même jour
+  que le trait ; les deux vivaient sur la même déclaration).
 - **Désactivé** : les variants remplis neutralisent leur couleur au lieu de la
   faner. Un vert ou un or à 50 % d'opacité lit encore comme un bouton vivant.
+  **La chaîne de bandeau suit la même règle** depuis le 2026-08-18 : elle fanait
+  à `opacity-50`, ce qui rendait l'aplat encre en un gris où le libellé ivoire
+  tombait à 2,04:1. Elle neutralise désormais sur `--surface-4` / `--text-muted`,
+  exactement comme le primitif.
 - **Focus** : contour de 2 px décalé de 2 px, couleur `gold` sur le papier,
   `ink-gold` sur l'encre.
 
@@ -502,7 +692,8 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
   soulignement or interne de 2 px pour « vous êtes ici », fond relevé pour « ce
   menu est déployé ».
 - Panneau déroulant : feuille blanche, coins bas à 6 px, colonnes coiffées d'un
-  label mono, liens en 13 px qui virent à l'or au survol et à l'état actif.
+  label mono, liens en 14 px (`--type-sm`) qui virent à l'or au survol et à
+  l'état actif.
 - Comportement de menubar : clic pour ouvrir, survol pour basculer une fois la
   barre ouverte, ←/→ entre onglets, ↓ pour entrer dans le panneau, Échap pour
   fermer et rendre le focus à l'onglet.
@@ -565,25 +756,92 @@ une réserve fait passer une estimation pour un relevé.
 
 ---
 
-**État de propagation (relevé du 2026-08-07).** Ce document décrit la direction
-telle qu'elle est **décidée** et telle que les tokens la portent. Le code ne l'a
-pas encore rattrapée sur deux points, et les nommer ici évite de prendre une
-règle pour un constat :
+**État de propagation (relevé du 2026-08-18).** Ce document décrit la direction
+telle qu'elle est **décidée** et telle que les tokens la portent. Les écarts
+restants sont nommés ici pour qu'on ne prenne pas une règle pour un constat.
 
-- **Le bouton de bandeau encre** n'est appliqué que sur deux écrans — le
-  dashboard et le catalogue produits. Environ soixante autres fichiers portant
-  une action primaire utilisent encore le bouton vert du primitif partagé.
-- **Playfair Display survit hors du monogramme.** Le titre de page l'a perdu le
-  2026-08-05, mais `font-serif` / `font-display` restent présents dans près de
-  quatre-vingt-dix fichiers du back-office (titres de carte, en-têtes de
-  section). La règle du monogramme unique est la cible, pas l'état.
+Les trois dettes déclarées au relevé précédent (2026-08-07) ont été mesurées à
+nouveau et sont **soldées ou très largement résorbées**. On les nomme parce
+qu'un chiffre périmé dans un document de direction est plus nuisible qu'un
+chiffre absent :
 
-- **Deux tokens de ce document n'existent pas encore dans le code.** Le gris
-  inerte (`#c2beb5`) et la rampe de data-viz (`chart-1..4`) sont employés dans la
-  planche de référence et documentés ici comme normatifs ; ils restent à créer
-  dans `packages/ui/src/tokens/colors.css` et à exposer dans le preset Tailwind.
+- **Le bouton de bandeau encre est la norme, pas l'exception.** Les chaînes
+  `TOOLBAR_BTN_*` sont employées dans quarante-quatre fichiers du back-office, et
+  le bouton vert du primitif partagé n'a **aucun appelant explicite** —
+  `variant="primary"` ne se rencontre nulle part. Le relevé du 2026-08-07 annonçait
+  l'inverse (« deux écrans conformes, environ soixante en retard ») ; il est faux.
+  L'écart qui subsiste est d'une autre nature : `Button` porte encore
+  `defaultVariants: { variant: 'primary' }`, donc un `<Button>` écrit **sans prop**
+  rendrait vert et en capitales. **Aucune surface d'interface n'est dans ce cas
+  aujourd'hui** (relevé du 2026-08-18, parseur équilibrant les accolades) : le seul
+  `<Button>` sans variant du back-office vit dans une fixture de test. Le risque est
+  donc entièrement devant nous, porté par le défaut du primitif, pas derrière.
+- **Playfair Display ne rend nulle part hors de la marque, mais des classes qui
+  prétendent l'appeler subsistent.** Le relevé de 2026-08-07 en annonçait
+  quatre-vingt-dix ; il en reste quelques dizaines de `font-serif` /
+  `font-display`, et **aucune ne produit de serif** : sous ce thème
+  `--font-display` est remappé sur la pile du corps. Elles nomment le contraire
+  de ce qu'elles font, ce qui est le vrai défaut — un auteur qui les lit croit
+  la règle enfreinte, un auteur qui les recopie propage un mensonge. Aucun compte
+  n'est gravé ici : il serait faux au commit suivant, et
+  `grep -E '\bfont-(serif|display)\b' apps/backoffice/src` le rend à jour. La
+  cible est zéro. **Ce que ce paragraphe annonçait comme la cible — « la règle du
+  monogramme unique » — était par ailleurs faux du côté du code jusqu'au
+  2026-08-18** : le monogramme lui-même portait `font-display` et ne rendait donc
+  pas Playfair (corrigé par `font-brand`, cf. § Typography).
+- **Les deux tokens annoncés manquants existent.** Le gris inerte est
+  `--text-inert` (`#c2beb5`) et la rampe de data-viz est `--chart-1..4`
+  (`#2b6c9c` → `#c9dcea`), tous deux dans `packages/ui/src/tokens/colors.css` et
+  exposés par le preset Tailwind. Reliquat réel : `features/reports/utils/chartColors.ts`
+  redéclare ces mêmes valeurs en dur au lieu de consommer les tokens.
 
-Les trois sont des chantiers de propagation, pas des exceptions au système.
+**Écarts ouverts, relevés le 2026-08-18.** Ceux-là sont des constats, pas des
+règles :
+
+- **Les primitives partagées portent le contraire de trois règles de ce
+  document.** `Card` rend `shadow-sm` par défaut, à rebours de
+  **Border-Before-Shadow** ; `Button` rend vert par défaut, à rebours de la
+  doctrine encre ; les quatre paliers d'espacement sémantique exposés par le
+  preset n'ont aucun appelant dans le back-office. Conséquence structurelle : la
+  conformité s'obtient par un opt-out que chaque auteur doit connaître, donc un
+  fichier neuf naît non conforme en silence.
+  **Le défaut de `size` produit déjà le dégât que celui de `variant` menace
+  seulement.** `defaultVariants: { size: 'md' }` vaut 56 px : 180 `<Button>` du
+  back-office, dans 87 fichiers, rendent ce cran sans l'avoir demandé, contre 112
+  qui demandent `sm` (relevé du 2026-08-18). Le risque n'est pas devant nous
+  ici — il est réalisé. Changer le défaut est un arbitrage qui touche la caisse,
+  il n'est pas pris dans ce relevé.
+- **Les six classes `bg-warn` / `text-warn` qui ne peignaient rien sont
+  résorbées** (le 2026-08-18 ; `grep -E '(bg|text|border)-warn([^i]|$)'` sur
+  `apps/` et `packages/` rend zéro). L'angle mort qui les avait laissées passer,
+  lui, reste ouvert et n'est *pas* un défaut résolu : `tailwind-dead-classes.mjs`
+  sait détecter une clé morte d'une famille connue, pas une famille inventée. Il
+  n'en ferme que le cas nommé — une liste noire du vocabulaire shadcn/ui.
+- **The Value-Width Rule est enfreinte sur une tuile de la liste B2B.** Mesuré à
+  1280 px, la largeur cible du produit : une valeur monétaire de dix caractères
+  rend sur deux lignes. C'est précisément la coupure que la règle nomme.
+- **Le champ n'a pas de limite qui tienne 1.4.11.** Le primitif `Input` borde en
+  `--border-subtle` (`#e3e1db`), soit 1,308:1 sur la feuille blanche qu'il
+  remplit. Le bouton secondaire a été porté à `--border-strong` le 2026-08-18 ; le
+  champ ne l'a pas été, parce que le geste touche tous les formulaires des deux
+  apps et relève d'un arbitrage, pas d'une correction. § Champs décrit donc le
+  code, pas le seuil.
+- **Trente-cinq champs sont écrits à la main, hors du primitif `Input`, et n'ont
+  aucun anneau de focus** (relevé du 2026-08-18, quinze fichiers ; parseur qui
+  ignore commentaires et tests et ne retient que les balises `input`, `select`,
+  `textarea`). Leur signature est `bg-bg-base` + `border border-border-subtle` +
+  `rounded`, sans `FOCUS_RING` ni `focus-visible:outline`. Deux conséquences
+  mesurées : ils retombent sur l'anneau par défaut du navigateur — 2,09-2,40:1,
+  sous les 3:1 des objets graphiques (WCAG 1.4.11 / 2.4.11) — et leur
+  placeholder, non tokenisé, prend le `gray-400` du Preflight, à 2,21:1 sur le
+  papier de page. **Forme cible**, celle déjà posée sur les champs du chantier
+  combos : `… bg-bg-base border border-border-subtle rounded
+  placeholder:text-text-muted ${FOCUS_RING}`, ou le primitif `Input` quand la
+  géométrie s'y prête. Le gros du lot vit dans `features/products`
+  (`NewProductDialog`, `AddVariantDialog` — onze à eux deux), `features/users`,
+  `features/inventory-opname`, `features/floor-plan`, `features/sections` et
+  `features/inventory-movements`. Ce n'est pas un arbitrage, c'est du travail
+  non fait : le geste est mécanique et le compte descend à chaque fichier touché.
 
 **État du corpus.** La planche de référence couvre quinze écrans pour neuf
 archétypes. Trois sont construits — Today (shell + landing), Products (List) et

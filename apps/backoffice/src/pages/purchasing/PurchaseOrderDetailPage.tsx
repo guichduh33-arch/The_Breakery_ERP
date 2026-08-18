@@ -21,6 +21,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronRight,
   Pencil,
   Printer,
   Truck,
@@ -287,12 +288,12 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
+      <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
         <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <Link to="/backoffice/purchasing/purchase-orders" className="hover:text-text-primary">Purchase Orders</Link>
-        <span aria-hidden>›</span>
-        <span className="text-text-primary font-mono">{po.po_number}</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="font-mono text-text-secondary">{po.po_number}</span>
       </nav>
 
       <header className="flex flex-wrap items-start justify-between gap-4">

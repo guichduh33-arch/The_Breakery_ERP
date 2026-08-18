@@ -15,6 +15,7 @@ import {
   Building2,
   Calendar,
   CheckCircle2,
+  ChevronRight,
   Copy,
   CreditCard,
   FileText,
@@ -114,10 +115,16 @@ export default function ExpenseDetailPage(): JSX.Element {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
+      {/* Gabarit UNIQUE du fil d'Ariane depuis le 2026-08-18 :
+          `gap-1 text-xs text-text-muted`, chevron icône `text-text-inert`,
+          segment terminal en `text-text-secondary`. Quatre pages — dépenses et
+          achats — gardaient `gap-2 text-xs text-text-secondary` avec un terminal
+          en primaire : deux gabarits pour un objet, ce que la campagne
+          annonçait unifié. */}
+      <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
         <Link to="/backoffice/expenses" className="hover:text-text-primary">Expenses</Link>
-        <span aria-hidden>›</span>
-        <span className="font-mono text-text-primary">{expense.expense_number}</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="font-mono text-text-secondary">{expense.expense_number}</span>
       </nav>
 
       <Link to="/backoffice/expenses" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">

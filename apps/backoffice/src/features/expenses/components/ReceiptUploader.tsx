@@ -58,6 +58,11 @@ export function ReceiptUploader({
     <div className="space-y-2">
       <input
         type="file"
+        // Le libellé visible du champ est un `<span>` porté par le formulaire
+        // appelant (ExpenseForm, « Receipt (optional) ») : il ne peut pas être
+        // associé, l'id du contrôle vivant ici. Le nom accessible est donc posé
+        // sur le contrôle lui-même — WCAG 1.3.1 / 4.1.2.
+        aria-label="Receipt file"
         accept={ACCEPT}
         disabled={disabled === true || busy}
         onChange={(e) => { void handleChange(e); }}

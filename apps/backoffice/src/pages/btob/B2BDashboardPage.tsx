@@ -9,23 +9,30 @@ import { useState, type JSX } from 'react';
 import {
   AlertTriangle,
   Calendar,
-  ClipboardList,
   CreditCard,
   FileText,
   Inbox,
   Plus,
-  TrendingUp,
   Users as UsersIcon,
 } from 'lucide-react';
 import {
   Button,
   Card,
   EmptyState,
-  KpiTile,
   SectionLabel,
 } from '@breakery/ui';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+// La tuile du back-office, pas celle de `@breakery/ui` : celle-ci rend la
+// valeur à 23 px avec `valueTitle`, l'autre à 34 px sans échappatoire. Dans
+// cette grille `xl:grid-cols-5` la tuile mesure 231 px et son contenu 183 px,
+// soit HUIT caractères mono — « Rp 80.000 » déborde déjà, et un encours B2B en
+// fait neuf. Le compact + l'exact en infobulle est le geste des 46 rapports.
+// La pastille d'icône disparaît avec elle, et c'est un gain : elle était un
+// aplat `bg-gold-soft`, que The Ink-Not-Gold Rule interdit ici.
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { Delta } from '@/components/kpi/Delta.js';
+import { formatCount, formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useB2bDashboard,
@@ -47,10 +54,8 @@ const AGING_TONES: Record<string, string> = {
   Default:  'text-danger',
 };
 
-/** Un échec ou un chargement rendent des tirets, jamais des zéros (ADR-025). */
-function kpiValue(v: number | undefined): number | string {
-  return v ?? '—';
-}
+// Un échec ou un chargement rendent des tirets, jamais des zéros (ADR-025) :
+// `formatCount` et `formatIdr*` portent déjà cette règle.
 
 export default function B2BDashboardPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -134,47 +139,49 @@ export default function B2BDashboardPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile
-          icon={UsersIcon}
           label="Active clients"
-          value={kpiValue(dash.data?.activeClients)}
-          valueFormat="number"
-          footer="With at least one order"
-        />
+          value={formatCount(dash.data?.activeClients)}
+          unavailable={dash.data === undefined}
+          testId="kpi-b2b-active-clients"
+        >
+          <span className={KPI_NOTE}>With at least one order</span>
+        </KpiTile>
         <KpiTile
-          icon={TrendingUp}
           label="Monthly B2B revenue"
-          value={formatCurrency(dash.data?.monthlyRevenue)}
-          valueFormat="currency"
-          {...(dash.data !== undefined
-            ? {
-                delta: {
-                  value: `${dash.data.monthlyDeltaPct >= 0 ? '+' : ''}${dash.data.monthlyDeltaPct}%`,
-                  direction: dash.data.monthlyDeltaPct >= 0 ? ('up' as const) : ('down' as const),
-                },
-              }
-            : {})}
-        />
+          value={formatIdrShort(dash.data?.monthlyRevenue)}
+          {...(dash.data !== undefined ? { valueTitle: formatIdr(dash.data.monthlyRevenue) } : {})}
+          unavailable={dash.data === undefined}
+          testId="kpi-b2b-monthly-revenue"
+        >
+          {dash.data !== undefined && (
+            <Delta value={dash.data.monthlyDeltaPct} period="prev month" />
+          )}
+        </KpiTile>
         <KpiTile
-          icon={FileText}
           label="Outstanding AR"
-          value={formatCurrency(dash.data?.outstandingAr)}
-          valueFormat="currency"
-          footer="Across all wholesale clients"
-        />
+          value={formatIdrShort(dash.data?.outstandingAr)}
+          {...(dash.data !== undefined ? { valueTitle: formatIdr(dash.data.outstandingAr) } : {})}
+          unavailable={dash.data === undefined}
+          testId="kpi-b2b-outstanding-ar"
+        >
+          <span className={KPI_NOTE}>Across all wholesale clients</span>
+        </KpiTile>
         <KpiTile
-          icon={ClipboardList}
           label="Pending orders"
-          value={kpiValue(dash.data?.pendingOrders)}
-          valueFormat="number"
-          footer="Processing"
-        />
+          value={formatCount(dash.data?.pendingOrders)}
+          unavailable={dash.data === undefined}
+          testId="kpi-b2b-pending-orders"
+        >
+          <span className={KPI_NOTE}>Processing</span>
+        </KpiTile>
         <KpiTile
-          icon={Calendar}
           label="Total orders"
-          value={kpiValue(dash.data?.totalOrders)}
-          valueFormat="number"
-          footer="All time"
-        />
+          value={formatCount(dash.data?.totalOrders)}
+          unavailable={dash.data === undefined}
+          testId="kpi-b2b-total-orders"
+        >
+          <span className={KPI_NOTE}>All time</span>
+        </KpiTile>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

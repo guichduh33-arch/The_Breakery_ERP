@@ -1,9 +1,22 @@
 // apps/backoffice/src/features/reports/components/ExportMenu.tsx
 //
 // Lot B (campagne Reports 2026-08-15) — refonte d'ExportButtons sur la maquette
-// 4c : UN bouton « Export » en encre (TOOLBAR_BTN_PRIMARY, le seul primaire du
-// bandeau) ouvrant un menu CSV / PDF, au lieu de deux boutons ghost divergents
-// du reste du back-office.
+// 4c : UN bouton « Export » ouvrant un menu CSV / PDF, au lieu de deux boutons
+// ghost divergents du reste du back-office.
+//
+// Il est SECONDAIRE, et ce n'est pas un détail (campagne design 2026-08-18).
+// Il était encre, « le seul primaire du bandeau » — sauf que sur une page de
+// rapport il ne l'est pas : la bande de KPI y pose une tuile héro encrée, et
+// The One Ink Fill Rule n'en autorise qu'une par écran. Mesuré à 1280 px sur
+// /reports/balance-sheet avant correction : DEUX aplats `rgb(32,29,25)` hors
+// barre de navigation. Ce composant étant partagé par quarante-quatre pages,
+// dont une vingtaine portent une bande de KPI, l'infraction était systémique.
+//
+// Et l'arbitrage de la règle est net pour ce cas : l'encre va « soit au bouton
+// qui crée, soit à la tuile qui répond à la question qu'on pose en ouvrant la
+// page ». Un rapport ne crée rien ; sa tuile EST la réponse. L'encre lui
+// revient, l'export prend le cran secondaire — le même geste que sur le
+// dashboard, dont le bouton Export a été dégradé pour la même raison.
 //
 // Différence de fond avec ExportButtons : sans la permission `reports.export`,
 // le bouton ne DISPARAÎT plus en silence — il se désactive et dit pourquoi.
@@ -16,7 +29,7 @@ import { ChevronDown, Download, FileDown, FileText, Loader2 } from 'lucide-react
 import { cn } from '@breakery/ui';
 import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useGeneratePdf, type GeneratePdfArgs, type PdfTemplate } from '../hooks/useGeneratePdf.js';
 import { useDismissablePanel } from './useDismissablePanel.js';
 
@@ -78,7 +91,7 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
       <button
         ref={triggerRef}
         type="button"
-        className={TOOLBAR_BTN_PRIMARY}
+        className={TOOLBAR_BTN_SECONDARY}
         disabled={blocked}
         title={!canExport ? 'Requires the reports.export permission.' : undefined}
         aria-expanded={open}
@@ -86,9 +99,9 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
         data-testid="export-menu"
         onClick={() => setOpen(!open)}
       >
-        <FileDown className="h-3.5 w-3.5" aria-hidden />
+        <FileDown className={TOOLBAR_ICON} aria-hidden />
         Export
-        <ChevronDown className="h-3 w-3 opacity-60" aria-hidden />
+        <ChevronDown className="h-3 w-3 text-text-muted" aria-hidden />
       </button>
 
       {open && !blocked && (

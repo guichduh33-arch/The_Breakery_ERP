@@ -280,6 +280,7 @@ export function POFormDraft({
                       value={it.productId}
                       onChange={(e) => patchItem(idx, { productId: e.target.value })}
                       disabled={submitting}
+                      aria-label={`Product for line ${idx + 1}`}
                       className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
                     >
                       <option value="">— Select —</option>
@@ -294,6 +295,7 @@ export function POFormDraft({
                       value={it.quantity}
                       onChange={(e) => patchItem(idx, { quantity: Number(e.target.value) || 0 })}
                       disabled={submitting}
+                      aria-label={`Quantity for line ${idx + 1}`}
                       className="h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
                     />
                   </td>
@@ -337,6 +339,7 @@ export function POFormDraft({
                       value={it.unitCost}
                       onChange={(e) => patchItem(idx, { unitCost: Number(e.target.value) || 0 })}
                       disabled={submitting}
+                      aria-label={`Unit cost for line ${idx + 1}`}
                       className="h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
                     />
                   </td>

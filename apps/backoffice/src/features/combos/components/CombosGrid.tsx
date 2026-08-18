@@ -31,7 +31,11 @@ export function CombosGrid({ combos, isLoading = false }: Props): JSX.Element {
           placeholder="Search for a combo..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-full pl-9"
+          // The Tight-Corner Rule : un champ est un contrôle, il prend le rayon
+          // de la rampe (`--radius-md`, 4 px — DESIGN.md § Champs), pas 22 px de
+          // demi-hauteur. Mesuré 1221 × 44 px à 1280 px de large : c'était le
+          // plus gros `rounded-full` de la page.
+          className="rounded-md pl-9"
         />
       </div>
 

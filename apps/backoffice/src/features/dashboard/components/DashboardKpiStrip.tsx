@@ -54,7 +54,8 @@ const NOTE_HERO = KPI_NOTE_HERO;
 /** Adaptateur local : la tuile partagée prend `to`/`srHint`, la bande raisonne
  *  encore en `KpiTarget | null` (cible filtrée par permission). */
 function Tile({
-  label, value, children, testId, hero = false, valueTitle, target = null,
+  label, value, children, testId, hero = false, valueTitle, tone = 'neutral', target = null,
+  unavailable = false, unavailableLabel,
 }: {
   label: string;
   value: string;
@@ -62,7 +63,15 @@ function Tile({
   testId: string;
   hero?: boolean;
   valueTitle?: string;
+  tone?: 'neutral' | 'danger';
   target?: KpiTarget | null;
+  /**
+   * La mesure est absente — le formatteur a rendu un tiret cadratin. L'état
+   * vient du KPI (`.value === null`), jamais de la chaîne affichée : le tiret
+   * est un caractère, pas un fait.
+   */
+  unavailable?: boolean;
+  unavailableLabel?: string;
 }): JSX.Element {
   return (
     <KpiTile
@@ -70,7 +79,10 @@ function Tile({
       value={value}
       {...(valueTitle !== undefined ? { valueTitle } : {})}
       hero={hero}
+      tone={tone}
       {...(target !== null ? { to: target.href, srHint: target.hint } : {})}
+      unavailable={unavailable}
+      {...(unavailableLabel !== undefined ? { unavailableLabel } : {})}
       testId={testId}
     >
       {children}
@@ -93,7 +105,22 @@ export function DashboardKpiStrip({
    *  chargement et la bande pulsait indéfiniment en affirmant qu'elle charge. */
   error?: Error | null;
 }): JSX.Element {
-  const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-7';
+  // QUATRE colonnes en extra-large, pas sept (arbitré le 2026-08-18).
+  //
+  // À sept colonnes la tuile offrait 134 px de contenu, alors que la valeur
+  // héro `Rp 8,42 jt` en demande 148,2 px à 26 px de corps et une valeur
+  // ordinaire `-Rp 3,85 jt` 146,8 px à 23 px : les deux coupaient, ce que The
+  // Value-Width Rule interdit explicitement. Réduire les corps aurait fait
+  // tenir les chaînes en détruisant la hiérarchie héro/ordinaire, qui est
+  // l'information ; élargir la tuile la préserve. À quatre colonnes la tuile
+  // vaut ≈ 297 px pour ≈ 268 px de contenu — toutes les chaînes tiennent avec
+  // de la marge, sur deux rangées. Deux rangées lisibles valent mieux que sept
+  // tuiles qui coupent.
+  //
+  // Le palier `md` descend de 4 à 3 pour que la progression reste monotone
+  // (2 → 3 → 4) : à 4 colonnes dès `md`, la tuile y était plus étroite qu'en
+  // `xl`, et le palier `xl` n'aurait rien changé au rendu.
+  const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4';
 
   // Hooks avant toute sortie anticipée — les branches squelette et « données
   // indisponibles » plus bas rendent sans eux, mais ne peuvent pas les sauter.
@@ -175,6 +202,7 @@ export function DashboardKpiStrip({
         label="Net revenue"
         value={formatIdrShort(kpis.net_revenue.value)}
         valueTitle={formatIdr(kpis.net_revenue.value)}
+        unavailable={kpis.net_revenue.value === null}
         testId="kpi-net-revenue"
         target={target('net_revenue')}
         hero
@@ -190,6 +218,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Orders"
         value={formatCount(kpis.orders.value)}
+        unavailable={kpis.orders.value === null}
         testId="kpi-orders"
         target={target('orders')}
       >
@@ -209,6 +238,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Customers"
         value={formatCount(kpis.customers.value)}
+        unavailable={kpis.customers.value === null}
         testId="kpi-customers"
         target={target('customers')}
       >
@@ -223,6 +253,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Items sold"
         value={formatCount(kpis.items_sold.value)}
+        unavailable={kpis.items_sold.value === null}
         testId="kpi-items-sold"
         target={target('items_sold')}
       >
@@ -234,9 +265,14 @@ export function DashboardKpiStrip({
         )}
       </Tile>
 
+      {/* Seule tuile de montant de la bande à rendre en NON compacté : « Rp
+          1.250.000 » fait onze caractères mono, la tuile en tient huit. Elle
+          s'aligne sur ses voisines — compact dans la tuile, exact en infobulle. */}
       <Tile
         label="Avg basket"
-        value={formatIdr(kpis.avg_basket.value)}
+        value={formatIdrShort(kpis.avg_basket.value)}
+        valueTitle={formatIdr(kpis.avg_basket.value)}
+        unavailable={kpis.avg_basket.value === null}
         testId="kpi-avg-basket"
         target={target('avg_basket')}
       >
@@ -251,6 +287,7 @@ export function DashboardKpiStrip({
       <Tile
         label="Gross margin"
         value={formatPct(margin.value)}
+        unavailable={margin.value === null}
         testId="kpi-gross-margin"
         target={target('gross_margin')}
       >
@@ -269,6 +306,16 @@ export function DashboardKpiStrip({
         label="Cash on hand"
         value={cash.restricted === true ? '—' : formatIdrShort(cash.value)}
         {...(cash.restricted === true ? {} : { valueTitle: formatIdr(cash.value) })}
+        // Deux absences distinctes : la donnée n'existe pas, ou le rôle n'a pas
+        // le droit de la voir. Le tiret était le même pour les deux.
+        unavailable={cash.restricted === true || cash.value === null}
+        {...(cash.restricted === true ? { unavailableLabel: 'restricted' } : {})}
+        // Une trésorerie NÉGATIVE est un solde à découvert — donc, dans un
+        // commerce qui n'a pas de découvert, une erreur de saisie ou un coffre
+        // non compté. Elle s'affichait comme une trésorerie saine. La tuile est
+        // CLAIRE (le héro n'est posé que sur la première de la bande) : le ton
+        // s'y résout en `--danger`, pas en `--ink-danger`.
+        tone={cash.restricted !== true && cash.value !== null && cash.value < 0 ? 'danger' : 'neutral'}
         testId="kpi-cash-on-hand"
         target={cash.restricted === true ? null : target('cash_on_hand')}
       >
@@ -279,6 +326,8 @@ export function DashboardKpiStrip({
             className={NOTE}
             title={`drawer ${formatIdr(cash.drawer)} · safe ${formatIdr(cash.safe)} — drawer is derived from open POS sessions, not a dedicated ledger account.`}
           >
+            {/* Le MOT, deuxième signal : la couleur ne porte jamais seule. */}
+            {cash.value !== null && cash.value < 0 && 'overdrawn · '}
             drawer {formatIdrShort(cash.drawer)} · safe {formatIdrShort(cash.safe)}
             {cash.is_derived === true && ' (derived)'}
           </span>

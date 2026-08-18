@@ -69,6 +69,7 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
       <input
         type="text"
         placeholder="Search by name or SKU…"
+        aria-label="Search products to add to the combo"
         value={search}
         onChange={(e) => { setSearch(e.target.value); }}
         className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}

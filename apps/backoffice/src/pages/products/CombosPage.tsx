@@ -34,17 +34,19 @@ export default function CombosPage(): JSX.Element {
   if (combos.error !== null && combos.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load combos: {(combos.error as Error).message}
+        Failed to load combos: {combos.error.message}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* La permission est passée TELLE QUELLE : le bandeau rend le bouton
+          désactivé et sa raison, il ne le masque plus (doctrine ProductsHeader /
+          B2BOrdersPage). */}
       <CombosHeader
-        {...(canCreate
-          ? { onCreate: () => { navigate('/backoffice/products/combos/new'); } }
-          : {})}
+        canCreate={canCreate}
+        onCreate={() => { void navigate('/backoffice/products/combos/new'); }}
       />
       <CombosKpiGrid kpis={kpis} isLoading={combos.isLoading} />
       <CombosGrid combos={list} isLoading={combos.isLoading} />

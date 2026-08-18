@@ -64,11 +64,16 @@ export function ComboOptionRow({
           onClick={onSetDefault}
           className={`${FOCUS_RING} ${
             isDefault
-              // `text-bg-base` est le papier de page (#f0efec) : sur l'or il ne
-              // vaut que 4,47:1. `text-gold-fg` est le premier plan prévu pour
-              // un remplissage or et donne 5,06:1.
-              ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold text-gold-fg'
-              : 'shrink-0 text-[0.625rem] uppercase tracking-widest rounded-full px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
+              // The Ink-Not-Gold Rule : dernier aplat d'or plein de la page, il
+              // avait survécu aux deux campagnes. Le correctif est côté FOND —
+              // le premier plan était déjà `text-gold-fg`, il redevient
+              // `text-gold` (6,22:1 sur la feuille blanche) posé sur le soft et
+              // cerné d'un liseré or, qui porte l'état sans remplir.
+              // L'exception « piste d'interrupteur » ne couvre pas ce cas : ici
+              // le liseré et le libellé (« Default » / « Set Default ») portent
+              // déjà le fait, retirer l'or n'efface aucune information.
+              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm px-2 py-0.5 border border-gold bg-gold-soft text-gold'
+              : 'shrink-0 text-xs uppercase tracking-widest rounded-sm px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
           }`}
           aria-pressed={isDefault}
           aria-label={isDefault ? `${option.label} is the default` : `Set ${option.label} as default`}
@@ -80,7 +85,7 @@ export function ComboOptionRow({
         <span
           className={
             isDefault
-              ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold-soft text-gold'
+              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm border border-gold px-2 py-0.5 bg-gold-soft text-gold'
               : ''
           }
         >
