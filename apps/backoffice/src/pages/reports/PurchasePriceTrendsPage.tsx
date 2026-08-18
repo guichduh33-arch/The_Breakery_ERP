@@ -461,7 +461,7 @@ export default function PurchasePriceTrendsPage(): JSX.Element {
                   </td>
                   <td className={NUM_CELL}>
                     {r.delta_pct === null
-                      ? <span className="text-text-inert">new</span>
+                      ? <span className="text-text-muted">new</span>
                       : <Delta value={r.delta_pct} invert />}
                   </td>
                   <td className={NUM_CELL}>{formatIdrFull(r.spend)}</td>

@@ -57,7 +57,7 @@ export function HeatmapGrid({
                     <span
                       className={cn(
                         'block rounded-sm px-1.5 py-1 font-data text-xs tabular-nums',
-                        v === null ? 'text-text-inert' : VARIANCE_TONE_CELL[t],
+                        v === null ? 'text-text-subtle' : VARIANCE_TONE_CELL[t],
                       )}
                     >
                       {v === null ? '·' : format(v)}

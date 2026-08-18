@@ -163,7 +163,7 @@ export function ProductSalesLinesDrawer({
                             −{formatIdrFull(l.discount_amount)}
                           </span>
                         ) : (
-                          <span className="text-text-inert">—</span>
+                          <span className="text-text-subtle">—</span>
                         )}
                       </td>
                       <td className={cn(NUM_CELL, 'font-semibold')}>{formatIdrFull(l.line_total)}</td>

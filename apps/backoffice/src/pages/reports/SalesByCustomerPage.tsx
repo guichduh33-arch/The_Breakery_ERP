@@ -473,13 +473,13 @@ export default function SalesByCustomerPage(): JSX.Element {
                     <td className={NUM_CELL}>{formatIdrFull(basket)}</td>
                     <td className={NUM_CELL}>
                       {r.is_new || delta === null
-                        ? <span className="text-text-inert">{r.is_new ? 'new' : '—'}</span>
+                        ? <span className="text-text-muted">{r.is_new ? 'new' : '—'}</span>
                         : <Delta value={delta} />}
                     </td>
                     <td className={NUM_CELL}>{shortDate(r.last_order_date)}</td>
                     <td className={NUM_CELL}>
                       {r.customer_type === 'b2b'
-                        ? <span className="text-text-inert">—</span>
+                        ? <span className="text-text-subtle">—</span>
                         : formatCount(r.loyalty_points)}
                     </td>
                   </tr>
