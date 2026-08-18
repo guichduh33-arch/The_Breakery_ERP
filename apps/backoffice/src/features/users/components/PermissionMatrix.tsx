@@ -9,6 +9,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Check, X as XIcon } from 'lucide-react';
 import { usePermissionMatrix, isGranted, type PermissionRow } from '../hooks/usePermissionMatrix.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 function moduleOf(p: PermissionRow): string { return p.module; }
 
@@ -42,7 +43,7 @@ export function PermissionMatrix(): JSX.Element {
           value={filter}
           onChange={(e) => { setFilter(e.target.value); }}
           placeholder="Filter by code, module, or description…"
-          className="w-72 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded"
+          className={`w-72 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
         />
         <span className="text-xs text-text-secondary">
           {filteredPerms.length} / {data.permissions.length} permissions

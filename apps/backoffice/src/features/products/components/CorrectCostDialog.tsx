@@ -109,7 +109,7 @@ export function CorrectCostDialog({
               value={newCost}
               onChange={(e) => setNewCost(e.target.value)}
               placeholder="e.g. 8500"
-              className="w-full px-3 py-2 text-sm font-mono bg-bg-base border border-border-subtle rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="w-full px-3 py-2 text-sm font-mono bg-bg-base border border-border-subtle rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
             />
           </div>
 
@@ -127,7 +127,7 @@ export function CorrectCostDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. WAC drift after bulk purchase at discounted rate"
-              className="w-full px-3 py-2 text-sm bg-bg-base border border-border-subtle rounded resize-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="w-full px-3 py-2 text-sm bg-bg-base border border-border-subtle rounded resize-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
             />
           </div>
 

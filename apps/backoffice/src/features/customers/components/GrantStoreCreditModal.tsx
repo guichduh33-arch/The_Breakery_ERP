@@ -11,6 +11,7 @@ import {
   Button, Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { formatCurrency, formatDate } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useGrantStoreCredit, GrantStoreCreditError, type GrantErrorCode,
 } from '../hooks/useGrantStoreCredit.js';
@@ -100,7 +101,7 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
             step="any"
             value={amountStr}
             onChange={(e) => setAmountStr(e.target.value)}
-            className="mt-1 w-full border rounded p-2 text-sm tabular-nums"
+            className={`mt-1 w-full border rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="50000"
             data-testid="grant-amount"
           />
@@ -116,7 +117,7 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             maxLength={500}
-            className="mt-1 w-full border rounded p-2 text-sm"
+            className={`mt-1 w-full border rounded p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="3-500 characters…"
             data-testid="grant-reason"
           />
@@ -133,7 +134,7 @@ export function GrantStoreCreditModal({ open, onClose, customerId, customerName 
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            className="mt-1 w-full border rounded p-2 text-sm tracking-widest"
+            className={`mt-1 w-full border rounded p-2 text-sm tracking-widest ${FOCUS_RING}`}
             data-testid="grant-pin"
           />
         </div>

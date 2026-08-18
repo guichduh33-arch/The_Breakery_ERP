@@ -201,7 +201,7 @@ export default function B2BSettingsPage(): JSX.Element {
             placeholder="e.g. net45"
             maxLength={32}
             aria-label="New payment term"
-            className={`h-9 flex-1 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+            className={`h-9 flex-1 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING} placeholder:text-text-muted`}
           />
           <Button variant="ghost" size="sm" onClick={addTerm} disabled={newTerm.trim() === ''}>
             <Plus className="h-3.5 w-3.5" aria-hidden /> Add
@@ -264,7 +264,7 @@ export default function B2BSettingsPage(): JSX.Element {
                 onChange={(e) => updateBucket(b.id, { max: e.target.value === '' ? null : Number(e.target.value) })}
                 placeholder="Max"
                 aria-label={`${b.id} max days`}
-                className={`h-9 w-20 rounded-md bg-bg-input px-2 text-right font-data tabular-nums text-sm text-text-primary ${FOCUS_RING}`}
+                className={`h-9 w-20 rounded-md bg-bg-input px-2 text-right font-data tabular-nums text-sm text-text-primary ${FOCUS_RING} placeholder:text-text-muted`}
               />
               <button
                 type="button"

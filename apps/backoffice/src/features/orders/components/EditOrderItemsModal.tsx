@@ -25,6 +25,7 @@ import { useEditOrderItems } from '@/features/orders/hooks/useEditOrderItems.js'
 import { ProductPicker } from '@/features/orders/components/ProductPicker.js';
 import type { OrderEditProduct } from '@/features/orders/hooks/useProductsForOrderEdit.js';
 import type { OrderEditDiff, OrderItemEdit } from '@/features/orders/types.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   open:         boolean;
@@ -201,7 +202,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                       handleUpdateQty(l, Math.max(1, Number(e.target.value) || 1))
                     }
                     aria-label={`Quantity for ${l.name_snapshot}`}
-                    className="w-16 border rounded px-1 py-0.5 text-sm"
+                    className={`w-16 border rounded px-1 py-0.5 text-sm ${FOCUS_RING}`}
                     data-testid={`qty-${l.id}`}
                   />
                   <span className="w-20 text-right tabular-nums">{formatCurrency(l.line_total)}</span>

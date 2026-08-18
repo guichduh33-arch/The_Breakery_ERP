@@ -11,6 +11,7 @@ import {
 } from '@breakery/ui';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';
 import { useCloseFiscalPeriod } from '../hooks/useCloseFiscalPeriod.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface FiscalPeriodModalProps {
   onClose: () => void;
@@ -99,7 +100,7 @@ export function FiscalPeriodModal({
                 type="checkbox"
                 checked={lock}
                 onChange={(e) => setLock(e.target.checked)}
-                className="mt-1"
+                className={`mt-1 ${FOCUS_RING}`}
                 data-testid="fp-modal-lock-checkbox"
               />
               <div>

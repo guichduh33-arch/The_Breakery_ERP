@@ -9,6 +9,7 @@ import {
 } from '@breakery/ui';
 import { useApproveExpense } from '../hooks/useExpenseActions.js';
 import type { ExpenseApprovalRow } from '../hooks/useExpenseApprovals.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ApproveDialogProps {
   open: boolean;
@@ -96,7 +97,7 @@ export function ApproveDialog({
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="••••••"
-            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest"
+            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest placeholder:text-text-muted ${FOCUS_RING}`}
           />
         </div>
         {mut.error !== null && mut.error !== undefined && (

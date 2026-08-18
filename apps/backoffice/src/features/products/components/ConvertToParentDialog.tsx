@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useConvertProductToParent } from '../hooks/useConvertProductToParent.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ConvertToParentDialogProps {
   open:          boolean;
@@ -138,7 +139,7 @@ export function ConvertToParentDialog({
 
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-xs text-text-secondary">
-              <input
+              <input className={FOCUS_RING}
                 type="checkbox"
                 checked={overrideName}
                 onChange={(e) => setOverrideName(e.target.checked)}

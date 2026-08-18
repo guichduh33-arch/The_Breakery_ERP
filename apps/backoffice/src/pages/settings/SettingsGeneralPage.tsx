@@ -26,6 +26,7 @@ import { useSettings, type SettingsCategory } from '@/features/settings/hooks/us
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'percent' | 'logo';
 
@@ -304,7 +305,7 @@ export default function SettingsGeneralPage() {
                         />
                       ) : f.type === 'boolean' ? (
                         <label className="inline-flex items-center gap-2 text-sm pt-2">
-                          <input id={inputId} type="checkbox" checked={Boolean(v)} disabled={!canUpdate}
+                          <input className={FOCUS_RING} id={inputId} type="checkbox" checked={Boolean(v)} disabled={!canUpdate}
                             onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />
                           <span>{Boolean(v) ? 'Yes' : 'No'}</span>
                         </label>
@@ -312,7 +313,7 @@ export default function SettingsGeneralPage() {
                         <select id={inputId} disabled={!canUpdate}
                           value={v === null ? '' : String(v)}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50">
+                          className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`}>
                           {(f.options ?? []).map((o) => <option key={o}>{o}</option>)}
                         </select>
                       ) : f.type === 'percent' ? (
@@ -320,19 +321,19 @@ export default function SettingsGeneralPage() {
                           <input id={inputId} type="number" min={0} max={100} step="any" disabled={!canUpdate}
                             value={v === null ? '' : String(v)}
                             onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+                            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                           <span className="text-sm text-text-secondary">%</span>
                         </div>
                       ) : f.type === 'number' ? (
                         <input id={inputId} type="number" step="any" disabled={!canUpdate}
                           value={v === null ? '' : String(v)}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+                          className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                       ) : (
                         <input id={inputId} type="text" disabled={!canUpdate} maxLength={500}
                           value={v === null ? '' : String(v)}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+                          className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                       )}
                       {f.helper && <p className="text-xs text-text-secondary">{f.helper}</p>}
                     </div>

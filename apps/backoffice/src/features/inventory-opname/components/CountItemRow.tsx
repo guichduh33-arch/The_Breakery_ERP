@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { Button } from '@breakery/ui';
 import { useSetOpnameCount } from '../hooks/useOpnameMutations.js';
 import type { OpnameItemRow } from '../hooks/useOpnameDetail.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface CountItemRowProps {
   countId:  string;
@@ -79,7 +80,7 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             value={count}
             onChange={(e) => { setCount(e.target.value); }}
             onBlur={handleSubmit}
-            className="w-24 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-subtle rounded"
+            className={`w-24 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
             aria-label={`Counted quantity for ${item.product?.name}`}
           />
         )}
@@ -106,7 +107,7 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             value={notes}
             onChange={(e) => { setNotes(e.target.value); }}
             onBlur={handleSubmit}
-            className="w-full px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"
+            className={`w-full px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Optional notes"
             aria-label={`Notes for ${item.product?.name}`}
           />

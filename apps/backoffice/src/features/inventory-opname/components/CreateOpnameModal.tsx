@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useCreateOpname } from '../hooks/useOpnameMutations.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface CreateOpnameModalProps {
   onCreated: (countId: string) => void;
@@ -51,7 +52,7 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
               value={notes}
               onChange={(e) => { setNotes(e.target.value); }}
               rows={3}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Why are we counting? e.g. monthly cycle / spot audit"
             />
           </div>

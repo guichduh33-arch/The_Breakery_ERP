@@ -2,6 +2,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import type { SupplierRow } from '../hooks/useSuppliersList.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface SupplierListRowProps {
   row: SupplierRow;
@@ -22,7 +23,7 @@ export function SupplierListRow({ row, canUpdate, canDelete, onEdit, onToggleAct
       <td className="px-4 py-3 text-right font-mono">{row.payment_terms_days}d</td>
       <td className="px-4 py-3 text-center">
         <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={row.is_active} disabled={!canUpdate}
+          <input className={FOCUS_RING} type="checkbox" checked={row.is_active} disabled={!canUpdate}
             onChange={() => onToggleActive(row)} aria-label={`Toggle ${row.name} active`} />
           <span className={row.is_active ? 'text-green text-xs uppercase' : 'text-text-secondary text-xs uppercase'}>
             {row.is_active ? 'Active' : 'Inactive'}

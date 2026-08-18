@@ -17,6 +17,7 @@ import {
 import { useZReport } from '../hooks/useZReport.js';
 import { useSignZReport } from '../hooks/useSignZReport.js';
 import { useGenerateZReportPdf } from '../hooks/useGenerateZReportPdf.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface SignZReportModalProps {
   open:         boolean;
@@ -194,7 +195,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
                 autoFocus
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest"
+                className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest ${FOCUS_RING}`}
                 data-testid="sign-pin-input"
               />
             </div>

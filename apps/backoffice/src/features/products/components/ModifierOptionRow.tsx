@@ -12,6 +12,7 @@ import type {
   ModifierIngredient,
 } from '@breakery/domain';
 import { OptionIngredientPicker } from './OptionIngredientPicker.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ModifierOptionRowProps {
   option: EditableModifierOption;
@@ -34,7 +35,7 @@ export function ModifierOptionRow({
       <div className="flex items-center gap-2">
         <input
           aria-label="Option label"
-          className="flex-1 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
+          className={`flex-1 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
           placeholder="e.g. Oat milk"
           value={option.option_label}
           onChange={(e) => onChange({ ...option, option_label: e.target.value })}
@@ -45,7 +46,7 @@ export function ModifierOptionRow({
             aria-label="Price adjustment"
             type="number"
             step="1"
-            className="w-28 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
+            className={`w-28 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
             value={option.price_adjustment}
             onChange={(e) =>
               onChange({ ...option, price_adjustment: Number(e.target.value) || 0 })
@@ -54,14 +55,14 @@ export function ModifierOptionRow({
         </label>
         <label className="flex items-center gap-1 text-xs text-text-muted">
           {groupType === 'single_select' ? (
-            <input
+            <input className={FOCUS_RING}
               type="radio"
               aria-label="Default option"
               checked={option.is_default}
               onChange={onMakeDefault}
             />
           ) : (
-            <input
+            <input className={FOCUS_RING}
               type="checkbox"
               aria-label="Default option"
               checked={option.is_default}

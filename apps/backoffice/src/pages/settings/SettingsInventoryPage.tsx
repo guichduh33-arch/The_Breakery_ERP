@@ -10,6 +10,7 @@ import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export default function SettingsInventoryPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -64,7 +65,7 @@ export default function SettingsInventoryPage() {
             </label>
             <div className="md:col-span-2 space-y-1">
               <label className="inline-flex items-center gap-2 text-sm pt-2">
-                <input id="allow_negative_stock" type="checkbox" checked={draft} disabled={!canUpdate}
+                <input className={FOCUS_RING} id="allow_negative_stock" type="checkbox" checked={draft} disabled={!canUpdate}
                   onChange={(e) => setDraft(e.target.checked)} />
                 <span>{draft ? 'Oui' : 'Non'}</span>
               </label>

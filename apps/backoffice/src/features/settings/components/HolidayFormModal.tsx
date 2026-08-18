@@ -5,6 +5,7 @@
 // modal pattern.
 
 import { useEffect, useState } from 'react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   Button,
   Dialog,
@@ -131,28 +132,28 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
             <label htmlFor="hol-name" className="text-xs uppercase tracking-widest text-text-secondary">Name *</label>
             <input id="hol-name" value={draft.name} maxLength={120}
               onChange={(e) => setField('name', e.target.value)}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.name && <p className="text-red text-xs mt-1">{errors.name}</p>}
           </div>
           <div>
             <label htmlFor="hol-date" className="text-xs uppercase tracking-widest text-text-secondary">Date *</label>
             <input id="hol-date" type="date" lang="id-ID" value={draft.date}
               onChange={(e) => setField('date', e.target.value)}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.date && <p className="text-red text-xs mt-1">{errors.date}</p>}
           </div>
           <div>
             <label htmlFor="hol-type" className="text-xs uppercase tracking-widest text-text-secondary">Type *</label>
             <select id="hol-type" value={draft.type}
               onChange={(e) => setField('type', e.target.value as HolidayType)}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary">
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}>
               <option value="national">National</option>
               <option value="religious">Religious</option>
               <option value="company">Company</option>
             </select>
           </div>
           <div className="col-span-2 flex items-center gap-2">
-            <input id="hol-recurring" type="checkbox" checked={draft.is_recurring}
+            <input className={FOCUS_RING} id="hol-recurring" type="checkbox" checked={draft.is_recurring}
               onChange={(e) => setField('is_recurring', e.target.checked)} />
             <label htmlFor="hol-recurring" className="text-sm">
               Recurring (moveable across years — Eid, Lunar New Year, etc.)
@@ -162,7 +163,7 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
             <label htmlFor="hol-notes" className="text-xs uppercase tracking-widest text-text-secondary">Notes</label>
             <textarea id="hol-notes" rows={2} value={draft.notes} maxLength={500}
               onChange={(e) => setField('notes', e.target.value)}
-              className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary" />
+              className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`} />
           </div>
         </div>
 

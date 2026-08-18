@@ -19,6 +19,7 @@ import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useInventoryReferenceData } from '../hooks/useInventoryReferenceData.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useRecordDirectPurchase,
   DirectPurchaseError,
@@ -147,7 +148,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
   }
 
   const suppliers = refData.data?.suppliers ?? [];
-  const fieldCls = 'h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary';
+  const fieldCls = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
 
   const listOpen = pickerOpen && filtered.length > 0;
   const keyboard = useListboxKeyboard<PoProductRow>({
@@ -278,7 +279,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
             <label key={m} className="flex items-center gap-2">
               <input type="radio" name={`${rid}-pay`} value={m} checked={pay === m}
                 onChange={() => { setPay(m); if (m !== 'unpaid' && payAmount === '' && total > 0) setPayAmount(String(total)); }}
-                disabled={purchase.isPending} className="accent-gold" />
+                disabled={purchase.isPending} className={`accent-gold ${FOCUS_RING}`} />
               <span className="capitalize text-text-primary">{m === 'unpaid' ? 'Unpaid (credit)' : m}</span>
             </label>
           ))}

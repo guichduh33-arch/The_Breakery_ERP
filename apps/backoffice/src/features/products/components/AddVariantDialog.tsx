@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useCreateVariant } from '../hooks/useCreateVariant.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface AddVariantDialogProps {
   open:         boolean;
@@ -104,7 +105,7 @@ export function AddVariantDialog({
               data-testid="add-variant-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               maxLength={64}
             />
           </div>
@@ -118,7 +119,7 @@ export function AddVariantDialog({
               data-testid="add-variant-sku"
               value={sku}
               onChange={(e) => setSku(e.target.value.toUpperCase())}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono ${FOCUS_RING}`}
               maxLength={32}
             />
           </div>
@@ -136,7 +137,7 @@ export function AddVariantDialog({
                 min={0}
                 value={retailPrice}
                 onChange={(e) => setRetailPrice(e.target.value)}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono"
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono ${FOCUS_RING}`}
               />
             </div>
             <div>
@@ -151,7 +152,7 @@ export function AddVariantDialog({
                 min={0}
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono"
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono ${FOCUS_RING}`}
               />
             </div>
           </div>

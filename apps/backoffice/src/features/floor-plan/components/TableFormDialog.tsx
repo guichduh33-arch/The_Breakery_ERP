@@ -9,6 +9,7 @@ import {
 } from '@breakery/ui';
 import type { RestaurantTable, TableSection } from '@breakery/domain';
 import { useCreateTable, useUpdateTable, mapFloorPlanError } from '../hooks/useFloorPlanAdmin.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface TableFormDialogProps {
   mode:      'create' | 'edit';
@@ -87,7 +88,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
               id="table-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               maxLength={80}
             />
           </div>
@@ -104,7 +105,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
                 max={20}
                 value={seats}
                 onChange={(e) => { setSeats(Number(e.target.value)); }}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               />
             </div>
             <div>
@@ -116,7 +117,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
                 type="number"
                 value={sortOrder}
                 onChange={(e) => { setSortOrder(Number(e.target.value)); }}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               />
             </div>
           </div>

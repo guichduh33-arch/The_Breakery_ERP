@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useCancelOpname } from '../hooks/useOpnameMutations.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface CancelOpnameDialogProps {
   countId: string;
@@ -53,7 +54,7 @@ export function CancelOpnameDialog({ countId, onClose }: CancelOpnameDialogProps
             value={reason}
             onChange={(e) => { setReason(e.target.value); }}
             rows={3}
-            className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+            className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Why is this count being cancelled? (>=3 chars)"
           />
 

@@ -53,6 +53,7 @@ import {
 } from '@/features/expenses/hooks/useExpensesList.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 type ExpenseFilterKey = ExpenseStatus | 'all';
 
@@ -267,7 +268,7 @@ export default function ExpensesListPage(): JSX.Element {
                 placeholder="Search expenses…"
                 maxLength={64}
                 aria-label="Search expenses"
-                className="h-10 w-full rounded-md border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted"
+                className={`h-10 w-full rounded-md border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
               />
             </div>
             <select
@@ -275,7 +276,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               aria-label="Category filter"
-              className="h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               <option value="all">All categories</option>
               {(cats.data ?? []).map((c) => (
@@ -287,7 +288,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as typeof paymentMethod)}
               aria-label="Payment method filter"
-              className="h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               <option value="all">All methods</option>
               <option value="cash">Cash</option>
@@ -301,7 +302,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               aria-label="From date"
-              className="h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             />
             <input
               id="exp-to"
@@ -309,7 +310,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               aria-label="To date"
-              className="h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             />
           </div>
 

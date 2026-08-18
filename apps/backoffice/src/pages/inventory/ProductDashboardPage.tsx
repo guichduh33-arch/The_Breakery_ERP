@@ -22,6 +22,7 @@ import { formatDateTimeShortWita, formatCurrency } from '@breakery/utils';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
@@ -76,7 +77,7 @@ export default function ProductDashboardPage(): JSX.Element {
                 id="dash-days"
                 value={days}
                 onChange={(e) => { setDays(Number(e.target.value)); }}
-                className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+                className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
               >
                 {WINDOW_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>

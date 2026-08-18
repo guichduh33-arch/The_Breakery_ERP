@@ -17,6 +17,7 @@ import {
 import { useCreateSupplier } from '../hooks/useCreateSupplier.js';
 import { useUpdateSupplier } from '../hooks/useUpdateSupplier.js';
 import type { SupplierRow } from '../hooks/useSuppliersList.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Draft {
   code: string;
@@ -164,49 +165,49 @@ export function SupplierFormModal({ open, mode, initial, onClose }: SupplierForm
             <label htmlFor="sup-code" className="text-xs uppercase tracking-widest text-text-secondary">Code *</label>
             <input id="sup-code" value={draft.code} onChange={(e) => setField('code', e.target.value)}
               maxLength={32} disabled={mode === 'edit'}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono uppercase text-text-primary disabled:opacity-50" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono uppercase text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
             {errors.code && <p className="text-red text-xs mt-1">{errors.code}</p>}
           </div>
           <div className="col-span-1">
             <label htmlFor="sup-name" className="text-xs uppercase tracking-widest text-text-secondary">Name *</label>
             <input id="sup-name" value={draft.name} onChange={(e) => setField('name', e.target.value)} maxLength={120}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.name && <p className="text-red text-xs mt-1">{errors.name}</p>}
           </div>
           <div>
             <label htmlFor="sup-phone" className="text-xs uppercase tracking-widest text-text-secondary">Phone</label>
             <input id="sup-phone" value={draft.contact_phone} onChange={(e) => setField('contact_phone', e.target.value)} maxLength={32}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.contact_phone && <p className="text-red text-xs mt-1">{errors.contact_phone}</p>}
           </div>
           <div>
             <label htmlFor="sup-email" className="text-xs uppercase tracking-widest text-text-secondary">Email</label>
             <input id="sup-email" type="email" value={draft.contact_email} onChange={(e) => setField('contact_email', e.target.value)} maxLength={120}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.contact_email && <p className="text-red text-xs mt-1">{errors.contact_email}</p>}
           </div>
           <div className="col-span-2">
             <label htmlFor="sup-addr" className="text-xs uppercase tracking-widest text-text-secondary">Address</label>
             <input id="sup-addr" value={draft.address} onChange={(e) => setField('address', e.target.value)} maxLength={255}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
           </div>
           <div>
             <label htmlFor="sup-terms" className="text-xs uppercase tracking-widest text-text-secondary">Payment terms (days)</label>
             <input id="sup-terms" type="number" min={0} max={365} value={draft.payment_terms_days}
               onChange={(e) => setField('payment_terms_days', Number(e.target.value) || 0)}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary" />
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.payment_terms_days && <p className="text-red text-xs mt-1">{errors.payment_terms_days}</p>}
           </div>
           <div className="flex items-end">
             <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={draft.is_active} onChange={(e) => setField('is_active', e.target.checked)} />
+              <input className={FOCUS_RING} type="checkbox" checked={draft.is_active} onChange={(e) => setField('is_active', e.target.checked)} />
               Active
             </label>
           </div>
           <div className="col-span-2">
             <label htmlFor="sup-notes" className="text-xs uppercase tracking-widest text-text-secondary">Notes</label>
             <textarea id="sup-notes" rows={3} value={draft.notes} onChange={(e) => setField('notes', e.target.value)} maxLength={500}
-              className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary" />
+              className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`} />
           </div>
         </div>
 

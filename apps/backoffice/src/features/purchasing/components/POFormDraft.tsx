@@ -14,6 +14,7 @@ import { Button } from '@breakery/ui';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
 import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const NOTES_MAX = 500;
 
@@ -182,7 +183,7 @@ export function POFormDraft({
             value={value.supplierId}
             onChange={(e) => patch({ supplierId: e.target.value })}
             disabled={submitting}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           >
             <option value="">— Select supplier —</option>
             {suppliers.map((s) => (
@@ -200,7 +201,7 @@ export function POFormDraft({
             value={value.paymentTerms}
             onChange={(e) => patch({ paymentTerms: e.target.value as 'cash' | 'credit' })}
             disabled={submitting}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           >
             <option value="credit">Credit</option>
             <option value="cash">Cash</option>
@@ -217,7 +218,7 @@ export function POFormDraft({
             value={value.orderDate}
             onChange={(e) => patch({ orderDate: e.target.value })}
             disabled={submitting}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
         </div>
 
@@ -231,7 +232,7 @@ export function POFormDraft({
             value={value.expectedDate}
             onChange={(e) => patch({ expectedDate: e.target.value })}
             disabled={submitting}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
         </div>
 
@@ -248,7 +249,7 @@ export function POFormDraft({
             value={value.vatRate}
             onChange={(e) => patch({ vatRate: Number(e.target.value) || 0 })}
             disabled={submitting}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
         </div>
       </div>
@@ -281,7 +282,7 @@ export function POFormDraft({
                       onChange={(e) => patchItem(idx, { productId: e.target.value })}
                       disabled={submitting}
                       aria-label={`Product for line ${idx + 1}`}
-                      className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
+                      className={`h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     >
                       <option value="">— Select —</option>
                       {products.map((p) => (
@@ -296,7 +297,7 @@ export function POFormDraft({
                       onChange={(e) => patchItem(idx, { quantity: Number(e.target.value) || 0 })}
                       disabled={submitting}
                       aria-label={`Quantity for line ${idx + 1}`}
-                      className="h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
+                      className={`h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     />
                   </td>
                   <td className="px-3 py-1.5">
@@ -310,7 +311,7 @@ export function POFormDraft({
                             value={it.unit}
                             disabled
                             aria-label={`Unit for line ${idx + 1}`}
-                            className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm disabled:opacity-50"
+                            className={`h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm disabled:opacity-50 ${FOCUS_RING}`}
                           >
                             <option value="">{it.unit || '—'}</option>
                           </select>
@@ -322,7 +323,7 @@ export function POFormDraft({
                           onChange={(e) => patchItem(idx, { unit: e.target.value })}
                           disabled={submitting}
                           aria-label={`Unit for line ${idx + 1}`}
-                          className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
+                          className={`h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                         >
                           {opts.map((o) => (
                             <option key={o.code} value={o.code}>
@@ -340,7 +341,7 @@ export function POFormDraft({
                       onChange={(e) => patchItem(idx, { unitCost: Number(e.target.value) || 0 })}
                       disabled={submitting}
                       aria-label={`Unit cost for line ${idx + 1}`}
-                      className="h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
+                      className={`h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     />
                   </td>
                   <td className="px-3 py-1.5 text-right text-text-primary tabular-nums">
@@ -392,7 +393,7 @@ export function POFormDraft({
           disabled={submitting}
           maxLength={NOTES_MAX}
           rows={2}
-          className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary"
+          className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}
         />
         <div className="text-xs text-text-secondary text-right">{value.notes.length}/{NOTES_MAX}</div>
       </div>

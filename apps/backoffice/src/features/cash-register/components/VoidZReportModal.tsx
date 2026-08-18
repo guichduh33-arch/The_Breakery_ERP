@@ -12,6 +12,7 @@ import {
 } from '@breakery/ui';
 import { Loader2 } from 'lucide-react';
 import { useVoidZReport } from '../hooks/useVoidZReport.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface VoidZReportModalProps {
   open:         boolean;
@@ -85,7 +86,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
                 onChange={(e) => setReason(e.target.value)}
                 rows={4}
                 placeholder="e.g. Manager misclicked, signed wrong shift"
-                className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary"
+                className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
                 data-testid="void-reason-input"
               />
               <p className="text-xs text-text-secondary mt-1">{trimmed.length} / 10 characters</p>
@@ -120,7 +121,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
                 autoFocus
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest"
+                className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest ${FOCUS_RING}`}
                 data-testid="void-pin-input"
               />
             </div>

@@ -5,6 +5,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useRejectExpense } from '../hooks/useExpenseActions.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface RejectDialogProps {
   open: boolean;
@@ -45,7 +46,7 @@ export function RejectDialog({ open, expenseId, onClose, onSuccess }: RejectDial
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             maxLength={500}
-            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary"
+            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}
           />
         </div>
         {mut.error !== null && mut.error !== undefined && (

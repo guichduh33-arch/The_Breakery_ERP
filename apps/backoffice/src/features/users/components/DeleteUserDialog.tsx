@@ -7,6 +7,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useDeleteUser, isLastAdminError } from '../hooks/useDeleteUser.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface DeleteUserDialogProps {
   userId:   string;
@@ -68,7 +69,7 @@ export function DeleteUserDialog(
               id="del-reason"
               value={reason}
               onChange={(e) => { setReason(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="e.g. left the company"
               maxLength={200}
             />

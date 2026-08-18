@@ -24,6 +24,7 @@ import {
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE } from '../paymentStatusMeta.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface RecordB2bPaymentModalProps {
   open:    boolean;
@@ -242,7 +243,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                     <li key={inv.invoice_id}>
                       <label className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs">
                         <span className="flex items-center gap-2">
-                          <input
+                          <input className={FOCUS_RING}
                             type="checkbox"
                             checked={selectedIds.includes(inv.invoice_id)}
                             onChange={() => toggleInvoice(inv)}
@@ -340,7 +341,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary"
+              className={`w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Optional"
             />
           </div>

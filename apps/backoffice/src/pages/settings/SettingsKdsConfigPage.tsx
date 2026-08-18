@@ -18,6 +18,7 @@ import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const WARNING_KEY = 'kds_warning_threshold_minutes';
 const URGENT_KEY = 'kds_urgent_threshold_minutes';
@@ -123,7 +124,7 @@ export default function SettingsKdsConfigPage() {
                 disabled={!canUpdate}
                 value={draft[f.key] ?? ''}
                 onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50"
+                className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
               />
               <p className="text-xs text-text-secondary">{f.helper}</p>
             </div>

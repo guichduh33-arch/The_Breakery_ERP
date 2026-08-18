@@ -41,6 +41,7 @@ import type { WasteReason } from '../hooks/useRecordProduction.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { IngredientAggregatePreview } from './IngredientAggregatePreview.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   sectionId: string;
@@ -266,7 +267,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             aria-autocomplete="list"
             aria-activedescendant={keyboard.activeDescendantId}
             data-testid="production-search"
-            className="h-9 w-72 rounded-full border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className="h-9 w-72 rounded-full border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
           />
           {/* Le descendant actif ne déplace pas le focus : sans annonce,
               l'apparition des résultats est muette pour un lecteur d'écran. */}
@@ -323,7 +324,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                 checked={forceNegative}
                 onChange={(e) => setForceNegative(e.target.checked)}
                 data-testid="force-negative-toggle"
-                className="mt-0.5"
+                className={`mt-0.5 ${FOCUS_RING}`}
               />
               <span>
                 <span className="inline-flex items-center gap-1 font-semibold text-red">
