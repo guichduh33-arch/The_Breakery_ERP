@@ -52,14 +52,19 @@ export function PermissionMatrix(): JSX.Element {
 
       <div className="overflow-x-auto border border-border-subtle rounded">
         <table className="text-xs w-full">
+          <caption className="sr-only">
+            Permissions granted to each role. Rows are permissions, columns are roles.
+            Each cell says whether the role holds that permission.
+          </caption>
           <thead className="bg-bg-elevated">
             <tr>
-              <th className="text-left py-2 px-3 sticky left-0 bg-bg-elevated z-10 min-w-[260px]">
+              <th scope="col" className="text-left py-2 px-3 sticky left-0 bg-bg-elevated z-10 min-w-[260px]">
                 Permission
               </th>
               {data.roles.map((r) => (
                 <th
                   key={r.code}
+                  scope="col"
                   className="py-2 px-3 text-center font-mono whitespace-nowrap"
                   title={r.description ?? r.name}
                 >
@@ -77,14 +82,17 @@ export function PermissionMatrix(): JSX.Element {
                   key={p.code}
                   className={`border-t border-border-subtle ${moduleChanged ? 'border-t-2 border-t-border-strong' : ''}`}
                 >
-                  <td className="py-1.5 px-3 sticky left-0 bg-bg-base z-10">
+                  {/* En-tête de ligne, pas une cellule : c'est ce qui permet à
+                      un lecteur d'écran d'annoncer « accounting.cash.read,
+                      MANAGER, granted » au lieu de « granted » seul. */}
+                  <th scope="row" className="py-1.5 px-3 sticky left-0 bg-bg-base z-10 text-left font-normal">
                     <div className="font-mono">{p.code}</div>
                     {p.description !== null && (
                       <div className="text-text-secondary text-xs leading-tight mt-0.5">
                         {p.description}
                       </div>
                     )}
-                  </td>
+                  </th>
                   {data.roles.map((r) => {
                     const granted = isGranted(data, r.code, p.code);
                     return (
@@ -92,7 +100,12 @@ export function PermissionMatrix(): JSX.Element {
                         {granted ? (
                           <Check className="h-4 w-4 text-success inline" aria-label="granted" />
                         ) : (
-                          <XIcon className="h-3.5 w-3.5 text-text-disabled inline" aria-label="denied" />
+                          // `text-text-disabled` valait 1,90:1 sur le papier —
+                          // sous les 3:1 des objets graphiques (WCAG 1.4.11),
+                          // alors que ce glyphe porte TOUTE l'information de la
+                          // cellule. `text-text-subtle` est le token que
+                          // DESIGN.md réserve au non-texte : 3,24:1.
+                          <XIcon className="h-3.5 w-3.5 text-text-subtle inline" aria-label="denied" />
                         )}
                       </td>
                     );
@@ -104,10 +117,30 @@ export function PermissionMatrix(): JSX.Element {
         </table>
       </div>
 
+      {/* Légende obligatoire de l'archétype Matrix : une cellule réduite à un
+          signe n'est lisible que si le signe est nommé quelque part. Elle ne
+          décrit QUE les deux états que la grille rend — inventer un troisième
+          état « accordé par héritage » ferait dire à la vue ce qu'elle ne
+          calcule pas. */}
+      <div
+        className="flex flex-col gap-2 rounded border border-border-subtle bg-bg-elevated px-3 py-2.5 sm:flex-row sm:items-center sm:gap-6"
+        data-testid="matrix-legend"
+      >
+        <span className="text-xs uppercase tracking-widest font-data text-text-muted">Legend</span>
+        <span className="inline-flex items-center gap-2 text-xs text-text-secondary">
+          <Check className="h-4 w-4 text-success shrink-0" aria-hidden />
+          Granted to the role
+        </span>
+        <span className="inline-flex items-center gap-2 text-xs text-text-secondary">
+          <XIcon className="h-3.5 w-3.5 text-text-subtle shrink-0" aria-hidden />
+          Not granted
+        </span>
+      </div>
+
       <p className="text-xs text-text-secondary">
-        Source : <code className="font-mono">role_permissions</code> table. Authoritative since
-        Phase 1.B (<code className="font-mono">has_permission()</code> is a pure lookup over this
-        table plus <code className="font-mono">user_permission_overrides</code>).
+        Reads the role grants only. Exceptions granted to a single person are
+        <strong className="font-semibold text-text-primary"> not reflected here</strong>, so a
+        given user may hold more than their role shows.
       </p>
     </div>
   );
