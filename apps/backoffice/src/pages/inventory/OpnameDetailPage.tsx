@@ -63,6 +63,20 @@ export default function OpnameDetailPage(): JSX.Element {
     }
     return { counted, pending, varianceTotal };
   }, [items]);
+  /**
+   * Ce qui verrouille l'action terminale, en toutes lettres. `null` = rien ne
+   * bloque. Un bouton désactivé muet fait chercher la ligne fautive à la main
+   * sur un comptage de plusieurs dizaines de lignes.
+   */
+  const blockReason = useMemo<string | null>(() => {
+    if (items.length === 0) return 'Add at least one line before validating.';
+    if (stats.pending > 0) {
+      return stats.pending === 1
+        ? '1 line still uncounted — enter its quantity to continue.'
+        : `${String(stats.pending)} lines still uncounted — enter their quantities to continue.`;
+    }
+    return null;
+  }, [items.length, stats.pending]);
   if (detail.isLoading) {
     return <div className="text-sm text-text-secondary">Loading count…</div>;
   }
@@ -193,19 +207,37 @@ export default function OpnameDetailPage(): JSX.Element {
         </div>
       )}
 
+      {/* La raison d'un bouton verrouillé est portée par la page, pas par le
+          bouton : un bouton désactivé n'est pas focalisable, donc ni le clavier
+          ni le lecteur d'écran n'atteindraient un `title`. Le texte est visible
+          ET référencé par `aria-describedby`. */}
       <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+        {blockReason !== null && (
+          <p id="opname-block-reason" className="text-sm text-text-secondary md:mr-auto">
+            {blockReason}
+          </p>
+        )}
         {counting && canCreate && (
           <Button
             variant="ghost"
             onClick={() => { setShowValidate(true); }}
-            disabled={stats.pending > 0 || items.length === 0}
+            disabled={blockReason !== null}
+            {...(blockReason !== null ? { 'aria-describedby': 'opname-block-reason' } : {})}
           >
             <CheckCircle2 className="h-4 w-4" aria-hidden />
             Validate &amp; reveal variances
           </Button>
         )}
-        {(d.status === 'review' || d.status === 'counting') && canFinalize && (
-          <Button variant="ink" onClick={() => { setShowFinalize(true); }} disabled={stats.pending > 0}>
+        {/* `review` UNIQUEMENT. Offrir Finaliser pendant le comptage rendait la
+            révélation facultative : on postait le JE définitif sans avoir vu les
+            écarts. Le serveur refuse désormais aussi (finalize_opname_v3). */}
+        {d.status === 'review' && canFinalize && (
+          <Button
+            variant="ink"
+            onClick={() => { setShowFinalize(true); }}
+            disabled={blockReason !== null}
+            {...(blockReason !== null ? { 'aria-describedby': 'opname-block-reason' } : {})}
+          >
             Finalize and post JE
           </Button>
         )}

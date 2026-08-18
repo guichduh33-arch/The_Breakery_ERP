@@ -138,7 +138,7 @@ export function useValidateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// finalize_opname_v2
+// finalize_opname_v3
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface FinalizeOpnameResult {
@@ -153,12 +153,13 @@ export interface FinalizeOpnameResult {
 
 export function useFinalizeOpname() {
   const qc = useQueryClient();
-  // Idempotency key held across retries; rotated on success. finalize_opname_v2
-  // is also status-locked server-side, but a stable key makes the replay explicit.
+  // Idempotency key held across retries; rotated on success. finalize_opname_v3
+  // n'accepte QUE le statut `review` — la révélation par validate_opname_v1 est
+  // le seul chemin depuis le comptage — mais une clé stable rend le rejeu explicite.
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<FinalizeOpnameResult, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
-      const { data, error } = await rpc()('finalize_opname_v2', {
+      const { data, error } = await rpc()('finalize_opname_v3', {
         p_count_id: countId,
         p_idempotency_key: idemKey.current,
       });

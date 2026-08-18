@@ -12,7 +12,7 @@
 --   T_OPN_07 — unique(count_id, product_id) on count items.
 --   T_OPN_08 — perms inventory.opname.create + finalize seeded into permissions.
 --   T_OPN_09 — role_permissions wired for MANAGER/ADMIN/SUPER_ADMIN.
---   T_OPN_10 — finalize_opname_v2 status guard rejects bad statuses (no perm
+--   T_OPN_10 — finalize_opname_v3 status guard rejects bad statuses (no perm
 --             needed since we test the schema-level state machine).
 --   T_OPN_11 — opname_in + opname_out enum values present.
 --   T_OPN_12 — ADR-027 : view_section_stock_details est droppée.
@@ -20,18 +20,18 @@
 --             execute without crash for an admin user.
 --   T_OPN_14 — ADR-027 : add_opname_item_v2 charge l'attendu depuis
 --             products.current_stock quand p_expected_qty est NULL.
---   T_OPN_15 — ADR-027 : finalize_opname_v2 émet opname_in/out SANS section
+--   T_OPN_15 — ADR-027 : finalize_opname_v3 émet opname_in/out SANS section
 --             (from/to_section_id NULL) et corrige products.current_stock.
 --
 -- ADR-027 (2026-08-16) : create_opname_v1/add_opname_item_v1/finalize_opname_v1
--- droppées au profit de create_opname_v2/add_opname_item_v2/finalize_opname_v2
+-- droppées au profit de create_opname_v2/add_opname_item_v2/finalize_opname_v3
 -- (plus d'argument section). view_section_stock_details droppée.
 -- get_low_stock_v1 -> get_low_stock_v2 ; get_product_dashboard_v2 -> _v3.
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(15);
+SELECT plan(16);
 
 -- T_OPN_01 — tables + sequence
 SELECT is(
@@ -47,7 +47,7 @@ SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
       'create_opname_v2','add_opname_item_v2','set_opname_count_v1',
-      'validate_opname_v1','finalize_opname_v2','cancel_opname_v1',
+      'validate_opname_v1','finalize_opname_v3','cancel_opname_v1',
       'next_count_number'
     )),
   7,
@@ -117,12 +117,12 @@ SELECT cmp_ok(
   'T_OPN_09: opname role_permissions wired for MANAGER/ADMIN/SUPER_ADMIN'
 );
 
--- T_OPN_10 — finalize_opname_v2 status guard — call as anonymous (should raise forbidden)
+-- T_OPN_10 — finalize_opname_v3 status guard — call as anonymous (should raise forbidden)
 SELECT throws_ok(
-  $$SELECT finalize_opname_v2(gen_random_uuid())$$,
+  $$SELECT finalize_opname_v3(gen_random_uuid())$$,
   'P0003',
   NULL,
-  'T_OPN_10: finalize_opname_v2 forbids anonymous callers'
+  'T_OPN_10: finalize_opname_v3 forbids anonymous callers'
 );
 
 -- T_OPN_11 — enum values opname_in + opname_out present
@@ -227,7 +227,7 @@ SELECT ok(current_setting('breakery.t_opn_14_pass')::boolean,
   'T_OPN_14: add_opname_item_v2(p_expected_qty=NULL) defaults expected_qty to products.current_stock (42.500)');
 
 -- =========================================================================
--- T_OPN_15 — ADR-027 : finalize_opname_v2 émet opname_in/out avec sections
+-- T_OPN_15 — ADR-027 : finalize_opname_v3 émet opname_in/out avec sections
 -- NULL et corrige products.current_stock. Compte à 50.000 (variance +7.500
 -- sur l'attendu 42.500 chargé en T_OPN_14) -> mouvement opname_in +7.500.
 -- =========================================================================
@@ -252,7 +252,7 @@ BEGIN
   PERFORM set_opname_count_v1(v_item_id, 50.000, 'T_OPN_15 counted');
   PERFORM validate_opname_v1(v_count_id);
 
-  SELECT finalize_opname_v2(v_count_id) INTO v_finalize;
+  SELECT finalize_opname_v3(v_count_id) INTO v_finalize;
 
   SELECT id, movement_type, quantity, from_section_id, to_section_id
     INTO v_mvt_id, v_mvt_type, v_mvt_qty, v_mvt_from, v_mvt_to
@@ -274,8 +274,54 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t_opn_15$;
 SELECT ok(current_setting('breakery.t_opn_15_pass')::boolean,
-  'T_OPN_15: finalize_opname_v2 emits opname_in +7.500 with from/to_section_id NULL and sets products.current_stock=50.000');
+  'T_OPN_15: finalize_opname_v3 emits opname_in +7.500 with from/to_section_id NULL and sets products.current_stock=50.000');
 
+
+-- =========================================================================
+-- T_OPN_16 — la révélation n'est pas contournable. finalize_opname_v3 refuse
+-- le statut `counting` : le seul chemin depuis le comptage est
+-- validate_opname_v1, qui fige la saisie et découvre les écarts. v2
+-- l'acceptait, ce qui rendait l'écriture comptable définitive postable sans
+-- que personne ait vu les écarts validés.
+-- =========================================================================
+DO $t_opn_16$
+DECLARE
+  v_count    JSONB;
+  v_count_id UUID;
+  v_item     JSONB;
+  v_item_id  UUID;
+  v_status   TEXT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
+
+  SELECT create_opname_v2('T_OPN_16 fixture') INTO v_count;
+  v_count_id := (v_count->>'count_id')::uuid;
+
+  SELECT add_opname_item_v2(
+    v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, 10.000, 'T_OPN_16'
+  ) INTO v_item;
+  SELECT id INTO v_item_id FROM inventory_count_items
+   WHERE count_id = v_count_id
+     AND product_id = '99999999-00e0-00e0-00e0-111111111111'::uuid;
+
+  -- Toutes les lignes sont comptées : `missing_counts` ne peut pas masquer
+  -- la garde de statut qu'on veut prouver.
+  PERFORM set_opname_count_v1(v_item_id, 12.000, 'T_OPN_16 counted');
+
+  SELECT status INTO v_status FROM inventory_counts WHERE id = v_count_id;
+  IF v_status <> 'counting' THEN
+    RAISE EXCEPTION 'T_OPN_16 fixture attendait counting, a obtenu %', v_status;
+  END IF;
+
+  PERFORM set_config('breakery.opn16_count_id', v_count_id::text, false);
+END $t_opn_16$;
+SELECT throws_ok(
+  format($q$SELECT finalize_opname_v3(%L::uuid)$q$,
+         current_setting('breakery.opn16_count_id')),
+  'P0001',
+  'finalize_not_allowed_in_status',
+  'T_OPN_16: finalize_opname_v3 refuses status counting — reveal is not skippable'
+);
 SELECT * FROM finish();
 
 ROLLBACK;

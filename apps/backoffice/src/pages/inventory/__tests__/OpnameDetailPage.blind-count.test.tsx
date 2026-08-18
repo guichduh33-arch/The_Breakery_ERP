@@ -138,11 +138,47 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   });
 
   it('n\'offre pas Finaliser sans la permission — un MANAGER compte, il ne finalise pas', () => {
+    // En revue : depuis le comptage, Finaliser n'est de toute façon plus rendu,
+    // et le test ne prouverait plus rien sur la permission.
+    detail = makeDetail('review');
     currentPerms = new Set(['inventory.read', 'inventory.opname.create']);
     renderPage();
 
     expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
+  });
+
+  it('n\'offre pas Finaliser pendant le comptage — la révélation n\'est pas contournable', () => {
+    // Toutes les lignes sont comptées : rien d'autre que le statut ne peut
+    // expliquer l'absence du bouton.
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeInTheDocument();
+
+    // Et il réapparaît une fois la révélation faite.
+    detail = makeDetail('review');
+    renderPage();
+    expect(screen.getAllByRole('button', { name: /Finalize/i }).length).toBeGreaterThan(0);
+  });
+
+  it('dit ce qui manque quand l\'action terminale est verrouillée', () => {
+    detail = makeDetail('counting');
+    detail.items.push({
+      id: 'it-2', product_id: 'p-2',
+      expected_qty: 5, counted_qty: null, variance: null,
+      unit: 'kg', notes: null, movement_id: null,
+      product: { sku: 'RAW-002', name: 'Butter' },
+    });
+    renderPage();
+
+    const reason = screen.getByText(/1 line still uncounted/i);
+    expect(reason).toBeInTheDocument();
+
+    // Un bouton désactivé n'est pas focalisable : la raison doit lui être liée
+    // par `aria-describedby`, pas seulement posée à côté.
+    const validate = screen.getByRole('button', { name: /Validate & reveal variances/i });
+    expect(validate).toBeDisabled();
+    expect(validate.getAttribute('aria-describedby')).toBe(reason.id);
   });
 
   it('une fois finalisé, plus de saisie et plus d\'annulation', () => {
