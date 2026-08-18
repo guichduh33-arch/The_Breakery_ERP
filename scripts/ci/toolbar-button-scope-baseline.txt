@@ -1,0 +1,21 @@
+# Plafond compté de la garde — toolbar-button-scope, hérité au 2026-08-18.
+#
+# Format : <compte>\t<chemin>
+#
+# PLAFOND, JAMAIS PLANCHER. Cette liste recense ce qui existait le jour où la
+# garde est née, pour qu elle puisse être allumée sans réécrire le dépôt. Elle ne
+# peut que DÉCROÎTRE : --update-baseline refuse de tourner s il reste une
+# violation, il ne sait que descendre un compte.
+#
+# Dernier resserrement : 2026-08-18
+1	apps/backoffice/src/features/combos/components/ComboBuilderPage.tsx
+1	apps/backoffice/src/features/inventory-production/components/ProductionEntryCard.tsx
+1	apps/backoffice/src/features/lan-devices/components/OfflineSettingsPanel.tsx
+3	apps/backoffice/src/features/orders/components/OrderDetailDrawer.tsx
+1	apps/backoffice/src/features/purchasing/components/POFormDraft.tsx
+1	apps/backoffice/src/features/reports/components/ExportMenu.tsx
+2	apps/backoffice/src/features/reports/components/PeriodControl.tsx
+1	apps/backoffice/src/features/settings/components/ShowcaseCurator.tsx
+5	apps/backoffice/src/pages/customers/CustomerDetailPage.tsx
+2	apps/backoffice/src/pages/expenses/ExpenseDetailPage.tsx
+1	apps/backoffice/src/pages/reports/DailySalesPage.tsx
