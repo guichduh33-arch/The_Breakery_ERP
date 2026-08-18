@@ -39,6 +39,9 @@ describeLive('KDS extensions — live RPC cycle', () => {
       .insert({
         order_number: `KDS-LIVE-${Date.now()}`,
         order_type: 'dine_in',
+        // Règle métier « dine-in sans table non autorisé » (v27) : l'INSERT direct
+        // service-role contourne la garde RPC, le fixture porte donc sa table.
+        table_number: 'T-TEST',
         status: 'draft',
         subtotal: 0,
         tax_amount: 0,
