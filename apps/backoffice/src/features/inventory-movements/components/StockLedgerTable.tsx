@@ -3,9 +3,13 @@
 // expandable for the movement detail (created_time, user, origin, ref_no,
 // product group). Rows must already be enriched (ref_no + type_label + origin)
 // via enrichLedgerLines.
+//
+// 2026-08-18 — fenêtre de rendu de 200 lignes + « Load more ». La table peignait
+// les 5 000 lignes que la RPC peut rendre, soit ~55 000 nœuds DOM d'un coup.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { ChevronRight, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@breakery/ui';
 import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import type { StockLedgerRow } from '../stockLedgerColumns.js';
 
@@ -53,6 +57,15 @@ const HEADERS: readonly { label: string; align: 'left' | 'right'; sort?: SortKey
 ];
 
 const TOTAL_COLS = HEADERS.length + 1; // + the expand-toggle column
+
+// Fenêtre de RENDU, pas de chargement. La RPC rend jusqu'à 5 000 lignes d'un
+// coup et ce tableau les posait toutes dans le DOM : onze cellules par ligne,
+// soit ~55 000 nœuds sur l'écran que le responsable stock ouvre le plus, depuis
+// un portable de boutique. Le solde courant étant calculé SERVEUR et l'ordre
+// (par produit, chronologique) portant l'information, on ne peut pas fenêtrer
+// côté base sans changer la sémantique du solde d'ouverture — c'est un autre
+// chantier, gaté par un bump de RPC. Ici on ne change que ce qui est PEINT.
+const RENDER_PAGE = 200;
 
 const collator = new Intl.Collator('id-ID', { sensitivity: 'base', numeric: true });
 
@@ -110,6 +123,17 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
     return [...rows].sort((a, b) => factor * compareRows(a, b, sort.key));
   }, [rows, sort]);
 
+  // Le tri porte sur TOUTES les lignes reçues, la fenêtre ne coupe qu'après :
+  // trier la fenêtre rendrait « les 200 premières, triées », ce qui n'est pas
+  // la même table. Un changement de filtre ramène la fenêtre à son premier cran
+  // — sans quoi une recherche plus étroite garderait le déroulé de la
+  // précédente et le pied mentirait sur ce qui reste à voir.
+  const [visible, setVisible] = useState<number>(RENDER_PAGE);
+  useEffect(() => { setVisible(RENDER_PAGE); }, [rows]);
+
+  const shownRows = useMemo(() => sortedRows.slice(0, visible), [sortedRows, visible]);
+  const hasMore   = sortedRows.length > shownRows.length;
+
   return (
     <div className="space-y-3">
       {truncated && (
@@ -161,7 +185,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
             {!isLoading && rows.length === 0 && (
               <tr><td colSpan={TOTAL_COLS} className="px-2 py-4 text-text-secondary">No stock movements for this period.</td></tr>
             )}
-            {sortedRows.flatMap((r) => {
+            {shownRows.flatMap((r) => {
               const isOpen = open.has(r.id);
               const mainRow = (
                 <tr
@@ -218,6 +242,31 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Le pied se rend MÊME quand la table est vide : « 0 of 0 » est une
+          information, pas un vide (DESIGN.md § Tableaux). Il dit RENDU contre
+          REÇU — deux nombres qui viennent de deux endroits différents — et le
+          bandeau `truncated` au-dessus dit, lui, reçu contre existant. */}
+      <div className="flex items-center justify-between">
+        <span
+          className="font-data text-xs tabular-nums text-text-muted"
+          data-testid="stock-ledger-footer-count"
+        >
+          {shownRows.length.toLocaleString('id-ID')} of {sortedRows.length.toLocaleString('id-ID')} shown
+        </span>
+        {hasMore && (
+          <Button
+            variant="secondary"
+            // `sm` (36 px) : le cran unique de « Load more » du back-office.
+            // Sans lui le primitif rend son défaut `md`, soit 56 px.
+            size="sm"
+            onClick={() => { setVisible((n) => n + RENDER_PAGE); }}
+            data-testid="stock-ledger-load-more"
+          >
+            Load more
+          </Button>
+        )}
       </div>
     </div>
   );
