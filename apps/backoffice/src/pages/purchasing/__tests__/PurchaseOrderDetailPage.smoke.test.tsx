@@ -129,4 +129,44 @@ describe('PurchaseOrderDetailPage (Phase 5.A rewrite)', () => {
     expect(screen.queryByRole('button', { name: /^Cancel$/i })).not.toBeInTheDocument();
     currentPerms = new Set(['purchasing.po.read', 'purchasing.po.receive', 'purchasing.po.cancel']);
   });
+
+  // Lot 2026-08-18 — la rangée d'actions du bandeau portait TROIS hauteurs de
+  // bouton (36 px `size="sm"`, 56 px primitif par défaut, 32 px chaîne de
+  // bandeau) et l'écran portait DEUX aplats encre. DESIGN.md § Boutons : la
+  // chaîne `TOOLBAR_BTN_*` est du bandeau et de lui seul, et un seul bloc encré
+  // par écran (The One Ink Fill Rule). Ces deux tests figent le sens du lot.
+  it('ne rend le bandeau que sur la hauteur de la chaîne de bandeau (32 px)', () => {
+    currentPerms = new Set([
+      'purchasing.po.read', 'purchasing.po.receive',
+      'purchasing.po.cancel', 'purchasing.po.edit',
+    ]);
+    renderPage();
+    const header = screen.getByRole('button', { name: /Receive/i }).closest('header');
+    expect(header).not.toBeNull();
+    const buttons = Array.from(header!.querySelectorAll('button'));
+    expect(buttons.map((b) => b.textContent?.trim())).toEqual([
+      'Back', 'Print', 'Receive', 'Cancel', 'Edit',
+    ]);
+    for (const b of buttons) {
+      // 32 px, et aucun des deux crans du primitif partagé (56 px `md`, 36 px `sm`).
+      expect(b.className).toMatch(/(^|\s)h-8(\s|$)/);
+      expect(b.className).not.toMatch(/h-touch-comfy|h-touch-large|(^|\s)h-9(\s|$)/);
+    }
+  });
+
+  it('ne porte qu\'un seul aplat encre : Receive au bandeau, pas Record payment', () => {
+    currentPerms = new Set([
+      'purchasing.po.read', 'purchasing.po.receive',
+      'purchasing.po.cancel', 'purchasing.po.edit', 'purchasing.po.pay',
+    ]);
+    renderPage();
+    const inked = Array.from(document.querySelectorAll('button'))
+      .filter((b) => /(^|\s)bg-ink(\s|$)/.test(b.className));
+    expect(inked.map((b) => b.textContent?.trim())).toEqual(['Receive']);
+
+    const pay = screen.getByRole('button', { name: /Record payment/i });
+    expect(pay.closest('header')).toBeNull();          // il vit dans le rail, pas le bandeau
+    expect(pay.className).not.toMatch(/bg-ink/);        // plus d'encre
+    expect(pay.className).toMatch(/border-border-strong/); // primitif `secondary`
+  });
 });
