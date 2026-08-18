@@ -13,6 +13,7 @@ import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Draft {
   offlinePaymentsEnabled: boolean;
@@ -76,7 +77,7 @@ export function OfflineSettingsPanel() {
             </label>
             <div className="md:col-span-2 space-y-1">
               <label className="inline-flex items-center gap-2 text-sm pt-2">
-                <input
+                <input className={FOCUS_RING}
                   id="offline_payments_enabled"
                   type="checkbox"
                   checked={draft.offlinePaymentsEnabled}

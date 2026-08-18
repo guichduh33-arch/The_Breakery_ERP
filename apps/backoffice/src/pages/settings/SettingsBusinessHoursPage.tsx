@@ -14,6 +14,7 @@ import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const DAYS = [
   { key: 'mon', label: 'Monday' },
@@ -148,7 +149,7 @@ export default function SettingsBusinessHoursPage() {
                         checked={d.open}
                         disabled={!canUpdate}
                         onChange={(e) => patchDay(key, { open: e.target.checked })}
-                        className="h-4 w-4 accent-gold"
+                        className={`h-4 w-4 accent-gold ${FOCUS_RING}`}
                       />
                       <span className="text-sm font-medium">{label}</span>
                     </label>
@@ -166,7 +167,7 @@ export default function SettingsBusinessHoursPage() {
                           disabled={!canUpdate}
                           onChange={(e) => patchDay(key, { from: e.target.value })}
                           aria-label={`${label} opens at`}
-                          className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
+                          className={`rounded-md border border-border-subtle bg-bg-input px-2 py-1 ${FOCUS_RING}`}
                         />
                         <span className="text-text-secondary">to</span>
                         <input
@@ -176,7 +177,7 @@ export default function SettingsBusinessHoursPage() {
                           disabled={!canUpdate}
                           onChange={(e) => patchDay(key, { until: e.target.value })}
                           aria-label={`${label} closes at`}
-                          className="rounded-md border border-border-subtle bg-bg-input px-2 py-1"
+                          className={`rounded-md border border-border-subtle bg-bg-input px-2 py-1 ${FOCUS_RING}`}
                         />
                         {rowInvalid && (
                           <span className="text-xs text-danger">Opening must precede closing.</span>

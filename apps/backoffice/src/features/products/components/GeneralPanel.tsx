@@ -26,6 +26,7 @@ import {
 import { useSetProductTestFlag } from '../hooks/useSetProductTestFlag.js';
 import { formatCurrency } from '@breakery/utils';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   product: ProductRow;
@@ -300,7 +301,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                     checked={checked}
                     disabled={readOnly}
                     onChange={() => toggleStation(station)}
-                    className="h-4 w-4 accent-gold disabled:cursor-not-allowed"
+                    className={`h-4 w-4 accent-gold disabled:cursor-not-allowed ${FOCUS_RING}`}
                   />
                   <span className="text-xs font-semibold uppercase tracking-widest text-text-primary">
                     {station}

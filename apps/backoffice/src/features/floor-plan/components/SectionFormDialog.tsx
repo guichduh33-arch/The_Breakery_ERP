@@ -8,6 +8,7 @@ import {
 } from '@breakery/ui';
 import type { TableSection } from '@breakery/domain';
 import { useCreateSection, useUpdateSection, mapFloorPlanError } from '../hooks/useFloorPlanAdmin.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface SectionFormDialogProps {
   mode:     'create' | 'edit';
@@ -65,7 +66,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
               id="section-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               maxLength={80}
             />
           </div>
@@ -79,7 +80,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
               type="number"
               value={sortOrder}
               onChange={(e) => { setSortOrder(Number(e.target.value)); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
             />
           </div>
 

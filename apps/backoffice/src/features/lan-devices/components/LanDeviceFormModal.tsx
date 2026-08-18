@@ -11,6 +11,7 @@ import {
 } from '@breakery/ui';
 import type { LanDeviceRow, LanDeviceType } from '../hooks/useLanDevices.js';
 import { useUpsertLanDevice } from '../hooks/useUpsertLanDevice.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const DEVICE_TYPES: LanDeviceType[] = ['printer', 'kds', 'tablet', 'pos', 'kiosk_display'];
 const STATIONS = ['kitchen', 'barista', 'display', 'cashier', 'waiter'] as const;
@@ -151,7 +152,7 @@ export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices 
               value={location} onChange={(e) => setLocation(e.target.value)} />
           </div>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            <input className={FOCUS_RING} type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             Active
           </label>
           {formError !== null && <p className="text-sm text-danger">{formError}</p>}

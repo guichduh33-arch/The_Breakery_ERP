@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { LayoutGrid, List, Search, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   PRODUCT_COLUMNS,
   type CategoryOption, type ProductColumnId, type ProductView, type ProductVariantFilter,
@@ -156,7 +157,7 @@ function ColumnsMenu({
                 type="checkbox"
                 checked={!hidden.has(c.id)}
                 onChange={() => { onToggle?.(c.id); }}
-                className="h-3.5 w-3.5 accent-gold"
+                className={`h-3.5 w-3.5 accent-gold ${FOCUS_RING}`}
               />
               {c.label}
             </label>

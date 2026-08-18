@@ -14,6 +14,7 @@
 import { useState, type FormEvent, type JSX } from 'react';
 import { Button, Input, type PromotionFormValues } from '@breakery/ui';
 import { emptyThresholdValues } from '../utils/emptyPromotionDefaults';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ThresholdFormProps {
   mode: 'create' | 'edit';
@@ -112,7 +113,7 @@ export function ThresholdForm({
         <div className="flex gap-3 text-sm">
           {(['subtotal', 'quantity'] as const).map((t) => (
             <label key={t} className="inline-flex items-center gap-2">
-              <input
+              <input className={FOCUS_RING}
                 type="radio"
                 name="threshold-type"
                 value={t}
@@ -144,7 +145,7 @@ export function ThresholdForm({
           <div className="flex gap-3 text-sm">
             {(['percent', 'fixed'] as const).map((k) => (
               <label key={k} className="inline-flex items-center gap-2">
-                <input
+                <input className={FOCUS_RING}
                   type="radio"
                   name="discount-kind"
                   checked={discountKind === k}

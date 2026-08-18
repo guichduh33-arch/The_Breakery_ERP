@@ -10,6 +10,7 @@ import {
   type PaperSize,
 } from '../hooks/useReceiptTemplates.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Draft {
   name:        string;
@@ -107,14 +108,14 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
           <label htmlFor={`rec-name-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Name</label>
           <input id={`rec-name-${row.id}`} value={draft.name} disabled={!canEdit} maxLength={120}
             onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor={`rec-paper-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Paper size</label>
             <select id={`rec-paper-${row.id}`} value={draft.paper_size} disabled={!canEdit}
               onChange={(e) => setDraft((d) => ({ ...d, paper_size: e.target.value as PaperSize }))}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50">
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`}>
               <option value="58mm">58mm thermal</option>
               <option value="80mm">80mm thermal</option>
               <option value="A4">A4 invoice</option>
@@ -122,12 +123,12 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
           </div>
           <div className="flex flex-col gap-1 pt-5">
             <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={draft.show_qr} disabled={!canEdit}
+              <input className={FOCUS_RING} type="checkbox" checked={draft.show_qr} disabled={!canEdit}
                 onChange={(e) => setDraft((d) => ({ ...d, show_qr: e.target.checked }))} />
               Show QR
             </label>
             <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={draft.show_logo} disabled={!canEdit}
+              <input className={FOCUS_RING} type="checkbox" checked={draft.show_logo} disabled={!canEdit}
                 onChange={(e) => setDraft((d) => ({ ...d, show_logo: e.target.checked }))} />
               Show logo
             </label>
@@ -137,19 +138,19 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
           <label htmlFor={`rec-header-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Header</label>
           <textarea id={`rec-header-${row.id}`} rows={3} value={draft.header} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, header: e.target.value }))}
-            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50" />
+            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div>
           <label htmlFor={`rec-footer-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Footer</label>
           <textarea id={`rec-footer-${row.id}`} rows={3} value={draft.footer} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, footer: e.target.value }))}
-            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50" />
+            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         {/* custom_css hidden — meaningless on the ESC/POS thermal path; the
             column stays in DB for a potential A4/HTML renderer. Existing
             values are preserved untouched by the save (draft keeps them). */}
         <label className="inline-flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={draft.is_default} disabled={!canEdit}
+          <input className={FOCUS_RING} type="checkbox" checked={draft.is_default} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, is_default: e.target.checked }))} />
           Default template
         </label>

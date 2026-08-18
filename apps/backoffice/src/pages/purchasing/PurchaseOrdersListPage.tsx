@@ -53,6 +53,7 @@ import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 type POFilterKey = POStatus | 'all';
 
@@ -268,7 +269,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
             placeholder="Search by PO number…"
             maxLength={64}
             aria-label="Search purchase orders"
-            className="h-10 w-full rounded-md border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted"
+            className={`h-10 w-full rounded-md border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
           />
         </div>
         <select
@@ -276,7 +277,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
           aria-label="Supplier filter"
-          className="h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
         >
           <option value="">All suppliers</option>
           {(suppliers.data ?? []).map((s) => (

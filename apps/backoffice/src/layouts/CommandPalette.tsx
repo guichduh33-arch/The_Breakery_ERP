@@ -23,6 +23,7 @@ import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
 import { NAV_DOMAINS, flattenDestinations, visibleDomains } from './nav.js';
 import { MIN_ENTITY_QUERY, usePaletteSearch } from './usePaletteSearch.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 /** Délai avant que la frappe ne parte en requête serveur (audit lot 4). */
 const SEARCH_DEBOUNCE_MS = 250;
@@ -232,7 +233,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             aria-label="Search orders, products, customers, suppliers, pages and actions"
             aria-controls="command-palette-results"
             aria-activedescendant={activeOptionId}
-            className="min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted"
+            className={`min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted ${FOCUS_RING}`}
           />
           <kbd className="shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-data text-xs text-text-muted">
             Esc

@@ -10,6 +10,7 @@ import {
   Button, Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useConvertLoyaltyToStoreCredit, ConvertStoreCreditError, type ConvertErrorCode,
 } from '../hooks/useConvertLoyaltyToStoreCredit.js';
@@ -89,7 +90,7 @@ export function ConvertLoyaltyModal({
             step={100}
             value={pointsStr}
             onChange={(e) => setPointsStr(e.target.value)}
-            className="mt-1 w-full border rounded p-2 text-sm tabular-nums"
+            className={`mt-1 w-full border rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="100"
             data-testid="convert-points"
           />

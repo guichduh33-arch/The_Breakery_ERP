@@ -310,7 +310,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                   disabled={!canWrite}
                   onChange={(e) => updateAlt(alt._key, 'code', e.target.value)}
                   placeholder="e.g. kg"
-                  className="w-20 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                  className="w-20 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
                 />
                 {/* Factor */}
                 <div className="flex flex-1 items-center gap-2">

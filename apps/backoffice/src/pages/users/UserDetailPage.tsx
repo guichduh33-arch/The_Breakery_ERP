@@ -13,6 +13,7 @@ import { useResetUserPin } from '@/features/users/hooks/useResetUserPin.js';
 import { RoleChangeDialog } from '@/features/users/components/RoleChangeDialog.js';
 import { DeleteUserDialog } from '@/features/users/components/DeleteUserDialog.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export default function UserDetailPage() {
   const navigate = useNavigate();
@@ -184,7 +185,7 @@ export default function UserDetailPage() {
                 }
               }}
               placeholder="6 digits"
-              className="w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono"
+              className={`w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
             />
             <Button variant="ink" onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
               {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}

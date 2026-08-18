@@ -19,6 +19,7 @@ import {
 } from '@/features/settings/hooks/useNotificationTemplates.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const CHANNEL_VARIANT: Record<string, 'info' | 'success' | 'warning' | 'neutral'> = {
   email: 'info',
@@ -104,7 +105,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
         <div className="flex items-center gap-2">
           <Badge variant={channelVariant(row.channel)}>{row.channel}</Badge>
           <label htmlFor={`notif-active-${row.id}`} className="flex items-center gap-2 text-sm">
-            <input
+            <input className={FOCUS_RING}
               id={`notif-active-${row.id}`}
               type="checkbox"
               checked={draft.is_active}
@@ -126,7 +127,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
           value={draft.subject_template}
           disabled={!canEdit}
           onChange={(e) => setDraft((d) => ({ ...d, subject_template: e.target.value }))}
-          className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50"
+          className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
         />
       </div>
 
@@ -140,7 +141,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
           value={draft.body_template}
           disabled={!canEdit}
           onChange={(e) => setDraft((d) => ({ ...d, body_template: e.target.value }))}
-          className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50"
+          className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
         />
       </div>
 
@@ -225,7 +226,7 @@ function AlertEmailCard() {
             disabled={!canUpdate}
             placeholder="ops@example.com"
             onChange={(e) => setDraft(e.target.value)}
-            className="h-9 w-full max-w-sm rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50"
+            className={`h-9 w-full max-w-sm rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 placeholder:text-text-muted ${FOCUS_RING}`}
           />
           {canUpdate && (
             <button type="button" className={TOOLBAR_BTN_PRIMARY}

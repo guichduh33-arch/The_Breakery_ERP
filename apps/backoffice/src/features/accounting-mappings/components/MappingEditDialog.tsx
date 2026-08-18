@@ -17,6 +17,7 @@ import {
 } from '@breakery/ui';
 import { useUpdateMapping } from '../hooks/useUpdateMapping.js';
 import { usePostableAccounts, type MappingRow } from '../hooks/useMappings.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Draft {
   account_code: string;
@@ -134,7 +135,7 @@ export function MappingEditDialog({ open, initial, onClose }: MappingEditDialogP
               type="checkbox"
               checked={draft.is_active}
               onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })}
-              className="h-4 w-4"
+              className={`h-4 w-4 ${FOCUS_RING}`}
             />
             <label htmlFor="is_active" className="text-sm">
               Active (mapping is consulted by JE triggers)

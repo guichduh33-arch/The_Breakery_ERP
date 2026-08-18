@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ReceiveDialogProps {
   po:        PurchaseOrderDetail;
@@ -105,7 +106,7 @@ export function ReceiveDialog({
                           value={qtyByItem[it.id] ?? 0}
                           onChange={(e) => patchQty(it.id, Math.min(remain, Math.max(0, Number(e.target.value))))}
                           disabled={submitting || remain <= 0}
-                          className="h-8 w-24 text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
+                          className={`h-8 w-24 text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                           aria-label={`Receive qty for ${it.products?.name ?? it.id}`}
                         />
                       </td>

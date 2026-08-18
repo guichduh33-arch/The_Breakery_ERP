@@ -12,6 +12,7 @@ import { useMemo, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePermissionsMatrix } from '@/features/settings/hooks/usePermissionsMatrix.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export default function SettingsPermissionsPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -66,7 +67,7 @@ export default function SettingsPermissionsPage() {
           <label htmlFor="perm-module" className="text-xs uppercase tracking-widest text-text-secondary">Module</label>
           <select id="perm-module" value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
-            className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary">
+            className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}>
             <option value="">All modules</option>
             {modules.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>

@@ -8,6 +8,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { Button, PromotionTypeBadge } from '@breakery/ui';
 import type { PromotionListRow as PromotionListRowType } from '../hooks/usePromotionsList.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface PromotionListRowProps {
   row: PromotionListRowType;
@@ -39,7 +40,7 @@ export function PromotionListRow({
       <td className="px-4 py-3 text-right font-mono">{row.priority}</td>
       <td className="px-4 py-3 text-center">
         <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
+          <input className={FOCUS_RING}
             type="checkbox"
             checked={row.is_active}
             disabled={!canUpdate}

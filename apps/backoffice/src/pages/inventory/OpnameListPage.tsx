@@ -24,6 +24,7 @@ import {
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
 import { CreateOpnameModal } from '@/features/inventory-opname/components/CreateOpnameModal.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const STATUS_OPTIONS: readonly { value: '' | OpnameStatus; label: string }[] = [
   { value: '',          label: 'All statuses' },
@@ -162,7 +163,7 @@ export default function OpnameListPage(): JSX.Element {
           id="opname-status-filter"
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as '' | OpnameStatus); }}
-          className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>

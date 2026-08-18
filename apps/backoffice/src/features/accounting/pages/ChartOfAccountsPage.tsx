@@ -12,6 +12,7 @@ import {
 } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import { useUpdateAccountActive } from '@/features/accounting/hooks/useUpdateAccountActive.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const CLASS_LABELS: Record<number, string> = {
   1: 'Asset',
@@ -82,7 +83,7 @@ export default function ChartOfAccountsPage(): JSX.Element {
             setClassFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
           }
           aria-label="Account class"
-          className="rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm"
+          className={`rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm ${FOCUS_RING}`}
           data-testid="coa-class-filter"
         >
           <option value="all">All classes</option>

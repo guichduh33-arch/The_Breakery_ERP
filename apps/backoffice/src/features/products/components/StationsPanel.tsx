@@ -16,6 +16,7 @@ import { useSections } from '@/hooks/useSections.js';
 import { useProductSections } from '../hooks/useProductSections.js';
 import { useSetProductSections } from '../hooks/useSetProductSections.js';
 import type { ProductRow } from '../types.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   product: ProductRow;
@@ -130,7 +131,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
                       disabled={!canWrite}
                       onChange={() => toggle(s.id)}
                       aria-label={`Assign to ${s.name}`}
-                      className="h-4 w-4 accent-gold disabled:cursor-not-allowed disabled:opacity-50"
+                      className={`h-4 w-4 accent-gold disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
                     />
                     <span className="text-sm text-text-primary">{s.name}</span>
                     <span className="font-mono text-xs uppercase tracking-widest text-text-muted">

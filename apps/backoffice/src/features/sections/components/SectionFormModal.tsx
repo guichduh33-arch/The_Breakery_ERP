@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useUpsertSection, type SectionRow } from '../hooks/useSectionsList.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface SectionFormModalProps {
   initial?: SectionRow;
@@ -77,7 +78,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
               value={code}
               onChange={(e) => { setCode(e.target.value); }}
               disabled={isEdit}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono uppercase disabled:opacity-60"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono uppercase disabled:opacity-60 placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="PASTRY_KITCHEN"
             />
           </div>
@@ -88,7 +89,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
               id="sec-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
             />
           </div>
 
@@ -101,12 +102,12 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
                 min={0}
                 value={order}
                 onChange={(e) => { setOrder(e.target.value); }}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               />
             </div>
             <div className="flex items-end">
               <label className="text-sm inline-flex items-center gap-2 cursor-pointer">
-                <input
+                <input className={FOCUS_RING}
                   type="checkbox"
                   checked={active}
                   onChange={(e) => { setActive(e.target.checked); }}

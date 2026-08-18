@@ -18,6 +18,7 @@ import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { formatTimeWita } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const ALL_METHODS = [
   { value: 'cash',         label: 'Cash' },
@@ -163,7 +164,7 @@ export default function SettingsPaymentMethodsPage() {
           aria-label={`Frais ${LABELS.get(value) ?? value} (%)`}
           data-testid={`pm-fee-${value}`}
           onChange={(e) => setFee(value, e.target.value)}
-          className="w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm"
+          className={`w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm placeholder:text-text-muted ${FOCUS_RING}`}
         />
         %
       </span>
@@ -206,7 +207,7 @@ export default function SettingsPaymentMethodsPage() {
             {draft.map((value, i) => (
               <div key={value} className="flex items-center gap-3 text-sm" data-testid={`pm-row-${value}`}>
                 <label className="flex items-center gap-3">
-                  <input
+                  <input className={FOCUS_RING}
                     type="checkbox"
                     checked
                     disabled={!canUpdate}
@@ -248,7 +249,7 @@ export default function SettingsPaymentMethodsPage() {
                 {disabledMethods.map((m) => (
                   <div key={m.value} className="flex items-center gap-3 text-sm text-text-secondary">
                     <label className="flex items-center gap-3">
-                      <input
+                      <input className={FOCUS_RING}
                         type="checkbox"
                         checked={false}
                         disabled={!canUpdate}
@@ -277,7 +278,7 @@ export default function SettingsPaymentMethodsPage() {
                 aria-label="Expiration des avoirs en mois (0 = jamais)"
                 data-testid="store-credit-expiry-months"
                 onChange={(e) => setExpiryDraft(e.target.value)}
-                className="w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm"
+                className={`w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm ${FOCUS_RING}`}
               />
             </label>
             <p className="mt-1 text-xs text-text-secondary">

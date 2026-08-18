@@ -12,6 +12,7 @@ import type {
   ModifierGroupType,
 } from '@breakery/domain';
 import { ModifierOptionRow } from './ModifierOptionRow.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ModifierGroupCardProps {
   group: EditableModifierGroup;
@@ -80,14 +81,14 @@ export function ModifierGroupCard({
       <div className="flex flex-wrap items-center gap-3">
         <input
           aria-label="Variant type name"
-          className="flex-1 min-w-48 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm font-semibold"
+          className={`flex-1 min-w-48 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm font-semibold placeholder:text-text-muted ${FOCUS_RING}`}
           placeholder="e.g. Milk"
           value={group.group_name}
           onChange={(e) => patch({ group_name: e.target.value })}
         />
         <select
           aria-label="Selection type"
-          className="rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
+          className={`rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
           value={group.group_type}
           onChange={(e) => changeType(e.target.value as ModifierGroupType)}
         >
@@ -95,7 +96,7 @@ export function ModifierGroupCard({
           <option value="multi_select">Multiple choice</option>
         </select>
         <label className="flex items-center gap-1 text-xs text-text-muted">
-          <input
+          <input className={FOCUS_RING}
             type="checkbox"
             aria-label="Required"
             checked={group.group_required}

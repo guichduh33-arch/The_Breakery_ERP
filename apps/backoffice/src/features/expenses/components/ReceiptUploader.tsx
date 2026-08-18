@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { Button } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ReceiptUploaderProps {
   /** UUID for namespacing the path. For new expenses, generate a draft UUID client-side. */
@@ -66,7 +67,7 @@ export function ReceiptUploader({
         accept={ACCEPT}
         disabled={disabled === true || busy}
         onChange={(e) => { void handleChange(e); }}
-        className="block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-gold-soft file:px-3 file:py-1.5 file:text-sm file:text-gold hover:file:opacity-80"
+        className={`block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-gold-soft file:px-3 file:py-1.5 file:text-sm file:text-gold hover:file:opacity-80 ${FOCUS_RING}`}
       />
       {busy && <div className="text-xs text-text-secondary">Uploading…</div>}
       {error !== null && <div className="text-xs text-red">{error}</div>}

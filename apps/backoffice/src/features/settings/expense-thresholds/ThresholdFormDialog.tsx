@@ -12,6 +12,7 @@ import {
 import { Trash2, Plus, Check } from 'lucide-react';
 import { useSetExpenseThreshold } from './hooks/useSetExpenseThreshold.js';
 import type { ApprovalStep, ExpenseThresholdRow } from './hooks/useExpenseThresholds.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   open: boolean;
@@ -23,8 +24,8 @@ interface Props {
 const ROLE_OPTIONS = ['CASHIER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'] as const;
 
 const LABEL_CLS = 'text-xs uppercase tracking-widest text-text-secondary';
-const INPUT_CLS  = 'h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary';
-const SELECT_CLS = 'h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary';
+const INPUT_CLS  = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
+const SELECT_CLS = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
 
 export function ThresholdFormDialog({ open, onOpenChange, initial, categories }: Props): JSX.Element {
   const [categoryId, setCategoryId] = useState<string | null>(null);

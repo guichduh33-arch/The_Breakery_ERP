@@ -10,6 +10,7 @@ import {
   Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { useCancelB2bOrder, CancelB2bOrderError } from '../hooks/useCancelB2bOrder.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const ERROR_COPY: Record<string, string> = {
   order_has_payments:    'This invoice already has a payment allocated — handle the payment first.',
@@ -77,7 +78,7 @@ export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: Can
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={2}
-              className="mt-1 w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary"
+              className={`mt-1 w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary ${FOCUS_RING}`}
               data-testid="cb2b-reason"
             />
           </label>

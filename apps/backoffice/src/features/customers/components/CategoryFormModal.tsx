@@ -14,6 +14,7 @@ import {
 import type { PriceModifierType } from '@breakery/domain';
 import type { CategoryInput } from '../hooks/useCustomerCategoryMutations.js';
 import type { CustomerCategoryRow } from '../hooks/useCustomerCategories.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const PRICE_MODIFIER_TYPES: readonly { value: PriceModifierType; label: string }[] = [
   { value: 'retail',             label: 'Retail (standard price)' },
@@ -171,7 +172,7 @@ export function CategoryFormModal({
           </div>
 
           <label className="flex items-center gap-2 text-sm text-text-primary">
-            <input
+            <input className={FOCUS_RING}
               type="checkbox" checked={loyaltyEnabled}
               onChange={(e) => setLoyaltyEnabled(e.target.checked)}
             />
@@ -179,7 +180,7 @@ export function CategoryFormModal({
           </label>
 
           <label className="flex items-center gap-2 text-sm text-text-primary">
-            <input
+            <input className={FOCUS_RING}
               type="checkbox" checked={isDefault}
               onChange={(e) => setIsDefault(e.target.checked)}
             />

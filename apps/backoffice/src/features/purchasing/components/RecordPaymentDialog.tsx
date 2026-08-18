@@ -11,6 +11,7 @@ import {
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import type { PoPaymentMethod } from '../hooks/useRecordPoPayment.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const METHODS: { value: PoPaymentMethod; label: string }[] = [
   { value: 'transfer', label: 'Bank transfer' },
@@ -76,7 +77,7 @@ export function RecordPaymentDialog({
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value) || 0)}
               disabled={submitting}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
               aria-required="true"
             />
             {overpay && (
@@ -93,7 +94,7 @@ export function RecordPaymentDialog({
               value={method}
               onChange={(e) => setMethod(e.target.value as PoPaymentMethod)}
               disabled={submitting}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               {METHODS.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -112,7 +113,7 @@ export function RecordPaymentDialog({
               onChange={(e) => setReference(e.target.value)}
               disabled={submitting}
               placeholder="e.g. transfer ref, cheque no."
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
             />
           </div>
 

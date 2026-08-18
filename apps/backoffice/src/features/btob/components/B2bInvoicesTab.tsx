@@ -12,6 +12,7 @@ import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
 import { CancelB2bOrderModal } from './CancelB2bOrderModal.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   B2B_SETTLEMENT_BADGE,
   B2B_SETTLEMENT_LABEL,
@@ -133,7 +134,7 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
           ))}
         </Select>
         <label className="flex items-center gap-2 text-sm text-text-secondary">
-          <input
+          <input className={FOCUS_RING}
             type="checkbox"
             checked={unpaidOnly}
             onChange={(e) => setUnpaidOnly(e.target.checked)}

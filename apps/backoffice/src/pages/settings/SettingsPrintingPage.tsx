@@ -12,6 +12,7 @@ import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const FIELDS = [
   { key: 'pos_auto_print_receipt', label: 'Auto-print receipt on payment',
@@ -90,7 +91,7 @@ export default function SettingsPrintingPage() {
           {FIELDS.map((f) => (
             <div key={f.key} className="space-y-1">
               <label htmlFor={f.key} className="flex items-center gap-3 text-sm font-medium">
-                <input id={f.key} type="checkbox" disabled={!canUpdate}
+                <input className={FOCUS_RING} id={f.key} type="checkbox" disabled={!canUpdate}
                   checked={Boolean(draft[f.key] ?? true)}
                   onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />
                 {f.label}

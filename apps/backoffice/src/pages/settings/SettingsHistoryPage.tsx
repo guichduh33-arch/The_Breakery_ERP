@@ -16,6 +16,7 @@ import { Badge, Button, Card, EmptyState, SectionLabel } from '@breakery/ui';
 import { formatDateTimeWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useSettingsHistory,
   type SettingsHistoryEntry,
@@ -86,7 +87,7 @@ export default function SettingsHistoryPage(): JSX.Element {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-40"
+            className={`mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-40 ${FOCUS_RING}`}
             data-testid="settings-history-filter-category"
           >
             <option value="">All categories</option>
@@ -101,7 +102,7 @@ export default function SettingsHistoryPage(): JSX.Element {
             value={keySearch}
             onChange={(e) => setKeySearch(e.target.value)}
             placeholder="e.g. tax_rate"
-            className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={`mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
             data-testid="settings-history-filter-key"
           />
         </label>

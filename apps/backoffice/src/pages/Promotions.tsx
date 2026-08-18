@@ -42,6 +42,7 @@ import {
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 type TypeFilter = 'all' | 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
 type ActiveFilter = 'all' | 'active' | 'inactive';
@@ -167,7 +168,7 @@ export default function PromotionsPage(): JSX.Element {
             disabled={!canUpdate}
             onChange={() => handleToggleActive(row)}
             aria-label={`Toggle ${row.name} active`}
-            className="accent-gold"
+            className={`accent-gold ${FOCUS_RING}`}
           />
           <span
             className={[
@@ -339,7 +340,7 @@ function DateField({ id, label, value, onChange }: DateFieldProps): JSX.Element 
         type="date" lang="id-ID"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+        className={`mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
       />
     </label>
   );

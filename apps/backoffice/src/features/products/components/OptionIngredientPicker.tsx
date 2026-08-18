@@ -19,6 +19,7 @@ import {
   type ModifierCostMaterial,
 } from '@breakery/domain';
 import { useDeductibleIngredientProducts } from '../hooks/useDeductibleIngredientProducts.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface OptionIngredientPickerProps {
   value: ModifierIngredient[];
@@ -85,7 +86,7 @@ export function OptionIngredientPicker({
           <div key={idx} className="flex items-center gap-2">
             <select
               aria-label="Ingredient"
-              className="flex-1 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
+              className={`flex-1 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
               value={row.product_id}
               onChange={(e) => {
                 const pid = e.target.value;
@@ -114,13 +115,13 @@ export function OptionIngredientPicker({
               type="number"
               min={0}
               step="any"
-              className="w-24 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
+              className={`w-24 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
               value={row.qty}
               onChange={(e) => updateRow(idx, { qty: Number(e.target.value) || 0 })}
             />
             <select
               aria-label="Unit"
-              className="w-24 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
+              className={`w-24 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
               value={row.unit}
               onChange={(e) => updateRow(idx, { unit: e.target.value })}
             >

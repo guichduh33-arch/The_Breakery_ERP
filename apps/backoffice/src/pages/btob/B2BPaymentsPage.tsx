@@ -218,7 +218,7 @@ export default function B2BPaymentsPage(): JSX.Element {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search…"
-                  className="h-9 w-full bg-transparent text-sm text-text-primary focus-visible:outline-none"
+                  className="h-9 w-full bg-transparent text-sm text-text-primary focus-visible:outline-none placeholder:text-text-muted"
                   aria-label="Search payments"
                 />
               </div>

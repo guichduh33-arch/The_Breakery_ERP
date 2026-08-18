@@ -9,6 +9,7 @@ import {
   Select,
 } from '@breakery/ui';
 import { useUpdateUserRole } from '../hooks/useUpdateUserRole.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface RoleChangeDialogProps {
   userId:      string;
@@ -89,7 +90,7 @@ export function RoleChangeDialog(
               id="rch-reason"
               value={reason}
               onChange={(e) => { setReason(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="e.g. promoted to shift lead"
               maxLength={200}
             />
