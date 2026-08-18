@@ -6,7 +6,7 @@
 
 import { useRef, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   POFormDraft,
@@ -63,9 +63,9 @@ export default function NewPurchaseOrderPage(): JSX.Element {
     <div className="space-y-6 max-w-5xl">
       <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
         <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <Link to="/backoffice/purchasing/purchase-orders" className="hover:text-text-primary">Purchase Orders</Link>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-primary">New</span>
       </nav>
 

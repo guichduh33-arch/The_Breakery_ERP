@@ -128,11 +128,15 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             // Le primitif partagé, PAS `TOOLBAR_BTN_*` : DESIGN.md § Components
             // réserve les chaînes de bandeau au « bouton de bandeau de PAGE » et
             // donne le primitif comme « le bouton des modales et des
-            // FORMULAIRES ». Un panneau de fiche est un formulaire. Accessoire :
-            // la bordure de `secondary` est `border-subtle`, qui n'a pas à tenir
-            // les 3:1 de WCAG 1.4.11 puisque le fond du bouton se distingue déjà
-            // du papier — là où `TOOLBAR_BTN_SECONDARY` s'appuie, lui, sur son
-            // seul liseré.
+            // FORMULAIRES ». Un panneau de fiche est un formulaire.
+            //
+            // La justification qui tenait ici — « le fond du bouton se distingue
+            // déjà du papier, sa bordure n'a donc pas à tenir les 3:1 » — était
+            // FAUSSE et a été retirée le 2026-08-18 : `--bg-overlay` et la carte
+            // qui porte ce panneau valent tous deux `#ffffff`, le bouton n'avait
+            // aucun fond propre. Le liseré est bien son seul délimiteur, comme
+            // pour `TOOLBAR_BTN_SECONDARY` ; le primitif est passé à
+            // `border-strong` (3,827:1 sur le blanc) pour cette raison.
             <Button
               variant="secondary"
               size="sm"

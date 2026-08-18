@@ -72,8 +72,8 @@ export function ComboOptionRow({
               // L'exception « piste d'interrupteur » ne couvre pas ce cas : ici
               // le liseré et le libellé (« Default » / « Set Default ») portent
               // déjà le fait, retirer l'or n'efface aucune information.
-              ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-sm px-2 py-0.5 border border-gold bg-gold-soft text-gold'
-              : 'shrink-0 text-[0.625rem] uppercase tracking-widest rounded-sm px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
+              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm px-2 py-0.5 border border-gold bg-gold-soft text-gold'
+              : 'shrink-0 text-xs uppercase tracking-widest rounded-sm px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
           }`}
           aria-pressed={isDefault}
           aria-label={isDefault ? `${option.label} is the default` : `Set ${option.label} as default`}
@@ -85,7 +85,7 @@ export function ComboOptionRow({
         <span
           className={
             isDefault
-              ? 'shrink-0 text-[0.625rem] font-bold uppercase tracking-widest rounded-sm border border-gold px-2 py-0.5 bg-gold-soft text-gold'
+              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm border border-gold px-2 py-0.5 bg-gold-soft text-gold'
               : ''
           }
         >

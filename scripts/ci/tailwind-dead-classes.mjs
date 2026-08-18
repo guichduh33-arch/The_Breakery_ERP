@@ -341,7 +341,7 @@ console.error('  4. CLÉ INCONNUE : ouvre packages/ui/tailwind-preset.ts et pren
 console.error('     Si le token MANQUE vraiment au système, ajoute-le au preset ET aux deux');
 console.error('     thèmes de packages/ui/src/tokens/colors.css — la garde l\'acceptera seule.');
 console.error('');
-console.error('  4. Besoin d\'un vrai fond translucide ? Seule la famille `cat-*` le permet');
+console.error('  5. Besoin d\'un vrai fond translucide ? Seule la famille `cat-*` le permet');
 console.error('     (déclarée en triplet RGB). Une teinte catégorielle reste réservée à');
 console.error('     l\'identité d\'une catégorie de produit — pas à un état.');
 console.error('');

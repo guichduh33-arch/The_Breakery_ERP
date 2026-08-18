@@ -153,11 +153,27 @@ function renderDashboard(): void {
   );
 }
 
-/** Text of a KpiTile's value — the label and value share a wrapper div. */
-function kpiValue(label: string): string {
-  const labelEl = screen.getByText(label);
-  const text = labelEl.parentElement?.textContent ?? '';
-  return text.replace(label, '').trim();
+/**
+ * Text of a KpiTile's VALUE, addressed by its own `data-testid`.
+ *
+ * This used to read `getByText(label).parentElement?.textContent` and strip the
+ * label back out. That worked only while the label and the value were the tile's
+ * *only* two children. The design campaign moved `B2BDashboardPage` from the
+ * `packages/ui` tile — where the note slot was a *sibling of the label block* —
+ * to the back-office `KpiTile`, where label, value and `children` are three
+ * direct siblings. From that commit on, the note concatenated into the same
+ * `textContent`: T4 read `'3All time'` and failed on a value that was correct.
+ *
+ * The tile now stamps `${testId}-value` on the value span, so the assertion is
+ * pinned to the value and cannot pick up a note again.
+ *
+ * NOTE FOR THE NEXT SESSION — the two failures in this file are NOT the same
+ * kind. T1 depends on live `view_ar_aging` rows on the dev database and fails
+ * when that view is empty; T4 was a rendering regression, fixed here. Do not
+ * "fix" one by loosening the other.
+ */
+function kpiValue(testId: string): string {
+  return screen.getByTestId(`${testId}-value`).textContent?.trim() ?? '';
 }
 
 function renderPaymentModal(): void {
@@ -195,10 +211,10 @@ describe('B2B foundation (S24)', () => {
   it('T4 — order KPIs count every B2B invoice, not a total_spent slice', async () => {
     renderDashboard();
     await waitFor(() => {
-      expect(kpiValue('Total orders')).toBe('3');
+      expect(kpiValue('kpi-b2b-total-orders')).toBe('3');
     }, { timeout: 4000 });
-    expect(kpiValue('Active clients')).toBe('2');
-    expect(kpiValue('Pending orders')).toBe('1');
+    expect(kpiValue('kpi-b2b-active-clients')).toBe('2');
+    expect(kpiValue('kpi-b2b-pending-orders')).toBe('1');
   });
 
   it('T2 — + New B2B Order button is enabled (RPC wired)', async () => {

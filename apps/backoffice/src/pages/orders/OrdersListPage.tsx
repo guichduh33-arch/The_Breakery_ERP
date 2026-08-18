@@ -9,9 +9,9 @@
 // commises en débounce ; export CSV gaté `reports.export` via buildCsv.
 
 import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
+import { ChevronRight, Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { Button, DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
@@ -409,7 +409,7 @@ export default function OrdersListPage(): JSX.Element {
     <div className="flex flex-col gap-[13px]">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>Sales</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Orders</span>
       </nav>
 
@@ -596,15 +596,20 @@ export default function OrdersListPage(): JSX.Element {
                     ? `${loadedLines.length} loaded`
                     : `${lines.length} of ${activeTotal.toLocaleString('id-ID')}`}
               </span>
+              {/* Primitif partagé en `sm`, PAS `TOOLBAR_BTN_SECONDARY` : ces
+                  chaînes appartiennent au bandeau de page et à lui seul
+                  (DESIGN.md § Boutons). Un pied de table prend le primitif —
+                  c'est aussi le cran unique de « Load more ». */}
               {query.hasNextPage && (
-                <button
+                <Button
                   type="button"
-                  className={TOOLBAR_BTN_SECONDARY}
+                  variant="secondary"
+                  size="sm"
                   onClick={() => { void query.fetchNextPage(); }}
                   disabled={query.isFetchingNextPage}
                 >
                   {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
-                </button>
+                </Button>
               )}
             </div>
           }

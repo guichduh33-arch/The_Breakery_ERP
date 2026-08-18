@@ -12,7 +12,23 @@
 # Le drapeau ne sait que descendre un compte ; il ne peut pas faire passer une
 # violation.
 #
+# LA SEULE ENTRÉE NEUVE LÉGITIME : un ÉLARGISSEMENT DU DÉTECTEUR. « Ne peut que
+# décroître » porte sur le DÉFAUT, pas sur le nombre de lignes de ce fichier. Le
+# jour où la garde apprend à voir une famille qu'elle ignorait, elle découvre des
+# occurrences qui existaient déjà et qu'elle n'avait jamais comptées : la liste
+# s'allonge sans qu'aucune classe morte ait été écrite. C'est arrivé le
+# 2026-08-17, quand la liste noire du vocabulaire shadcn/ui a été ajoutée —
+# `accent-primary` est entré ici pour cette raison, et non parce qu'un auteur
+# l'aurait introduit.
+# Le test qui les distingue : une entrée ajoutée par élargissement pointe une
+# ligne de code INCHANGÉE par le diff qui l'ajoute. Une entrée ajoutée par
+# régression pointe une ligne que ce même diff écrit — celle-là est refusée, sans
+# exception. Un ajout par élargissement se documente en une ligne sous
+# « Dernier resserrement », en nommant ce que le détecteur voit désormais.
+#
 # Dernier resserrement : 2026-08-17
+# Dernier élargissement du détecteur : 2026-08-17 (liste noire shadcn/ui —
+#   +1 entrée préexistante rendue visible : `accent-primary`)
 1	apps/backoffice/src/__tests__/loyalty-list.smoke.test.tsx	accent-primary
 1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	bg-red-as-text/5
 1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	border-red-as-text/40

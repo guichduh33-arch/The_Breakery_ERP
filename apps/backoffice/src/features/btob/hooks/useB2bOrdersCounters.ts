@@ -8,14 +8,27 @@
 // fallait donc les sortir du client, pas seulement les recâbler.
 //
 // Deux sources, aucune neuve :
-//   · deux `count: 'exact', head: true` sur `view_b2b_invoices` — head, donc
+//   · trois `count: 'exact', head: true` sur `view_b2b_invoices` — head, donc
 //     zéro ligne transportée pour un nombre ;
 //   · `get_b2b_dashboard_counters_v1` pour l'ENCOURS, qu'elle rend déjà
 //     (`outstanding_ar`) et que le dashboard B2B lit depuis l'ADR-026.
 //
-// « Réglées » n'a pas son propre appel : c'est `total − impayées`, et la vue
-// exclut déjà les commandes annulées. Un troisième aller-retour pour une
-// soustraction exacte serait du trafic sans information.
+// CHAQUE COMPTEUR PORTE LE PRÉDICAT EXACT DE SON FILTRE (2026-08-18).
+// « Réglées » était `total − impayées`, où « impayées » compte
+// `outstanding > 0`. Or `> 0` et `<= 0` ne partitionnent pas une colonne
+// NULLABLE : une facture à `outstanding IS NULL` échappe aux deux, elle était
+// donc comptée « réglée » par la tuile ET absente de la table que cette tuile
+// filtre (`useB2bOrdersList` : `.lte('outstanding', 0)`). Dans l'archétype List
+// le compteur EST le filtre — c'est la seule voie par laquelle il peut mentir.
+// On compte désormais « réglées » avec `.lte('outstanding', 0)`, le prédicat
+// littéral du filtre. Le troisième aller-retour est un `head: true` : il ne
+// transporte rien, et il achète l'égalité tuile/table quel que soit ce que la
+// vue garantit — on ne fait donc reposer aucune exactitude d'affichage sur une
+// nullabilité de schéma non vérifiée.
+//
+// Conséquence assumée : `total` peut être supérieur à `unpaid + paid`. C'est
+// exact, et c'est l'information — l'écart, s'il apparaît, dit qu'il existe des
+// lignes qu'aucun des deux filtres n'atteint.
 //
 // Les compteurs couvrent TOUT le registre, jamais la recherche : l'encours
 // serveur est un total d'AR global, et une bande dont trois tuiles suivraient un
@@ -47,16 +60,22 @@ export function useB2bOrdersCounters() {
     queryKey: [...B2B_INVOICES_QUERY_KEY, 'orders-counters'],
     staleTime: 15_000,
     queryFn: async () => {
-      const [allRes, unpaidRes] = await Promise.all([
+      const [allRes, unpaidRes, paidRes] = await Promise.all([
         supabase.from('view_b2b_invoices').select('invoice_id', { count: 'exact', head: true }),
+        // Prédicat IDENTIQUE à celui de `useB2bOrdersList` pour `payment=unpaid`.
         supabase.from('view_b2b_invoices').select('invoice_id', { count: 'exact', head: true })
           .gt('outstanding', 0),
+        // Prédicat IDENTIQUE à celui de `useB2bOrdersList` pour `payment=paid`.
+        supabase.from('view_b2b_invoices').select('invoice_id', { count: 'exact', head: true })
+          .lte('outstanding', 0),
       ]);
       if (allRes.error)    throw allRes.error;
       if (unpaidRes.error) throw unpaidRes.error;
+      if (paidRes.error)   throw paidRes.error;
 
       const total  = allRes.count ?? 0;
       const unpaid = unpaidRes.count ?? 0;
+      const paid   = paidRes.count ?? 0;
 
       // L'encours ne fait PAS échouer la bande : une RPC muette rend un tiret
       // sur sa tuile, les trois comptes restent justes. Un `throw` ici
@@ -67,7 +86,7 @@ export function useB2bOrdersCounters() {
       return {
         total,
         unpaid,
-        paid: total - unpaid,
+        paid,
         outstandingAr: rpcErr ? null : readOutstanding(rpcRaw),
       };
     },

@@ -20,7 +20,21 @@ const buttonVariants = cva(
         // additif, le POS garde `primary` vert.
         ink: 'bg-ink hover:bg-ink-hover text-ink-fg rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
         gold: 'bg-gold hover:bg-gold-hover text-gold-fg uppercase tracking-wide rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
-        secondary: 'bg-bg-overlay border border-border-subtle text-text-primary hover:bg-bg-input rounded-md',
+        // `border-strong` et non `border-subtle` : le secondaire est une surface
+        // qui vaut EXACTEMENT celle qui le porte (--bg-overlay = #ffffff dans le
+        // thème back-office, comme la carte), son trait est donc le SEUL objet
+        // qui le délimite et il porte les 3:1 de WCAG 1.4.11. Mesuré sur les
+        // deux thèmes, 2026-08-18 :
+        //   · back-office — subtle #e3e1db sur le blanc du bouton 1,308:1 (mort) ;
+        //     strong #86827a 3,827:1 (clos). Sur les quatre fonds du thème :
+        //     3,827 / 3,328 / 3,662 / 3,097:1.
+        //   · POS luxe-dark — le remplissage est #231f1b : subtle #2a2622 y vaut
+        //     1,090:1, strong #413a33 1,463:1. Le sombre ne PERD donc rien au
+        //     changement, il gagne 34 % ; il reste sous 3:1, mais c'est une dette
+        //     de la rampe sombre (aucun de ses deux traits ne la tient), pas une
+        //     régression de cette ligne. Pas de surcharge scopée : elle figerait
+        //     le pire des deux états.
+        secondary: 'bg-bg-overlay border border-border-strong text-text-primary hover:bg-bg-input rounded-md',
         outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md disabled:border-border-subtle disabled:text-text-muted disabled:opacity-100',
         ghost: 'bg-transparent text-text-primary hover:bg-bg-overlay rounded-md',
         ghostDestructive: 'bg-transparent text-red-as-text hover:bg-red-soft rounded-md',

@@ -35,8 +35,19 @@ export function WalletCard({
       // rayon du porteur doit suivre celui de ce qu'il entoure — `--radius-md`
       // et `--radius-lg` valent tous deux 4 px dans ce thème, la carte et
       // l'anneau tombent donc exactement l'un sur l'autre.
+      // SÉLECTION ET FOCUS NE PEUVENT PAS ÊTRE LE MÊME SIGNAL (2026-08-18).
+      // La sélection portait `ring-2 ring-gold` et le focus un
+      // `outline-2 outline-gold` décalé de 2 px : même couleur, même épaisseur,
+      // deux traits parallèles à 2 px d'écart. Au clavier, on ne pouvait plus
+      // lire lequel des deux états on regardait — et sur la carte sélectionnée
+      // les deux se confondaient en un seul liseré épais.
+      // La sélection passe donc à l'ENCRE, qui n'est ni la couleur du focus ni
+      // celle d'aucun autre état de ce thème (`--ink-base` #201d19, 15,9:1 sur
+      // la feuille blanche). L'or reste ce que DESIGN.md lui donne : le focus.
+      // La couleur n'est de toute façon pas le seul porteur — `aria-pressed`
+      // annonce la sélection, elle n'est jamais devinée à la teinte.
       className={`rounded-md text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
-        selected ? 'ring-2 ring-gold' : ''
+        selected ? 'ring-2 ring-ink' : ''
       }`}
       aria-pressed={selected}
     >

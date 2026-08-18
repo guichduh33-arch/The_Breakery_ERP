@@ -19,7 +19,7 @@
 // update_order_item_qty déduit la perte sur le delta.
 
 import { useState, useMemo } from 'react';
-import { Button, CenterModal } from '@breakery/ui';
+import { Button, CenterModal, Input } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useEditOrderItems } from '@/features/orders/hooks/useEditOrderItems.js';
 import { ProductPicker } from '@/features/orders/components/ProductPicker.js';
@@ -253,13 +253,22 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                 Sur une autorisation manager doublée d'une déclaration de
                 perte, celui qui revient sur le champ n'avait plus rien
                 (WCAG 1.3.1 / 4.1.2, niveau A). Le libellé passe en `<label>`
-                persistant, le `placeholder` ne garde que l'exemple. */}
+                persistant, le `placeholder` ne garde que l'exemple.
+
+                Et les deux champs passent au primitif partagé (2026-08-18).
+                Ils portaient `border rounded px-2 py-1` : un `border` NU de
+                Tailwind, c'est-à-dire `#e5e7eb` — une couleur froide, hors
+                token, à 1,238:1 sur la feuille blanche —, ~29 px de haut au lieu
+                des 44 de DESIGN.md § Champs, et AUCUN anneau de focus. Sur le
+                PIN d'un manager, dans un chemin d'argent. `Input` porte les
+                quatre : h-44, rayon 4 px, `border-border-subtle`, anneau or de
+                2 px décalé de 2 px avec son halo. */}
             <div className="flex gap-2">
               <div className="space-y-1">
                 <label htmlFor="locked-manager-pin" className="block text-xs uppercase tracking-widest text-text-secondary">
                   Manager PIN
                 </label>
-                <input
+                <Input
                   id="locked-manager-pin"
                   type="password"
                   inputMode="numeric"
@@ -267,7 +276,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                   placeholder="6 digits"
                   value={managerPin}
                   onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
-                  className="border rounded px-2 py-1 text-sm w-44"
+                  className="w-44"
                   data-testid="locked-manager-pin"
                 />
               </div>
@@ -275,13 +284,13 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                 <label htmlFor="locked-waste-reason" className="block text-xs uppercase tracking-widest text-text-secondary">
                   Waste reason
                 </label>
-                <input
+                <Input
                   id="locked-waste-reason"
                   type="text"
                   placeholder="e.g. burnt dish, customer left…"
                   value={wasteReason}
                   onChange={(e) => setWasteReason(e.target.value)}
-                  className="border rounded px-2 py-1 text-sm w-full"
+                  className="w-full"
                   data-testid="locked-waste-reason"
                 />
               </div>

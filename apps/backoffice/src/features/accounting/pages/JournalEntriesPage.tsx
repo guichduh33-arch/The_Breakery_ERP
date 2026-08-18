@@ -18,6 +18,9 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 
 const fmt = formatCurrency;
 
+const CREATE_JE_REASON =
+  'You need the accounting.je.create_manual permission to post a manual journal entry.';
+
 function defaultPeriodStart(): string {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
@@ -63,17 +66,29 @@ export default function JournalEntriesPage(): JSX.Element {
             {rows.length} entries — open an entry number for line detail
           </span>
         }
-        actions={canCreate ? (
-          <Button
-            variant="ink"
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2"
-            data-testid="je-new-btn"
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            New manual JE
-          </Button>
-        ) : undefined}
+        // Le bouton était MASQUÉ sans la permission. Doctrine du dépôt
+        // (ProductsHeader, B2BOrdersPage) : on le REND, désactivé, en disant
+        // pourquoi — un bouton absent se lit « cette page ne crée pas
+        // d'écriture », un bouton grisé et motivé se lit « demande ce droit ».
+        // Un `<button disabled>` n'est pas focalisable, le `title` seul n'atteint
+        // donc ni le clavier ni le lecteur d'écran : la raison est doublée d'un
+        // texte `sr-only` référencé par `aria-describedby`.
+        actions={
+          <>
+            <Button
+              variant="ink"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-2"
+              disabled={!canCreate}
+              {...(canCreate ? {} : { title: CREATE_JE_REASON, 'aria-describedby': 'je-create-reason' })}
+              data-testid="je-new-btn"
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              New manual JE
+            </Button>
+            {!canCreate && <span id="je-create-reason" className="sr-only">{CREATE_JE_REASON}</span>}
+          </>
+        }
       />
 
       <div className="flex flex-wrap items-end gap-3">
@@ -149,7 +164,13 @@ export default function JournalEntriesPage(): JSX.Element {
                       aria-haspopup="dialog"
                       aria-label={`Open detail for entry ${row.entry_number}`}
                       data-testid={`je-open-${row.entry_number}`}
-                      className={`rounded-sm underline-offset-2 hover:underline ${FOCUS_RING}`}
+                      // `text-gold` : sans couleur, le déclencheur héritait de
+                      // la cellule et ne se distinguait d'un texte statique
+                      // qu'au survol SOURIS — invisible au clavier, invisible au
+                      // repos. DESIGN.md § Colors donne l'or aux liens, et
+                      // `DrilldownLink` porte exactement ce motif depuis la même
+                      // branche : 6,222:1 sur la feuille blanche.
+                      className={`rounded-sm text-gold underline-offset-2 hover:underline ${FOCUS_RING}`}
                     >
                       {row.entry_number}
                     </button>

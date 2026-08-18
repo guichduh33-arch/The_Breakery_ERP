@@ -38,15 +38,21 @@ colors:
   chart-3: "#8cc3e0"
   chart-4: "#c9dcea"
 typography:
+  # La RAMPE du code — `--type-*` dans packages/ui/src/tokens/typography.css.
+  # C'est elle qui fait loi ; les rôles ci-dessous s'y rattachent, sauf les deux
+  # marqués `offRamp` qui sont écrits en valeurs arbitraires faute de cran.
+  scale: [12, 14, 16, 19, 24, 30, 34, 56]
   display:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
     fontSize: "26px"
+    offRamp: true
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.03em"
   headline:
     fontFamily: "Instrument Sans Variable, Instrument Sans, Inter Variable, system-ui, sans-serif"
     fontSize: "23px"
+    offRamp: true
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.015em"
@@ -68,6 +74,12 @@ typography:
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "0.14em"
+  data:
+    fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "19px"
+    fontWeight: 600
+    lineHeight: 1.3
+    fontFeature: "tabular-nums"
   brand:
     fontFamily: "Playfair Display, Times New Roman, Georgia, serif"
     fontSize: "14px"
@@ -217,13 +229,18 @@ même accent, même vocabulaire d'état, même échelle.
   ne se lit pas ».
 - **Bordures** : filet de carte (`#e3e1db`), bordure de contrôle (`#86827a`),
   séparateur de ligne de tableau (`#f3f1ec`).
-  La bordure de contrôle est le **seul** trait qui délimite un bouton secondaire
-  ou un champ : elle porte donc le seuil de **3:1 des objets graphiques**
+  La bordure de contrôle est le **seul** trait qui délimite un bouton
+  secondaire : elle porte donc le seuil de **3:1 des objets graphiques**
   (WCAG 1.4.11), pas celui du texte. Elle a été assombrie le 2026-08-18 pour
   cette raison — l'ancien `#cdcac2` ne valait que 1,42:1 contre le papier de
   page, et un bouton secondaire y était une limite invisible. `#86827a` clôt le
   seuil sur les quatre fonds du thème : 3,83:1 feuille blanche, 3,33:1 papier,
   3,66:1 en-tête inerte, 3,10:1 état pressé.
+  **Le champ, lui, est encore bordé du filet de carte** (`#e3e1db`) — c'est ce
+  que rend le primitif `Input` et ce que décrit § Champs. Ce trait vaut 1,308:1
+  sur la feuille blanche : un champ n'a donc, à ce jour, pas de limite qui tienne
+  1.4.11. Ce paragraphe l'annonçait comme réglé en rangeant le champ avec le
+  bouton ; c'est un écart ouvert, pas un constat (relevé le 2026-08-18).
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
   (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
   plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
@@ -321,7 +338,18 @@ des approximations :
   ils sont écrits en valeurs arbitraires — `text-[26px]`, `text-[1.4375rem]` —
   parce qu'aucun cran de la rampe ne les porte. Les reprendre ailleurs se fait
   en recopiant la constante partagée (`KPI_VALUE_HERO`, `PageHeader`), jamais en
-  réécrivant le nombre.
+  réécrivant le nombre. Ils sont les **deux seuls** rôles hors rampe, et le
+  front-matter les marque désormais `offRamp: true` : jusqu'au 2026-08-18 il
+  n'énumérait que {12, 14, 16, 23, 26} et faisait donc de ces deux exceptions le
+  contrat, pendant que le corps décrivait la rampe. Un `font-size: 19px` de
+  `src/index.css` — la cellule de PIN de l'écran de connexion, `--type-lg` — se
+  faisait signaler comme un écart alors qu'il est un cran officiel. Le
+  front-matter porte maintenant la rampe entière sous `scale`.
+- **Le cran de données courant est 19 px, pas 23.** `--type-lg` en mono tabulaire
+  porte les montants des tiroirs et des panneaux (`AgingBucketsGrid`,
+  `OrderDetailDrawer`, `CostingPanel` — quatorze fichiers) ; c'est lui que le
+  front-matter déclare sous `data`. Les 23 px de la valeur de tuile sont, eux,
+  le rôle `headline` hors rampe.
 
 La graisse, elle, se lit sur l'appelant et non ici : `SectionLabel` pose 700 par
 défaut, les constantes de tuile (`KPI_LABEL`) redescendent à 600. C'est un écart
@@ -553,10 +581,35 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
   frontière a été franchie une fois dans les deux sens — des boutons de panneau
   en `TOOLBAR_BTN_*`, un bouton de bandeau en primitif — et les deux fois le
   résultat a été deux hauteurs de bouton sur le même écran (2026-08-18).
-- **Bouton primitif partagé** (`@breakery/ui`) : hauteur 56 px, rayon 4 px,
-  capitales interlettrées. Son variant `primary` est **vert** — couleur réservée
-  au chemin de l'argent — et son variant `gold` remplit en or. C'est le bouton
-  des modales et des formulaires.
+- **Bouton primitif partagé** (`@breakery/ui`) : rayon 4 px. C'est le bouton des
+  modales, des formulaires, des panneaux et des pieds de table — tout ce qui
+  n'est pas le bandeau de page. Son variant `primary` est **vert** — couleur
+  réservée au chemin de l'argent — et son variant `gold` remplit en or. Les
+  capitales interlettrées ne sont **pas** portées par le primitif : elles
+  appartiennent aux trois variants `primary`, `gold` et `outlineGold`. Les six
+  autres (`ink`, `secondary`, `ghost`, `ghostDestructive`, `link`) rendent en
+  casse de phrase — c'est ce que le back-office emploie.
+  **Quatre crans de hauteur, pas un** — ce document annonçait « 56 px » comme
+  s'il n'y en avait qu'un. Relevé du 2026-08-18, parseur équilibrant les
+  accolades (un `>` de `() =>` ne ferme pas une balise) :
+  - `sm` — **36 px** (`h-9`). **112 emplois** dans 60 fichiers : les paires
+    d'action des modales, et le « Load more » de tout pied de table.
+  - `md` — **56 px** (`--touch-comfy`), le **défaut du primitif**. 2 emplois
+    explicites, mais **180 implicites** dans 87 fichiers — un `<Button>` écrit
+    sans `size` rend 56 px.
+  - `lg` — 80 px : 1 emploi. `icon` — 56 × 56 : aucun.
+
+  Autrement dit le back-office n'a pas un cran dominant mais **deux populations
+  comparables**, 112 contre 182, et la plus grosse est obtenue par omission. Ce
+  n'est pas un choix, c'est un défaut de primitif — le même que
+  `defaultVariants: { variant: 'primary' }` déjà nommé plus bas : la conformité
+  s'obtient par un opt-out que chaque auteur doit connaître.
+
+  **Le secondaire est bordé `border-strong`, jamais `border-subtle`.** Son
+  remplissage (`--bg-overlay`) vaut exactement la feuille blanche qui le porte :
+  son trait est le seul objet qui le délimite, il tient donc les 3:1 de WCAG
+  1.4.11 (3,827:1). Le `border-subtle` qu'il a porté un temps valait 1,308:1 — le
+  bouton n'avait plus de limite visible (corrigé le 2026-08-18).
 - **Désactivé** : les variants remplis neutralisent leur couleur au lieu de la
   faner. Un vert ou un or à 50 % d'opacité lit encore comme un bouton vivant.
 - **Focus** : contour de 2 px décalé de 2 px, couleur `gold` sur le papier,
@@ -705,14 +758,27 @@ règles :
   preset n'ont aucun appelant dans le back-office. Conséquence structurelle : la
   conformité s'obtient par un opt-out que chaque auteur doit connaître, donc un
   fichier neuf naît non conforme en silence.
-- **Six classes de couleur ne peignent rien.** `bg-warn` / `text-warn` désignent
-  une famille qui n'existe pas dans le preset — la déclaration est supprimée sans
-  bruit. Elles vivent dans `features/marketing` (`SegmentList`, `BirthdayList`).
-  La garde CI `tailwind-dead-classes.mjs` ne les attrape pas : elle sait détecter
-  une classe morte d'une famille connue, pas une famille inventée.
+  **Le défaut de `size` produit déjà le dégât que celui de `variant` menace
+  seulement.** `defaultVariants: { size: 'md' }` vaut 56 px : 180 `<Button>` du
+  back-office, dans 87 fichiers, rendent ce cran sans l'avoir demandé, contre 112
+  qui demandent `sm` (relevé du 2026-08-18). Le risque n'est pas devant nous
+  ici — il est réalisé. Changer le défaut est un arbitrage qui touche la caisse,
+  il n'est pas pris dans ce relevé.
+- **Les six classes `bg-warn` / `text-warn` qui ne peignaient rien sont
+  résorbées** (le 2026-08-18 ; `grep -E '(bg|text|border)-warn([^i]|$)'` sur
+  `apps/` et `packages/` rend zéro). L'angle mort qui les avait laissées passer,
+  lui, reste ouvert et n'est *pas* un défaut résolu : `tailwind-dead-classes.mjs`
+  sait détecter une clé morte d'une famille connue, pas une famille inventée. Il
+  n'en ferme que le cas nommé — une liste noire du vocabulaire shadcn/ui.
 - **The Value-Width Rule est enfreinte sur une tuile de la liste B2B.** Mesuré à
   1280 px, la largeur cible du produit : une valeur monétaire de dix caractères
   rend sur deux lignes. C'est précisément la coupure que la règle nomme.
+- **Le champ n'a pas de limite qui tienne 1.4.11.** Le primitif `Input` borde en
+  `--border-subtle` (`#e3e1db`), soit 1,308:1 sur la feuille blanche qu'il
+  remplit. Le bouton secondaire a été porté à `--border-strong` le 2026-08-18 ; le
+  champ ne l'a pas été, parce que le geste touche tous les formulaires des deux
+  apps et relève d'un arbitrage, pas d'une correction. § Champs décrit donc le
+  code, pas le seuil.
 
 **État du corpus.** La planche de référence couvre quinze écrans pour neuf
 archétypes. Trois sont construits — Today (shell + landing), Products (List) et

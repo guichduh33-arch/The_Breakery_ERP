@@ -1,8 +1,15 @@
 // apps/backoffice/src/features/accounting/components/RecordCashMovementModal.tsx
 // Cash Wallets module — modal to record a manual cash movement (posts a balanced JE).
 // Native <select> kept (shared `inputCls` with the hand-styled inputs) so every
-// control in this modal stays visually uniform; the @breakery/ui Select primitive
-// would introduce a lone 44px field among them.
+// control in this modal stays visually uniform.
+//
+// Le raisonnement qui suivait — « le primitif Select introduirait un champ isolé
+// de 44 px parmi eux » — prenait l'écart pour la norme : DESIGN.md § Champs pose
+// 44 px, rayon 4 px, fond feuille blanche et anneau or, et c'est `inputCls` qui
+// était hors spécification à ~37 px et sans anneau de focus. Corrigé le
+// 2026-08-18 en montant TOUS les contrôles du modal à 44 px : l'uniformité est
+// conservée, elle est simplement obtenue à la hauteur du système. Un primitif
+// posé ici ne détonnerait plus.
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -12,6 +19,7 @@ import {
   Button,
 } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useRecordCashMovement, type CashMovementType } from '../hooks/useRecordCashMovement.js';
 
 const TYPES: { value: CashMovementType; label: string; needsWallet?: boolean; requiresAdjust?: boolean }[] = [
@@ -29,7 +37,8 @@ const ADJUST_TYPES = new Set<CashMovementType>(['adjustment_gain', 'adjustment_l
 const DEFAULT_TYPE: CashMovementType = 'undepo_to_petty';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-const inputCls = 'w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm';
+const inputCls =
+  `h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
 
 export function RecordCashMovementModal({
   open,

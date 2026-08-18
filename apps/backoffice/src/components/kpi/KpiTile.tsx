@@ -3,8 +3,13 @@
 // La tuile de KPI de la direction « Instrument » — extraite du `Tile` interne
 // de DashboardKpiStrip (lot B, campagne Reports 2026-08-15) pour servir aussi
 // les bandes KPI des rapports. C'est le composant signature de la maquette 4c :
-// label mono 10 px, valeur mono 23 px (26 px sur la tuile héro encre), et la
+// label mono 12 px, valeur mono 23 px (26 px sur la tuile héro encre), et la
 // place de l'icône rendue aux COMPARAISONS, qui portent l'information.
+//
+// « 10 px » était un chiffre de la planche de référence recopié ici ; le label
+// rend `text-xs`, et `--type-xs` vaut 12 px depuis la décompression de l'échelle
+// (typography.css, 2026-08-01). Corrigé le 2026-08-18 — c'est l'échelle du CODE
+// qui fait loi (DESIGN.md § Typography).
 //
 // Une seule tuile héro par écran (« One Ink Fill Rule ») : la première de la
 // bande répond à la question qu'on pose en ouvrant la page ; une deuxième
@@ -113,6 +118,12 @@ export function KpiTile({
       <span
         className={cn(hero ? KPI_VALUE_HERO : KPI_VALUE, toneClass)}
         title={valueTitle}
+        // La VALEUR est adressable seule. Le `testId` de l'appelant désigne la
+        // boîte, qui contient aussi le libellé et les notes de `children` : un
+        // test qui lisait le `textContent` de l'ancêtre ramassait « 3All time »
+        // pour une valeur de « 3 ». Le suffixe dérive du testId de la tuile —
+        // aucun nom neuf à tenir côté appelant.
+        {...(testId === undefined ? {} : { 'data-testid': `${testId}-value` })}
         {...(unavailable ? { 'aria-hidden': true } : {})}
       >
         {value}

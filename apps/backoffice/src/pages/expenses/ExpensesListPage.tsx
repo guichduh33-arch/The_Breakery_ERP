@@ -329,7 +329,13 @@ export default function ExpensesListPage(): JSX.Element {
                   <Receipt className="mx-auto h-10 w-10 text-text-muted" aria-hidden />
                   {/* `<h3>` sous le `<h1>` de PageHeader : la page n'a pas de
                       `<h2>`, le niveau sautait de 1 à 3 (WCAG 1.3.1). */}
-                  <h2 className="mt-3 font-display italic text-xl text-text-primary">No expenses found</h2>
+                  {/* `font-display italic` retiré (2026-08-18) : sous le thème
+                      back-office `--font-display` est remappé sur la pile du
+                      corps, la classe ne rendait donc AUCUN serif — DESIGN.md
+                      dit d'elle qu'elle « nomme le contraire de ce qu'elle
+                      fait ». Le titre s'aligne sur l'autre état vide corrigé
+                      dans le même geste (`ProductsGrid`). */}
+                  <h2 className="mt-3 text-xl font-semibold text-text-primary">No expenses found</h2>
                   <p className="mx-auto mt-1 max-w-prose text-sm text-text-secondary">
                     {canCreate
                       ? 'Capture your first operational expense to start tracking spend.'

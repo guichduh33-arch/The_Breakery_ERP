@@ -10,6 +10,7 @@ import { useMemo, useState, type JSX } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronRight,
   Clock,
   CreditCard,
   FileText,
@@ -128,7 +129,7 @@ export default function B2BPaymentsPage(): JSX.Element {
     <div className="space-y-6">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>B2B</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Payments</span>
       </nav>
 

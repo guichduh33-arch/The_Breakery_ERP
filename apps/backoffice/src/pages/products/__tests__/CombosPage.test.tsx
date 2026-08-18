@@ -123,10 +123,20 @@ describe('CombosPage', () => {
     expect(screen.getByTestId('create-combo-btn')).toBeInTheDocument();
   });
 
-  it('hides Create button when user lacks combos.create', async () => {
+  // Doctrine du dépôt (ProductsHeader, B2BOrdersPage, JournalEntriesPage) : sans
+  // la permission, le bouton est RENDU et DÉSACTIVÉ, avec sa raison — il n'est
+  // plus masqué. Un bouton absent se lit « cette page ne crée pas de combo » ;
+  // un bouton grisé et motivé se lit « demande ce droit ». La raison est doublée
+  // d'un `sr-only` car un `<button disabled>` n'est pas focalisable, donc son
+  // `title` n'atteint ni le clavier ni le lecteur d'écran.
+  it('disables the Create button and says why when user lacks combos.create', async () => {
     canCreatePerm = false;
     renderPage();
     await screen.findByText('French Platter');
-    expect(screen.queryByTestId('create-combo-btn')).not.toBeInTheDocument();
+    const btn = screen.getByTestId('create-combo-btn');
+    expect(btn).toBeInTheDocument();
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('aria-describedby', 'combos-create-reason');
+    expect(document.getElementById('combos-create-reason')?.textContent).toMatch(/combos\.create/);
   });
 });

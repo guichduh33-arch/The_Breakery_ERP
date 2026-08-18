@@ -7,7 +7,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useCreateExpense } from '@/features/expenses/hooks/useCreateExpense.js';
 import type { CreateExpenseInput } from '@/features/expenses/hooks/useCreateExpense.js';
@@ -81,7 +81,7 @@ export default function NewExpensePage(): JSX.Element {
     <div className="space-y-6 max-w-3xl">
       <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
         <Link to="/backoffice/expenses" className="hover:text-text-primary">Expenses</Link>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-primary">New</span>
       </nav>
 

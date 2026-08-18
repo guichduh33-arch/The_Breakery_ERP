@@ -196,7 +196,7 @@ export default function SettingsHistoryPage(): JSX.Element {
           {hasNextPage && (
             <div className="flex justify-center pt-3">
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 disabled={isFetchingNextPage}
                 onClick={() => { fetchNextPage(); }}

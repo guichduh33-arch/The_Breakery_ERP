@@ -21,6 +21,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
+  ChevronRight,
   Crown,
   DollarSign,
   Gift,
@@ -138,9 +139,9 @@ export function CustomerDetailPage(): JSX.Element {
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
         <span>Sales</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <Link to="/backoffice/customers" className="hover:text-text-primary">Customers</Link>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">{customer.name}</span>
       </nav>
 

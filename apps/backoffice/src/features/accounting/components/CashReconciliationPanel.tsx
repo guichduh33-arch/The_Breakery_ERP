@@ -7,6 +7,10 @@ import { Card, Button } from '@breakery/ui';
 import type { WalletBalance } from '../hooks/useCashWallets.js';
 import { useRecordCashMovement } from '../hooks/useRecordCashMovement.js';
 import { useAuthStore } from '@/stores/authStore.js';
+// Le champ « Counted » rendait ~37 px (`py-2`) sans anneau de focus, contre les
+// 44 px et l'anneau or de DESIGN.md § Champs. C'est le champ sur lequel on saisit
+// un comptage physique de caisse : `h-touch-min` (44 px) + `FOCUS_RING`.
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const idr = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
@@ -50,7 +54,7 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
         type="number"
         value={counted}
         onChange={(e) => setCounted(e.target.value)}
-        className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm"
+        className={`h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
       />
       {counted !== '' && (
         <div className={`text-sm ${diff === 0 ? 'text-success' : 'text-warning'}`}>

@@ -28,12 +28,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { cn, DataTable, Input, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { Button, cn, DataTable, Input, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
-import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useListParams } from '@/hooks/useListParams.js';
 import {
@@ -299,9 +299,16 @@ export default function B2BOrdersPage(): JSX.Element {
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         {/* Chevron ICÔNE et non glyphe `›` : le glyphe hérite de la ligne de
             base du texte et se pose 1 px trop haut entre deux segments de 12 px,
-            là où l'icône se centre et prend sa couleur du jeton. */}
+            là où l'icône se centre et prend sa couleur du jeton. C'est l'idiome
+            UNIQUE du dépôt depuis le 2026-08-18 — `ReportShell` le portait déjà
+            pour les 43 pages de rapports, les onze pages restées au glyphe l'ont
+            rejoint. Couleur `text-text-inert` : DESIGN.md § Colors nomme
+            explicitement ce rôle (« le gris des séparateurs de fil d'Ariane »).
+            Le `text-border-strong` posé ici au tour 2 était un AUTRE gris —
+            3,328:1 contre le papier de page quand l'inerte vaut 1,612:1 : deux
+            chevrons manifestement différents à deux pages d'écart. */}
         <span>B2B</span>
-        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Orders</span>
       </nav>
 
@@ -425,15 +432,21 @@ export default function B2BOrdersPage(): JSX.Element {
               >
                 {rows.length.toLocaleString('id-ID')} of {matching.toLocaleString('id-ID')} loaded
               </span>
+              {/* Primitif partagé en `sm`, PAS `TOOLBAR_BTN_SECONDARY` :
+                  DESIGN.md § Boutons réserve ces chaînes au bandeau de page « et
+                  à lui seul », et un pied de table n'en est pas un. C'est aussi
+                  ce qui ramène « Load more » à une hauteur unique — il rendait
+                  32 px ici, 36 px sur trois pages et 56 px au grand livre. */}
               {query.hasNextPage && (
-                <button
+                <Button
                   type="button"
-                  className={TOOLBAR_BTN_SECONDARY}
+                  variant="secondary"
+                  size="sm"
                   onClick={() => { void query.fetchNextPage(); }}
                   disabled={query.isFetchingNextPage}
                 >
                   {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
-                </button>
+                </Button>
               )}
             </div>
           }

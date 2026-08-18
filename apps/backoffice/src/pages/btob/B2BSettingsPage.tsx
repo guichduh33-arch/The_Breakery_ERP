@@ -17,6 +17,7 @@
 import { useState, useEffect, type JSX } from 'react';
 import {
   AlertTriangle,
+  ChevronRight,
   Clock,
   List,
   Plus,
@@ -138,7 +139,7 @@ export default function B2BSettingsPage(): JSX.Element {
     <div className="space-y-6">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>B2B</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Settings</span>
       </nav>
 

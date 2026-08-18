@@ -39,7 +39,7 @@ export function ProductDetailHeader({
             faisait le seul segment de la flotte qui ne renvoie à rien. La forme
             est celle de `CustomerDetailPage` — domaine › liste › objet. */}
         <span>Stock</span>
-        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <Link to="/backoffice/products" className="hover:text-text-secondary">Products</Link>
       </nav>
 

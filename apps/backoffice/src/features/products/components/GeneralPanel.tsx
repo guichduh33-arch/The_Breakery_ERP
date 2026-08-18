@@ -420,9 +420,19 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
           // L'encre avait été essayée ici et posait cinq aplats #201d19 sur le
           // seul onglet General, en plus de « Save changes » du bandeau —
           // The One Ink Fill Rule, la règle même au nom de laquelle les panneaux
-          // avaient été vidés. Mesures : curseur blanc 6,22:1 sur l'or allumé,
-          // 3,83:1 sur la piste éteinte — les deux au-dessus des 3:1 de WCAG
-          // 1.4.11, l'état restant porté par la POSITION du curseur.
+          // avaient été vidés.
+          //
+          // MESURES REFAITES le 2026-08-18 — la ligne précédente annonçait
+          // « 3,83:1 sur la piste éteinte », qui est le ratio de `--border-strong`
+          // contre le BLANC et non contre la piste. Ce qui est réellement
+          // opposable ici :
+          //   · piste allumée — curseur blanc sur l'or `#7a5c1c` : 6,222:1 ✓
+          //   · piste éteinte — le remplissage du curseur (#ffffff) ne vaut que
+          //     1,236:1 sur `--surface-4` (#e9e7e2) ; c'est son LISERÉ
+          //     `--border-strong` qui porte le seuil, à 3,097:1 — au-dessus des
+          //     3:1 de WCAG 1.4.11, mais de 3 % seulement. Toute retouche de
+          //     `--surface-4` ou de `--border-strong` doit être remesurée ici.
+          // L'état reste de toute façon porté par la POSITION du curseur.
           enabled ? 'border-gold bg-gold' : 'border-text-subtle bg-surface-4'
         }`}
       >

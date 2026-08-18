@@ -3,6 +3,14 @@
 // Session 47 — rewritten for choice-group model.
 // Groups by name + option pills + "+N more", struck-through value price,
 // min→max bundle range, Save% badge (from domain savingsPct).
+//
+// Corps de texte — 2026-08-18. Cette carte portait onze corps arbitraires
+// `text-[0.625rem]` (10 px) et `text-[0.6875rem]` (11 px), sur des `className`
+// que la campagne design avait déjà réécrits pour d'autres motifs. 10 px est le
+// plus petit corps du produit, sur un poste de BUREAU, et aucun des deux n'est un
+// cran de la rampe : `--type-*` ne descend pas sous 12 px depuis la
+// décompression de l'échelle. Tout est remonté à `text-xs` (`--type-xs`, 12 px),
+// le plancher officiel — une ligne réécrite sort conforme aux règles en vigueur.
 
 import { Box } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -67,8 +75,8 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
           <span
             className={
               combo.is_active
-                ? 'rounded-sm border border-border-subtle px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-widest text-text-primary'
-                : 'rounded-sm border border-red-soft px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-widest text-red'
+                ? 'rounded-sm border border-border-subtle px-2 py-0.5 text-xs font-semibold uppercase tracking-widest text-text-primary'
+                : 'rounded-sm border border-red-soft px-2 py-0.5 text-xs font-semibold uppercase tracking-widest text-red'
             }
           >
             {combo.is_active ? 'POS Visible' : 'Hidden'}
@@ -76,7 +84,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
         </div>
 
         <div className="rounded-lg border border-border-subtle bg-bg-overlay p-3">
-          <div className="mb-2 flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-widest text-gold">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gold">
             <Box className="h-3 w-3" aria-hidden />
             Selections
           </div>
@@ -86,25 +94,25 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
           ) : (
             combo.groups.map((g) => (
               <div key={g.id} className="mt-2">
-                <div className="text-[0.6875rem] uppercase tracking-widest text-text-secondary">
+                <div className="text-xs uppercase tracking-widest text-text-secondary">
                   {g.name}
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {g.options.slice(0, 3).map((opt) => (
                     <span
                       key={opt.component_product_id}
-                      className="inline-flex items-center gap-1 rounded-sm border border-gold-soft bg-bg-elevated px-2 py-0.5 text-[0.6875rem] text-text-primary"
+                      className="inline-flex items-center gap-1 rounded-sm border border-gold-soft bg-bg-elevated px-2 py-0.5 text-xs text-text-primary"
                     >
                       {opt.label}
                       {opt.surcharge > 0 && (
-                        <span className="ml-1 text-[0.625rem] text-gold">
+                        <span className="ml-1 text-xs text-gold">
                           +<Currency format={formatCurrency} amount={opt.surcharge} />
                         </span>
                       )}
                     </span>
                   ))}
                   {g.options.length > 3 && (
-                    <span className="rounded-sm border border-border-subtle px-2 py-0.5 text-[0.6875rem] text-text-secondary">
+                    <span className="rounded-sm border border-border-subtle px-2 py-0.5 text-xs text-text-secondary">
                       +{g.options.length - 3} more
                     </span>
                   )}
@@ -156,7 +164,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
             // La pastille était donc à moitié conforme, ce qui ne se voit pas
             // en lisant la seule ligne du chiffre.
             <span className="inline-flex flex-col items-center justify-center rounded-sm bg-gold-soft px-3 py-2 font-data text-gold">
-              <span className="text-[0.625rem] font-semibold uppercase tracking-widest">Save</span>
+              <span className="text-xs font-semibold uppercase tracking-widest">Save</span>
               <span className="text-sm font-bold tabular-nums">{savings}%</span>
             </span>
           )}

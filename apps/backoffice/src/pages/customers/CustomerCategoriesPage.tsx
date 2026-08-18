@@ -15,7 +15,7 @@
 // classifyCategoryError (esp. category_in_use).
 
 import { useMemo, useState, type JSX } from 'react';
-import { Plus } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import { PenSquare, Trash2 } from 'lucide-react';
 import {
   cn,
@@ -224,7 +224,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
     <div className="flex flex-col gap-[13px]">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>Sales</span>
-        <span className="text-text-inert" aria-hidden>›</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Customer categories</span>
       </nav>
 

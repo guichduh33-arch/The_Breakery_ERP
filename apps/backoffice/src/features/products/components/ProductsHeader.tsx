@@ -57,7 +57,7 @@ export function ProductsHeader({
     <div className="space-y-2">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <span>Stock</span>
-        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
         <span className="text-text-secondary">Products</span>
       </nav>
 
