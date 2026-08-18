@@ -67,7 +67,7 @@ export function SortableTh<K extends string>({
       >
         {label}
         <Icon
-          className={cn('h-3 w-3', active ? 'text-text-primary' : 'text-text-inert')}
+          className={cn('h-3 w-3', active ? 'text-text-primary' : 'text-text-subtle')}
           aria-hidden
         />
       </button>

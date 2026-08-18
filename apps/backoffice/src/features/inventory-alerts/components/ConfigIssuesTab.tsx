@@ -82,7 +82,7 @@ const COLUMNS: DataTableColumn<StockConfigIssueRow>[] = [
     render: (r) => (
       <span className="font-data text-xs">
         {flag('track', r.track_inventory)}
-        <span className="text-text-inert"> · </span>
+        <span className="text-text-subtle" aria-hidden> · </span>
         {flag('deduct', r.deduct_stock)}
       </span>
     ),

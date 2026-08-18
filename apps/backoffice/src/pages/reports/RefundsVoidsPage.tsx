@@ -430,7 +430,7 @@ export default function RefundsVoidsPage(): JSX.Element {
                     <td className="py-2">
                       <span className="flex flex-wrap gap-1">
                         {e.payments.length === 0
-                          ? <span className="text-text-inert">—</span>
+                          ? <span className="text-text-subtle">—</span>
                           : e.payments.map((p) => (
                             // Le cash remboursé se recompte au tiroir : badge warning.
                             <Badge

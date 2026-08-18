@@ -161,7 +161,7 @@ export function OrderDetailPage(): JSX.Element {
               <MetaPair label="Customer">
                 {data.customer_id !== null && data.customer_name !== null
                   ? <DrilldownLink entity="customer" id={data.customer_id} label={data.customer_name} />
-                  : <span className="text-text-subtle">Walk-in</span>}
+                  : <span className="text-text-muted">Walk-in</span>}
               </MetaPair>
               <MetaPair label="Served by">
                 {data.served_by_name !== null
@@ -403,7 +403,7 @@ function Timeline({
                 UX/UI 2026-08-13, lot 6a). Vaut pour Paid comme pour Completed. */}
             <span className={cn('block text-sm', step.done ? 'text-text-primary' : 'text-text-muted')}>
               {step.label}
-              {!step.done && <span className="text-xs text-text-subtle">{' — pending'}</span>}
+              {!step.done && <span className="text-xs text-text-muted">{' — pending'}</span>}
             </span>
             {step.at !== undefined && (
               <span className="block font-data text-xs tabular-nums text-text-muted">{fmtDateTime(step.at)}</span>

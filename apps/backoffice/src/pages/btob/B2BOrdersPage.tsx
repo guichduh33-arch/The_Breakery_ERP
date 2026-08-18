@@ -239,7 +239,7 @@ export default function B2BOrdersPage(): JSX.Element {
               aria-expanded={isOpen}
               aria-label={`${isOpen ? 'Hide' : 'Show'} the lines of order ${r.order_number}`}
               onClick={(e) => { e.stopPropagation(); toggle(r.invoice_id); }}
-              className={`rounded-sm text-text-inert transition-colors duration-fast hover:text-text-primary ${FOCUS_RING}`}
+              className={`rounded-sm text-text-subtle transition-colors duration-fast hover:text-text-primary ${FOCUS_RING}`}
             >
               {isOpen
                 ? <ChevronDown className="h-3.5 w-3.5" aria-hidden />
@@ -273,7 +273,7 @@ export default function B2BOrdersPage(): JSX.Element {
       // promettrait une ferait attendre un flux qui n'existe pas.
       render: (r) =>
         r.pickup_date === null ? (
-          <span className="font-data text-xs text-text-inert" title="No pickup day agreed on this order">
+          <span className="font-data text-xs text-text-muted" title="No pickup day agreed on this order">
             not set
           </span>
         ) : (

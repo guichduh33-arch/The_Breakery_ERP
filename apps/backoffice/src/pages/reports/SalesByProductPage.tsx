@@ -394,13 +394,13 @@ export default function SalesByProductPage(): JSX.Element {
                     <td className={NUM_CELL}>
                       {r.discount > 0
                         ? `−${formatIdrFull(r.discount)}`
-                        : <span className="text-text-inert">—</span>}
+                        : <span className="text-text-subtle">—</span>}
                     </td>
                     <td className={NUM_CELL}>{formatIdrFull(r.counter.revenue)}</td>
                     <td className={NUM_CELL}>
                       {r.b2b.revenue > 0
                         ? formatIdrFull(r.b2b.revenue)
-                        : <span className="text-text-inert">—</span>}
+                        : <span className="text-text-subtle">—</span>}
                     </td>
                   </tr>
                 );

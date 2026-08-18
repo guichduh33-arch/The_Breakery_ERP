@@ -231,7 +231,7 @@ export default function SalesByTablePage(): JSX.Element {
                             <span
                               className={cn(
                                 'block rounded-sm px-2 py-1.5 font-data text-xs tabular-nums',
-                                step === null && 'text-text-inert',
+                                step === null && 'text-text-subtle',
                                 step !== null && step >= 2 && 'text-white',
                               )}
                               style={step !== null ? { background: INTENSITY_VARS[step] } : undefined}
