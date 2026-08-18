@@ -8,13 +8,16 @@
 // celles que l'utilisateur a le droit de voir, le filtrage étant fait en amont
 // par `visibleDomains` — plus une courte liste d'ACTIONS de création.
 //
-// Chaque résultat porte son fil d'Ariane (« Reports › Inventory ») : sans lui
-// un titre comme « Sales by hour » ne dit pas d'où il vient, et la palette
-// remplacerait mal la carte mentale que donnait l'arborescence du sidebar.
+// Chaque résultat de PAGE porte son fil d'Ariane (Reports puis Inventory) :
+// sans lui un titre comme « Sales by hour » ne dit pas d'où il vient, et la
+// palette remplacerait mal la carte mentale que donnait l'arborescence du
+// sidebar. Un résultat d'ENTITÉ porte à la place une métadonnée (SKU,
+// téléphone, statut + montant) : ce n'est pas un chemin, et les deux ne se
+// rendent donc pas pareil.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CornerDownLeft, Search } from 'lucide-react';
+import { ChevronRight, CornerDownLeft, Search } from 'lucide-react';
 import { CenterModal, cn, useDebouncedValue } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -32,8 +35,17 @@ const optionId = (index: number): string => `command-palette-option-${String(ind
 interface PaletteEntry {
   to: string;
   label: string;
-  /** « Reports › Inventory » — vide pour les entrées de premier niveau. */
-  breadcrumb: string;
+  /**
+   * Fil d'Ariane d'une PAGE — un segment par niveau (« Reports », « Financial »),
+   * vide pour les entrées de premier niveau. La palette construisait et affichait
+   * ici la chaîne `Reports › Financial`, séparateur en GLYPHE : c'était le
+   * dernier fil d'Ariane du back-office à ne pas suivre l'idiome unique du dépôt
+   * (chevron ICÔNE `text-text-inert`, cf. `ReportShell`). Les segments arrivent
+   * donc séparés, et c'est le rendu qui pose le chevron (2026-08-18).
+   */
+  crumbs: readonly string[];
+  /** Métadonnée d'une ENTITÉ (SKU, téléphone, « paid · Rp 25.000 »). */
+  meta?: string;
   group: string;
 }
 
@@ -103,13 +115,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     ).map((d) => ({
       to: d.to,
       label: d.label,
-      breadcrumb: d.columnLabel === '' ? d.domainLabel : `${d.domainLabel} › ${d.columnLabel}`,
+      crumbs: d.columnLabel === '' ? [d.domainLabel] : [d.domainLabel, d.columnLabel],
       group: 'Pages',
     }));
     const actions: PaletteEntry[] = ACTIONS.filter((a) => hasPermission(a.permission)).map((a) => ({
       to: a.to,
       label: a.label,
-      breadcrumb: '',
+      crumbs: [],
       group: 'Actions',
     }));
     return [...pages, ...actions];
@@ -117,7 +129,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const results = useMemo(() => {
     const scored = entries
-      .map((e) => ({ entry: e, score: fuzzyScore(query, `${e.label} ${e.breadcrumb}`) }))
+      .map((e) => ({ entry: e, score: fuzzyScore(query, `${e.label} ${e.crumbs.join(' ')}`) }))
       .filter((r): r is { entry: PaletteEntry; score: number } => r.score !== null)
       .sort((a, b) => a.score - b.score)
       .map((r) => r.entry);
@@ -132,7 +144,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     // Requête active : entités d'abord (Orders/Products/Customers/Suppliers,
     // classement serveur), puis Pages, puis Actions — 5 par section.
     const entityEntries: PaletteEntry[] = entitySections.flatMap((s) =>
-      s.hits.map((h) => ({ ...h, group: s.group })),
+      s.hits.map((h) => ({ ...h, crumbs: [], group: s.group })),
     );
     return [
       ...entityEntries,
@@ -294,8 +306,23 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   <span className="min-w-0 flex-1 truncate text-sm text-text-primary">
                     {entry.label}
                   </span>
-                  {entry.breadcrumb !== '' && (
-                    <span className="shrink-0 text-xs text-text-muted">{entry.breadcrumb}</span>
+                  {/* Le fil d'Ariane d'une page prend l'idiome unique du dépôt :
+                      chevron ICÔNE en `text-text-inert`, jamais le glyphe `›`.
+                      DESIGN.md § Colors nomme ce rôle (« le gris des séparateurs
+                      de fil d'Ariane »), et le glyphe se posait 1 px trop haut
+                      entre deux segments de 12 px. */}
+                  {entry.crumbs.length > 0 && (
+                    <span className="flex shrink-0 items-center gap-1 text-xs text-text-muted">
+                      {entry.crumbs.map((crumb, k) => (
+                        <Fragment key={crumb}>
+                          {k > 0 && <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />}
+                          <span>{crumb}</span>
+                        </Fragment>
+                      ))}
+                    </span>
+                  )}
+                  {entry.meta !== undefined && entry.meta !== '' && (
+                    <span className="shrink-0 text-xs text-text-muted">{entry.meta}</span>
                   )}
                   {highlighted && (
                     <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />

@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { ProductTypeahead } from '@/features/inventory/components/ProductTypeahead.js';
 import type { ProductTypeaheadRow } from '@/features/inventory/hooks/useProductsForInventory.js';
 import { useAddOpnameItem } from '../hooks/useOpnameMutations.js';
@@ -70,7 +71,13 @@ export function AddItemForm({ countId }: AddItemFormProps) {
             min={0}
             value={expectedQty}
             onChange={(e) => { setExpectedQty(e.target.value); }}
-            className="w-32 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-subtle rounded"
+            // Champ écrit à la main, hors primitif `Input` : il retombait sur
+            // l'anneau de focus du navigateur (2,09-2,40:1, sous les 3:1 de
+            // WCAG 1.4.11) et sur le `gray-400` du Preflight pour son
+            // placeholder (2,21:1). Le seul de cet anti-patron qui vive dans un
+            // fichier déjà édité par cette campagne ; les 35 autres sont
+            // recensés dans DESIGN.md comme écart ouvert (2026-08-18).
+            className={`w-32 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="auto"
           />
         </div>

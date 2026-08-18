@@ -227,8 +227,16 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           to="/backoffice"
           className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
         >
+          {/* `font-brand` et non `font-display` : sous `.theme-backoffice`,
+              `--font-display` est remappé sur la pile du CORPS (colors.css), et
+              le monogramme rendait donc en Instrument Sans — le seul endroit du
+              back-office où Playfair devait survivre était précisément celui qui
+              ne le rendait pas (relevé du 2026-08-18). `--font-brand` n'est
+              jamais remappé ; l'utilitaire qui l'expose a été ajouté au preset
+              le même jour. L'APLAT d'or reste un arbitrage du propriétaire,
+              consigné en exception dans DESIGN.md. */}
           <span
-            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-display text-sm leading-none text-ink-fg"
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-brand text-sm leading-none text-ink-fg"
             aria-hidden
           >
             B

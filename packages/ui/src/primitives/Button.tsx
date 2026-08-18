@@ -34,7 +34,17 @@ const buttonVariants = cva(
         //     de la rampe sombre (aucun de ses deux traits ne la tient), pas une
         //     régression de cette ligne. Pas de surcharge scopée : elle figerait
         //     le pire des deux états.
-        secondary: 'bg-bg-overlay border border-border-strong text-text-primary hover:bg-bg-input rounded-md',
+        // Le SURVOL est `surface-4`, pas `bg-input` : c'est le cran « survol /
+        // pressé » de la rampe dans les deux thèmes, et c'est déjà ce que rend
+        // la chaîne de bandeau (`TOOLBAR_BTN_SECONDARY`). `bg-input` ne marquait
+        // rien — mesuré le 2026-08-18, repos contre survol :
+        //   · back-office — --bg-overlay et --bg-input valent TOUS DEUX #ffffff :
+        //     1,000:1, ΔL 0,00000. Le bouton ne réagissait pas à la souris.
+        //     surface-4 #e9e7e2 donne 1,236:1, ΔL 0,20034.
+        //   · POS luxe-dark — #231f1b contre #1f1c18 : 1,037:1, ΔL 0,00229 ;
+        //     surface-4 #2e2924 donne 1,137:1, ΔL 0,00878, soit 3,8× le pas.
+        // Le sombre gagne donc lui aussi ; aucun thème ne perd.
+        secondary: 'bg-bg-overlay border border-border-strong text-text-primary hover:bg-surface-4 rounded-md',
         outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md disabled:border-border-subtle disabled:text-text-muted disabled:opacity-100',
         ghost: 'bg-transparent text-text-primary hover:bg-bg-overlay rounded-md',
         ghostDestructive: 'bg-transparent text-red-as-text hover:bg-red-soft rounded-md',

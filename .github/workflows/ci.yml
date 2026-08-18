@@ -61,7 +61,13 @@ jobs:
       # `text-muted-foreground` échappe à la seconde (aucune couleur littérale).
       # Un token dupliqué ne casse rien le jour où on l'écrit — il casse le jour
       # où le token bouge et que la copie ne suit pas. C'est exactement ce qui
-      # est arrivé au halo de focus, deux fois.
+      # est arrivé au halo de focus, deux fois. Ce halo vit dans
+      # `packages/ui/src/tokens/elevation.css`, que la garde ne balayait PAS à sa
+      # naissance : son périmètre couvre `packages/ui/src/` depuis le
+      # 2026-08-18, et elle reconnaît désormais `rgba(r, g, b, a)` autant que
+      # `#rrggbb` — c'est sous cette forme que la moitié POS du halo était encore
+      # recopiée. Deux tables de tokens, une par thème, pour qu'un littéral
+      # légitime de l'autre thème ne la fasse pas crier au loup.
       - name: Garde 4 — aucune couleur du thème recopiée en dur hors baseline
         if: always()
         run: node scripts/ci/hardcoded-theme-colors.mjs

@@ -8,14 +8,32 @@
 //     sur des cartes devenues blanches ;
 //   · `--gold-base` assombri au lot 8 a laissé des ors clairs sous 4,5:1.
 //
-// LA VÉRITÉ VIENT DES TOKENS, jamais d'une liste écrite ici. On lit le bloc
-// `.theme-backoffice` de packages/ui/src/tokens/colors.css et on s'en sert pour
+// LA VÉRITÉ VIENT DES TOKENS, jamais d'une liste écrite ici. On lit les blocs de
+// thème de packages/ui/src/tokens/{colors,luxe-dark}.css et on s'en sert pour
 // juger. Ajouter, retirer ou changer un token suffit donc à déplacer le verdict :
 // rien à mettre à jour ici, et aucune liste à faire pourrir.
 //
-// POURQUOI LE BACKOFFICE SEUL — un hex du thème clair recopié dans apps/pos
-// n'est pas la même faute (le POS a sa propre palette, la valeur y est un
-// étranger, pas un doublon). Le périmètre est donc `apps/backoffice/src`.
+// PÉRIMÈTRE — `apps/backoffice/src/` ET `packages/ui/src/` (étendu le
+// 2026-08-18). Le halo de focus, dont la dérive est le deuxième défaut cité en
+// tête de ce fichier, vit dans `packages/ui/src/tokens/elevation.css` : la garde
+// née pour cette classe de défaut ne balayait pas le fichier qui l'avait
+// produite. `apps/pos` reste dehors : un hex du thème CLAIR recopié là n'est pas
+// la même faute (le POS a sa propre palette, la valeur y est un étranger, pas un
+// doublon), alors que `packages/ui` sert les DEUX thèmes.
+//
+// DEUX TABLES, PAS UNE — les tokens du POS et ceux du back-office vivent dans le
+// même fichier. Comparer tout à tout ferait crier au loup sur les littéraux
+// légitimes de l'autre thème. On classe donc chaque bloc de thème par son
+// sélecteur et on juge :
+//   · `apps/backoffice/src/` → table BACK-OFFICE (régime d'origine, baseline
+//     inchangée) ;
+//   · un fichier CSS de `packages/ui/src/` → la table du BLOC où vit la ligne
+//     (`.theme-backoffice` vs `:root` / `.dark` / `.theme-pos`) ; hors bloc de
+//     thème, l'union ;
+//   · un fichier TS/TSX de `packages/ui/src/` → l'UNION : un composant partagé
+//     rend sous les deux thèmes, y recopier l'un ou l'autre est la même faute.
+// Les deux fichiers de DÉFINITION sont exclus du balayage : la valeur y est la
+// déclaration, pas sa copie.
 //
 // CE QUI N'EST PAS VÉRIFIÉ, volontairement :
 //   · les couleurs qui n'appartiennent à AUCUN token — un hex inventé est un
@@ -39,10 +57,13 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
 const BASELINE = 'scripts/ci/hardcoded-theme-colors-baseline.txt';
-const TOKENS = 'packages/ui/src/tokens/colors.css';
-const BLOCK = '.theme-backoffice {';
+/** Les fichiers où les tokens sont DÉFINIS — source de vérité, jamais balayés. */
+const TOKEN_SOURCES = [
+  'packages/ui/src/tokens/colors.css',
+  'packages/ui/src/tokens/luxe-dark.css',
+];
 
-const SCANNED = ['apps/backoffice/src/'];
+const SCANNED = ['apps/backoffice/src/', 'packages/ui/src/'];
 const EXT = /\.(tsx|ts|css)$/;
 
 const git = (...args) =>
@@ -59,38 +80,90 @@ function normalizeHex(raw) {
 }
 
 const HEX_RE = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b/g;
+/**
+ * `rgb(r, g, b)` / `rgba(r g b / a)` — la MÊME recopie, écrite autrement. Sans
+ * cette forme la garde ne voyait pas le cas qui a motivé son extension : le halo
+ * de focus du POS était `rgba(211, 171, 92, 0.40)`, c'est-à-dire --gold-base
+ * (#d3ab5c) recopié en décimal. L'alpha ne sauve pas plus une recopie ici qu'en
+ * hexadécimal : c'est la même teinte du thème. Une composante en `%` ou une
+ * fonction imbriquée (`rgb(var(--x) / .4)`) n'est pas un littéral et ne matche
+ * pas — c'est voulu, elle CONSOMME le token.
+ */
+const RGB_RE = /\brgba?\(\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*(?:[,/][^)]*)?\)/g;
+
+function rgbToHex(m) {
+  return `#${[m[1], m[2], m[3]].map((v) => Number(v).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Toutes les couleurs LITTÉRALES d'un texte, normalisées en `#rrggbb`. */
+function colorsIn(text) {
+  const out = [];
+  HEX_RE.lastIndex = 0;
+  for (const m of text.matchAll(HEX_RE)) out.push({ hex: normalizeHex(m[0]), literal: m[0] });
+  RGB_RE.lastIndex = 0;
+  for (const m of text.matchAll(RGB_RE)) out.push({ hex: rgbToHex(m), literal: m[0] });
+  return out;
+}
+
+/** Découpe un CSS en blocs de premier niveau `{ sélecteur, from, to }`. */
+function cssBlocks(css) {
+  const out = [];
+  let i = 0;
+  while (i < css.length) {
+    const open = css.indexOf('{', i);
+    if (open === -1) break;
+    const selector = (css.slice(i, open).trim().split(/\n\s*\n/).pop() ?? '').trim();
+    let depth = 0, close = css.length - 1;
+    for (let j = open; j < css.length; j++) {
+      if (css[j] === '{') depth++;
+      else if (css[j] === '}') { depth--; if (depth === 0) { close = j; break; } }
+    }
+    out.push({ selector, from: open + 1, to: close });
+    i = close + 1;
+  }
+  return out;
+}
+
+/** `backoffice` | `pos` | null (bloc qui n'est pas un thème : @media, @keyframes…). */
+function themeOfSelector(selector) {
+  if (/\.theme-backoffice/.test(selector)) return 'backoffice';
+  if (/(^|[,\s]):root\b|\.dark\b|\.theme-pos\b/.test(selector)) return 'pos';
+  return null;
+}
 
 /**
- * Extrait le bloc `.theme-backoffice { … }` par équilibrage d'accolades et en
- * tire la table `hex normalisé → [tokens qui le portent]`. Parseur volontairement
- * étroit : il connaît la forme de CE fichier. S'il ne trouve rien, la garde
- * ÉCHOUE — une garde qui ne sait plus lire sa source doit se taire bruyamment,
- * jamais passer en silence.
+ * Lit les DEUX fichiers de tokens, classe chaque bloc par son sélecteur et en
+ * tire une table `hex normalisé → [tokens]` PAR THÈME. Parseur volontairement
+ * étroit : il connaît la forme de ces fichiers. S'il ne sait plus les lire — un
+ * bloc de thème non classé, une table vide — la garde ÉCHOUE : une garde qui ne
+ * comprend plus sa source doit se taire bruyamment, jamais passer en silence.
  */
-function readThemeHexes() {
-  let src;
-  try { src = readFileSync(join(ROOT, TOKENS), 'utf8'); } catch { return null; }
-  const start = src.indexOf(BLOCK);
-  if (start === -1) return null;
-  let depth = 0, end = -1;
-  for (let i = src.indexOf('{', start); i < src.length; i++) {
-    if (src[i] === '{') depth++;
-    else if (src[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-  }
-  if (end === -1) return null;
-  const body = stripComments(src.slice(src.indexOf('{', start) + 1, end), 'css');
-
-  const map = new Map(); // hex -> [tokens]
-  for (const decl of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
-    HEX_RE.lastIndex = 0;
-    for (const hit of decl[2].matchAll(HEX_RE)) {
-      const hex = normalizeHex(hit[0]);
-      const list = map.get(hex) ?? [];
-      if (!list.includes(decl[1])) list.push(decl[1]);
-      map.set(hex, list);
+function readThemeTables() {
+  const tables = { backoffice: new Map(), pos: new Map() };
+  const unclassified = [];
+  for (const file of TOKEN_SOURCES) {
+    let src;
+    try { src = readFileSync(join(ROOT, file), 'utf8'); } catch { return null; }
+    const css = stripComments(src, 'css');
+    for (const block of cssBlocks(css)) {
+      const theme = themeOfSelector(block.selector);
+      if (theme === null) { unclassified.push(`${file} « ${block.selector.slice(-60)} »`); continue; }
+      for (const decl of css.slice(block.from, block.to).matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+        for (const { hex } of colorsIn(decl[2])) {
+          const list = tables[theme].get(hex) ?? [];
+          if (!list.includes(decl[1])) list.push(decl[1]);
+          tables[theme].set(hex, list);
+        }
+      }
     }
   }
-  return map.size > 0 ? map : null;
+  if (unclassified.length > 0) return { unclassified };
+  if (tables.backoffice.size === 0 || tables.pos.size === 0) return null;
+  const union = new Map(tables.pos);
+  for (const [hex, toks] of tables.backoffice) {
+    union.set(hex, [...new Set([...(union.get(hex) ?? []), ...toks])]);
+  }
+  return { ...tables, union };
 }
 
 /**
@@ -169,10 +242,11 @@ function stripComments(src, kind) {
   return out.join('');
 }
 
-const themeHexes = readThemeHexes();
-if (themeHexes === null) {
-  console.error(`::error::GARDE 4 — impossible de lire le bloc « ${BLOCK} » dans ${TOKENS}.`);
-  console.error(`La garde tire sa vérité de ce fichier ; si sa forme a changé, ADAPTE LE PARSEUR.`);
+const themeTables = readThemeTables();
+if (themeTables === null || themeTables.unclassified !== undefined) {
+  console.error(`::error::GARDE 4 — impossible de lire les blocs de thème de ${TOKEN_SOURCES.join(' et ')}.`);
+  for (const u of themeTables?.unclassified ?? []) console.error(`  bloc non classé : ${u}`);
+  console.error(`La garde tire sa vérité de ces fichiers ; si leur forme a changé, ADAPTE LE PARSEUR.`);
   console.error(`Ne désactive pas la garde : c'est elle qui tient l'invariant.`);
   process.exit(1);
 }
@@ -204,18 +278,39 @@ let scanned = 0;
 
 for (const file of tracked) {
   if (file === BASELINE) continue;
+  if (TOKEN_SOURCES.includes(file)) continue;
   if (!SCANNED.some((p) => file.startsWith(p)) || !EXT.test(file)) continue;
   let content;
   try { content = readFileSync(join(ROOT, file), 'utf8'); } catch { continue; }
   scanned++;
-  const lines = stripComments(content, file.endsWith('.css') ? 'css' : 'ts').split(/\r?\n/);
+  const isCss = file.endsWith('.css');
+  const clean = stripComments(content, isCss ? 'css' : 'ts');
+  const lines = clean.split(/\r?\n/);
   const raw = content.split(/\r?\n/);
+
+  // Quelle table juge chaque ligne. Le back-office garde son régime d'origine —
+  // la table de SON thème — ce qui laisse sa baseline exactement valide. Dans
+  // `packages/ui`, un CSS est jugé bloc par bloc et un composant à l'union.
+  const isBackoffice = file.startsWith('apps/backoffice/src/');
+  let tableOfLine;
+  if (isBackoffice) {
+    tableOfLine = () => themeTables.backoffice;
+  } else if (isCss) {
+    const perLine = new Array(lines.length).fill(null);
+    for (const block of cssBlocks(clean)) {
+      const theme = themeOfSelector(block.selector);
+      const first = clean.slice(0, block.from).split('\n').length - 1;
+      const last = clean.slice(0, block.to).split('\n').length - 1;
+      for (let k = first; k <= last; k++) perLine[k] = theme;
+    }
+    tableOfLine = (i) => (perLine[i] === null ? themeTables.union : themeTables[perLine[i]]);
+  } else {
+    tableOfLine = () => themeTables.union;
+  }
+
   for (let i = 0; i < lines.length; i++) {
-    HEX_RE.lastIndex = 0;
-    let m;
-    while ((m = HEX_RE.exec(lines[i])) !== null) {
-      const hex = normalizeHex(m[0]);
-      const tokens = themeHexes.get(hex);
+    for (const { hex } of colorsIn(lines[i])) {
+      const tokens = tableOfLine(i).get(hex);
       if (tokens === undefined) continue;
       const key = `${file}\t${hex}`;
       const e = counted.get(key) ?? { count: 0, hits: [] };
@@ -279,7 +374,7 @@ if (process.argv.includes('--update-baseline')) {
 
 if (violations.length === 0) {
   const tolerated = [...counted.values()].reduce((a, e) => a + e.count, 0);
-  console.log(`GARDE 4 — aucune couleur du thème recopiée en dur hors baseline. ${scanned} fichiers balayés, ${themeHexes.size} teintes lues dans .theme-backoffice, ${tolerated} occurrence(s) héritée(s) tolérée(s).`);
+  console.log(`GARDE 4 — aucune couleur du thème recopiée en dur hors baseline. ${scanned} fichiers balayés, ${themeTables.backoffice.size} teintes back-office et ${themeTables.pos.size} teintes POS lues, ${tolerated} occurrence(s) héritée(s) tolérée(s).`);
   reportSlack();
   process.exit(0);
 }

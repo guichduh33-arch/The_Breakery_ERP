@@ -18,7 +18,13 @@ import { useAuthStore } from '@/stores/authStore.js';
 export interface PaletteHit {
   to: string;
   label: string;
-  breadcrumb: string;
+  /**
+   * MÉTADONNÉE d'une entité — « paid · Rp 25.000 », un SKU, un téléphone. Ce
+   * champ s'appelait `breadcrumb`, ce qu'il n'a jamais été : le fil d'Ariane
+   * d'une PAGE est une suite de segments, rendue chevron par chevron par la
+   * palette. Renommé le 2026-08-18 pour que les deux ne se confondent plus.
+   */
+  meta: string;
 }
 
 export interface PaletteSection {
@@ -82,7 +88,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
         return [{
           to: `/backoffice/orders/${id}`,
           label: `#${num}${customer !== null ? ` — ${customer}` : ''}`,
-          breadcrumb: `${status} · ${formatCurrency(r.total)}`,
+          meta: `${status} · ${formatCurrency(r.total)}`,
         }];
       });
     },
@@ -108,7 +114,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
         return [{
           to: `/backoffice/products/${id}`,
           label: name,
-          breadcrumb: sku ?? '',
+          meta: sku ?? '',
         }];
       });
     },
@@ -129,7 +135,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
       return (data ?? []).map((c) => ({
         to: `/backoffice/customers/${c.id}`,
         label: c.name,
-        breadcrumb: c.phone ?? c.email ?? '',
+        meta: c.phone ?? c.email ?? '',
       }));
     },
   });
@@ -149,7 +155,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
       return (data ?? []).map((s) => ({
         to: `/backoffice/suppliers/${s.id}`,
         label: s.name,
-        breadcrumb: s.code ?? '',
+        meta: s.code ?? '',
       }));
     },
   });

@@ -7,6 +7,10 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+// La grille rend des <Link> depuis le 2026-08-18 (le role="button" de la carte
+// effaçait la sémantique de tous ses enfants) : elle exige donc un routeur,
+// comme la rendait déjà products-list-filter.smoke.test.tsx.
+import { MemoryRouter } from 'react-router-dom';
 import { ProductsGrid } from '../components/ProductsGrid.js';
 import {
   ListPagination,
@@ -61,19 +65,19 @@ describe('pageSlice', () => {
 
 describe('ProductsGrid — pagination parity with the table', () => {
   it('renders one page of cards, not the whole filtered set', () => {
-    render(<ProductsGrid rows={makeRows(40)} />);
+    render(<MemoryRouter><ProductsGrid rows={makeRows(40)} /></MemoryRouter>);
     expect(gridCards()).toBe(LIST_PAGE_SIZE_DEFAULT);
     expect(screen.getByTestId('list-page-range')).toHaveTextContent('1–15 of 40');
   });
 
   it('honours the page it is given', () => {
-    render(<ProductsGrid rows={makeRows(40)} page={3} />);
+    render(<MemoryRouter><ProductsGrid rows={makeRows(40)} page={3} /></MemoryRouter>);
     expect(gridCards()).toBe(10);
     expect(screen.getByTestId('list-page-range')).toHaveTextContent('31–40 of 40');
   });
 
   it('honours a larger page size', () => {
-    render(<ProductsGrid rows={makeRows(120)} pageSize={100} />);
+    render(<MemoryRouter><ProductsGrid rows={makeRows(120)} pageSize={100} /></MemoryRouter>);
     expect(gridCards()).toBe(100);
     expect(screen.getByTestId('list-page-range')).toHaveTextContent('1–100 of 120');
   });

@@ -300,17 +300,30 @@ export default function PurchaseOrdersListPage(): JSX.Element {
           emptyState={
             <div className="px-6 py-12 text-center">
               <Package className="mx-auto h-10 w-10 text-text-muted" aria-hidden />
-              <h3 className="mt-3 font-display italic text-xl text-text-primary">No purchase orders yet</h3>
+              {/* `<h2>` et non `<h3>` : la page n'a que le `<h1>` de PageHeader,
+                  le niveau sautait de 1 à 3 (WCAG 1.3.1). Et `font-display
+                  italic` est parti avec : sous `.theme-backoffice`,
+                  `--font-display` est remappé sur la pile du CORPS — la classe
+                  nommait le contraire de ce qu'elle faisait, et l'italique
+                  restait seul. Deux défauts déjà corrigés deux fois ailleurs
+                  dans cette campagne (2026-08-18). */}
+              <h2 className="mt-3 text-xl font-semibold text-text-primary">No purchase orders yet</h2>
               <p className="mx-auto mt-1 max-w-prose text-sm text-text-secondary">
                 {canCreate
                   ? 'Draft a purchase order to start tracking incoming stock and supplier balances.'
                   : 'A manager must draft a purchase order before any will appear here.'}
               </p>
               {canCreate && (
+                // Le primitif partagé, pas `TOOLBAR_BTN_PRIMARY` : DESIGN.md
+                // § Boutons borne les chaînes `TOOLBAR_BTN_*` au BANDEAU de page.
+                // Un bouton d'état vide est une action de panneau — il prend le
+                // primitif, comme ceux des modales et des pieds de table.
                 <div className="mt-4">
-                  <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
-                    <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
-                  </Link>
+                  <Button asChild variant="ink" size="sm">
+                    <Link to="/backoffice/purchasing/purchase-orders/new">
+                      <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
+                    </Link>
+                  </Button>
                 </div>
               )}
             </div>

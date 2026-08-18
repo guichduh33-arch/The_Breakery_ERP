@@ -120,7 +120,11 @@ describe('CommandPalette', () => {
     renderPalette();
     fireEvent.change(input(), { target: { value: 'cash flow' } });
     const option = screen.getByRole('option', { name: /Cash flow/ });
-    expect(within(option).getByText('Reports › Financial')).toBeInTheDocument();
+    // Le fil d'Ariane est rendu SEGMENT par segment depuis le 2026-08-18, le
+    // séparateur étant une icône `ChevronRight` et non le glyphe `›` : on
+    // vérifie donc les deux segments, dans l'ordre, à l'intérieur de l'option.
+    const crumbs = within(option).getAllByText(/^(Reports|Financial)$/);
+    expect(crumbs.map((n) => n.textContent)).toEqual(['Reports', 'Financial']);
   });
 
   it('n’expose jamais une destination interdite, même sur son nom exact', () => {

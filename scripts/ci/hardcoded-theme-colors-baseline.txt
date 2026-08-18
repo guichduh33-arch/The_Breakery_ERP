@@ -12,6 +12,12 @@
 # Le drapeau ne sait que descendre un compte ; il ne peut pas faire passer une
 # violation.
 #
+# PÉRIMÈTRE ÉLARGI le 2026-08-18 — la garde balaie désormais `packages/ui/src/`
+# en plus de `apps/backoffice/src/`, et reconnaît `rgba(r, g, b, a)` en plus de
+# `#rrggbb`. Aucune ligne n'a été ajoutée ici : le seul doublon que l'extension
+# a mis au jour (le halo de focus du POS, `rgba(211, 171, 92, 0.40)` =
+# --gold-base) a été CORRIGÉ le même jour, pas toléré.
+#
 # CE QUI N'EST PAS ICI, et pourquoi : les quatorze crans des deux rampes de coût
 # de apps/backoffice/src/features/reports/utils/chartColors.ts. La garde attrape
 # le DOUBLON d'un token, jamais la couleur inconnue — et ces quatorze valeurs

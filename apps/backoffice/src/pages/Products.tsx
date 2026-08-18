@@ -344,10 +344,13 @@ export default function ProductsPage(): JSX.Element {
             {...(canDelete ? { onDelete: (row: ProductRow) => { setToDelete(row); } } : {})}
           />
         ) : (
+          // `onCardClick` a disparu avec le `role="button"` de la carte : la
+          // grille rend des `<Link>` et porte donc sa destination elle-même,
+          // comme `SupplierCard` et `ComboCard`. `openProduct` reste l'ouverture
+          // de la vue TABLE, dont les lignes ne sont pas des liens.
           <ProductsGrid
             rows={sorted}
             parentIds={parentIds}
-            onCardClick={openProduct}
             page={page}
             onPage={setPage}
             pageSize={pageSize}

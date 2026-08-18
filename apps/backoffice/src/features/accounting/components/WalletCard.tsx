@@ -42,7 +42,7 @@ export function WalletCard({
       // lire lequel des deux états on regardait — et sur la carte sélectionnée
       // les deux se confondaient en un seul liseré épais.
       // La sélection passe donc à l'ENCRE, qui n'est ni la couleur du focus ni
-      // celle d'aucun autre état de ce thème (`--ink-base` #201d19, 15,9:1 sur
+      // celle d'aucun autre état de ce thème (`--ink-base` #201d19, 16,784:1 sur
       // la feuille blanche). L'or reste ce que DESIGN.md lui donne : le focus.
       // La couleur n'est de toute façon pas le seul porteur — `aria-pressed`
       // annonce la sélection, elle n'est jamais devinée à la teinte.

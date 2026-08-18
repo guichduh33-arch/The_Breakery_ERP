@@ -178,9 +178,10 @@ Ce que le système a délibérément écarté est aussi net que ce qu'il a reten
 L'ivoire chaud et Playfair Display sur les titres de page ont été retirés le
 2026-08-05 : ils étaient le signal « boulangerie artisanale » le plus fort dans
 un outil de gestion, et ils faisaient lire la page comme un site vitrine.
-Playfair survit au seul monogramme de marque. Les coins arrondis sont tombés de
-12 px à 4 px pour la même raison — la rondeur lisait « application grand
-public », la serre lit « instrument ».
+Playfair survit à la seule **marque** — le monogramme de la barre de navigation
+et la marque du splash de démarrage, qui lisent tous deux `--font-brand`. Les
+coins arrondis sont tombés de 12 px à 4 px pour la même raison — la rondeur
+lisait « application grand public », la serre lit « instrument ».
 
 **Key Characteristics:**
 
@@ -288,6 +289,16 @@ plus du bouton du bandeau, ce qui enfreint **The One Ink Fill Rule** (arbitré l
 2026-08-18). Contrainte de mesure : le curseur doit tenir 3:1 sur la piste dans
 **les deux** états — 6,22:1 sur l'or, 3,83:1 sur la piste éteinte.
 
+*Troisième aplat — la plaque du monogramme, et ce n'est PAS le test de la règle
+qui l'excuse.* Le carré de 26 px qui porte le « B » dans la barre de navigation
+est rempli en `bg-gold`. Il échoue au test énoncé plus haut : retirez le
+remplissage et le monogramme reste lisible, seule la marque perd sa plaque —
+c'est donc bien un décor, pas un signal. Il est **maintenu par arbitrage du
+propriétaire**, et nommé ici pour qu'on ne le prenne ni pour un oubli ni pour
+une extension de l'exception précédente : la liste des aplats d'or du
+back-office est *piste d'interrupteur, point d'état, plaque du monogramme*, et
+elle ne s'allonge pas d'elle-même (relevé du 2026-08-18).
+
 **The One Ink Fill Rule.** Un seul bloc encré par écran en plus de la barre de
 navigation : soit le bouton qui crée, soit la tuile qui répond à la question
 qu'on pose en ouvrant la page. Un second détruit la hiérarchie que le premier
@@ -301,7 +312,10 @@ teintes remontées en luminosité — et nulle part ailleurs.
 
 **Body Font:** Instrument Sans Variable (repli Inter Variable, puis system-ui)
 **Data Font:** JetBrains Mono Variable (repli ui-monospace)
-**Brand Font:** Playfair Display — **monogramme de marque uniquement**
+**Brand Font:** Playfair Display — **marque uniquement**, et le seul utilitaire
+qui la sorte sous ce thème est `font-brand` (`--font-brand`). `font-display` et
+`font-serif` **ne rendent pas de serif ici** : le thème remappe `--font-display`
+sur la pile du corps, et `--font-serif` n'en est qu'un alias.
 
 **Character:** Instrument Sans a un œil étroit et une allure technique sans
 raideur ; il porte tout ce qui s'explique. JetBrains Mono, tabulaire, porte tout
@@ -361,9 +375,26 @@ réel, pas une tolérance.
 tabulaire. Un montant, un compteur, un pourcentage ou un horodatage en
 sans-serif est un défaut, pas une variante.
 
-**The Playfair-Is-Brand-Only Rule.** Playfair Display ne rend que le monogramme
-de la barre de navigation. Un titre de page en serif fait relire la boulangerie
-au lieu de l'outil — c'est le geste que la refonte a explicitement défait.
+**The Playfair-Is-Brand-Only Rule.** Playfair Display ne rend que la **marque** :
+le monogramme de la barre de navigation et la marque du splash de démarrage. Un
+titre de page en serif fait relire la boulangerie au lieu de l'outil — c'est le
+geste que la refonte a explicitement défait.
+
+*Ce que la règle exige en pratique, et ce qu'elle n'exige pas.* La règle porte
+sur ce qui **rend**, pas sur ce qui est **écrit**. Deux corollaires opposables :
+
+- **Une surface de marque prend `font-brand`, jamais `font-display`.** Jusqu'au
+  2026-08-18 le monogramme portait `font-display` et rendait donc en Instrument
+  Sans : le seul endroit où Playfair devait survivre était précisément le seul
+  qui ne le rendait pas, pendant que ce document, la règle ci-dessus et un
+  commentaire de `colors.css` affirmaient l'inverse. `--font-brand` existait,
+  mais aucun utilitaire Tailwind ne l'exposait — il a été ajouté au preset ce
+  jour-là.
+- **Un `font-serif` / `font-display` restant n'est pas une violation de cette
+  règle**, puisqu'il ne produit aucun serif sous ce thème ; c'est une classe qui
+  nomme le contraire de ce qu'elle fait, et le défaut est là. Le relevé se fait
+  par `grep -E '\bfont-(serif|display)\b'` sur `apps/backoffice/src`, commentaires
+  et tests exclus — pas de compte gravé ici, il pourrit à chaque édition.
 
 **The Value-Width Rule.** Le corps de la valeur KPI est tendu contre la largeur
 de tuile : `Rp 4,850,000` doit tenir sur une ligne. Toute remontée du corps
@@ -592,7 +623,7 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
   **Quatre crans de hauteur, pas un** — ce document annonçait « 56 px » comme
   s'il n'y en avait qu'un. Relevé du 2026-08-18, parseur équilibrant les
   accolades (un `>` de `() =>` ne ferme pas une balise) :
-  - `sm` — **36 px** (`h-9`). **112 emplois** dans 60 fichiers : les paires
+  - `sm` — **36 px** (`h-9`). **113 emplois** dans 60 fichiers : les paires
     d'action des modales, et le « Load more » de tout pied de table.
   - `md` — **56 px** (`--touch-comfy`), le **défaut du primitif**. 2 emplois
     explicites, mais **180 implicites** dans 87 fichiers — un `<Button>` écrit
@@ -600,7 +631,7 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
   - `lg` — 80 px : 1 emploi. `icon` — 56 × 56 : aucun.
 
   Autrement dit le back-office n'a pas un cran dominant mais **deux populations
-  comparables**, 112 contre 182, et la plus grosse est obtenue par omission. Ce
+  comparables**, 113 contre 182, et la plus grosse est obtenue par omission. Ce
   n'est pas un choix, c'est un défaut de primitif — le même que
   `defaultVariants: { variant: 'primary' }` déjà nommé plus bas : la conformité
   s'obtient par un opt-out que chaque auteur doit connaître.
@@ -610,8 +641,17 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
   son trait est le seul objet qui le délimite, il tient donc les 3:1 de WCAG
   1.4.11 (3,827:1). Le `border-subtle` qu'il a porté un temps valait 1,308:1 — le
   bouton n'avait plus de limite visible (corrigé le 2026-08-18).
+  **Et il vire au papier pressé au survol**, comme la chaîne de bandeau : son
+  survol visait `--bg-input`, qui vaut lui aussi `#ffffff` sous ce thème — repos
+  et survol étaient à 1,000:1, ΔL 0, le bouton ne réagissait pas à la souris.
+  `--surface-4` donne 1,236:1, ΔL 0,20034 (corrigé le 2026-08-18, le même jour
+  que le trait ; les deux vivaient sur la même déclaration).
 - **Désactivé** : les variants remplis neutralisent leur couleur au lieu de la
   faner. Un vert ou un or à 50 % d'opacité lit encore comme un bouton vivant.
+  **La chaîne de bandeau suit la même règle** depuis le 2026-08-18 : elle fanait
+  à `opacity-50`, ce qui rendait l'aplat encre en un gris où le libellé ivoire
+  tombait à 2,04:1. Elle neutralise désormais sur `--surface-4` / `--text-muted`,
+  exactement comme le primitif.
 - **Focus** : contour de 2 px décalé de 2 px, couleur `gold` sur le papier,
   `ink-gold` sur l'encre.
 
@@ -736,12 +776,19 @@ chiffre absent :
   aujourd'hui** (relevé du 2026-08-18, parseur équilibrant les accolades) : le seul
   `<Button>` sans variant du back-office vit dans une fixture de test. Le risque est
   donc entièrement devant nous, porté par le défaut du primitif, pas derrière.
-- **Playfair Display survit hors du monogramme, mais dans vingt-et-un fichiers**,
-  pour vingt-huit occurrences de `font-serif` / `font-display` — pas dans les
-  quatre-vingt-dix annoncés. Réserve à ne pas confondre avec une victoire : sous
-  ce thème `--font-display` est remappé sur le corps, donc la plupart de ces
-  classes ne rendent **pas** de serif ; elles nomment le contraire de ce qu'elles
-  font. La règle du monogramme unique reste la cible.
+- **Playfair Display ne rend nulle part hors de la marque, mais des classes qui
+  prétendent l'appeler subsistent.** Le relevé de 2026-08-07 en annonçait
+  quatre-vingt-dix ; il en reste quelques dizaines de `font-serif` /
+  `font-display`, et **aucune ne produit de serif** : sous ce thème
+  `--font-display` est remappé sur la pile du corps. Elles nomment le contraire
+  de ce qu'elles font, ce qui est le vrai défaut — un auteur qui les lit croit
+  la règle enfreinte, un auteur qui les recopie propage un mensonge. Aucun compte
+  n'est gravé ici : il serait faux au commit suivant, et
+  `grep -E '\bfont-(serif|display)\b' apps/backoffice/src` le rend à jour. La
+  cible est zéro. **Ce que ce paragraphe annonçait comme la cible — « la règle du
+  monogramme unique » — était par ailleurs faux du côté du code jusqu'au
+  2026-08-18** : le monogramme lui-même portait `font-display` et ne rendait donc
+  pas Playfair (corrigé par `font-brand`, cf. § Typography).
 - **Les deux tokens annoncés manquants existent.** Le gris inerte est
   `--text-inert` (`#c2beb5`) et la rampe de data-viz est `--chart-1..4`
   (`#2b6c9c` → `#c9dcea`), tous deux dans `packages/ui/src/tokens/colors.css` et
@@ -779,6 +826,22 @@ règles :
   champ ne l'a pas été, parce que le geste touche tous les formulaires des deux
   apps et relève d'un arbitrage, pas d'une correction. § Champs décrit donc le
   code, pas le seuil.
+- **Trente-cinq champs sont écrits à la main, hors du primitif `Input`, et n'ont
+  aucun anneau de focus** (relevé du 2026-08-18, quinze fichiers ; parseur qui
+  ignore commentaires et tests et ne retient que les balises `input`, `select`,
+  `textarea`). Leur signature est `bg-bg-base` + `border border-border-subtle` +
+  `rounded`, sans `FOCUS_RING` ni `focus-visible:outline`. Deux conséquences
+  mesurées : ils retombent sur l'anneau par défaut du navigateur — 2,09-2,40:1,
+  sous les 3:1 des objets graphiques (WCAG 1.4.11 / 2.4.11) — et leur
+  placeholder, non tokenisé, prend le `gray-400` du Preflight, à 2,21:1 sur le
+  papier de page. **Forme cible**, celle déjà posée sur les champs du chantier
+  combos : `… bg-bg-base border border-border-subtle rounded
+  placeholder:text-text-muted ${FOCUS_RING}`, ou le primitif `Input` quand la
+  géométrie s'y prête. Le gros du lot vit dans `features/products`
+  (`NewProductDialog`, `AddVariantDialog` — onze à eux deux), `features/users`,
+  `features/inventory-opname`, `features/floor-plan`, `features/sections` et
+  `features/inventory-movements`. Ce n'est pas un arbitrage, c'est du travail
+  non fait : le geste est mécanique et le compte descend à chaque fichier touché.
 
 **État du corpus.** La planche de référence couvre quinze écrans pour neuf
 archétypes. Trois sont construits — Today (shell + landing), Products (List) et

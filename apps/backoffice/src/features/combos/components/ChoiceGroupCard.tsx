@@ -3,6 +3,12 @@
 // Session 47 — A single configurable group card in the ComboBuilderPage.
 // Contains group metadata + list of ComboOptionRows + "Add Product" picker.
 // Note: @breakery/ui has no RadioGroup — uses native <select> (kept for form uniformity).
+//
+// Corps de texte — 2026-08-18. Les deux libellés de champ portaient
+// `text-[0.625rem]` (10 px), sous le plancher de la rampe : `--type-*` ne
+// descend pas sous 12 px depuis la décompression de l'échelle, et 10 px est le
+// plus petit corps du produit sur un poste de BUREAU. Remontés à `text-xs`,
+// comme les onze de `ComboCard`.
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
@@ -110,7 +116,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-name-${group.id}`}
-              className="block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1"
+              className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
             >
               Group Name
             </label>
@@ -127,7 +133,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-type-${group.id}`}
-              className="block text-[0.625rem] uppercase tracking-wider text-text-secondary mb-1"
+              className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
             >
               Type
             </label>
