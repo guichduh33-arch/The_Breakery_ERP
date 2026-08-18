@@ -11,6 +11,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import B2BDashboardPage from '@/pages/btob/B2BDashboardPage.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
+// Le MÊME formateur que la page : l'assertion épingle le montant, pas une
+// chaîne recopiée à la main qui divergerait au premier changement de locale.
+import { formatIdr } from '@/features/dashboard/utils/format.js';
 
 const mockRpc = vi.fn();
 
@@ -167,10 +170,14 @@ function renderDashboard(): void {
  * The tile now stamps `${testId}-value` on the value span, so the assertion is
  * pinned to the value and cannot pick up a note again.
  *
- * NOTE FOR THE NEXT SESSION — the two failures in this file are NOT the same
- * kind. T1 depends on live `view_ar_aging` rows on the dev database and fails
- * when that view is empty; T4 was a rendering regression, fixed here. Do not
- * "fix" one by loosening the other.
+ * CORRECTION (2026-08-18) — une note précédente affirmait ici que T1 « dépend
+ * des lignes live de `view_ar_aging` sur la base dev ». C'EST FAUX, et cette
+ * erreur a coûté une enquête : tout ce fichier est monté sur `vi.mock` de
+ * `@/lib/supabase.js`, et `view_ar_aging` y rend la fixture AGING. Aucun test
+ * d'ici ne touche la base. Les deux échecs étaient de la MÊME nature — des
+ * régressions de rendu de la campagne design — et le second se lisait dans son
+ * message : « expected 0 to be greater than or equal to 1 » comptait des nœuds
+ * du DOM, pas des lignes d'une vue.
  */
 function kpiValue(testId: string): string {
   return screen.getByTestId(`${testId}-value`).textContent?.trim() ?? '';
@@ -191,14 +198,19 @@ describe('B2B foundation (S24)', () => {
 
   it('T1 — dashboard outstanding AR aggregates view_ar_aging rows', async () => {
     renderDashboard();
-    // Outstanding AR KPI must display 870 000 (750 + 120 from view_ar_aging).
+    // 750 000 + 120 000 = 870 000, les deux seaux de la fixture AGING.
+    //
+    // L'assertion porte sur l'INFOBULLE, pas sur le texte visible. La campagne
+    // design du 2026-08-18 a fait passer cette tuile au format court parce
+    // qu'un montant IDR à sept chiffres cassait en deux lignes : elle affiche
+    // « Rp 870 rb » et garde l'exact dans `title`, via la prop `valueTitle`.
+    // L'ancienne assertion balayait le DOM à la recherche de « 870.000 » — elle
+    // testait donc un CHOIX DE FORMATAGE, et le changer la cassait sans qu'une
+    // seule règle métier ait bougé. Le montant exact, lui, est ce que la vue
+    // agrège : c'est lui qu'il faut épingler.
     await waitFor(() => {
-      const candidates = screen.queryAllByText((_, el) => {
-        if (el === null) return false;
-        const t = el.textContent ?? '';
-        return /870[\s,.]?000/.test(t);
-      });
-      expect(candidates.length).toBeGreaterThanOrEqual(1);
+      const value = screen.getByTestId('kpi-b2b-outstanding-ar-value');
+      expect(value).toHaveAttribute('title', formatIdr(870000));
     }, { timeout: 4000 });
   });
 
