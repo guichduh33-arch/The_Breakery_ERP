@@ -792,8 +792,15 @@ chiffre absent :
 - **Les deux tokens annoncés manquants existent.** Le gris inerte est
   `--text-inert` (`#c2beb5`) et la rampe de data-viz est `--chart-1..4`
   (`#2b6c9c` → `#c9dcea`), tous deux dans `packages/ui/src/tokens/colors.css` et
-  exposés par le preset Tailwind. Reliquat réel : `features/reports/utils/chartColors.ts`
-  redéclare ces mêmes valeurs en dur au lieu de consommer les tokens.
+  exposés par le preset Tailwind. Le reliquat annoncé ici — `chartColors.ts` qui
+  redéclarait ces mêmes valeurs en dur au lieu de consommer les tokens — est
+  **soldé** (vérifié le 2026-08-18) : le fichier lit les `var()`, et plus une seule
+  de ses valeurs ne double un token. Ce qu'il porte encore est d'une autre
+  nature : deux rampes analytiques locales et une série catégorielle, arbitrées
+  en tête de fichier et sans équivalent dans les tokens. La réserve qui reste
+  n'est donc pas un doublon mais un contraste — cinq de leurs crans passent sous
+  le plancher de 3:1, et ne se lisent que parce que chaque graphe porte des
+  étiquettes directes et sa table. Rien ne surveille cette condition.
 
 **Écarts ouverts, relevés le 2026-08-18.** Ceux-là sont des constats, pas des
 règles :
@@ -817,36 +824,90 @@ règles :
   lui, reste ouvert et n'est *pas* un défaut résolu : `tailwind-dead-classes.mjs`
   sait détecter une clé morte d'une famille connue, pas une famille inventée. Il
   n'en ferme que le cas nommé — une liste noire du vocabulaire shadcn/ui.
-- **The Value-Width Rule est enfreinte sur une tuile de la liste B2B.** Mesuré à
-  1280 px, la largeur cible du produit : une valeur monétaire de dix caractères
-  rend sur deux lignes. C'est précisément la coupure que la règle nomme.
+- **La violation de The Value-Width Rule annoncée sur une tuile de la liste B2B
+  n'existe pas.** Cette entrée affirmait qu'à 1280 px, la largeur cible du
+  produit, une valeur monétaire de dix caractères rendait sur deux lignes.
+  Repris au navigateur le 2026-08-18, sur le nœud réel : **infirmé.** La bande
+  de tuiles est un `flex` sans retour à la ligne et la tuile n'a pas de largeur
+  fixe ; cinq chaînes de dix à treize caractères injectées tour à tour
+  l'élargissent jusqu'à environ 209 px et rendent toutes **sur une ligne**, sans
+  induire de débordement de page. Les deux autres tuiles monétaires du domaine
+  B2B tiennent aussi.
+  Ce qui reste vrai est plus étroit, et ce n'est pas ce qui était écrit : la
+  valeur ne porte pas `whitespace-nowrap`, donc la coupure redevient possible si
+  la bande se remplit assez pour forcer la contraction. C'est un risque
+  conditionnel, pas un défaut constaté. La leçon de méthode vaut le constat : une
+  largeur de contenu comparée à une largeur de tuile **supposée fixe** ne dit
+  rien d'une tuile qui s'élargit, et cette entrée a fait passer un calcul pour
+  une mesure.
 - **Le champ n'a pas de limite qui tienne 1.4.11.** Le primitif `Input` borde en
   `--border-subtle` (`#e3e1db`), soit 1,308:1 sur la feuille blanche qu'il
   remplit. Le bouton secondaire a été porté à `--border-strong` le 2026-08-18 ; le
   champ ne l'a pas été, parce que le geste touche tous les formulaires des deux
   apps et relève d'un arbitrage, pas d'une correction. § Champs décrit donc le
   code, pas le seuil.
-- **Trente-cinq champs sont écrits à la main, hors du primitif `Input`, et n'ont
-  aucun anneau de focus** (relevé du 2026-08-18, quinze fichiers ; parseur qui
-  ignore commentaires et tests et ne retient que les balises `input`, `select`,
-  `textarea`). Leur signature est `bg-bg-base` + `border border-border-subtle` +
-  `rounded`, sans `FOCUS_RING` ni `focus-visible:outline`. Deux conséquences
-  mesurées : ils retombent sur l'anneau par défaut du navigateur — 2,09-2,40:1,
-  sous les 3:1 des objets graphiques (WCAG 1.4.11 / 2.4.11) — et leur
-  placeholder, non tokenisé, prend le `gray-400` du Preflight, à 2,21:1 sur le
-  papier de page. **Forme cible**, celle déjà posée sur les champs du chantier
-  combos : `… bg-bg-base border border-border-subtle rounded
-  placeholder:text-text-muted ${FOCUS_RING}`, ou le primitif `Input` quand la
-  géométrie s'y prête. Le gros du lot vit dans `features/products`
-  (`NewProductDialog`, `AddVariantDialog` — onze à eux deux), `features/users`,
-  `features/inventory-opname`, `features/floor-plan`, `features/sections` et
-  `features/inventory-movements`. Ce n'est pas un arbitrage, c'est du travail
-  non fait : le geste est mécanique et le compte descend à chaque fichier touché.
+- **Les champs écrits à la main hors du primitif `Input` n'ont pas d'anneau de
+  focus conforme — et ils étaient cinq fois plus nombreux que ce paragraphe ne
+  l'annonçait.** Le relevé porté ici jusqu'au 2026-08-18 disait « trente-cinq
+  champs, quinze fichiers ». Ce chiffre est **exact pour la signature de classe
+  qu'il énonce** — `bg-bg-base` + `border border-border-subtle` + `rounded` — et
+  reproductible au champ près ; il n'a jamais été un compte de population. Deux
+  mesures indépendantes du 2026-08-18, parseurs équilibrant les accolades et
+  résolvant les constantes locales, rendent **cent-soixante-dix-huit à
+  cent-quatre-vingt-six contrôles dans quatre-vingt-un à quatre-vingt-dix
+  fichiers** : il existait un **second dialecte**, `h-9 … bg-bg-input` en 36 px,
+  qu'aucune recherche sur la première signature ne pouvait voir. Les deux plus
+  gros formulaires du produit — le brouillon de bon de commande et la fiche
+  fournisseur — n'étaient dans aucune des deux listes citées.
+  Deux conséquences mesurées **au navigateur** : ces contrôles ne sont pas sans
+  anneau, ils retombent sur celui du navigateur, `auto 1px` à **2,398:1** sur la
+  feuille blanche, sous les 3:1 des objets graphiques (WCAG 1.4.11 / 2.4.11) ; et
+  leur placeholder, non tokenisé, prend le `gray-400` du Preflight, à **2,208:1**
+  sur le papier de page (WCAG 1.4.3). Les trois ratios annoncés par ce document
+  sont, eux, exacts au millième.
+  **Forme cible**, celle déjà posée sur les champs du chantier combos :
+  `… bg-bg-base border border-border-subtle rounded placeholder:text-text-muted
+  ${FOCUS_RING}`, ou le primitif `Input` quand la géométrie s'y prête ; une
+  constante de classe se corrige à la source plutôt qu'à chacun de ses appels.
+  Ce n'est pas un arbitrage, c'est du travail mécanique, et il est en cours de
+  livraison (PR #415, ouverte le 2026-08-18).
+  **La leçon de relevé survit au chantier**, elle : un compte obtenu en filtrant
+  sur une signature de classe mesure cette signature, jamais la population. Gravé
+  dans un document de direction, il fait lire un chantier à 80 % quand il est à
+  20 %. Un relevé se cadre sur ce qu'on cherche — ici la balise et l'absence
+  d'anneau — pas sur la forme du premier exemple rencontré.
+
+- **`EmptyState` enfreint deux règles de ce document, et aucun relevé ne l'avait
+  vu** (2026-08-18). Le primitif partagé rend son titre en `font-display italic` :
+  sous ce thème `--font-display` est remappé sur la pile du corps, donc il ne
+  produit pas de serif — mais **l'italique, lui, rend**, et ce n'est aucun des
+  six rôles que § Typography déclare. Et son action-objet rend
+  `<Button variant="gold">`, c'est-à-dire un **aplat d'or en capitales
+  interlettrées**, que **The Ink-Not-Gold Rule** interdit et qui n'est aucune des
+  trois exceptions nommées. Ce n'est pas un risque théorique : un appelant
+  l'atteint aujourd'hui, l'état vide de l'index des rapports — et l'état vide est
+  le premier écran que voit un utilisateur d'un module neuf.
+  **L'angle mort de méthode est le même que celui des champs sans anneau** : le
+  relevé du même jour concluait que le risque du défaut de variant était
+  « entièrement devant nous » parce qu'il cherchait `variant="primary"`. Il ne
+  cherchait pas `gold`. Chercher la valeur qu'on redoute ne dit rien des autres
+  valeurs de la même prop.
 
 **État du corpus.** La planche de référence couvre quinze écrans pour neuf
-archétypes. Trois sont construits — Today (shell + landing), Products (List) et
-B2B orders (List). Les douze autres sont dessinés et validés, non implémentés :
+archétypes. **« Construit » veut dire refait depuis l'archétype, pas « la page
+existe »** : la plupart des quinze ont une page en production depuis longtemps,
+et lire cette liste comme un inventaire de routes manquantes la fait dire le
+contraire de ce qu'elle dit. Le test est l'invariant propre à l'archétype, pas
+la présence du fichier.
+
+Quatre sont construits — Today (shell + landing), Products (List), B2B orders
+(List) et **Settings (Hub)**. Ce dernier était rangé parmi les non-implémentés
+jusqu'au 2026-08-18 ; il l'est, et il tient l'invariant qui distingue un hub d'un
+menu : chaque tuile porte sa valeur courante sous son libellé, avec un tiret
+honnête quand la section est vide et le lien laissé intact.
+
+Les onze autres sont dessinés et validés, non refaits depuis leur archétype :
 Stock alerts (List), Daily sales et Trial balance (Report), Purchase order
-(Document), New expense (Form), Settings (Hub), Stock count (Bulk entry), Roles
-& permissions (Matrix), Recipe (Cascade), Production log (Append-only log),
-Z-reports (List) et Login (hors shell).
+(Document), New expense (Form), Stock count (Bulk entry), Roles & permissions
+(Matrix), Recipe (Cascade), Production log (Append-only log), Z-reports (List)
+et Login (hors shell).
