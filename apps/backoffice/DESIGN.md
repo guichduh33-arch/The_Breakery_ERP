@@ -558,6 +558,16 @@ antichronologique.
 **Hors shell.** Une page qui précède l'authentification n'a pas de barre de
 navigation et n'est donc l'instance de rien : elle se partage en deux moitiés —
 l'encre porte la marque et l'état du jour, la lumière porte le geste.
+
+*La marque qu'elle porte est celle de l'enseigne, pas celle de l'instrument.*
+Le login rend le logo complet — croissant illustré et « FAIT MAISON — FRENCH
+BAKERY » —, c'est-à-dire le signal que le chrome interdit. Il échoue au test de
+la règle : retirez-le, le geste de connexion reste entier. Il est **maintenu
+par arbitrage du propriétaire** (2026-08-19), au même titre que la plaque or du
+monogramme : avant l'authentification on entre dans la boulangerie, après on
+prend l'instrument. L'exception est bornée à cette seule page ; le premier
+écran authentifié reprend le monogramme sobre, et le contraste entre les deux
+est assumé, pas un oubli.
 *Instance : Login.*
 
 ## Elevation & Depth
@@ -756,6 +766,8 @@ une réserve fait passer une estimation pour un relevé.
   tombent sous le seuil de lecture. Utiliser `ink-success` / `ink-danger`.
 - **Don't** réintroduire l'ivoire chaud ni aucun signal de boulangerie
   artisanale dans le chrome — c'est l'anti-référence explicite du système.
+  *Une seule surface y échappe, par arbitrage : la page de connexion
+  (cf. § Hors shell).*
 - **Don't** écrire une couleur en dur dans un composant. Toute la direction est
   scopée au thème pour rester commutable ; une valeur en dur dans un composant la
   fige.
