@@ -237,11 +237,13 @@ même accent, même vocabulaire d'état, même échelle.
   page, et un bouton secondaire y était une limite invisible. `#86827a` clôt le
   seuil sur les quatre fonds du thème : 3,83:1 feuille blanche, 3,33:1 papier,
   3,66:1 en-tête inerte, 3,10:1 état pressé.
-  **Le champ, lui, est encore bordé du filet de carte** (`#e3e1db`) — c'est ce
-  que rend le primitif `Input` et ce que décrit § Champs. Ce trait vaut 1,308:1
-  sur la feuille blanche : un champ n'a donc, à ce jour, pas de limite qui tienne
-  1.4.11. Ce paragraphe l'annonçait comme réglé en rangeant le champ avec le
-  bouton ; c'est un écart ouvert, pas un constat (relevé le 2026-08-18).
+  **Le champ borde en `--border-strong` depuis le 2026-08-19** — même arbitrage
+  que le bouton secondaire, pris par le propriétaire pour les deux apps : la
+  bordure d'un champ est la limite d'un contrôle, elle tient les 3:1 de 1.4.11
+  (3,33:1 mesuré sur le papier de page). Réserve honnête : dans le thème sombre
+  de la caisse, `--border-strong` (`#413a33` sur `#1f1c18`) vaut 1,52:1 — mieux
+  que les 1,13:1 d'avant, toujours sous le seuil. Monter le token du thème
+  sombre est un arbitrage POS distinct, non pris à ce jour.
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
   (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
   plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
@@ -669,7 +671,7 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
 
 ### Champs
 
-- Hauteur 44 px, rayon 4 px, bordure `#e3e1db`, fond feuille blanche.
+- Hauteur 44 px, rayon 4 px, **bordure de contrôle `#86827a`**, fond feuille blanche.
 - **Focus** : contour or de 2 px décalé de 2 px, halo de la même teinte.
 - **Désactivé** : curseur interdit et opacité réduite.
 
@@ -840,12 +842,12 @@ règles :
   largeur de contenu comparée à une largeur de tuile **supposée fixe** ne dit
   rien d'une tuile qui s'élargit, et cette entrée a fait passer un calcul pour
   une mesure.
-- **Le champ n'a pas de limite qui tienne 1.4.11.** Le primitif `Input` borde en
-  `--border-subtle` (`#e3e1db`), soit 1,308:1 sur la feuille blanche qu'il
-  remplit. Le bouton secondaire a été porté à `--border-strong` le 2026-08-18 ; le
-  champ ne l'a pas été, parce que le geste touche tous les formulaires des deux
-  apps et relève d'un arbitrage, pas d'une correction. § Champs décrit donc le
-  code, pas le seuil.
+- **Le champ n'avait pas de limite qui tienne 1.4.11 — soldé le 2026-08-19.**
+  `Input` et `selectClassName` bordent en `--border-strong` (arbitrage du
+  propriétaire, les deux apps). Ce qui reste ouvert est plus étroit : le thème
+  sombre de la caisse plafonne à 1,52:1 (arbitrage POS non pris), et les
+  contrôles stylés à la main hors primitif — le champ « Receipt file » de la
+  saisie de dépense, 1,08:1 — se corrigent appelant par appelant.
 - **Les champs écrits à la main hors du primitif `Input` n'ont pas d'anneau de
   focus conforme — et ils étaient cinq fois plus nombreux que ce paragraphe ne
   l'annonçait.** Le relevé porté ici jusqu'au 2026-08-18 disait « trente-cinq
