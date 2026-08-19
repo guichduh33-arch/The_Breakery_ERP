@@ -5,6 +5,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { todayIsoDate } from '@breakery/utils';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
 
 let currentPerms = new Set<string>(['inventory.read', 'inventory.production.create']);
@@ -40,14 +42,19 @@ const STATIONS = [
   { id: 'st-cafe', code: 'COFFEE_STATION', name: 'Coffee Station', kind: 'sales', display_order: 30 },
 ];
 
-function renderPage() {
+// La station active et le jour vivent dans l'URL (`useSearchParams`) : le rendu
+// EXIGE un Router. `initialEntries` est ce qui permet de figer la restitution
+// d'un lien partagé — c'est le sujet de deux des cas ci-dessous.
+function renderPage(entry = '/backoffice/inventory/production') {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <ProductionPage />
-    </QueryClientProvider>,
+    <MemoryRouter initialEntries={[entry]}>
+      <QueryClientProvider client={qc}>
+        <ProductionPage />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -68,17 +75,45 @@ describe('ProductionPage smoke', () => {
     expect(screen.getByTestId('station-tab-STN_HOT_KITCHEN')).toBeInTheDocument();
     // Sales section must NOT appear as a production station.
     expect(screen.queryByTestId('station-tab-COFFEE_STATION')).not.toBeInTheDocument();
-    // La sélection arrive UN CYCLE APRÈS le rendu des onglets : `activeId` part
-    // vide et c'est un `useEffect` qui le pose une fois les stations chargées
-    // (ProductionPage.tsx, « Default to the first station once they load »).
-    // Attendre la présence de l'onglet ne suffit donc pas — il existe d'abord à
-    // `aria-selected="false"`. Sur une machine rapide l'effet retombe dans le
-    // même lot que le rendu et l'assertion passe ; sous charge elle échoue.
-    // C'est ce qui a fait rougir la CI de la PR #414 alors que la suite passait
-    // en local, sur un test et un composant que cette PR n'a pas touchés.
+    // La sélection est désormais DÉRIVÉE de l'URL, plus posée par un `useEffect`
+    // un cycle après le rendu : l'onglet naît à `aria-selected="true"`, il
+    // n'existe plus un instant à `false`. L'assertion peut donc être directe —
+    // c'est ce qui retire la course qui avait fait rougir la CI de la PR #414
+    // alors que la suite passait en local.
+    expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('renders exactly one <h1> — the shared page header', async () => {
+    const { container } = renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('station-tab-STN_PASTRY')).toBeInTheDocument();
+    });
+    const headings = container.querySelectorAll('h1');
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent('Production');
+  });
+
+  it('restores the station and the day from the URL', async () => {
+    renderPage('/backoffice/inventory/production?station=st-hot&day=2026-08-14');
+    await waitFor(() => {
+      expect(screen.getByTestId('station-tab-STN_HOT_KITCHEN')).toHaveAttribute('aria-selected', 'true');
+    });
+    expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'false');
+    // Le jour se lit dans le fuseau métier, pas dans celui du poste : la chaîne
+    // ISO de l'URL doit ressortir telle quelle, quel que soit le `TZ` du runner.
+    expect(screen.getByTestId('production-selected-date')).toHaveTextContent('14/08/2026');
+    expect(screen.queryByText('Today')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the defaults on unknown station / malformed day, without crashing', async () => {
+    renderPage('/backoffice/inventory/production?station=does-not-exist&day=2026-13-45');
     await waitFor(() => {
       expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'true');
     });
+    expect(screen.getByText('Today')).toBeInTheDocument();
+    expect(screen.getByTestId('production-selected-date')).toHaveTextContent(
+      todayIsoDate().split('-').reverse().join('/'),
+    );
   });
 
   it('renders the entry card for the active station + empty production log', async () => {
@@ -118,5 +153,8 @@ describe('ProductionPage smoke', () => {
     currentPerms = new Set();
     renderPage();
     expect(screen.getByText(/do not have permission to view production/i)).toBeInTheDocument();
+    // Le refus de permission garde son titre : la vue rend exactement un <h1>
+    // dans TOUS ses états, pas seulement quand elle a le droit de montrer.
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 });
