@@ -133,13 +133,9 @@ pas copier sans refaire le même travail :
   réconcilié avec les fiches d'objectifs : il ne fait pas foi** (ADR-021 déc. 1).
   À lire comme un gisement, pas comme la référence.
 - `docs/adr/` — les décisions gravées, immuables.
-- `docs/design_handoff_backoffice_shell/` — le dossier de handoff du redesign du
-  shell : un prototype de référence en HTML monofichier (`Backoffice Landing.dc.html`,
-  cadres 1440 px, styles en ligne, non-code de production), son README de
-  spécification écran par écran, et le logo de marque. C'est la surface de
-  référence visuelle du back-office, et il est versionné. Une réserve en
-  conditionne la lecture : son README fige un état au 2026-08-07 que la direction
-  a depuis dépassé — DESIGN.md fait foi sur le nombre d'archétypes et l'état de
+- Le dossier de handoff du redesign du shell (`docs/design_handoff_backoffice_shell/`)
+  a été retiré du dépôt le 2026-08-19, le redesign étant livré ; il reste résoluble
+  via l'historique git. DESIGN.md fait foi sur les archétypes et l'état de
   propagation.
 
 **Absences que le travail futur ne doit pas combler par de l'invention :** le
