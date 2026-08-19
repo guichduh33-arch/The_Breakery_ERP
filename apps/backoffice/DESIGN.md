@@ -237,11 +237,13 @@ même accent, même vocabulaire d'état, même échelle.
   page, et un bouton secondaire y était une limite invisible. `#86827a` clôt le
   seuil sur les quatre fonds du thème : 3,83:1 feuille blanche, 3,33:1 papier,
   3,66:1 en-tête inerte, 3,10:1 état pressé.
-  **Le champ, lui, est encore bordé du filet de carte** (`#e3e1db`) — c'est ce
-  que rend le primitif `Input` et ce que décrit § Champs. Ce trait vaut 1,308:1
-  sur la feuille blanche : un champ n'a donc, à ce jour, pas de limite qui tienne
-  1.4.11. Ce paragraphe l'annonçait comme réglé en rangeant le champ avec le
-  bouton ; c'est un écart ouvert, pas un constat (relevé le 2026-08-18).
+  **Le champ borde en `--border-strong` depuis le 2026-08-19** — même arbitrage
+  que le bouton secondaire, pris par le propriétaire pour les deux apps : la
+  bordure d'un champ est la limite d'un contrôle, elle tient les 3:1 de 1.4.11
+  (3,33:1 mesuré sur le papier de page). Réserve honnête : dans le thème sombre
+  de la caisse, `--border-strong` (`#413a33` sur `#1f1c18`) vaut 1,52:1 — mieux
+  que les 1,13:1 d'avant, toujours sous le seuil. Monter le token du thème
+  sombre est un arbitrage POS distinct, non pris à ce jour.
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
   (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
   plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
@@ -524,10 +526,20 @@ l'irréversibilité juste avant le bouton.
 *Instance : Stock count (opname).*
 
 **7. Matrix** — *seul le motif de différence se lit.* Lignes décrites, colonnes
-courtes, cellules réduites à un signe. Le filtre « différences seulement » est un
-contrôle de premier plan, pas une option enfouie ; la légende est obligatoire et
-distingue l'accordé de l'accordé-par-héritage. Lecture seule assumée, avec le
-renvoi explicite vers l'endroit où l'on édite.
+courtes, cellules réduites à un signe. La légende est obligatoire et nomme
+**exactement les états que la grille calcule** — en annoncer un qu'elle ne
+calcule pas (un « hérité » qu'aucune donnée ne porte) est un mensonge
+d'interface. Lecture seule assumée, avec le renvoi explicite vers l'endroit où
+l'on édite, et la réserve dite quand une source de vérité n'est pas reflétée
+(les dérogations par personne).
+
+*Pas de filtre « différences seulement ».* L'archétype l'a exigé jusqu'au
+2026-08-19 ; mesuré en base ce jour-là, 143 permissions sur 151 sont
+discriminantes — le filtre aurait masqué 8 lignes, un contrôle de premier plan
+pour rien. Même motif que la sélection multiple retirée de List : un archétype
+qui exige un contrôle que les données ne justifient pas fabrique de la fausse
+dette à chaque instance. Il reviendra si la grille devient majoritairement
+uniforme, pas avant.
 *Instance : Roles & permissions.*
 
 **8. Cascade** — *l'arbre aplati, les enfants somment au parent.* Profondeur
@@ -546,6 +558,16 @@ antichronologique.
 **Hors shell.** Une page qui précède l'authentification n'a pas de barre de
 navigation et n'est donc l'instance de rien : elle se partage en deux moitiés —
 l'encre porte la marque et l'état du jour, la lumière porte le geste.
+
+*La marque qu'elle porte est celle de l'enseigne, pas celle de l'instrument.*
+Le login rend le logo complet — croissant illustré et « FAIT MAISON — FRENCH
+BAKERY » —, c'est-à-dire le signal que le chrome interdit. Il échoue au test de
+la règle : retirez-le, le geste de connexion reste entier. Il est **maintenu
+par arbitrage du propriétaire** (2026-08-19), au même titre que la plaque or du
+monogramme : avant l'authentification on entre dans la boulangerie, après on
+prend l'instrument. L'exception est bornée à cette seule page ; le premier
+écran authentifié reprend le monogramme sobre, et le contraste entre les deux
+est assumé, pas un oubli.
 *Instance : Login.*
 
 ## Elevation & Depth
@@ -669,7 +691,7 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
 
 ### Champs
 
-- Hauteur 44 px, rayon 4 px, bordure `#e3e1db`, fond feuille blanche.
+- Hauteur 44 px, rayon 4 px, **bordure de contrôle `#86827a`**, fond feuille blanche.
 - **Focus** : contour or de 2 px décalé de 2 px, halo de la même teinte.
 - **Désactivé** : curseur interdit et opacité réduite.
 
@@ -744,6 +766,8 @@ une réserve fait passer une estimation pour un relevé.
   tombent sous le seuil de lecture. Utiliser `ink-success` / `ink-danger`.
 - **Don't** réintroduire l'ivoire chaud ni aucun signal de boulangerie
   artisanale dans le chrome — c'est l'anti-référence explicite du système.
+  *Une seule surface y échappe, par arbitrage : la page de connexion
+  (cf. § Hors shell).*
 - **Don't** écrire une couleur en dur dans un composant. Toute la direction est
   scopée au thème pour rester commutable ; une valeur en dur dans un composant la
   fige.
@@ -840,12 +864,12 @@ règles :
   largeur de contenu comparée à une largeur de tuile **supposée fixe** ne dit
   rien d'une tuile qui s'élargit, et cette entrée a fait passer un calcul pour
   une mesure.
-- **Le champ n'a pas de limite qui tienne 1.4.11.** Le primitif `Input` borde en
-  `--border-subtle` (`#e3e1db`), soit 1,308:1 sur la feuille blanche qu'il
-  remplit. Le bouton secondaire a été porté à `--border-strong` le 2026-08-18 ; le
-  champ ne l'a pas été, parce que le geste touche tous les formulaires des deux
-  apps et relève d'un arbitrage, pas d'une correction. § Champs décrit donc le
-  code, pas le seuil.
+- **Le champ n'avait pas de limite qui tienne 1.4.11 — soldé le 2026-08-19.**
+  `Input` et `selectClassName` bordent en `--border-strong` (arbitrage du
+  propriétaire, les deux apps). Ce qui reste ouvert est plus étroit : le thème
+  sombre de la caisse plafonne à 1,52:1 (arbitrage POS non pris), et les
+  contrôles stylés à la main hors primitif — le champ « Receipt file » de la
+  saisie de dépense, 1,08:1 — se corrigent appelant par appelant.
 - **Les champs écrits à la main hors du primitif `Input` n'ont pas d'anneau de
   focus conforme — et ils étaient cinq fois plus nombreux que ce paragraphe ne
   l'annonçait.** Le relevé porté ici jusqu'au 2026-08-18 disait « trente-cinq
