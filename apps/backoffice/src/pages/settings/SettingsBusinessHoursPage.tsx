@@ -93,7 +93,7 @@ export default function SettingsBusinessHoursPage() {
   }, [business.data]);
 
   if (!canRead) {
-    return <div className="text-text-secondary">Accès refusé aux réglages.</div>;
+    return <div className="text-text-secondary">Access denied — you cannot read settings.</div>;
   }
 
   const original = business.data ? parseHours(business.data.settings.business_hours) : null;

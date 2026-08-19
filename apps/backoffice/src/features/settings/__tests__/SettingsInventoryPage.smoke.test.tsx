@@ -27,15 +27,15 @@ function wrap(ui: React.ReactNode) {
 describe('SettingsInventoryPage', () => {
   it('renders the allow_negative_stock toggle from the RPC', async () => {
     render(wrap(<SettingsInventoryPage />));
-    await waitFor(() => expect(screen.getByLabelText(/stock négatif/i)).toBeInTheDocument());
-    expect(screen.getByLabelText<HTMLInputElement>(/stock négatif/i).checked).toBe(true);
+    await waitFor(() => expect(screen.getByLabelText(/allow negative stock/i)).toBeInTheDocument());
+    expect(screen.getByLabelText<HTMLInputElement>(/allow negative stock/i).checked).toBe(true);
   });
 
   it('calls set_setting_v13 on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsInventoryPage />));
-    await waitFor(() => screen.getByLabelText(/stock négatif/i));
-    fireEvent.click(screen.getByLabelText(/stock négatif/i));
+    await waitFor(() => screen.getByLabelText(/allow negative stock/i));
+    fireEvent.click(screen.getByLabelText(/allow negative stock/i));
     fireEvent.click(screen.getByRole('button', { name: /save|enregistrer/i }));
     await waitFor(() =>
       expect(rpcCalls.some((c) => c.fn === 'set_setting_v13')).toBe(true));

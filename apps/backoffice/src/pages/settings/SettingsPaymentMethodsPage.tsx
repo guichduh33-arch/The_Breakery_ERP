@@ -90,7 +90,7 @@ export default function SettingsPaymentMethodsPage() {
   }, [payments.data]);
 
   if (!canRead) {
-    return <div className="text-text-secondary">Accès refusé aux réglages.</div>;
+    return <div className="text-text-secondary">Access denied — you cannot read settings.</div>;
   }
 
   // Save (dirty) exige un `original` array — garanti aujourd'hui par le
@@ -187,19 +187,19 @@ export default function SettingsPaymentMethodsPage() {
       }
       setSaved(formatTimeWita(new Date()));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Échec de l'enregistrement");
+      setError(e instanceof Error ? e.message : 'Save failed.');
     }
   }
 
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader
-        title="Moyens de paiement"
-        subtitle="Les méthodes décochées disparaissent des terminaux POS (≤ 60 s, sans redémarrage) ; l'ordre ci-dessous est l'ordre d'affichage sur les grilles POS. Le % de frais est informatif (net estimé dans le rapport Payments by Method), aucune écriture comptable automatique. Chaque changement écrit une entrée d'audit."
+        title="Payment methods"
+        subtitle="Unchecked methods leave the POS terminals within 60 s, no restart needed. The order below is the display order on the POS grids. The fee % is informational — it feeds the estimated net in the Payments by Method report and posts no journal entry. Every change writes an audit entry."
       />
 
       {payments.isLoading && <div className="text-text-secondary">Loading…</div>}
-      {payments.error && <div className="text-red">Échec du chargement : {payments.error.message}</div>}
+      {payments.error && <div className="text-red">Failed to load: {payments.error.message}</div>}
 
       {!payments.isLoading && !payments.error && draft !== null && (
         <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
@@ -221,7 +221,7 @@ export default function SettingsPaymentMethodsPage() {
                     <span className="flex gap-1">
                       <button
                         type="button"
-                        aria-label={`Monter ${LABELS.get(value) ?? value}`}
+                        aria-label={`Move ${LABELS.get(value) ?? value} up`}
                         data-testid={`pm-up-${value}`}
                         disabled={i === 0}
                         onClick={() => move(i, -1)}
@@ -231,7 +231,7 @@ export default function SettingsPaymentMethodsPage() {
                       </button>
                       <button
                         type="button"
-                        aria-label={`Descendre ${LABELS.get(value) ?? value}`}
+                        aria-label={`Move ${LABELS.get(value) ?? value} down`}
                         data-testid={`pm-down-${value}`}
                         disabled={i === draft.length - 1}
                         onClick={() => move(i, 1)}
@@ -267,7 +267,7 @@ export default function SettingsPaymentMethodsPage() {
           {/* ADR-013 Lot 4 (D7) — expiration des avoirs clients. */}
           <div className="border-t border-border-subtle pt-4">
             <label className="flex items-center gap-3 text-sm">
-              <span>Expiration des avoirs (mois)</span>
+              <span>Store credit expiry (months)</span>
               <input
                 type="number"
                 min={0}
@@ -275,27 +275,27 @@ export default function SettingsPaymentMethodsPage() {
                 step={1}
                 value={expiryDraft ?? ''}
                 disabled={!canUpdate}
-                aria-label="Expiration des avoirs en mois (0 = jamais)"
+                aria-label="Store credit expiry in months (0 = never)"
                 data-testid="store-credit-expiry-months"
                 onChange={(e) => setExpiryDraft(e.target.value)}
                 className={`w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm ${FOCUS_RING}`}
               />
             </label>
             <p className="mt-1 text-xs text-text-secondary">
-              0 = jamais (défaut). Appliqué aux nouveaux avoirs (accord manager, conversion points,
-              remboursement en avoir) ; la reprise en produit court chaque nuit à 02:15.
+              0 = never (default). Applies to new store credit only — manager grant, points
+              conversion, refund to credit. The write-back to income runs nightly at 02:15.
             </p>
           </div>
 
-          {empty && <p className="text-red text-sm" role="alert">Au moins une méthode doit rester activée.</p>}
-          {feeInvalid && <p className="text-red text-sm" role="alert">Les frais doivent être un pourcentage entre 0 et 100.</p>}
-          {expiryInvalid && <p className="text-red text-sm" role="alert">L&apos;expiration doit être un entier entre 0 et 120 mois.</p>}
+          {empty && <p className="text-red text-sm" role="alert">At least one method must stay enabled.</p>}
+          {feeInvalid && <p className="text-red text-sm" role="alert">Fees must be a percentage between 0 and 100.</p>}
+          {expiryInvalid && <p className="text-red text-sm" role="alert">Expiry must be a whole number between 0 and 120 months.</p>}
           {error && <p className="text-red text-sm" role="alert">{error}</p>}
-          {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
+          {savedAt && !dirty && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
 
           {canUpdate && (
             <button type="submit" disabled={!dirty || empty || feeInvalid || expiryInvalid || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
-              {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
+              {setSetting.isPending ? 'Saving…' : dirty ? 'Save' : 'No changes'}
             </button>
           )}
         </form>

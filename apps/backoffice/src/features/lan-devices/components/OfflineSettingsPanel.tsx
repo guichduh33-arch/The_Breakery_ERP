@@ -39,7 +39,7 @@ export function OfflineSettingsPanel() {
   }, [network.data]);
 
   if (!canRead) {
-    return <div className="text-text-secondary text-sm">Accès refusé aux réglages.</div>;
+    return <div className="text-text-secondary text-sm">Access denied — you cannot read settings.</div>;
   }
 
   const original: Draft | null = network.data
@@ -60,20 +60,20 @@ export function OfflineSettingsPanel() {
       }
       setSaved(formatTimeWita(new Date()));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Échec de l'enregistrement");
+      setError(e instanceof Error ? e.message : 'Save failed.');
     }
   }
 
   return (
     <div className="space-y-4">
       {network.isLoading && <div className="text-text-secondary text-sm">Loading…</div>}
-      {network.error && <div className="text-red text-sm">Échec du chargement : {network.error.message}</div>}
+      {network.error && <div className="text-red text-sm">Failed to load: {network.error.message}</div>}
 
       {!network.isLoading && !network.error && draft !== null && (
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
             <label htmlFor="offline_payments_enabled" className="text-sm font-medium pt-2">
-              Encaissement hors-ligne
+              Offline payments
             </label>
             <div className="md:col-span-2 space-y-1">
               <label className="inline-flex items-center gap-2 text-sm pt-2">
@@ -84,32 +84,31 @@ export function OfflineSettingsPanel() {
                   disabled={!canUpdate}
                   onChange={(e) => setDraft({ ...draft, offlinePaymentsEnabled: e.target.checked })}
                 />
-                <span>{draft.offlinePaymentsEnabled ? 'Activé' : 'Désactivé'}</span>
+                <span>{draft.offlinePaymentsEnabled ? 'Enabled' : 'Disabled'}</span>
               </label>
               <p className="text-xs text-text-secondary">
-                Quand internet tombe mais que le hub LAN répond, la caisse continue
-                d&apos;encaisser — espèces, carte, QRIS, EDC, virement et e-wallets. Le
-                terminal EDC passe par sa propre carte SIM et n&apos;a pas besoin du
-                réseau de la boutique ; la caisse ne fait qu&apos;enregistrer le règlement.
-                Les ventes sont journalisées localement et resynchronisées au retour du
-                cloud, sans limite de durée de coupure.
+                When the internet drops but the LAN hub still answers, the POS keeps
+                taking payment — cash, card, QRIS, EDC, transfer and e-wallets. The EDC
+                terminal uses its own SIM and does not need the shop network; the POS
+                only records the settlement. Sales are queued locally and re-synced when
+                the cloud comes back, with no cap on how long the outage lasts.
               </p>
               <p className="text-xs text-text-secondary">
-                <strong>Exception :</strong> le paiement par avoir client reste indisponible
-                hors-ligne — son solde ne peut être vérifié que par le serveur.
+                <strong>Exception:</strong> paying with store credit stays unavailable
+                offline — only the server can check the balance.
               </p>
               <p className="text-xs text-text-secondary">
-                Désactivé par défaut — activation explicite du propriétaire.
+                Off by default — the owner turns it on explicitly.
               </p>
             </div>
           </div>
 
           {error && <p className="text-red text-sm" role="alert">{error}</p>}
-          {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
+          {savedAt && !dirty && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
 
           {canUpdate && (
             <button type="submit" disabled={!dirty || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
-              {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
+              {setSetting.isPending ? 'Saving…' : dirty ? 'Save' : 'No changes'}
             </button>
           )}
         </form>

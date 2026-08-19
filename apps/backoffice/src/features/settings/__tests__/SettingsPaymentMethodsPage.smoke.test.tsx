@@ -54,8 +54,8 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByLabelText(/^cash$/i));
     fireEvent.click(screen.getByLabelText(/^card$/i));
 
-    expect(screen.getByText(/au moins une méthode/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /enregistrer/i })).toBeDisabled();
+    expect(screen.getByText(/at least one method/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
   });
 
   // ADR-006 déc. 9 lot A — the array order IS the POS display order.
@@ -66,7 +66,7 @@ describe('SettingsPaymentMethodsPage', () => {
 
     // ['cash', 'card'] → move cash down → ['card', 'cash']
     fireEvent.click(screen.getByTestId('pm-down-cash'));
-    fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() =>
       expect(rpcCalls.some((c) => c.fn === 'set_setting_v13')).toBe(true));
@@ -98,7 +98,7 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.getByTestId<HTMLInputElement>('pm-fee-cash').value).toBe('');
 
     fireEvent.change(screen.getByTestId('pm-fee-gopay'), { target: { value: '2' } });
-    fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() =>
       expect(rpcCalls.some((c) => c.fn === 'set_setting_v13')).toBe(true));
@@ -116,9 +116,9 @@ describe('SettingsPaymentMethodsPage', () => {
 
     fireEvent.change(screen.getByTestId('pm-fee-cash'), { target: { value: '150' } });
 
-    expect(screen.getByText(/entre 0 et 100/i)).toBeInTheDocument();
-    // Frais invalide → feesDirty false → le bouton retombe sur « Aucun changement », désactivé.
-    expect(screen.getByRole('button', { name: /aucun changement/i })).toBeDisabled();
+    expect(screen.getByText(/between 0 and 100/i)).toBeInTheDocument();
+    // Frais invalide → feesDirty false → le bouton retombe sur « No changes », désactivé.
+    expect(screen.getByRole('button', { name: /no changes/i })).toBeDisabled();
   });
 
   it('calls set_setting_v13 with the remaining methods on save', async () => {
@@ -127,7 +127,7 @@ describe('SettingsPaymentMethodsPage', () => {
     await waitFor(() => screen.getByLabelText(/^cash$/i));
 
     fireEvent.click(screen.getByLabelText(/^card$/i));
-    fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() =>
       expect(rpcCalls.some((c) => c.fn === 'set_setting_v13')).toBe(true));

@@ -21,13 +21,13 @@ export interface DeleteCategoryResult {
 
 function mapDeleteError(message: string): string {
   if (message.includes('category_has_products')) {
-    return 'Cette catégorie contient encore des produits — réassignez ou supprimez-les d\'abord.';
+    return 'This category still holds products — reassign or delete them first.';
   }
   if (message.includes('category_not_found')) {
-    return 'Catégorie introuvable.';
+    return 'Category not found.';
   }
   if (message.includes('permission_denied')) {
-    return 'Vous n\'avez pas la permission de supprimer une catégorie.';
+    return 'You do not have permission to delete a category.';
   }
   return message;
 }
@@ -46,7 +46,7 @@ export function useDeleteCategory() {
       if (error !== null) throw new Error(mapDeleteError(error.message));
       const result = data as unknown as DeleteCategoryResult;
       if (result.deleted !== true) {
-        throw new Error('La catégorie n\'a pas pu être supprimée. Veuillez réessayer.');
+        throw new Error('The category could not be deleted. Please try again.');
       }
       return result;
     },

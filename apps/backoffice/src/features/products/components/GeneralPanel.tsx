@@ -365,7 +365,7 @@ function TestFlagToggle({ productId, isTest }: { productId: string; isTest: bool
     <>
       <ToggleRow
         label="Test product"
-        sub="Exclu des rapports — écrit immédiatement (ADMIN+, ADR-007 déc. 6)"
+        sub="Excluded from reports — written immediately (ADMIN+, ADR-007 dec. 6)"
         enabled={isTest}
         disabled={setTestFlag.isPending}
         onChange={(v) => setTestFlag.mutate({ productId, isTest: v })}

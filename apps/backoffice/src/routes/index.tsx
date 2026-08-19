@@ -166,7 +166,7 @@ function PermissionGate({
   // renders, boot rehydration is done (see <BootGate>), so a `false` here is a
   // genuine permission denial, not a not-yet-loaded state.
   useEffect(() => {
-    if (!has) toast.error("Accès refusé : vous n'avez pas la permission requise pour cette page.");
+    if (!has) toast.error('Access denied — you do not have the permission this page requires.');
   }, [has]);
   return has ? <>{children}</> : <Navigate to="/backoffice" replace />;
 }
@@ -183,7 +183,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   const roleCode = useAuthStore((s) => s.user?.role_code);
   const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
   useEffect(() => {
-    if (!isAdmin) toast.error("Accès refusé : cette page est réservée aux administrateurs.");
+    if (!isAdmin) toast.error('Access denied — this page is restricted to administrators.');
   }, [isAdmin]);
   return isAdmin ? <>{children}</> : <Navigate to="/backoffice" replace />;
 }
