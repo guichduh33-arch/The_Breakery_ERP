@@ -33,12 +33,18 @@ export interface RolePermissionEdge {
 export interface PermissionMatrix {
   roles:       RoleRow[];
   permissions: PermissionRow[];
-  /** Set of "role_codepermission_code" strings for fast lookup. */
+  /**
+   * Clés `role_codepermission_code`. Le séparateur est un **U+0001 (SOH)**,
+   * invisible dans un éditeur : il rend la concaténation non ambiguë, là où un
+   * collage nu ferait de ('ADMIN','X.Y') et ('ADMI','NX.Y') la même clé.
+   * Ne pas le prendre pour une absence de séparateur — il est là, et il compte.
+   */
   grants:      Set<string>;
 }
 
 export const PERMISSION_MATRIX_KEY = ['permission-matrix'] as const;
 
+// Le  ci-dessous est un caractère de contrôle U+0001, pas une coquille.
 function key(roleCode: string, permissionCode: string): string {
   return `${roleCode}${permissionCode}`;
 }
@@ -72,8 +78,8 @@ export function usePermissionMatrix() {
         if (row.is_granted) grants.add(key(row.role_code, row.permission_code));
       }
       return {
-        roles:       ((rolesRes.data as unknown as RoleRow[]) ?? []),
-        permissions: ((permsRes.data as unknown as PermissionRow[]) ?? []),
+        roles:       rolesRes.data ?? [],
+        permissions: permsRes.data ?? [],
         grants,
       };
     },

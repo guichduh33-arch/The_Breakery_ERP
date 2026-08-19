@@ -13,16 +13,16 @@ export default function PermissionsMatrixPage() {
         <ChevronLeft className="h-3.5 w-3.5 mr-0.5" aria-hidden />
         Back to users
       </Link>
+      {/* Le sous-titre s'adressait au lecteur en SQL — « run a migration that
+          INSERTs / UPDATEs the row directly » — et citait un jalon interne
+          (« Phase 1.B »). Les quatre profils qui ouvrent cet écran, dont le
+          comptable et le gérant, n'ont pas de quoi exécuter cette consigne. Le
+          « yet » est délibéré : PRODUCT.md note que l'impossibilité d'éditer un
+          rôle depuis l'application est une contrainte d'exploitation, jamais une
+          décision prise comme telle. */}
       <PageHeader
         title="Permission matrix"
-        subtitle={
-          <>
-            Read-only view of role × permission grants. Driven by the
-            <code className="font-mono mx-1">role_permissions</code> table seeded in Phase 1.B.
-            To grant or revoke, run a migration that INSERTs / UPDATEs the row directly — the
-            <code className="font-mono mx-1">has_permission()</code> function is locked.
-          </>
-        }
+        subtitle="Read-only view of what each role can do. Granting or revoking a permission cannot be done from the back office yet — it requires a change to the database."
       />
       <PermissionMatrix />
     </div>
