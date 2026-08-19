@@ -316,9 +316,12 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
             </button>
           )}
+          {/* Le rouge sur la chaîne secondaire est le patron du bouton Waste
+              (Inventory.tsx) : la famille TOOLBAR n'a pas de variante
+              destructive, la teinte se compose (arbitré le 2026-08-19). */}
           {canCncl && (
-            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setShowCancel(true)}>
-              <XCircle className={TOOLBAR_ICON} aria-hidden /> Cancel
+            <button type="button" className={`${TOOLBAR_BTN_SECONDARY} text-red-as-text`} onClick={() => setShowCancel(true)}>
+              <XCircle className="h-3.5 w-3.5" aria-hidden /> Cancel
             </button>
           )}
           {/* Session 46 — Edit is wired to update_purchase_order_v1, gated by
