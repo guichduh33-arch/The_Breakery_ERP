@@ -30,7 +30,7 @@ export default function SettingsInventoryPage() {
   }, [inventory.data]);
 
   if (!canRead) {
-    return <div className="text-text-secondary">Accès refusé aux réglages.</div>;
+    return <div className="text-text-secondary">Access denied — you cannot read settings.</div>;
   }
 
   const original = inventory.data ? Boolean(inventory.data.settings.allow_negative_stock) : null;
@@ -43,45 +43,45 @@ export default function SettingsInventoryPage() {
       await setSetting.mutateAsync({ key: 'allow_negative_stock', value: draft, category: 'inventory' });
       setSaved(formatTimeWita(new Date()));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Échec de l'enregistrement");
+      setError(e instanceof Error ? e.message : 'Save failed.');
     }
   }
 
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader
-        title="Réglages Inventaire"
-        subtitle="Contrôles globaux du stock. Chaque changement écrit une entrée d'audit."
+        title="Inventory settings"
+        subtitle="Global stock controls. Every change writes an audit entry."
       />
 
       {inventory.isLoading && <div className="text-text-secondary">Loading…</div>}
-      {inventory.error && <div className="text-red">Échec du chargement : {inventory.error.message}</div>}
+      {inventory.error && <div className="text-red">Failed to load: {inventory.error.message}</div>}
 
       {!inventory.isLoading && !inventory.error && draft !== null && (
         <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
             <label htmlFor="allow_negative_stock" className="text-sm font-medium pt-2">
-              Autoriser le stock négatif
+              Allow negative stock
             </label>
             <div className="md:col-span-2 space-y-1">
               <label className="inline-flex items-center gap-2 text-sm pt-2">
                 <input className={FOCUS_RING} id="allow_negative_stock" type="checkbox" checked={draft} disabled={!canUpdate}
                   onChange={(e) => setDraft(e.target.checked)} />
-                <span>{draft ? 'Oui' : 'Non'}</span>
+                <span>{draft ? 'Yes' : 'No'}</span>
               </label>
               <p className="text-xs text-text-secondary">
-                Quand activé, la vente et la production passent même si les matières
-                premières sont insuffisantes (le stock devient négatif).
+                When on, sales and production go through even if raw materials are
+                short — stock is allowed to go negative.
               </p>
             </div>
           </div>
 
           {error && <p className="text-red text-sm" role="alert">{error}</p>}
-          {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
+          {savedAt && !dirty && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
 
           {canUpdate && (
             <button type="submit" disabled={!dirty || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
-              {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
+              {setSetting.isPending ? 'Saving…' : dirty ? 'Save' : 'No changes'}
             </button>
           )}
         </form>
