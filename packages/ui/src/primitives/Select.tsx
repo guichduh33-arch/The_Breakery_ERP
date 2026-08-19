@@ -18,8 +18,10 @@
 import { forwardRef, type SelectHTMLAttributes } from 'react';
 import { cn } from '../lib/cn.js';
 
+// `border-strong` : même arbitrage que `Input` (2026-08-19) — la bordure d'un
+// contrôle tient les 3:1 de WCAG 1.4.11, `border-subtle` ne délimitait rien.
 export const selectClassName =
-  'flex h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-touch-min w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-50';
 
 export type SelectProps = SelectHTMLAttributes<HTMLSelectElement>;
 
