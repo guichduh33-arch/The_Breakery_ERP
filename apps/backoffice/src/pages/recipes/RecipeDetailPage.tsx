@@ -5,28 +5,65 @@
 
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Card, Button, Badge } from '@breakery/ui';
+import { ArrowLeft, Scale } from 'lucide-react';
+import { Card, Button, Badge, EmptyState } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useRecipeDetail } from '@/features/recipes/hooks/useRecipeDetail.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { formatPct1, sharePct } from '@/features/reports/utils/reportFigures.js';
+
+/** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data Rule). */
+const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
 
 function fmtIdr(amount: number | null): string {
   return formatCurrency(Number(amount ?? 0));
 }
 
+/** Part d'une ligne dans le coût. Sans base positive, un tiret — jamais 0 % ni NaN. */
+function fmtShare(part: number, base: number): string {
+  return base > 0 ? formatPct1(sharePct(part, base)) : '—';
+}
+
 export function RecipeDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
-  const { data, isLoading } = useRecipeDetail(productId);
+  const { data, isLoading, error } = useRecipeDetail(productId);
 
-  if (isLoading || !data) {
-    return <div className="p-8">Loading…</div>;
+  if (isLoading) {
+    return <div className="text-sm text-text-secondary">Loading recipe…</div>;
+  }
+  if (error !== null && error !== undefined) {
+    return (
+      <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
+        Failed to load recipe: {String(error)}
+      </div>
+    );
+  }
+  if (data === null || data === undefined) {
+    return (
+      <div className="space-y-4">
+        <Link
+          to="/backoffice/inventory/recipes"
+          className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to recipes
+        </Link>
+        <EmptyState
+          icon={Scale}
+          title="Recipe not found"
+          description="This product has no recipe, or it may have been deleted."
+          size="md"
+        />
+      </div>
+    );
   }
 
   const { product, active_version_number, version_count, bom, total_cost } = data;
+  // Le pied somme les lignes DE LA TABLE ; l'en-tête de carte porte le total du payload.
+  const lineCostTotal = bom.reduce((sum, r) => sum + Number(r.line_cost ?? 0), 0);
+  const costBase = Number(total_cost ?? 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
         <Button variant="ghost" asChild>
           <Link to="/backoffice/inventory/recipes">
@@ -71,20 +108,24 @@ export function RecipeDetailPage(): JSX.Element {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-text-muted">
-                  <th className="pb-2">Material</th>
-                  <th className="pb-2 text-right">Qty / unit</th>
-                  <th className="pb-2">Unit</th>
-                  <th className="pb-2 text-right">Cost / material unit</th>
-                  <th className="pb-2 text-right">Stock on hand</th>
-                  <th className="pb-2 text-right">Line cost</th>
+              <caption className="sr-only">
+                Ingredients, unit cost, stock on hand and share of the recipe cost
+              </caption>
+              <thead className="border-b border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
+                <tr>
+                  <th scope="col" className="px-3 py-2 text-left">Material</th>
+                  <th scope="col" className="px-3 py-2 text-right">Qty / unit</th>
+                  <th scope="col" className="px-3 py-2 text-left">Unit</th>
+                  <th scope="col" className="px-3 py-2 text-right">Cost / material unit</th>
+                  <th scope="col" className="px-3 py-2 text-right">Stock on hand</th>
+                  <th scope="col" className="px-3 py-2 text-right">Line cost</th>
+                  <th scope="col" className="px-3 py-2 text-right">% of cost</th>
                 </tr>
               </thead>
               <tbody>
                 {bom.map((r) => (
-                  <tr key={r.material_id} className="border-t">
-                    <td className="py-2">
+                  <tr key={r.material_id} className="border-t border-border-subtle">
+                    <td className="px-3 py-2">
                       <DrilldownLink
                         entity="product"
                         id={r.material_id}
@@ -92,14 +133,22 @@ export function RecipeDetailPage(): JSX.Element {
                         icon={false}
                       />
                     </td>
-                    <td className="text-right">{r.qty_per_unit}</td>
-                    <td>{r.material_unit}</td>
-                    <td className="text-right">{fmtIdr(r.cost_price)}</td>
-                    <td className="text-right">{r.current_stock}</td>
-                    <td className="text-right">{fmtIdr(r.qty_per_unit * r.cost_price)}</td>
+                    <td className={NUM_CELL}>{r.qty_per_unit}</td>
+                    <td className="px-3 py-2">{r.material_unit}</td>
+                    <td className={NUM_CELL}>{fmtIdr(r.cost_price)}</td>
+                    <td className={NUM_CELL}>{r.current_stock}</td>
+                    <td className={NUM_CELL}>{fmtIdr(r.line_cost)}</td>
+                    <td className={NUM_CELL}>{fmtShare(Number(r.line_cost ?? 0), costBase)}</td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot className="border-t border-border-subtle bg-surface-inert font-semibold">
+                <tr>
+                  <td colSpan={5} className="px-3 py-2 text-right">Total</td>
+                  <td className={NUM_CELL}>{fmtIdr(lineCostTotal)}</td>
+                  <td className={NUM_CELL}>{fmtShare(lineCostTotal, costBase)}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
