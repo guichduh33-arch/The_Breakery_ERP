@@ -66,7 +66,7 @@ import {
 } from '@/features/purchasing/components/POFormDraft.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 
 function fmtIdr(amount: number | string | null): string {
   return formatCurrency(Number(amount ?? 0));
@@ -298,9 +298,9 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => { void navigate('/backoffice/purchasing/purchase-orders'); }}>
-            <ArrowLeft className="h-4 w-4" aria-hidden /> Back
-          </Button>
+          <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => { void navigate('/backoffice/purchasing/purchase-orders'); }}>
+            <ArrowLeft className={TOOLBAR_ICON} aria-hidden /> Back
+          </button>
           <div className="mt-2 flex items-center gap-3">
             <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary tabular-nums">{po.po_number}</h1>
             <POStatusBadge status={status} />
@@ -308,31 +308,34 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           <p className="mt-1 text-sm text-text-secondary">{po.suppliers?.name ?? '—'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="ghost" onClick={() => setShowPrint(true)}>
-            <Printer className="h-4 w-4" aria-hidden /> Print
-          </Button>
+          <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setShowPrint(true)}>
+            <Printer className={TOOLBAR_ICON} aria-hidden /> Print
+          </button>
           {canRcv && (
             <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setShowReceive(true)}>
               <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
             </button>
           )}
+          {/* Le rouge sur la chaîne secondaire est le patron du bouton Waste
+              (Inventory.tsx) : la famille TOOLBAR n'a pas de variante
+              destructive, la teinte se compose (arbitré le 2026-08-19). */}
           {canCncl && (
-            <Button type="button" variant="ghostDestructive" onClick={() => setShowCancel(true)}>
-              <XCircle className="h-4 w-4" aria-hidden /> Cancel
-            </Button>
+            <button type="button" className={`${TOOLBAR_BTN_SECONDARY} text-red-as-text`} onClick={() => setShowCancel(true)}>
+              <XCircle className="h-3.5 w-3.5" aria-hidden /> Cancel
+            </button>
           )}
           {/* Session 46 — Edit is wired to update_purchase_order_v1, gated by
               purchasing.po.edit and locked once received or paid (D6). */}
           {canEdit && (
-            <Button
+            <button
               type="button"
-              variant="ghost"
+              className={TOOLBAR_BTN_SECONDARY}
               onClick={openEdit}
               disabled={!editable}
               title={editable ? undefined : 'Locked — PO already received or paid'}
             >
-              <Pencil className="h-4 w-4" aria-hidden /> Edit
-            </Button>
+              <Pencil className={TOOLBAR_ICON} aria-hidden /> Edit
+            </button>
           )}
         </div>
       </header>
@@ -496,7 +499,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             )}
 
             {canRecordPay && (
-              <Button type="button" variant="ink" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
+              <Button type="button" variant="secondary" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
                 <Wallet className="h-4 w-4" aria-hidden /> Record payment
               </Button>
             )}
