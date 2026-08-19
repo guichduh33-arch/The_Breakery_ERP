@@ -526,10 +526,20 @@ l'irréversibilité juste avant le bouton.
 *Instance : Stock count (opname).*
 
 **7. Matrix** — *seul le motif de différence se lit.* Lignes décrites, colonnes
-courtes, cellules réduites à un signe. Le filtre « différences seulement » est un
-contrôle de premier plan, pas une option enfouie ; la légende est obligatoire et
-distingue l'accordé de l'accordé-par-héritage. Lecture seule assumée, avec le
-renvoi explicite vers l'endroit où l'on édite.
+courtes, cellules réduites à un signe. La légende est obligatoire et nomme
+**exactement les états que la grille calcule** — en annoncer un qu'elle ne
+calcule pas (un « hérité » qu'aucune donnée ne porte) est un mensonge
+d'interface. Lecture seule assumée, avec le renvoi explicite vers l'endroit où
+l'on édite, et la réserve dite quand une source de vérité n'est pas reflétée
+(les dérogations par personne).
+
+*Pas de filtre « différences seulement ».* L'archétype l'a exigé jusqu'au
+2026-08-19 ; mesuré en base ce jour-là, 143 permissions sur 151 sont
+discriminantes — le filtre aurait masqué 8 lignes, un contrôle de premier plan
+pour rien. Même motif que la sélection multiple retirée de List : un archétype
+qui exige un contrôle que les données ne justifient pas fabrique de la fausse
+dette à chaque instance. Il reviendra si la grille devient majoritairement
+uniforme, pas avant.
 *Instance : Roles & permissions.*
 
 **8. Cascade** — *l'arbre aplati, les enfants somment au parent.* Profondeur
