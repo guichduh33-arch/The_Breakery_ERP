@@ -139,6 +139,8 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   (`scripts/ci/`) rendent leur verdict en secondes, avant le build.
   `vitest-live.yml` = dispatch MANUEL du seul job vitest live-RPC ; ne jamais le
   dispatcher pendant les crons (19:00/22:00 UTC) — même base dev partagée.
+  `staging-deploy.yml` déploie le staging (setup décrit dans
+  `.github/workflows/STAGING_SETUP.md`).
 - Env : Vite lit `.env` à la RACINE du repo ; vitest lit `apps/<app>/.env.local`
   (copier les deux dans un worktree).
 
