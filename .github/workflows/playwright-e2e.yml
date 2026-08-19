@@ -76,7 +76,9 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # pnpm 11 (packageManager, 2026-08-10) requiert Node >= 22.13
+          # (node:sqlite) — sur Node 20 le job meurt au `pnpm store path`.
+          node-version: 22
           cache: 'pnpm'
 
       - name: Install dependencies
