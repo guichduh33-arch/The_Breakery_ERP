@@ -13,7 +13,7 @@
 //     when p_expected_qty is omitted.
 //   - set_opname_count_v1 records counted_qty ; variance is GENERATED.
 //   - validate_opname_v1 transitions counting → review (rejects with missing counts).
-//   - finalize_opname_v2 emits opname_in / opname_out stock_movements (sans
+//   - finalize_opname_v3 emits opname_in / opname_out stock_movements (sans
 //     section) + tr_20_je_emit posts a balanced JE for each non-zero variance row.
 //   - cancel_opname_v1 succeeds pre-finalize, refused post-finalize.
 //   - MANAGER allowed to create, ADMIN required to finalize.
@@ -143,7 +143,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
 
     // Finalize.
-    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v2', {
+    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v3', {
       p_count_id: countId,
       p_idempotency_key: crypto.randomUUID(),
     });
@@ -171,7 +171,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
     expect((jeAfter ?? 0) - (jeBefore ?? 0)).toBe(1);
 
-    // ADR-027 : finalize_opname_v2 émet ses mouvements sans section.
+    // ADR-027 : finalize_opname_v3 émet ses mouvements sans section.
     const { data: mvt } = await admin.from('stock_movements')
       .select('from_section_id, to_section_id')
       .eq('id', movementId)
@@ -180,7 +180,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     expect(mvt!.to_section_id).toBeNull();
 
     // Replay finalize → idempotent_replay=true.
-    const { data: replay } = await rpc(sb)('finalize_opname_v2', {
+    const { data: replay } = await rpc(sb)('finalize_opname_v3', {
       p_count_id: countId,
     });
     expect(replay.idempotent_replay).toBe(true);
@@ -239,7 +239,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       p_count_id: countId, p_product_id: productId, p_expected_qty: 100,
     });
 
-    const { error: fErr } = await rpc(managerSb)('finalize_opname_v2', { p_count_id: countId });
+    const { error: fErr } = await rpc(managerSb)('finalize_opname_v3', { p_count_id: countId });
     expect(fErr?.message ?? '').toMatch(/forbidden/);
   });
 });
