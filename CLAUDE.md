@@ -136,9 +136,16 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `pgtap-pr.yml` ne se déclenche QUE si la PR touche
   `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
   DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
-  (`scripts/ci/`) rendent leur verdict en secondes, avant le build.
+  (`scripts/ci/`) rendent leur verdict en secondes, avant le build. Elles sont
+  HUIT, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
+  `relative-links`, `hardcoded-theme-colors`, et les quatre gardes design du
+  2026-08-18 (`focus-ring-controls`, `gold-fills`, `lying-font-classes`,
+  `toolbar-button-scope`). Toutes partagent `_guard-lib.mjs` : baseline =
+  plafond, jamais plancher. Une PR frontend BO les croise toutes.
   `vitest-live.yml` = dispatch MANUEL du seul job vitest live-RPC ; ne jamais le
   dispatcher pendant les crons (19:00/22:00 UTC) — même base dev partagée.
+  `staging-deploy.yml` déploie le staging (setup décrit dans
+  `.github/workflows/STAGING_SETUP.md`).
 - Env : Vite lit `.env` à la RACINE du repo ; vitest lit `apps/<app>/.env.local`
   (copier les deux dans un worktree).
 
@@ -216,6 +223,11 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   Header dédié type `x-manager-pin`, hard cutover dans le même commit.
 - **Enums : source unique = Postgres.** Aucun string littéral dérivé côté TS
   (`take_away` vs `take_out` = la classe de bug à tuer).
+- **L'interface parle ANGLAIS, les commentaires et la doc parlent français.**
+  Aucune lib i18n : les chaînes sont en dur dans le JSX, et aucune garde CI ne
+  surveille la langue. Le français y glisse par réflexe de session — deux PR
+  consécutives (#429, #433) n'ont servi qu'à l'en ressortir. Tout libellé,
+  placeholder, toast, message d'erreur ou titre de page s'écrit en anglais.
 - **Pas d'alpha sur un token de couleur `var()` nu** (`bg-danger/15`, `bg-gold/5`) :
   Tailwind supprime la déclaration EN SILENCE, la couleur n'apparaît jamais. Seule la
   famille `cat-*` est déclarée `rgb(var(--x) / <alpha-value>)`. La vérité est dans
