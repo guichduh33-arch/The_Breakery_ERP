@@ -377,7 +377,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className={`w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Optional — PO reference, pickup instructions…"
             />
           </div>

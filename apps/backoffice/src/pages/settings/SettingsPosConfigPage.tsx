@@ -61,7 +61,7 @@ function NumberListEditor({ title, helper, values, canEdit, isPending, onSave }:
           <div className="flex items-center gap-2">
             <input type="number" inputMode="numeric" placeholder="e.g. 50000" value={draft}
               onChange={(e) => setDraft(e.target.value)} aria-label={`New ${title} value`}
-              className={`h-9 w-40 rounded-md border border-border-subtle bg-bg-input px-3 text-sm placeholder:text-text-muted ${FOCUS_RING}`} />
+              className={`h-9 w-40 rounded-md border border-border-strong bg-bg-input px-3 text-sm placeholder:text-text-muted ${FOCUS_RING}`} />
             <Button variant="secondary" size="sm" disabled={isPending || draft.trim() === ''}
               onClick={() => {
                 const n = Number(draft);
@@ -129,11 +129,11 @@ export default function SettingsPosConfigPage() {
               <input type="text" placeholder="Name (e.g. Staff Meal)" value={discountDraft.name}
                 onChange={(e) => setDiscountDraft((d) => ({ ...d, name: e.target.value }))}
                 aria-label="New discount preset name"
-                className={`h-9 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-input px-3 text-sm placeholder:text-text-muted ${FOCUS_RING}`} />
+                className={`h-9 flex-1 max-w-xs rounded-md border border-border-strong bg-bg-input px-3 text-sm placeholder:text-text-muted ${FOCUS_RING}`} />
               <input type="number" inputMode="numeric" placeholder="%" value={discountDraft.pct}
                 onChange={(e) => setDiscountDraft((d) => ({ ...d, pct: e.target.value }))}
                 aria-label="New discount preset percent"
-                className={`h-9 w-24 rounded-md border border-border-subtle bg-bg-input px-3 text-sm placeholder:text-text-muted ${FOCUS_RING}`} />
+                className={`h-9 w-24 rounded-md border border-border-strong bg-bg-input px-3 text-sm placeholder:text-text-muted ${FOCUS_RING}`} />
               <Button variant="secondary" size="sm" disabled={setSetting.isPending || discountDraft.pct.trim() === ''}
                 onClick={() => {
                   const value = Number(discountDraft.pct);

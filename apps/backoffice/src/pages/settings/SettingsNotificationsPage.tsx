@@ -127,7 +127,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
           value={draft.subject_template}
           disabled={!canEdit}
           onChange={(e) => setDraft((d) => ({ ...d, subject_template: e.target.value }))}
-          className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
+          className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
         />
       </div>
 
@@ -141,7 +141,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
           value={draft.body_template}
           disabled={!canEdit}
           onChange={(e) => setDraft((d) => ({ ...d, body_template: e.target.value }))}
-          className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
+          className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`}
         />
       </div>
 
@@ -226,7 +226,7 @@ function AlertEmailCard() {
             disabled={!canUpdate}
             placeholder="ops@example.com"
             onChange={(e) => setDraft(e.target.value)}
-            className={`h-9 w-full max-w-sm rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`h-9 w-full max-w-sm rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 placeholder:text-text-muted ${FOCUS_RING}`}
           />
           {canUpdate && (
             <button type="button" className={TOOLBAR_BTN_PRIMARY}

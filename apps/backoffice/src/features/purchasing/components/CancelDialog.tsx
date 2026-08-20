@@ -53,7 +53,7 @@ export function CancelDialog({
               disabled={submitting}
               rows={3}
               maxLength={200}
-              className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}
               aria-required="true"
             />
             <div className="text-xs text-text-secondary text-right">{reason.length}/200</div>

@@ -52,7 +52,7 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
               value={notes}
               onChange={(e) => { setNotes(e.target.value); }}
               rows={3}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Why are we counting? e.g. monthly cycle / spot audit"
             />
           </div>

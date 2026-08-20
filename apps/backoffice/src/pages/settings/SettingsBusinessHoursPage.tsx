@@ -167,7 +167,7 @@ export default function SettingsBusinessHoursPage() {
                           disabled={!canUpdate}
                           onChange={(e) => patchDay(key, { from: e.target.value })}
                           aria-label={`${label} opens at`}
-                          className={`rounded-md border border-border-subtle bg-bg-input px-2 py-1 ${FOCUS_RING}`}
+                          className={`rounded-md border border-border-strong bg-bg-input px-2 py-1 ${FOCUS_RING}`}
                         />
                         <span className="text-text-secondary">to</span>
                         <input
@@ -177,7 +177,7 @@ export default function SettingsBusinessHoursPage() {
                           disabled={!canUpdate}
                           onChange={(e) => patchDay(key, { until: e.target.value })}
                           aria-label={`${label} closes at`}
-                          className={`rounded-md border border-border-subtle bg-bg-input px-2 py-1 ${FOCUS_RING}`}
+                          className={`rounded-md border border-border-strong bg-bg-input px-2 py-1 ${FOCUS_RING}`}
                         />
                         {rowInvalid && (
                           <span className="text-xs text-danger">Opening must precede closing.</span>

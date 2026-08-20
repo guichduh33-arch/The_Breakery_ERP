@@ -77,7 +77,7 @@ export function ShowcaseProductPicker({
         aria-label="Search products to add to the showcase"
         value={search}
         onChange={(e) => { setSearch(e.target.value); }}
-        className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+        className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
         data-testid="showcase-picker-search"
         autoFocus
       />

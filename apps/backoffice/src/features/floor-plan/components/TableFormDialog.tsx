@@ -88,7 +88,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
               id="table-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               maxLength={80}
             />
           </div>
@@ -105,7 +105,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
                 max={20}
                 value={seats}
                 onChange={(e) => { setSeats(Number(e.target.value)); }}
-                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               />
             </div>
             <div>
@@ -117,7 +117,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
                 type="number"
                 value={sortOrder}
                 onChange={(e) => { setSortOrder(Number(e.target.value)); }}
-                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               />
             </div>
           </div>

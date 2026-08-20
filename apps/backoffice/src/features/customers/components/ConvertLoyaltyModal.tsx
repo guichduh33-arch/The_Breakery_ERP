@@ -90,7 +90,7 @@ export function ConvertLoyaltyModal({
             step={100}
             value={pointsStr}
             onChange={(e) => setPointsStr(e.target.value)}
-            className={`mt-1 w-full border rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`mt-1 w-full border border-border-strong rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="100"
             data-testid="convert-points"
           />

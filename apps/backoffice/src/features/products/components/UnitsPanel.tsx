@@ -210,7 +210,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             disabled={!canWrite || setBaseUnit.isPending}
             onChange={(e) => setBaseDraft(e.target.value)}
             data-testid="base-unit-select"
-            className="h-touch-min rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className="h-touch-min rounded-md border border-border-strong bg-bg-input px-3 text-sm font-mono text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
             {baseUnitOptions.map((u) => (
               <option key={u} value={u}>{u}</option>
@@ -310,7 +310,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                   disabled={!canWrite}
                   onChange={(e) => updateAlt(alt._key, 'code', e.target.value)}
                   placeholder="e.g. kg"
-                  className="w-20 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
+                  className="w-20 rounded-md border border-border-strong bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
                 />
                 {/* Factor */}
                 <div className="flex flex-1 items-center gap-2">
@@ -323,7 +323,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                     step="any"
                     disabled={!canWrite}
                     onChange={(e) => updateAlt(alt._key, 'factor_to_base', Number(e.target.value) || 0)}
-                    className="w-28 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                    className="w-28 rounded-md border border-border-strong bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                   />
                   <span className="text-xs text-text-secondary font-mono">{baseUnit}</span>
                 </div>
@@ -444,7 +444,7 @@ function ContextRow({ icon, label, sub, field, value, options, disabled, onChang
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         data-testid={`context-select-${field}`}
-        className="mt-3 h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="mt-3 h-touch-min w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm font-mono text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         {options.map((opt) => (
           <option key={opt} value={opt}>

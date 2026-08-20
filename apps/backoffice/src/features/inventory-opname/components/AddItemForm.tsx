@@ -77,7 +77,7 @@ export function AddItemForm({ countId }: AddItemFormProps) {
             // placeholder (2,21:1). Le seul de cet anti-patron qui vive dans un
             // fichier déjà édité par cette campagne ; les 35 autres sont
             // recensés dans DESIGN.md comme écart ouvert (2026-08-18).
-            className={`w-32 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`w-32 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="auto"
           />
         </div>

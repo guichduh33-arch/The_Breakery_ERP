@@ -66,7 +66,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
               id="section-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               maxLength={80}
             />
           </div>
@@ -80,7 +80,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
               type="number"
               value={sortOrder}
               onChange={(e) => { setSortOrder(Number(e.target.value)); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
             />
           </div>
 

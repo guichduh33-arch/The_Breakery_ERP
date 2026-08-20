@@ -54,7 +54,7 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
         type="number"
         value={counted}
         onChange={(e) => setCounted(e.target.value)}
-        className={`h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+        className={`h-touch-min w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
       />
       {counted !== '' && (
         <div className={`text-sm ${diff === 0 ? 'text-success' : 'text-warning'}`}>

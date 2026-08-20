@@ -84,7 +84,7 @@ export default function ProductDashboardPage(): JSX.Element {
                 id="dash-days"
                 value={days}
                 onChange={(e) => { setDays(Number(e.target.value)); }}
-                className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+                className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
               >
                 {WINDOW_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>

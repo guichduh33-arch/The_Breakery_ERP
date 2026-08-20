@@ -69,7 +69,7 @@ export function DeleteUserDialog(
               id="del-reason"
               value={reason}
               onChange={(e) => { setReason(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="e.g. left the company"
               maxLength={200}
             />

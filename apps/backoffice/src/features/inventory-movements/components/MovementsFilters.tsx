@@ -91,7 +91,7 @@ function ItemFilter({ productId, onSelect }: {
           }}
           onFocus={() => { setOpen(true); }}
           onBlur={() => { blurTimer.current = window.setTimeout(() => { setOpen(false); }, 120); }}
-          className={`w-44 px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+          className={`w-44 px-2 py-1 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
         />
         {(productId !== undefined && productId !== '') && (
           <button
@@ -169,7 +169,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           id="mvt-type"
           value={value.movementType ?? ''}
           onChange={(e) => { onChange({ ...value, movementType: e.target.value }); }}
-          className={`px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+          className={`px-2 py-1 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
         >
           <option value="">All types</option>
           {MOVEMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -183,7 +183,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           type="date" lang="id-ID"
           value={value.dateStart ?? ''}
           onChange={(e) => { onChange({ ...value, dateStart: e.target.value }); }}
-          className={`px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+          className={`px-2 py-1 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
         />
       </div>
 
@@ -194,7 +194,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           type="date" lang="id-ID"
           value={value.dateEnd ?? ''}
           onChange={(e) => { onChange({ ...value, dateEnd: e.target.value }); }}
-          className={`px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+          className={`px-2 py-1 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
         />
       </div>
 

@@ -97,7 +97,7 @@ export function ApproveDialog({
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="••••••"
-            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest placeholder:text-text-muted ${FOCUS_RING}`}
           />
         </div>
         {mut.error !== null && mut.error !== undefined && (

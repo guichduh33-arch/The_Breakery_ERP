@@ -167,7 +167,7 @@ export default function SuppliersPage(): JSX.Element {
             placeholder="Search suppliers, categories, or contact person..."
             maxLength={64}
             aria-label="Search suppliers"
-            className={`h-10 w-full rounded-md border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`h-10 w-full rounded-md border border-border-strong bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
           />
         </div>
         <select
@@ -175,7 +175,7 @@ export default function SuppliersPage(): JSX.Element {
           value={active}
           onChange={(e) => setActive(e.target.value as ActiveFilter)}
           aria-label="Status filter"
-          className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+          className={`h-10 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
         >
           <option value="all">All statuses</option>
           <option value="active">Active</option>

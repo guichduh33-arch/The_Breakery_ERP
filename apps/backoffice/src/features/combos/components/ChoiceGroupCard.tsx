@@ -125,7 +125,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
               value={group.name}
               onChange={(e) => { updateField('name', e.target.value); }}
               placeholder="e.g. Choose a drink"
-              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
               data-testid={`group-name-${group.id}`}
             />
           </div>
@@ -158,7 +158,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 }
                 onChange(next);
               }}
-              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               data-testid={`group-type-${group.id}`}
             >
               <option value="single">Single choice</option>
@@ -204,7 +204,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 max={group.max_select}
                 value={group.min_select}
                 onChange={(e) => { updateField('min_select', Math.max(0, Number(e.target.value))); }}
-                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
+                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-strong rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-min-${group.id}`}
               />
             </div>
@@ -218,7 +218,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 min={1}
                 value={group.max_select}
                 onChange={(e) => { updateField('max_select', Math.max(1, Number(e.target.value))); }}
-                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
+                className={`w-14 px-1.5 py-0.5 text-xs font-mono tabular-nums bg-bg-base border border-border-strong rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-max-${group.id}`}
               />
             </div>

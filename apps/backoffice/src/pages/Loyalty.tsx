@@ -224,7 +224,7 @@ export default function LoyaltyPage(): JSX.Element {
               aria-label="Tier filter"
               value={tier}
               onChange={(e) => setTier(e.target.value as TierFilter)}
-              className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               {TIER_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>

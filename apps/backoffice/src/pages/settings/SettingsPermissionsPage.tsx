@@ -67,7 +67,7 @@ export default function SettingsPermissionsPage() {
           <label htmlFor="perm-module" className="text-xs uppercase tracking-widest text-text-secondary">Module</label>
           <select id="perm-module" value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
-            className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}>
+            className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}>
             <option value="">All modules</option>
             {modules.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>

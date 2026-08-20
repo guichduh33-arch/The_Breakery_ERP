@@ -34,7 +34,7 @@ export function ProductPicker({ onPick }: Props) {
         aria-label="Search products to add to the order"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className={`border rounded px-2 py-1 text-sm w-full placeholder:text-text-muted ${FOCUS_RING}`}
+        className={`border border-border-strong rounded px-2 py-1 text-sm w-full placeholder:text-text-muted ${FOCUS_RING}`}
         data-testid="picker-search"
       />
 

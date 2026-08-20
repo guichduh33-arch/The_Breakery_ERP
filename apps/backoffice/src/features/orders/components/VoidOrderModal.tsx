@@ -66,7 +66,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            className={`mt-1 w-full border rounded p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`mt-1 w-full border border-border-strong rounded p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Min. 10 characters…"
             aria-invalid={reason.length > 0 && !reasonOk}
             aria-describedby={reason.length > 0 && !reasonOk ? 'void-reason-error' : undefined}
@@ -85,7 +85,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            className={`mt-1 w-full border rounded p-2 text-sm tracking-widest ${FOCUS_RING}`}
+            className={`mt-1 w-full border border-border-strong rounded p-2 text-sm tracking-widest ${FOCUS_RING}`}
             data-testid="void-pin"
           />
         </div>

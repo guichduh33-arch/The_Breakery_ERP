@@ -300,7 +300,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
             id="refund-reason-bo"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className={`mt-1 w-full rounded border p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`mt-1 w-full rounded border border-border-strong p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Min. 3 characters…"
             data-testid="refund-reason"
           />
@@ -317,7 +317,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            className={`mt-1 w-full rounded border p-2 text-sm tracking-widest ${FOCUS_RING}`}
+            className={`mt-1 w-full rounded border border-border-strong p-2 text-sm tracking-widest ${FOCUS_RING}`}
             data-testid="refund-pin"
           />
         </div>

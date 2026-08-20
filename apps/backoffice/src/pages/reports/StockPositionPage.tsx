@@ -151,7 +151,7 @@ export default function StockPositionPage(): JSX.Element {
             }, { replace: true });
           }}
           className={cn(
-            'rounded-sm border border-border-subtle bg-surface-3 px-2 py-1.5',
+            'rounded-sm border border-border-strong bg-surface-3 px-2 py-1.5',
             'font-data text-sm text-text-primary', FOCUS_RING,
           )}
           data-testid="as-of-picker"

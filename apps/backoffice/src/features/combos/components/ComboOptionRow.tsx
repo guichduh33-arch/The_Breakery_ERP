@@ -47,7 +47,7 @@ export function ComboOptionRow({
           step={1000}
           value={option.surcharge}
           onChange={(e) => { onSurchargeChange(Math.max(0, Number(e.target.value))); }}
-          className={`w-20 px-1.5 py-1 text-xs font-mono tabular-nums bg-bg-elevated border border-border-subtle rounded text-right ${FOCUS_RING}`}
+          className={`w-20 px-1.5 py-1 text-xs font-mono tabular-nums bg-bg-elevated border border-border-strong rounded text-right ${FOCUS_RING}`}
           aria-label={`Surcharge for ${option.label}`}
           data-testid={`surcharge-input-${option.component_product_id}`}
         />

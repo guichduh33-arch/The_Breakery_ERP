@@ -78,7 +78,7 @@ export function CancelB2bOrderModal({ open, orderId, orderNumber, onClose }: Can
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={2}
-              className={`mt-1 w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`mt-1 w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm text-text-primary ${FOCUS_RING}`}
               data-testid="cb2b-reason"
             />
           </label>

@@ -313,7 +313,7 @@ export default function SettingsGeneralPage() {
                         <select id={inputId} disabled={!canUpdate}
                           value={v === null ? '' : String(v)}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`}>
+                          className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`}>
                           {(f.options ?? []).map((o) => <option key={o}>{o}</option>)}
                         </select>
                       ) : f.type === 'percent' ? (
@@ -321,19 +321,19 @@ export default function SettingsGeneralPage() {
                           <input id={inputId} type="number" min={0} max={100} step="any" disabled={!canUpdate}
                             value={v === null ? '' : String(v)}
                             onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+                            className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                           <span className="text-sm text-text-secondary">%</span>
                         </div>
                       ) : f.type === 'number' ? (
                         <input id={inputId} type="number" step="any" disabled={!canUpdate}
                           value={v === null ? '' : String(v)}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+                          className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                       ) : (
                         <input id={inputId} type="text" disabled={!canUpdate} maxLength={500}
                           value={v === null ? '' : String(v)}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+                          className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                       )}
                       {f.helper && <p className="text-xs text-text-secondary">{f.helper}</p>}
                     </div>
