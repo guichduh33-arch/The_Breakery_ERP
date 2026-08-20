@@ -29,6 +29,7 @@ import { DataTable, type DataTableColumn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
 import { WasteModal } from '@/features/inventory/components/WasteModal.js';
@@ -274,8 +275,28 @@ export default function InventoryPage() {
   const c = counters.data;
   const pageRows = useMemo(() => list.data ?? [], [list.data]);
 
-  /** Total du panier affiché — c'est lui que le pied et la pagination comptent. */
+  // Les compteurs sont tombés. `keepPreviousData` peut laisser `c` garni d'une
+  // réponse précédente : on ne la rend pas pour autant, le serveur vient de
+  // refuser de la confirmer. Même règle que la bande des commandes.
+  const countersDown = counters.isError;
+
+  /**
+   * Total du panier affiché — c'est lui que la PAGINATION compte, et il reste
+   * NUMÉRIQUE en toutes circonstances.
+   *
+   * Ne pas y pousser l'inconnue : `useStockCounters` porte
+   * `placeholderData: keepPreviousData`, donc `c` reste garni après un refetch
+   * en échec. Le replier sur `0` réduirait `ListPagination` à une seule page
+   * (`pageCount = max(1, ceil(0 / pageSize))`), et l'opérateur posé page 4
+   * d'une liste de 318 produits se retrouverait les deux flèches désactivées —
+   * bloqué sur sa tranche, alors que la requête de LISTE, elle, a réussi. Le
+   * patron de la bande des commandes fait exactement cela : total numérique,
+   * `countersDown` réservé à l'affichage (`OrdersListPage.tsx:196`).
+   */
   const activeTotal = c === undefined ? 0 : BUCKETS[bucket].count(c);
+
+  /** Le total est-il SU ? C'est cette question-là qui gouverne ce qui se lit. */
+  const totalKnown = c !== undefined && !countersDown;
 
   function pick(next: StockBucket): void {
     patchParams({ bucket: next === 'all' ? null : next, page: null });
@@ -284,12 +305,17 @@ export default function InventoryPage() {
   const counterItems = useMemo<ListCounter[]>(
     () => BUCKET_ORDER.map((id) => {
       const spec = BUCKETS[id];
-      const value = c === undefined ? 0 : spec.count(c);
+      const value = c === undefined || countersDown ? undefined : spec.count(c);
       return {
         id,
         label: spec.label,
-        value,
-        ...(spec.tone !== undefined && value > 0 ? { tone: spec.tone } : {}),
+        // Un compte qu'on ne sait pas rend un tiret cadratin grisé, jamais un
+        // zéro : « aucun produit à zéro » et « je ne sais pas encore combien »
+        // sont deux états opposés, et c'est le second qui appelle un coup
+        // d'œil. Motif de `features/products/counters.ts`.
+        ...(value === undefined ? { value: '—', muted: true } : { value }),
+        // Le ton d'alerte suit la valeur : pas de rouge sur un tiret.
+        ...(spec.tone !== undefined && value !== undefined && value > 0 ? { tone: spec.tone } : {}),
         ...(spec.title !== undefined ? { title: spec.title } : {}),
         onSelect: () => { pick(id); },
       };
@@ -297,7 +323,7 @@ export default function InventoryPage() {
     // `pick` est stable en pratique (setters d'URL mémoïsés) ; la bande ne
     // dépend que des compteurs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [c],
+    [c, countersDown],
   );
 
   const columns = useMemo<readonly DataTableColumn<Row>[]>(() => [
@@ -411,6 +437,19 @@ export default function InventoryPage() {
         }
       />
 
+      {/* L'échec des compteurs n'était rendu NULLE PART : le bandeau existant
+          ne couvre que la liste. La bande retombait à des zéros sans qu'aucun
+          pixel ne dise que la requête avait échoué. */}
+      {countersDown && (
+        <QueryErrorBanner
+          onRetry={() => { void counters.refetch(); }}
+          data-testid="stock-counters-error"
+        >
+          Stock counts could not be loaded — the strip shows dashes rather than
+          numbers that would be wrong.
+        </QueryErrorBanner>
+      )}
+
       <ListCounterStrip
         counters={counterItems}
         activeId={bucket}
@@ -448,10 +487,13 @@ export default function InventoryPage() {
       </div>
 
       {/* Sans annonce, cocher un compteur fait passer la table de 318 à 14
-          lignes en silence pour un lecteur d'écran. */}
+          lignes en silence pour un lecteur d'écran. Les trois états — su, en
+          cours, indisponible — s'annoncent ici comme la bande les montre :
+          cette zone disait « Loading stock counts » pendant que l'œil lisait
+          « 0 ». */}
       <span className="sr-only" role="status" aria-live="polite">
-        {counters.isLoading
-          ? 'Loading stock counts'
+        {!totalKnown
+          ? (countersDown ? 'Stock counts unavailable' : 'Loading stock counts')
           : `${activeTotal.toLocaleString('id-ID')} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
       </span>
 
@@ -487,6 +529,13 @@ export default function InventoryPage() {
             // offsets 0-based : la conversion vit ici, à la frontière, et nulle
             // part ailleurs.
             <ListPagination
+              // Total numérique : la navigation ne doit jamais dépendre de
+              // l'état de la requête des COMPTEURS. Résidu connu et borné —
+              // `ListPagination` rend son propre « from–to of total » et ne sait
+              // pas exprimer « inconnu » ; quand les compteurs sont tombés il
+              // montre donc le dernier total confirmé. Lui donner un `total`
+              // optionnel réglerait le cas pour toutes les listes du
+              // back-office d'un coup ; c'est un lot à part.
               total={activeTotal}
               page={page + 1}
               pageSize={pageSize}
@@ -497,8 +546,12 @@ export default function InventoryPage() {
                 // théorique. Les deux divergent quand la liste revient vide sur
                 // un panier que les compteurs disent peuplé — et c'est
                 // précisément là qu'un pied qui annoncerait « 1–50 » mentirait.
+                // Sans total su, on compte le chargé et on s'arrête là : « 50
+                // of 0 » était le même mensonge dans l'autre sens.
                 <span className="font-data text-xs tabular-nums text-text-muted">
-                  {pageRows.length} of {activeTotal.toLocaleString('id-ID')}
+                  {totalKnown
+                    ? `${pageRows.length} of ${activeTotal.toLocaleString('id-ID')}`
+                    : `${pageRows.length} loaded`}
                 </span>
               }
             />
