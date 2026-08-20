@@ -11,6 +11,8 @@ import { formatCurrency } from '@breakery/utils';
 import { useRecipeDetail } from '@/features/recipes/hooks/useRecipeDetail.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { formatPct1, sharePct } from '@/features/reports/utils/reportFigures.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 /** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data Rule). */
 const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
@@ -26,16 +28,21 @@ function fmtShare(part: number, base: number): string {
 
 export function RecipeDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
-  const { data, isLoading, error } = useRecipeDetail(productId);
+  const { data, isLoading, error, refetch } = useRecipeDetail(productId);
 
   if (isLoading) {
     return <div className="text-sm text-text-secondary">Loading recipe…</div>;
   }
   if (error !== null && error !== undefined) {
     return (
-      <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-        Failed to load recipe: {String(error)}
-      </div>
+      <QueryErrorBanner
+        detail={errorDetailText(error)}
+        onRetry={() => { void refetch(); }}
+        data-testid="recipe-detail-error"
+      >
+        This recipe could not be loaded — nothing below is shown, so no cost
+        here is a zero.
+      </QueryErrorBanner>
     );
   }
   if (data === null || data === undefined) {

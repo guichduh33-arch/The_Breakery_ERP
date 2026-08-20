@@ -110,7 +110,14 @@ describe('RecipeDetailPage', () => {
     hookState.current = { isLoading: false, error: new Error('boom'), data: undefined };
     renderAt('/backoffice/inventory/recipes/p-1');
     const alert = screen.getByRole('alert');
-    expect(alert.textContent).toContain('Failed to load recipe');
+    // Copie changée le 2026-08-20 : la page rendait « Failed to load recipe:
+    // [object Object] » — un `String()` sur une erreur Supabase, qui est un
+    // objet nu. Elle passe désormais par `QueryErrorBanner`, qui dit ce qui est
+    // en jeu et offre un « Try again ». L'invariant du test reste le même :
+    // un `role="alert"`, et pas de « Loading » résiduel.
+    expect(alert.textContent).toContain('This recipe could not be loaded');
+    expect(alert.textContent).not.toContain('object Object');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
   });
 
