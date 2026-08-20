@@ -29,6 +29,7 @@ import { DataTable, type DataTableColumn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
 import { WasteModal } from '@/features/inventory/components/WasteModal.js';
@@ -274,8 +275,21 @@ export default function InventoryPage() {
   const c = counters.data;
   const pageRows = useMemo(() => list.data ?? [], [list.data]);
 
-  /** Total du panier affiché — c'est lui que le pied et la pagination comptent. */
-  const activeTotal = c === undefined ? 0 : BUCKETS[bucket].count(c);
+  // Les compteurs sont tombés. `keepPreviousData` peut laisser `c` garni d'une
+  // réponse précédente : on ne la rend pas pour autant, le serveur vient de
+  // refuser de la confirmer. Même règle que la bande des commandes.
+  const countersDown = counters.isError;
+
+  /**
+   * Total du panier affiché — c'est lui que le pied et la pagination comptent.
+   * `undefined` tant qu'il n'est pas SU : au premier chargement comme sur
+   * échec. Le `0` d'avant faisait dire « of 0 » à un pied qui surplombait
+   * cinquante lignes, et posait cinq zéros dans la bande à l'instant précis où
+   * la zone `sr-only` annonçait « Loading stock counts ».
+   */
+  const activeTotal = c === undefined || countersDown
+    ? undefined
+    : BUCKETS[bucket].count(c);
 
   function pick(next: StockBucket): void {
     patchParams({ bucket: next === 'all' ? null : next, page: null });
@@ -284,12 +298,17 @@ export default function InventoryPage() {
   const counterItems = useMemo<ListCounter[]>(
     () => BUCKET_ORDER.map((id) => {
       const spec = BUCKETS[id];
-      const value = c === undefined ? 0 : spec.count(c);
+      const value = c === undefined || countersDown ? undefined : spec.count(c);
       return {
         id,
         label: spec.label,
-        value,
-        ...(spec.tone !== undefined && value > 0 ? { tone: spec.tone } : {}),
+        // Un compte qu'on ne sait pas rend un tiret cadratin grisé, jamais un
+        // zéro : « aucun produit à zéro » et « je ne sais pas encore combien »
+        // sont deux états opposés, et c'est le second qui appelle un coup
+        // d'œil. Motif de `features/products/counters.ts`.
+        ...(value === undefined ? { value: '—', muted: true } : { value }),
+        // Le ton d'alerte suit la valeur : pas de rouge sur un tiret.
+        ...(spec.tone !== undefined && value !== undefined && value > 0 ? { tone: spec.tone } : {}),
         ...(spec.title !== undefined ? { title: spec.title } : {}),
         onSelect: () => { pick(id); },
       };
@@ -297,7 +316,7 @@ export default function InventoryPage() {
     // `pick` est stable en pratique (setters d'URL mémoïsés) ; la bande ne
     // dépend que des compteurs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [c],
+    [c, countersDown],
   );
 
   const columns = useMemo<readonly DataTableColumn<Row>[]>(() => [
@@ -411,6 +430,19 @@ export default function InventoryPage() {
         }
       />
 
+      {/* L'échec des compteurs n'était rendu NULLE PART : le bandeau existant
+          ne couvre que la liste. La bande retombait à des zéros sans qu'aucun
+          pixel ne dise que la requête avait échoué. */}
+      {countersDown && (
+        <QueryErrorBanner
+          onRetry={() => { void counters.refetch(); }}
+          data-testid="stock-counters-error"
+        >
+          Stock counts could not be loaded — the strip shows dashes rather than
+          numbers that would be wrong.
+        </QueryErrorBanner>
+      )}
+
       <ListCounterStrip
         counters={counterItems}
         activeId={bucket}
@@ -448,10 +480,13 @@ export default function InventoryPage() {
       </div>
 
       {/* Sans annonce, cocher un compteur fait passer la table de 318 à 14
-          lignes en silence pour un lecteur d'écran. */}
+          lignes en silence pour un lecteur d'écran. Les trois états — su, en
+          cours, indisponible — s'annoncent ici comme la bande les montre :
+          cette zone disait « Loading stock counts » pendant que l'œil lisait
+          « 0 ». */}
       <span className="sr-only" role="status" aria-live="polite">
-        {counters.isLoading
-          ? 'Loading stock counts'
+        {activeTotal === undefined
+          ? (countersDown ? 'Stock counts unavailable' : 'Loading stock counts')
           : `${activeTotal.toLocaleString('id-ID')} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
       </span>
 
@@ -487,7 +522,10 @@ export default function InventoryPage() {
             // offsets 0-based : la conversion vit ici, à la frontière, et nulle
             // part ailleurs.
             <ListPagination
-              total={activeTotal}
+              // Le repli à zéro ne concerne QUE la mécanique de pagination —
+              // comportement d'avant, inchangé. Ce qui se LIT passe par
+              // `leading` ci-dessous et ne se replie pas.
+              total={activeTotal ?? 0}
               page={page + 1}
               pageSize={pageSize}
               onPage={(next) => { setPage(next - 1); }}
@@ -497,8 +535,12 @@ export default function InventoryPage() {
                 // théorique. Les deux divergent quand la liste revient vide sur
                 // un panier que les compteurs disent peuplé — et c'est
                 // précisément là qu'un pied qui annoncerait « 1–50 » mentirait.
+                // Sans total su, on compte le chargé et on s'arrête là : « 50
+                // of 0 » était le même mensonge dans l'autre sens.
                 <span className="font-data text-xs tabular-nums text-text-muted">
-                  {pageRows.length} of {activeTotal.toLocaleString('id-ID')}
+                  {activeTotal === undefined
+                    ? `${pageRows.length} loaded`
+                    : `${pageRows.length} of ${activeTotal.toLocaleString('id-ID')}`}
                 </span>
               }
             />

@@ -31,6 +31,7 @@ import { tierFromLifetime } from '@breakery/domain';
 import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { ListPagination, pageSlice } from '@/components/ListPagination.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -158,32 +159,45 @@ export default function CustomersListPage(): JSX.Element {
 
   // Compteurs informatifs — pas de `onSelect` : aucun filtre serveur ne leur
   // correspond, la bande annonce l'état de la base clients, elle ne filtre pas.
+  //
+  // Tant que `stats.data` est indéfini — au premier chargement comme après un
+  // échec — la bande ne SAIT pas : chaque cellule rend un tiret cadratin grisé
+  // plutôt qu'un zéro. « 0 client » et « je ne sais pas encore » ne se
+  // ressemblent pas. Même règle que les compteurs du catalogue
+  // (`features/products/counters.ts`) et que ceux des commandes. Les infobulles
+  // suivent : chiffrées quand le compte est su, réduites à leur définition
+  // sinon — « 0% of the customer base » était le même mensonge en plus petit.
   const counters = useMemo<ListCounter[]>(() => {
     const s = stats.data;
+    const unknownCell = { value: '—', muted: true } as const;
     return [
       {
         id: 'total',
         label: 'Customers',
-        value: s?.totalCustomers ?? 0,
+        ...(s === undefined ? unknownCell : { value: s.totalCustomers }),
       },
       {
         id: 'active',
         label: 'Active this month',
-        value: s?.activeThisMonth ?? 0,
+        ...(s === undefined ? unknownCell : { value: s.activeThisMonth }),
         title: 'Customers with at least one recorded visit since the 1st of the month.',
       },
       {
         id: 'loyalty',
         label: 'Loyalty members',
-        value: s?.loyaltyMembers ?? 0,
-        title: `${s?.loyaltyPercent ?? 0}% of the customer base has earned loyalty points.`,
+        ...(s === undefined ? unknownCell : { value: s.loyaltyMembers }),
+        title: s === undefined
+          ? 'Share of the customer base that has earned loyalty points.'
+          : `${s.loyaltyPercent}% of the customer base has earned loyalty points.`,
       },
       {
         id: 'b2b-outstanding',
         label: 'Outstanding B2B',
-        value: formatCurrency(s?.outstandingB2b ?? 0),
-        ...((s?.outstandingB2b ?? 0) > 0 ? { tone: 'warning' as const } : {}),
-        title: `${(s?.outstandingCount ?? 0).toLocaleString('id-ID')} account customers carry an unpaid balance.`,
+        ...(s === undefined ? unknownCell : { value: formatCurrency(s.outstandingB2b) }),
+        ...(s !== undefined && s.outstandingB2b > 0 ? { tone: 'warning' as const } : {}),
+        title: s === undefined
+          ? 'Account customers carrying an unpaid balance.'
+          : `${s.outstandingCount.toLocaleString('id-ID')} account customers carry an unpaid balance.`,
       },
     ];
   }, [stats.data]);
@@ -293,7 +307,11 @@ export default function CustomersListPage(): JSX.Element {
   }
 
   const rows = list.data ?? [];
-  const total = stats.data?.totalCustomers ?? 0;
+  // `undefined` tant que le total n'est pas su : le pied dira ce qu'il a chargé
+  // plutôt que de rapporter les lignes rendues à un total qu'il ignore. Replié
+  // sur zéro, il annonçait « 50 of 0 » — plus de lignes à l'écran que le total
+  // qu'il prétendait connaître.
+  const total = stats.data?.totalCustomers;
   const { pageRows, current } = pageSlice(rows, page, pageSize);
   // La colonne triée courante, dérivée du même état que le Select : les deux
   // contrôles ne peuvent pas diverger puisqu'il n'y a qu'une source.
@@ -342,6 +360,19 @@ export default function CustomersListPage(): JSX.Element {
           </>
         }
       />
+
+      {/* L'échec des compteurs était MUET : la bande retombait à quatre zéros
+          sans qu'aucun pixel ne dise que la requête avait échoué. Le bandeau
+          surplombe la bande, il ne remplace rien — la liste, elle, a chargé. */}
+      {stats.isError && (
+        <QueryErrorBanner
+          onRetry={() => { void stats.refetch(); }}
+          data-testid="customers-counters-error"
+        >
+          Customer counts could not be loaded — the strip shows dashes rather
+          than numbers that would be wrong.
+        </QueryErrorBanner>
+      )}
 
       <ListCounterStrip
         counters={counters}
@@ -434,7 +465,12 @@ export default function CustomersListPage(): JSX.Element {
               onPageSize={(next) => { setPageSize(next); setPage(1); }}
               leading={
                 <span className="font-data text-xs tabular-nums text-text-muted">
-                  {rows.length} of {total.toLocaleString('id-ID')}
+                  {/* Même geste que le pied des commandes : sans total connu,
+                      on compte ce qui est CHARGÉ, on ne le rapporte pas à un
+                      tout qu'on ignore. */}
+                  {total === undefined
+                    ? `${rows.length} loaded`
+                    : `${rows.length} of ${total.toLocaleString('id-ID')}`}
                 </span>
               }
             />
