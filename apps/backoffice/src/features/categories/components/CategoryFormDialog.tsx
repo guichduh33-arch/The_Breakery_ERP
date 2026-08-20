@@ -124,7 +124,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
               id="cat-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               maxLength={120}
             />
           </div>
@@ -137,7 +137,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
               id="cat-slug"
               value={slug}
               onChange={(e) => { setSlug(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="coffee"
               maxLength={120}
             />

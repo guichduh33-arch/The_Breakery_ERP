@@ -150,7 +150,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                 disabled={readOnly}
                 onChange={(e) => update('description', e.target.value as ProductRow['description'])}
                 placeholder="Add a short description..."
-                className="mt-1.5 block w-full resize-y rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                className="mt-1.5 block w-full resize-y rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               />
             </div>
           </div>

@@ -78,7 +78,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
               value={code}
               onChange={(e) => { setCode(e.target.value); }}
               disabled={isEdit}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono uppercase disabled:opacity-60 placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded font-mono uppercase disabled:opacity-60 placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="PASTRY_KITCHEN"
             />
           </div>
@@ -89,7 +89,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
               id="sec-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
             />
           </div>
 
@@ -102,7 +102,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
                 min={0}
                 value={order}
                 onChange={(e) => { setOrder(e.target.value); }}
-                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               />
             </div>
             <div className="flex items-end">

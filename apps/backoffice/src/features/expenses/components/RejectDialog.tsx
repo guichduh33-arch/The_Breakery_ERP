@@ -46,7 +46,7 @@ export function RejectDialog({ open, expenseId, onClose, onSuccess }: RejectDial
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             maxLength={500}
-            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}
+            className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}
           />
         </div>
         {mut.error !== null && mut.error !== undefined && (

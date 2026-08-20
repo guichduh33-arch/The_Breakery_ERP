@@ -165,7 +165,7 @@ export default function OpnameListPage(): JSX.Element {
           id="opname-status-filter"
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as '' | OpnameStatus); }}
-          className={`h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+          className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>

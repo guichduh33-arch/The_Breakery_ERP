@@ -43,7 +43,7 @@ export function PermissionMatrix(): JSX.Element {
           value={filter}
           onChange={(e) => { setFilter(e.target.value); }}
           placeholder="Filter by code, module, or description…"
-          className={`w-72 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+          className={`w-72 px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
         />
         <span className="text-xs text-text-secondary">
           {filteredPerms.length} / {data.permissions.length} permissions

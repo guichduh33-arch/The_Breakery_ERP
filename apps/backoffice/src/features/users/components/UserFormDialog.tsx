@@ -78,7 +78,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
               id="usr-emp"
               value={employeeCode}
               onChange={(e) => { setEmployeeCode(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono uppercase placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded font-mono uppercase placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="EMP004"
               maxLength={16}
             />
@@ -92,7 +92,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
               id="usr-name"
               value={fullName}
               onChange={(e) => { setFullName(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Jane Doe"
               maxLength={120}
             />
@@ -124,7 +124,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
               onChange={(e) => { setPin(e.target.value.replace(/[^0-9]/g, '')); }}
               type="password"
               inputMode="numeric"
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="••••••"
               maxLength={6}
             />

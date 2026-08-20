@@ -92,7 +92,7 @@ export function YieldVarianceModal({
               maxLength={500}
               rows={3}
               autoFocus
-              className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+              className="w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
               aria-invalid={!canConfirm}
             />
             <div className="text-xs text-text-secondary">

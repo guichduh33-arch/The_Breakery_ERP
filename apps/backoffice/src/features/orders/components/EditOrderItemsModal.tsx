@@ -202,7 +202,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                       handleUpdateQty(l, Math.max(1, Number(e.target.value) || 1))
                     }
                     aria-label={`Quantity for ${l.name_snapshot}`}
-                    className={`w-16 border rounded px-1 py-0.5 text-sm ${FOCUS_RING}`}
+                    className={`w-16 border border-border-strong rounded px-1 py-0.5 text-sm ${FOCUS_RING}`}
                     data-testid={`qty-${l.id}`}
                   />
                   <span className="w-20 text-right tabular-nums">{formatCurrency(l.line_total)}</span>

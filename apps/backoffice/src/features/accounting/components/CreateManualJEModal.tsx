@@ -188,7 +188,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                           value={line.account_id}
                           onChange={(e) => updateLine(line.key, { account_id: e.target.value })}
                           aria-label={`Account for line ${idx + 1}`}
-                          className={`w-full rounded border border-border-subtle bg-bg-elevated px-2 py-1 text-sm ${FOCUS_RING}`}
+                          className={`w-full rounded border border-border-strong bg-bg-elevated px-2 py-1 text-sm ${FOCUS_RING}`}
                           data-testid={`je-modal-line-account-${line.key}`}
                         >
                           <option value="">— select —</option>

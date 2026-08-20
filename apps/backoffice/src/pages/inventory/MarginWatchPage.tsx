@@ -250,7 +250,7 @@ export default function MarginWatchPage(): JSX.Element {
               value={ackNotes}
               onChange={(e) => setAckNotes(e.target.value)}
               rows={3}
-              className={`mt-1 w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`mt-1 w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Reason / corrective action"
               aria-label="Acknowledgement notes"
             />

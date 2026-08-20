@@ -97,7 +97,7 @@ export default function CashTreasuryPage() {
             type="date" lang="id-ID"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className={`h-touch-min rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+            className={`h-touch-min rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
           <span aria-hidden="true">→</span>
           <label htmlFor="treasury-range-to" className="text-xs uppercase tracking-widest text-text-secondary">
@@ -108,7 +108,7 @@ export default function CashTreasuryPage() {
             type="date" lang="id-ID"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className={`h-touch-min rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+            className={`h-touch-min rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
           <Button
             variant="secondary"

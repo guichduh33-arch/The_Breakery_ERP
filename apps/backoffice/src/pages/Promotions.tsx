@@ -340,7 +340,7 @@ function DateField({ id, label, value, onChange }: DateFieldProps): JSX.Element 
         type="date" lang="id-ID"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+        className={`mt-1 h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
       />
     </label>
   );

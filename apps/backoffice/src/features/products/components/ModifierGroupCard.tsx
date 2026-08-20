@@ -81,14 +81,14 @@ export function ModifierGroupCard({
       <div className="flex flex-wrap items-center gap-3">
         <input
           aria-label="Variant type name"
-          className={`flex-1 min-w-48 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm font-semibold placeholder:text-text-muted ${FOCUS_RING}`}
+          className={`flex-1 min-w-48 rounded border border-border-strong bg-bg-input px-2 py-1 text-sm font-semibold placeholder:text-text-muted ${FOCUS_RING}`}
           placeholder="e.g. Milk"
           value={group.group_name}
           onChange={(e) => patch({ group_name: e.target.value })}
         />
         <select
           aria-label="Selection type"
-          className={`rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
+          className={`rounded border border-border-strong bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
           value={group.group_type}
           onChange={(e) => changeType(e.target.value as ModifierGroupType)}
         >

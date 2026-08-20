@@ -83,7 +83,7 @@ export default function ChartOfAccountsPage(): JSX.Element {
             setClassFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
           }
           aria-label="Account class"
-          className={`rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm ${FOCUS_RING}`}
+          className={`rounded-md border border-border-strong bg-bg-elevated px-3 py-2 text-sm ${FOCUS_RING}`}
           data-testid="coa-class-filter"
         >
           <option value="all">All classes</option>

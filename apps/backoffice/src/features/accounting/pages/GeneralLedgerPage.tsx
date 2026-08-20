@@ -110,7 +110,7 @@ export default function GeneralLedgerPage(): JSX.Element {
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            className={`mt-1 rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm min-w-72 ${FOCUS_RING}`}
+            className={`mt-1 rounded-md border border-border-strong bg-bg-elevated px-3 py-2 text-sm min-w-72 ${FOCUS_RING}`}
             data-testid="gl-account-select"
           >
             <option value="">— select an account —</option>

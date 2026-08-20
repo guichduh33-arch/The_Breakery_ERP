@@ -101,19 +101,19 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
           <label htmlFor={`tpl-subj-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Subject</label>
           <input id={`tpl-subj-${row.id}`} value={draft.subject} disabled={!canEdit} maxLength={200}
             onChange={(e) => setDraft((d) => ({ ...d, subject: e.target.value }))}
-            className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+            className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div>
           <label htmlFor={`tpl-text-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Plain text body</label>
           <textarea id={`tpl-text-${row.id}`} rows={6} value={draft.body_text} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, body_text: e.target.value }))}
-            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+            className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div>
           <label htmlFor={`tpl-html-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">HTML body</label>
           <textarea id={`tpl-html-${row.id}`} rows={6} value={draft.body_html} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, body_html: e.target.value }))}
-            className={`w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+            className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div className="flex items-center gap-2">
           <input className={FOCUS_RING} id={`tpl-active-${row.id}`} type="checkbox" checked={draft.is_active} disabled={!canEdit}

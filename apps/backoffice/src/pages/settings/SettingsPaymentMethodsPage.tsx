@@ -164,7 +164,7 @@ export default function SettingsPaymentMethodsPage() {
           aria-label={`${LABELS.get(value) ?? value} fee (%)`}
           data-testid={`pm-fee-${value}`}
           onChange={(e) => setFee(value, e.target.value)}
-          className={`w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm placeholder:text-text-muted ${FOCUS_RING}`}
+          className={`w-20 rounded border border-border-strong bg-bg-input px-2 py-1 text-right text-sm placeholder:text-text-muted ${FOCUS_RING}`}
         />
         %
       </span>
@@ -278,7 +278,7 @@ export default function SettingsPaymentMethodsPage() {
                 aria-label="Store credit expiry in months (0 = never)"
                 data-testid="store-credit-expiry-months"
                 onChange={(e) => setExpiryDraft(e.target.value)}
-                className={`w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm ${FOCUS_RING}`}
+                className={`w-20 rounded border border-border-strong bg-bg-input px-2 py-1 text-right text-sm ${FOCUS_RING}`}
               />
             </label>
             <p className="mt-1 text-xs text-text-secondary">

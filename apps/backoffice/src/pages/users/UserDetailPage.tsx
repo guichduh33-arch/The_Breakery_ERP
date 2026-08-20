@@ -185,7 +185,7 @@ export default function UserDetailPage() {
                 }
               }}
               placeholder="6 digits"
-              className={`w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
             />
             <Button variant="ink" onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
               {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}

@@ -220,7 +220,7 @@ function PinPolicyCard({ canEdit }: { canEdit: boolean }): JSX.Element {
                 setDraft((prev) => (prev === null ? prev : { ...prev, [f.key]: e.target.value }));
               }}
               data-testid={`pin-input-${f.key}`}
-              className={`w-24 rounded-md border border-border-subtle bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
+              className={`w-24 rounded-md border border-border-strong bg-bg-input px-2 py-1 text-sm ${FOCUS_RING}`}
             />
             <span className="text-xs text-text-muted">{f.hint}</span>
             {invalid && (
@@ -272,7 +272,7 @@ function SecurityRoleRow({ role, canEdit, pending, errorMessage, onSave }: Secur
           disabled={!canEdit}
           aria-label={`Timeout for ${role.code}`}
           data-testid={`timeout-input-${role.code}`}
-          className={`w-24 rounded-md border border-border-subtle bg-bg-base px-2 py-1 text-sm disabled:opacity-60 ${FOCUS_RING}`}
+          className={`w-24 rounded-md border border-border-strong bg-bg-base px-2 py-1 text-sm disabled:opacity-60 ${FOCUS_RING}`}
         />
         {invalid && dirty && (
           <p className="mt-1 text-xs text-red" data-testid={`timeout-invalid-${role.code}`}>

@@ -105,7 +105,7 @@ export default function SettingsCustomerDisplayPage() {
                 <input id={f.key} type="text" maxLength={f.max} disabled={!canUpdate}
                   value={draft[f.key] ?? ''}
                   onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                  className={`h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
+                  className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
                 <p className="text-xs text-text-secondary">{f.helper}</p>
               </div>
             ))}

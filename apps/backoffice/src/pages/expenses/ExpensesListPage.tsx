@@ -268,7 +268,7 @@ export default function ExpensesListPage(): JSX.Element {
                 placeholder="Search expenses…"
                 maxLength={64}
                 aria-label="Search expenses"
-                className={`h-10 w-full rounded-md border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
+                className={`h-10 w-full rounded-md border border-border-strong bg-bg-input pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
               />
             </div>
             <select
@@ -276,7 +276,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               aria-label="Category filter"
-              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`h-10 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               <option value="all">All categories</option>
               {(cats.data ?? []).map((c) => (
@@ -288,7 +288,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as typeof paymentMethod)}
               aria-label="Payment method filter"
-              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`h-10 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             >
               <option value="all">All methods</option>
               <option value="cash">Cash</option>
@@ -302,7 +302,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               aria-label="From date"
-              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`h-10 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             />
             <input
               id="exp-to"
@@ -310,7 +310,7 @@ export default function ExpensesListPage(): JSX.Element {
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               aria-label="To date"
-              className={`h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+              className={`h-10 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
             />
           </div>
 

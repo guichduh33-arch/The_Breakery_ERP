@@ -87,7 +87,7 @@ export default function SettingsHistoryPage(): JSX.Element {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className={`mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-40 ${FOCUS_RING}`}
+            className={`mt-1 h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary min-w-40 ${FOCUS_RING}`}
             data-testid="settings-history-filter-category"
           >
             <option value="">All categories</option>
@@ -102,7 +102,7 @@ export default function SettingsHistoryPage(): JSX.Element {
             value={keySearch}
             onChange={(e) => setKeySearch(e.target.value)}
             placeholder="e.g. tax_rate"
-            className={`mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
+            className={`mt-1 h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
             data-testid="settings-history-filter-key"
           />
         </label>

@@ -267,7 +267,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             aria-autocomplete="list"
             aria-activedescendant={keyboard.activeDescendantId}
             data-testid="production-search"
-            className="h-9 w-72 rounded-full border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
+            className="h-9 w-72 rounded-full border border-border-strong bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
           />
           {/* Le descendant actif ne déplace pas le focus : sans annonce,
               l'apparition des résultats est muette pour un lecteur d'écran. */}
@@ -378,13 +378,13 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                         value={r.quantity}
                         onChange={(e) => updateRow(r.rowId, { quantity: e.target.value })}
                         aria-label={`Quantity for ${r.product.name}`}
-                        className="w-20 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                        className="w-20 rounded-md border border-border-strong bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                       />
                       <select
                         value={r.unitCode}
                         onChange={(e) => updateRow(r.rowId, { unitCode: e.target.value })}
                         aria-label={`Unit for ${r.product.name}`}
-                        className="h-9 rounded-md border border-border-subtle bg-bg-input px-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                        className="h-9 rounded-md border border-border-strong bg-bg-input px-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                       >
                         {r.product.units.map((u) => (
                           <option key={u.code} value={u.code}>{u.code}</option>
@@ -402,7 +402,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                         value={r.waste}
                         onChange={(e) => updateRow(r.rowId, { waste: e.target.value })}
                         aria-label={`Waste for ${r.product.name}`}
-                        className="w-20 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                        className="w-20 rounded-md border border-border-strong bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                       />
                       <span className="text-xs text-text-muted">{r.product.unit}</span>
                     </div>
@@ -421,7 +421,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                           aria-label={`Waste reason for ${r.product.name}`}
                           data-testid={`waste-reason-${r.product.sku}`}
                           className={`h-9 rounded-md border bg-bg-input px-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-50 ${
-                            needsReason && r.wasteReason === '' ? 'border-red' : 'border-border-subtle'
+                            needsReason && r.wasteReason === '' ? 'border-red' : 'border-border-strong'
                           }`}
                         >
                           <option value="">{needsReason ? '— required —' : '—'}</option>
@@ -439,7 +439,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                       onChange={(e) => updateRow(r.rowId, { note: e.target.value })}
                       maxLength={200}
                       aria-label={`Note for ${r.product.name}`}
-                      className="w-full rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                      className="w-full rounded-md border border-border-strong bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -475,7 +475,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             onChange={(e) => setProductionAt(e.target.value)}
             aria-label="Production date and time"
             data-testid="production-datetime"
-            className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className="h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           />
         </div>
         <div className="flex items-center gap-3">

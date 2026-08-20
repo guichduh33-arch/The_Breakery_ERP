@@ -101,7 +101,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               id="np-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="Affogato"
               maxLength={120}
             />
@@ -116,7 +116,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
                 id="np-sku"
                 value={sku}
                 onChange={(e) => { setSku(e.target.value.toUpperCase()); }}
-                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
                 placeholder="COF-002"
                 maxLength={32}
               />
@@ -129,7 +129,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
                 id="np-unit"
                 value={unit}
                 onChange={(e) => { setUnit(e.target.value); }}
-                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+                className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
               >
                 {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
@@ -144,7 +144,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               id="np-cat"
               value={categoryId}
               onChange={(e) => { setCategoryId(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
             >
               {/* Placeholder non sélectionnable : force un choix explicite. */}
               <option value="" disabled>
@@ -167,7 +167,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               min={0}
               value={retailPrice}
               onChange={(e) => { setRetailPrice(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded font-mono ${FOCUS_RING}`}
             />
           </div>
 
@@ -180,7 +180,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               rows={2}
               value={description}
               onChange={(e) => { setDescription(e.target.value); }}
-              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded resize-y ${FOCUS_RING}`}
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded resize-y ${FOCUS_RING}`}
               maxLength={500}
             />
           </div>
@@ -191,7 +191,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               checked={isDisplayItem}
               onChange={(e) => { setIsDisplayItem(e.target.checked); }}
               data-testid="new-product-display-item"
-              className={`h-4 w-4 rounded border-border-subtle bg-bg-base ${FOCUS_RING}`}
+              className={`h-4 w-4 rounded border-border-strong bg-bg-base ${FOCUS_RING}`}
             />
             <span>
               Display-case item (POS) — separate display-case counter, independent of global inventory
