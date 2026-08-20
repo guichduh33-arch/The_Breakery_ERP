@@ -21,6 +21,8 @@ import { StockLedgerTable } from '@/features/inventory-movements/components/Stoc
 import { enrichLedgerLines, stockLedgerCsvColumns } from '@/features/inventory-movements/stockLedgerColumns.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 const IN_TYPES = new Set([
   'purchase', 'incoming', 'transfer_in', 'production_in',
@@ -101,9 +103,14 @@ export default function StockMovementsPage(): JSX.Element {
       <MovementsFiltersBar value={filters} onChange={setFilters} />
 
       {ledger.error !== null ? (
-        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed to load movements: {String(ledger.error.message)}
-        </div>
+        <QueryErrorBanner
+          detail={errorDetailText(ledger.error)}
+          onRetry={() => { void ledger.refetch(); }}
+          data-testid="stock-movements-error"
+        >
+          Stock movements could not be loaded — the ledger is withheld rather
+          than shown empty.
+        </QueryErrorBanner>
       ) : (
         <StockLedgerTable rows={rows} truncated={result.truncated} isLoading={ledger.isLoading} />
       )}

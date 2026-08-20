@@ -21,6 +21,8 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, Layers, Sigma, X } from 'lucide-react';
 import { Button, EmptyState, KpiTile } from '@breakery/ui';
 import { formatQuantity } from '@breakery/utils';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDetail.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
@@ -82,9 +84,14 @@ export default function OpnameDetailPage(): JSX.Element {
   }
   if (detail.error !== null) {
     return (
-      <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-        Failed to load count: {String(detail.error)}
-      </div>
+      <QueryErrorBanner
+        detail={errorDetailText(detail.error)}
+        onRetry={() => { void detail.refetch(); }}
+        data-testid="opname-detail-error"
+      >
+        This stock count could not be loaded — nothing below is shown, so no
+        figure here is a zero.
+      </QueryErrorBanner>
     );
   }
   if (detail.data === null || detail.data === undefined) {

@@ -24,6 +24,8 @@ import {
 } from '@/features/sections/hooks/useSectionsList.js';
 import { SectionFormModal } from '@/features/sections/components/SectionFormModal.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 interface StationKpi {
   total:  number;
@@ -139,9 +141,14 @@ export default function SectionsPage(): JSX.Element {
       </section>
 
       {list.error !== null ? (
-        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed to load stations: {String(list.error)}
-        </div>
+        <QueryErrorBanner
+          detail={errorDetailText(list.error)}
+          onRetry={() => { void list.refetch(); }}
+          data-testid="sections-error"
+        >
+          Stations could not be loaded — the table is withheld rather than shown
+          empty, which would read as “no station exists”.
+        </QueryErrorBanner>
       ) : (
         <DataTable
           data-testid="sections-table"

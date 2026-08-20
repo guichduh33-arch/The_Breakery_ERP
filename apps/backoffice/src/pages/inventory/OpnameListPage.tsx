@@ -25,6 +25,8 @@ import { OpnameStatusBadge } from '@/features/inventory-opname/components/Opname
 import { CreateOpnameModal } from '@/features/inventory-opname/components/CreateOpnameModal.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 const STATUS_OPTIONS: readonly { value: '' | OpnameStatus; label: string }[] = [
   { value: '',          label: 'All statuses' },
@@ -172,9 +174,14 @@ export default function OpnameListPage(): JSX.Element {
       </div>
 
       {list.error !== null ? (
-        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed to load counts: {String(list.error)}
-        </div>
+        <QueryErrorBanner
+          detail={errorDetailText(list.error)}
+          onRetry={() => { void list.refetch(); }}
+          data-testid="opname-list-error"
+        >
+          Stock counts could not be loaded — the table below is not shown rather
+          than shown empty, which would read as “no counts exist”.
+        </QueryErrorBanner>
       ) : (
         <DataTable
           data-testid="opname-list-table"

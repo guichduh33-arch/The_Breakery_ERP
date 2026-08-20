@@ -23,6 +23,8 @@ import { useProductDashboard } from '@/features/inventory-dashboard/hooks/usePro
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
@@ -42,9 +44,14 @@ export default function ProductDashboardPage(): JSX.Element {
   }
   if (dash.error !== null) {
     return (
-      <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-        Failed: {String(dash.error)}
-      </div>
+      <QueryErrorBanner
+        detail={errorDetailText(dash.error)}
+        onRetry={() => { void dash.refetch(); }}
+        data-testid="product-dashboard-error"
+      >
+        This product dashboard could not be loaded — nothing below is shown, so
+        no figure here is a zero.
+      </QueryErrorBanner>
     );
   }
   if (dash.data === null || dash.data === undefined) {

@@ -20,6 +20,8 @@ import {
   type DisplayMovementRow,
 } from '@/features/inventory/hooks/useDisplayMovements.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
   {
@@ -117,9 +119,14 @@ export default function DisplayStockPage(): JSX.Element {
       <section className="space-y-3" aria-label="Display-stock counters">
         <h2 className="font-display text-xl text-text-primary">Current counters</h2>
         {stock.error !== null ? (
-          <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-            Failed to load display stock: {String(stock.error)}
-          </div>
+          <QueryErrorBanner
+            detail={errorDetailText(stock.error)}
+            onRetry={() => { void stock.refetch(); }}
+            data-testid="display-stock-error"
+          >
+            Display-stock counters could not be loaded — the table is withheld
+            rather than shown empty.
+          </QueryErrorBanner>
         ) : (
           <DataTable
             data-testid="display-stock-table"
@@ -136,9 +143,14 @@ export default function DisplayStockPage(): JSX.Element {
       <section className="space-y-3" aria-label="Display-movements ledger">
         <h2 className="font-display text-xl text-text-primary">Recent movements</h2>
         {movements.error !== null ? (
-          <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-            Failed to load display movements: {String(movements.error)}
-          </div>
+          <QueryErrorBanner
+            detail={errorDetailText(movements.error)}
+            onRetry={() => { void movements.refetch(); }}
+            data-testid="display-movements-error"
+          >
+            Display movements could not be loaded — the ledger is withheld
+            rather than shown empty.
+          </QueryErrorBanner>
         ) : (
           <DataTable
             data-testid="display-movements-table"
