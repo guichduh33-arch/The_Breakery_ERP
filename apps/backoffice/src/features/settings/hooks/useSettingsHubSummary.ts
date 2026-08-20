@@ -78,12 +78,36 @@ export function compressBusinessHours(
     .join(' · ');
 }
 
+/**
+ * `business_config.tax_rate` est stocké en FRACTION (`0.1000` = 10 %), comme
+ * tous les champs `percent` de la fiche Réglages. `SettingsGeneralPage.tsx`
+ * affirmait être « the ONLY place the conversion happens on read » ; ce hub
+ * lisait la même colonne et l'imprimait brute avec un `%`. La tuile annonçait
+ * donc **« tax 0.1% »** à une boutique dont le PB1 est à **10 %** — un taux de
+ * taxe faux au premier écran des Réglages (relevé du 2026-08-20).
+ *
+ * Deux précautions, et aucune n'est cosmétique :
+ *  · **l'arrondi est obligatoire** — pas pour le taux d'aujourd'hui (`0.1 * 100`
+ *    tombe juste sur `10`), mais pour la plupart des autres : `0.07 * 100` vaut
+ *    `7.000000000000001` et `0.29 * 100` vaut `28.999999999999996`. Sans lui, la
+ *    tuile rendrait ces nombres-là au premier changement de taux (vérifié dans
+ *    node le 2026-08-20) ;
+ *  · **le repli au-dessus de 1** reprend l'idiome déjà posé par
+ *    `ProductionForm.tsx` : une valeur > 1 est déjà encodée en pourcent, on ne
+ *    la multiplie pas une seconde fois.
+ */
+export function percentFromFraction(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const asPercent = value <= 1 ? value * 100 : value;
+  return Math.round(asPercent * 1000) / 1000;
+}
+
 type Formatter = (s: HubSummary) => string | null;
 
 const FORMATTERS: Record<string, Formatter> = {
   '/backoffice/settings/general': (s) =>
     s.company
-      ? `${s.company.name} · ${s.company.currency} · tax ${s.company.tax_rate}% ${s.company.tax_inclusive ? 'incl.' : 'excl.'}`
+      ? `${s.company.name} · ${s.company.currency} · tax ${percentFromFraction(s.company.tax_rate)}% ${s.company.tax_inclusive ? 'incl.' : 'excl.'}`
       : null,
   '/backoffice/settings/business-hours': (s) => compressBusinessHours(s.business_hours),
   '/backoffice/settings/holidays': (s) =>
