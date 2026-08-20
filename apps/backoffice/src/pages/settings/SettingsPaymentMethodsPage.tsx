@@ -161,7 +161,7 @@ export default function SettingsPaymentMethodsPage() {
           value={feesDraft[value] ?? ''}
           placeholder="0"
           disabled={!canUpdate}
-          aria-label={`Frais ${LABELS.get(value) ?? value} (%)`}
+          aria-label={`${LABELS.get(value) ?? value} fee (%)`}
           data-testid={`pm-fee-${value}`}
           onChange={(e) => setFee(value, e.target.value)}
           className={`w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm placeholder:text-text-muted ${FOCUS_RING}`}
