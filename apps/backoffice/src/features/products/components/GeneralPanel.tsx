@@ -365,14 +365,14 @@ function TestFlagToggle({ productId, isTest }: { productId: string; isTest: bool
     <>
       <ToggleRow
         label="Test product"
-        sub="Excluded from reports — written immediately (ADMIN+, ADR-007 dec. 6)"
+        sub="Excluded from reports — written immediately (ADMIN+, ADR-007 decision 6)"
         enabled={isTest}
         disabled={setTestFlag.isPending}
         onChange={(v) => setTestFlag.mutate({ productId, isTest: v })}
       />
       {setTestFlag.error !== null && (
         <div role="alert" data-testid="test-flag-error" className="rounded-md border border-red bg-red-soft px-3 py-2 text-xs text-red">
-          Échec du changement de flag test : {setTestFlag.error.message}
+          Could not change the test flag: {setTestFlag.error.message}
         </div>
       )}
     </>
