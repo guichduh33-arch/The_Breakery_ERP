@@ -19,12 +19,21 @@
 //      les error boundaries NE CAPTENT PAS. L'exception part dans
 //      `window.onerror`, l'écran ne bouge pas, aucun fichier n'est téléchargé.
 //
-// CE QUE LES CAS VERROUILLENT. Le message nomme l'export qui a échoué et rend
-// le message du serveur quand il y en a un ; il ne montre jamais la sentinelle
-// interne `pdf_failed` de useGeneratePdf (du jargon, pas une information) ni un
-// `[object Object]` ; le déclencheur revient au repos après l'échec. Le dernier
-// cas est le garde-fou du chemin HEUREUX : c'est celui qu'on serait tenté de
-// couper, et c'est lui qui prouve qu'un correctif d'erreur n'a pas déplacé le
+// CE QUE LES CAS VERROUILLENT. Le message nomme l'export qui a échoué et dit
+// quelque chose d'utile — jamais un jeton interne.
+//
+// Le piège, ici, est que le champ `error` de l'EF `generate-pdf` ne contient
+// JAMAIS de prose : ce sont douze codes machine (`permission_denied`,
+// `generation_failed`, `sign_url_failed`…) que `useGeneratePdf` propage tels
+// quels. Un test dont la fixture renvoie « Period is not closed » valide donc un
+// contrat imaginaire et ne peut pas voir la fuite. Les cas ci-dessous rejouent
+// de VRAIS codes de l'EF et exigent la phrase — puis vérifient que le code
+// lui-même n'atteint pas l'écran. Même exigence pour la sentinelle `pdf_failed`
+// et pour `[object Object]`.
+//
+// Le déclencheur revient au repos après l'échec. Et le dernier cas est le
+// garde-fou du chemin HEUREUX : c'est celui qu'on serait tenté de couper, et
+// c'est lui qui prouve qu'un correctif d'erreur n'a pas déplacé le
 // téléchargement, l'URL signée ni les flags d'ouverture.
 //
 // Les assertions sont DISCRIMINANTES : mesurées sur le code d'avant correctif,
@@ -72,11 +81,19 @@ beforeEach(() => {
 });
 
 describe('export failures reach the user', () => {
-  it('ExportButtons — server message is rendered, button returns to rest', async () => {
-    fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'Period is not closed' }) });
+  it('ExportButtons — a real EF error code becomes a sentence, button returns to rest', async () => {
+    // `permission_denied` est un code que l'EF `generate-pdf` produit VRAIMENT
+    // (elle vérifie `reports.export` ET le droit du template). Une fixture qui
+    // renverrait une phrase toute faite validerait un contrat imaginaire : le
+    // champ `error` de cette EF ne contient jamais de prose.
+    fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'permission_denied' }) });
     render(wrap(<ExportButtons pdf={PDF} />));
     fireEvent.click(screen.getByTestId('export-pdf'));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('PDF export failed: Period is not closed'));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith(
+      'PDF export failed: you do not have permission to export this report.',
+    ));
+    // Le code machine lui-même n'atteint jamais l'écran.
+    expect(toastError.mock.calls.map((c) => (typeof c[0] === 'string' ? c[0] : JSON.stringify(c[0]))).join(' ')).not.toContain('permission_denied');
     // Pas de bouton coincé sur « Generating… » : plus de disabled, plus de spinner.
     await waitFor(() => expect(screen.getByTestId('export-pdf')).not.toBeDisabled());
     expect(document.querySelector('.animate-spin')).toBeNull();
@@ -96,12 +113,15 @@ describe('export failures reach the user', () => {
     expect(shown).not.toContain('pdf_failed');
   });
 
-  it('ExportMenu — server message is rendered, item returns to rest', async () => {
-    fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'Template unavailable' }) });
+  it('ExportMenu — a real EF error code becomes a sentence, item returns to rest', async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'generation_failed' }) });
     render(wrap(<ExportMenu pdf={PDF} />));
     fireEvent.click(screen.getByTestId('export-menu'));
     fireEvent.click(screen.getByTestId('export-pdf'));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('PDF export failed: Template unavailable'));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith(
+      'PDF export failed: the report could not be rendered.',
+    ));
+    expect(toastError.mock.calls.map((c) => (typeof c[0] === 'string' ? c[0] : JSON.stringify(c[0]))).join(' ')).not.toContain('generation_failed');
     await waitFor(() => expect(screen.getByTestId('export-pdf')).not.toBeDisabled());
   });
 

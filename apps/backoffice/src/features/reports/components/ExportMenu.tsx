@@ -32,6 +32,7 @@ import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useGeneratePdf, type GeneratePdfArgs, type PdfTemplate } from '../hooks/useGeneratePdf.js';
+import { exportErrorDetail } from './ExportButtons.js';
 import { useDismissablePanel } from './useDismissablePanel.js';
 
 export interface ExportMenuProps<T> {
@@ -57,18 +58,10 @@ export interface ExportMenuProps<T> {
 // parce qu'une exception dans un handler d'événement React ne remonte à aucune
 // error boundary. On rend le message du serveur quand il y en a un.
 //
-// `pdf_failed` est la sentinelle de useGeneratePdf quand l'EF ne renvoie aucun
-// message : ce n'est pas une information pour l'utilisateur, on ne l'affiche
-// pas. Tout ce qui n'est ni une Error ni une string donne '' — jamais de
-// « [object Object] » à l'écran. Jumeau de celui d'ExportButtons : les deux
-// composants coexistent le temps de la migration vers ce menu, un helper
-// partagé sortirait du périmètre de ce correctif.
-function exportErrorDetail(e: unknown): string {
-  const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
-  const msg = raw.trim();
-  return msg === '' || msg === 'pdf_failed' ? '' : msg;
-}
-
+// La traduction des codes de l'EF `generate-pdf` en phrases est IMPORTÉE et non
+// recopiée : une table de messages dupliquée diverge au premier code ajouté
+// côté serveur. Seule l'enveloppe du toast reste locale, le temps de la
+// migration d'ExportButtons vers ce menu.
 function toastExportError(label: 'CSV' | 'PDF', e: unknown): void {
   const detail = exportErrorDetail(e);
   toast.error(detail === ''
@@ -114,7 +107,12 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
     if (pdf.comparePrevious) args.comparePrevious = pdf.comparePrevious;
     try {
       const result = await generatePdf.mutateAsync(args);
-      if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+      // Même dernier silence qu'ExportButtons : 200 sans URL signée.
+      if (!result.signed_url) {
+        toast.error('PDF export failed: the report came back without a download link.');
+        return;
+      }
+      window.open(result.signed_url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       toastExportError('PDF', e);
       return;   // le menu reste ouvert : le toast dit pourquoi, le geste reste à portée

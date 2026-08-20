@@ -15,14 +15,43 @@ import { useGeneratePdf, type GeneratePdfArgs, type PdfTemplate } from '../hooks
 // CSV parce qu'une exception dans un handler d'événement React ne remonte à
 // aucune error boundary. On rend le message du serveur quand il y en a un.
 //
-// `pdf_failed` est la sentinelle de useGeneratePdf quand l'EF ne renvoie aucun
-// message : ce n'est pas une information pour l'utilisateur, on ne l'affiche
-// pas. Tout ce qui n'est ni une Error ni une string donne '' — jamais de
-// « [object Object] » à l'écran.
-function exportErrorDetail(e: unknown): string {
+// Ce que l'EF `generate-pdf` renvoie dans son champ `error` n'est JAMAIS une
+// phrase : c'est un code machine, et `useGeneratePdf` le propage tel quel
+// (`throw new Error(err.error ?? 'pdf_failed')`). Sans cette table, un manager
+// sans droit sur un template lisait « PDF export failed: permission_denied ».
+// Filtrer la seule sentinelle `pdf_failed` ne suffisait donc pas — elle n'est
+// que le douzième de ces codes.
+//
+// La table est exportée et consommée par ExportMenu : les deux composants
+// coexistent le temps de la migration vers le menu, mais une table de messages
+// recopiée diverge au premier ajout de code côté EF.
+export const PDF_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  permission_denied:       'you do not have permission to export this report.',
+  permission_check_failed: 'your permissions could not be verified. Try again.',
+  authorization_required:  'your session has expired. Sign in again.',
+  invalid_auth:            'your session has expired. Sign in again.',
+  generation_failed:       'the report could not be rendered.',
+  upload_failed:           'the report was rendered but could not be stored.',
+  sign_url_failed:         'the report was stored but its download link could not be issued.',
+  invalid_template:        'this report has no PDF template.',
+  invalid_filename:        'the file name was rejected.',
+  invalid_body:            'the request was rejected.',
+  invalid_json:            'the request was rejected.',
+  method_not_allowed:      'the request was rejected.',
+};
+
+// Tout ce qui n'est ni une Error ni une string donne '' — jamais de
+// « [object Object] » à l'écran. Un code connu devient sa phrase ; un code
+// inconnu (snake_case sans espace) est tu plutôt que montré : mieux vaut le
+// message générique qu'un jeton interne. Une vraie phrase venue d'ailleurs
+// passe telle quelle.
+export function exportErrorDetail(e: unknown): string {
   const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
   const msg = raw.trim();
-  return msg === '' || msg === 'pdf_failed' ? '' : msg;
+  if (msg === '' || msg === 'pdf_failed') return '';
+  const known = PDF_ERROR_MESSAGES[msg];
+  if (known !== undefined) return known;
+  return /^[a-z0-9]+(_[a-z0-9]+)+$/.test(msg) ? '' : msg;
 }
 
 function toastExportError(label: 'CSV' | 'PDF', e: unknown): void {
@@ -77,7 +106,13 @@ export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>):
     if (pdf.comparePrevious) args.comparePrevious = pdf.comparePrevious;
     try {
       const result = await generatePdf.mutateAsync(args);
-      if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+      // La branche `else` était le dernier silence de ce chemin : une réponse
+      // 200 sans URL signée ne produisait rien et ne le disait pas.
+      if (!result.signed_url) {
+        toast.error('PDF export failed: the report came back without a download link.');
+        return;
+      }
+      window.open(result.signed_url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       toastExportError('PDF', e);
     }
