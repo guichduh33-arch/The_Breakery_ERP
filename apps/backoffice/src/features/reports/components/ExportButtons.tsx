@@ -4,9 +4,33 @@
 
 import { Button } from '@breakery/ui';
 import { Download, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useGeneratePdf, type GeneratePdfArgs, type PdfTemplate } from '../hooks/useGeneratePdf.js';
+
+// Un export qui échoue doit le DIRE. Les deux chemins partaient en silence :
+// le PDF parce que `void handlePdf()` avale le rejet de mutateAsync (eslint ne
+// voit rien — `void` est l'échappatoire documentée de no-floating-promises), le
+// CSV parce qu'une exception dans un handler d'événement React ne remonte à
+// aucune error boundary. On rend le message du serveur quand il y en a un.
+//
+// `pdf_failed` est la sentinelle de useGeneratePdf quand l'EF ne renvoie aucun
+// message : ce n'est pas une information pour l'utilisateur, on ne l'affiche
+// pas. Tout ce qui n'est ni une Error ni une string donne '' — jamais de
+// « [object Object] » à l'écran.
+function exportErrorDetail(e: unknown): string {
+  const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
+  const msg = raw.trim();
+  return msg === '' || msg === 'pdf_failed' ? '' : msg;
+}
+
+function toastExportError(label: 'CSV' | 'PDF', e: unknown): void {
+  const detail = exportErrorDetail(e);
+  toast.error(detail === ''
+    ? `${label} export failed. Please try again.`
+    : `${label} export failed: ${detail}`);
+}
 
 export interface ExportButtonsProps<T> {
   csv?: {
@@ -34,8 +58,12 @@ export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>):
 
   const handleCsv = (): void => {
     if (!csv) return;
-    const out = buildCsv(csv.rows, csv.columns);
-    downloadCsv(out, csv.filename);
+    try {
+      const out = buildCsv(csv.rows, csv.columns);
+      downloadCsv(out, csv.filename);
+    } catch (e) {
+      toastExportError('CSV', e);
+    }
   };
 
   const handlePdf = async (): Promise<void> => {
@@ -47,8 +75,12 @@ export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>):
     };
     if (pdf.period)          args.period = pdf.period;
     if (pdf.comparePrevious) args.comparePrevious = pdf.comparePrevious;
-    const result = await generatePdf.mutateAsync(args);
-    if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    try {
+      const result = await generatePdf.mutateAsync(args);
+      if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toastExportError('PDF', e);
+    }
   };
 
   if (!canExport) return null;
