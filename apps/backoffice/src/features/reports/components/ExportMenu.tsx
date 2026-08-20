@@ -26,11 +26,13 @@
 
 import type { JSX } from 'react';
 import { ChevronDown, Download, FileDown, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@breakery/ui';
 import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useGeneratePdf, type GeneratePdfArgs, type PdfTemplate } from '../hooks/useGeneratePdf.js';
+import { exportErrorDetail } from './ExportButtons.js';
 import { useDismissablePanel } from './useDismissablePanel.js';
 
 export interface ExportMenuProps<T> {
@@ -50,6 +52,23 @@ export interface ExportMenuProps<T> {
   disabled?: boolean;
 }
 
+// Un export qui échoue doit le DIRE. Les deux chemins partaient en silence : le
+// PDF parce que `void handlePdf()` avale le rejet de mutateAsync (eslint ne voit
+// rien — `void` est l'échappatoire documentée de no-floating-promises), le CSV
+// parce qu'une exception dans un handler d'événement React ne remonte à aucune
+// error boundary. On rend le message du serveur quand il y en a un.
+//
+// La traduction des codes de l'EF `generate-pdf` en phrases est IMPORTÉE et non
+// recopiée : une table de messages dupliquée diverge au premier code ajouté
+// côté serveur. Seule l'enveloppe du toast reste locale, le temps de la
+// migration d'ExportButtons vers ce menu.
+function toastExportError(label: 'CSV' | 'PDF', e: unknown): void {
+  const detail = exportErrorDetail(e);
+  toast.error(detail === ''
+    ? `${label} export failed. Please try again.`
+    : `${label} export failed: ${detail}`);
+}
+
 const ITEM_CLS = cn(
   'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-text-primary',
   'hover:bg-surface-4 disabled:cursor-not-allowed disabled:opacity-50',
@@ -67,8 +86,13 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
 
   const handleCsv = (): void => {
     if (csv === undefined) return;
-    const out = buildCsv(csv.rows, csv.columns);
-    downloadCsv(out, csv.filename);
+    try {
+      const out = buildCsv(csv.rows, csv.columns);
+      downloadCsv(out, csv.filename);
+    } catch (e) {
+      toastExportError('CSV', e);
+      return;   // le menu reste ouvert : le toast dit pourquoi, le geste reste à portée
+    }
     setOpen(false);
   };
 
@@ -81,8 +105,18 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
     };
     if (pdf.period)          args.period = pdf.period;
     if (pdf.comparePrevious) args.comparePrevious = pdf.comparePrevious;
-    const result = await generatePdf.mutateAsync(args);
-    if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    try {
+      const result = await generatePdf.mutateAsync(args);
+      // Même dernier silence qu'ExportButtons : 200 sans URL signée.
+      if (!result.signed_url) {
+        toast.error('PDF export failed: the report came back without a download link.');
+        return;
+      }
+      window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toastExportError('PDF', e);
+      return;   // le menu reste ouvert : le toast dit pourquoi, le geste reste à portée
+    }
     setOpen(false);
   };
 
