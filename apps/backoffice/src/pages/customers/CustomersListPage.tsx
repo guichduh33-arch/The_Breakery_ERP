@@ -157,18 +157,29 @@ export default function CustomersListPage(): JSX.Element {
     }
   }
 
+  // La requête des compteurs est tombée. Une seule source pour la bande, le
+  // bandeau et le pied : sans elle, les trois divergent.
+  const statsDown = stats.isError;
+
   // Compteurs informatifs — pas de `onSelect` : aucun filtre serveur ne leur
   // correspond, la bande annonce l'état de la base clients, elle ne filtre pas.
   //
-  // Tant que `stats.data` est indéfini — au premier chargement comme après un
-  // échec — la bande ne SAIT pas : chaque cellule rend un tiret cadratin grisé
+  // Tant que le compte n'est pas SU, la bande rend un tiret cadratin grisé
   // plutôt qu'un zéro. « 0 client » et « je ne sais pas encore » ne se
   // ressemblent pas. Même règle que les compteurs du catalogue
   // (`features/products/counters.ts`) et que ceux des commandes. Les infobulles
   // suivent : chiffrées quand le compte est su, réduites à leur définition
   // sinon — « 0% of the customer base » était le même mensonge en plus petit.
+  //
+  // « Su » exige les DEUX conditions : des données présentes ET une requête qui
+  // n'est pas en échec. Tester `stats.data === undefined` seul ne suffit pas —
+  // React Query conserve la dernière réponse réussie quand un refetch échoue,
+  // si bien que la bande aurait affiché quatre chiffres pendant que le bandeau
+  // juste au-dessus annonçait qu'elle affichait des tirets. Un correctif
+  // d'honnêteté qui décrit un écran inexistant est le défaut qu'il prétend
+  // corriger.
   const counters = useMemo<ListCounter[]>(() => {
-    const s = stats.data;
+    const s = statsDown ? undefined : stats.data;
     const unknownCell = { value: '—', muted: true } as const;
     return [
       {
@@ -200,7 +211,7 @@ export default function CustomersListPage(): JSX.Element {
           : `${s.outstandingCount.toLocaleString('id-ID')} account customers carry an unpaid balance.`,
       },
     ];
-  }, [stats.data]);
+  }, [stats.data, statsDown]);
 
   const columns = useMemo<readonly DataTableColumn<CustomersListRow>[]>(() => [
     {
@@ -311,7 +322,7 @@ export default function CustomersListPage(): JSX.Element {
   // plutôt que de rapporter les lignes rendues à un total qu'il ignore. Replié
   // sur zéro, il annonçait « 50 of 0 » — plus de lignes à l'écran que le total
   // qu'il prétendait connaître.
-  const total = stats.data?.totalCustomers;
+  const total = statsDown ? undefined : stats.data?.totalCustomers;
   const { pageRows, current } = pageSlice(rows, page, pageSize);
   // La colonne triée courante, dérivée du même état que le Select : les deux
   // contrôles ne peuvent pas diverger puisqu'il n'y a qu'une source.
@@ -364,7 +375,7 @@ export default function CustomersListPage(): JSX.Element {
       {/* L'échec des compteurs était MUET : la bande retombait à quatre zéros
           sans qu'aucun pixel ne dise que la requête avait échoué. Le bandeau
           surplombe la bande, il ne remplace rien — la liste, elle, a chargé. */}
-      {stats.isError && (
+      {statsDown && (
         <QueryErrorBanner
           onRetry={() => { void stats.refetch(); }}
           data-testid="customers-counters-error"

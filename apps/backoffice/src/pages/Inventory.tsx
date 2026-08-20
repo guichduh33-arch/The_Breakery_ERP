@@ -281,15 +281,22 @@ export default function InventoryPage() {
   const countersDown = counters.isError;
 
   /**
-   * Total du panier affiché — c'est lui que le pied et la pagination comptent.
-   * `undefined` tant qu'il n'est pas SU : au premier chargement comme sur
-   * échec. Le `0` d'avant faisait dire « of 0 » à un pied qui surplombait
-   * cinquante lignes, et posait cinq zéros dans la bande à l'instant précis où
-   * la zone `sr-only` annonçait « Loading stock counts ».
+   * Total du panier affiché — c'est lui que la PAGINATION compte, et il reste
+   * NUMÉRIQUE en toutes circonstances.
+   *
+   * Ne pas y pousser l'inconnue : `useStockCounters` porte
+   * `placeholderData: keepPreviousData`, donc `c` reste garni après un refetch
+   * en échec. Le replier sur `0` réduirait `ListPagination` à une seule page
+   * (`pageCount = max(1, ceil(0 / pageSize))`), et l'opérateur posé page 4
+   * d'une liste de 318 produits se retrouverait les deux flèches désactivées —
+   * bloqué sur sa tranche, alors que la requête de LISTE, elle, a réussi. Le
+   * patron de la bande des commandes fait exactement cela : total numérique,
+   * `countersDown` réservé à l'affichage (`OrdersListPage.tsx:196`).
    */
-  const activeTotal = c === undefined || countersDown
-    ? undefined
-    : BUCKETS[bucket].count(c);
+  const activeTotal = c === undefined ? 0 : BUCKETS[bucket].count(c);
+
+  /** Le total est-il SU ? C'est cette question-là qui gouverne ce qui se lit. */
+  const totalKnown = c !== undefined && !countersDown;
 
   function pick(next: StockBucket): void {
     patchParams({ bucket: next === 'all' ? null : next, page: null });
@@ -485,7 +492,7 @@ export default function InventoryPage() {
           cette zone disait « Loading stock counts » pendant que l'œil lisait
           « 0 ». */}
       <span className="sr-only" role="status" aria-live="polite">
-        {activeTotal === undefined
+        {!totalKnown
           ? (countersDown ? 'Stock counts unavailable' : 'Loading stock counts')
           : `${activeTotal.toLocaleString('id-ID')} ${activeTotal === 1 ? 'product' : 'products'} in the current filter`}
       </span>
@@ -522,10 +529,14 @@ export default function InventoryPage() {
             // offsets 0-based : la conversion vit ici, à la frontière, et nulle
             // part ailleurs.
             <ListPagination
-              // Le repli à zéro ne concerne QUE la mécanique de pagination —
-              // comportement d'avant, inchangé. Ce qui se LIT passe par
-              // `leading` ci-dessous et ne se replie pas.
-              total={activeTotal ?? 0}
+              // Total numérique : la navigation ne doit jamais dépendre de
+              // l'état de la requête des COMPTEURS. Résidu connu et borné —
+              // `ListPagination` rend son propre « from–to of total » et ne sait
+              // pas exprimer « inconnu » ; quand les compteurs sont tombés il
+              // montre donc le dernier total confirmé. Lui donner un `total`
+              // optionnel réglerait le cas pour toutes les listes du
+              // back-office d'un coup ; c'est un lot à part.
+              total={activeTotal}
               page={page + 1}
               pageSize={pageSize}
               onPage={(next) => { setPage(next - 1); }}
@@ -538,9 +549,9 @@ export default function InventoryPage() {
                 // Sans total su, on compte le chargé et on s'arrête là : « 50
                 // of 0 » était le même mensonge dans l'autre sens.
                 <span className="font-data text-xs tabular-nums text-text-muted">
-                  {activeTotal === undefined
-                    ? `${pageRows.length} loaded`
-                    : `${pageRows.length} of ${activeTotal.toLocaleString('id-ID')}`}
+                  {totalKnown
+                    ? `${pageRows.length} of ${activeTotal.toLocaleString('id-ID')}`
+                    : `${pageRows.length} loaded`}
                 </span>
               }
             />
