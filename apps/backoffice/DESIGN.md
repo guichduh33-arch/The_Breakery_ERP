@@ -29,10 +29,13 @@ colors:
   text-subtle: "#88847c"
   text-inert: "#c2beb5"
   text-disabled: "#b3afa7"
-  success: "#187a52"
-  danger: "#b4342c"
-  warning: "#8a5a10"
-  info: "#2b6c9c"
+  # Assombris le 2026-08-21 — voir § Colors / Sémantique. `info` n'est plus égal
+  # à `chart-1` : ils l'ont été, ils sont déclarés séparément, et seule la
+  # couleur d'ÉTAT a bougé. La série de données garde la sienne.
+  success: "#156d49"
+  danger: "#b03029"
+  warning: "#845611"
+  info: "#26618d"
   chart-1: "#2b6c9c"
   chart-2: "#4f93bf"
   chart-3: "#8cc3e0"
@@ -314,9 +317,26 @@ navigation : soit le bouton qui crée, soit la tuile qui répond à la question
 qu'on pose en ouvrant la page. Un second détruit la hiérarchie que le premier
 installe.
 
-**The Ink Semantics Rule.** Le vert et le rouge du thème sont taillés pour un
-fond blanc. Sur l'encre, on utilise `ink-success` / `ink-danger`, les mêmes
-teintes remontées en luminosité — et nulle part ailleurs.
+**The Ink Semantics Rule.** Le vert et le rouge du thème sont taillés pour le
+papier. Sur l'encre, on utilise `ink-success` / `ink-danger`, les mêmes teintes
+remontées en luminosité — et nulle part ailleurs.
+
+**The Worst-Ground Rule.** Une couleur d'état se mesure contre le PIRE fond sur
+lequel elle peut atterrir, jamais contre le plus flatteur. Le chip d'état du
+primitif `Badge` pose sa couleur pleine sur sa propre teinte douce à 12 %, et
+cette teinte se compose avec ce qui la porte : sur la feuille blanche les quatre
+variantes tenaient 5,26 à 5,54:1, sur le PAPIER de page elles tombaient à 3,96
+(`success`), 4,18 (`info`), 4,39 (`warning`) et 4,41:1 (`danger`) — les quatre
+sous AA, et invisibles à qui ne vérifie que sur blanc. Les bases ont été
+assombries le 2026-08-21, leurs teintes douces recalées sur elles, et les quatre
+chips mesurent désormais 4,61 à 4,86:1 sur le papier.
+
+Deux conséquences opposables. **Un ratio annoncé sans son fond ne vaut rien** —
+c'est déjà ce que dit la note sur le texte muet, et c'est la même erreur à
+l'échelle des couleurs d'état. Et **une famille se corrige entière** : deux
+variantes réparées sur quatre laissent le défaut derrière une moitié propre,
+d'autant que les deux non vues ne l'étaient que faute d'écran qui les affichait
+ce jour-là.
 
 ## Typography
 
@@ -407,7 +427,7 @@ sur ce qui **rend**, pas sur ce qui est **écrit**. Deux corollaires opposables 
   et tests exclus — pas de compte gravé ici, il pourrit à chaque édition.
 
 **The Value-Width Rule.** Le corps de la valeur KPI est tendu contre la largeur
-de tuile : `Rp 4,850,000` doit tenir sur une ligne. Toute remontée du corps
+de tuile : `Rp 4.850.000` doit tenir sur une ligne. Toute remontée du corps
 au-dessus de 34 px sur une tuile de dashboard redonne le même défaut de coupure.
 
 ## Layout

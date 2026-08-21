@@ -32,7 +32,7 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, CalendarClock, Clock, CreditCard, FileSpreadsheet, KeyRound, ListChecks, Receipt,
-  Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp, Hourglass,
+  Package, ShoppingCart, Truck, AlertTriangle, TrendingDown, TrendingUp,
   GitCommitHorizontal, Undo2, BadgePercent,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
@@ -85,7 +85,18 @@ const SECTIONS: ReportSection[] = [
       { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: TrendingDown },
       { to: 'stock-movements',     title: 'Stock Movement',     blurb: 'History of all stock changes.', icon: GitCommitHorizontal },
       { to: 'wastage',             title: 'Wastage & Spoilage', blurb: 'Manual waste + auto spoilage by product & lot.', icon: AlertTriangle },
-      { to: 'perishable-turnover', title: 'Perishable Turnover', blurb: 'Days in stock against shelf life, and the share that expired.', icon: Hourglass },
+      // ⛔ `perishable-turnover` a été RETIRÉ de cet index le 2026-08-22.
+      // ADR-004 (acté le 2026-07-04), conséquence 2 : « retirer la page
+      // /inventory/expiring et le rapport perishable-turnover de la
+      // navigation ». The Breakery ne suit ni lots ni dates de péremption ; la
+      // péremption se déclare en perte (`waste_stock_v1`, raison `Expired`).
+      // Une grille de tuiles cliquables EST une navigation, quel que soit son
+      // nom — arbitrage du propriétaire, 2026-08-22.
+      //
+      // Ce qui SUBSISTE délibérément : la route, la page, la RPC
+      // `get_perishable_turnover_v1` et le gabarit PDF. L'ADR demande le retrait
+      // du menu, pas la suppression du rapport ; un lien direct continue de
+      // servir l'historique. Ne pas remettre de tuile ici.
     ],
   },
   {
