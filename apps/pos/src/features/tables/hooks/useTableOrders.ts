@@ -1,13 +1,20 @@
 // apps/pos/src/features/tables/hooks/useTableOrders.ts
 //
 // Fiche 02 D2.5 — carte tableName → commande active pour le mode transfert du
-// plan de salle. Même prédicat d'occupation que useTableOccupancy (table posée +
-// status hors completed/voided) mais remonte id + order_number. Si plusieurs
-// commandes partagent une table (possible aujourd'hui), la PLUS RÉCENTE gagne —
-// limite v1 documentée (le transfert multi-commandes par table = session future).
+// plan de salle. Même prédicat d'occupation que useTableOccupancy — désormais
+// littéralement le même, via `TABLE_RELEASING_STATUSES_FILTER` : les deux copies
+// avaient divergé du schéma en oubliant `paid` (lot B de l'audit 2026-08-22).
+// Ce hook remonte en plus id + order_number.
+//
+// Si plusieurs commandes partagent une table (possible aujourd'hui), la PLUS
+// RÉCENTE gagne — limite v1 documentée (le transfert multi-commandes par table
+// = session future). Exclure `paid` retire au passage un piège de cette règle :
+// une commande payée récente pouvait masquer une commande encore ouverte sur la
+// même table, et la serveuse ne pouvait plus y ajouter sa 2ᵉ tournée.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { TABLE_RELEASING_STATUSES_FILTER } from '../tableActivity';
 
 export interface TableOrderRef {
   id: string;
@@ -51,7 +58,7 @@ async function fetchTableOrders(): Promise<Record<string, TableOrderRef>> {
     .from('orders')
     .select('id, order_number, table_number, created_at, created_via, status')
     .not('table_number', 'is', null)
-    .not('status', 'in', '(completed,voided)')
+    .not('status', 'in', TABLE_RELEASING_STATUSES_FILTER)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
