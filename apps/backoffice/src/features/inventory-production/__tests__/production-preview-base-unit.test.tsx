@@ -117,7 +117,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
     });
     // Quantité par défaut : 1 pcs → 0,05 kg.
     await waitFor(() => {
-      expect(flourRowText()).toMatch(/0\.05 kg/);
+      expect(flourRowText()).toMatch(/0,05 kg/);
     });
     expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v2', { p_product_id: 'p-bag', p_max_depth: 5 });
     expect(screen.getByTestId('status-ok')).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
 
     // 2 × 12 × 0,05 = 1,2 kg — et non 2 × 0,05 = 0,1.
     await waitFor(() => {
-      expect(flourRowText()).toMatch(/1\.2 kg/);
+      expect(flourRowText()).toMatch(/1,2 kg/);
     });
     expect(flourRowText()).not.toMatch(/0\.1 kg/);
   });

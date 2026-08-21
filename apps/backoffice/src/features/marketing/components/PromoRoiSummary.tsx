@@ -7,7 +7,7 @@
 // Session 13 / Phase 6.B.
 
 import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatPercent } from '@breakery/utils';
 import type { PromoRoi } from '../hooks/usePromoRoi.js';
 
 export interface PromoRoiSummaryProps {
@@ -69,7 +69,7 @@ export function PromoRoiSummary({ data }: PromoRoiSummaryProps) {
         />
         <StatRow
           label="ROI %"
-          value={`${data.roi_pct.toFixed(2)}%`}
+          value={formatPercent(data.roi_pct, { digits: 2 })}
           hint="((net revenue − discount cost) ÷ discount cost) × 100"
           emphasis
         />

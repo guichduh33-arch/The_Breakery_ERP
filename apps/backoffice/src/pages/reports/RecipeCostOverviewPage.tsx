@@ -30,6 +30,7 @@ import { useMemo, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toLocalDateStr, type CsvColumn } from '@breakery/domain';
 import { cn } from '@breakery/ui';
+import { formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -58,8 +59,7 @@ function deltaTone(d: number | null): string {
 
 function formatDeltaPct(d: number | null): string {
   if (d === null) return '—';
-  const sign = d > 0 ? '+' : '';
-  return `${sign}${d.toFixed(2)}%`;
+  return formatPercent(d, { digits: 2, signed: true });
 }
 
 const OVERVIEW_CSV_COLUMNS: CsvColumn<OverviewRow>[] = [

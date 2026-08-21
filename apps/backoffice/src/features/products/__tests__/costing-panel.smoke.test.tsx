@@ -149,9 +149,9 @@ describe('CostingPanel [S39 WB2]', () => {
     const retailCard = screen.getByTestId('costing-card-retail');
     expect(retailCard).toHaveTextContent('25.000');
 
-    // margin = (25000 - 10000) / 25000 * 100 = 60.0%
+    // margin = (25000 - 10000) / 25000 * 100 = 60,0%
     const marginCard = screen.getByTestId('costing-card-margin');
-    expect(marginCard).toHaveTextContent('60.0%');
+    expect(marginCard).toHaveTextContent('60,0%');
   });
 
   it('T2: BOM table renders 2 rows + correct total', () => {

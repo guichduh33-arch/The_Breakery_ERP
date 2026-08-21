@@ -187,7 +187,7 @@ describe('GrossMarginPage smoke', () => {
     expect(within(card).queryByRole('img', { name: /Share of margin/ })).toBeNull();
     expect(within(card).queryByText('0%')).toBeNull();
     // La tuile de tête bascule sur le TAUX du produit, qui reste vrai.
-    expect(screen.getByTestId('kpi-top-product')).toHaveTextContent('80.0% margin rate');
+    expect(screen.getByTestId('kpi-top-product')).toHaveTextContent('80,0% margin rate');
   });
 
   it('renders the empty state when there are no sales', async () => {

@@ -115,7 +115,7 @@ describe('ProductionEfficiencyPage (smoke)', () => {
   it('weights the period average by runs, not by product', async () => {
     renderPage();
     const tile = await screen.findByTestId('kpi-avg-variance');
-    expect(tile.textContent).toMatch(/-2\.8%/);
+    expect(tile.textContent).toMatch(/-2,8%/);
     expect(tile.textContent).toMatch(/weighted by 12 runs/);
   });
 
@@ -124,7 +124,7 @@ describe('ProductionEfficiencyPage (smoke)', () => {
     expect(await screen.findByTestId('chart-yield-trend')).toBeInTheDocument();
     // La table journalière porte le TAUX DE PERTE, que la courbe ne trace pas.
     const byDay = await loadedCard('efficiency-by-day');
-    expect(within(byDay).getByText('2.5%')).toBeInTheDocument();
+    expect(within(byDay).getByText('2,5%')).toBeInTheDocument();
   });
 
   it('offers a CSV export, and no PDF — no template is registered for this report', async () => {

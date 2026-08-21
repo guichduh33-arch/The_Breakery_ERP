@@ -31,6 +31,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
+import { formatPercent } from '@breakery/utils';
 import { Button, cn } from '@breakery/ui';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
@@ -60,9 +61,7 @@ function varianceTone(frac: number | null): string {
 /** Fraction → pourcentage signé (`+12.50%` / `-16.67%`). */
 function formatVariancePct(frac: number | null): string {
   if (frac === null) return '—';
-  const pct = frac * 100;
-  const sign = pct > 0 ? '+' : '';
-  return `${sign}${pct.toFixed(2)}%`;
+  return formatPercent(frac * 100, { digits: 2, signed: true });
 }
 
 const YIELD_CSV_COLUMNS: CsvColumn<YieldRow>[] = [

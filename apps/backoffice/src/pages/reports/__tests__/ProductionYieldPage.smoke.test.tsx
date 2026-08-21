@@ -4,7 +4,7 @@
 // outliers table appears and the worst row is at the top.
 //
 // CRITICAL : `production_records.yield_variance_pct` is NUMERIC(7,4) ; the DB
-// stores FRACTIONS (e.g. -0.5 = -50.00%). The page multiplies by 100 for
+// stores FRACTIONS (e.g. -0.5 = -50,00%). The page multiplies by 100 for
 // display. The fixtures here mirror that contract.
 
 //
@@ -26,7 +26,7 @@ const PROD_ROWS = [
     id: 'pr-1', production_number: 'PROD-001', product_id: 'p1',
     production_date: '2026-05-10T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 50,
-    // DB-shape : fraction → -0.5 displays as -50.00%
+    // DB-shape : fraction → -0.5 displays as -50,00%
     yield_variance_pct: -0.5, yield_variance_reason: 'oven failure',
     reverted_at: null,
   },
@@ -129,7 +129,7 @@ describe('ProductionYieldPage smoke', () => {
     const rows = within(screen.getByTestId('yield-outliers')).getAllByRole('row');
     // First row is <thead> ; second row is the worst outlier (PROD-001 / -50%).
     expect(rows[1]?.textContent ?? '').toMatch(/PROD-001/);
-    expect(rows[1]?.textContent ?? '').toMatch(/-50\.00%/);
+    expect(rows[1]?.textContent ?? '').toMatch(/-50,00%/);
   });
 
   // Les deux mesures dérivées de la bande, sur la fixture : trois lots suivis,
@@ -137,7 +137,7 @@ describe('ProductionYieldPage smoke', () => {
   it('summarises the window in the KPI band', async () => {
     renderPage();
     const swing = await screen.findByTestId('kpi-largest-swing');
-    expect(swing.textContent).toMatch(/50\.00%/);
+    expect(swing.textContent).toMatch(/50,00%/);
     expect(screen.getByTestId('kpi-beyond').textContent).toMatch(/^Beyond ±15%1/);
     expect(screen.getByTestId('kpi-explained').textContent).toMatch(/1 of 3 with a reason/);
   });

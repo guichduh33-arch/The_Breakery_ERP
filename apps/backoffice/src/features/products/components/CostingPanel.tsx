@@ -11,7 +11,7 @@
 import { useRef, useState, type JSX } from 'react';
 import { DollarSign, Percent, Tag } from 'lucide-react';
 import { Button, Card, EmptyState } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatPercent } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';
 import { CorrectCostDialog } from './CorrectCostDialog.js';
@@ -105,7 +105,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             </span>
           </div>
           <p className="font-mono text-lg font-semibold text-text-primary">
-            {margin !== null ? `${margin.toFixed(1)}%` : '—'}
+            {formatPercent(margin)}
           </p>
         </Card>
       </div>

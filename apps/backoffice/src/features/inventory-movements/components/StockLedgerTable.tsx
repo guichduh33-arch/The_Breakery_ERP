@@ -23,11 +23,15 @@ export interface StockLedgerTableProps {
   rowCap?:    number;
 }
 
-// Ce tableau était le seul du back-office à formater en `id-ID` : il rendait
-// « 1.234,56 » là où tout le reste rend « 1,234.56 ». Comparer un montant du
-// grand livre à celui d'un autre écran demandait de changer de convention de
-// lecture en cours de route.
-const qtyFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
+// ⚠️ CETTE NOTE AFFIRMAIT L'INVERSE DE LA RÉALITÉ, et la correction qu'elle
+// justifiait a créé l'écart qu'elle prétendait fermer. Elle disait : « ce
+// tableau était le seul à formater en id-ID, il rendait 1.234,56 là où tout le
+// reste rend 1,234.56 ». Comptage du 2026-08-21 : le back-office pose `id-ID`
+// soixante-trois fois et `en-US` une seule — ici. C'est donc ce tableau qui
+// était devenu le seul étranger, et « tout le reste » n'a jamais rendu
+// « 1,234.56 ». La quantité repasse en locale métier, comme les montants juste
+// à côté, qui n'ont jamais cessé d'y être.
+const qtyFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
 
 function fmtQty(n: number): string    { return qtyFmt.format(n); }
 // `price` et `movement_amount` sont de l'argent : ils prennent la source unique,

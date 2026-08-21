@@ -32,8 +32,8 @@ describe('CohortHeatmap — smoke', () => {
     // Cohort size = retained_customers at month 0 (100)
     expect(screen.getByText('100')).toBeTruthy();
     // Retention values rendered
-    expect(screen.getByText('100.0%')).toBeTruthy();
-    expect(screen.getByText('60.0%')).toBeTruthy();
-    expect(screen.getByText('40.0%')).toBeTruthy();
+    expect(screen.getByText('100,0%')).toBeTruthy();
+    expect(screen.getByText('60,0%')).toBeTruthy();
+    expect(screen.getByText('40,0%')).toBeTruthy();
   });
 });

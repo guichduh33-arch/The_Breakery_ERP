@@ -24,7 +24,7 @@
 import { DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
   classifyProduct, productMarginPct,
@@ -117,12 +117,15 @@ export function ProductsTable({
   // taille et hérite donc 16 px, quand les `<td>` sont en `text-sm` (14 px) —
   // un `ch` y mentirait de 14 %.
   //
-  //   product 9 · sku 8 · category 7,5 · stock 6 · cost/retail/wholesale 9,25
-  //   · margin 5,25 · status 5,25 · actions 7        = 75,75rem = 1212 px ≤ 1219
+  //   product 9 · sku 8 · category 7,5 · stock 6 · cost/retail 9,25
+  //   · margin 5,25 · status 5,25 · actions 8,5      = 68 rem = 1088 px ≤ 1219
   //
-  // La colonne `type` (6rem) est HORS de cette somme : elle est masquée par
-  // défaut (`PRODUCT_DEFAULT_HIDDEN_COLUMNS`, features/products/types.ts), parce
-  // que sans elle le budget ne bouclait pas. Le menu Columns la rend en un clic.
+  // Les colonnes `type` (6rem) et `wholesale` (9,25rem) sont HORS de cette
+  // somme : elles sont masquées par défaut (`PRODUCT_DEFAULT_HIDDEN_COLUMNS`,
+  // features/products/types.ts), parce que sans elles le budget ne boucle pas.
+  // Le menu Columns les rend en un clic. `wholesale` a rejoint `type` le
+  // 2026-08-21 quand `actions` est passée de 7 à 8,5rem pour loger des cibles
+  // de 32 px : la raison du masquage est écrite là-bas, avec l'arbitrage.
   const columns: DataTableColumn<ProductRow>[] = [
     {
       id: 'product',
@@ -274,7 +277,7 @@ export function ProductsTable({
             className={cn(MONO, atALoss ? 'font-semibold text-danger' : 'text-text-primary')}
             {...(atALoss ? { title: 'Sold below cost' } : {})}
           >
-            {m.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+            {formatPercent(m)}
           </span>
         );
       },
@@ -294,22 +297,24 @@ export function ProductsTable({
       id: 'actions',
       header: 'Actions',
       align: 'right',
-      // 7rem = 112 px, la largeur RÉELLEMENT rendue : les trois boutons d'action
-      // plus les 28 px de padding. Les 72 px déclarés jusqu'ici étaient une
-      // fiction que `table-layout: auto` corrigeait en silence — et 40 px de
-      // fiction dans un budget qui débordait de 20.
-      width: '7rem',
+      // 8.5rem = 136 px, la largeur RÉELLEMENT rendue : trois boutons de 32 px,
+      // deux écarts de 6 px, plus les 28 px de padding. Les 72 px déclarés
+      // jusqu'ici étaient une fiction que `table-layout: auto` corrigeait en
+      // silence — et 40 px de fiction dans un budget qui débordait de 20.
+      // Passée de 7rem à 8.5rem avec les boutons de 24 → 32 px (critique du
+      // 2026-08-21, P1-2) : la largeur suit la cible, sinon la table déborde.
+      width: '8.5rem',
       render: (r) => (
         <div className="flex items-center justify-end gap-1.5">
           <RowAction label={`View ${r.name}`} onClick={(e) => { e.stopPropagation(); onView?.(r); }}>
-            <Eye className="h-3.5 w-3.5" aria-hidden />
+            <Eye className="h-4 w-4" aria-hidden />
           </RowAction>
           {onPricing !== undefined && (
             <RowAction
               label={`Edit pricing for ${r.name}`}
               onClick={(e) => { e.stopPropagation(); onPricing(r); }}
               data-testid={`pricing-btn-${r.id}`}
-            ><DollarSign className="h-3.5 w-3.5" aria-hidden /></RowAction>
+            ><DollarSign className="h-4 w-4" aria-hidden /></RowAction>
           )}
           {onDelete !== undefined && (
             <RowAction
@@ -317,7 +322,7 @@ export function ProductsTable({
               onClick={(e) => { e.stopPropagation(); onDelete(r); }}
               destructive
               data-testid={`delete-btn-${r.id}`}
-            ><Trash2 className="h-3.5 w-3.5" aria-hidden /></RowAction>
+            ><Trash2 className="h-4 w-4" aria-hidden /></RowAction>
           )}
         </div>
       ),
@@ -380,7 +385,7 @@ function RowAction({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-subtle transition-colors',
+        'inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-subtle transition-colors',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
         destructive ? 'hover:bg-red-soft hover:text-danger' : 'hover:bg-surface-4 hover:text-text-primary',
       )}

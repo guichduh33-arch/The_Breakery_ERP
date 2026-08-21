@@ -35,6 +35,7 @@
 
 import { useMemo, type JSX } from 'react';
 import { cn } from '@breakery/ui';
+import { formatPercent } from '@breakery/utils';
 import type { CsvColumn } from '@breakery/domain';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
@@ -77,11 +78,11 @@ function varianceClass(pct: number | null): string {
 
 function fmtPct(pct: number | null): string {
   if (pct === null) return '—';
-  return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  return formatPercent(pct, { signed: true });
 }
 
 function fmtRate(pct: number | null): string {
-  return pct === null ? '—' : `${pct.toFixed(1)}%`;
+  return formatPercent(pct);
 }
 
 /**
@@ -238,7 +239,7 @@ export default function ProductionEfficiencyPage(): JSX.Element {
     },
     {
       key: 'documented', label: 'Variances explained',
-      value: documented === null ? '—' : `${documented.toFixed(0)}%`,
+      value: formatPercent(documented, { digits: 0 }),
       delta: pointDelta(documented, prevDocumented), unit: 'pt',
       note:  'products with a stated reason',
     },
@@ -308,8 +309,8 @@ export default function ProductionEfficiencyPage(): JSX.Element {
           currentName="This period"
           {...(showCompareSeries ? { compareKey: 'compare', compareName: 'Previous period' } : {})}
           xTickFormatter={(v) => shortDate(String(v))}
-          yTickFormatter={(v) => `${v.toFixed(0)}%`}
-          valueFormatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
+          yTickFormatter={(v) => formatPercent(v, { digits: 0 })}
+          valueFormatter={(v) => formatPercent(v, { signed: true })}
           ariaLabel={`Average yield variance per day in percent, ${start} to ${end}.`}
         />
       </PanelCard>
