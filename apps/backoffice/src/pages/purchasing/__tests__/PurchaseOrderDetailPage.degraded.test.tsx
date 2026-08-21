@@ -50,6 +50,15 @@ vi.mock('@/features/purchasing/hooks/useCancelPurchaseOrder.js', () => ({
 }));
 vi.mock('@/features/purchasing/hooks/usePoPayments.js', () => ({
   usePoPayments: () => ({ data: { totalPaid: 0, payments: [] }, isLoading: false }),
+  // Manquait jusqu'ici : les quatre branches dégradées d'origine renvoient
+  // toutes avant l'appel à `derivePaymentStatus` (detail.data reste null).
+  // Le cas « PO cancelled », premier de ce fichier à rendre un PO complet,
+  // atteint réellement cette ligne — sans ce mock la page plante.
+  derivePaymentStatus: (totalPaid: number, totalDue: number): 'unpaid' | 'partial' | 'paid' => {
+    if (totalPaid <= 0) return 'unpaid';
+    if (totalPaid + 0.005 >= totalDue) return 'paid';
+    return 'partial';
+  },
 }));
 vi.mock('@/features/purchasing/hooks/useRecordPoPayment.js', () => ({
   useRecordPoPayment: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -154,5 +163,77 @@ describe('PurchaseOrderDetailPage — états dégradés', () => {
     renderPage();
     expectOrientationKept();
     expect(screen.getByText('Purchase order not found')).toBeInTheDocument();
+  });
+
+  // Fix (dev incident 2026-08-21) — un PO `cancelled` laissait « Record
+  // payment » actif ; un clic a réellement écrit un paiement (Rp 6.660,
+  // JE-20260821-0057). Le bouton doit rester rendu et désactivé — pas
+  // disparaître — avec la raison lisible à l'écran ET reliée au bouton par
+  // `aria-describedby` (le `title` seul ne s'affiche pas : le primitif
+  // `Button` porte `disabled:pointer-events-none`, qui tue le survol).
+  it('PO cancelled : Record payment reste rendu, désactivé, avec la raison visible et reliée par aria-describedby', () => {
+    perms = new Set<string>(['purchasing.po.read', 'purchasing.po.pay']);
+    detailStub = {
+      data: {
+        id: 'po-cancelled-1',
+        po_number: 'PO-202608-0099',
+        supplier_id: 'sup-1',
+        status: 'cancelled',
+        payment_terms: 'credit',
+        subtotal: 600000,
+        vat_amount: 60000,
+        total_amount: 660000,
+        order_date: '2026-08-01',
+        expected_date: '2026-08-05',
+        received_date: null,
+        notes: null,
+        cancel_reason: 'Supplier could not deliver',
+        import_reference: null,
+        is_historical_import: false,
+        cancelled_at: '2026-08-21T00:00:00Z',
+        cancelled_by: null,
+        received_by: null,
+        created_by: null,
+        created_at: '2026-08-01T00:00:00Z',
+        updated_at: '2026-08-21T00:00:00Z',
+        deleted_at: null,
+        metadata: {},
+        idempotency_key: null,
+        suppliers: { code: 'CGS', name: 'CAKRA GEMILANG SEJAHTERA', payment_terms_days: 30 },
+        purchase_order_items: [
+          {
+            id: 'poi-1',
+            po_id: 'po-cancelled-1',
+            product_id: 'p-1',
+            quantity: 10,
+            received_quantity: 0,
+            unit: 'kg',
+            unit_cost: 60000,
+            subtotal: 600000,
+            vat_amount: 60000,
+            total: 660000,
+            created_at: '2026-08-01T00:00:00Z',
+            updated_at: '2026-08-01T00:00:00Z',
+            products: { sku: 'SEE-003', name: 'Almond Ground', unit: 'kg' },
+          },
+        ],
+        goods_receipt_notes: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch,
+    };
+    renderPage();
+
+    const payButton = screen.getByRole('button', { name: /Record payment/i });
+    expect(payButton).toBeDisabled();
+
+    const reasonId = payButton.getAttribute('aria-describedby');
+    expect(reasonId).not.toBeNull();
+    const reason = document.getElementById(reasonId!);
+    expect(reason).toHaveTextContent(
+      'This purchase order is cancelled — no payment can be recorded.',
+    );
   });
 });

@@ -7945,7 +7945,7 @@ export type Database = {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
       }
-      record_po_payment_v1: {
+      record_po_payment_v2: {
         Args: {
           p_amount: number
           p_idempotency_key?: string

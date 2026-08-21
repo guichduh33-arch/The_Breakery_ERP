@@ -216,6 +216,14 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const paymentStatus: PoPaymentStatus = derivePaymentStatus(totalPaid, totalDue);
   const hasPayments   = (payments.data?.payments.length ?? 0) > 0;
   const canRecordPay  = canPay && paymentStatus !== 'paid' && totalDue > 0;
+  // Fix (dev incident 2026-08-21): a cancelled PO still accepted a payment —
+  // record_po_payment_v1 had no status guard, and this button was simply
+  // enabled. The server now refuses it (record_po_payment_v2, po_cancelled).
+  // The button itself must NOT disappear for a cancelled PO (an absent button
+  // does not say why) — it stays rendered and DISABLED, same motif as `Edit`
+  // below (disabled={!editable} + a visible reason). Only 'cancelled' disables
+  // it here; a fully-paid PO still hides it entirely (unchanged from before).
+  const payBlockedByCancel = status === 'cancelled';
 
   // Edit lock (D6): editable only while pending AND no GRN AND no payment.
   const hasGrn        = (po.goods_receipt_notes?.length ?? 0) > 0;
@@ -568,12 +576,21 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             )}
 
             {canRecordPay && (
-              <Button type="button" variant="secondary" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => { setPayError(undefined); setShowPay(true); }}
+                disabled={payBlockedByCancel}
+                aria-describedby="po-payment-note"
+              >
                 <Wallet className="h-4 w-4" aria-hidden /> Record payment
               </Button>
             )}
-            <p className="text-xs text-text-muted">
-              Payment is tracked independently from goods reception.
+            <p id="po-payment-note" className="text-xs text-text-muted">
+              {payBlockedByCancel
+                ? 'This purchase order is cancelled — no payment can be recorded.'
+                : 'Payment is tracked independently from goods reception.'}
             </p>
           </Card>
 
