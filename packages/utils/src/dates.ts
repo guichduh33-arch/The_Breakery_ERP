@@ -1,5 +1,4 @@
 // packages/utils/src/dates.ts
-import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 // ADR-019 (D5) — CONSTANTE CLIENT UNIQUE du fuseau métier. C'est la seule
@@ -27,10 +26,26 @@ export function formatDateTimeShortWita(d: Date | string): string {
   return formatInTimeZone(date, TIMEZONE, 'dd MMM yyyy, HH:mm');
 }
 
-// Audit UX/UI 2026-08-13 (lot 5) — les DEUX formats canoniques de l'app.
-// `formatDate` : date seule, jj/MM/aaaa (l'audit a relevé du 06/14/2026 US via
-// des toLocaleDateString() sans locale). `formatDateTime` : le format de table
-// existant (dd MMM yyyy, HH:mm) sous son nom générique — même fuseau ADR-019.
+// Audit UX/UI 2026-08-13 (lot 5) — `formatDate` : date seule, jj/MM/aaaa
+// (l'audit a relevé du 06/14/2026 US via des toLocaleDateString() sans locale).
+// `formatDateTime` : le format de table existant (dd MMM yyyy, HH:mm) sous son
+// nom générique — même fuseau ADR-019.
+//
+// ⚠️ CES DEUX-LÀ ONT LONGTEMPS ÉTÉ APPELÉES « les deux formats canoniques de
+// l'app ». Le fichier en exporte SIX depuis, et la phrase faisait croire à un
+// lecteur pressé que les quatre autres étaient des accidents à supprimer. Elles
+// ne le sont pas : ce sont SIX RÔLES distincts, et le rôle est ce qui autorise
+// la forme. Récapitulatif tenu à jour ici, et nulle part ailleurs :
+//
+//   formatDateTimeWita       yyyy-MM-dd HH:mm:ss   horodatage exact (audit, export)
+//   formatDateTimeShortWita  dd MMM yyyy, HH:mm    ligne de table  (= formatDateTime)
+//   formatDate               dd/MM/yyyy            date seule, saisie et filtre
+//   formatTimeWita           HH:mm                 heure seule, dans un jour déjà nommé
+//   formatDateShortWita      dd MMM                seconde ligne d'une cellule
+//   formatDateLong           MMMM d, yyyy          titre de page
+//
+// Une SEPTIÈME forme rendue à l'écran est une forme de trop : elle vient d'un
+// `toLocaleDateString()` oublié quelque part, et sa place est ici.
 export function formatDate(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return formatInTimeZone(date, TIMEZONE, 'dd/MM/yyyy');
@@ -52,9 +67,17 @@ export function formatDateShortWita(d: Date | string): string {
   return formatInTimeZone(date, TIMEZONE, 'dd MMM');
 }
 
+// Le titre long, pour un en-tête de page (« August 21, 2026 »).
+//
+// Il posait `format` au lieu de `formatInTimeZone` — LE SEUL du fichier à
+// échapper au fuseau métier, dans un fichier qui n'existe que pour l'imposer
+// (ADR-019). Conséquence sur le seul appelant, le titre du Dashboard : entre
+// minuit et 08 h WITA, le navigateur du lecteur étant en UTC ou plus à
+// l'ouest, la page annonçait la VEILLE en gros au-dessus de chiffres du jour.
+// Corrigé le 2026-08-21.
 export function formatDateLong(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
-  return format(date, 'MMMM d, yyyy');
+  return formatInTimeZone(date, TIMEZONE, 'MMMM d, yyyy');
 }
 
 export function todayIsoDate(): string {

@@ -50,14 +50,23 @@ export function formatQty(v: number | null | undefined): string {
     : v.toLocaleString('id-ID', { maximumFractionDigits: 1 });
 }
 
-/** Durée en minutes → « 12 min », « 1 h 24 ». */
+/**
+ * Durée en minutes → « 12m », « 1h 24m », « 163h ».
+ *
+ * Rendait « 12 min » / « 1 h 24 » jusqu'au 2026-08-21 : la typographie
+ * FRANÇAISE de la durée, espace avant l'unité et « h » en séparateur, sur un
+ * tableau de bord dont tout le reste est en anglais (CLAUDE.md — l'interface
+ * parle anglais, les commentaires parlent français). Et « 163 h 07 » laissait
+ * le lecteur deviner que 07 était des minutes : le nombre nu n'avait pas
+ * d'unité. Elle en a une maintenant.
+ */
 export function formatMinutes(v: number | null | undefined): string {
   if (v === null || v === undefined) return TIRET;
   const m = Math.max(0, Math.round(v));
-  if (m < 60) return `${m} min`;
+  if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   const rest = m % 60;
-  return rest === 0 ? `${h} h` : `${h} h ${String(rest).padStart(2, '0')}`;
+  return rest === 0 ? `${h}h` : `${h}h ${String(rest).padStart(2, '0')}m`;
 }
 
 /** Heure métier courte — « 09:42 », fuseau WITA (ADR-019), pas celui du poste. */

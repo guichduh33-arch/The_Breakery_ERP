@@ -36,9 +36,9 @@ describe('OpenOrdersCard', () => {
 
   it('escalates the age colour at 30 and 45 minutes', () => {
     wrap(<OpenOrdersCard panel={panel} isLoading={false} isRestricted={false} error={null} />);
-    expect(screen.getByText('6 min').className).toMatch(/text-text-muted/);
-    expect(screen.getByText('34 min').className).toMatch(/text-warning/);
-    expect(screen.getByText('48 min').className).toMatch(/text-danger/);
+    expect(screen.getByText('6m').className).toMatch(/text-text-muted/);
+    expect(screen.getByText('34m').className).toMatch(/text-warning/);
+    expect(screen.getByText('48m').className).toMatch(/text-danger/);
   });
 
   it('warns in the footer when an order has been open over 45 min', () => {

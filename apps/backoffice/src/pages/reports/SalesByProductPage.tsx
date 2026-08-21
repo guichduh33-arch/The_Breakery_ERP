@@ -226,7 +226,7 @@ export default function SalesByProductPage(): JSX.Element {
           value={categoryId}
           onChange={(e) => { setCategoryId(e.target.value); }}
           aria-label="Category filter"
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
         >
           <option value="">All categories</option>
           {(categories ?? []).map((c) => (
