@@ -65,7 +65,16 @@ pas copier sans refaire le même travail :
 ## Operating Context
 
 - Commerce unique à Lombok. Devise **IDR**, montants sans décimales et souvent à
-  sept chiffres (`Rp 4,850,000`) — les colonnes et les tuiles doivent les tenir.
+  sept chiffres (`Rp 4.850.000`) — les colonnes et les tuiles doivent les tenir.
+  L'écriture des nombres suit la **locale métier `id-ID`** : le point sépare les
+  milliers, la virgule les décimales. Un pourcentage s'écrit donc `-99,9%`, comme
+  un montant s'écrit `Rp 3.257.500`. Cette fiche a longtemps illustré la devise
+  en convention américaine (`Rp 4,850,000`), une troisième écriture qui
+  n'apparaît sur aucun écran — et qui donnait deux sens au même caractère selon
+  qu'on lisait un montant ou une marge. La règle ne connaît qu'une exception,
+  écrite dans `packages/utils/src/format.ts` : les colonnes d'**export CSV**
+  gardent le point décimal, faute de quoi un tableur en locale anglaise couperait
+  « 12,5 » en deux colonnes.
 - Fuseau métier **Asia/Makassar**, constante de déploiement. Le jour comptable
   n'est pas le jour du navigateur du lecteur.
 - Fiscalité indonésienne : régime **NON-PKP**, taxe locale **PB1 à 10 % incluse
