@@ -52,21 +52,36 @@ export function trackedFiles(prefixes, extRe) {
  *  · les commentaires JSX `{/* … *\/}` échappent à une garde qui ne reconnaît
  *    qu'une ligne commençant par `//` ou `*` — c'est ce qui gèle deux entrées de
  *    la baseline de la garde 3 ;
- *  · les chaînes sont PRÉSERVÉES : c'est là que vivent les classes.
+ *  · les chaînes sont PRÉSERVÉES : c'est là que vivent les classes ;
+ *  · l'INTÉRIEUR d'un `${…}` de gabarit est du CODE, pas de la chaîne. Sans la
+ *    pile ci-dessous, un commentaire écrit dans une interpolation traversait le
+ *    masque intact et sa citation comptait comme une infraction (relevé du
+ *    2026-08-21). La pile retient la profondeur d'accolades à l'ouverture de
+ *    chaque `${` : on retourne au gabarit sur le `}` qui la retrouve, jamais sur
+ *    une accolade d'objet ou de bloc écrite à l'intérieur.
  */
 export function maskComments(src) {
   const out = src.split('');
   let i = 0;
   let mode = 'code';
+  const tplStack = [];
+  let brace = 0;
   while (i < src.length) {
     const c = src[i];
     const n = src[i + 1];
     if (mode === 'code') {
       if (c === '/' && n === '/') { out[i] = ' '; out[i + 1] = ' '; mode = 'line'; i += 2; continue; }
       if (c === '/' && n === '*') { out[i] = ' '; out[i + 1] = ' '; mode = 'block'; i += 2; continue; }
-      if (c === "'") mode = 'sq';
-      else if (c === '"') mode = 'dq';
-      else if (c === '`') mode = 'tpl';
+      if (c === "'") { mode = 'sq'; i++; continue; }
+      if (c === '"') { mode = 'dq'; i++; continue; }
+      if (c === '`') { mode = 'tpl'; i++; continue; }
+      if (c === '{') { brace++; i++; continue; }
+      if (c === '}') {
+        if (tplStack.length > 0 && brace === tplStack[tplStack.length - 1]) {
+          tplStack.pop(); mode = 'tpl'; i++; continue;
+        }
+        brace--; i++; continue;
+      }
       i++; continue;
     }
     if (mode === 'line') {
@@ -80,6 +95,7 @@ export function maskComments(src) {
       i++; continue;
     }
     if (c === '\\') { i += 2; continue; }
+    if (mode === 'tpl' && c === '$' && n === '{') { tplStack.push(brace); mode = 'code'; i += 2; continue; }
     if ((mode === 'sq' && c === "'") || (mode === 'dq' && c === '"') || (mode === 'tpl' && c === '`')) mode = 'code';
     i++;
   }
@@ -212,7 +228,7 @@ function loadBaseline(relPath) {
  * balise, et le masque de commentaires préserve les chaînes à dessein. Les
  * juger, c'est faire crier la garde sur la preuve qu'elle a raison.
  */
-const IS_TEST = /(^|\/)__tests__\/|\.(test|spec)\.[cm]?[jt]sx?$/;
+export const IS_TEST = /(^|\/)__tests__\/|\.(test|spec)\.[cm]?[jt]sx?$/;
 
 export function runGuard({ number, title, baselinePath, scanned, extRe, collect, whatToDo, scannedLabel }) {
   const baseline = loadBaseline(baselinePath);

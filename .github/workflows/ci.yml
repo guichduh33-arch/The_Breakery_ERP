@@ -72,7 +72,9 @@ jobs:
         if: always()
         run: node scripts/ci/hardcoded-theme-colors.mjs
 
-      # Gardes 5 à 8 — les RÈGLES NOMMÉES de apps/backoffice/DESIGN.md.
+      # Gardes 5 à 9 — les RÈGLES NOMMÉES de apps/backoffice/DESIGN.md.
+      # (Cinq depuis le 2026-08-21 : la 9 outille The Tight-Corner Rule, restée
+      # sans exécuteur alors que sa dette venait d'être payée.)
       #
       # Pourquoi elles arrivent ensemble, le 2026-08-18. L'audit de ce jour-là a
       # mesuré une corrélation qui n'en est pas une : les deux seuls invariants du
@@ -87,6 +89,9 @@ jobs:
       # Elles partagent scripts/ci/_guard-lib.mjs — même régime de plafond, même
       # masque de commentaires, même refus de relever la baseline. Recopier cette
       # mécanique quatre fois, c'était quatre endroits où elle peut diverger.
+      # La garde 3, née avant le socle, lui emprunte depuis le 2026-08-21 son
+      # masque de commentaires et son motif de test : elle jugeait jusque-là une
+      # ligne de commentaire JSX et une assertion de test comme des infractions.
       - name: Garde 5 — aucun contrôle sans anneau de focus ni placeholder tokenisé
         if: always()
         # Baseline VIDE, et c'est le point : la PR #415 a corrigé les 170 contrôles
@@ -120,6 +125,17 @@ jobs:
         # frontière met deux hauteurs sur le même écran — cinq rangées mesurées le
         # 2026-08-18, et un « Load more » qui existait en 32, 36 et 56 px.
         run: node scripts/ci/toolbar-button-scope.mjs
+
+      - name: Garde 9 — aucun coin entièrement rond hors baseline
+        if: always()
+        # The Tight-Corner Rule, la QUATRIÈME dette du relevé du 2026-08-18 et la
+        # seule qui n'avait aucun exécuteur. Elle est passée de 41 à 21 le
+        # 2026-08-21 — sans garde, ce plancher neuf se serait re-creusé en
+        # silence, exactement comme les quatre règles nommées entre leur écriture
+        # et leur outillage. Les 21 survivants sont des exceptions de FORME
+        # (spinner, pastille d'avatar, piste d'interrupteur, point d'état),
+        # nommées et closes en tête du script.
+        run: node scripts/ci/tight-corner.mjs
 
   lint-typecheck-test-build:
     runs-on: ubuntu-latest

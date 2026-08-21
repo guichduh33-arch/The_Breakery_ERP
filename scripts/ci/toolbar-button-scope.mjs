@@ -19,11 +19,21 @@
 // peut rendre un bandeau ET une modale — mais elle attrape la classe entière du
 // défaut sans jamais demander à la garde de deviner ce qu'est un « bandeau ».
 //
-// TROIS CAS LÉGITIMES QUE LE TEST NE SAIT PAS VOIR, et que la baseline porte :
-// les composants de bandeau INJECTÉS dans le `actions` d'un `PageHeader` par un
-// autre fichier (`ExportMenu`, `PeriodControl`, servis par `ReportShell`), et le
-// bandeau de fiche écrit à la main de la page client. Ce sont des exceptions de
-// STRUCTURE, pas de règle.
+// QUATRE OCCURRENCES LÉGITIMES QUE LE TEST NE SAIT PAS VOIR, et que la baseline
+// porte. Toutes ont la même cause : le fichier construit un fragment de bandeau
+// qu'un AUTRE fichier injecte dans le `actions` d'un `PageHeader` — c'est ce que
+// fait `ReportShell` avec sa prop `toolbar`. La liste est CLOSE et NOMMÉE, les
+// quatre, sans exception muette :
+//   · features/reports/components/ExportMenu.tsx        — 1
+//   · features/reports/components/PeriodControl.tsx     — 2
+//   · pages/reports/DailySalesPage.tsx                  — 1 (bouton « Print »
+//     posé dans le `toolbar` que la page passe à `ReportShell`)
+// Ce sont des exceptions de STRUCTURE, pas de règle.
+//
+// Le quatrième cas nommé jusqu'au 2026-08-21 — « le bandeau de fiche écrit à la
+// main de la page client » — n'en est plus un : `CustomerDetailPage` passe
+// désormais par `PageHeader`, et `ExpenseDetailPage` avec elle. Un bandeau écrit
+// à la main n'est pas une exception, c'est le second défaut que DESIGN.md nomme.
 //
 // PÉRIMÈTRE — `apps/backoffice/src/`. Les chaînes n'existent pas ailleurs.
 //

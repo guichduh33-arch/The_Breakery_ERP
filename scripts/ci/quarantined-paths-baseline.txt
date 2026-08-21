@@ -17,7 +17,7 @@
 # une de ces lignes pour une autre raison, tu la rends vraie, et tu abaisses le
 # compte ici.
 #
-# Dernier resserrement : 2026-07-28
+# Dernier resserrement : 2026-08-21
 # Généré par `node scripts/ci/quarantined-paths.mjs --update-baseline`, jamais
 # écrit de mémoire. Les huit entrées interdites se dérivent du tag :
 #   git ls-tree --name-only quarantine/2026-07-27 docs/_quarantine/
@@ -25,7 +25,6 @@
 # Format : <compte>\t<chemin>\t<entrée>
 # =============================================================================
 1	apps/backoffice/src/features/inventory/components/IncomingStockForm.tsx	superpowers
-1	apps/backoffice/src/features/inventory/hooks/useStockLevels.ts	superpowers
 1	apps/backoffice/src/features/products/hooks/useDeductibleIngredientProducts.ts	superpowers
 1	apps/backoffice/src/features/promotions/components/PromotionDeleteConfirm.tsx	superpowers
 1	apps/backoffice/src/features/promotions/components/PromotionFormModal.tsx	superpowers
@@ -37,9 +36,6 @@
 1	apps/backoffice/src/features/promotions/hooks/usePromotionsList.ts	superpowers
 1	apps/backoffice/src/features/promotions/hooks/useUpdatePromotion.ts	superpowers
 1	apps/backoffice/src/pages/Promotions.tsx	superpowers
-1	apps/backoffice/src/pages/TransferDetail.tsx	reference
-1	apps/backoffice/src/pages/TransferForm.tsx	reference
-1	apps/backoffice/src/pages/TransfersList.tsx	reference
 1	apps/pos/src/pages/Kds.tsx	superpowers
 1	apps/pos/src/pages/Kds.tsx	workplan
 1	apps/pos/src/stores/kdsStore.ts	superpowers
