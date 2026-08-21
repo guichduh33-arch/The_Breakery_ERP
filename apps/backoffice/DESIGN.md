@@ -77,6 +77,10 @@ typography:
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "0.14em"
+  # 19 px = `--type-lg`. Le cran des montants de TIROIRS et de PANNEAUX, pas
+  # celui des tuiles de KPI (23 px, rôle `headline` hors rampe). Un relevé fait
+  # sur les seules pages de liste ne le trouve pas et conclut à tort qu'il est
+  # mort : il vit dans des surfaces qu'il faut ouvrir. Voir § Typography.
   data:
     fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
     fontSize: "19px"
@@ -95,10 +99,18 @@ rounded:
   xl: "6px"
   "2xl": "8px"
 spacing:
-  compact: "12px"
-  card: "20px"
-  page: "28px"
-  section: "48px"
+  # MESURÉE au navigateur sur six pages le 2026-08-22, et non déduite d'une
+  # intention. L'échelle déclarée jusque-là — compact 12 / carte 20 / page 28 /
+  # section 48 — annonçait deux paliers que le produit ne rend NULLE PART (28 px
+  # et 48 px : zéro occurrence), pendant que les deux valeurs qui structurent
+  # réellement chaque écran, le padding de cellule de tableau, n'y figuraient
+  # pas. Voir § Layout pour les comptages.
+  cell-y: "10px"      # padding vertical de cellule — la valeur la plus rendue
+  cell-x: "14px"      # padding horizontal de cellule
+  compact: "12px"     # densité de rush : pile de contrôles, gouttière serrée
+  card: "16px"        # carte de dashboard
+  gutter-card: "20px" # carte hors dashboard — le token `--gutter-card`
+  module: "22px"      # LE module — grille de fond, gouttière de page, barre
 components:
   toolbar-button-primary:
     backgroundColor: "{colors.ink}"
@@ -365,7 +377,9 @@ corps.
   descriptions, messages d'état.
 - **Label** (mono, 600, 12 px, `0.14em`, capitales) : en-tête de colonne de
   tableau, en-tête de colonne de panneau de navigation, libellé de tuile.
-- **Valeur KPI ordinaire** (mono, 600, 23 px, `-0.02em`, tabulaire).
+- **Valeur KPI ordinaire** (mono, 600, 23 px, `-0.02em`, tabulaire) : la valeur
+  de toute tuile qui n'est pas la tuile héroïque. À ne pas confondre avec le
+  rôle `data` du frontmatter, qui est le cran de 19 px décrit plus bas.
 
 **L'échelle du code fait loi (arbitré le 2026-08-18).** Ce document a longtemps
 décrit une rampe relevée sur la planche de référence — {10, 11, 14, 16, 23,
@@ -391,9 +405,28 @@ des approximations :
   front-matter porte maintenant la rampe entière sous `scale`.
 - **Le cran de données courant est 19 px, pas 23.** `--type-lg` en mono tabulaire
   porte les montants des tiroirs et des panneaux (`AgingBucketsGrid`,
-  `OrderDetailDrawer`, `CostingPanel` — quatorze fichiers) ; c'est lui que le
-  front-matter déclare sous `data`. Les 23 px de la valeur de tuile sont, eux,
-  le rôle `headline` hors rampe.
+  `OrderDetailDrawer`, `CostingPanel`) ; c'est lui que le front-matter déclare
+  sous `data`. Les 23 px de la valeur de tuile sont, eux, le rôle `headline`
+  hors rampe.
+
+  ⚠️ **Ce cran ne se relève pas depuis une page de liste.** Il vit dans des
+  surfaces qu'il faut OUVRIR — un tiroir de commande, un panneau de coût, la
+  grille d'ancienneté B2B. Un balayage du dashboard, des commandes, du catalogue
+  et de l'inventaire ne rend jamais 19 px et donne à croire que le rôle est mort
+  ; l'audit du 2026-08-22 s'y est laissé prendre avant de lire ce paragraphe. Le
+  relevé se fait par `grep -rn "text-lg" apps/backoffice/src` croisé avec
+  `font-data` / `font-mono` — pas de compte gravé ici, il pourrit à chaque
+  édition (celui qui s'y trouvait annonçait quatorze fichiers sans date).
+
+- **L'écran de connexion a son propre corps de libellé, et c'est assumé.** Ses
+  capitales mono rendent à **10 px**, sous le premier cran de la rampe. Il est
+  hors du shell — pas de barre, pas de grille de fond, fond encre plein écran —
+  et ses libellés ne se lisent pas dans le flux d'un tableau mais autour d'un
+  pavé numérique, où 12 px paraissaient lourds. Le détecteur mécanique le
+  signale à chaque passage : c'est **la seule famille d'avis qu'il rende sur ce
+  module**, elle porte sur `src/index.css` seul, et elle est **attendue**. Ne
+  pas la « corriger » sans arbitrage — et ne pas conclure d'un détecteur muet
+  ailleurs que le reste est propre (relevé du 2026-08-22).
 
 La graisse, elle, se lit sur l'appelant et non ici : `SectionLabel` pose 700 par
 défaut, les constantes de tuile (`KPI_LABEL`) redescendent à 600. C'est un écart
@@ -441,8 +474,21 @@ déborderait à droite.
 
 Le module est **22 px** : c'est le pas de la grille de fond, la gouttière de
 page, l'espacement horizontal de la barre et la gouttière entre colonnes du
-panneau. Le reste de l'échelle est en base 4 px, avec quatre paliers sémantiques
-— compact (12 px, densité de rush), carte (20 px), page (28 px), section (48 px).
+panneau.
+
+**L'échelle réelle a été relevée le 2026-08-22**, au navigateur, sur six pages —
+et elle n'est pas celle que ce document annonçait. Les paliers « page (28 px) »
+et « section (48 px) » ne sont rendus **nulle part** : zéro occurrence, ni en
+remplissage ni en gouttière. Pendant ce temps, les deux valeurs les plus posées
+de tout le back-office — **14 px (1053 occurrences)** et **10 px (996)**, le
+remplissage de cellule de tableau — n'étaient déclarées nulle part.
+
+L'échelle du frontmatter dit désormais ce que le produit rend : cellule 14/10,
+compact 12 (densité de rush), carte 16, gouttière de carte 20, module 22. Un
+tableau dense EST le produit ; son remplissage de cellule est son unité de base,
+pas un détail d'implémentation. Les tableaux gardent leurs deux densités, la compacte
+resserrant les cellules à 14/10 px pour les écrans de travail où trois lignes de
+plus valent mieux que de l'air.
 
 Les grilles de dashboard descendent en marches franches : 2 colonnes en petit
 écran, 3 en medium, **4 en extra-large** pour la bande de KPI — donc deux
@@ -454,9 +500,7 @@ coupaient. Réduire les corps aurait fait tenir les chaînes en détruisant la
 hiérarchie héro/ordinaire — or c'est elle qui porte l'information. À quatre
 colonnes la tuile vaut ≈ 297 px pour ≈ 268 px de contenu, et toute la bande
 tient sur une ligne chacune (arbitré le 2026-08-18). Deux rangées de tuiles
-lisibles valent mieux que sept tuiles qui coupent. Les tableaux ont deux
-densités, la compacte resserrant les cellules à 14/10 px pour les écrans de
-travail où trois lignes de plus valent mieux que de l'air.
+lisibles valent mieux que sept tuiles qui coupent.
 
 ### Named Rules
 
@@ -607,14 +651,34 @@ ombres n'apparaissent que pour ce qui **flotte au-dessus de la page** : panneau
 de navigation déroulant, menu utilisateur, modales.
 
 Toutes les ombres sont réchauffées sur `rgba(45, 34, 15, ·)` — une base neutre
-froide tirerait vers le bleu-gris et trahirait l'axe de teinte du système.
+froide tirerait vers le bleu-gris et trahirait l'axe de teinte du système. Cette
+phrase a été **fausse jusqu'au 2026-08-22** : « Flottant », la seule des six qui
+n'était pas un token, vivait sur `rgba(28,23,18,·)` — la base du `--backdrop` —
+recopiée à la main dans trois fichiers. Une règle contredite par la seule valeur
+qui échappe au système est exactement la façon dont une valeur en dur se défend.
+Elle est devenue `--shadow-float` et a rejoint la base commune, à géométrie et
+opacité inchangées.
 
 ### Shadow Vocabulary
 
-- **Filet** (`0 1px 2px rgba(45,34,15,0.07)`) : élément posé, à peine décollé.
-- **Carte** (`0 2px 8px rgba(45,34,15,0.09)`) : carte en état survolé.
-- **Flottant** (`0 18px 40px rgba(28,23,18,0.20)`) : panneau de navigation, menu.
-- **Modale** (`0 20px 56px rgba(45,34,15,0.22)`) : dialogues.
+Six tokens, `--shadow-*` dans `packages/ui/src/tokens/elevation.css`. La liste
+est celle du thème, pas une sélection : un cran qu'on ne nomme pas ici se fait
+réinventer en valeur arbitraire au premier composant qui en a besoin.
+
+- **Filet** (`--shadow-sm`, `0 1px 2px rgba(45,34,15,0.07)`) : élément posé, à
+  peine décollé.
+- **Carte** (`--shadow-md`, `0 2px 8px rgba(45,34,15,0.09)`) : carte en état
+  survolé.
+- **Détaché** (`--shadow-lg`, `0 8px 24px rgba(45,34,15,0.12)`) : le cran le plus
+  employé du dépôt, et il n'était pas documenté ici jusqu'au 2026-08-22.
+- **Flottant** (`--shadow-float`, `0 18px 40px rgba(45,34,15,0.20)`) : panneau de
+  navigation déroulant, menu utilisateur, menu Columns.
+- **Profond** (`--shadow-xl`, `0 16px 48px rgba(45,34,15,0.16)`) : réservé, deux
+  usages.
+- **Modale** (`--shadow-modal`, `0 20px 56px rgba(45,34,15,0.22)`) : dialogues.
+
+`--shadow-xs` existe dans le thème et **n'est utilisé nulle part** : ne pas le
+choisir sans avoir d'abord écarté `--shadow-sm`, dont il n'est qu'une nuance.
 - **Focus** (`0 0 0 3px color-mix(in srgb, var(--gold-base) 32%, transparent)`) :
   halo, dérivé de l'accent — le liseré et le halo sont toujours de la même
   couleur. La valeur est **calculée depuis le token, jamais recopiée** : c'est ce
@@ -710,7 +774,10 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
 - **Coins** : 4 px. **Fond** : feuille blanche. **Bordure** : `#e3e1db`.
 - **Ombre** : aucune sur un dashboard ; `shadow-sm` en usage général.
 - **Padding interne** : 16 px sur les cartes de dashboard, 20 px (gouttière de
-  carte) ailleurs.
+  carte) ailleurs. ⚠️ Le token `--gutter-card` porte bien ces 20 px, mais
+  **aucun appelant du back-office ne le nomme** : les huit sites concernés
+  écrivent `p-5`. Le token et l'utilitaire disent la même chose aujourd'hui ; le
+  jour où la gouttière bougera, les huit ne suivront pas (relevé du 2026-08-22).
 - Une carte de dashboard porte quatre états qui ne sont pas cosmétiques :
   chargement (squelettes en papier pressé), **restreint** (cadenas et phrase
   explicite quand le rôle n'a pas le droit), erreur, contenu. La page dégrade
