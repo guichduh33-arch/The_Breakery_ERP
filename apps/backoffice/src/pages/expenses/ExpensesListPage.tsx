@@ -320,6 +320,7 @@ export default function ExpensesListPage(): JSX.Element {
             </div>
           ) : (
             <DataTable
+              caption="Date, number, description, amount, payment method and status per expense"
               data-testid="expenses-table"
               columns={columns}
               rows={rows}
@@ -382,12 +383,13 @@ function CategoriesTab(): JSX.Element {
   return (
     <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
       <table className="w-full text-sm">
+        <caption className="sr-only">Code, name, mapped account and status per expense category</caption>
         <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
-            <th className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Code</th>
-            <th className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Name</th>
-            <th className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Account</th>
-            <th className="px-4 py-3 text-center text-xs uppercase tracking-widest text-text-muted">Status</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Code</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Name</th>
+            <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Account</th>
+            <th scope="col" className="px-4 py-3 text-center text-xs uppercase tracking-widest text-text-muted">Status</th>
           </tr>
         </thead>
         <tbody>

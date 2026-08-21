@@ -210,9 +210,9 @@ export default function SalesByTablePage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 text-left font-normal">Table</th>
+                    <th scope="col" className="py-2 text-left font-normal">Table</th>
                     {DOW_LABELS.map((d) => (
-                      <th key={d} className="py-2 text-right font-data text-xs font-semibold uppercase tracking-widest">
+                      <th scope="col" key={d} className="py-2 text-right font-data text-xs font-semibold uppercase tracking-widest">
                         {d}
                       </th>
                     ))}
@@ -291,13 +291,13 @@ export default function SalesByTablePage(): JSX.Element {
               </caption>
               <thead>
                 <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 pr-3 text-left font-normal">Table</th>
-                  <th className="py-2 pr-3 text-right font-normal">Seats</th>
-                  <th className="py-2 pr-3 text-right font-normal">Orders</th>
-                  <th className="py-2 pr-3 text-right font-normal">Revenue</th>
-                  <th className="py-2 pr-3 text-right font-normal">vs prev</th>
-                  <th className="py-2 pr-3 text-right font-normal">Avg ticket</th>
-                  <th className="py-2 pr-3 text-right font-normal">Revenue / seat</th>
+                  <th scope="col" className="py-2 pr-3 text-left font-normal">Table</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Seats</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Orders</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Revenue</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">vs prev</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Avg ticket</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Revenue / seat</th>
                 </tr>
               </thead>
               <tbody>

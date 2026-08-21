@@ -19,7 +19,7 @@ export default function NotFoundPage(): JSX.Element {
         <Compass className="mx-auto h-10 w-10 text-text-muted" aria-hidden />
         <div className="space-y-1">
           <p className="font-data text-xs uppercase tracking-widest text-text-muted">404</p>
-          <h1 className="font-serif text-xl text-text-primary">Page not found</h1>
+          <h1 className="text-xl text-text-primary">Page not found</h1>
           <p className="text-sm text-text-secondary">
             The page you&rsquo;re looking for doesn&rsquo;t exist, or it may have moved.
           </p>

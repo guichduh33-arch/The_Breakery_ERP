@@ -99,7 +99,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
     <div className="space-y-6">
       <Card padding="md">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md text-gold">
             <Factory className="h-5 w-5" aria-hidden />
           </div>
           <div>
@@ -150,7 +150,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
                     className={
                       'inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-40 ' +
                       (isPrimary
-                        ? 'bg-gold-soft text-gold'
+                        ? 'bg-surface-4 text-gold'
                         : 'text-text-muted hover:enabled:text-text-primary')
                     }
                   >

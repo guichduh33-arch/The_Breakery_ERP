@@ -27,7 +27,7 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
     <article className="bg-white text-black p-6 print:p-0 max-w-3xl mx-auto">
       <header className="flex justify-between border-b pb-4 mb-4">
         <div>
-          <h1 className="text-2xl font-serif">PURCHASE ORDER</h1>
+          <h1 className="text-2xl">PURCHASE ORDER</h1>
           <p className="text-sm mt-1">#{po.po_number}</p>
         </div>
         <div className="text-right text-sm">
@@ -42,13 +42,14 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
       </section>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse mb-4">
+          <caption className="sr-only">Product, quantity, unit, unit cost and subtotal per ordered line</caption>
           <thead>
             <tr className="border-b">
-              <th className="text-left py-1">Product</th>
-              <th className="text-right py-1 w-20">Qty</th>
-              <th className="text-left py-1 w-16">Unit</th>
-              <th className="text-right py-1 w-24">Unit cost</th>
-              <th className="text-right py-1 w-28">Subtotal</th>
+              <th scope="col" className="text-left py-1">Product</th>
+              <th scope="col" className="text-right py-1 w-20">Qty</th>
+              <th scope="col" className="text-left py-1 w-16">Unit</th>
+              <th scope="col" className="text-right py-1 w-24">Unit cost</th>
+              <th scope="col" className="text-right py-1 w-28">Subtotal</th>
             </tr>
           </thead>
           <tbody>

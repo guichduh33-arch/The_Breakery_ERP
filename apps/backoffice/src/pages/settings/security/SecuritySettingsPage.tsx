@@ -88,7 +88,7 @@ export default function SecuritySettingsPage(): JSX.Element {
       />
 
       <div>
-        <h2 className="font-serif text-xl">Session timeouts</h2>
+        <h2 id="session-timeouts-heading" className="text-xl">Session timeouts</h2>
         <p className="text-text-secondary text-sm mt-1">
           Idle session timeout per role. Operators are signed out after this
           many minutes of inactivity. Bounds 5–480 minutes.
@@ -100,13 +100,13 @@ export default function SecuritySettingsPage(): JSX.Element {
 
       {!isLoading && !error && (
         <div className="overflow-x-auto rounded-lg border border-border-subtle">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-labelledby="session-timeouts-heading">
             <thead className="bg-bg-overlay text-left text-text-secondary">
               <tr>
-                <th className="px-4 py-2">Role</th>
-                <th className="px-4 py-2">Name</th>
-                <th className="px-4 py-2">Timeout (min)</th>
-                <th className="px-4 py-2"></th>
+                <th scope="col" className="px-4 py-2">Role</th>
+                <th scope="col" className="px-4 py-2">Name</th>
+                <th scope="col" className="px-4 py-2">Timeout (min)</th>
+                <th scope="col" className="px-4 py-2"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -198,7 +198,7 @@ function PinPolicyCard({ canEdit }: { canEdit: boolean }): JSX.Element {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-serif text-xl">PIN policy</h2>
+        <h2 className="text-xl">PIN policy</h2>
         <p className="text-text-secondary text-sm mt-1">
           Login PIN lockout, applied by the sign-in flow on every attempt:
           after the configured number of failed attempts, the account locks

@@ -46,12 +46,12 @@ export function LoyaltyHistoryDrawer({ customer, onClose }: LoyaltyHistoryDrawer
               <table className="w-full text-sm">
                 <thead className="text-xs uppercase tracking-widest text-text-secondary">
                   <tr>
-                    <th className="px-2 py-1 text-left">When</th>
-                    <th className="px-2 py-1 text-left">Type</th>
-                    <th className="px-2 py-1 text-right">Points</th>
-                    <th className="px-2 py-1 text-right">Balance after</th>
-                    <th className="px-2 py-1 text-left">Description</th>
-                    <th className="px-2 py-1 text-left">Author</th>
+                    <th scope="col" className="px-2 py-1 text-left">When</th>
+                    <th scope="col" className="px-2 py-1 text-left">Type</th>
+                    <th scope="col" className="px-2 py-1 text-right">Points</th>
+                    <th scope="col" className="px-2 py-1 text-right">Balance after</th>
+                    <th scope="col" className="px-2 py-1 text-left">Description</th>
+                    <th scope="col" className="px-2 py-1 text-left">Author</th>
                   </tr>
                 </thead>
                 <tbody>

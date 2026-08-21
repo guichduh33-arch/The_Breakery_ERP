@@ -45,12 +45,13 @@ export function BakerPreviewPanel({
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
+          <caption className="sr-only">Material, baker&apos;s percentage, absolute quantity and unit for the target flour weight</caption>
           <thead className="text-text-secondary">
             <tr>
-              <th className="text-left py-1">Material</th>
-              <th className="text-right py-1">%</th>
-              <th className="text-right py-1">Absolute</th>
-              <th className="text-left py-1 pl-2">Unit</th>
+              <th scope="col" className="text-left py-1">Material</th>
+              <th scope="col" className="text-right py-1">%</th>
+              <th scope="col" className="text-right py-1">Absolute</th>
+              <th scope="col" className="text-left py-1 pl-2">Unit</th>
             </tr>
           </thead>
           <tbody>

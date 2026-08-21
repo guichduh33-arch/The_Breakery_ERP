@@ -108,13 +108,14 @@ export default function ExpenseThresholdsPage(): JSX.Element {
       {rows.length > 0 && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="threshold-table">
+            <caption className="sr-only">Category, amount range, approval steps and required roles per threshold</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="px-3 py-2">Category</th>
-                <th className="px-3 py-2">Amount range (IDR)</th>
-                <th className="px-3 py-2">Steps</th>
-                <th className="px-3 py-2">Roles required</th>
-                {canWrite && <th className="px-3 py-2 text-right">Actions</th>}
+                <th scope="col" className="px-3 py-2">Category</th>
+                <th scope="col" className="px-3 py-2">Amount range (IDR)</th>
+                <th scope="col" className="px-3 py-2">Steps</th>
+                <th scope="col" className="px-3 py-2">Roles required</th>
+                {canWrite && <th scope="col" className="px-3 py-2 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>

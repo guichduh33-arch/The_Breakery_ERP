@@ -167,11 +167,11 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
               <table className="w-full text-sm" data-testid="je-modal-lines-table">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-                    <th className="px-2 py-2">Account</th>
-                    <th className="px-2 py-2 text-right">Debit</th>
-                    <th className="px-2 py-2 text-right">Credit</th>
-                    <th className="px-2 py-2">Description</th>
-                    <th className="px-2 py-2 w-8"></th>
+                    <th scope="col" className="px-2 py-2">Account</th>
+                    <th scope="col" className="px-2 py-2 text-right">Debit</th>
+                    <th scope="col" className="px-2 py-2 text-right">Credit</th>
+                    <th scope="col" className="px-2 py-2">Description</th>
+                    <th scope="col" className="px-2 py-2 w-8"><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>

@@ -67,7 +67,14 @@ export function ReceiptUploader({
         accept={ACCEPT}
         disabled={disabled === true || busy}
         onChange={(e) => { void handleChange(e); }}
-        className={`block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border-0 file:bg-gold-soft file:px-3 file:py-1.5 file:text-sm file:text-gold hover:file:opacity-80 ${FOCUS_RING}`}
+        /* Le bouton du champ est un CONTRÔLE, pas une pastille : il prend la
+           géométrie de contrôle du système — feuille blanche, liseré
+           `border-strong` (3,83:1, seuil WCAG 1.4.11 clos), rayon 4 px, survol
+           sur papier pressé. Il portait `bg-gold-soft` + `text-gold` sans
+           bordure, ce que The Ink-Not-Gold Rule interdit et que DESIGN.md
+           relève par ailleurs comme le contrôle « Receipt file » à 1,08:1 —
+           une seule passe règle les deux défauts. */
+        className={`block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border file:border-border-strong file:bg-bg-elevated file:px-3 file:py-1.5 file:text-sm file:text-text-primary hover:file:bg-surface-4 ${FOCUS_RING}`}
       />
       {busy && <div className="text-xs text-text-secondary">Uploading…</div>}
       {error !== null && <div className="text-xs text-red">{error}</div>}

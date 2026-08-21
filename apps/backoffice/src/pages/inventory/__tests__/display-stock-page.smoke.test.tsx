@@ -66,7 +66,7 @@ function renderPage() {
 describe('DisplayStockPage [Wave 6 / Task 26]', () => {
   it('renders the page header and both tables', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /Display Stock \(Vitrine\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Display stock$/i })).toBeInTheDocument();
     expect(screen.getByTestId('display-stock-table')).toBeInTheDocument();
     expect(screen.getByTestId('display-movements-table')).toBeInTheDocument();
   });

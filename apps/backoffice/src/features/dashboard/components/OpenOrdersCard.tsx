@@ -46,8 +46,10 @@ export function OpenOrdersCard({
           ? undefined
           : (
               <>
-                {panel.open_count} open ·{' '}
-                <span title={formatIdr(panel.open_total)}>{formatIdrShort(panel.open_total)}</span>
+                <span className="font-data tabular-nums">{panel.open_count}</span> open ·{' '}
+                <span className="font-data tabular-nums" title={formatIdr(panel.open_total)}>
+                  {formatIdrShort(panel.open_total)}
+                </span>
                 {' '}in the room
               </>
             )
@@ -62,7 +64,7 @@ export function OpenOrdersCard({
             <>
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" aria-hidden />
               <span className="text-text-secondary">
-                {over45} order{over45 > 1 ? 's' : ''} open over 45 min
+                <span className="font-data tabular-nums">{over45}</span> order{over45 > 1 ? 's' : ''} open over 45 min
               </span>
             </>
           )}

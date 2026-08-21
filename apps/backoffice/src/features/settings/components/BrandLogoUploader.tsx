@@ -11,7 +11,7 @@
 // Writes are gated server-side by RLS (has_permission settings.update).
 
 import { Loader2, ImagePlus, Trash2, UploadCloud } from 'lucide-react';
-import { useId, useRef, useState, type DragEvent, type JSX } from 'react';
+import { useRef, useState, type DragEvent, type JSX } from 'react';
 import { supabase } from '@/lib/supabase.js';
 
 const BUCKET = 'branding';
@@ -37,7 +37,6 @@ function sanitizeFilename(name: string): string {
 }
 
 export function BrandLogoUploader({ logoUrl, readOnly = false, onChange }: Props): JSX.Element {
-  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +90,14 @@ export function BrandLogoUploader({ logoUrl, readOnly = false, onChange }: Props
 
   return (
     <div className="space-y-2" data-testid="brand-logo-uploader">
+      {/* PAS d'`id` ici, et c'est délibéré : le champ est `aria-hidden` et hors
+          tabulation, donc AUCUN `<label htmlFor>` ne peut légitimement le
+          viser — un label pointant un contrôle masqué rouvrirait une cible de
+          clic qui contourne `openPicker()`. L'`id` généré par `useId()` que ce
+          champ portait n'avait aucun consommateur : il faisait seulement croire
+          le champ étiqueté (retiré lot 9). */}
       <input
         ref={inputRef}
-        id={inputId}
         type="file"
         accept={ACCEPTED.join(',')}
         className="sr-only"
@@ -130,7 +134,8 @@ export function BrandLogoUploader({ logoUrl, readOnly = false, onChange }: Props
         }}
         onDrop={onDrop}
         className={`relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-lg border border-dashed bg-bg-overlay text-text-muted transition-colors ${
-          dragOver ? 'border-gold bg-gold-soft' : 'border-border-subtle'
+          /* Survol de dépôt porté par le liseré seul (The Ink-Not-Gold Rule). */
+          dragOver ? 'border-gold' : 'border-border-subtle'
         } ${readOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gold'}`}
       >
         {logoUrl !== null && logoUrl !== '' ? (

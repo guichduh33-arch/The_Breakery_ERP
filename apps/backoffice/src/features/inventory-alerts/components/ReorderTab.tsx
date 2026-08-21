@@ -129,6 +129,7 @@ export function ReorderTab(): JSX.Element {
         <p className="text-sm text-danger" role="alert">Failed to load suggestions: {q.error.message}</p>
       ) : (
         <DataTable<ReorderSuggestion>
+          caption="Product, quantity on hand, daily use, coverage, order quantity and last supplier per reorder suggestion"
           columns={COLUMNS}
           rows={rows}
           getRowKey={(r) => r.product_id}

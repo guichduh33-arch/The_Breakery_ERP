@@ -36,14 +36,15 @@ export function OrdersTab({
         <span className="tabular-nums">{rp(totalShown)}</span>
       </div>
       <table className="w-full border-collapse text-sm">
+        <caption className="sr-only">Date, order number, type, status, item count and total per recent order</caption>
         <thead className="border-y border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">Date</th>
-            <th className="px-4 py-2.5 text-left font-medium">Order #</th>
-            <th className="px-4 py-2.5 text-left font-medium">Type</th>
-            <th className="px-4 py-2.5 text-left font-medium">Status</th>
-            <th className="px-4 py-2.5 text-right font-medium">Items</th>
-            <th className="px-4 py-2.5 text-right font-medium">Total</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Date</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Order #</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Type</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Status</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-medium">Items</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-medium">Total</th>
           </tr>
         </thead>
         <tbody>

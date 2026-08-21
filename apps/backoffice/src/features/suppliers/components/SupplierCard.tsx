@@ -64,7 +64,7 @@ export function SupplierCard({
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gold-soft text-gold"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gold"
           >
             <Building2 className="h-4 w-4" />
           </span>

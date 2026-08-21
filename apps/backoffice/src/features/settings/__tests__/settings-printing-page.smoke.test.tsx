@@ -74,7 +74,7 @@ describe('SettingsPrintingPage', () => {
 
     expect(screen.getByLabelText<HTMLInputElement>(/^kitchen$/i).value).toBe('2');
     expect(screen.getByLabelText<HTMLInputElement>(/^barista$/i).value).toBe('0');
-    expect(screen.getByLabelText<HTMLInputElement>(/display \(vitrine\)/i).value).toBe('1');
+    expect(screen.getByLabelText<HTMLInputElement>(/^display case$/i).value).toBe('1');
   });
 
   it('saves a KOT copies change as a number via set_setting_v13', async () => {

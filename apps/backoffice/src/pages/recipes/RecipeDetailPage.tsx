@@ -7,12 +7,13 @@ import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Scale } from 'lucide-react';
 import { Card, Button, Badge, EmptyState } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { useRecipeDetail } from '@/features/recipes/hooks/useRecipeDetail.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { formatPct1, sharePct } from '@/features/reports/utils/reportFigures.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
 
 /** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data Rule). */
 const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
@@ -31,7 +32,7 @@ export function RecipeDetailPage(): JSX.Element {
   const { data, isLoading, error, refetch } = useRecipeDetail(productId);
 
   if (isLoading) {
-    return <div className="text-sm text-text-secondary">Loading recipe…</div>;
+    return <DetailPageSkeleton label="Loading recipe" data-testid="recipe-detail-loading" />;
   }
   if (error !== null && error !== undefined) {
     return (
@@ -91,10 +92,10 @@ export function RecipeDetailPage(): JSX.Element {
       <Card className="p-4 space-y-1">
         <h2 className="text-sm font-medium text-text-muted">Output product</h2>
         <div className="text-sm">
-          SKU : {product.sku ?? '—'} · Unit : {product.unit ?? '—'}
+          SKU: {product.sku ?? '—'} · Unit: {product.unit ?? '—'}
         </div>
         <div className="text-sm">
-          Cost / unit (current) : <strong>{fmtIdr(product.cost_price)}</strong>
+          Cost / unit (current): <strong>{fmtIdr(product.cost_price)}</strong>
         </div>
         <div className="text-sm">
           <DrilldownLink entity="product" id={product.id} label="View product detail" />
@@ -107,7 +108,7 @@ export function RecipeDetailPage(): JSX.Element {
             Ingredients (cascade flat, depth ≤ 5)
           </h2>
           <div className="text-sm">
-            Computed cost : <strong>{fmtIdr(total_cost)}</strong>
+            Computed cost: <strong>{fmtIdr(total_cost)}</strong>
           </div>
         </div>
         {bom.length === 0 ? (
@@ -140,7 +141,12 @@ export function RecipeDetailPage(): JSX.Element {
                         icon={false}
                       />
                     </td>
-                    <td className={NUM_CELL}>{r.qty_per_unit}</td>
+                    {/* La quantité s'affiche DANS l'unité de la colonne voisine :
+                        `qty_in_base` est la quantité de recette convertie dans
+                        l'unité de stock de la matière (serveur, recipe_bom_full_v2).
+                        `qty_per_unit` est en unité de RECETTE — rendu à côté de
+                        `material_unit`, il annonçait 115 kg pour 115 gr. */}
+                    <td className={NUM_CELL}>{formatQuantity(r.qty_in_base, null)}</td>
                     <td className="px-3 py-2">{r.material_unit}</td>
                     <td className={NUM_CELL}>{fmtIdr(r.cost_price)}</td>
                     <td className={NUM_CELL}>{r.current_stock}</td>

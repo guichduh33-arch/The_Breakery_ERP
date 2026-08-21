@@ -208,7 +208,7 @@ export function ProductsTable({
           <span
             className={cn(MONO, 'whitespace-nowrap', tone)}
             {...(r.is_display_item
-              ? { title: 'Display-case product — the POS sells off the vitrine counter, not this global stock.' }
+              ? { title: 'Display-case product — the POS sells off the display-case counter, not this global stock.' }
               : {})}
           >
             {formatQuantity(qty, r.unit)}
@@ -336,6 +336,7 @@ export function ProductsTable({
 
   const tableProps: Parameters<typeof DataTable<ProductRow>>[0] = {
     'data-testid': 'products-table',
+    caption: 'Product, SKU, type, category, stock, cost, retail and wholesale price, margin and status per catalogue product',
     columns,
     rows: pageRows,
     getRowKey: (r) => r.id,

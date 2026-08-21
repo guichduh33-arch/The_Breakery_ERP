@@ -46,14 +46,15 @@ export default function MappingsPage() {
       {!list.isLoading && !list.error && (
         <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">Account code, account name, description and status per journal-entry mapping key</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-                <th className="px-4 py-3">Mapping key</th>
-                <th className="px-4 py-3">Account code</th>
-                <th className="px-4 py-3">Account name</th>
-                <th className="px-4 py-3">Description</th>
-                <th className="px-4 py-3">Status</th>
-                {canUpdate && <th className="px-4 py-3 text-right">Actions</th>}
+                <th scope="col" className="px-4 py-3">Mapping key</th>
+                <th scope="col" className="px-4 py-3">Account code</th>
+                <th scope="col" className="px-4 py-3">Account name</th>
+                <th scope="col" className="px-4 py-3">Description</th>
+                <th scope="col" className="px-4 py-3">Status</th>
+                {canUpdate && <th scope="col" className="px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -67,16 +68,16 @@ export default function MappingsPage() {
                   </td>
                   <td className="px-4 py-3">
                     {row.is_active ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success-soft text-success border border-success text-xs">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-success-soft text-success border border-success text-xs">
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-bg-overlay text-text-secondary border border-border-subtle text-xs">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-bg-overlay text-text-secondary border border-border-subtle text-xs">
                         Inactive
                       </span>
                     )}
                     {row.account_is_postable === false && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-warning-soft text-warning border border-warning text-xs">
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-sm bg-warning-soft text-warning border border-warning text-xs">
                         Not postable!
                       </span>
                     )}

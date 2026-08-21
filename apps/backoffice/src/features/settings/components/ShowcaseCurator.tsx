@@ -14,9 +14,8 @@
 // dépendance et un parcours clavier à réinventer.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Currency } from '@breakery/ui';
+import { Button, Currency } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
-import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useShowcaseCandidates } from '../hooks/useShowcaseCandidates.js';
 import { ShowcaseProductPicker } from './ShowcaseProductPicker.js';
 import { formatCurrency } from '@breakery/utils';
@@ -167,15 +166,16 @@ export function ShowcaseCurator({ value, onChange, disabled = false }: Props): J
       )}
 
       {!disabled && !pickerOpen && (
-        <button
+        <Button
           type="button"
-          className={TOOLBAR_BTN_SECONDARY}
+          size="sm"
+          variant="secondary"
           onClick={() => { setPickerOpen(true); }}
           disabled={full}
           data-testid="showcase-add"
         >
           {full ? `Showcase full (${SHOWCASE_MAX})` : 'Add product'}
-        </button>
+        </Button>
       )}
 
       {pickerOpen && (

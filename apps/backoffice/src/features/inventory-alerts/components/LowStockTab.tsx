@@ -64,6 +64,7 @@ export function LowStockTab(): JSX.Element {
 
   return (
     <DataTable<LowStockRow>
+      caption="Product, quantity on hand, minimum level and shortfall per low-stock product"
       columns={COLUMNS}
       rows={rows}
       getRowKey={(r) => r.product_id}

@@ -25,6 +25,28 @@
 //      navigateur du lecteur (ADR-019) : le défaut et la comparaison
 //      « aujourd'hui » passent par `todayIsoDate()`, et plus aucun rendu ne
 //      dépend du fuseau du poste.
+//
+// Remise dans l'archétype 9 « Append-only log » (2026-08-21) — géométrie et
+// sémantique de la rangée de stations :
+//
+//   · `rounded-full` sur les onglets, sur la boîte du sélecteur de jour et sur
+//     ses deux boutons d'icône. DESIGN.md The Tight-Corner Rule : au-delà de
+//     6 px un rayon est une erreur, et rien n'est entièrement circulaire hors
+//     pastille d'avatar et point d'état. Les cinq passent à `rounded-sm` (3 px).
+//   · `bg-gold-soft` sur l'onglet actif — The Ink-Not-Gold Rule : l'or ne
+//     remplit rien dans le back-office. Retrait sec ; le liseré `border-gold` et
+//     le `text-gold` portent déjà l'état, et le test de la règle est vérifié
+//     (retirer l'aplat n'efface aucune information).
+//   · `role="tablist"` SANS `role="tabpanel"` ni `aria-controls` en face. Un
+//     tablist promet au lecteur d'écran un composite à panneaux, avec navigation
+//     ←/→ et un panneau par onglet ; ici la station vit dans l'URL et pilote DEUX
+//     régions indépendantes (saisie et journal), pas un panneau. On retire le
+//     rôle plutôt que de fabriquer un composite qui n'existe pas : ce qui reste
+//     est ce que c'est réellement, une navigation, et l'élément courant se dit
+//     par `aria-current` — valide sur n'importe quel élément, là où
+//     `aria-selected` exigeait le rôle `tab` qu'on vient d'ôter.
+//   · les trois boutons de la rangée n'avaient AUCUN anneau de focus : ils
+//     retombaient sur celui du navigateur, mesuré sous les 3:1 de WCAG 1.4.11.
 
 import { useMemo, type JSX } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -33,6 +55,8 @@ import { businessDateIso, formatDate, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSections } from '@/hooks/useSections.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { RestrictedState } from '@/components/RestrictedState.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useListParams } from '@/hooks/useListParams.js';
 import { ProductionEntryCard } from '@/features/inventory-production/components/ProductionEntryCard.js';
 import { ProductionTodayPanel } from '@/features/inventory-production/components/ProductionTodayPanel.js';
@@ -107,7 +131,7 @@ export default function ProductionPage(): JSX.Element {
     return (
       <div className="space-y-6">
         <PageHeader title="Production" subtitle={PAGE_SUBTITLE} />
-        <div className="text-text-secondary">You do not have permission to view production.</div>
+        <RestrictedState what="production" permission="inventory.read" />
       </div>
     );
   }
@@ -137,21 +161,24 @@ export default function ProductionPage(): JSX.Element {
 
       {/* Station tabs + day navigator */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <nav role="tablist" aria-label="Production stations" className="flex flex-wrap gap-2">
+        <nav aria-label="Production stations" className="flex flex-wrap gap-2">
           {stations.map((s) => {
             const selected = s.id === activeId;
             return (
               <button
                 key={s.id}
                 type="button"
-                role="tab"
-                aria-selected={selected}
+                // `aria-current` et non `aria-selected` : ce dernier n'est valide
+                // que sous un rôle qui l'admet (`tab`, `option`, `row`…), et le
+                // rôle `tab` a été retiré faute de panneau à contrôler.
+                {...(selected ? { 'aria-current': true as const } : {})}
                 onClick={() => selectStation(s.id)}
                 data-testid={`station-tab-${s.code}`}
                 className={cn(
-                  'rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors',
+                  'rounded-sm border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors',
+                  FOCUS_RING,
                   selected
-                    ? 'border-gold bg-gold-soft text-gold'
+                    ? 'border-gold text-gold'
                     : 'border-border-subtle text-text-muted hover:text-text-primary',
                 )}
               >
@@ -161,12 +188,15 @@ export default function ProductionPage(): JSX.Element {
           })}
         </nav>
 
-        <div className="flex items-center gap-2 rounded-full border border-border-subtle px-2 py-1">
+        <div className="flex items-center gap-2 rounded-sm border border-border-subtle px-2 py-1">
           <button
             type="button"
             onClick={() => shiftDay(-1)}
             aria-label="Previous day"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:text-text-primary"
+            className={cn(
+              'inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-muted hover:text-text-primary',
+              FOCUS_RING,
+            )}
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </button>
@@ -182,7 +212,10 @@ export default function ProductionPage(): JSX.Element {
             type="button"
             onClick={() => shiftDay(1)}
             aria-label="Next day"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:text-text-primary"
+            className={cn(
+              'inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-muted hover:text-text-primary',
+              FOCUS_RING,
+            )}
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
           </button>
@@ -203,9 +236,11 @@ export default function ProductionPage(): JSX.Element {
                 selectedDate={selectedDate}
               />
             ) : (
-              <div className="rounded-lg border border-border-subtle p-8 text-center text-sm text-text-muted">
-                You do not have permission to record production.
-              </div>
+              // La carte de saisie est remplacée par le bloc « restricted »
+              // canonique : le reste de la page (onglets de station, navigateur
+              // de jour, panneau du jour) tient debout — c'est la dégradation
+              // carte par carte que DESIGN.md exige.
+              <RestrictedState what="recording production" permission="inventory.production.create" />
             )}
           </div>
           <div className="lg:col-span-1">

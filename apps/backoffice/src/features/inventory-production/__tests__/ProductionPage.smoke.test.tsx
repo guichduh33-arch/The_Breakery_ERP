@@ -76,11 +76,21 @@ describe('ProductionPage smoke', () => {
     // Sales section must NOT appear as a production station.
     expect(screen.queryByTestId('station-tab-COFFEE_STATION')).not.toBeInTheDocument();
     // La sélection est désormais DÉRIVÉE de l'URL, plus posée par un `useEffect`
-    // un cycle après le rendu : l'onglet naît à `aria-selected="true"`, il
-    // n'existe plus un instant à `false`. L'assertion peut donc être directe —
-    // c'est ce qui retire la course qui avait fait rougir la CI de la PR #414
-    // alors que la suite passait en local.
-    expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'true');
+    // un cycle après le rendu : l'onglet naît courant, il n'existe plus un
+    // instant à l'état non courant. L'assertion peut donc être directe — c'est
+    // ce qui retire la course qui avait fait rougir la CI de la PR #414 alors
+    // que la suite passait en local.
+    //
+    // `aria-current` et non `aria-selected` : le `role="tablist"` a été retiré
+    // le 2026-08-21 (il ne contrôlait aucun `tabpanel`), et `aria-selected`
+    // n'est valide que sous un rôle qui l'admet. L'attribut est ABSENT sur les
+    // onglets non courants — `aria-current="false"` est du bruit pour un lecteur
+    // d'écran, là où `aria-selected="false"` était porteur.
+    expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByTestId('station-tab-STN_HOT_KITCHEN')).not.toHaveAttribute('aria-current');
+    // Le tablist est bien parti : plus aucun rôle de composite à panneaux.
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
   });
 
   it('renders exactly one <h1> — the shared page header', async () => {
@@ -96,9 +106,9 @@ describe('ProductionPage smoke', () => {
   it('restores the station and the day from the URL', async () => {
     renderPage('/backoffice/inventory/production?station=st-hot&day=2026-08-14');
     await waitFor(() => {
-      expect(screen.getByTestId('station-tab-STN_HOT_KITCHEN')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('station-tab-STN_HOT_KITCHEN')).toHaveAttribute('aria-current', 'true');
     });
-    expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByTestId('station-tab-STN_PASTRY')).not.toHaveAttribute('aria-current');
     // Le jour se lit dans le fuseau métier, pas dans celui du poste : la chaîne
     // ISO de l'URL doit ressortir telle quelle, quel que soit le `TZ` du runner.
     expect(screen.getByTestId('production-selected-date')).toHaveTextContent('14/08/2026');
@@ -108,7 +118,7 @@ describe('ProductionPage smoke', () => {
   it('falls back to the defaults on unknown station / malformed day, without crashing', async () => {
     renderPage('/backoffice/inventory/production?station=does-not-exist&day=2026-13-45');
     await waitFor(() => {
-      expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('station-tab-STN_PASTRY')).toHaveAttribute('aria-current', 'true');
     });
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByTestId('production-selected-date')).toHaveTextContent(
@@ -140,19 +150,30 @@ describe('ProductionPage smoke', () => {
     });
   });
 
+  // Lot 4 — les deux refus passent par le bloc « restricted » partagé, qui NOMME
+  // le droit manquant. L'ancienne phrase (« You do not have permission to record
+  // production. ») disait vrai sans être exploitable : elle ne donnait pas le
+  // code à demander. On assertionne donc sur le code, pas sur la formule.
+  // `toHaveTextContent` et non `getByText` : le code vit dans un <span> imbriqué,
+  // que `getByText` ne voit pas depuis le nœud parent.
   it('blocks entry (but not the page) without inventory.production.create', async () => {
     currentPerms = new Set(['inventory.read']);
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText(/do not have permission to record production/i)).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Access to recording production is restricted.',
+      );
     });
+    expect(screen.getByRole('status')).toHaveTextContent('inventory.production.create');
     expect(screen.queryByTestId('submit-production')).not.toBeInTheDocument();
   });
 
   it('blocks the whole page without inventory.read', () => {
     currentPerms = new Set();
     renderPage();
-    expect(screen.getByText(/do not have permission to view production/i)).toBeInTheDocument();
+    const restricted = screen.getByRole('status');
+    expect(restricted).toHaveTextContent('Access to production is restricted.');
+    expect(restricted).toHaveTextContent('inventory.read');
     // Le refus de permission garde son titre : la vue rend exactement un <h1>
     // dans TOUS ses états, pas seulement quand elle a le droit de montrer.
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);

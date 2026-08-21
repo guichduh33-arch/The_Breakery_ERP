@@ -57,7 +57,7 @@ export default function SettingsEmailTemplatesPage() {
                   <h2 className="text-lg font-semibold">{humanLabel(tpl.code)}</h2>
                   <p className="text-xs text-text-secondary font-mono">{tpl.code}</p>
                 </div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border text-xs ${
                   tpl.is_active
                     ? 'bg-success-soft text-success border-success'
                     : 'bg-bg-overlay text-text-secondary border-border-subtle'

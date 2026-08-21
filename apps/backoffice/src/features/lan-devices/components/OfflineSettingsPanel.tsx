@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { Button } from '@breakery/ui';
 import { formatTimeWita } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -107,9 +107,9 @@ export function OfflineSettingsPanel() {
           {savedAt && !dirty && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
 
           {canUpdate && (
-            <button type="submit" disabled={!dirty || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
+            <Button type="submit" size="sm" variant="ink" disabled={!dirty || setSetting.isPending}>
               {setSetting.isPending ? 'Saving…' : dirty ? 'Save' : 'No changes'}
-            </button>
+            </Button>
           )}
         </form>
       )}

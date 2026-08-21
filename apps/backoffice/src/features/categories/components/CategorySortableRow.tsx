@@ -70,7 +70,7 @@ export function CategorySortableRow({
       <td className="px-3 py-2">{category.name}</td>
       <td className="px-3 py-2 font-mono text-xs text-text-secondary">{category.slug}</td>
       <td className="px-3 py-2">
-        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
+        <span className={`inline-flex rounded-sm px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
           {TYPE_META[category.category_type].label}
         </span>
       </td>
@@ -79,7 +79,7 @@ export function CategorySortableRow({
       </td>
       <td className="px-3 py-2 text-center">
         <span
-          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+          className={`inline-flex h-5 w-5 items-center justify-center rounded-sm text-xs ${
             category.show_in_pos ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'
           }`}
           aria-label={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
@@ -90,7 +90,7 @@ export function CategorySortableRow({
       </td>
       <td className="px-3 py-2 text-center">
         <span
-          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+          className={`inline-flex h-5 w-5 items-center justify-center rounded-sm text-xs ${
             category.is_active ? 'bg-success-soft text-success' : 'bg-surface-4 text-text-muted'
           }`}
           aria-label={category.is_active ? 'Active' : 'Inactive'}

@@ -13,7 +13,7 @@ const COLUMNS: CsvColumn<WalletLedgerRow>[] = [
   { header: 'Supplier',    accessor: (r) => r.supplier ?? '',   format: 'text' },
   { header: 'In',          accessor: (r) => r.in_amount ?? 0,   format: 'idr' },
   { header: 'Out',         accessor: (r) => r.out_amount ?? 0,  format: 'idr' },
-  { header: 'Saldo',       accessor: (r) => r.saldo,            format: 'idr' },
+  { header: 'Balance',     accessor: (r) => r.saldo,            format: 'idr' },
 ];
 
 export function exportCashWalletCsv(rows: WalletLedgerRow[], walletName: string): void {

@@ -27,7 +27,9 @@ function typeBadgeClass(t: string): string {
   switch (t) {
     case 'national':  return 'bg-cat-blue/15 text-cat-blue border-cat-blue/30';
     case 'religious': return 'bg-cat-amber/15 text-cat-amber border-cat-amber/30';
-    case 'company':   return 'bg-gold-soft text-gold border-border-gold';
+    // Aplat retiré (The Ink-Not-Gold Rule) ; liseré monté à `border-gold` —
+    // `border-border-gold` ne vaut que 1,64:1 sur le papier, il ne borde rien.
+    case 'company':   return 'text-gold border-gold';
     default: return 'bg-bg-overlay text-text-secondary border-border-subtle';
   }
 }
@@ -60,7 +62,7 @@ export default function SettingsHolidaysPage() {
         <td className="px-4 py-2 text-sm font-medium">{r.date}</td>
         <td className="px-4 py-2 text-sm">{r.name}</td>
         <td className="px-4 py-2">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${typeBadgeClass(r.type)}`}>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border text-xs ${typeBadgeClass(r.type)}`}>
             {typeLabel(r.type)}
           </span>
         </td>
@@ -102,14 +104,15 @@ export default function SettingsHolidaysPage() {
             </h2>
             <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">Date, name, type, recurrence and notes per recurring holiday</caption>
                 <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                   <tr>
-                    <th className="text-left px-4 py-3 w-32">Date</th>
-                    <th className="text-left px-4 py-3">Name</th>
-                    <th className="text-left px-4 py-3 w-28">Type</th>
-                    <th className="text-left px-4 py-3 w-28">Recurring</th>
-                    <th className="text-left px-4 py-3">Notes</th>
-                    <th className="text-right px-4 py-3 w-44">Actions</th>
+                    <th scope="col" className="text-left px-4 py-3 w-32">Date</th>
+                    <th scope="col" className="text-left px-4 py-3">Name</th>
+                    <th scope="col" className="text-left px-4 py-3 w-28">Type</th>
+                    <th scope="col" className="text-left px-4 py-3 w-28">Recurring</th>
+                    <th scope="col" className="text-left px-4 py-3">Notes</th>
+                    <th scope="col" className="text-right px-4 py-3 w-44">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -127,14 +130,15 @@ export default function SettingsHolidaysPage() {
             </h2>
             <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">Date, name, type, recurrence and notes per fixed-date holiday</caption>
                 <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                   <tr>
-                    <th className="text-left px-4 py-3 w-32">Date</th>
-                    <th className="text-left px-4 py-3">Name</th>
-                    <th className="text-left px-4 py-3 w-28">Type</th>
-                    <th className="text-left px-4 py-3 w-28">Recurring</th>
-                    <th className="text-left px-4 py-3">Notes</th>
-                    <th className="text-right px-4 py-3 w-44">Actions</th>
+                    <th scope="col" className="text-left px-4 py-3 w-32">Date</th>
+                    <th scope="col" className="text-left px-4 py-3">Name</th>
+                    <th scope="col" className="text-left px-4 py-3 w-28">Type</th>
+                    <th scope="col" className="text-left px-4 py-3 w-28">Recurring</th>
+                    <th scope="col" className="text-left px-4 py-3">Notes</th>
+                    <th scope="col" className="text-right px-4 py-3 w-44">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

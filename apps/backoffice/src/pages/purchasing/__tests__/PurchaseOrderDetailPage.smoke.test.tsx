@@ -144,8 +144,10 @@ describe('PurchaseOrderDetailPage (Phase 5.A rewrite)', () => {
     const header = screen.getByRole('button', { name: /Receive/i }).closest('header');
     expect(header).not.toBeNull();
     const buttons = Array.from(header!.querySelectorAll('button'));
+    // « Back » ouvrait cette liste jusqu'au lot 9 : il doublait le fil d'Ariane
+    // rendu juste au-dessus, alors que l'ossature commune n'en déclare qu'un.
     expect(buttons.map((b) => b.textContent?.trim())).toEqual([
-      'Back', 'Print', 'Receive', 'Cancel', 'Edit',
+      'Print', 'Receive', 'Cancel', 'Edit',
     ]);
     for (const b of buttons) {
       // 32 px, et aucun des deux crans du primitif partagé (56 px `md`, 36 px `sm`).

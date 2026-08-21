@@ -22,7 +22,8 @@ const META: Record<Exclude<ProductTypeFilter, 'all'>, { label: string; icon: Rea
   'semi-finished': {
     label: 'Semi-Finished',
     icon: <Box className="h-3 w-3" aria-hidden />,
-    tone: 'bg-gold-soft text-gold border-transparent',
+    // The Ink-Not-Gold Rule : le liseré et le texte portent le type, pas l'aplat.
+    tone: 'text-gold border-gold',
   },
   raw: {
     label: 'Raw Material',

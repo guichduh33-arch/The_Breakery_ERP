@@ -184,6 +184,7 @@ export default function OpnameListPage(): JSX.Element {
         </QueryErrorBanner>
       ) : (
         <DataTable
+          caption="Count number, section, status, start date and notes per stock count"
           data-testid="opname-list-table"
           columns={COLUMNS}
           rows={rows}

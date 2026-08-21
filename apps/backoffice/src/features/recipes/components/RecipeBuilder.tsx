@@ -248,11 +248,11 @@ export function RecipeBuilder({
       {/* Calculation-base callout — kept from the original product-tab look */}
       <Card padding="md" className="border-l border-l-gold">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-soft text-gold">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md text-gold">
             <Scale className="h-4 w-4" aria-hidden />
           </div>
           <div>
-            <div className="font-display text-base text-gold">
+            <div className="text-base text-gold">
               Calculation base: 1 {productUnit} of finished product
             </div>
             <div className="text-xs italic text-text-secondary">
@@ -324,7 +324,7 @@ export function RecipeBuilder({
 
           <Card padding="md">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-xl text-text-primary">Recipe Components</h2>
+              <h2 id="recipe-components-heading" className="text-xl text-text-primary">Recipe Components</h2>
               <span className="text-xs text-text-secondary">
                 {recipe.length} ingredient{recipe.length === 1 ? '' : 's'}
               </span>
@@ -341,23 +341,23 @@ export function RecipeBuilder({
               />
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border-subtle">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" aria-labelledby="recipe-components-heading">
                   <thead className="border-b border-border-subtle bg-surface-inert">
                     <tr>
-                      {!readOnly && <th className="w-8 px-2 py-3" />}
-                      <th className="px-4 py-3 text-left">
+                      {!readOnly && <th scope="col" className="w-8 px-2 py-3"><span className="sr-only">Reorder</span></th>}
+                      <th scope="col" className="px-4 py-3 text-left">
                         <SectionLabel as="span" size="xs">Ingredient</SectionLabel>
                       </th>
-                      <th className="px-4 py-3 text-right">
+                      <th scope="col" className="px-4 py-3 text-right">
                         <SectionLabel as="span" size="xs">
                           {isBakerMode ? '% flour' : 'Quantity'}
                         </SectionLabel>
                       </th>
-                      <th className="px-4 py-3 text-left">
+                      <th scope="col" className="px-4 py-3 text-left">
                         <SectionLabel as="span" size="xs">Unit</SectionLabel>
                       </th>
                       {!readOnly && (
-                        <th className="px-4 py-3 text-right">
+                        <th scope="col" className="px-4 py-3 text-right">
                           <span className="sr-only">Actions</span>
                         </th>
                       )}

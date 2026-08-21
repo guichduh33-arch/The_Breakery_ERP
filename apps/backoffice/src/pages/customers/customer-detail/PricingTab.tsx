@@ -118,12 +118,13 @@ export function PricingTab({ customer }: { customer: CustomerDetailRow }): JSX.E
           {overrides && overrides.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
+                <caption className="sr-only">Retail price and custom price per product overridden for this category</caption>
                 <thead className="border-y border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
                   <tr>
-                    <th className="px-4 py-2.5 text-left font-medium">Product</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Retail</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Custom</th>
-                    {canEditOverrides && <th className="px-4 py-2.5 text-right font-medium">&nbsp;</th>}
+                    <th scope="col" className="px-4 py-2.5 text-left font-medium">Product</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Retail</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Custom</th>
+                    {canEditOverrides && <th scope="col" className="px-4 py-2.5 text-right font-medium">&nbsp;</th>}
                   </tr>
                 </thead>
                 <tbody>

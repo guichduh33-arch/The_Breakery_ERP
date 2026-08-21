@@ -135,7 +135,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
     <div data-testid="ingredient-aggregate-preview"
          className="rounded-md border border-border-subtle bg-bg-elevated p-4 space-y-2">
       <div className="flex items-baseline justify-between">
-        <h3 className="font-serif text-lg">Aggregate ingredient preview</h3>
+        <h3 className="text-lg">Aggregate ingredient preview</h3>
         {/* Le point médian et le compteur qui le suit tiennent sur une seule
             ligne : JSX avale le saut de ligne, et « ·6 » s'affichait collé. */}
         {validRows.length > 0 && (
@@ -164,12 +164,13 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">Required quantity, available stock and shortage status per material</caption>
               <thead>
                 <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                  <th className="py-1">Material</th>
-                  <th className="py-1 text-right">Required</th>
-                  <th className="py-1 text-right">Available</th>
-                  <th className="py-1 text-right">Status</th>
+                  <th scope="col" className="py-1">Material</th>
+                  <th scope="col" className="py-1 text-right">Required</th>
+                  <th scope="col" className="py-1 text-right">Available</th>
+                  <th scope="col" className="py-1 text-right">Status</th>
                 </tr>
               </thead>
               <tbody>

@@ -21,11 +21,33 @@
 // s'affiche qu'après un refus, et seulement pour un utilisateur porteur de
 // `inventory.production.force_negative` : forcer reste un acte volontaire et
 // tracé, jamais un réglage laissé coché par défaut.
+//
+// LE PANNEAU EST ENCRÉ (2026-08-21). DESIGN.md § Page Archetypes, archétype 9
+// « Append-only log » : « le panneau de saisie est la SEULE surface encrée de la
+// page ». Il était une feuille blanche parmi d'autres, donc rien ne disait où
+// l'on écrit sur un écran dont tout le reste est en lecture seule. Quatre
+// conséquences, toutes tenues par `../inkPanel.js` :
+//
+//   · les premiers plans changent de FAMILLE — `ink-fg` / `ink-fg-muted` /
+//     `ink-fg-dim` / `ink-fg-sub` ;
+//   · la sémantique change de TEINTE — The Ink Semantics Rule : `ink-danger` et
+//     non `red`, qui tombe à 2,77:1 sur l'encre ;
+//   · le focus passe à `ink-gold` (7,79:1) — `gold` y vaut 2,70:1 ;
+//   · le bouton de soumission CÈDE l'encre. Il portait `TOOLBAR_BTN_PRIMARY`,
+//     c'est-à-dire un aplat `bg-ink` : posé sur un panneau encré il aurait été
+//     invisible ET aurait fait une seconde surface encrée (The One Ink Fill
+//     Rule). Il s'inverse en ivoire plein à libellé encre. Accessoirement, cette
+//     chaîne appartient au BANDEAU DE PAGE et à lui seul (DESIGN.md § Boutons,
+//     garde CI n° 8) : elle n'avait rien à faire dans une carte.
+//
+// Deux surfaces restent CLAIRES à l'intérieur, et c'est délibéré : la liste de
+// résultats de la recherche et l'aperçu d'ingrédients FLOTTENT ou RÉPONDENT —
+// ce sont des feuilles posées sur l'encre, pas des surfaces encrées de plus.
 
 import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Button, Card, SectionLabel } from '@breakery/ui';
+import { Card, SectionLabel, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
@@ -40,8 +62,9 @@ import {
 import type { WasteReason } from '../hooks/useRecordProduction.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { IngredientAggregatePreview } from './IngredientAggregatePreview.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
+import {
+  FOCUS_RING_INK, INK_BTN_PRIMARY, INK_BTN_SECONDARY, INK_FIELD_BOX, INK_FIELD_BOX_CELL,
+} from '../inkPanel.js';
 
 interface Props {
   sectionId: string;
@@ -244,14 +267,32 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
   }, []);
 
   return (
-    <Card padding="md" className="space-y-5">
+    <Card padding="md" className="space-y-5 border-ink bg-ink text-ink-fg">
       {/* Header + search */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-2xl text-text-primary">
-          Production Entry <span className="text-base font-normal text-text-muted">— {sectionName}</span>
-        </h2>
+        {/* Titre de CARTE = rôle Title (DESIGN.md § Typography) : mono, 12 px,
+            capitales interlettrées — c'est ce que rend `SectionLabel`. Il
+            portait `font-display text-2xl`, deux défauts d'une même ligne :
+            `font-display` ne rend AUCUN serif sous ce thème (la classe ment,
+            garde CI n° 7), et 30 px passaient au-dessus du `<h1>` de la page
+            (23 px), inversant la hiérarchie. Le nombre n'est pas réécrit à la
+            main : le primitif lit la rampe.
+
+            Title et Label partagent le MÊME palier (12 px, `--type-xs`) — c'est
+            écrit au § Typography : « un écran ne peut pas s'appuyer sur un
+            contraste de taille entre le titre d'une carte et un en-tête de
+            colonne ». La distinction se fait donc par la couleur et la
+            position : ce titre est en `ink-fg`, les en-têtes de la table de
+            saisie en `ink-fg-dim`. */}
+        <SectionLabel as="h2" size="xs" className="text-ink-fg">
+          Production Entry <span className="text-ink-fg-dim">— {sectionName}</span>
+        </SectionLabel>
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" aria-hidden />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-fg-sub" aria-hidden />
+          {/* 44 px et rayon 4 px (DESIGN.md § Champs). C'était un `h-9
+              rounded-full` : un galet de 36 px là où le système ne connaît
+              aucune forme entièrement circulaire hors pastille d'avatar et
+              point d'état. */}
           <input
             type="text"
             value={query}
@@ -267,7 +308,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             aria-autocomplete="list"
             aria-activedescendant={keyboard.activeDescendantId}
             data-testid="production-search"
-            className="h-9 w-72 rounded-full border border-border-strong bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-muted"
+            className={cn(INK_FIELD_BOX, 'h-11 w-72 pl-9 pr-3 placeholder:text-ink-fg-sub', FOCUS_RING_INK)}
           />
           {/* Le descendant actif ne déplace pas le focus : sans annonce,
               l'apparition des résultats est muette pour un lecteur d'écran. */}
@@ -276,7 +317,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             <ul
               id={keyboard.listboxId}
               role="listbox"
-              className="absolute right-0 z-20 mt-1 max-h-72 w-80 overflow-auto rounded-lg border border-border-subtle bg-bg-elevated py-1 shadow-lg"
+              className="absolute right-0 z-20 mt-1 max-h-72 w-80 overflow-auto rounded-xl border border-border-subtle bg-bg-elevated py-1 shadow-lg"
               data-testid="production-search-results"
             >
               {products.isLoading ? (
@@ -284,6 +325,10 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
               ) : matches.length === 0 ? (
                 <li role="presentation" className="px-3 py-2 text-sm text-text-muted">No products for this station.</li>
               ) : (
+                /* La liste FLOTTE au-dessus de la page : elle reste une feuille
+                   blanche à 6 px de rayon (DESIGN.md § Elevation), pas une
+                   surface encrée de plus. Ses premiers plans sont donc ceux du
+                   papier, sans exception à faire. */
                 matches.map((p, i) => (
                   // Non focalisable : surbrillance portée par le champ via
                   // `aria-activedescendant` (voir useListboxKeyboard).
@@ -306,9 +351,13 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* Alerts — The Ink Semantics Rule : `--danger` vaut 2,77:1 sur l'encre,
+          `--ink-danger` 8,84:1. L'aplat `bg-red-soft` disparaît (une teinte à
+          12 % d'opacité sur #201d19 ne se distingue plus du fond) ; le liseré
+          et le texte portent seuls le signal, ce qui est de toute façon la
+          doctrine du système. */}
       {formError !== null && (
-        <div role="alert" className="rounded-md border border-red bg-red-soft p-3 text-xs text-red">
+        <div role="alert" className="rounded-md border border-ink-danger p-3 text-xs text-ink-danger">
           {formError}
           {shortages !== null && (
             <ul className="mt-1 list-disc pl-5" data-testid="production-shortages">
@@ -318,16 +367,16 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             </ul>
           )}
           {shortages !== null && canForceNegative && (
-            <label className="mt-3 flex items-start gap-2 border-t border-red pt-2 text-text-secondary">
+            <label className="mt-3 flex items-start gap-2 border-t border-ink-danger pt-2 text-ink-fg-dim">
               <input
                 type="checkbox"
                 checked={forceNegative}
                 onChange={(e) => setForceNegative(e.target.checked)}
                 data-testid="force-negative-toggle"
-                className={`mt-0.5 ${FOCUS_RING}`}
+                className={`mt-0.5 accent-ink-gold ${FOCUS_RING_INK}`}
               />
               <span>
-                <span className="inline-flex items-center gap-1 font-semibold text-red">
+                <span className="inline-flex items-center gap-1 font-semibold text-ink-danger">
                   <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
                   Force this production below stock
                 </span>
@@ -342,31 +391,34 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-border-subtle">
+      <div className="overflow-x-auto rounded-md border border-ink-border">
         <table className="w-full text-sm">
-          <thead className="bg-surface-inert">
+          <caption className="sr-only">Product, quantity, waste, waste reason and note per production line</caption>
+          <thead className="bg-ink-hover">
             <tr className="text-left">
-              <th className="px-4 py-2"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
-              <th className="px-4 py-2"><SectionLabel as="span" size="xs">Quantity</SectionLabel></th>
-              <th className="px-4 py-2"><SectionLabel as="span" size="xs">Waste</SectionLabel></th>
-              <th className="px-4 py-2"><SectionLabel as="span" size="xs">Waste reason</SectionLabel></th>
-              <th className="px-4 py-2"><SectionLabel as="span" size="xs">Note</SectionLabel></th>
-              <th className="px-4 py-2 w-10" />
+              <th scope="col" className="px-4 py-2"><SectionLabel as="span" size="xs" className="text-ink-fg-dim">Product</SectionLabel></th>
+              <th scope="col" className="px-4 py-2"><SectionLabel as="span" size="xs" className="text-ink-fg-dim">Quantity</SectionLabel></th>
+              <th scope="col" className="px-4 py-2"><SectionLabel as="span" size="xs" className="text-ink-fg-dim">Waste</SectionLabel></th>
+              <th scope="col" className="px-4 py-2"><SectionLabel as="span" size="xs" className="text-ink-fg-dim">Waste reason</SectionLabel></th>
+              <th scope="col" className="px-4 py-2"><SectionLabel as="span" size="xs" className="text-ink-fg-dim">Note</SectionLabel></th>
+              <th scope="col" className="px-4 py-2 w-10"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm italic text-text-muted">
+                {/* L'italique n'est aucun des six rôles typographiques déclarés
+                    au § Typography : la phrase rend en corps ordinaire. */}
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-ink-fg-dim">
                   Search and add a product to start a production batch.
                 </td>
               </tr>
             ) : (
               rows.map((r) => (
-                <tr key={r.rowId} className="border-t border-border-subtle" data-testid={`entry-row-${r.product.sku}`}>
+                <tr key={r.rowId} className="border-t border-ink-border" data-testid={`entry-row-${r.product.sku}`}>
                   <td className="px-4 py-3">
-                    <div className="text-text-primary">{r.product.name}</div>
-                    <div className="font-mono text-xs uppercase tracking-widest text-text-muted">{r.product.sku}</div>
+                    <div className="text-ink-fg">{r.product.name}</div>
+                    <div className="font-mono text-xs uppercase tracking-widest text-ink-fg-dim">{r.product.sku}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -378,13 +430,13 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                         value={r.quantity}
                         onChange={(e) => updateRow(r.rowId, { quantity: e.target.value })}
                         aria-label={`Quantity for ${r.product.name}`}
-                        className="w-20 rounded-md border border-border-strong bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                        className={cn(INK_FIELD_BOX_CELL, 'h-9 w-20', FOCUS_RING_INK)}
                       />
                       <select
                         value={r.unitCode}
                         onChange={(e) => updateRow(r.rowId, { unitCode: e.target.value })}
                         aria-label={`Unit for ${r.product.name}`}
-                        className="h-9 rounded-md border border-border-strong bg-bg-input px-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                        className={cn(INK_FIELD_BOX_CELL, 'h-9', FOCUS_RING_INK)}
                       >
                         {r.product.units.map((u) => (
                           <option key={u.code} value={u.code}>{u.code}</option>
@@ -402,9 +454,9 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                         value={r.waste}
                         onChange={(e) => updateRow(r.rowId, { waste: e.target.value })}
                         aria-label={`Waste for ${r.product.name}`}
-                        className="w-20 rounded-md border border-border-strong bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                        className={cn(INK_FIELD_BOX_CELL, 'h-9 w-20', FOCUS_RING_INK)}
                       />
-                      <span className="text-xs text-text-muted">{r.product.unit}</span>
+                      <span className="text-xs text-ink-fg-dim">{r.product.unit}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -420,9 +472,13 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                           disabled={!needsReason}
                           aria-label={`Waste reason for ${r.product.name}`}
                           data-testid={`waste-reason-${r.product.sku}`}
-                          className={`h-9 rounded-md border bg-bg-input px-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-50 ${
-                            needsReason && r.wasteReason === '' ? 'border-red' : 'border-border-strong'
-                          }`}
+                          className={cn(
+                            INK_FIELD_BOX_CELL, 'h-9 disabled:opacity-50', FOCUS_RING_INK,
+                            // ADR-008 D3 — la ligne réclame sa cause : le liseré
+                            // vire au rouge d'encre (7,57:1 sur le remplissage
+                            // du champ), pas au rouge du papier (2,77:1).
+                            needsReason && r.wasteReason === '' ? 'border-ink-danger' : '',
+                          )}
                         >
                           <option value="">{needsReason ? '— required —' : '—'}</option>
                           {WASTE_REASON_OPTIONS.map((reason) => (
@@ -439,7 +495,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                       onChange={(e) => updateRow(r.rowId, { note: e.target.value })}
                       maxLength={200}
                       aria-label={`Note for ${r.product.name}`}
-                      className="w-full rounded-md border border-border-strong bg-bg-input px-2 py-1.5 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                      className={cn(INK_FIELD_BOX_CELL, 'h-9 w-full', FOCUS_RING_INK)}
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -447,7 +503,11 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                       type="button"
                       onClick={() => removeRow(r.rowId)}
                       aria-label={`Remove ${r.product.name}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:bg-red-soft hover:text-red"
+                      className={cn(
+                        'inline-flex h-8 w-8 items-center justify-center rounded-sm',
+                        'text-ink-fg-dim hover:bg-ink-hover hover:text-ink-danger',
+                        FOCUS_RING_INK,
+                      )}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
                     </button>
@@ -468,27 +528,27 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
       {/* Footer: production date/time + actions */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <SectionLabel as="div" size="xs">Production date &amp; time</SectionLabel>
+          <SectionLabel as="div" size="xs" className="text-ink-fg-dim">Production date &amp; time</SectionLabel>
           <input
             type="datetime-local"
             value={productionAt}
             onChange={(e) => setProductionAt(e.target.value)}
             aria-label="Production date and time"
             data-testid="production-datetime"
-            className="h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className={cn(INK_FIELD_BOX, 'h-11 [color-scheme:dark]', FOCUS_RING_INK)}
           />
         </div>
         <div className="flex items-center gap-3">
-          <Button
+          <button
             type="button"
-            variant="secondary"
+            className={INK_BTN_SECONDARY}
             onClick={reset}
             disabled={rows.length === 0 || recordMut.isPending}
           >
             Cancel
-          </Button>
+          </button>
           <button
-            className={TOOLBAR_BTN_PRIMARY}
+            className={INK_BTN_PRIMARY}
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}

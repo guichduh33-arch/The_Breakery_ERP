@@ -245,13 +245,13 @@ export default function SupplierPaymentsPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 pr-3 text-left font-normal">Supplier</th>
-                    <th className="py-2 pr-3 text-left font-normal">PO</th>
-                    <th className="py-2 pr-3 text-left font-normal">Received</th>
-                    <th className="py-2 pr-3 text-right font-normal">Age</th>
-                    <th className="py-2 pr-3 text-right font-normal">Total</th>
-                    <th className="py-2 pr-3 text-right font-normal">Settled</th>
-                    <th className="py-2 pr-3 text-right font-normal">Outstanding</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Supplier</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">PO</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Received</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Age</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Total</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Settled</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Outstanding</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -327,11 +327,11 @@ export default function SupplierPaymentsPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 pr-3 text-left font-normal">Date</th>
-                    <th className="py-2 pr-3 text-left font-normal">Supplier</th>
-                    <th className="py-2 pr-3 text-left font-normal">PO</th>
-                    <th className="py-2 pr-3 text-left font-normal">Method</th>
-                    <th className="py-2 pr-3 text-right font-normal">Amount</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Date</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Supplier</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">PO</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Method</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Amount</th>
                   </tr>
                 </thead>
                 <tbody>

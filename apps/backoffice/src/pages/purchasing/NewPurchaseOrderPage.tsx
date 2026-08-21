@@ -6,7 +6,7 @@
 
 import { useRef, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   POFormDraft,
@@ -69,13 +69,10 @@ export default function NewPurchaseOrderPage(): JSX.Element {
         <span className="text-text-secondary">New</span>
       </nav>
 
-      <Link
-        to="/backoffice/purchasing/purchase-orders"
-        className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to purchase orders
-      </Link>
-
+      {/* LOT 9 — un « ← Back to purchase orders » suivait le fil d'Ariane :
+          deux vocabulaires pour le même geste sur le même écran, alors que
+          l'ossature commune (DESIGN.md § Page Archetypes) ne déclare qu'un fil
+          d'Ariane. Même règle que `NewExpensePage` au lot 8. */}
       <PageHeader
         title="New Purchase Order"
         subtitle="Draft a PO. Receipt (goods + JE posting) happens later from the detail page."

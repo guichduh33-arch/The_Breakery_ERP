@@ -138,6 +138,39 @@ describe('RecipeDetailPage', () => {
     expect(foot?.textContent).toContain('100,0%');
   });
 
+  // Régression 2026-08-21 : la cellule rendait `qty_per_unit`, qui est en unité
+  // de RECETTE, juste à côté de `material_unit`, qui est l'unité de STOCK. Pour
+  // 115 gr d'une matière suivie au kg, l'écran affirmait « 115 kg » — 1000× la
+  // réalité — alors que `line_cost` (calculé serveur sur la quantité CONVERTIE)
+  // était juste. Le pire des mensonges : tous les autres chiffres de la ligne
+  // sont vrais. La colonne rend désormais `qty_in_base`.
+  it('renders the qty converted into the material stock unit, not the recipe unit', async () => {
+    hookState.current = loadedDetail({
+      bom: [
+        bomRow({
+          material_id: 'm-1',
+          material_name: 'Flour',
+          material_unit: 'kg',
+          qty_per_unit: 115,   // 115 gr, en unité de recette
+          qty_in_base: 0.115,  // 0,115 kg, en unité de stock
+          cost_price: 49_524,
+          current_stock: 12,
+          line_cost: 5695,
+        }),
+      ],
+      total_cost: 5695,
+    });
+    const { container } = renderAt('/backoffice/inventory/recipes/p-1');
+    await waitFor(() => expect(screen.getByText('Flour')).toBeInTheDocument());
+
+    const cells = container.querySelectorAll('tbody tr td');
+    // 0 = Material, 1 = Qty / unit, 2 = Unit.
+    expect(cells[1]?.textContent).toBe('0,115');
+    expect(cells[2]?.textContent).toBe('kg');
+    // Et surtout : la quantité de recette nue n'apparaît nulle part.
+    expect(cells[1]?.textContent).not.toBe('115');
+  });
+
   it('renders a dash — never NaN nor 0 % — when the total cost is zero', async () => {
     hookState.current = loadedDetail({
       bom: [bomRow({ material_id: 'm-1', material_name: 'Flour', line_cost: 0 })],

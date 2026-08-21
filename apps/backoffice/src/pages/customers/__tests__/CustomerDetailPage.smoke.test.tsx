@@ -140,7 +140,7 @@ describe('CustomerDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
     );
-    expect(screen.queryByLabelText(/plafond ardoise/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/tab limit/i)).not.toBeInTheDocument();
   });
 
   it('shows the retail tab-limit field for a retail customer, seeded from the mutation value', async () => {
@@ -150,7 +150,7 @@ describe('CustomerDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
     );
-    expect(screen.getByLabelText(/plafond ardoise/i)).toHaveValue('750000');
+    expect(screen.getByLabelText(/tab limit/i)).toHaveValue('750000');
   });
 
   // ADR-013 Lot 4 — avoir client (solde + onglet + boutons gatés).

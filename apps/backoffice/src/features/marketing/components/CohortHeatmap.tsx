@@ -68,9 +68,9 @@ export function CohortHeatmap({ buckets }: CohortHeatmapProps) {
         <table className="w-full text-xs border-collapse" aria-label="Cohort retention heatmap">
           <thead>
             <tr>
-              <th className="px-2 py-1 text-left font-medium text-text-secondary">Month +</th>
+              <th scope="col" className="px-2 py-1 text-left font-medium text-text-secondary">Month +</th>
               {sorted.map((b) => (
-                <th key={b.months_since_signup} className="px-2 py-1 text-center font-medium text-text-secondary">
+                <th scope="col" key={b.months_since_signup} className="px-2 py-1 text-center font-medium text-text-secondary">
                   {b.months_since_signup}
                 </th>
               ))}

@@ -25,7 +25,7 @@ const FIELDS = [
 const KOT_FIELDS = [
   { key: 'kot_copies_kitchen', label: 'Kitchen' },
   { key: 'kot_copies_barista', label: 'Barista' },
-  { key: 'kot_copies_display', label: 'Display (vitrine)' },
+  { key: 'kot_copies_display', label: 'Display case' },
 ] as const;
 
 type DraftValue = boolean | number;

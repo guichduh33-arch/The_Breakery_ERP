@@ -24,15 +24,16 @@
 // La prop `data` (tests) désactive le hook agrégat ET les trois panneaux :
 // aucun réseau en test.
 
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BarChart3, BellRing, Building2, CalendarHeart, FileDown, Lock, RefreshCw,
+  BarChart3, BellRing, Building2, CalendarHeart, FileDown, RefreshCw,
 } from 'lucide-react';
 import { Card, SectionLabel, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import { formatDateLong } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
+import { RestrictedState } from '@/components/RestrictedState.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
 import {
@@ -44,8 +45,19 @@ import {
   useDisplayStockActivity, useOpenOrders, isRestricted,
 } from '@/features/dashboard/hooks/useDashboardPanels.js';
 import { DashboardKpiStrip } from '@/features/dashboard/components/DashboardKpiStrip.js';
-import { RevenueTrendChart } from '@/features/dashboard/components/RevenueTrendChart.js';
-import { HourlySalesChart } from '@/features/dashboard/components/HourlySalesChart.js';
+// Les deux seuls consommateurs de `recharts` de la page d'accueil. Statiques,
+// ils tiraient le chunk `charts` (443 Ko bruts / 117 Ko gzip) dans le premier
+// téléchargement après connexion — pour deux graphes situés SOUS la bande de
+// KPI. En `lazy`, la page arrive sans eux et le chunk se charge en second
+// plan. Exports NOMMÉS : d'où le `.then()` qui les remet en `default`.
+const RevenueTrendChart = lazy(() =>
+  import('@/features/dashboard/components/RevenueTrendChart.js')
+    .then((m) => ({ default: m.RevenueTrendChart })),
+);
+const HourlySalesChart = lazy(() =>
+  import('@/features/dashboard/components/HourlySalesChart.js')
+    .then((m) => ({ default: m.HourlySalesChart })),
+);
 import { OpenOrdersCard } from '@/features/dashboard/components/OpenOrdersCard.js';
 import { CostMtdCard } from '@/features/dashboard/components/CostMtdCard.js';
 import { DisplayStockCard } from '@/features/dashboard/components/DisplayStockCard.js';
@@ -87,6 +99,27 @@ const SHORTCUTS = [
 
 function todayTitle(): string {
   return `Today · ${formatDateLong(new Date())}`;
+}
+
+/**
+ * Repli des deux graphes `lazy`. Deux contraintes, pas une :
+ *   · `h-44` — la hauteur EXACTE des trois branches des deux graphes (courbe,
+ *     état vide, état d'erreur). Un repli plus court ferait sauter la carte au
+ *     moment où le chunk arrive.
+ *   · `bg-surface-4` (papier pressé) — DESIGN.md § Do : un squelette blanc est
+ *     invisible sur une carte blanche. Même geste que le squelette des cartes
+ *     du tableau de bord (DashboardCard), animation coupée sous
+ *     `motion-reduce`.
+ */
+function ChartSkeleton() {
+  return (
+    <div
+      data-testid="chart-skeleton"
+      role="status"
+      aria-label="Loading chart"
+      className="h-44 animate-pulse rounded bg-surface-4 motion-reduce:animate-none"
+    />
+  );
 }
 
 export default function DashboardPage({ data }: DashboardPageProps) {
@@ -193,9 +226,13 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       />
 
       {todayHoliday !== null && (
+        /* Aplat retiré (The Ink-Not-Gold Rule) ; le liseré monte de
+           `border-border-gold` — rgba(122,92,28,0.35), 1,64:1 sur le papier,
+           donc invisible au sens de WCAG 1.4.11 — à `border-gold`, qui vaut
+           5,41:1 sur ce même papier et porte seul le bandeau. */
         <div
           data-testid="holiday-banner"
-          className="flex items-center gap-2 rounded-md border border-border-gold bg-gold-soft px-4 py-2.5 text-sm text-text-primary"
+          className="flex items-center gap-2 rounded-md border border-gold px-4 py-2.5 text-sm text-text-primary"
         >
           <CalendarHeart className="h-4 w-4 text-gold" aria-hidden />
           <span>
@@ -205,17 +242,11 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       )}
 
       {restricted ? (
-        <Card variant="default" padding="md" data-testid="dashboard-restricted" className="shadow-none">
-          <div className="flex items-center gap-3">
-            <Lock className="h-5 w-5 text-text-muted" aria-hidden />
-            <div>
-              <p className="text-sm text-text-primary">Dashboard metrics are restricted.</p>
-              <p className="mt-0.5 text-xs text-text-muted">
-                Viewing business metrics requires the reports permission. Contact an administrator.
-              </p>
-            </div>
-          </div>
-        </Card>
+        <RestrictedState
+          what="dashboard metrics"
+          permission="reports.read"
+          data-testid="dashboard-restricted"
+        />
       ) : (
         <>
           {error !== null && (
@@ -263,13 +294,15 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 </SectionLabel>
                 {summary !== null && (
                   <span className="text-sm text-text-secondary">
-                    <span title={formatIdr(summary.total)}>{formatIdrShort(summary.total)}</span> total{' '}
+                    <span className="font-data tabular-nums" title={formatIdr(summary.total)}>{formatIdrShort(summary.total)}</span> total{' '}
                     <Delta value={summary.delta_pct} period="vs previous 30 d" />
                   </span>
                 )}
               </div>
               <div className="mt-3">
-                <RevenueTrendChart data={overview?.revenue_30d ?? []} error={error} />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <RevenueTrendChart data={overview?.revenue_30d ?? []} error={error} />
+                </Suspense>
               </div>
             </Card>
 
@@ -288,7 +321,9 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                     : `Peak ${formatHourRange(peak.from_hour, peak.to_hour)} · ${formatPct(peak.share_pct)} of the day`}
               </p>
               <div className="mt-2">
-                <HourlySalesChart data={overview?.hourly_sales ?? []} error={error} />
+                <Suspense fallback={<ChartSkeleton />}>
+                  <HourlySalesChart data={overview?.hourly_sales ?? []} error={error} />
+                </Suspense>
               </div>
             </Card>
           </div>

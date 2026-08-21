@@ -143,11 +143,11 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-widest text-text-secondary">
                     <tr>
-                      <th className="px-2 py-1 text-left">When</th>
-                      <th className="px-2 py-1 text-left">Type</th>
-                      <th className="px-2 py-1 text-right">Qty</th>
-                      <th className="px-2 py-1 text-left">Reason / reference</th>
-                      <th className="px-2 py-1 text-left">By</th>
+                      <th scope="col" className="px-2 py-1 text-left">When</th>
+                      <th scope="col" className="px-2 py-1 text-left">Type</th>
+                      <th scope="col" className="px-2 py-1 text-right">Qty</th>
+                      <th scope="col" className="px-2 py-1 text-left">Reason / reference</th>
+                      <th scope="col" className="px-2 py-1 text-left">By</th>
                     </tr>
                   </thead>
                   <tbody>

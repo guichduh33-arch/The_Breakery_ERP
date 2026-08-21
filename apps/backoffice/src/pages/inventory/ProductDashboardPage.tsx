@@ -132,6 +132,18 @@ export default function ProductDashboardPage(): JSX.Element {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
+                <caption className="sr-only">Time, movement type and signed quantity per recent stock movement</caption>
+                {/* Cette table n'avait AUCUN en-tête : trois colonnes de données
+                    brutes, dont une quantité signée, qu'il fallait deviner. Une
+                    caption seule n'y aurait rien changé — ce sont bien des
+                    données tabulaires, elles prennent leurs `<th scope="col">`. */}
+                <thead className="text-xs uppercase tracking-widest text-text-muted">
+                  <tr>
+                    <th scope="col" className="text-left py-1 px-3">When</th>
+                    <th scope="col" className="text-left py-1 px-3">Type</th>
+                    <th scope="col" className="text-right py-1 px-3">Qty</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {d.recent_movements.map((m) => (
                     <tr key={m.id} className="border-t border-border-subtle">
@@ -156,11 +168,12 @@ export default function ProductDashboardPage(): JSX.Element {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">Units bought and amount spent per customer over the selected window</caption>
                 <thead className="text-xs uppercase tracking-widest text-text-muted">
                   <tr>
-                    <th className="text-left py-2 px-3">Customer</th>
-                    <th className="text-right py-2 px-3">Units</th>
-                    <th className="text-right py-2 px-3">Spend</th>
+                    <th scope="col" className="text-left py-2 px-3">Customer</th>
+                    <th scope="col" className="text-right py-2 px-3">Units</th>
+                    <th scope="col" className="text-right py-2 px-3">Spend</th>
                   </tr>
                 </thead>
                 <tbody>

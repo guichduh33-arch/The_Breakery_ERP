@@ -74,13 +74,14 @@ export default function SettingsAccountingPage(): JSX.Element {
       {rows.length > 0 && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="fp-table">
+            <caption className="sr-only">Period, status, closing date and locking date per fiscal period</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="px-3 py-2">Period</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Closed at</th>
-                <th className="px-3 py-2">Locked at</th>
-                <th className="px-3 py-2 text-right">Action</th>
+                <th scope="col" className="px-3 py-2">Period</th>
+                <th scope="col" className="px-3 py-2">Status</th>
+                <th scope="col" className="px-3 py-2">Closed at</th>
+                <th scope="col" className="px-3 py-2">Locked at</th>
+                <th scope="col" className="px-3 py-2 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -95,7 +96,7 @@ export default function SettingsAccountingPage(): JSX.Element {
                   </td>
                   <td className="px-3 py-2">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(row.status)}`}
+                      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(row.status)}`}
                     >
                       {row.status}
                     </span>

@@ -66,9 +66,9 @@ export function PermissionMatrix(): JSX.Element {
                   key={r.code}
                   scope="col"
                   className="py-2 px-3 text-center font-mono whitespace-nowrap"
-                  title={r.description ?? r.name}
+                  title={r.description ?? r.code}
                 >
-                  {r.code}
+                  {r.name}
                 </th>
               ))}
             </tr>

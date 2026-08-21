@@ -506,6 +506,7 @@ export default function InventoryPage() {
         </p>
       ) : (
         <DataTable<Row>
+          caption="SKU, product, category, quantity on hand, value at cost and last movement per stocked product"
           columns={columns}
           rows={pageRows}
           getRowKey={(r) => r.product_id}

@@ -102,16 +102,17 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
       <Card variant="default" padding="none">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">Date, purchase order, supplier, ordered and received quantity, unit price, total and status per purchase line</caption>
             <thead className="border-b border-border-subtle bg-surface-inert">
               <tr>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Supplier</SectionLabel></th>
-                <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
-                <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Received</SectionLabel></th>
-                <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Unit Price</SectionLabel></th>
-                <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Status</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Supplier</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Received</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Unit Price</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Status</SectionLabel></th>
               </tr>
             </thead>
             <tbody>

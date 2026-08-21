@@ -73,10 +73,16 @@ export function OrderDetailPage(): JSX.Element {
     return (
       <div className="flex flex-col gap-[13px]">
         <Crumbs />
+        {/* LOT 9 — la phrase se terminait par un « Back to orders » souligné.
+            Le fil d'Ariane juste au-dessus porte DÉJÀ ce lien, sous un autre
+            nom : deux vocabulaires pour le même geste sur le même écran, ce que
+            l'ossature commune (DESIGN.md § Page Archetypes) proscrit en ne
+            déclarant qu'un fil d'Ariane. L'invariant de la review PR #367 — un
+            lien périmé n'est pas un cul-de-sac — tient toujours : c'est le fil
+            qui le tient, et il se rend dans TOUS les états (cf. `Crumbs`). */}
         <p role="alert" className="rounded-md border border-red bg-red-soft p-4 text-sm text-red-as-text">
           This order could not be loaded. It may have been recorded on another
-          environment, or the link is stale.{' '}
-          <Link to="/backoffice/orders" className="underline">Back to orders</Link>
+          environment, or the link is stale.
         </p>
       </div>
     );

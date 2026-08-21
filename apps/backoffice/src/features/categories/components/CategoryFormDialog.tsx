@@ -191,7 +191,9 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                     aria-checked={on}
                     className={`rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
                       on
-                        ? 'border-gold bg-gold-soft text-text-primary'
+                        // The Ink-Not-Gold Rule : le liseré or porte seul l'état
+                        // sélectionné, l'aplat était un décor.
+                        ? 'border-gold text-text-primary'
                         : 'border-border-subtle text-text-secondary hover:bg-surface-4'
                     } ${FOCUS_RING}`}
                   >

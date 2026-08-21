@@ -249,6 +249,7 @@ export default function CashierVariancePage(): JSX.Element {
           tone={(v) => varianceToneSigned(v, SIGNED)}
           format={formatIdrCompact}
           rowHeader="Cashier"
+          caption="Cash variance per cashier and day of week"
         />
       </PanelCard>
 

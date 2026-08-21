@@ -271,6 +271,7 @@ export default function PromotionsPage(): JSX.Element {
         </div>
       ) : (
         <DataTable
+          caption="Promotion, type, scope, priority and status per promotion"
           columns={columns}
           rows={list.data ?? []}
           getRowKey={(r) => r.id}

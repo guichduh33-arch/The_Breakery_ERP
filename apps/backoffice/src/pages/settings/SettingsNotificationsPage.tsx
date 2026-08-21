@@ -153,7 +153,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
           variables.map((v) => (
             <span
               key={v}
-              className="inline-flex items-center rounded-full border border-border-subtle bg-surface-4 px-2 py-0.5 text-xs font-mono text-text-secondary"
+              className="inline-flex items-center rounded-sm border border-border-subtle bg-surface-4 px-2 py-0.5 text-xs font-mono text-text-secondary"
             >
               {v}
             </span>

@@ -569,6 +569,7 @@ export default function OrdersListPage(): JSX.Element {
       )}
       {(query.error === null || loadedLines.length > 0) && (
         <DataTable<OrdersListLine>
+          caption="Order number, time, type, customer, item count, amount, status and payment per order"
           columns={columns}
           rows={lines}
           getRowKey={(o) => o.id}

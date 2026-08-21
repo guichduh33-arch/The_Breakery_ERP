@@ -107,7 +107,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     fireEvent.click(screen.getByRole('tab', { name: /General/i }));
 
     // The Inventory levels card explains what the threshold drives (audit M7).
-    expect(await screen.findByText(/sous ce seuil/i)).toBeInTheDocument();
+    expect(await screen.findByText(/below this threshold/i)).toBeInTheDocument();
 
     const thresholdInput = screen.getByDisplayValue('5');
     fireEvent.change(thresholdInput, { target: { value: '12' } });

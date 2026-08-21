@@ -269,13 +269,13 @@ export default function StockPositionPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 pr-3 text-left font-normal">Product</th>
-                    <th className="py-2 pr-3 text-left font-normal">Category</th>
-                    <th className="py-2 pr-3 text-right font-normal">Qty</th>
-                    <th className="py-2 pr-3 text-left font-normal">Unit</th>
-                    <th className="py-2 pr-3 text-right font-normal">WAC</th>
-                    <th className="py-2 pr-3 text-right font-normal">Value</th>
-                    <th className="py-2 pr-3 text-left font-normal">Status</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Product</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Category</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Qty</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Unit</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">WAC</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Value</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Status</th>
                   </tr>
                 </thead>
                 <tbody>

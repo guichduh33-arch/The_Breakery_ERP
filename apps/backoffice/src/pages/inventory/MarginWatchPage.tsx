@@ -164,17 +164,18 @@ export default function MarginWatchPage(): JSX.Element {
       <section data-testid="margin-watch-table" className="rounded-md border border-border-subtle bg-bg-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">Target, expected and delta margin, cost, price, computation date and status per product</caption>
             <thead className="bg-surface-inert text-xs uppercase tracking-widest text-text-secondary">
               <tr>
-                <th className="px-3 py-2 text-left">Product</th>
-                <th className="px-3 py-2 text-right">Target</th>
-                <th className="px-3 py-2 text-right">Expected</th>
-                <th className="px-3 py-2 text-right">Delta</th>
-                <th className="px-3 py-2 text-right">Cost</th>
-                <th className="px-3 py-2 text-right">Price</th>
-                <th className="px-3 py-2 text-left">Computed</th>
-                <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2"> </th>
+                <th scope="col" className="px-3 py-2 text-left">Product</th>
+                <th scope="col" className="px-3 py-2 text-right">Target</th>
+                <th scope="col" className="px-3 py-2 text-right">Expected</th>
+                <th scope="col" className="px-3 py-2 text-right">Delta</th>
+                <th scope="col" className="px-3 py-2 text-right">Cost</th>
+                <th scope="col" className="px-3 py-2 text-right">Price</th>
+                <th scope="col" className="px-3 py-2 text-left">Computed</th>
+                <th scope="col" className="px-3 py-2 text-left">Status</th>
+                <th scope="col" className="px-3 py-2"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>

@@ -312,11 +312,11 @@ export default function DiscountsLoyaltyPage(): JSX.Element {
                   </caption>
                   <thead>
                     <tr className="border-b border-border-subtle text-text-secondary">
-                      <th className="py-2 pr-3 text-left font-normal">Date</th>
-                      <th className="py-2 pr-3 text-left font-normal">Order</th>
-                      <th className="py-2 pr-3 text-left font-normal">Reason</th>
-                      <th className="py-2 pr-3 text-left font-normal">Authorized by</th>
-                      <th className="py-2 pr-3 text-right font-normal">Amount</th>
+                      <th scope="col" className="py-2 pr-3 text-left font-normal">Date</th>
+                      <th scope="col" className="py-2 pr-3 text-left font-normal">Order</th>
+                      <th scope="col" className="py-2 pr-3 text-left font-normal">Reason</th>
+                      <th scope="col" className="py-2 pr-3 text-left font-normal">Authorized by</th>
+                      <th scope="col" className="py-2 pr-3 text-right font-normal">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -393,10 +393,10 @@ export default function DiscountsLoyaltyPage(): JSX.Element {
               </caption>
               <thead>
                 <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 pr-3 text-left font-normal">Promotion</th>
-                  <th className="py-2 pr-3 text-right font-normal">Applications</th>
-                  <th className="py-2 pr-3 text-right font-normal">Amount</th>
-                  <th className="py-2 pr-3 text-right font-normal">Share of promos</th>
+                  <th scope="col" className="py-2 pr-3 text-left font-normal">Promotion</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Applications</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Amount</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Share of promos</th>
                 </tr>
               </thead>
               <tbody>

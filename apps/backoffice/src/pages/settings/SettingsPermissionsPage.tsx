@@ -80,12 +80,13 @@ export default function SettingsPermissionsPage() {
       {!matrix.isLoading && !matrix.error && (
         <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">Permission and description, then one column per role showing whether it is granted</caption>
             <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary sticky top-0">
               <tr>
-                <th className="text-left px-4 py-3 sticky left-0 bg-bg-overlay z-10">Permission</th>
-                <th className="text-left px-4 py-3">Description</th>
+                <th scope="col" className="text-left px-4 py-3 sticky left-0 bg-bg-overlay z-10">Permission</th>
+                <th scope="col" className="text-left px-4 py-3">Description</th>
                 {matrix.data?.roles.map((r) => (
-                  <th key={r.code} className="text-center px-3 py-3">{r.code}</th>
+                  <th scope="col" key={r.code} className="text-center px-3 py-3">{r.code}</th>
                 ))}
               </tr>
             </thead>

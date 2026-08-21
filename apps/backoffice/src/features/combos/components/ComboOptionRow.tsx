@@ -58,21 +58,26 @@ export function ComboOptionRow({
           la nuance (WCAG 1.4.1). Un vrai `radiogroup` demanderait de sortir ces
           boutons de leurs rangées, qui portent aussi une saisie et une
           suppression ; ce n'est pas fait ici. */}
+      {/* The Ink-Not-Gold Rule sur l'état « Default », des deux côtés du
+          ternaire ci-dessous. Le correctif précédent avait gardé l'aplat en le
+          présentant comme conforme parce que le premier plan repassait en
+          encre or — c'était faux : l'utilitaire de remplissage doux tombe sous
+          la règle exactement comme le remplissage plein, et la garde CI le
+          compte. L'aplat est donc RETIRÉ, pas adouci. L'exception « piste
+          d'interrupteur » ne couvre pas ce cas : le liseré et le libellé
+          (« Default » / « Set Default ») portent déjà le fait, retirer la
+          surface n'efface aucune information.
+          NOTE DE RELEVÉ — les commentaires écrits À L'INTÉRIEUR du littéral de
+          gabarit ci-dessous ne sont pas masqués par la garde (son masqueur ne
+          descend pas dans les `${}`) : un nom de classe cité là y compterait
+          comme une infraction. C'est pourquoi ce texte vit ici. */}
       {groupType === 'single' ? (
         <button
           type="button"
           onClick={onSetDefault}
           className={`${FOCUS_RING} ${
             isDefault
-              // The Ink-Not-Gold Rule : dernier aplat d'or plein de la page, il
-              // avait survécu aux deux campagnes. Le correctif est côté FOND —
-              // le premier plan était déjà `text-gold-fg`, il redevient
-              // `text-gold` (6,22:1 sur la feuille blanche) posé sur le soft et
-              // cerné d'un liseré or, qui porte l'état sans remplir.
-              // L'exception « piste d'interrupteur » ne couvre pas ce cas : ici
-              // le liseré et le libellé (« Default » / « Set Default ») portent
-              // déjà le fait, retirer l'or n'efface aucune information.
-              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm px-2 py-0.5 border border-gold bg-gold-soft text-gold'
+              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm px-2 py-0.5 border border-gold text-gold'
               : 'shrink-0 text-xs uppercase tracking-widest rounded-sm px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
           }`}
           aria-pressed={isDefault}
@@ -85,7 +90,7 @@ export function ComboOptionRow({
         <span
           className={
             isDefault
-              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm border border-gold px-2 py-0.5 bg-gold-soft text-gold'
+              ? 'shrink-0 text-xs font-bold uppercase tracking-widest rounded-sm border border-gold px-2 py-0.5 text-gold'
               : ''
           }
         >

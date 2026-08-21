@@ -163,7 +163,9 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
             // DESIGN.md § Typography donne en mono capitales interlettrées.
             // La pastille était donc à moitié conforme, ce qui ne se voit pas
             // en lisant la seule ligne du chiffre.
-            <span className="inline-flex flex-col items-center justify-center rounded-sm bg-gold-soft px-3 py-2 font-data text-gold">
+            // The Ink-Not-Gold Rule : une pastille porte son état par le liseré
+            // et par le texte, jamais par un aplat d'or.
+            <span className="inline-flex flex-col items-center justify-center rounded-sm border border-gold px-3 py-2 font-data text-gold">
               <span className="text-xs font-semibold uppercase tracking-widest">Save</span>
               <span className="text-sm font-bold tabular-nums">{savings}%</span>
             </span>

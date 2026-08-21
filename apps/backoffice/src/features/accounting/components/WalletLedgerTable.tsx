@@ -25,7 +25,7 @@ const HEAD: readonly { label: string; right: boolean }[] = [
   { label: 'Supplier',    right: false },
   { label: 'In',          right: true  },
   { label: 'Out',         right: true  },
-  { label: 'Saldo',       right: true  },
+  { label: 'Balance',     right: true  },
 ];
 
 export function WalletLedgerTable({
@@ -44,6 +44,7 @@ export function WalletLedgerTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
+        <caption className="sr-only">Date, remark, category, description, supplier, in, out and running balance for the selected cash wallet</caption>
         <thead>
           <tr className="border-b border-border-subtle bg-surface-inert text-left">
             {HEAD.map((h) => (

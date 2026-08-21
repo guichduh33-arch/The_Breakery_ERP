@@ -84,9 +84,12 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
               onClick={() => setDays(w.value)}
               className={cn(
                 'rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
-                // Segment ACTIF, pas bouton d'action : l'or reste une encre de
-                // sens sur un fond `gold-soft` — le motif de ProductsFilters.
-                days === w.value ? 'bg-gold-soft text-gold' : 'text-text-muted hover:text-text-primary',
+                // Segment ACTIF, pas bouton d'action. L'aplat est NEUTRE
+                // (`surface-4`) et l'or ne porte que le texte : The Ink-Not-Gold
+                // Rule. Le fond reste indispensable — c'est le seul porteur
+                // visible de l'état — mais il n'a pas à être doré.
+                // Même motif que ProductsFilters.
+                days === w.value ? 'bg-surface-4 text-gold' : 'text-text-muted hover:text-text-primary',
               )}
             >
               {w.label}
@@ -328,13 +331,14 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <div className="max-h-72 overflow-y-auto">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
+                  <caption className="sr-only">Type, quantity per batch, share of demand and estimated usage per product using this ingredient</caption>
                   <thead className="sticky top-0 bg-bg-elevated text-xs uppercase tracking-widest text-text-muted">
                     <tr>
-                      <th className="px-4 py-2 text-left">Product</th>
-                      <th className="px-3 py-2 text-left">Type</th>
-                      <th className="px-3 py-2 text-right">Qty/Batch</th>
-                      <th className="px-3 py-2 text-right">% Demand</th>
-                      <th className="px-4 py-2 text-right">Est. Used</th>
+                      <th scope="col" className="px-4 py-2 text-left">Product</th>
+                      <th scope="col" className="px-3 py-2 text-left">Type</th>
+                      <th scope="col" className="px-3 py-2 text-right">Qty/Batch</th>
+                      <th scope="col" className="px-3 py-2 text-right">% Demand</th>
+                      <th scope="col" className="px-4 py-2 text-right">Est. Used</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -38,7 +38,7 @@ export function AlertsBadge() {
       title={`${low.data?.length ?? 0} low-stock / ${reorder.data?.length ?? 0} reorder`}
     >
       <Bell className="h-4 w-4" aria-hidden />
-      <span className="absolute -top-1 -right-1 bg-danger text-white text-xs font-bold rounded-full min-w-[16px] h-4 px-1 inline-flex items-center justify-center">
+      <span className="absolute -top-1 -right-1 bg-danger text-white text-xs font-bold rounded-sm min-w-[16px] h-4 px-1 inline-flex items-center justify-center">
         {total > 99 ? '99+' : total}
       </span>
     </Link>

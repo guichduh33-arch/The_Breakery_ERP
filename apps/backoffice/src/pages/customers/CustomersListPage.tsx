@@ -448,6 +448,7 @@ export default function CustomersListPage(): JSX.Element {
         </p>
       ) : (
         <DataTable
+          caption="Customer, category, loyalty tier, B2B balance, points, total spent and last visit per customer"
           columns={columns}
           rows={pageRows}
           getRowKey={(r) => r.id}

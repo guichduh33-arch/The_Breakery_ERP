@@ -78,11 +78,11 @@ export function ReceiveDialog({
             <table className="w-full text-sm">
               <thead className="bg-bg-overlay text-text-secondary text-xs uppercase tracking-widest">
                 <tr>
-                  <th className="text-left px-3 py-2">Product</th>
-                  <th className="text-right px-3 py-2 w-24">Ordered</th>
-                  <th className="text-right px-3 py-2 w-24">Already</th>
-                  <th className="text-right px-3 py-2 w-24">Remaining</th>
-                  <th className="text-right px-3 py-2 w-28">Receive now</th>
+                  <th scope="col" className="text-left px-3 py-2">Product</th>
+                  <th scope="col" className="text-right px-3 py-2 w-24">Ordered</th>
+                  <th scope="col" className="text-right px-3 py-2 w-24">Already</th>
+                  <th scope="col" className="text-right px-3 py-2 w-24">Remaining</th>
+                  <th scope="col" className="text-right px-3 py-2 w-28">Receive now</th>
                 </tr>
               </thead>
               <tbody>

@@ -17,9 +17,15 @@ interface Props {
 export function PricePreview({ definition }: Props): JSX.Element {
   const { min, max } = priceRange(definition);
 
+  // L'aplat est retiré (The Ink-Not-Gold Rule) et le liseré MONTE de
+  // `border-border-gold` à `border-gold` : sous `.theme-backoffice`,
+  // `--border-gold` vaut rgba(122,92,28,0.35), soit 1,64:1 composité sur le
+  // papier — il ne tient pas les 3:1 des objets graphiques (WCAG 1.4.11) et ne
+  // peut donc pas porter seul l'encart. `--gold-base` vaut 6,22:1 sur la
+  // feuille blanche.
   return (
     <div
-      className="rounded-lg border border-border-gold bg-gold-soft px-4 py-3 flex items-start justify-between gap-4"
+      className="rounded-lg border border-gold px-4 py-3 flex items-start justify-between gap-4"
       data-testid="price-preview"
     >
       <div>

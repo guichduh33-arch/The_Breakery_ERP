@@ -18,6 +18,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { CHART_TITLE } from './chartTitle.js';
 import { Clock } from 'lucide-react';
 import { formatCurrency } from '@breakery/utils';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE, familyColor } from '@/features/reports/utils/chartColors.js';
@@ -92,7 +93,7 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card variant="default" padding="md">
-          <h3 className="mb-3 font-display text-base text-text-primary">Monthly Purchase Volume</h3>
+          <SectionLabel as="h3" className={CHART_TITLE}>Monthly Purchase Volume</SectionLabel>
           <div className="h-64 w-full">
             {hasData ? (
               // Le nom accessible est porte par la branche PLEINE : sur le
@@ -119,7 +120,7 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
         </Card>
 
         <Card variant="default" padding="md">
-          <h3 className="mb-3 font-display text-base text-text-primary">Monthly Spend (IDR)</h3>
+          <SectionLabel as="h3" className={CHART_TITLE}>Monthly Spend (IDR)</SectionLabel>
           <div className="h-64 w-full">
             {hasData ? (
               <div
@@ -152,18 +153,18 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card variant="default" padding="md">
-          <h3 className="mb-3 font-display text-base text-text-primary">Top 10 Products Purchased</h3>
+          <SectionLabel as="h3" id="supplier-top-products-heading" className={CHART_TITLE}>Top 10 Products Purchased</SectionLabel>
           {topProducts.length === 0 ? (
             <p className="py-8 text-center text-sm text-text-muted">No products purchased yet.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" aria-labelledby="supplier-top-products-heading">
                 <thead className="border-b border-border-subtle">
                   <tr>
-                    <th className="py-2 text-left"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
-                    <th className="py-2 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
-                    <th className="py-2 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
-                    <th className="py-2 text-right"><SectionLabel as="span" size="xs">Avg Price</SectionLabel></th>
+                    <th scope="col" className="py-2 text-left"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
+                    <th scope="col" className="py-2 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
+                    <th scope="col" className="py-2 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
+                    <th scope="col" className="py-2 text-right"><SectionLabel as="span" size="xs">Avg Price</SectionLabel></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -182,7 +183,7 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
         </Card>
 
         <Card variant="default" padding="md">
-          <h3 className="mb-3 font-display text-base text-text-primary">Avg Delivery Time (days)</h3>
+          <SectionLabel as="h3" className={CHART_TITLE}>Avg Delivery Time (days)</SectionLabel>
           <EmptyState
             icon={Clock}
             title="No delivery data yet"
