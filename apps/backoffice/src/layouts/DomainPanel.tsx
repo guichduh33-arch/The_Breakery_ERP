@@ -137,7 +137,7 @@ export function DomainPanel({ domain, anchorLeft, onClose, id }: DomainPanelProp
       data-testid={`domain-panel-${domain.id}`}
       className={cn(
         'absolute top-[52px] z-40 rounded-b-xl border border-border-strong bg-surface-3',
-        'px-5 py-[18px] shadow-[0_18px_40px_rgba(28,23,18,0.20)]',
+        'px-5 py-[18px] shadow-float',
       )}
       style={{
         left,

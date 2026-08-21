@@ -206,6 +206,11 @@ const preset: Partial<Config> = {
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
         xl: 'var(--shadow-xl)',
+        // `shadow-float` — panneau déroulant, menu. Le cran entre `lg` et
+        // `modal`. Il rend enfin `shadow-[0_18px_40px_rgba(28,23,18,0.20)]`
+        // inutile : cette valeur était recopiée dans trois fichiers du BO,
+        // sur une base de teinte que le thème n'utilisait nulle part ailleurs.
+        float: 'var(--shadow-float)',
         modal: 'var(--shadow-modal)',
         'inset-sm': 'var(--shadow-inset-sm)',
         'inset-md': 'var(--shadow-inset-md)',
