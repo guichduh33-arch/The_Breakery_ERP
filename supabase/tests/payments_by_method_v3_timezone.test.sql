@@ -1,4 +1,4 @@
--- supabase/tests/payments_by_method_v2_timezone.test.sql
+-- supabase/tests/payments_by_method_v3_timezone.test.sql
 -- S57 Chantier B (B-D4) — pgTAP: get_payments_by_method_v3 timezone bucketing.
 --
 -- v1 bucketed on hardcoded UTC (p_date||'T00:00:00Z'/'T23:59:59Z' + DATE(paid_at));
@@ -9,7 +9,7 @@
 --
 -- T1 : a sale at local 00:15 (falls on the PREVIOUS UTC calendar date for any
 --      positive-offset tz) is bucketed on the LOCAL day D by BOTH
---      get_payments_by_method_v3 and get_daily_sales_v2.
+--      get_payments_by_method_v3 and get_daily_sales_v3.
 -- T2 : the same sale is NOT attributed to local day D-1 by either RPC (no
 --      UTC-day leakage — the exact regression v1 had).
 --
@@ -71,8 +71,8 @@ BEGIN
 
   v_ppm_d   := get_payments_by_method_v3('2031-04-16', '2031-04-16');
   v_ppm_dm1 := get_payments_by_method_v3('2031-04-15', '2031-04-15');
-  v_ds_d    := get_daily_sales_v2('2031-04-16', '2031-04-16');
-  v_ds_dm1  := get_daily_sales_v2('2031-04-15', '2031-04-15');
+  v_ds_d    := get_daily_sales_v3('2031-04-16', '2031-04-16');
+  v_ds_dm1  := get_daily_sales_v3('2031-04-15', '2031-04-15');
 
   v_t1 := (v_ppm_d->'summary'->>'total_amount')::numeric = 1100
       AND jsonb_array_length(v_ppm_d->'by_day') = 1
@@ -88,7 +88,7 @@ END
 $$;
 
 SELECT ok(current_setting('breakery.ppmtz_t1')::boolean,
-  'T1: sale at local 00:15 bucketed on local day D by both get_payments_by_method_v3 and get_daily_sales_v2');
+  'T1: sale at local 00:15 bucketed on local day D by both get_payments_by_method_v3 and get_daily_sales_v3');
 SELECT ok(current_setting('breakery.ppmtz_t2')::boolean,
   'T2: same sale NOT attributed to local day D-1 by either RPC (no UTC-day leakage)');
 

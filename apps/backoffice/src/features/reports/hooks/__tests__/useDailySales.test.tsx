@@ -9,6 +9,11 @@
 // discount_orders_count/voids_count/voids_value, racine +sessions). Les tests
 // v1 restent valables (extension additive) ; on ajoute la couverture des
 // champs neufs + leur tolérance à l'absence (parse défensif).
+//
+// Bump v2 → v3 (2026-08-21) — `summary` gagne la ventilation par canal de
+// règlement (tendered_* / on_account_*). Même traitement : le nom de la RPC est
+// verrouillé (c'est ce qui attrape un WRONG_ARG au bump suivant), les quatre
+// clés neuves sont mappées, et leur absence retombe à 0 sans casser.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -33,6 +38,10 @@ const ENVELOPE = {
   summary: {
     total: 8_610_000, order_count: 247, aov: 34_100, refund_total: 186_000, net: 8_424_000,
     discount_total: 320_000, discount_orders_count: 18, voids_count: 2, voids_value: 145_000,
+    // Invariant serveur : total = tendered_total + on_account_total,
+    // order_count = tendered_order_count + on_account_order_count.
+    tendered_total: 7_610_000, tendered_order_count: 233,
+    on_account_total: 1_000_000, on_account_order_count: 14,
   },
   by_day: [
     { date: '2026-07-01', order_count: 120, gross: 4_200_000, refunds: 86_000, net: 4_114_000, aov: 34_283 },
@@ -56,13 +65,13 @@ beforeEach(() => {
 });
 
 describe('useDailySales', () => {
-  it('appelle get_daily_sales_v2 avec p_date_start / p_date_end', async () => {
+  it('appelle get_daily_sales_v3 avec p_date_start / p_date_end', async () => {
     const { result } = renderHook(
       () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v2', {
+    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v3', {
       p_date_start: '2026-07-01',
       p_date_end:   '2026-07-02',
     });
@@ -101,6 +110,25 @@ describe('useDailySales', () => {
     expect(result.current.data?.sessions[1]?.variance_total).toBeNull();
   });
 
+  it('mappe la ventilation par canal de règlement (v3) et respecte l’invariant', async () => {
+    const { result } = renderHook(
+      () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const s = result.current.data?.summary;
+    expect(s?.tendered_total).toBe(7_610_000);
+    expect(s?.tendered_order_count).toBe(233);
+    expect(s?.on_account_total).toBe(1_000_000);
+    expect(s?.on_account_order_count).toBe(14);
+    // Le hook ne recalcule rien : il rend ce que le serveur donne, et le
+    // serveur garantit le rapprochement. Un mapping croisé (tendered lu dans
+    // on_account) passerait les quatre lignes ci-dessus mais pas celle-ci.
+    expect((s?.tendered_total ?? 0) + (s?.on_account_total ?? 0)).toBe(s?.total);
+    expect((s?.tendered_order_count ?? 0) + (s?.on_account_order_count ?? 0))
+      .toBe(s?.order_count);
+  });
+
   it('ne casse pas sur une enveloppe vide (période sans vente)', async () => {
     mockRpc.mockResolvedValue({ data: null, error: null });
     const { result } = renderHook(
@@ -113,6 +141,11 @@ describe('useDailySales', () => {
     expect(result.current.data?.summary.total).toBe(0);
     expect(result.current.data?.summary.discount_total).toBe(0);
     expect(result.current.data?.summary.voids_count).toBe(0);
+    // Clés v3 absentes → 0, jamais NaN ni undefined : la page teste
+    // `on_account_total > 0` pour décider de rendre sa ligne de rapprochement.
+    expect(result.current.data?.summary.tendered_total).toBe(0);
+    expect(result.current.data?.summary.on_account_total).toBe(0);
+    expect(result.current.data?.summary.on_account_order_count).toBe(0);
     expect(result.current.data?.period).toEqual({ start: '2026-07-01', end: '2026-07-02' });
   });
 

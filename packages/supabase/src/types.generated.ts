@@ -6934,7 +6934,7 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_daily_sales_v2: {
+      get_daily_sales_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
