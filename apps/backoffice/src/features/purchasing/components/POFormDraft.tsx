@@ -281,7 +281,7 @@ export function POFormDraft({
                       onChange={(e) => patchItem(idx, { productId: e.target.value })}
                       disabled={submitting}
                       aria-label={`Product for line ${idx + 1}`}
-                      className={`h-8 w-full rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
+                      className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     >
                       <option value="">— Select —</option>
                       {products.map((p) => (
@@ -296,7 +296,7 @@ export function POFormDraft({
                       onChange={(e) => patchItem(idx, { quantity: Number(e.target.value) || 0 })}
                       disabled={submitting}
                       aria-label={`Quantity for line ${idx + 1}`}
-                      className={`h-8 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
+                      className={`h-9 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     />
                   </td>
                   <td className="px-3 py-1.5">
@@ -310,7 +310,7 @@ export function POFormDraft({
                             value={it.unit}
                             disabled
                             aria-label={`Unit for line ${idx + 1}`}
-                            className={`h-8 w-full rounded-md border border-border-strong bg-bg-input px-2 text-sm disabled:opacity-50 ${FOCUS_RING}`}
+                            className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-2 text-sm disabled:opacity-50 ${FOCUS_RING}`}
                           >
                             <option value="">{it.unit || '—'}</option>
                           </select>
@@ -322,7 +322,7 @@ export function POFormDraft({
                           onChange={(e) => patchItem(idx, { unit: e.target.value })}
                           disabled={submitting}
                           aria-label={`Unit for line ${idx + 1}`}
-                          className={`h-8 w-full rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
+                          className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                         >
                           {opts.map((o) => (
                             <option key={o.code} value={o.code}>
@@ -340,7 +340,7 @@ export function POFormDraft({
                       onChange={(e) => patchItem(idx, { unitCost: Number(e.target.value) || 0 })}
                       disabled={submitting}
                       aria-label={`Unit cost for line ${idx + 1}`}
-                      className={`h-8 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
+                      className={`h-9 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     />
                   </td>
                   <td className="px-3 py-1.5 text-right text-text-primary tabular-nums">

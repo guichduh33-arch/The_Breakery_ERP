@@ -240,7 +240,7 @@ export default function SalesByCustomerPage(): JSX.Element {
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value); }}
           aria-label="Customer type filter"
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
         >
           <option value="">All types</option>
           <option value="retail">Retail</option>
