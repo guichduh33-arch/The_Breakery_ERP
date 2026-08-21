@@ -868,8 +868,28 @@ règles :
   `Input` et `selectClassName` bordent en `--border-strong` (arbitrage du
   propriétaire, les deux apps). Ce qui reste ouvert est plus étroit : le thème
   sombre de la caisse plafonne à 1,52:1 (arbitrage POS non pris), et les
-  contrôles stylés à la main hors primitif — le champ « Receipt file » de la
-  saisie de dépense, 1,08:1 — se corrigent appelant par appelant.
+  contrôles stylés à la main hors primitif se corrigent appelant par appelant.
+  Le seul nommé ici, le champ « Receipt file » de la saisie de dépense à 1,08:1,
+  est **soldé le 2026-08-21** : son bouton a pris la géométrie de contrôle du
+  système (feuille blanche, `border-strong`, rayon 4 px), ce qui a réglé du même
+  geste l'aplat d'or qu'il portait.
+- **`--border-gold` n'est PAS une limite de contrôle** (mesuré le 2026-08-21).
+  Sous `.theme-backoffice` il vaut `rgba(122, 92, 28, 0.35)`, soit **1,64:1** sur
+  le papier de page — très en dessous des 3:1 que WCAG 1.4.11 exige d'un objet
+  graphique. Le token qui tient est **`border-gold`** (`--gold-base` `#7a5c1c`,
+  6,22:1 sur la feuille blanche, 5,41:1 sur le papier). La conséquence est
+  opposable : **retirer un aplat d'or d'un encart bordé `border-border-gold` sans
+  monter son liseré le laisse SANS limite visible.** Cinq encarts étaient dans ce
+  cas au moment du retrait des aplats.
+- **Une classe de défaut qui n'avait pas de nom : `tabular-nums` sans famille.**
+  L'auteur a le bon réflexe — les chiffres tabulaires — et oublie
+  `font-data`. Le montant rend alors en Instrument Sans, ce que
+  **The Mono-Carries-Data Rule** interdit. Le piège est le relevé, pas le
+  correctif : un `grep` de `tabular-nums` sans `font-data` rend des **centaines**
+  de lignes, parce que la famille peut venir d'un parent. C'est un majorant
+  inutilisable. **Seul le rendu tranche** — mesuré au navigateur le 2026-08-21,
+  la population réelle valait une poignée de nœuds, presque tous sur le rail
+  d'argent du bon de commande.
 - **Les champs écrits à la main hors du primitif `Input` n'ont pas d'anneau de
   focus conforme — et ils étaient cinq fois plus nombreux que ce paragraphe ne
   l'annonçait.** Le relevé porté ici jusqu'au 2026-08-18 disait « trente-cinq
@@ -911,6 +931,17 @@ règles :
   trois exceptions nommées. Ce n'est pas un risque théorique : un appelant
   l'atteint aujourd'hui, l'état vide de l'index des rapports — et l'état vide est
   le premier écran que voit un utilisateur d'un module neuf.
+  **À moitié soldé le 2026-08-21.** Le primitif a reçu une prop optionnelle pour
+  le variant de son action, **à défaut inchangé** — donc le rendu de la caisse
+  est prouvablement intact — et le seul appelant back-office qui rend une action
+  passe désormais `ink` : **l'aplat d'or n'est plus atteignable depuis le
+  back-office**. Ce qui reste ouvert est double et demande un arbitrage : le
+  **défaut** du primitif est toujours `gold`, donc un appelant neuf naît non
+  conforme en silence ; et **l'italique du titre n'a pas bougé**, parce qu'il
+  touche trente-six surfaces du back-office ET le rendu du POS, où
+  `font-display` sort vraiment Playfair. Même motif que `Card`, `Dialog` et
+  `Sheet`, qui portent la même classe — `Dialog` atteignant à lui seul
+  soixante-et-un fichiers du back-office, c'est le plus gros gain non pris.
   **L'angle mort de méthode est le même que celui des champs sans anneau** : le
   relevé du même jour concluait que le risque du défaut de variant était
   « entièrement devant nous » parce qu'il cherchait `variant="primary"`. Il ne
@@ -924,14 +955,35 @@ et lire cette liste comme un inventaire de routes manquantes la fait dire le
 contraire de ce qu'elle dit. Le test est l'invariant propre à l'archétype, pas
 la présence du fichier.
 
-Quatre sont construits — Today (shell + landing), Products (List), B2B orders
-(List) et **Settings (Hub)**. Ce dernier était rangé parmi les non-implémentés
-jusqu'au 2026-08-18 ; il l'est, et il tient l'invariant qui distingue un hub d'un
-menu : chaque tuile porte sa valeur courante sous son libellé, avec un tiret
-honnête quand la section est vide et le lien laissé intact.
+Six sont construits — Today (shell + landing), Products (List), B2B orders
+(List), **Settings (Hub)**, **Production log (Append-only log)** et
+**New expense (Form)**. Settings était rangé parmi les non-implémentés jusqu'au
+2026-08-18 ; il l'est, et il tient l'invariant qui distingue un hub d'un menu :
+chaque tuile porte sa valeur courante sous son libellé, avec un tiret honnête
+quand la section est vide et le lien laissé intact.
 
-Les onze autres sont dessinés et validés, non refaits depuis leur archétype :
+**Les deux derniers sont passés « construits » le 2026-08-21**, et chacun tenait
+zéro invariant avant :
+
+- **Production log.** Le panneau de saisie est devenu la seule surface encrée de
+  la page ; les lignes du journal portent `LOCKED` et disent l'issue ; la
+  contre-écriture est atteignable. Elle ne l'était pas : la RPC existait, le
+  dialogue existait, les messages de blocage étaient écrits, et le seul composant
+  qui les montait **n'avait aucun importeur**. Un fichier peut être construit,
+  testé, et ne rendre à personne — le test de l'archétype est bien l'invariant,
+  pas la présence du fichier.
+- **New expense.** L'écran demandait un engagement sans montrer ce qu'il
+  déclenche, alors que les paliers d'approbation existent et sont configurés. Il
+  a gagné sa colonne de conséquence : total dérivé en lecture seule, prévision de
+  chaîne d'approbation résolue à la frappe, historique comparable, statut de
+  brouillon dans le bandeau. Le rail **prévoit** et le dit — la résolution finale
+  reste au serveur (Product Principle 1).
+
+Les neuf autres sont dessinés et validés, non refaits depuis leur archétype :
 Stock alerts (List), Daily sales et Trial balance (Report), Purchase order
-(Document), New expense (Form), Stock count (Bulk entry), Roles & permissions
-(Matrix), Recipe (Cascade), Production log (Append-only log), Z-reports (List)
-et Login (hors shell).
+(Document), Stock count (Bulk entry), Roles & permissions (Matrix), Recipe
+(Cascade), Z-reports (List) et Login (hors shell).
+
+**Recipe reste le plus loin de son archétype** : il annonce une cascade et rend
+une table plate — aucune indentation, aucun sous-total de parent, aucun encart
+nommant le matériau dominant.

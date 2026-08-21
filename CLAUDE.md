@@ -122,7 +122,12 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - Apps : les packages sont `@breakery/app-pos` / `@breakery/app-backoffice`
   (PAS `@breakery/pos`). Dev : `pnpm --filter @breakery/app-pos dev`.
 - Tests JS : `pnpm --filter <pkg> test` (vitest). Les filtres vitest matchent le
-  NOM DE FICHIER, pas le describe. Suite POS complète = timeout en local ;
+  NOM DE FICHIER, pas le describe — et beaucoup de tests du BO sont en
+  **kebab-case** (`daily-sales-page.smoke.test.tsx`) : un filtre `DailySales` ne
+  les matche pas et fait croire que tout passe. Localiser par glob, jamais par
+  nom de composant. La suite **BO** complète tourne en local (~5-6 min, 282
+  fichiers) et c'est le seul filet qui voit une régression inter-fichiers : la
+  lancer avant de conclure. Suite POS complète = timeout en local ;
   la CI est le seul filet full-suite. Le lint-ratchet CI bloque aussi sur les
   erreurs préexistantes des fichiers touchés par la PR.
 - pgTAP : via MCP `execute_sql` (BEGIN/ROLLBACK), pas de runner local. SQL
@@ -137,11 +142,18 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
   DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
   (`scripts/ci/`) rendent leur verdict en secondes, avant le build. Elles sont
-  HUIT, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
-  `relative-links`, `hardcoded-theme-colors`, et les quatre gardes design du
+  NEUF, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
+  `relative-links`, `hardcoded-theme-colors`, les quatre gardes design du
   2026-08-18 (`focus-ring-controls`, `gold-fills`, `lying-font-classes`,
-  `toolbar-button-scope`). Toutes partagent `_guard-lib.mjs` : baseline =
-  plafond, jamais plancher. Une PR frontend BO les croise toutes.
+  `toolbar-button-scope`) et `tight-corner` (2026-08-21, `rounded-full` — la
+  seule des quatre dettes de direction qu'aucune garde ne voyait, donc la seule
+  qui pouvait regrandir en silence). Toutes partagent `_guard-lib.mjs` :
+  baseline = plafond, jamais plancher. Une PR frontend BO les croise toutes.
+  **Le lint-ratchet ne lint que les fichiers CHANGÉS par la PR** : toucher une
+  seule ligne d'un vieux fichier l'y fait entrer et réveille ses erreurs
+  préexistantes. Le rejouer en local se fait par lots — `xargs` sur ~170 fichiers
+  dépasse la limite de ligne de commande Windows et **échoue en silence**, ce qui
+  rend un « propre » qui ne vaut rien.
   `vitest-live.yml` = dispatch MANUEL du seul job vitest live-RPC ; ne jamais le
   dispatcher pendant les crons (19:00/22:00 UTC) — même base dev partagée.
   `staging-deploy.yml` déploie le staging (setup décrit dans
