@@ -99,6 +99,17 @@ export interface DataTableProps<TRow> {
   renderExpanded?: (row: TRow, rowIndex: number) => ReactNode;
   /** Clés des lignes actuellement dépliées — même valeur que `getRowKey`. */
   expandedKeys?: ReadonlySet<string | number>;
+  /**
+   * Nom accessible de la table, rendu en `<caption class="sr-only">`.
+   *
+   * Sans lui, un lecteur d'écran annonce « table » et rien d'autre : l'utilisateur
+   * doit deviner ce qu'il lit depuis la première cellule. La convention du dépôt
+   * est une phrase qui ÉNUMÈRE LES COLONNES (« Date, type, quantity … per X »),
+   * jamais le mot « Table ».
+   *
+   * Optionnel, et l'omettre ne change rien au rendu : additif strict.
+   */
+  caption?: ReactNode;
   /** Test ID propagated to the outer element. */
   'data-testid'?: string;
 }
@@ -137,6 +148,7 @@ export function DataTable<TRow>({
   rowClassName,
   renderExpanded,
   expandedKeys,
+  caption,
   'data-testid': testId,
 }: DataTableProps<TRow>): JSX.Element {
   const cellPad = density === 'compact' ? 'px-3.5 py-2.5' : 'px-4 py-3';
@@ -167,6 +179,7 @@ export function DataTable<TRow>({
       className={cn('w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
     >
       <table className="w-full border-collapse">
+        {caption !== undefined && <caption className="sr-only">{caption}</caption>}
         <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
             {columns.map((col) => {

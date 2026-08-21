@@ -32,7 +32,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cn } from '../lib/cn.js';
-import { Button } from './Button.js';
+import { Button, type ButtonProps } from './Button.js';
 import { BrandMark } from '../components/BrandMark.js';
 
 /**
@@ -59,6 +59,24 @@ export interface EmptyStateProps {
   description?: string;
   /** Optional CTA — either a custom node or `{label, onClick}` for a primary button. */
   action?: EmptyStateAction;
+  /**
+   * Variant du bouton rendu quand `action` est un objet `{label, onClick}`.
+   *
+   * DÉFAUT `gold`, DÉLIBÉRÉMENT — la caisse rend ce bouton en or et ce défaut
+   * est ce qui garantit que son pixel ne bouge pas. Prop ADDITIVE : aucun
+   * appelant existant ne change de rendu.
+   *
+   * Le back-office, lui, passe `ink` : The Ink-Not-Gold Rule de son DESIGN.md dit
+   * que « l'or ne remplit jamais une surface » là-bas, et cet aplat était le
+   * quarante-cinquième — invisible à la garde 6, qui ne balaye que
+   * `apps/backoffice/` et ne peut donc pas voir un primitif PARTAGÉ qui remplit
+   * en or dans son propre code.
+   *
+   * L'italique du titre (`font-display italic`) NE bouge pas : elle touche 36
+   * surfaces du back-office ET le rendu de la caisse, où `font-display` sort
+   * vraiment Playfair. Cet arbitrage-là appartient au propriétaire.
+   */
+  actionVariant?: ButtonProps['variant'];
   /** Size. Default 'md'. */
   size?: EmptyStateSize;
   /** Tone. 'branded' shows BrandMark when no icon. */
@@ -128,6 +146,7 @@ export function EmptyState({
   title,
   description,
   action,
+  actionVariant = 'gold',
   size = 'md',
   tone = 'default',
   headingLevel: Heading = 'h3',
@@ -168,7 +187,7 @@ export function EmptyState({
       {action !== undefined && (
         <div className="mt-2">
           {isActionObject(action) ? (
-            <Button variant="gold" onClick={action.onClick}>
+            <Button variant={actionVariant} onClick={action.onClick}>
               {action.label}
             </Button>
           ) : (
