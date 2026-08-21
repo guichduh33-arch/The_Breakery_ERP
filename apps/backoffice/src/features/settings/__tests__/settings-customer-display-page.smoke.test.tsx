@@ -77,9 +77,20 @@ beforeEach(() => {
 describe('SettingsCustomerDisplayPage', () => {
   it('renders the fields seeded from the RPC', async () => {
     render(wrap(<SettingsCustomerDisplayPage />));
-    await waitFor(() => expect(screen.getByLabelText(/idle footer message/i)).toBeInTheDocument());
+    // Le champ EXISTE avant d'être alimenté : il est rendu vide, puis rempli
+    // quand la réponse de la RPC arrive. Attendre sa seule PRÉSENCE laissait
+    // donc passer le rendu vide, et l'assertion de valeur qui suivait tombait
+    // sous la charge de la suite complète — jamais en isolation. On attend la
+    // VALEUR, c'est-à-dire exactement ce que le test affirme.
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/idle footer message/i).value).toBe(
+        'Open daily 07:00-21:00',
+      ),
+    );
 
-    expect(screen.getByLabelText<HTMLInputElement>(/idle footer message/i).value).toBe('Open daily 07:00-21:00');
+    // Le slogan est vide dans la fixture. L'assertion n'est fiable QUE parce que
+    // l'attente ci-dessus prouve que la réponse est arrivée : sans elle, un
+    // champ non encore alimenté vaut '' lui aussi et le test passerait à tort.
     expect(screen.getByLabelText<HTMLInputElement>(/brand slogan/i).value).toBe('');
   });
 

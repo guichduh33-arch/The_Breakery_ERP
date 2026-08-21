@@ -42,12 +42,19 @@ import type { DashboardOverview } from '@/features/dashboard/hooks/useDashboardO
 // vérifie que les graphes ne mentent PAS quand la RPC échoue : contre un
 // composant mocké, elle passe sans rien prouver. Le trou aurait été déplacé,
 // pas fermé.
+// Le délai du hook est porté à 90 s EXPRÈS. Le défaut du dépôt est 30 s, et il
+// suffit largement en isolation — mais ce préchargement transforme `recharts`
+// (443 ko) à froid, et quand 282 fichiers de test se disputent le pipeline
+// vite-node, cette transformation a dépassé les 30 s. Le symptôme n'était alors
+// plus un cas rouge mais le FICHIER entier en échec, ce qui est plus difficile
+// à lire. Un délai généreux ne coûte rien au cas passant : il ne borne que
+// l'échec.
 beforeAll(async () => {
   await Promise.all([
     import('@/features/dashboard/components/RevenueTrendChart.js'),
     import('@/features/dashboard/components/HourlySalesChart.js'),
   ]);
-});
+}, 90_000);
 
 beforeEach(() => {
   cleanup();
