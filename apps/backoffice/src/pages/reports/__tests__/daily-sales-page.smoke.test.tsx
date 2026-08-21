@@ -9,6 +9,12 @@
 //  · `variance_total` NULL se lit « not closed yet » et JAMAIS « Rp 0 » ;
 //  · les deux acquis que la maquette n'a pas : annotation des jours fériés et
 //    drill-down par jour, conservés dans le bloc de détail.
+//
+// 2026-08-21 — la ligne de RAPPROCHEMENT de la carte Payments (bump v3). Deux
+// comportements, et le second compte autant que le premier : elle se rend quand
+// `on_account_total > 0`, elle DISPARAÎT quand il vaut 0. Une ligne toujours
+// rendue afficherait « + Rp 0 settled on account » sur une période sans compte
+// client, et affirmerait une cause le jour où l'écart en aurait une autre.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
@@ -68,6 +74,10 @@ const CURRENT = {
     refund_total: 150_000, net: 8_420_000,
     discount_total: 412_000, discount_orders_count: 31,
     voids_count: 4, voids_value: 36_000,
+    // Bump v3 — invariant serveur : total = tendered_total + on_account_total,
+    // order_count = tendered_order_count + on_account_order_count.
+    tendered_total: 7_610_000, tendered_order_count: 233,
+    on_account_total: 1_000_000, on_account_order_count: 14,
   },
   by_day: [
     { date: '2026-06-01', order_count: 120, gross: 4_300_000, refunds: 100_000, net: 4_200_000, aov: 35_000 },
@@ -94,6 +104,8 @@ const PREVIOUS = {
     refund_total: 100_000, net: 7_400_000,
     discount_total: 300_000, discount_orders_count: 20,
     voids_count: 2, voids_value: 20_000,
+    tendered_total: 7_500_000, tendered_order_count: 220,
+    on_account_total: 0, on_account_order_count: 0,
   },
   by_day: [
     { date: CMP_START, order_count: 100, gross: 3_700_000, refunds: 0, net: 3_700_000, aov: 37_000 },
@@ -214,6 +226,38 @@ describe('DailySalesPage — archétype Report (maquette 4c)', () => {
     expect(within(screen.getByTestId('breakdown-payments')).getByText('Total collected')).toBeInTheDocument();
   });
 
+  it('Payments : la ligne de rapprochement nomme l’écart entre les deux « Total »', () => {
+    renderPage();
+    const card  = screen.getByTestId('breakdown-payments');
+    const split = within(card).getByTestId('payments-settlement-split');
+    // Les trois montants sont RENDUS, pas recalculés : brut, encaissé, en compte.
+    expect(split).toHaveTextContent(/8\.610\.000/);
+    expect(split).toHaveTextContent(/7\.610\.000/);
+    expect(split).toHaveTextContent(/1\.000\.000/);
+    expect(split).toHaveTextContent(/14 orders with no payment line/);
+    // Elle s'AJOUTE à la note existante, elle ne la remplace pas.
+    expect(card).toHaveTextContent(/260 payments across 247 orders/);
+  });
+
+  it('Payments : aucun règlement en compte → aucune ligne, et surtout aucun « Rp 0 »', () => {
+    seedHooks(ok({
+      ...CURRENT,
+      summary: {
+        ...CURRENT.summary,
+        tendered_total:       CURRENT.summary.total,
+        tendered_order_count: CURRENT.summary.order_count,
+        on_account_total: 0, on_account_order_count: 0,
+      },
+    }));
+    renderPage();
+    const card = screen.getByTestId('breakdown-payments');
+    expect(within(card).queryByTestId('payments-settlement-split')).toBeNull();
+    expect(card).not.toHaveTextContent(/settled on account/);
+    // Le pied garde sa note : c'est la ligne de rapprochement qui disparaît,
+    // pas le pied entier.
+    expect(card).toHaveTextContent(/260 payments across 247 orders/);
+  });
+
   it('Register close : session ouverte → « not closed yet », jamais un écart nul', () => {
     renderPage();
     const card = screen.getByTestId('breakdown-registers');
@@ -240,7 +284,14 @@ describe('DailySalesPage — archétype Report (maquette 4c)', () => {
     const card = screen.getByTestId('breakdown-categories');
     expect(within(card).getByTitle(/8\.000\.000/)).toBeInTheDocument();
     expect(within(card).queryByTitle(/^Rp 5\.000\.000$/)).toBeNull();
-    expect(within(card).getByText('Top 5 of 8 by revenue.')).toBeInTheDocument();
+    // Le sous-titre COMPOSE deux énoncés qui ne se remplacent pas : la note de
+    // troncature (« on ne montre que 5 des 8 ») et le périmètre de la carte
+    // (« ces totaux se somment ligne à ligne »). Un `getByText` exact sur la
+    // seule note casserait au premier ajout et, pire, laisserait croire que
+    // l'un chasse l'autre. On assert la présence des DEUX.
+    const subtitle = within(card).getByText(/Top 5 of 8 by revenue\./);
+    expect(subtitle).toHaveTextContent('Top 5 of 8 by revenue.');
+    expect(subtitle).toHaveTextContent('does not reconcile with gross revenue');
     // Reliquat agrégé : 5 × 12,5 % montrés, 37,5 % en « Others ».
     const others = within(card).getByText('Others');
     expect(others.closest('li')).toHaveTextContent('38%');
@@ -328,6 +379,21 @@ describe('DailySalesPage — archétype Report (maquette 4c)', () => {
     renderPage();
     expect(screen.getByText('No sales')).toBeInTheDocument();
     expect(screen.queryByTestId('daily-sales-table')).toBeNull();
+  });
+
+  it('périmètre ligne-à-ligne : rendu SEUL quand il n’y a pas de troncature', () => {
+    // Le cas jumeau du test « Top 5 of 8 » : sans coupe, `topSlice` ne rend
+    // aucune note, et le périmètre doit tout de même s'afficher. Sans cette
+    // assertion, un `withLineLevelScope` qui ne renverrait la phrase QUE
+    // lorsqu'une note existe passerait le reste de la suite au vert — la carte
+    // la plus courante du produit perdrait son périmètre en silence.
+    seedHooks(ok(CURRENT));
+    renderPage();
+    for (const testId of ['breakdown-categories', 'breakdown-products']) {
+      const card = screen.getByTestId(testId);
+      expect(card).toHaveTextContent('does not reconcile with gross revenue');
+      expect(card).not.toHaveTextContent('Top 5 of');
+    }
   });
 
   it('chargement : squelettes de la bande, aucun « Rp 0 » affirmé', () => {

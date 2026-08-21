@@ -3,7 +3,8 @@
 // Lot C (campagne Reports 2026-08-15) — la page FLAGSHIP de l'archétype
 // « Report » (maquette 4c), posée sur le socle du lot B (ReportShell, KpiBand,
 // PeriodControl, ExportMenu, BreakdownCard, PairedBarsChart) et sur le payload
-// `get_daily_sales_v2` (lot I). Quatre propriétés qui ne sont pas cosmétiques :
+// `get_daily_sales_v3` (lot I, puis bump du 2026-08-21). Cinq propriétés qui ne
+// sont pas cosmétiques :
 //
 //  1. CHAQUE CHIFFRE PORTE SA COMPARAISON — la période précédente est requêtée
 //     en parallèle ; quand la comparaison est impossible la tuile sort un
@@ -15,6 +16,13 @@
 //     partage referme ses 100 % par un reliquat « Others ».
 //  4. `variance_total` NULL ≠ 0, et `closed_at` seul dit si une caisse est
 //     ouverte — des sessions fermées d'avant le comptage ont une variance NULL.
+//  5. DEUX « TOTAL » QUI DIFFÈRENT S'EXPLIQUENT, ILS NE SE DEVINENT PAS. Le
+//     « Total collected » de la carte Payments ne peut pas égaler le chiffre
+//     d'affaires brut de la bande : une commande réglée au grand livre AR n'a
+//     aucune ligne `order_payments`, donc aucun tender à compter. La
+//     décomposition `total = tendered + on_account` vient du SERVEUR (bump v3) ;
+//     la page ne soustrait rien et ne nomme aucune cause qu'elle aurait déduite.
+//     Sans écart, la ligne ne se rend pas : « + Rp 0 » serait du bruit.
 //
 // Settings §6.A — jours fériés annotés (badge + colonne CSV) : un jour hors
 // tendance doit se lire comme un contexte expliqué.
@@ -79,6 +87,36 @@ const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 const INK_LINK = 'text-gold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
 /** Sessions de caisse listées dans la carte « Register close ». */
 const MAX_SESSIONS = 8;
+
+/**
+ * Périmètre des deux cartes bâties sur les LIGNES de commande — « Revenue by
+ * category » (`get_sales_by_category_v3`) et « Top products »
+ * (`get_gross_margin_by_product_v1`).
+ *
+ * Elles somment `order_items.line_total` HORS TAXE et brut des remises posées
+ * au niveau de la COMMANDE, là où la bande de KPI somme `orders.total`. Leur
+ * « Total » ne peut donc pas égaler le chiffre d'affaires brut, et l'écart n'a
+ * rien à voir avec celui qu'explique la carte Payments.
+ *
+ * CE QUE CETTE PHRASE NE DIT PAS, ET POURQUOI. Elle ne mentionne pas le B2B.
+ * Relevé du 2026-08-21 : ni `get_sales_by_category_v3` ni
+ * `get_gross_margin_by_product_v1` ne porte de filtre `order_type` — les
+ * commandes B2B y entreront donc dès qu'elles porteront des lignes. Si elles
+ * n'y pèsent rien sur la base de développement, c'est que les quinze qui s'y
+ * trouvent ont été insérées directement par des fixtures, en contournant
+ * `create_b2b_order_v5`/`v6` qui écrivent bien leurs `order_items`. Écrire
+ * « excludes B2B » attribuerait à ces cartes une exclusion que le serveur
+ * n'implémente pas, et la phrase deviendrait fausse en boutique — exactement
+ * le défaut que le bump v3 corrige un panneau plus loin.
+ */
+const LINE_LEVEL_SCOPE =
+  'Line-level revenue, excl. tax — does not reconcile with gross revenue.';
+
+/** Compose le périmètre avec la note de troncature de `topSlice`, qui n'existe
+ *  que lorsque le jeu dépasse la coupe. L'une ne remplace pas l'autre. */
+function withLineLevelScope(sliceNote: string | undefined): string {
+  return sliceNote === undefined ? LINE_LEVEL_SCOPE : `${sliceNote} ${LINE_LEVEL_SCOPE}`;
+}
 
 function capitalize(s: string): string {
   return s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1);
@@ -198,6 +236,28 @@ export default function DailySalesPage(): JSX.Element {
       : `${s.status} · var ${s.variance_total === null ? '—' : formatIdrFull(s.variance_total)}`,
   }));
 
+  // Ligne de rapprochement de la carte Payments — DÉRIVÉE du serveur, jamais
+  // d'une soustraction locale. Elle ne se rend que s'il y a un écart à
+  // expliquer : sur une période sans règlement en compte, « + Rp 0 settled on
+  // account » n'informerait de rien et deviendrait faux le jour où l'écart
+  // aurait une autre origine. Le partage serveur porte sur le BRUT
+  // (`total = tendered + on_account`), le net s'en déduit par les refunds.
+  const onAccount      = summary?.on_account_total ?? 0;
+  const onAccountCount = summary?.on_account_order_count ?? 0;
+  const settlementSplit = summary !== undefined && onAccount > 0 ? (
+    <span className="text-text-muted" data-testid="payments-settlement-split">
+      Gross revenue{' '}
+      <span className="font-data tabular-nums">{formatIdrFull(summary.total)}</span>
+      {' = '}
+      <span className="font-data tabular-nums">{formatIdrFull(summary.tendered_total)}</span>
+      {' tendered + '}
+      <span className="font-data tabular-nums">{formatIdrFull(onAccount)}</span>
+      {' settled on account ('}
+      <span className="font-data tabular-nums">{formatCount(onAccountCount)}</span>
+      {` order${onAccountCount === 1 ? '' : 's'} with no payment line)`}
+    </span>
+  ) : null;
+
   const refundsVoids     = (summary?.refund_total ?? 0) + (summary?.voids_value ?? 0);
   const prevRefundsVoids = prev !== undefined ? prev.refund_total + prev.voids_value : undefined;
   const discountNote     = `${formatPct1(sharePct(summary?.discount_total ?? 0, summary?.total ?? 0))}`
@@ -307,7 +367,7 @@ export default function DailySalesPage(): JSX.Element {
         </PanelCard>
         <BreakdownCard
           title="Revenue by category"
-          subtitle={cat.note}
+          subtitle={withLineLevelScope(cat.note)}
           variant="track"
           rows={categoryRows}
           total={{ label: 'Total', amount: cat.total }}
@@ -326,7 +386,7 @@ export default function DailySalesPage(): JSX.Element {
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <BreakdownCard
           title="Top products"
-          subtitle={prod.note ?? 'Revenue over the period.'}
+          subtitle={withLineLevelScope(prod.note)}
           rows={topProducts}
           total={{ label: 'Total', amount: prod.total }}
           isLoading={margin.isLoading}
@@ -340,10 +400,13 @@ export default function DailySalesPage(): JSX.Element {
           isLoading={payments.isLoading}
           error={payments.error}
           footer={
-            <span className="text-text-muted">
-              <span className="font-data tabular-nums">{formatCount(payments.data?.totalCount ?? 0)}</span> payments across{' '}
-              <span className="font-data tabular-nums">{formatCount(payments.data?.totalOrders ?? 0)}</span> orders
-            </span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-text-muted">
+                <span className="font-data tabular-nums">{formatCount(payments.data?.totalCount ?? 0)}</span> payments across{' '}
+                <span className="font-data tabular-nums">{formatCount(payments.data?.totalOrders ?? 0)}</span> orders
+              </span>
+              {settlementSplit}
+            </div>
           }
           testId="breakdown-payments"
         />

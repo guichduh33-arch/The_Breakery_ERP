@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { formatQuantity } from '@breakery/utils';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface YieldVarianceModalProps {
   expectedQty:  number;
@@ -92,7 +93,12 @@ export function YieldVarianceModal({
               maxLength={500}
               rows={3}
               autoFocus
-              className="w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold"
+              // `focus:ring-2` était keyé sur `:focus` et non `:focus-visible`.
+              // Sur un `<textarea autoFocus>` c'est le pire cas : l'anneau
+              // s'allumait à la seule OUVERTURE de la modale, avant toute
+              // interaction clavier. La doctrine maison est un `outline`
+              // (FOCUS_RING), pas un `ring` (box-shadow).
+              className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm ${FOCUS_RING}`}
               aria-invalid={!canConfirm}
             />
             <div className="text-xs text-text-secondary">

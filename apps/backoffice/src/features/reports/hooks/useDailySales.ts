@@ -4,6 +4,16 @@
 // (summary +discount_total/discount_orders_count/voids_count/voids_value,
 // racine +sessions) pour la tuile Discounts et la carte Register close de
 // la maquette 4c. Parse défensif : les champs neufs tolèrent l'absence.
+//
+// Bump v2 → v3 (2026-08-21, migration 20260821000003) — payload additif :
+// `summary` gagne la ventilation par canal de règlement, tendered_total/
+// tendered_order_count (commandes portant au moins une ligne `order_payments`)
+// et on_account_total/on_account_order_count (le reste, typiquement le B2B
+// réglé au grand livre AR). Invariant serveur opposable :
+// `total = tendered_total + on_account_total`, et `tendered_total` vaut
+// exactement le `summary.total_amount` de `get_payments_by_method_v3`. C'est ce
+// qui permet à la page d'EXPLIQUER l'écart entre ses deux « Total » au lieu de
+// le deviner. Même parse défensif que les champs des bumps précédents.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -41,6 +51,12 @@ export interface DailySalesSummary {
   discount_orders_count:   number;
   voids_count:             number;
   voids_value:             number;
+  /** Encaissé : commandes portant au moins une ligne `order_payments`. */
+  tendered_total:          number;
+  tendered_order_count:    number;
+  /** Réglé en compte : le reste (B2B au grand livre AR). `total` = somme des deux. */
+  on_account_total:        number;
+  on_account_order_count:  number;
 }
 
 export interface DailySalesSession {
@@ -69,7 +85,7 @@ export function useDailySales(params: UseDailySalesParams) {
   return useQuery<DailySalesData, Error>({
     queryKey: ['reports', 'daily-sales', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_daily_sales_v2', {
+      const { data, error } = await supabase.rpc('get_daily_sales_v3', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
@@ -92,6 +108,10 @@ export function useDailySales(params: UseDailySalesParams) {
           discount_orders_count:  toNum(summary.discount_orders_count),
           voids_count:            toNum(summary.voids_count),
           voids_value:            toNum(summary.voids_value),
+          tendered_total:         toNum(summary.tendered_total),
+          tendered_order_count:   toNum(summary.tendered_order_count),
+          on_account_total:       toNum(summary.on_account_total),
+          on_account_order_count: toNum(summary.on_account_order_count),
         },
         by_day: asArray(raw.by_day).map((r): DailySalesRow => {
           const o = asRecord(r);

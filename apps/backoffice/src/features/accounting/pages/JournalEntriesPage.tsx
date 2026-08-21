@@ -139,7 +139,7 @@ export default function JournalEntriesPage(): JSX.Element {
                 <tr
                   key={row.id}
                   data-testid={`je-row-${row.entry_number}`}
-                  className="border-t border-border-subtle cursor-pointer hover:bg-bg-overlay"
+                  className="border-t border-border-subtle cursor-pointer hover:bg-surface-4"
                   onClick={() => { triggerRef.current = null; setSelected(row); }}
                 >
                   <td className="px-3 py-2">{row.entry_date}</td>

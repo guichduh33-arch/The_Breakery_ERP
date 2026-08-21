@@ -8,7 +8,7 @@
 //   1. create_purchase_order_v2  → a 1-line PO (payment_terms='credit')
 //   2. receive_purchase_order_v4 → GRN ⇒ DR Inventory / CR Purchase Payable JE
 //                                  + movement_type='purchase' (WAC + price trend)
-//   3. record_po_payment_v1      → DR Payable / CR Cash|Bank JE (only when paid)
+//   3. record_po_payment_v2      → DR Payable / CR Cash|Bank JE (only when paid)
 //
 // Each step is idempotent (deterministic sub-keys derived from one base key) so
 // a retry after a partial failure re-uses the same PO/GRN/payment.
@@ -147,7 +147,7 @@ export function useRecordDirectPurchase() {
       // ── 4. Record the payment (only when paid now) ───────────────────────────
       let paymentId: string | null = null;
       if (args.paymentMethod !== null && args.paymentAmount > 0) {
-        const payRes = await rpc('record_po_payment_v1', {
+        const payRes = await rpc('record_po_payment_v2', {
           p_po_id:           po.po_id,
           p_amount:          args.paymentAmount,
           p_method:          args.paymentMethod,

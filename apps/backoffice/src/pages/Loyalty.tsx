@@ -321,7 +321,13 @@ function MenuItem({
       role="menuitem"
       onClick={onClick}
       className={[
-        'block w-full px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none',
+        // `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair
+        // `--bg-overlay`, `--bg-elevated` et `--bg-input` valent TOUS #ffffff.
+        // Sur le panneau blanc du menu, survol et focus repeignaient donc du
+        // blanc sur du blanc — ratio 1,000:1, aucun retour visible. Et
+        // `focus:outline-none` était posé sans remplaçant : au clavier, rien ne
+        // disait quelle entrée était sélectionnée, Delete compris (WCAG 2.4.7).
+        `block w-full px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-surface-4 focus:bg-surface-4 ${FOCUS_RING}`,
         tone === 'danger' ? 'text-danger' : 'text-text-primary',
       ].join(' ')}
     >

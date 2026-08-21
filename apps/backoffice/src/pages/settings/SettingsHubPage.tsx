@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel, Skeleton } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettingsHubSummary, summaryLineFor } from '@/features/settings/hooks/useSettingsHubSummary.js';
@@ -137,7 +138,13 @@ export default function SettingsHubPage() {
               // null = section absente/vide (tiret honnête, lien intact).
               const line = summaryLineFor(t.to, summary.data);
               const cardInner = (
-                <Card className={`h-full ${t.to !== undefined ? 'hover:bg-bg-overlay transition-colors' : 'opacity-60'}`}>
+                // `hover:bg-surface-4` et non `bg-bg-overlay` : le primitif
+                // `Card` porte déjà `bg-bg-elevated`, et dans le thème clair
+                // `--bg-elevated` et `--bg-overlay` valent TOUS DEUX #ffffff.
+                // La tuile se repeignait donc de sa propre couleur au survol.
+                // On corrige l'ÉTAT ; le primitif n'est pas touché (il est
+                // partagé avec la caisse).
+                <Card className={`h-full ${t.to !== undefined ? 'hover:bg-surface-4 transition-colors' : 'opacity-60'}`}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Icon className="h-4 w-4 text-gold" aria-hidden />
@@ -161,7 +168,11 @@ export default function SettingsHubPage() {
                 <Link
                   key={`${section.id}-${t.title}`}
                   to={t.to}
-                  className="block focus:outline-none focus:ring-2 focus:ring-gold rounded-lg"
+                  // `focus:ring-2` était keyé sur `:focus` et non
+                  // `:focus-visible` : l'anneau s'allumait aussi au CLIC souris.
+                  // La doctrine maison est un `outline` (FOCUS_RING), pas un
+                  // `ring` (box-shadow).
+                  className={`block rounded-lg ${FOCUS_RING}`}
                 >
                   {cardInner}
                 </Link>

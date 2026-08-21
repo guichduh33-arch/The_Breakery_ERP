@@ -54,10 +54,17 @@ export function ProductPicker({ onPick }: Props) {
         <ul className="overflow-auto flex-1 divide-y border rounded">
           {filtered.map((p) => (
             <li key={p.id}>
+              {/* `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair
+                  `--bg-overlay`, `--bg-elevated` et `--bg-input` valent TOUS
+                  #ffffff — le survol repeignait du blanc sur du blanc.
+                  `listboxOptionState` ne s'applique PAS ici : ce helper sert le
+                  motif `aria-activedescendant`, où les options sont des
+                  `role="option"` NON focalisables. Ces résultats-ci sont de
+                  vrais `<button>` tabulables dans un `<ul>` nu. */}
               <button
                 type="button"
                 onClick={() => onPick(p)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay flex items-center justify-between gap-2"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-surface-4 flex items-center justify-between gap-2"
                 data-testid={`picker-row-${p.id}`}
               >
                 <span className="flex-1 min-w-0 truncate">

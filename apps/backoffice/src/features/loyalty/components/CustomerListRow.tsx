@@ -21,6 +21,16 @@ export interface CustomerListRowProps {
   onDelete:  (r: Row) => void;
 }
 
+// Entrée du menu d'actions de ligne. `bg-surface-4` et non `bg-bg-overlay` :
+// dans le thème clair `--bg-overlay`, `--bg-elevated` et `--bg-input` valent
+// TOUS #ffffff, donc survol et focus repeignaient le panneau blanc de sa propre
+// couleur — ratio 1,000:1. Et `focus:outline-none` était posé sans remplaçant :
+// au clavier, rien ne désignait l'entrée sélectionnée, Delete compris
+// (WCAG 2.4.7). Le fichier importait déjà `FOCUS_RING` et le posait sur la
+// cellule du nom ; il l'avait simplement oublié ici.
+const MENU_ITEM =
+  `block w-full text-left px-3 py-2 text-sm hover:bg-surface-4 focus:bg-surface-4 ${FOCUS_RING}`;
+
 function formatLastVisit(iso: string | null): string {
   if (iso === null) return '—';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -77,7 +87,7 @@ export function CustomerListRow({
   }
 
   return (
-    <tr className="border-b border-border-subtle hover:bg-bg-overlay">
+    <tr className="border-b border-border-subtle hover:bg-surface-4">
       <td
         // `focus-visible:ring-accent-primary` ne résolvait à AUCUNE couleur —
         // `accent-primary` n'existe dans aucune famille du preset — donc la
@@ -122,7 +132,7 @@ export function CustomerListRow({
             <button
               type="button"
               role="menuitem"
-              className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+              className={MENU_ITEM}
               onClick={() => { setMenuOpen(false); onView(row); }}
             >
               View history
@@ -131,7 +141,7 @@ export function CustomerListRow({
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+                className={MENU_ITEM}
                 onClick={() => { setMenuOpen(false); onAdjust(row); }}
               >
                 Adjust points
@@ -141,7 +151,7 @@ export function CustomerListRow({
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+                className={MENU_ITEM}
                 onClick={() => { setMenuOpen(false); onEdit(row); }}
               >
                 Edit
@@ -151,7 +161,7 @@ export function CustomerListRow({
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full text-left px-3 py-2 text-sm text-red hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+                className={`${MENU_ITEM} text-red`}
                 onClick={() => { setMenuOpen(false); onDelete(row); }}
               >
                 Delete

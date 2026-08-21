@@ -1,5 +1,8 @@
 -- supabase/tests/po_payments.test.sql
--- Session 46 / Wave A4 — pgTAP suite for purchase_payments table + record_po_payment_v1.
+-- Session 46 / Wave A4 — pgTAP suite for purchase_payments table + record_po_payment_v2.
+--
+-- Bumped to v2 (20260821000002) — cancelled-PO guard fix. v1 signature dropped
+-- in the same migration; all calls below target v2.
 --
 -- Tests:
 --   T1  — Permission gate: non-authorized user (CASHIER) raises P0003
@@ -8,9 +11,10 @@
 --   T4  — Overpayment rejected (P0001 overpayment_not_allowed)
 --   T5  — Derived status: unpaid → partial → paid transitions
 --   T6  — REVOKE UPDATE/DELETE on purchase_payments enforced for authenticated
---   T7  — REVOKE: anon cannot execute record_po_payment_v1
+--   T7  — REVOKE: anon cannot execute record_po_payment_v2
 --   T8  — Cash payment JE: CR = PURCHASE_CASH_OUT account
---   T9  — Bank/transfer payment JE: CR = PURCHASE_PAYMENT_BANK account
+--   T9  — v2 guard: payment refused on a cancelled PO (po_cancelled, P0001)
+--   T10 — v2 no-regression: payment still accepted on a pending PO
 --
 -- Run via MCP execute_sql inside BEGIN ... ROLLBACK.
 
@@ -18,7 +22,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(14);
+SELECT plan(16);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 DO $fix$
@@ -29,8 +33,10 @@ DECLARE
   v_section_id  UUID;
   v_mgr_uid     UUID;
   v_cashier_uid UUID;
-  v_po_credit_id UUID;
-  v_po_cash_id   UUID;
+  v_po_credit_id    UUID;
+  v_po_cash_id      UUID;
+  v_po_pending_id   UUID;
+  v_po_cancelled_id UUID;
   v_items        JSONB;
 BEGIN
   SELECT id INTO v_cat_id FROM categories WHERE category_type = 'raw_material' LIMIT 1;
@@ -76,12 +82,34 @@ BEGIN
     p_payment_terms := 'cash', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_cash_id;
 
-  PERFORM set_config('t46p.mgr_uid',     v_mgr_uid::text,      true);
-  PERFORM set_config('t46p.cashier_uid', v_cashier_uid::text,   true);
-  PERFORM set_config('t46p.po_credit',   v_po_credit_id::text,  true);
-  PERFORM set_config('t46p.po_cash',     v_po_cash_id::text,    true);
-  PERFORM set_config('t46p.prod_id',     v_prod_id::text,       true);
-  PERFORM set_config('t46p.section',     v_section_id::text,    true);
+  -- Pending PO (credit, unpaid) — T10 proves v2 still accepts payment for
+  -- status='pending' (no regression from the cancelled-only guard).
+  v_items := jsonb_build_array(
+    jsonb_build_object('product_id', v_prod_id, 'quantity', 20, 'unit', 'kg', 'unit_cost', 1000)
+  );
+  SELECT (create_purchase_order_v2(
+    p_supplier_id := v_supplier_id, p_items := v_items,
+    p_payment_terms := 'credit', p_vat_rate := 0.0
+  ))->>'po_id' INTO v_po_pending_id;
+
+  -- Cancelled PO — T9 proves v2 refuses payment (po_cancelled, P0001).
+  v_items := jsonb_build_array(
+    jsonb_build_object('product_id', v_prod_id, 'quantity', 10, 'unit', 'kg', 'unit_cost', 1000)
+  );
+  SELECT (create_purchase_order_v2(
+    p_supplier_id := v_supplier_id, p_items := v_items,
+    p_payment_terms := 'credit', p_vat_rate := 0.0
+  ))->>'po_id' INTO v_po_cancelled_id;
+  PERFORM cancel_purchase_order_v1(p_po_id := v_po_cancelled_id, p_reason := 'S33 pgTAP fixture — v2 cancelled guard');
+
+  PERFORM set_config('t46p.mgr_uid',      v_mgr_uid::text,       true);
+  PERFORM set_config('t46p.cashier_uid',  v_cashier_uid::text,   true);
+  PERFORM set_config('t46p.po_credit',    v_po_credit_id::text,  true);
+  PERFORM set_config('t46p.po_cash',      v_po_cash_id::text,    true);
+  PERFORM set_config('t46p.po_pending',   v_po_pending_id::text, true);
+  PERFORM set_config('t46p.po_cancelled', v_po_cancelled_id::text, true);
+  PERFORM set_config('t46p.prod_id',      v_prod_id::text,       true);
+  PERFORM set_config('t46p.section',      v_section_id::text,    true);
 END $fix$;
 
 -- ─── T1: CASHIER forbidden ────────────────────────────────────────────────────
@@ -93,7 +121,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM record_po_payment_v1(
+      PERFORM record_po_payment_v2(
         p_po_id           := current_setting('t46p.po_credit', true)::uuid,
         p_amount          := 30000,
         p_method          := 'transfer',
@@ -103,7 +131,7 @@ SELECT throws_ok(
   $gate$,
   'P0003',
   NULL,
-  'T1: CASHIER forbidden (P0003) on record_po_payment_v1'
+  'T1: CASHIER forbidden (P0003) on record_po_payment_v2'
 );
 
 -- ─── T2: Happy path — partial bank payment ────────────────────────────────────
@@ -116,7 +144,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_result := record_po_payment_v1(
+  v_result := record_po_payment_v2(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 30000,
     p_method          := 'transfer',
@@ -145,7 +173,7 @@ SELECT is(
 
 -- Derived status = 'partial' (30000 of 100000 paid).
 SELECT is(
-  (SELECT (record_po_payment_v1(
+  (SELECT (record_po_payment_v2(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 0.01,
     p_method          := 'transfer',
@@ -165,7 +193,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
-  v_r2 := record_po_payment_v1(
+  v_r2 := record_po_payment_v2(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 30000,
     p_method          := 'transfer',
@@ -206,7 +234,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
-      PERFORM record_po_payment_v1(
+      PERFORM record_po_payment_v2(
         p_po_id           := current_setting('t46p.po_credit', true)::uuid,
         p_amount          := 999999,   -- far exceeds remaining ~69999.99
         p_method          := 'cash',
@@ -230,7 +258,7 @@ BEGIN
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
 
   -- Pay the remaining ~69999.99 (100000 - 30000 - 0.01 from T2c sanity call).
-  v_result := record_po_payment_v1(
+  v_result := record_po_payment_v2(
     p_po_id           := current_setting('t46p.po_credit', true)::uuid,
     p_amount          := 69999.99,
     p_method          := 'transfer',
@@ -258,12 +286,12 @@ SELECT is(
   'T6b: authenticated cannot DELETE purchase_payments (append-only)'
 );
 
--- ─── T7: REVOKE — anon cannot execute record_po_payment_v1 ────────────────────
+-- ─── T7: REVOKE — anon cannot execute record_po_payment_v2 ────────────────────
 SELECT is(
   (SELECT has_function_privilege('anon',
-     'record_po_payment_v1(uuid,numeric,text,text,uuid)', 'execute')),
+     'record_po_payment_v2(uuid,numeric,text,text,uuid)', 'execute')),
   false,
-  'T7: anon does not have EXECUTE on record_po_payment_v1'
+  'T7: anon does not have EXECUTE on record_po_payment_v2'
 );
 
 -- ─── T8: Cash JE credit account = PURCHASE_CASH_OUT ─────────────────────────
@@ -316,6 +344,58 @@ SELECT is(
      AND a.code = '1110'),
   1,
   'T8b: cash auto-payment JE credit = account 1110 (PURCHASE_CASH_OUT)'
+);
+
+-- ─── T9: v2 guard — cancelled PO rejected (po_cancelled, P0001) ──────────────
+-- Dev incident this migration fixes: a cancelled PO still accepted
+-- record_po_payment_v1, a real Rp 6.660 payment was written and posted
+-- JE-20260821-0057. v2 must refuse it before delegating to the internal helper.
+SELECT throws_ok(
+  $canc$
+    DO $blk$
+    DECLARE v_uid UUID := current_setting('t46p.mgr_uid', true)::uuid;
+    BEGIN
+      PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
+      PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
+      PERFORM record_po_payment_v2(
+        p_po_id           := current_setting('t46p.po_cancelled', true)::uuid,
+        p_amount          := 1000,
+        p_method          := 'cash',
+        p_idempotency_key := 'cace1100-0000-0000-0000-000000000001'::uuid
+      );
+    END $blk$;
+  $canc$,
+  'P0001',
+  'po_cancelled: payment refused on a cancelled purchase order',
+  'T9: record_po_payment_v2 refuses payment on a cancelled PO (po_cancelled)'
+);
+
+-- ─── T10: v2 no-regression — a pending PO stays payable ──────────────────────
+-- The guard blocks status='cancelled' ONLY. draft/pending/partial/received
+-- must be unaffected — proven here on a freshly-created 'pending' PO.
+DO $$
+DECLARE
+  v_uid    UUID := current_setting('t46p.mgr_uid', true)::uuid;
+  v_result JSONB;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
+
+  v_result := record_po_payment_v2(
+    p_po_id           := current_setting('t46p.po_pending', true)::uuid,
+    p_amount          := 5000,
+    p_method          := 'transfer',
+    p_idempotency_key := 'fee1f000-0000-0000-0000-000000000001'::uuid
+  );
+  PERFORM set_config('t46p.pending_pay_status', v_result->>'derived_status', true);
+END $$;
+
+SELECT is(
+  current_setting('t46p.pending_pay_status', true),
+  'partial',
+  'T10: record_po_payment_v2 still accepts payment on a pending PO (no regression)'
 );
 
 SELECT * FROM finish();

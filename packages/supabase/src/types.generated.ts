@@ -6934,7 +6934,7 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_daily_sales_v2: {
+      get_daily_sales_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7945,7 +7945,7 @@ export type Database = {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
       }
-      record_po_payment_v1: {
+      record_po_payment_v2: {
         Args: {
           p_amount: number
           p_idempotency_key?: string

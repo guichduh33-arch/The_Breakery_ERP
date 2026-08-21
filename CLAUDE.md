@@ -21,31 +21,25 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 
 ## Règles documentaires — non négociables
 
-1. **Tu ne crées pas de rapport, plan de session, INDEX, compte-rendu ou résumé** :
-   ces contenus vivent dans ta réponse, jamais en fichier. **Exception — les
-   documents que la tâche appelle** (un ADR qui grave une décision de Mamat, une
-   spec exigée par un ADR, une fiche que Mamat demande) : ceux-là, **tu les
-   rédiges toi-même dans le fichier**, puis tu les soumets à Mamat.
-2. **Tu rédiges, Mamat valide, tu commites — dans cet ordre.** Le commit d'un
+1. **Tu rédiges, Mamat valide, tu commites — dans cet ordre.** Le commit d'un
    fichier de doc se fait **après validation explicite de Mamat**, sur une branche
    dédiée (`docs/…`, `feat/…`, `fix/…`, **jamais `master`**), sans push sans
    demander. Pas de validation explicite = pas de commit.
-3. **Les plans de session vivent dans la conversation** (mode plan), jamais en
+2. **Les plans de session vivent dans la conversation** (mode plan), jamais en
    fichier. Ce qui mérite de survivre à une session devient un ADR — que tu
-   rédiges et que Mamat valide (règles 1-2) — ou disparaît avec le contexte.
-4. **Specs d'exécution (`docs/specs/`)** : uniquement quand un ADR l'exige
+   rédiges et que Mamat valide (règle 1) — ou disparaît avec le contexte.
+3. **Specs d'exécution (`docs/specs/`)** : uniquement quand un ADR l'exige
    explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Rédigée par
-   l'agent, relue et validée par Mamat (création/commit selon règles 1-2). Une
+   l'agent, relue et validée par Mamat (création/commit selon règle 1). Une
    spec meurt à la livraison du chantier : supprimée, son
    résiduel éventuel noté dans l'ADR. Jamais plus de 3 specs vivantes.
-   Tout autre plan/spec/compte-rendu reste interdit de fichier.
-5. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
+4. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
    supersede l'ancien (`Statut: remplacé par ADR-00XX`).
-6. **Information manquante → tu t'arrêtes et tu demandes.** Tu n'inventes pas,
+5. **Information manquante → tu t'arrêtes et tu demandes.** Tu n'inventes pas,
    tu ne déduis pas « ce qui semble logique », tu ne vas pas fouiller la quarantaine.
-7. **Aucune décision autonome** : architecture, renommage, suppression, choix de
+6. **Aucune décision autonome** : architecture, renommage, suppression, choix de
    librairie, changement de comportement → accord explicite de Mamat AVANT l'action.
-8. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
+7. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
 
 ## Règles d'écriture des documents de gouvernance
 
@@ -260,7 +254,7 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   (Le préfixe `swarm/` est aboli avec le mode multi-session.)
 - Commits conventionnels (`feat(scope): …`). Co-author Claude si assisté.
 - **Un commit `docs(...)` par un agent sans validation préalable de Mamat =
-  violation de la règle 2.**
+  violation de la règle documentaire 1.**
 - **Jamais de commit direct sur master.** Tout changement passe par une branche
   (`feat/`, `fix/`, `chore/`) puis une PR — même un fix d'une ligne. Si la session
   démarre sur master, créer la branche AVANT le premier commit.
