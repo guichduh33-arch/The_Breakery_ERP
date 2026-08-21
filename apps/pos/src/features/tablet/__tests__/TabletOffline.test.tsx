@@ -14,6 +14,7 @@ import { render, screen, renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { useTabletOffline } from '../hooks/useTabletOffline';
+import type { TabletConnection } from '../hooks/useTabletConnectionState';
 import {
   useTabletMenuCacheRead,
   useTabletMenuCacheWriter,
@@ -40,14 +41,28 @@ function withQuery(node: React.ReactElement, qc?: QueryClient) {
   return <QueryClientProvider client={client}>{node}</QueryClientProvider>;
 }
 
+/** Fabrique un état de connexion complet — lot D (audit 2026-08-22). */
+function conn(
+  state: TabletConnection['state'],
+  lastSync: Date | null = null,
+): TabletConnection {
+  return {
+    state,
+    isOnline: state === 'online',
+    canSendOrders: state !== 'no_network',
+    lastSync,
+    offlineSince: null,
+  };
+}
+
 describe('OfflineBanner', () => {
-  it('renders nothing when isOnline=true', () => {
-    const { container } = render(<OfflineBanner isOnline={true} lastSync={null} />);
+  it('renders nothing when the cloud answers', () => {
+    const { container } = render(<OfflineBanner connection={conn('online')} />);
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders the banner with role=status when isOnline=false', () => {
-    render(<OfflineBanner isOnline={false} lastSync={null} />);
+  it('renders the banner with role=status when the cloud is down', () => {
+    render(<OfflineBanner connection={conn('offline_bus')} />);
     const banner = screen.getByRole('status');
     expect(banner).toHaveAttribute('data-testid', 'tablet-offline-banner');
     expect(banner).toHaveTextContent(/offline/i);
@@ -55,8 +70,25 @@ describe('OfflineBanner', () => {
 
   it('renders the last-sync relative time when a date is provided', () => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60_000);
-    render(<OfflineBanner isOnline={false} lastSync={fiveMinAgo} />);
+    render(<OfflineBanner connection={conn('offline_bus', fiveMinAgo)} />);
     expect(screen.getByRole('status')).toHaveTextContent(/last synced 5 minutes ago/i);
+  });
+
+  // Cloud coupé, bus debout : la commande PART. Le bandeau doit rassurer, pas
+  // alarmer — sinon la serveuse s'arrête alors que le service tient encore.
+  it('says orders still reach the kitchen when the LAN bus is up', () => {
+    render(<OfflineBanner connection={conn('offline_bus')} />);
+    expect(screen.getByRole('status')).toHaveTextContent(/still reach the kitchen/i);
+  });
+
+  // Cloud ET bus coupés : rien n'aboutit. C'est le seul cas où il faut arrêter.
+  it('says orders CANNOT be sent when both the cloud and the bus are down', () => {
+    render(<OfflineBanner connection={conn('no_network')} />);
+    const banner = screen.getByRole('status');
+    expect(banner).toHaveAttribute('data-connection-state', 'no_network');
+    expect(banner).toHaveTextContent(/no network/i);
+    expect(banner).toHaveTextContent(/cannot be sent/i);
+    expect(banner).not.toHaveTextContent(/still reach the kitchen/i);
   });
 });
 

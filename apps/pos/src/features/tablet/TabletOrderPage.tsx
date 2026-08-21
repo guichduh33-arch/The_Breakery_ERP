@@ -51,7 +51,7 @@ import { TabletMenuView } from './components/TabletMenuView';
 import { TabletCartPanel } from './components/TabletCartPanel';
 import { OfflineBanner } from './components/OfflineBanner';
 import { OrderTypeToggle } from './components/OrderTypeToggle';
-import { useTabletOffline } from './hooks/useTabletOffline';
+import { useTabletConnectionState } from './hooks/useTabletConnectionState';
 import { useCreateTabletOrder } from './hooks/useCreateTabletOrder';
 import { FloorPlanView } from './FloorPlanView';
 
@@ -107,7 +107,7 @@ export function TabletOrderPage({
     return out;
   }, [tableOrdersQuery.data]);
 
-  const { isOnline, lastSync } = useTabletOffline();
+  const connection = useTabletConnectionState();
   const mutation = useCreateTabletOrder();
   const clientUuidRef = useRef<string>(crypto.randomUUID());
 
@@ -215,7 +215,7 @@ export function TabletOrderPage({
   if (view === 'floor-plan') {
     return (
       <div className="flex flex-col h-full">
-        <OfflineBanner isOnline={isOnline} lastSync={lastSync} />
+        <OfflineBanner connection={connection} />
         <div className="px-6 py-3 border-b border-border-subtle bg-bg-elevated flex items-center gap-4">
           <Button
             variant="ghost"
@@ -272,7 +272,7 @@ export function TabletOrderPage({
 
   return (
     <div className="flex flex-col h-full" data-testid="tablet-order-page">
-      <OfflineBanner isOnline={isOnline} lastSync={lastSync} />
+      <OfflineBanner connection={connection} />
       {/* Bandeau permanent : sans lui, rien ne distingue une 2ᵉ tournée d'une
           commande neuve, et la serveuse enverrait un doublon à la table. */}
       {isAppendMode && (
