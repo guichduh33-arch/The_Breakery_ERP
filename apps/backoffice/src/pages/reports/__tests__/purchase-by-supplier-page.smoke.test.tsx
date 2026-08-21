@@ -111,7 +111,7 @@ describe('PurchaseBySupplierPage (smoke)', () => {
     // Bali Dairy has avg_lead_days null — rendered as em-dash
     expect(within(table).getAllByText('—').length).toBeGreaterThanOrEqual(1);
     // La part vient du SERVEUR, 2 décimales.
-    expect(within(table).getByText('80.00%')).toBeInTheDocument();
+    expect(within(table).getByText('80,00%')).toBeInTheDocument();
   });
 
   it('ventilates the spend by supplier instead of drawing a donut', async () => {

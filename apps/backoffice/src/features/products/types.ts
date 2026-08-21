@@ -118,8 +118,16 @@ export type ProductColumnId =
  * dans sa catégorie, son SKU et la présence ou non d'un prix de vente. Rien
  * n'est perdu : le menu Columns la rappelle en un clic, et l'utilisateur qui
  * l'affiche accepte le défilement horizontal en connaissance de cause.
+ *
+ * `wholesale` LA REJOINT le 2026-08-21 (arbitrage Mamat). Les boutons d'action
+ * de ligne passent de 24 à 32 px — la cible qui porte `Delete` était à deux
+ * pixels d'une cible bénigne — et la colonne `actions` réclame 1,5rem de plus.
+ * Le budget étant déjà tendu à 1212 px sur 1219, quelque chose devait céder.
+ * C'est le prix de gros : il sert le B2B, qui a ses propres écrans, pas la
+ * lecture quotidienne du catalogue. Même clause de retour que `type` — un clic
+ * dans le menu Columns, et l'URL garde le choix.
  */
-export const PRODUCT_DEFAULT_HIDDEN_COLUMNS: readonly ProductColumnId[] = ['type'];
+export const PRODUCT_DEFAULT_HIDDEN_COLUMNS: readonly ProductColumnId[] = ['type', 'wholesale'];
 
 export const PRODUCT_COLUMNS: readonly { id: ProductColumnId; label: string }[] = [
   { id: 'type',      label: 'Type' },

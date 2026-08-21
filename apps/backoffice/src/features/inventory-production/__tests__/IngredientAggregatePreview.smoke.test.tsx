@@ -233,8 +233,8 @@ describe('IngredientAggregatePreview smoke', () => {
     const cells = Array.from(document.querySelectorAll('td')).map((el) => el.textContent?.trim() ?? '');
     const allText = cells.join(' ');
     expect(allText).toContain('2'); // flour total = 2.0
-    expect(allText).toContain('0.8'); // butter total
-    expect(allText).toContain('1.1'); // chocolate total
+    expect(allText).toContain('0,8'); // butter total
+    expect(allText).toContain('1,1'); // chocolate total
 
     // All sufficient (stock=100 >> required)
     const okBadges = screen.getAllByTestId('status-ok');

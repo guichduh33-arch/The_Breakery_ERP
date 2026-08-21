@@ -33,6 +33,7 @@ import { useMemo, type JSX } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toLocalDateStr, DEFAULT_TIMEZONE, type CsvColumn } from '@breakery/domain';
 import { cn } from '@breakery/ui';
+import { formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -64,7 +65,7 @@ function deltaTone(d: number | null): string {
 
 function formatDeltaPct(d: number | null): string {
   if (d === null) return '—';
-  return `${d > 0 ? '+' : ''}${d.toFixed(2)}%`;
+  return formatPercent(d, { digits: 2, signed: true });
 }
 
 function round2(n: number): number {

@@ -25,6 +25,7 @@ import { useMemo, type JSX } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { CsvColumn } from '@breakery/domain';
+import { formatPercent } from '@breakery/utils';
 import { supabase } from '@/lib/supabase.js';
 import { PanelCard } from '@/components/PanelCard.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -97,7 +98,7 @@ function DeltaBadge({ pct }: { pct: number | null }): JSX.Element {
       : 'bg-surface-4 text-text-secondary';
   return (
     <span className={cn('inline-flex rounded px-1 py-0.5 font-data text-xs font-medium', tone)}>
-      {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+      {formatPercent(pct, { signed: true })}
     </span>
   );
 }
@@ -127,7 +128,7 @@ export default function PriceChangesPage(): JSX.Element {
       <label className="flex items-center gap-2 text-sm text-text-secondary">
         <span className="sr-only">Product</span>
         <select
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
           value={productId}
           onChange={(e) => { setProductId(e.target.value); }}
           aria-label="Filter by product"

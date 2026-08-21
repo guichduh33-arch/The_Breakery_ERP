@@ -29,6 +29,7 @@
 
 import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
+import { formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { Delta } from '@/components/kpi/Delta.js';
@@ -256,7 +257,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
                   <td className={`${NUM_CELL} text-text-secondary`}>
                     {r.avg_lead_days ?? '—'}
                   </td>
-                  <td className={NUM_CELL}>{r.share_pct.toFixed(2)}%</td>
+                  <td className={NUM_CELL}>{formatPercent(r.share_pct, { digits: 2 })}</td>
                 </tr>
               ))}
             </tbody>

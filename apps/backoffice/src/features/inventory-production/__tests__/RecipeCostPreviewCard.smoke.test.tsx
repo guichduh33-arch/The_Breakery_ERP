@@ -111,7 +111,7 @@ describe('RecipeCostPreviewCard smoke', () => {
     await waitFor(() => {
       expect(screen.getByTestId('margin-pct')).toHaveAttribute('data-tone', 'green');
     });
-    expect(screen.getByTestId('margin-pct').textContent).toMatch(/75\.0%/);
+    expect(screen.getByTestId('margin-pct').textContent).toMatch(/75,0%/);
   });
 
   it('shows a red margin badge when margin < 40', async () => {

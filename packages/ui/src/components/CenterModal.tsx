@@ -59,6 +59,12 @@ export function CenterModal({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-backdrop backdrop-blur-md motion-reduce:animate-none motion-reduce:transition-none" />
         <DialogPrimitive.Content
           data-testid={testId}
+          // `aria-modal` suit la prop `modal`, et ne l'affirme donc que quand
+          // c'en est un : ce composant est le SEUL du dépôt à pouvoir s'ouvrir
+          // en non-modal, et un « aria-modal=true » sur un panneau qui laisse
+          // le reste de la page cliquable mentirait au lecteur d'écran dans
+          // l'autre sens. Absent de tous les dialogues jusqu'au 2026-08-21.
+          aria-modal={modal ? 'true' : undefined}
           // Spread to preserve Radix auto-linking when a Description child IS
           // rendered; explicit undefined silences the warning when not.
           {...(description ? {} : { 'aria-describedby': undefined })}

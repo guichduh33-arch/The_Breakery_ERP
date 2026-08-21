@@ -128,9 +128,9 @@ describe('RecipeCostOverviewPage smoke', () => {
       expect(screen.getByTestId('overview-row-prod-a')).toBeInTheDocument();
     });
     const rowA = screen.getByTestId('overview-row-prod-a');
-    // The delta cell shows "+25.00%" — find it by text
+    // The delta cell shows "+25,00%" — find it by text
     const deltaCell = Array.from(rowA.querySelectorAll('td')).find(
-      (td) => td.textContent?.includes('+25.00%'),
+      (td) => td.textContent?.includes('+25,00%'),
     );
     expect(deltaCell).toBeTruthy();
     expect(deltaCell!.className).toContain('text-danger');
@@ -168,7 +168,7 @@ describe('RecipeCostOverviewPage smoke', () => {
     mockRpc.mockResolvedValue({ data: OVERVIEW_ROWS, error: null });
     renderPage();
     const up = await screen.findByTestId('kpi-biggest-up');
-    expect(up.textContent).toMatch(/\+25\.00%/);
+    expect(up.textContent).toMatch(/\+25,00%/);
     expect(up.textContent).toMatch(/Croissant/);
     // Aucun produit n'a baissé dans la fixture : on le DIT, on n'affiche pas 0 %.
     expect(screen.getByTestId('kpi-biggest-down').textContent).toMatch(/no recipe went down/);

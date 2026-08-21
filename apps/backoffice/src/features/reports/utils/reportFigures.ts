@@ -18,6 +18,8 @@
 // elle consomme désormais celles-ci. Le module n'a plus qu'une définition de
 // chacun de ces calculs.
 
+import { formatPercent } from '@breakery/utils';
+
 /** Lignes visibles par défaut dans une carte de ventilation. */
 export const TOP_N = 5;
 
@@ -55,9 +57,19 @@ export function formatCount(v: number): string {
   return v.toLocaleString('id-ID');
 }
 
-/** Pourcentage à une décimale, locale métier. */
+/**
+ * Pourcentage à une décimale, locale métier.
+ *
+ * DÉLÈGUE désormais à `formatPercent` de `@breakery/utils` (2026-08-21). Cette
+ * fonction avait raison depuis le lot D — elle est même la seule du dépôt à
+ * avoir eu raison — mais elle vivait sous `features/reports`, hors de portée de
+ * la production, du catalogue et du marketing, qui ont donc tous réinventé le
+ * `toFixed()` à point décimal qu'elle évitait. La règle a déménagé là où tout
+ * le monde peut l'atteindre ; ce nom reste pour les vingt-et-un appelants du
+ * module, et parce qu'il dit sa précision.
+ */
 export function formatPct1(v: number): string {
-  return `${v.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  return formatPercent(v, { digits: 1 });
 }
 
 export interface TopSlice<T> {

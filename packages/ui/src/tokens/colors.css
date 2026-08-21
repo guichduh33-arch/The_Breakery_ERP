@@ -282,14 +282,21 @@
   --ink-base:     #201d19;     /* fond top bar + remplissage bouton primaire */
   --ink-hover:    #2e2925;     /* onglet ouvert / survol sur encre */
   --ink-raised:   #3a342c;     /* pastille avatar */
-  --ink-border:   #453e35;     /* bordure de contrôle sur encre */
+  /* FILET DE SÉPARATION sur encre — 1,59:1 contre `--ink-base`. Il sépare deux
+   * blocs ; il ne délimite JAMAIS un contrôle, où WCAG 1.4.11 demande 3:1. La
+   * limite d'un contrôle encré est `--ink-fg-sub` (5,82:1). Cette ligne disait
+   * « bordure de contrôle » jusqu'au 2026-08-21 : le bouton `Search / Ctrl+K`
+   * de la barre du haut l'avait crue et rendait une limite invisible sur toutes
+   * les pages. La doctrine complète est dans
+   * `apps/backoffice/src/features/inventory-production/inkPanel.ts`. */
+  --ink-border:   #453e35;
   --ink-fg:       #fffdf9;     /* texte le plus clair sur encre */
   --ink-fg-muted: #e8e1d5;     /* icônes sur encre */
   --ink-fg-dim:   #c4bcae;     /* onglet inactif */
   --ink-fg-sub:   #a09789;     /* placeholder sur encre */
   --ink-gold:     #d3ab5c;     /* soulignement d'onglet actif (or éclairci) */
-  /* Sémantique sur encre — ÉCLAIRCIE. Le vert (#187a52) et le rouge (#b4342c)
-   * du thème sont taillés pour un fond blanc ; posés sur #201d19 ils tombent
+  /* Sémantique sur encre — ÉCLAIRCIE. Le vert (`--green-base`) et le rouge
+   * (`--red-base`) du thème sont taillés pour le papier ; posés sur #201d19 ils tombent
    * sous le seuil de lecture. Ces deux valeurs sont les mêmes teintes remontées
    * en luminosité, et ne servent QUE sur un fond encre. */
   --ink-success:  #86efac;
@@ -309,17 +316,42 @@
   --gold-strong: #574112;
   --gold-fg:     #fffdf9;                    /* texte sur remplissage or */
 
-  /* Semantic — assombris pour AA sur les surfaces claires. */
-  --green-base:    #187a52;
-  --green-hover:   #1a8c5e;
-  --green-pressed: #126343;
+  /* Semantic — assombris pour AA sur les surfaces claires.
+   *
+   * Assombris une SECONDE fois le 2026-08-21 (critique du BO, défauts mesurés) :
+   * la première passe visait le texte sur la FEUILLE BLANCHE, où les deux
+   * valeurs passaient. Mais le chip d'état du primitif Badge pose ce même texte
+   * sur sa propre teinte douce à 12 % — et cette teinte se compose avec le fond
+   * qui la porte. Sur le PAPIER de page (#f0efec), le badge `Paid` rendait
+   * #187a52 sur #d6e1da, soit 3,96:1, et `Low stock` #b4342c sur #e9d9d5, soit
+   * 4,41:1. Les deux sous le seuil AA, et invisibles à qui ne mesure que sur
+   * blanc. Le pire fond du thème fait donc loi ici, comme il l'a fait pour l'or
+   * le 2026-08-13.
+   *
+   *   #156d49 sur sa propre teinte douce posée sur le papier — 4,65:1
+   *   #b03029 sur la sienne, même fond                       — 4,61:1
+   *
+   * Les teintes douces suivent la base : les laisser sur l'ancienne valeur
+   * ferait diverger le fond du chip de son texte au premier coup d'œil suivant. */
+  --green-base:    #156d49;
+  --green-hover:   #187a52;
+  --green-pressed: #105539;
   --green-fg:      #ffffff;
-  --red-base:      #b4342c;
-  --red-soft:      rgba(180, 52, 44, 0.12);
-  --red-as-text:   var(--red-base);          /* rouge EN premier plan — 6,1:1 sur la feuille blanche */
-  --red-on-fill:   #ffffff;                  /* texte SUR remplissage rouge — 6,1:1 sur --red-base */
-  --blue-info:     #2b6c9c;
-  --amber-warn:    #8a5a10;
+  --red-base:      #b03029;
+  --red-soft:      rgba(176, 48, 41, 0.12);
+  --red-as-text:   var(--red-base);          /* rouge EN premier plan — 6,36:1 sur la feuille blanche */
+  --red-on-fill:   #ffffff;                  /* texte SUR remplissage rouge — 6,36:1 sur --red-base */
+  /* L'ambre et le bleu tombaient du MÊME défaut que le vert et le rouge, sans
+   * qu'aucun écran ne les ait montrés le jour de la mesure : 4,39:1 et 4,18:1
+   * sur leur propre teinte douce posée sur le papier. Corriger deux des quatre
+   * variantes sémantiques du chip aurait laissé le défaut entier derrière une
+   * moitié réparée. `--blue-info` n'est PAS `--chart-1` : les deux valaient
+   * #2b6c9c, ils sont déclarés séparément, et la série de données garde sa
+   * couleur. Nouveaux ratios, MESURÉS au navigateur sur le thème rendu :
+   * 4,68:1 et 4,86:1. Sur la feuille blanche, les quatre chips montent à
+   * 5,26–5,54:1. */
+  --blue-info:     #26618d;
+  --amber-warn:    #845611;
   /* Texte SUR remplissage ambre — même logique que --gold-fg ici : l'ambre du
    * thème clair est une ENCRE sombre, son premier plan est donc l'ivoire de la
    * feuille. 5,82:1 sur --amber-warn. Le POS le résout en brun quasi-noir :
@@ -327,15 +359,15 @@
   --amber-fg:      #fffdf9;
 
   --success:      var(--green-base);
-  --success-soft: rgba(24, 122, 82, 0.12);
+  --success-soft: rgba(21, 109, 73, 0.12);
   --warning:      var(--amber-warn);
-  --warning-soft: rgba(138, 90, 16, 0.12);
+  --warning-soft: rgba(132, 86, 17, 0.12);
   --danger:       var(--red-base);
   --danger-soft:  var(--red-soft);
   --info:         var(--blue-info);
   /* Corrigé : --info-soft utilisait rgba(45,143,224,·), une couleur qui
    * n'existait plus depuis l'assombrissement de --blue-info. */
-  --info-soft:    rgba(43, 108, 156, 0.12);
+  --info-soft:    rgba(38, 97, 141, 0.12);
 
   /* Categorical identity hues — nuances -700/-800, lisibles sur l'ivoire. */
   --cat-amber:   180 83 9;

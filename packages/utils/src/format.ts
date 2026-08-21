@@ -89,3 +89,58 @@ export function formatQuantity(
   const body = isCount ? _qtyIntFmt.format(n) : _qtyFmt.format(n);
   return unitCode ? `${body} ${unitCode}` : body;
 }
+
+// ─── POURCENTAGES ────────────────────────────────────────────────────────────
+//
+// POURQUOI CETTE FONCTION EXISTE (critique du BO, 2026-08-21, P1-3).
+//
+// `toFixed()` rend un POINT décimal quelle que soit la locale — c'est une
+// méthode de `Number`, elle ne consulte aucun réglage régional. Les montants,
+// eux, passent par Intl en id-ID, où le point est le séparateur de MILLIERS.
+// Résultat mesuré à l'écran, à deux clics d'écart :
+//
+//   Rp 3.257.500   ← le point sépare les milliers
+//   -99.90%        ← le même point sépare les décimales
+//
+// Un lecteur ne peut pas apprendre les deux. La marge devient lisible comme
+// « moins quatre-vingt-dix-neuf mille quatre-vingt-dix » le jour où elle est
+// assez grande pour en avoir l'air. Un pourcentage s'écrit donc avec la MÊME
+// locale que la monnaie, et la décimale est une virgule : `-99,9%`.
+//
+// PÉRIMÈTRE. Cette fonction est pour l'AFFICHAGE. Une colonne d'export CSV
+// garde son point décimal : un tableur qui ouvre le fichier en locale anglaise
+// lirait « 12,5 » comme deux colonnes, et un chiffre coupé en deux est pire
+// qu'un chiffre au mauvais format. La règle n'est pas « une seule écriture
+// partout », elle est « une seule écriture par surface de lecture ».
+const _pctFmt = new Intl.NumberFormat('id-ID', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+const _pctFmt2 = new Intl.NumberFormat('id-ID', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const _pctFmt0 = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+
+export interface FormatPercentOptions {
+  /** Décimales rendues : 0, 1 (défaut) ou 2. */
+  digits?: 0 | 1 | 2;
+  /** Préfixe `+` sur les valeurs positives — pour un écart, pas pour une part. */
+  signed?: boolean;
+}
+
+/**
+ * Un pourcentage DÉJÀ exprimé en points de pourcentage (`12.5` → `12,5%`).
+ * Une valeur nulle ou non numérique rend le tiret, comme les montants.
+ */
+export function formatPercent(
+  value: number | string | null | undefined,
+  options?: FormatPercentOptions,
+): string {
+  const n = toFiniteNumber(value);
+  if (n === null) return '—';
+  const digits = options?.digits ?? 1;
+  const fmt = digits === 0 ? _pctFmt0 : digits === 2 ? _pctFmt2 : _pctFmt;
+  const sign = options?.signed === true && n > 0 ? '+' : '';
+  return `${sign}${fmt.format(n)}%`;
+}

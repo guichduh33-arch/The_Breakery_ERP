@@ -26,8 +26,8 @@ function renderModal(overrides: Partial<{
 describe('YieldVarianceModal smoke', () => {
   it('shows the computed variance percentage', () => {
     renderModal({ expectedQty: 10, actualQty: 5, thresholdPct: 15 });
-    // (5-10)/10*100 = -50.0%
-    expect(screen.getByTestId('variance-pct').textContent).toMatch(/-50\.0%/);
+    // (5-10)/10*100 = -50,0%
+    expect(screen.getByTestId('variance-pct').textContent).toMatch(/-50,0%/);
   });
 
   it('disables Confirm until the reason has ≥ 5 chars and enables after', () => {

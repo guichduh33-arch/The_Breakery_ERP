@@ -130,6 +130,14 @@ components:
     rounded: "{rounded.md}"
     padding: "8px 12px"
     height: "44px"
+  # Le second cran de l'échelle des champs — voir § Components / Champs.
+  # Barre de filtres, cellule éditable, sélecteur de période.
+  input-inline:
+    backgroundColor: "{colors.sheet}"
+    textColor: "{colors.text-primary}"
+    rounded: "{rounded.md}"
+    padding: "6px 10px"
+    height: "36px"
   table-header:
     backgroundColor: "{colors.paper-inert}"
     textColor: "{colors.text-muted}"
@@ -691,7 +699,22 @@ Deux familles coexistent, et c'est délibéré — mais la frontière doit être
 
 ### Champs
 
-- Hauteur 44 px, rayon 4 px, **bordure de contrôle `#86827a`**, fond feuille blanche.
+**DEUX hauteurs, et deux seulement** — arbitrage du 2026-08-21, après une mesure
+qui en a relevé cinq à l'écran (44 / 36 / 34 / 32 / 28) quand cette section n'en
+déclarait qu'une. Le cran se lit sur le RÔLE du champ, jamais sur la place
+disponible :
+
+| Hauteur | Classe | Rôle |
+|---|---|---|
+| **44 px** | `h-touch-min` | Champ de **formulaire** — dialogue, page de saisie. C'est aussi la hauteur des primitifs `Input` et `Select` de `@breakery/ui`, qui n'ont donc jamais à être surchargés dans ce rôle. |
+| **36 px** | `h-9` | Champ **en ligne** — barre de filtres, cellule éditable de tableau, sélecteur de période. Le back-office est un outil de session longue sur ordinateur : imposer 44 px à une barre de dix filtres coûte une ligne de tableau à chaque écran. |
+
+Les 34 px et 28 px relevés n'étaient pas un troisième cran : c'étaient des
+hauteurs OBTENUES — un `p-2` sans hauteur déclarée, un champ de saisie d'opname
+comprimé. Une hauteur qui tombe d'un calcul de remplissage n'est pas une
+décision, et elle ne se reproduit jamais deux fois pareil.
+
+- Rayon 4 px, **bordure de contrôle `#86827a`**, fond feuille blanche.
 - **Focus** : contour or de 2 px décalé de 2 px, halo de la même teinte.
 - **Désactivé** : curseur interdit et opacité réduite.
 

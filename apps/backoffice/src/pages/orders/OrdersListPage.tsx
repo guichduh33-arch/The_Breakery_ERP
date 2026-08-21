@@ -300,7 +300,12 @@ export default function OrdersListPage(): JSX.Element {
       render: (o) => (
         <Link
           to={`/backoffice/orders/${o.id}`}
-          className="font-data text-xs text-info underline [text-decoration-color:color-mix(in_srgb,transparent,var(--info)_70%)] underline-offset-[3px] hover:[text-decoration-color:var(--info)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          // Or, et non `info` (critique du 2026-08-21, P1-3). DESIGN.md donne
+          // les liens à l'or ; ces cinquante-là étaient bleus, et le bleu du
+          // thème sert par ailleurs de première série de graphique. Un lecteur
+          // apprenait donc « bleu = série de données » sur un écran et
+          // « bleu = clique ici » sur le suivant. Une couleur, un sens.
+          className="font-data text-xs text-gold underline [text-decoration-color:color-mix(in_srgb,transparent,var(--gold-base)_70%)] underline-offset-[3px] hover:[text-decoration-color:var(--gold-base)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           #{o.order_number.replace(/^#+/, '')}
         </Link>
@@ -370,16 +375,16 @@ export default function OrdersListPage(): JSX.Element {
       ),
     },
     {
-      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '6rem',
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '7.5rem',
       render: (o) => (
-        <span className="inline-flex items-center gap-0.5">
+        <span className="inline-flex items-center gap-1.5">
           {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
             <RowActionButton
               label={`Edit items of ${o.order_number}`}
               testId={`row-edit-${o.id}`}
               onClick={() => { void loadItemsAndOpenEdit(o.id, o.order_number); }}
             >
-              <Edit3 className="h-3.5 w-3.5" aria-hidden />
+              <Edit3 className="h-4 w-4" aria-hidden />
             </RowActionButton>
           )}
           {hasVoid && (o.status === 'paid' || o.status === 'completed') && (
@@ -389,7 +394,7 @@ export default function OrdersListPage(): JSX.Element {
               destructive
               onClick={() => { setVoidTarget({ id: o.id, number: o.order_number }); }}
             >
-              <XCircle className="h-3.5 w-3.5" aria-hidden />
+              <XCircle className="h-4 w-4" aria-hidden />
             </RowActionButton>
           )}
           <RowActionButton
@@ -397,7 +402,7 @@ export default function OrdersListPage(): JSX.Element {
             testId={`row-details-${o.id}`}
             onClick={() => { setDetailId(o.id); }}
           >
-            <Eye className="h-3.5 w-3.5" aria-hidden />
+            <Eye className="h-4 w-4" aria-hidden />
           </RowActionButton>
         </span>
       ),

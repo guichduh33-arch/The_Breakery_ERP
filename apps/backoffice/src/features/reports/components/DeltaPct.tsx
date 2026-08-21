@@ -3,6 +3,7 @@
 // S29 Wave 5.1 — delta % indicator. Green if up, red if down, '—' if previous=0.
 
 import { formatDelta } from '@breakery/domain';
+import { formatPercent } from '@breakery/utils';
 
 export interface DeltaPctProps {
   current:  number;
@@ -20,7 +21,7 @@ export function DeltaPct({ current, previous, className }: DeltaPctProps): JSX.E
   const signStr = sign > 0 ? '+' : '';
   return (
     <span className={`text-xs ${color} ${className ?? ''}`} data-testid="delta-pct">
-      {signStr}{(pct * 100).toFixed(1)}%
+      {signStr}{formatPercent(pct * 100)}
     </span>
   );
 }

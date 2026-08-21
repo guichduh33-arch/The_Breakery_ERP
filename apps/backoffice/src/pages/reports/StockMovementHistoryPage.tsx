@@ -70,7 +70,7 @@ export default function StockMovementHistoryPage(): JSX.Element {
       <label className="flex items-center gap-2 text-sm text-text-secondary">
         <span className="sr-only">Movement type</span>
         <select
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value); }}
           aria-label="Filter by movement type"

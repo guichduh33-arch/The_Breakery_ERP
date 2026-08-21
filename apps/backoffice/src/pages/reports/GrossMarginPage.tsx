@@ -23,6 +23,7 @@
 import { useMemo, type JSX } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
+import { formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -68,7 +69,7 @@ function truncate(s: string): string {
 }
 
 function fmtPct(n: number): string {
-  return `${n.toFixed(1)}%`;
+  return formatPercent(n);
 }
 
 interface KpiDescriptor {
@@ -180,7 +181,7 @@ export default function GrossMarginPage(): JSX.Element {
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           aria-label="Category filter"
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
         >
           <option value="">All categories</option>
           {(categories ?? []).map((c) => (

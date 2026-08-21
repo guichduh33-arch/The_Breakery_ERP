@@ -22,7 +22,7 @@ import {
 const EMPTY_HIDDEN: ReadonlySet<ProductColumnId> = new Set();
 
 const CONTROL =
-  'h-[34px] rounded-sm border border-border-strong bg-bg-elevated text-sm text-text-primary ' +
+  'h-9 rounded-sm border border-border-strong bg-bg-elevated text-sm text-text-primary ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
 
 interface Props {
@@ -94,7 +94,7 @@ export function ProductsFilters({
       <div
         role="group"
         aria-label="View mode"
-        className="inline-flex h-[34px] items-stretch overflow-hidden rounded-sm border border-border-strong bg-bg-elevated"
+        className="inline-flex h-9 items-stretch overflow-hidden rounded-sm border border-border-strong bg-bg-elevated"
       >
         <ViewToggleButton label="Grid view" active={view === 'grid'} onClick={() => { onViewChange('grid'); }}>
           <LayoutGrid className="h-4 w-4" aria-hidden />
@@ -185,6 +185,10 @@ function ViewToggleButton({
       className={cn(
         'inline-flex w-8 items-center justify-center transition-colors duration-fast',
         active ? 'bg-surface-4 text-gold' : 'text-text-muted hover:text-text-primary',
+        // Le fichier importait déjà `FOCUS_RING` pour ses cases à cocher et
+        // l'oubliait ici : la bascule grille/liste change ce que l'écran
+        // MONTRE, et elle se prenait au clavier sans qu'on voie où on est.
+        FOCUS_RING,
       )}
     >
       {children}

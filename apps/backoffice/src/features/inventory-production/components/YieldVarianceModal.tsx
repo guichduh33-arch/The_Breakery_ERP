@@ -10,7 +10,7 @@ import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
-import { formatQuantity } from '@breakery/utils';
+import { formatPercent, formatQuantity } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface YieldVarianceModalProps {
@@ -72,12 +72,12 @@ export function YieldVarianceModal({
               data-testid="variance-pct"
               className={`font-mono font-semibold ${absVariance > thresholdPct ? 'text-danger' : 'text-warning'}`}
             >
-              {variancePct > 0 ? '+' : ''}{variancePct.toFixed(1)}%
+              {formatPercent(variancePct, { signed: true })}
             </div>
           </div>
           <div className="space-y-0.5">
             <div className="text-xs uppercase tracking-widest text-text-secondary">Threshold</div>
-            <div className="font-mono">±{thresholdPct.toFixed(1)}%</div>
+            <div className="font-mono">±{formatPercent(thresholdPct)}</div>
           </div>
         </div>
 

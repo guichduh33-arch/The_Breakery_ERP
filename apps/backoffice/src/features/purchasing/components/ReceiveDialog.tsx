@@ -106,7 +106,7 @@ export function ReceiveDialog({
                           value={qtyByItem[it.id] ?? 0}
                           onChange={(e) => patchQty(it.id, Math.min(remain, Math.max(0, Number(e.target.value))))}
                           disabled={submitting || remain <= 0}
-                          className={`h-8 w-24 text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
+                          className={`h-9 w-24 text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                           aria-label={`Receive qty for ${it.products?.name ?? it.id}`}
                         />
                       </td>

@@ -251,7 +251,7 @@ export default function PurchasePriceTrendsPage(): JSX.Element {
           value={supplierId}
           onChange={(e) => { setSupplierId(e.target.value); }}
           aria-label="Supplier filter"
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
         >
           <option value="">All suppliers</option>
           {(suppliers ?? []).map((s) => (

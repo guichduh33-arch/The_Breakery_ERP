@@ -18,8 +18,10 @@ import { formatCurrency } from '@breakery/utils';
 // SEUL endroit où une couleur du thème est recopiée côté Backoffice. Un `var()`
 // est valide dans un attribut de présentation SVG (`fill`, `stroke`) — les
 // neutres, CATEGORICAL_SERIES et les onze graphes livrés le prouvent — vérifié
-// en direct le 2026-08-18 : `var(--info)` posé en `fill` rend
-// `rgb(43, 108, 156)`, soit le #2b6c9c qu'il remplace, à l'octet près. On ne
+// en direct le 2026-08-18 : `var(--info)` posé en `fill` rendait alors
+// `rgb(43, 108, 156)`, soit le #2b6c9c qu'il remplaçait, à l'octet près — ce
+// qui prouvait le MÉCANISME, et le mécanisme n'a pas bougé quand la valeur du
+// token a changé le 2026-08-21 (voir plus bas). On ne
 // passe donc JAMAIS par `getComputedStyle`, qui exige la feuille chargée et un
 // élément portant `.theme-backoffice` : en test (jsdom) il rend `''`, et une
 // couleur vide emporte les snapshots.
@@ -45,6 +47,14 @@ import { formatCurrency } from '@breakery/utils';
 // 2026-08-18 :
 //   COGS_RAMP  5,63 · 10,00 · 3,36 · 6,95 · 2,37 · 4,88 · 11,44 · 1,91
 //   OPEX_RAMP  5,91 ·  4,20 · 3,09 · 8,63 · 2,24 · 11,83 ·  4,27 · 1,79
+//
+// ⚠️ LE PREMIER CRAN DE CHAQUE RAMPE A BOUGÉ DEPUIS (2026-08-21). `--info` et
+// `--warning` ont été assombris parce que le chip d'état du primitif Badge les
+// posait sur leur propre teinte douce et tombait sous AA. Les deux têtes de
+// rampe montent donc en contraste — COGS 5,63 → 6,61, OpEx 5,91 → 6,58 — et
+// aucun autre cran ne bouge, les quatorze suivants étant en dur. Un graphe ne
+// perd rien : il gagne. Les DEUX crans sous le plancher 3:1 listés plus bas
+// restent exactement où ils étaient.
 // Deux crans sont sous le plancher 3:1 des objets graphiques (WCAG 1.4.11) —
 // #d9a44a à 2,24:1 et #e0bd7d à 1,79:1, plus #6fb0d6 à 2,37:1 et #8cc3e0 à
 // 1,91:1 côté bleus. Un troisième PASSE mais à 3 % du seuil : #c2872a, 3,09:1,

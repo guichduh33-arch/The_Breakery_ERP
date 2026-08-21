@@ -259,7 +259,7 @@ export default function RefundsVoidsPage(): JSX.Element {
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value); }}
           aria-label="Type filter"
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
         >
           <option value="">All types</option>
           <option value="void">Voids</option>
@@ -272,7 +272,7 @@ export default function RefundsVoidsPage(): JSX.Element {
           value={staffFilter}
           onChange={(e) => { setStaffFilter(e.target.value); }}
           aria-label="Cashier filter"
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
         >
           <option value="">All cashiers</option>
           {staffOptions.map((s) => (

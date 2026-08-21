@@ -318,7 +318,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           <button
             type="button"
             onClick={onOpenSearch}
-            className="flex h-[30px] items-center gap-2 rounded-sm border border-ink-border px-2.5 text-ink-fg-sub transition-colors hover:text-ink-fg-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+            className="flex h-[30px] items-center gap-2 rounded-sm border border-ink-fg-sub px-2.5 text-ink-fg-sub transition-colors hover:text-ink-fg-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
             aria-label="Search — open the command palette"
             aria-keyshortcuts="Meta+K Control+K"
           >

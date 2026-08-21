@@ -13,7 +13,7 @@ import { useReorderSuggestions, type ReorderSuggestion } from '../hooks/useReord
 import { ProductCell } from './ProductCell.js';
 
 const FIELD =
-  'h-8 w-20 rounded-sm border border-border-strong bg-bg-elevated px-2 font-data text-xs text-text-primary ' +
+  'h-9 w-20 rounded-sm border border-border-strong bg-bg-elevated px-2 font-data text-xs text-text-primary ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
 
 /** Sous 3 jours de couverture, la ligne cesse d'être une suggestion. */

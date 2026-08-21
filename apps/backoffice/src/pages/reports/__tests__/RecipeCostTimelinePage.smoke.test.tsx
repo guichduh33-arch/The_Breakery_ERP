@@ -4,7 +4,7 @@
 // Mocks supabase.rpc to return controlled TimelineRow fixtures and asserts:
 //   1. Empty state renders "No cost history" when RPC returns 0 rows.
 //   2. 3 versions render table rows + chart wrapper.
-//   3. Delta vs prev computed correctly (v1=—, v2=+20.00%, v3=+25.00%).
+//   3. Delta vs prev computed correctly (v1=—, v2=+20,00%, v3=+25,00%).
 //   4. Exports absent when empty, CSV + PDF present with data.
 //   5. Back link href = /backoffice/reports/recipe-cost.
 //   6. Error state renders an alert.
@@ -73,8 +73,8 @@ function makeRow(
 }
 
 // 3 rows with costs [100, 120, 150]
-// v2 delta = (120-100)/100 * 100 = +20.00%
-// v3 delta = (150-120)/120 * 100 = +25.00%
+// v2 delta = (120-100)/100 * 100 = +20,00%
+// v3 delta = (150-120)/120 * 100 = +25,00%
 const THREE_ROWS = [
   makeRow(1, 100, 'initial'),
   makeRow(2, 120, 'flour price spike'),
@@ -147,13 +147,13 @@ describe('RecipeCostTimelinePage smoke', () => {
     // delta cell is index 3 (Version, Date, Cost, Δ vs prev, Change note)
     expect(cellsV1[3]?.textContent).toBe('—');
 
-    // v2 → +20.00%
+    // v2 → +20,00%
     const cellsV2 = rowV2.querySelectorAll('td');
-    expect(cellsV2[3]?.textContent).toBe('+20.00%');
+    expect(cellsV2[3]?.textContent).toBe('+20,00%');
 
-    // v3 → +25.00%
+    // v3 → +25,00%
     const cellsV3 = rowV3.querySelectorAll('td');
-    expect(cellsV3[3]?.textContent).toBe('+25.00%');
+    expect(cellsV3[3]?.textContent).toBe('+25,00%');
   });
 
   // Lot F — le menu d'export du socle se DÉSACTIVE au lieu de disparaître.

@@ -76,7 +76,14 @@ export function ListCounterStrip({
       aria-label={ariaLabel}
       data-testid={testId}
       className={cn(
-        'flex items-stretch overflow-hidden rounded-md border border-border-subtle bg-bg-elevated',
+        // `border-strong` et non `border-subtle` : la bande est un GROUPE DE
+        // CONTRÔLES, pas une carte. Sa limite extérieure valait 1,20:1 contre le
+        // papier (critique du 2026-08-21), sous les 3:1 de WCAG 1.4.11 — le
+        // groupe cliquable n'avait pas de bord visible. `border-strong` est le
+        // token de limite de contrôle sur le papier : 3,33:1. Le filet INTERNE
+        // reste `border-muted` : il sépare deux cellules du même groupe, il ne
+        // délimite pas le groupe.
+        'flex items-stretch overflow-hidden rounded-md border border-border-strong bg-bg-elevated',
         className,
       )}
     >

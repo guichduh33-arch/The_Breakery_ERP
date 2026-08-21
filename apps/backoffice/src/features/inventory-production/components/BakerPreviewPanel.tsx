@@ -9,6 +9,7 @@
 // line cap.
 
 import type { JSX } from 'react';
+import { formatPercent } from '@breakery/utils';
 import type { BakerConvertResult } from '../hooks/useBakerRecipeMode.js';
 
 export interface BakerPreviewPanelProps {
@@ -58,7 +59,7 @@ export function BakerPreviewPanel({
             {data.rows.map((r) => (
               <tr key={r.recipe_id} data-testid="baker-preview-row">
                 <td className="py-1">{r.material_name}</td>
-                <td className="text-right py-1">{Number(r.baker_percentage).toFixed(2)}%</td>
+                <td className="text-right py-1">{formatPercent(r.baker_percentage, { digits: 2 })}</td>
                 <td className="text-right py-1 font-mono">{Number(r.absolute_qty).toFixed(2)}</td>
                 <td className="pl-2 py-1">{r.unit}</td>
               </tr>

@@ -53,6 +53,16 @@ const DialogContent = forwardRef<
         'motion-reduce:animate-none motion-reduce:transition-none motion-reduce:duration-0',
         className,
       )}
+      // `aria-modal` était ABSENT de tous les dialogues du dépôt — mesuré au
+      // navigateur le 2026-08-21 sur deux dialogues indépendants. Le piège de
+      // focus et le verrou de défilement de Radix sont bien là, mais ils ne se
+      // voient pas d'un lecteur d'écran : sans cet attribut, il continue
+      // d'annoncer la page DERRIÈRE la fenêtre comme si elle était atteignable.
+      // Posé AVANT `{...props}` : un appelant qui ouvrirait un contenu non
+      // modal (`Dialog modal={false}`) doit pouvoir le contredire, et aucun ne
+      // le fait aujourd'hui — le seul `modal` variable du dépôt est celui de
+      // `CenterModal`, qui porte sa propre logique.
+      aria-modal="true"
       {...props}
     >
       {children}

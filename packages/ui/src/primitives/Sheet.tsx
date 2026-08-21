@@ -66,6 +66,10 @@ const SheetContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, Shee
       <DialogPrimitive.Content
         ref={ref}
         className={cn(sheetVariants({ side }), 'flex flex-col focus:outline-none', className)}
+        // Même absence que sur `DialogContent`, même correctif — voir le
+        // commentaire là-bas. Un tiroir latéral piège le focus exactement comme
+        // une fenêtre centrée ; il doit le dire.
+        aria-modal="true"
         {...props}
       >
         {children}

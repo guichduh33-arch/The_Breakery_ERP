@@ -12,6 +12,7 @@
 
 import { useMemo, type JSX } from 'react';
 import { Badge, Card, cn } from '@breakery/ui';
+import { formatPercent } from '@breakery/utils';
 import { bomCost, type RecipeRow } from '@breakery/domain';
 import { useProductSummary } from '../hooks/useProductSummary.js';
 
@@ -179,7 +180,7 @@ export function RecipeCostPreviewCard({
                     variant="default"
                     className={cn('font-mono', MARGIN_TONE_CLASS[tone])}
                   >
-                    {marginPct.toFixed(1)}%
+                    {formatPercent(marginPct)}
                   </Badge>
                 )}
               </div>

@@ -23,6 +23,7 @@
 
 import { type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
+import { formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -117,7 +118,7 @@ export default function Pb1ReportPage(): JSX.Element {
     },
     {
       key: 'pb1-rate', label: 'PB1 rate',
-      value: `${((data?.pb1_rate ?? 0) * 100).toFixed(0)}%`,
+      value: formatPercent((data?.pb1_rate ?? 0) * 100, { digits: 0 }),
       note:  'NON-PKP · PBJT, Lombok',
     },
     {

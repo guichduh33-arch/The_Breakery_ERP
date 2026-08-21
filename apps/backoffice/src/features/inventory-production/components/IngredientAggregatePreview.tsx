@@ -60,7 +60,9 @@ interface AggregatedRow {
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return '–';
-  return n.toLocaleString('en-US', { maximumFractionDigits: 3 });
+  // Locale métier, comme les soixante-trois autres appels du back-office.
+  // `en-US` ici rendait « 1,234.56 » à côté d'un « Rp 1.234 » de la même carte.
+  return n.toLocaleString('id-ID', { maximumFractionDigits: 3 });
 }
 
 export function IngredientAggregatePreview({ items }: IngredientAggregatePreviewProps): JSX.Element {

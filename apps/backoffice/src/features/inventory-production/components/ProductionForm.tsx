@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input, Select } from '@breakery/ui';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 import { checkFeasibility } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
@@ -293,8 +293,8 @@ export default function ProductionForm(): JSX.Element {
                 data-testid="variance-display"
                 className={`text-xs font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
               >
-                variance {variancePct > 0 ? '+' : ''}{variancePct.toFixed(1)}%
-                {exceedsThreshold && <> (over ±{thresholdPct.toFixed(1)}%)</>}
+                variance {formatPercent(variancePct, { signed: true })}
+                {exceedsThreshold && <> (over ±{formatPercent(thresholdPct)})</>}
               </div>
             )}
           </div>

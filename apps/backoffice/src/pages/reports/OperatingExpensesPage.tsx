@@ -171,7 +171,7 @@ export default function OperatingExpensesPage(): JSX.Element {
       <label className="flex items-center gap-1.5 text-xs text-text-muted">
         <span>Category</span>
         <select
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           aria-label="Filter by expense category"
@@ -185,7 +185,7 @@ export default function OperatingExpensesPage(): JSX.Element {
       <label className="flex items-center gap-1.5 text-xs text-text-muted">
         <span>Status</span>
         <select
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           aria-label="Filter by expense status"

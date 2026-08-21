@@ -207,6 +207,12 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/stock-variance', label: 'Stock variance', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/stock-movements', label: 'Stock movement history', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/wastage', label: 'Wastage & spoilage', permission: 'reports.inventory.read' },
+          // Manquait ici jusqu'au 2026-08-21 : le rapport existait, sa route
+          // existait, l'index des rapports le listait — et aucun panneau de
+          // navigation ne le montrait. Un écran qu'on n'atteint que par une URL
+          // apprise ailleurs n'existe pas pour qui ne l'a jamais vu. Gate
+          // recopiée de la route et de la RPC `get_perishable_turnover_v1`.
+          { to: '/backoffice/reports/perishable-turnover', label: 'Perishable turnover', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/recipe-cost', label: 'Recipe cost', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'inventory.read' },
           { to: '/backoffice/reports/production-report', label: 'Production report', permission: 'reports.inventory.read' },

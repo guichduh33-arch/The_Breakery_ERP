@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
-import { formatCurrency, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita, formatPercent, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import {
@@ -48,7 +48,7 @@ const FILTERS: { value: MarginAlertFilter; label: string }[] = [
 ];
 
 function fmtPct(n: number): string {
-  return `${n.toFixed(2)}%`;
+  return formatPercent(n, { digits: 2 });
 }
 
 // `Intl.NumberFormat('en-US', …)` rendait « 4850000 » sans devise ni séparateur

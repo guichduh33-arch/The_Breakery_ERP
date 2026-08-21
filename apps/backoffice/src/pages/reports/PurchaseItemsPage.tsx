@@ -168,7 +168,7 @@ export default function PurchaseItemsPage(): JSX.Element {
       <label className="flex items-center gap-2 text-sm text-text-secondary">
         <span className="sr-only">Supplier</span>
         <select
-          className={cn(selectClassName, 'h-8 w-auto')}
+          className={cn(selectClassName, 'h-9 w-auto')}
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
           aria-label="Filter by supplier"
