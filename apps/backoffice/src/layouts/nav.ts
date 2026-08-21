@@ -207,12 +207,19 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/stock-variance', label: 'Stock variance', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/stock-movements', label: 'Stock movement history', permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/wastage', label: 'Wastage & spoilage', permission: 'reports.inventory.read' },
-          // Manquait ici jusqu'au 2026-08-21 : le rapport existait, sa route
-          // existait, l'index des rapports le listait — et aucun panneau de
-          // navigation ne le montrait. Un écran qu'on n'atteint que par une URL
-          // apprise ailleurs n'existe pas pour qui ne l'a jamais vu. Gate
-          // recopiée de la route et de la RPC `get_perishable_turnover_v1`.
-          { to: '/backoffice/reports/perishable-turnover', label: 'Perishable turnover', permission: 'reports.inventory.read' },
+          // ⛔ `perishable-turnover` N'A PAS SA PLACE ICI, et son absence est une
+          // DÉCISION, pas un oubli. ADR-004 (2026-07-04, acté), conséquence 2 :
+          // « retirer la page /inventory/expiring et le rapport
+          // perishable-turnover de la navigation ». The Breakery ne suit ni lots
+          // ni péremption ; la péremption se déclare en perte. Le rapport, sa
+          // route et son gabarit PDF subsistent pour l'historique — le menu, non.
+          //
+          // Il a été ajouté ici le 2026-08-21 puis retiré le lendemain. La
+          // critique /impeccable avait relevé l'écart entre l'index des rapports
+          // et le panneau de navigation, et l'écart était RÉEL — mais un écart
+          // n'est pas un défaut tant qu'on n'a pas cherché pourquoi il existe.
+          // Cette ligne est là pour que la prochaine comparaison mécanique des
+          // deux listes trouve la réponse avant de « corriger » la décision.
           { to: '/backoffice/reports/recipe-cost', label: 'Recipe cost', permission: 'reports.financial.read' },
           { to: '/backoffice/reports/production-yield', label: 'Production yield', permission: 'inventory.read' },
           { to: '/backoffice/reports/production-report', label: 'Production report', permission: 'reports.inventory.read' },
