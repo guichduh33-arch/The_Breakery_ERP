@@ -28,6 +28,11 @@
   --shadow-md:    var(--elev-hairline);
   --shadow-lg:    var(--elev-hairline), 0 16px 40px rgba(0, 0, 0, 0.55);
   --shadow-xl:    var(--elev-hairline), 0 28px 72px rgba(0, 0, 0, 0.60);
+  /* FLOTTANT — le cran entre `lg` et `modal`. Défini ici pour que le token
+   * existe dans les DEUX thèmes : un primitif partagé qui le poserait sous la
+   * caisse ne doit pas rendre une ombre vide. Aucun écran POS ne l'utilise à ce
+   * jour ; la valeur suit la logique du thème sombre, pas celle du papier. */
+  --shadow-float: var(--elev-hairline), 0 18px 40px rgba(0, 0, 0, 0.58);
   --shadow-modal: var(--elev-hairline), 0 28px 72px rgba(0, 0, 0, 0.65);
 
   /* Inset (recessed card / inputs). */
@@ -56,6 +61,19 @@
   --shadow-md:    0 2px 8px rgba(45, 34, 15, 0.09);
   --shadow-lg:    0 8px 24px rgba(45, 34, 15, 0.12);
   --shadow-xl:    0 16px 48px rgba(45, 34, 15, 0.16);
+  /* FLOTTANT — panneau de navigation déroulant, menu utilisateur, menu Columns.
+   * Ce qui quitte le plan de la page sans être une modale.
+   *
+   * La valeur existait depuis longtemps, mais PAS comme token : elle était
+   * recopiée à la main dans trois fichiers (`TopBar`, `DomainPanel`,
+   * `ProductsFilters`), et sur une base de teinte à elle — rgba(28,23,18,·),
+   * celle du `--backdrop` — pendant que le commentaire trois lignes plus haut
+   * affirmait que TOUTES les ombres du thème sont réchauffées sur
+   * rgba(45,34,15,·). Une règle contredite par la seule ombre qui n'était pas
+   * un token : c'est exactement de cette façon qu'une valeur en dur se défend.
+   * Elle rejoint la base commune le 2026-08-22, à opacité et géométrie
+   * inchangées. */
+  --shadow-float: 0 18px 40px rgba(45, 34, 15, 0.20);
   --shadow-modal: 0 20px 56px rgba(45, 34, 15, 0.22);
 
   --shadow-inset-sm: inset 0 1px 2px rgba(45, 34, 15, 0.06);

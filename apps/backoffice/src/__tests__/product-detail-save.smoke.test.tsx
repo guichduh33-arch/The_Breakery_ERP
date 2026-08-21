@@ -109,10 +109,19 @@ describe('ProductDetailPage — save flow (S27)', () => {
     // The Inventory levels card explains what the threshold drives (audit M7).
     expect(await screen.findByText(/below this threshold/i)).toBeInTheDocument();
 
-    const thresholdInput = screen.getByDisplayValue('5');
+    // `findBy` et non `getBy` : ce test tombait par intermittence dans la suite
+    // COMPLÈTE — deux fois sur trois exécutions le 2026-08-22 — et passait
+    // toujours seul, en 841 ms. La cause n'est pas un délai trop court mais une
+    // lecture SYNCHRONE juste après un changement d'onglet : `getBy` jette à
+    // l'instant où il ne trouve pas, sans laisser React finir de monter le
+    // panneau General. Le test voisin de ce même fichier attend déjà
+    // (`await screen.findByDisplayValue('Affogato')`) et n'est jamais tombé —
+    // la différence tenait à cette seule ligne. Allonger un délai aurait rendu
+    // l'échec plus rare ; attendre le rend impossible.
+    const thresholdInput = await screen.findByDisplayValue('5');
     fireEvent.change(thresholdInput, { target: { value: '12' } });
 
-    const btn = screen.getByTestId('product-detail-save');
+    const btn = await screen.findByTestId('product-detail-save');
     await waitFor(() => expect(btn).not.toBeDisabled());
     fireEvent.click(btn);
 

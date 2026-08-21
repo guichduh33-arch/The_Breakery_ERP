@@ -146,7 +146,7 @@ function ColumnsMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+6px)] z-40 w-52 rounded-xl border border-border-strong bg-surface-3 py-1.5 shadow-[0_18px_40px_rgba(28,23,18,0.20)]"
+          className="absolute right-0 top-[calc(100%+6px)] z-40 w-52 rounded-xl border border-border-strong bg-surface-3 py-1.5 shadow-float"
         >
           {PRODUCT_COLUMNS.map((c) => (
             <label
