@@ -392,13 +392,13 @@ export default function RefundsVoidsPage(): JSX.Element {
             <thead>
               <tr className="border-b border-border-subtle text-text-secondary">
                 <SortableTh label="Date"    sortKey="date"   sorted={sorted} />
-                <th className="py-2 pr-3 text-left font-normal">Refund #</th>
-                <th className="py-2 pr-3 text-left font-normal">Order</th>
+                <th scope="col" className="py-2 pr-3 text-left font-normal">Refund #</th>
+                <th scope="col" className="py-2 pr-3 text-left font-normal">Order</th>
                 <SortableTh label="Type"    sortKey="type"   sorted={sorted} />
                 <SortableTh label="Reason"  sortKey="reason" sorted={sorted} />
-                <th className="py-2 pr-3 text-left font-normal">Methods</th>
+                <th scope="col" className="py-2 pr-3 text-left font-normal">Methods</th>
                 <SortableTh label="Entered by" sortKey="by"  sorted={sorted} />
-                <th className="py-2 pr-3 text-left font-normal">Authorized by</th>
+                <th scope="col" className="py-2 pr-3 text-left font-normal">Authorized by</th>
                 <SortableTh label="Amount"  sortKey="amount" sorted={sorted} align="right" />
               </tr>
             </thead>
@@ -504,11 +504,11 @@ export default function RefundsVoidsPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 pr-3 text-left font-normal">Article</th>
-                    <th className="py-2 pr-3 text-right font-normal">Lines</th>
-                    <th className="py-2 pr-3 text-right font-normal">Value avoided</th>
-                    <th className="py-2 pr-3 text-left font-normal">Dominant reason</th>
-                    <th className="py-2 pr-3 text-left font-normal">Most frequent cashier</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Article</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Lines</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Value avoided</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Dominant reason</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Most frequent cashier</th>
                   </tr>
                 </thead>
                 <tbody>

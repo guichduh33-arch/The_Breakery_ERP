@@ -306,7 +306,9 @@ export default function ProfitLossPage(): JSX.Element {
               </tr>
               {OPEX_ITEMS.map((k) => item(OPEX_LABELS[k], data?.opex[k] ?? 0))}
 
-              <tr className="border-t-2 border-border-subtle bg-gold-soft">
+              {/* Pied sur papier inerte (DESIGN.md § Tableaux) — le `border-t-2`
+                  porte la séparation, l'or ne remplit rien. */}
+              <tr className="border-t-2 border-border-subtle bg-surface-inert">
                 <td className="py-3 font-semibold uppercase tracking-wider">Net profit</td>
                 <td className={`${NUM_CELL} py-3 font-semibold`}>{fmt(data?.net_profit ?? 0)}</td>
                 {showDelta && prevData !== undefined && (

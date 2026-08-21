@@ -202,7 +202,9 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                         onClick={() => toggleStepRole(idx, role)}
                         className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
                           isOn
-                            ? 'border-gold bg-gold-soft font-semibold text-gold'
+                            // The Ink-Not-Gold Rule : liseré or + coche + graisse
+                            // portent l'état, l'aplat n'ajoutait rien.
+                            ? 'border-gold font-semibold text-gold'
                             : 'border-border-subtle bg-surface-inert text-text-muted hover:bg-surface-4'
                         }`}
                       >

@@ -196,7 +196,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
       <Card padding="md">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md text-gold">
               <Box className="h-5 w-5" aria-hidden />
             </div>
             <div>
@@ -223,7 +223,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
         {baseChanged && (
           <div
             data-testid="base-unit-confirm"
-            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold bg-gold-soft p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-start gap-2 text-xs text-text-secondary">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />

@@ -45,7 +45,12 @@ export default function SettingsReceiptTemplatesPage() {
                   <p className="text-xs text-text-secondary">{tpl.paper_size}</p>
                 </div>
                 {tpl.is_default && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-xs bg-gold-soft text-gold border-border-gold">
+                  /* Deux défauts sur une même ligne : le coin entièrement rond
+                     (The Tight-Corner Rule — 3 px pour un badge) et l'aplat d'or
+                     (The Ink-Not-Gold Rule). Le liseré monte au passage de
+                     `border-border-gold`, qui ne vaut que 1,64:1 sur le papier,
+                     à `border-gold`. */
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-sm border text-xs text-gold border-gold">
                     Default
                   </span>
                 )}

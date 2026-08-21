@@ -156,15 +156,16 @@ export default function GeneralLedgerPage(): JSX.Element {
       {accountId !== '' && gl.data && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="gl-table">
+            <caption className="sr-only">Date, entry number, description, source, debit, credit and running balance for the selected account</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Entry #</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2">Source</th>
-                <th className="px-3 py-2 text-right">Debit</th>
-                <th className="px-3 py-2 text-right">Credit</th>
-                <th className="px-3 py-2 text-right">Running balance</th>
+                <th scope="col" className="px-3 py-2">Date</th>
+                <th scope="col" className="px-3 py-2">Entry #</th>
+                <th scope="col" className="px-3 py-2">Description</th>
+                <th scope="col" className="px-3 py-2">Source</th>
+                <th scope="col" className="px-3 py-2 text-right">Debit</th>
+                <th scope="col" className="px-3 py-2 text-right">Credit</th>
+                <th scope="col" className="px-3 py-2 text-right">Running balance</th>
               </tr>
             </thead>
             <tbody>

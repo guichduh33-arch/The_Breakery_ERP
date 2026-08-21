@@ -106,7 +106,7 @@ export function ConvertToParentDialog({
                   aria-pressed={axis === a.value}
                   className={
                     axis === a.value
-                      ? 'px-3 py-1 text-xs font-semibold rounded-sm bg-gold-soft text-gold'
+                      ? 'px-3 py-1 text-xs font-semibold rounded-sm bg-surface-4 text-gold'
                       : 'px-3 py-1 text-xs font-semibold rounded-sm text-text-muted hover:text-text-primary'
                   }
                 >

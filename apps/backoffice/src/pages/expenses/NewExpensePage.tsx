@@ -1,13 +1,25 @@
 // apps/backoffice/src/pages/expenses/NewExpensePage.tsx
 //
-// Session 14 / Phase 5.A — header chrome aligned with the rebuilt Expenses
-// surface (breadcrumb + Fraunces heading). Form behaviour unchanged — the
-// existing ExpenseForm + create_expense_v1 RPC still own validation and
-// idempotent submission.
+// Instance nommée de l'ARCHÉTYPE 4 — Form, « la conséquence avant
+// l'engagement » (DESIGN.md § Page Archetypes). Deux colonnes : la saisie à
+// gauche, la conséquence à droite — total dérivé, chaîne d'approbation qui
+// s'appliquera, historique comparable. Le statut du brouillon vit dans
+// l'en-tête, servi par `PageHeader`, source unique du bandeau.
+//
+// Le bandeau annonçait un « Fraunces heading » : Fraunces ne fait plus partie
+// du système typographique (`packages/ui/src/tokens/typography.css`), et le
+// titre de page rend en Instrument Sans depuis la refonte du shell.
+//
+// Le fil d'Ariane est la SEULE sortie de la page. Elle rendait aussi un
+// « ← Back to expenses » : deux vocabulaires pour le même geste sur le même
+// écran, alors que l'ossature commune ne déclare qu'un fil d'Ariane.
+//
+// Le comportement du formulaire est inchangé — `ExpenseForm` +
+// `create_expense_v1` gardent la validation et la soumission idempotente.
 
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useCreateExpense } from '@/features/expenses/hooks/useCreateExpense.js';
 import type { CreateExpenseInput } from '@/features/expenses/hooks/useCreateExpense.js';
@@ -17,10 +29,34 @@ import {
   type ExpenseFormValues,
   type DuplicateExpenseSeed,
 } from '@/features/expenses/components/ExpenseForm.js';
+import { ExpenseConsequenceRail } from '@/features/expenses/components/ExpenseConsequenceRail.js';
+import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { RestrictedState } from '@/components/RestrictedState.js';
 
 interface NewExpenseNavigationState {
   duplicateFrom?: DuplicateExpenseSeed;
+}
+
+function Breadcrumb(): JSX.Element {
+  return (
+    <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
+      <Link to="/backoffice/expenses" className="hover:text-text-primary">Expenses</Link>
+      <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+      <span className="text-text-secondary">New</span>
+    </nav>
+  );
+}
+
+// Le statut vit dans l'en-tête (exigence de l'archétype), et il dit la vérité
+// entière : c'est un brouillon, et il n'est pas encore enregistré.
+function DraftMeta(): JSX.Element {
+  return (
+    <div className="flex items-center gap-2">
+      <ExpenseStatusBadge status="draft" />
+      <span className="text-xs text-text-muted">Not saved yet</span>
+    </div>
+  );
 }
 
 export default function NewExpensePage(): JSX.Element {
@@ -51,8 +87,17 @@ export default function NewExpensePage(): JSX.Element {
   const isSubmitting = create.isPending;
   const submitDisabled = useMemo(() => isSubmitting, [isSubmitting]);
 
+  // Le refus garde le fil d'Ariane et le titre : sans eux, un opérateur arrivé
+  // ici par un lien perdait l'écran entier et n'avait pour seule issue que le
+  // bouton Retour du navigateur.
   if (!canCreate) {
-    return <div className="text-text-secondary">You do not have permission to create expenses.</div>;
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <Breadcrumb />
+        <PageHeader title="New expense" />
+        <RestrictedState what="creating expenses" permission="expenses.create" />
+      </div>
+    );
   }
 
   async function handleSubmit(): Promise<void> {
@@ -78,40 +123,44 @@ export default function NewExpensePage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
-        <Link to="/backoffice/expenses" className="hover:text-text-primary">Expenses</Link>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <span className="text-text-secondary">New</span>
-      </nav>
-
-      <Link
-        to="/backoffice/expenses"
-        className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to expenses
-      </Link>
+    // `max-w-6xl` borne la mesure du formulaire : la largeur des deux colonnes
+    // devient constante de 1280 à 1920 px, et le rail garde 376 px de large
+    // partout. Le back-office n'a pas de cible tablette — aucun palier sous
+    // 1024 px n'est fabriqué ici.
+    <div className="space-y-6 max-w-6xl">
+      <Breadcrumb />
 
       <PageHeader
         title="New expense"
         subtitle="Capture an operational expense. Submit it later to request approval."
+        actions={<DraftMeta />}
       />
 
-      <ExpenseForm
-        draftId={draftId}
-        value={values}
-        onChange={setValues}
-        onSubmit={() => { void handleSubmit(); }}
-        onCancel={() => { void navigate('/backoffice/expenses'); }}
-        submitting={submitDisabled}
-        submitLabel="Save as draft"
-      />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="space-y-6">
+          <ExpenseForm
+            draftId={draftId}
+            value={values}
+            onChange={setValues}
+            onSubmit={() => { void handleSubmit(); }}
+            onCancel={() => { void navigate('/backoffice/expenses'); }}
+            submitting={submitDisabled}
+            submitLabel="Save as draft"
+          />
 
-      {create.error !== null && create.error !== undefined && (
-        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-          Failed to save: {create.error.message}
+          {create.error !== null && create.error !== undefined && (
+            <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
+              Failed to save: {create.error.message}
+            </div>
+          )}
         </div>
-      )}
+
+        <ExpenseConsequenceRail
+          categoryId={values.category_id}
+          amount={values.amount}
+          vatAmount={values.vat_amount}
+        />
+      </div>
     </div>
   );
 }

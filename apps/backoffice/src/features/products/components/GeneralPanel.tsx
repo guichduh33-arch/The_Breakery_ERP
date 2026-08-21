@@ -268,14 +268,14 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               <div
                 role="alert"
                 data-testid="display-stock-warning"
-                className="rounded-md border border-gold bg-gold-soft px-3 py-2 text-xs text-text-secondary"
+                className="rounded-md border border-gold px-3 py-2 text-xs text-text-secondary"
               >
                 <span className="font-semibold text-gold">
-                  Compteur vitrine à {displayStockQty ?? 0}.
+                  Display-case counter at {displayStockQty ?? 0}.
                 </span>{' '}
-                Ce produit ne sera pas vendable au POS tant que la vitrine n'est pas
-                approvisionnée (geste POS «&nbsp;Mettre en vitrine&nbsp;»). Le BackOffice
-                ne gère pas le stock vitrine.
+                The POS cannot sell this product until the counter is stocked from the
+                POS Display Stock screen (Cafe Stock in the side menu). The back-office
+                does not manage display-case stock.
               </div>
             )}
           </div>
@@ -285,7 +285,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
         <Card padding="md">
           <h2 className="mb-1 text-sm font-bold uppercase tracking-widest text-text-muted">Dispatch Routing</h2>
           <p className="mb-3 text-xs italic text-text-secondary">
-            Stations qui reçoivent le KOT pour ce produit. Vide = hériter de la catégorie.
+            Stations that receive the KOT for this product. Empty = inherit from the category.
           </p>
           <div className="space-y-2" data-testid="dispatch-stations-picker">
             {(['kitchen', 'barista', 'display'] as const).map((station) => {
@@ -315,7 +315,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               data-testid="dispatch-inherit-label"
               className="mt-2 text-xs italic text-text-muted"
             >
-              Hérite le dispatch de la catégorie.
+              Inherits dispatch from the category.
             </p>
           )}
         </Card>
@@ -348,7 +348,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             </div>
           </div>
           <p className="mt-3 text-xs text-text-muted">
-            Sous ce seuil le produit remonte dans Alerts / reorder suggestions. 0 = jamais.
+            Below this threshold the product shows up in Alerts / reorder suggestions. 0 = never.
           </p>
         </Card>
       </div>

@@ -23,6 +23,7 @@ import { Button, EmptyState, KpiTile } from '@breakery/ui';
 import { formatQuantity } from '@breakery/utils';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDetail.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
@@ -80,7 +81,7 @@ export default function OpnameDetailPage(): JSX.Element {
     return null;
   }, [items.length, stats.pending]);
   if (detail.isLoading) {
-    return <div className="text-sm text-text-secondary">Loading count…</div>;
+    return <DetailPageSkeleton label="Loading stock count" data-testid="opname-detail-loading" />;
   }
   if (detail.error !== null) {
     return (
@@ -191,18 +192,19 @@ export default function OpnameDetailPage(): JSX.Element {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <caption className="sr-only">Expected quantity, counted quantity, variance and notes per counted product</caption>
             <thead className="bg-surface-inert border-b border-border-subtle">
               <tr>
-                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
+                <th scope="col" className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
                 {revealed && (
-                  <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
+                  <th scope="col" className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
                 )}
-                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
+                <th scope="col" className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
                 {revealed && (
-                  <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
+                  <th scope="col" className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
                 )}
-                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
-                {!locked && <th />}
+                <th scope="col" className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
+                {!locked && <th scope="col"><span className="sr-only">Actions</span></th>}
               </tr>
             </thead>
             <tbody>

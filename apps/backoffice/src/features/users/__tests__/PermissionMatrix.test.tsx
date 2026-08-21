@@ -86,6 +86,17 @@ describe('PermissionMatrix — lisibilité de la grille', () => {
     for (const th of rows) expect(th.getAttribute('scope')).toBe('row');
   });
 
+  it('nomme les rôles par leur `name`, pas par le code brut de la table', () => {
+    render(<PermissionMatrix />);
+
+    const cols = screen.getAllByRole('columnheader');
+    // cols[0] est « Permission » ; les suivantes sont les rôles.
+    expect(cols[1]).toHaveTextContent('Admin');
+    expect(cols[1]).not.toHaveTextContent('ADMIN');
+    expect(cols[2]).toHaveTextContent('Cashier');
+    expect(cols[2]).not.toHaveTextContent('CASHIER');
+  });
+
   it('rend une légende qui nomme les deux états, et seulement eux', () => {
     render(<PermissionMatrix />);
 

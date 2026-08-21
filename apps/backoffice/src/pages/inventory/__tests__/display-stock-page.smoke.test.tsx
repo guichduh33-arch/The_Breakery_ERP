@@ -12,6 +12,12 @@ import { MemoryRouter } from 'react-router-dom';
 import DisplayStockPage from '@/pages/inventory/DisplayStockPage.js';
 import type { DisplayStockRow } from '@/features/inventory/hooks/useDisplayStock.js';
 import type { DisplayMovementRow } from '@/features/inventory/hooks/useDisplayMovements.js';
+// `importOriginal<typeof import('…')>()` est l'idiome vitest, mais la règle
+// `@typescript-eslint/consistent-type-imports` interdit une annotation de type
+// `import()`. On nomme donc les deux modules ici : `typeof M` est strictement
+// équivalent à `typeof import('…')`, et le lint-ratchet cesse de bloquer.
+import type * as UseDisplayStockModule from '@/features/inventory/hooks/useDisplayStock.js';
+import type * as UseDisplayMovementsModule from '@/features/inventory/hooks/useDisplayMovements.js';
 
 const MOCK_STOCK: DisplayStockRow[] = [
   {
@@ -37,7 +43,7 @@ const MOCK_MOVEMENTS: DisplayMovementRow[] = [
 ];
 
 vi.mock('@/features/inventory/hooks/useDisplayStock.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/inventory/hooks/useDisplayStock.js')>();
+  const actual = await importOriginal<typeof UseDisplayStockModule>();
   return {
     ...actual,
     useDisplayStock: () => ({ data: MOCK_STOCK, isLoading: false, error: null }),
@@ -45,7 +51,7 @@ vi.mock('@/features/inventory/hooks/useDisplayStock.js', async (importOriginal) 
 });
 
 vi.mock('@/features/inventory/hooks/useDisplayMovements.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/inventory/hooks/useDisplayMovements.js')>();
+  const actual = await importOriginal<typeof UseDisplayMovementsModule>();
   return {
     ...actual,
     useDisplayMovements: () => ({ data: MOCK_MOVEMENTS, isLoading: false, error: null }),
@@ -66,7 +72,7 @@ function renderPage() {
 describe('DisplayStockPage [Wave 6 / Task 26]', () => {
   it('renders the page header and both tables', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /Display Stock \(Vitrine\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Display stock$/i })).toBeInTheDocument();
     expect(screen.getByTestId('display-stock-table')).toBeInTheDocument();
     expect(screen.getByTestId('display-movements-table')).toBeInTheDocument();
   });

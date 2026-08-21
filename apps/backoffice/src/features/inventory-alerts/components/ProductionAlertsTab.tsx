@@ -91,6 +91,7 @@ export function ProductionAlertsTab(): JSX.Element {
 
   return (
     <DataTable<ProductionSuggestion>
+      caption="Product, quantity on hand, daily sales, coverage, quantity to produce and priority per production suggestion"
       columns={COLUMNS}
       rows={rows}
       getRowKey={(r) => r.product_id}

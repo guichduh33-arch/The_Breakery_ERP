@@ -26,13 +26,14 @@ export function LoyaltyTab({ customerId }: { customerId: string | null }): JSX.E
   return (
     <Card variant="default" padding="none" className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
+        <caption className="sr-only">Date, type, description, points and balance per loyalty transaction</caption>
         <thead className="border-b border-border-subtle bg-surface-inert font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">Date</th>
-            <th className="px-4 py-2.5 text-left font-medium">Type</th>
-            <th className="px-4 py-2.5 text-left font-medium">Description</th>
-            <th className="px-4 py-2.5 text-right font-medium">Points</th>
-            <th className="px-4 py-2.5 text-right font-medium">Balance</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Date</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Type</th>
+            <th scope="col" className="px-4 py-2.5 text-left font-medium">Description</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-medium">Points</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-medium">Balance</th>
           </tr>
         </thead>
         <tbody>

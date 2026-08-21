@@ -36,12 +36,11 @@ import {
   Undo2,
   XCircle,
 } from 'lucide-react';
-import { cn } from '@breakery/ui';
+import { Button, cn } from '@breakery/ui';
 // Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas).
 // Les montants passent par `formatCurrency`, qui pose lui-même le préfixe
 // « Rp » — audit UX/UI 2026-08-13, lot 1.
 import { formatCurrency, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
-import { TOOLBAR_BTN, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import { RefundOrderModalBo } from '@/features/orders/components/RefundOrderModalBo.js';
 import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
@@ -73,7 +72,12 @@ const VOIDABLE_STATUSES = new Set(['paid', 'completed']);
 /** Statuts remboursables — une commande portant l'argent (lot 6c). */
 const REFUNDABLE_STATUSES = new Set(['paid', 'completed']);
 
-const BTN_DANGER = `${TOOLBAR_BTN} border border-red bg-bg-elevated text-red-as-text hover:bg-red-soft`;
+// TEINTE seulement, jamais de géométrie — le pied du tiroir aligne cinq boutons
+// sur une rangée et ils prennent tous la hauteur du primitif partagé (`sm`,
+// 36 px). Adosser ce style à `TOOLBAR_BTN` (32 px) remettait deux hauteurs sur
+// la même ligne, ce que DESIGN.md § Boutons interdit nommément. On surcharge
+// donc le seul variant `secondary` : trait, encre et survol rouges.
+const BTN_DANGER = 'border-red text-red-as-text hover:bg-red-soft';
 
 const KITCHEN_TONE: Record<string, string> = {
   new: 'bg-info-soft text-info',
@@ -306,21 +310,23 @@ export function OrderDetailDrawer({
             {/* L'aperçu n'est jamais un cul-de-sac : il ouvre le document
                 complet, et se ferme en y allant (deux surfaces empilées
                 mentiraient sur ce qui a le focus). */}
-            <Link
-              to={`/backoffice/orders/${data.id}`}
-              onClick={onClose}
-              className={TOOLBAR_BTN_SECONDARY}
-              data-testid="drawer-open-full-page"
-            >
-              <ExternalLink className="h-3.5 w-3.5 text-text-muted" aria-hidden />
-              Open full page
-            </Link>
+            <Button asChild size="sm" variant="secondary">
+              <Link
+                to={`/backoffice/orders/${data.id}`}
+                onClick={onClose}
+                data-testid="drawer-open-full-page"
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-text-muted" aria-hidden />
+                Open full page
+              </Link>
+            </Button>
             {(editAction !== null || voidAction !== null || canRefund || canReprint) && (
               <span className="flex flex-wrap justify-end gap-2">
                 {canReprint && (
-                  <button
+                  <Button
                     type="button"
-                    className={TOOLBAR_BTN_SECONDARY}
+                    size="sm"
+                    variant="secondary"
                     data-testid="drawer-reprint"
                     disabled={reprint.isPending}
                     onClick={() => {
@@ -331,40 +337,45 @@ export function OrderDetailDrawer({
                   >
                     <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
                     {reprint.isPending ? 'Preparing…' : 'Download receipt (PDF)'}
-                  </button>
+                  </Button>
                 )}
                 {editAction !== null && (
-                  <button
+                  <Button
                     type="button"
-                    className={TOOLBAR_BTN_SECONDARY}
+                    size="sm"
+                    variant="secondary"
                     data-testid="drawer-edit-items"
                     onClick={editAction}
                   >
                     <Edit3 className="h-3.5 w-3.5 text-text-muted" aria-hidden />
                     Edit items
-                  </button>
+                  </Button>
                 )}
                 {canRefund && (
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="secondary"
                     className={BTN_DANGER}
                     data-testid="drawer-refund"
                     onClick={() => { setRefundOpen(true); }}
                   >
                     <Undo2 className="h-3.5 w-3.5" aria-hidden />
                     Refund
-                  </button>
+                  </Button>
                 )}
                 {voidAction !== null && (
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="secondary"
                     className={BTN_DANGER}
                     data-testid="drawer-void"
                     onClick={voidAction}
                   >
                     <XCircle className="h-3.5 w-3.5" aria-hidden />
                     Void
-                  </button>
+                  </Button>
                 )}
               </span>
             )}

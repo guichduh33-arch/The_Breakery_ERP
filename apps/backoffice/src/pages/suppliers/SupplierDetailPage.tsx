@@ -127,24 +127,25 @@ function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoadin
   return (
     <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
       <table className="w-full text-sm">
+        <caption className="sr-only">Date, purchase order number, status, item count, total and payment status per order</caption>
         <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
-            <th className="px-4 py-3 text-left">
+            <th scope="col" className="px-4 py-3 text-left">
               <SectionLabel as="span" size="xs">Date</SectionLabel>
             </th>
-            <th className="px-4 py-3 text-left">
+            <th scope="col" className="px-4 py-3 text-left">
               <SectionLabel as="span" size="xs">PO Number</SectionLabel>
             </th>
-            <th className="px-4 py-3 text-left">
+            <th scope="col" className="px-4 py-3 text-left">
               <SectionLabel as="span" size="xs">Status</SectionLabel>
             </th>
-            <th className="px-4 py-3 text-right">
+            <th scope="col" className="px-4 py-3 text-right">
               <SectionLabel as="span" size="xs">Items</SectionLabel>
             </th>
-            <th className="px-4 py-3 text-right">
+            <th scope="col" className="px-4 py-3 text-right">
               <SectionLabel as="span" size="xs">Total</SectionLabel>
             </th>
-            <th className="px-4 py-3 text-center">
+            <th scope="col" className="px-4 py-3 text-center">
               <SectionLabel as="span" size="xs">Payment</SectionLabel>
             </th>
           </tr>
@@ -232,7 +233,7 @@ export default function SupplierDetailPage(): JSX.Element {
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gold-soft text-gold">
+                <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md text-gold">
                   <Building2 className="h-6 w-6" />
                 </span>
                 <div>
@@ -415,13 +416,14 @@ function PaymentsSection({
           </Card>
           <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
           <table className="w-full text-sm">
+            <caption className="sr-only">Purchase order, date, total, status and due date per credit-term order</caption>
             <thead className="border-b border-border-subtle bg-surface-inert">
               <tr>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
-                <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Status</SectionLabel></th>
-                <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Due Date</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Status</SectionLabel></th>
+                <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Due Date</SectionLabel></th>
               </tr>
             </thead>
             <tbody>

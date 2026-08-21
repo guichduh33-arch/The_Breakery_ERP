@@ -100,11 +100,12 @@ export function ScanPanel({ devices, onAdd }: {
       {hits.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm max-w-2xl">
+            <caption className="sr-only">Address and latency per printer found on the scanned subnet</caption>
             <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
               <tr>
-                <th className="py-2 text-left">Address</th>
-                <th className="py-2 text-left">Latency</th>
-                <th className="py-2 text-right">Action</th>
+                <th scope="col" className="py-2 text-left">Address</th>
+                <th scope="col" className="py-2 text-left">Latency</th>
+                <th scope="col" className="py-2 text-right">Action</th>
               </tr>
             </thead>
             <tbody>

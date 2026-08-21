@@ -56,7 +56,10 @@ const SEGMENT_HINTS: Record<SegmentBucket['segment'], string> = {
 // et `dormant` prend le gris : un client en sommeil est une ABSENCE, pas une
 // alarme plus forte que `at_risk`.
 const SEGMENT_BADGES: Record<SegmentBucket['segment'], string> = {
-  champions: 'border-gold bg-gold-soft text-gold',
+  // The Ink-Not-Gold Rule : l'or ne remplit rien ici. L'aplat retiré ne coûte
+  // aucune information — le commentaire ci-dessus mesure les six fonds `-soft`
+  // dans une plage de 1,000 à 1,201:1, donc indiscernables entre eux.
+  champions: 'border-gold text-gold',
   loyal:     'border-success bg-success-soft text-success',
   new:       'border-info bg-info-soft text-info',
   at_risk:   'border-warning bg-warning-soft text-warning',
@@ -76,13 +79,14 @@ export function SegmentList({ segments }: SegmentListProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
+        <caption className="sr-only">Definition, customer count, total spent and average orders over 90 days per customer segment</caption>
         <thead>
           <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-            <th className="px-3 py-2">Segment</th>
-            <th className="px-3 py-2">Definition</th>
-            <th className="px-3 py-2 text-right">Customers</th>
-            <th className="px-3 py-2 text-right">Total spent</th>
-            <th className="px-3 py-2 text-right">Avg orders (90d)</th>
+            <th scope="col" className="px-3 py-2">Segment</th>
+            <th scope="col" className="px-3 py-2">Definition</th>
+            <th scope="col" className="px-3 py-2 text-right">Customers</th>
+            <th scope="col" className="px-3 py-2 text-right">Total spent</th>
+            <th scope="col" className="px-3 py-2 text-right">Avg orders (90d)</th>
           </tr>
         </thead>
         <tbody>

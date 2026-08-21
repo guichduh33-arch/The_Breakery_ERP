@@ -1,17 +1,22 @@
 // apps/backoffice/src/features/inventory-production/components/ProductionRecordList.tsx
 //
-// Recent production batches. Compact table — reverted rows are dimmed.
-// Selecting a row exposes a "Revert" button (admin-only ; server enforces).
+// Recent production batches. Compact table — a non-reverted row exposes the
+// counter-entry action.
+//
+// ⚠️ CE COMPOSANT N'A AUCUN IMPORTEUR dans `apps/backoffice/src` (relevé du
+// 2026-08-21). L'écran de production monte `ProductionTodayPanel` à sa place.
+// Il n'est PAS supprimé ici — supprimer un fichier est une décision qui revient
+// au propriétaire. En attendant, il partage l'affordance d'annulation avec
+// l'écran vivant (`RevertProductionAction`) plutôt que d'en tenir une copie :
+// le jour où il retrouve un appelant, il n'y en aura toujours qu'une.
 
-import { useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { type JSX } from 'react';
 import { useProductionRecords } from '../hooks/useProductionRecords.js';
-import { RevertProductionDialog } from './RevertProductionDialog.js';
+import { RevertProductionAction } from './RevertProductionAction.js';
 import { formatDateTimeShortWita, formatQuantity } from '@breakery/utils';
 
 export default function ProductionRecordList(): JSX.Element {
   const { data, isLoading, isError } = useProductionRecords();
-  const [revertTarget, setRevertTarget] = useState<{ id: string; number: string } | null>(null);
 
   if (isLoading) return <div className="text-text-secondary text-sm">Loading…</div>;
   if (isError) return <div className="text-red text-sm">Error loading production records.</div>;
@@ -21,26 +26,25 @@ export default function ProductionRecordList(): JSX.Element {
   }
 
   return (
-    <>
-      <div className="border border-border-subtle rounded-lg overflow-x-auto">
+    <div className="border border-border-subtle rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
+          <caption className="sr-only">Number, product, quantity, waste, date and status per production record</caption>
           <thead className="bg-surface-inert text-xs uppercase tracking-widest text-text-secondary">
             <tr>
-              <th className="px-3 py-2 text-left">Number</th>
-              <th className="px-3 py-2 text-left">Product</th>
-              <th className="px-3 py-2 text-right">Qty</th>
-              <th className="px-3 py-2 text-right">Waste</th>
-              <th className="px-3 py-2 text-left">Date</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2"></th>
+              <th scope="col" className="px-3 py-2 text-left">Number</th>
+              <th scope="col" className="px-3 py-2 text-left">Product</th>
+              <th scope="col" className="px-3 py-2 text-right">Qty</th>
+              <th scope="col" className="px-3 py-2 text-right">Waste</th>
+              <th scope="col" className="px-3 py-2 text-left">Date</th>
+              <th scope="col" className="px-3 py-2 text-left">Status</th>
+              <th scope="col" className="px-3 py-2"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr
-                key={r.id}
-                className={`border-t border-border-subtle ${r.reverted_at !== null ? 'opacity-50' : ''}`}
-              >
+              // Une contre-passation est un FAIT du registre : elle garde son
+              // contraste, son état se dit par la colonne Status.
+              <tr key={r.id} className="border-t border-border-subtle">
                 <td className="px-3 py-2 font-mono">{r.production_number}</td>
                 <td className="px-3 py-2">{r.product_name ?? r.product_id.slice(0, 8)}</td>
                 {/* Pas d'unité dans `production_records` : sans suffixe. */}
@@ -56,27 +60,16 @@ export default function ProductionRecordList(): JSX.Element {
                 </td>
                 <td className="px-3 py-2 text-right">
                   {r.reverted_at === null && (
-                    <Button
-                      variant="ghost" size="sm"
-                      onClick={() => setRevertTarget({ id: r.id, number: r.production_number })}
-                    >
-                      Revert
-                    </Button>
+                    <RevertProductionAction
+                      productionId={r.id}
+                      productionNumber={r.production_number}
+                    />
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-
-      {revertTarget !== null && (
-        <RevertProductionDialog
-          productionId={revertTarget.id}
-          productionNumber={revertTarget.number}
-          onClose={() => setRevertTarget(null)}
-        />
-      )}
-    </>
+    </div>
   );
 }

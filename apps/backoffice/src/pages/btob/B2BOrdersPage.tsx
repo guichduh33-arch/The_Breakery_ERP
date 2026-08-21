@@ -395,6 +395,7 @@ export default function B2BOrdersPage(): JSX.Element {
           dirait « aucune commande B2B » là où c'est la requête qui a échoué. */}
       {(query.error === null || rows.length > 0) && (
         <DataTable<B2bInvoiceRow>
+          caption="Order number, creation date, customer, pickup date, amount and status per B2B order"
           columns={columns}
           rows={rows}
           getRowKey={(r) => r.invoice_id}

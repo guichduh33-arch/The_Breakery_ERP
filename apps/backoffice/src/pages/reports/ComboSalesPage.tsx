@@ -231,10 +231,10 @@ export default function ComboSalesPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 pr-3 text-left font-normal">Combo</th>
-                    <th className="py-2 pr-3 text-right font-normal">Qty</th>
-                    <th className="py-2 pr-3 text-right font-normal">Revenue</th>
-                    <th className="py-2 pr-3 text-right font-normal">Avg effective price</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Combo</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Qty</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Revenue</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Avg effective price</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,11 +291,11 @@ export default function ComboSalesPage(): JSX.Element {
                     ×{formatCount(p.qty)}
                   </span>
                   <span
-                    className="col-span-2 block h-1.5 overflow-hidden rounded-full bg-surface-4"
+                    className="col-span-2 block h-1.5 overflow-hidden rounded-sm bg-surface-4"
                     aria-hidden
                   >
                     <span
-                      className="block h-full rounded-full"
+                      className="block h-full rounded-sm"
                       style={{
                         width: `${maxPick > 0 ? (p.qty / maxPick) * 100 : 0}%`,
                         background: categoricalColor(0),

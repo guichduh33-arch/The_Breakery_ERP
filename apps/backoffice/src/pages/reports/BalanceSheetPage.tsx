@@ -79,7 +79,9 @@ const bsCsvColumns: CsvColumn<BsRow>[] = [
 const fmt = formatIdrFull;
 const NUM_CELL = 'py-2 text-right font-data tabular-nums';
 const SUB_CELL = 'py-1 text-right font-data text-xs tabular-nums';
-const TOTAL_ROW = 'border-t-2 border-border-subtle bg-gold-soft';
+// Pied de tableau sur papier inerte (DESIGN.md § Tableaux) — l'or ne remplit
+// rien ici, et le `border-t-2` porte déjà la séparation.
+const TOTAL_ROW = 'border-t-2 border-border-subtle bg-surface-inert';
 
 /** Aucun compte ne porte de solde à cette date. */
 function isBlankBalanceSheet(d: BalanceSheet): boolean {

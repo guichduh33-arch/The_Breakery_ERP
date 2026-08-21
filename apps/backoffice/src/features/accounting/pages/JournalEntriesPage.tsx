@@ -123,14 +123,15 @@ export default function JournalEntriesPage(): JSX.Element {
       {rows.length > 0 && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="je-table">
+            <caption className="sr-only">Date, entry number, description, debit, credit and source per journal entry</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Entry #</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2 text-right">Debit</th>
-                <th className="px-3 py-2 text-right">Credit</th>
-                <th className="px-3 py-2">Source</th>
+                <th scope="col" className="px-3 py-2">Date</th>
+                <th scope="col" className="px-3 py-2">Entry #</th>
+                <th scope="col" className="px-3 py-2">Description</th>
+                <th scope="col" className="px-3 py-2 text-right">Debit</th>
+                <th scope="col" className="px-3 py-2 text-right">Credit</th>
+                <th scope="col" className="px-3 py-2">Source</th>
               </tr>
             </thead>
             <tbody>

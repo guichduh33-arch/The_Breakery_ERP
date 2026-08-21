@@ -241,6 +241,7 @@ export default function LoyaltyPage(): JSX.Element {
         </div>
       ) : (
         <DataTable
+          caption="Member, tier, point balance, lifetime points and last visit per loyalty member"
           columns={columns}
           rows={list.data ?? []}
           getRowKey={(r) => r.id}

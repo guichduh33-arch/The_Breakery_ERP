@@ -310,7 +310,9 @@ export default function CashFlowPage(): JSX.Element {
                 </td>
               </tr>
 
-              <tr className="border-t-2 border-border-subtle bg-gold-soft">
+              {/* Pied sur papier inerte (DESIGN.md § Tableaux) — le `border-t-2`
+                  porte la séparation, l'or ne remplit rien. */}
+              <tr className="border-t-2 border-border-subtle bg-surface-inert">
                 <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
                 <td className={`${NUM_CELL} py-3 font-semibold`}>
                   {fmt(data?.net_change_in_cash ?? 0)}

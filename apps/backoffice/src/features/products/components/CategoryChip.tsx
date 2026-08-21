@@ -12,8 +12,11 @@ interface Props {
   className?: string;
 }
 
+// The Ink-Not-Gold Rule : le cran or porte son liseré, pas un aplat. Le socle
+// pose `border border-transparent` pour que les quatre crans gardent la même
+// boîte — sans quoi le seul cran bordé serait 2 px plus large que ses voisins.
 const PALETTE = [
-  'bg-gold-soft text-gold',
+  'border-gold text-gold',
   'bg-red-soft text-red',
   'bg-success-soft text-success',
   'bg-bg-overlay text-text-primary',
@@ -27,7 +30,7 @@ export function CategoryChip({ name, className }: Props): JSX.Element {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold uppercase tracking-wide',
+        'inline-flex items-center rounded-sm border border-transparent px-2 py-0.5 text-xs font-semibold uppercase tracking-wide',
         tone,
         className,
       )}

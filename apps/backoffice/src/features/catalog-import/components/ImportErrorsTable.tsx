@@ -51,13 +51,14 @@ export function ImportErrorsTable({ errors, structureErrors }: Props): JSX.Eleme
   return (
     <div className="overflow-x-auto rounded-lg border border-danger-soft" data-testid="import-errors-table">
       <table className="w-full text-sm">
+        <caption className="sr-only">Sheet, row, SKU or column, code and message for every rejected import row</caption>
         <thead className="bg-danger-soft text-danger">
           <tr>
-            <th className="px-3 py-2 text-left font-semibold">Sheet</th>
-            <th className="px-3 py-2 text-left font-semibold">Row</th>
-            <th className="px-3 py-2 text-left font-semibold">SKU / Column</th>
-            <th className="px-3 py-2 text-left font-semibold">Code</th>
-            <th className="px-3 py-2 text-left font-semibold">Message</th>
+            <th scope="col" className="px-3 py-2 text-left font-semibold">Sheet</th>
+            <th scope="col" className="px-3 py-2 text-left font-semibold">Row</th>
+            <th scope="col" className="px-3 py-2 text-left font-semibold">SKU / Column</th>
+            <th scope="col" className="px-3 py-2 text-left font-semibold">Code</th>
+            <th scope="col" className="px-3 py-2 text-left font-semibold">Message</th>
           </tr>
         </thead>
         <tbody>

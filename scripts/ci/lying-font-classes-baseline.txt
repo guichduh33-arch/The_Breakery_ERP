@@ -7,18 +7,11 @@
 # peut que DÉCROÎTRE : --update-baseline refuse de tourner s il reste une
 # violation, il ne sait que descendre un compte.
 #
-# Dernier resserrement : 2026-08-18
-1	apps/backoffice/src/components/ErrorState.tsx
-1	apps/backoffice/src/features/inventory-production/components/IngredientAggregatePreview.tsx
-1	apps/backoffice/src/features/inventory-production/components/ProductionEntryCard.tsx
-1	apps/backoffice/src/features/inventory-production/components/RecipeCostPreviewCard.tsx
-1	apps/backoffice/src/features/purchasing/components/POPrintView.tsx
-2	apps/backoffice/src/features/recipes/components/RecipeBuilder.tsx
-1	apps/backoffice/src/features/recipes/components/SortableRecipeRow.tsx
-4	apps/backoffice/src/features/suppliers/components/SupplierAnalyticsTab.tsx
-1	apps/backoffice/src/features/suppliers/components/SupplierPaymentDistribution.tsx
-1	apps/backoffice/src/features/suppliers/components/SupplierPriceEvolutionTab.tsx
-2	apps/backoffice/src/pages/inventory/DisplayStockPage.tsx
-1	apps/backoffice/src/pages/NotFoundPage.tsx
-2	apps/backoffice/src/pages/settings/security/SecuritySettingsPage.tsx
-1	apps/backoffice/src/pages/settings/SettingsGeneralPage.tsx
+# CE FICHIER EST VIDE DEPUIS LE 2026-08-21, et c'est le point : les 20
+# occurrences héritées ont toutes été réécrites. La garde ne gèle plus aucune
+# dette et refuse désormais la PREMIÈRE régression, comme la garde 5. Un fichier
+# de plafond vide n'est pas un fichier mort — c'est le seul état où la règle est
+# tenue.
+#
+# Dernier resserrement : 2026-08-21
+

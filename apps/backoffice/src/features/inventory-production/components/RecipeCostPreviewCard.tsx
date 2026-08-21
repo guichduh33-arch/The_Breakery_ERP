@@ -131,7 +131,7 @@ export function RecipeCostPreviewCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-serif text-lg font-semibold text-text-primary truncate">
+              <h3 className="text-lg font-semibold text-text-primary truncate">
                 {p.name}
               </h3>
               <p className="text-xs uppercase tracking-widest text-text-secondary">

@@ -9,7 +9,7 @@ describe('RetailCreditLimitSection', () => {
   it('renders the current limit and emits the parsed number on Save', () => {
     const onSave = vi.fn();
     render(<RetailCreditLimitSection value={500_000} canEdit={true} onSave={onSave} />);
-    const input = screen.getByLabelText(/plafond ardoise/i);
+    const input = screen.getByLabelText(/tab limit/i);
     expect(input).toHaveValue('500000');
 
     fireEvent.change(input, { target: { value: '750000' } });
@@ -20,7 +20,7 @@ describe('RetailCreditLimitSection', () => {
   it('emits null when the field is cleared (unlimited)', () => {
     const onSave = vi.fn();
     render(<RetailCreditLimitSection value={500_000} canEdit={true} onSave={onSave} />);
-    fireEvent.change(screen.getByLabelText(/plafond ardoise/i), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText(/tab limit/i), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
     expect(onSave).toHaveBeenCalledWith(null);
   });
@@ -35,7 +35,7 @@ describe('RetailCreditLimitSection', () => {
   it('renders read-only with no Save button when canEdit=false', () => {
     const onSave = vi.fn();
     render(<RetailCreditLimitSection value={500_000} canEdit={false} onSave={onSave} />);
-    expect(screen.getByLabelText(/plafond ardoise/i)).toHaveAttribute('readonly');
+    expect(screen.getByLabelText(/tab limit/i)).toHaveAttribute('readonly');
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
   });
 });

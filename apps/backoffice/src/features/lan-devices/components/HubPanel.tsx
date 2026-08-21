@@ -92,12 +92,13 @@ export function HubPanel(): JSX.Element {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm max-w-2xl">
+            <caption className="sr-only">Device, type, IP address and last-seen time per terminal on the hub bus</caption>
             <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
               <tr>
-                <th className="py-2 text-left">Device</th>
-                <th className="py-2 text-left">Type</th>
-                <th className="py-2 text-left">IP</th>
-                <th className="py-2 text-left">Last seen</th>
+                <th scope="col" className="py-2 text-left">Device</th>
+                <th scope="col" className="py-2 text-left">Type</th>
+                <th scope="col" className="py-2 text-left">IP</th>
+                <th scope="col" className="py-2 text-left">Last seen</th>
               </tr>
             </thead>
             <tbody>

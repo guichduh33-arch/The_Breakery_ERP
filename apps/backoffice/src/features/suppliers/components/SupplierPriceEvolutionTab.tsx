@@ -16,6 +16,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { CHART_TITLE } from './chartTitle.js';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateShortWita } from '@breakery/utils';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE, CATEGORICAL_SERIES, CHART_SERIES_OFF } from '@/features/reports/utils/chartColors.js';
@@ -114,7 +115,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
                 key={p.id}
                 type="button"
                 onClick={() => toggle(p.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-sm transition-colors ${
                   on ? 'text-text-primary' : 'border-border-subtle text-text-muted'
                 }`}
                 style={on ? { borderColor: color, backgroundColor: `${color}1a` } : undefined}
@@ -128,7 +129,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
       </div>
 
       <Card variant="default" padding="md">
-        <h3 className="mb-3 font-display text-base text-text-primary">Unit Price Over Time</h3>
+        <SectionLabel as="h3" className={CHART_TITLE}>Unit Price Over Time</SectionLabel>
         <div
           className="h-72 w-full"
           role="img"
@@ -161,14 +162,15 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
 
       <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
         <table className="w-full text-sm">
+          <caption className="sr-only">Date, purchase order, product, quantity, unit price and total per purchase line</caption>
           <thead className="border-b border-border-subtle bg-surface-inert">
             <tr>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
-              <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
-              <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Unit Price</SectionLabel></th>
-              <th className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Date</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">PO #</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Unit Price</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
             </tr>
           </thead>
           <tbody>

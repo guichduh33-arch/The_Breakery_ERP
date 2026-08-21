@@ -259,6 +259,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
         </p>
       ) : (
         <DataTable
+          caption="Category, slug, pricing rule, loyalty setting and status per customer category"
           columns={columns}
           rows={rows}
           getRowKey={(c) => c.id}

@@ -3,7 +3,7 @@
 // Écran 1c — tests de la page (enveloppe get_dashboard_overview_v3).
 // La prop `data` désactive le hook agrégat ET les trois panneaux : aucun réseau.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,6 +13,48 @@ import type { PermissionCode } from '@breakery/supabase';
 import DashboardPage from '@/pages/Dashboard.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { DashboardOverview } from '@/features/dashboard/hooks/useDashboardOverview.js';
+
+// LOT 9 — CE FICHIER AVAIT UN TEST INTERMITTENT, ET ON L'A DÉSAMORCÉ ICI.
+//
+// Le cas « renders empty states rather than zeros… » lâchait sous la charge de
+// la suite complète, jamais en isolation, sur `Unable to find an element with
+// the text: /No revenue data/i`. Cause : les deux graphes du tableau de bord
+// sont passés en `React.lazy` (lot 3, 117 ko sortis du premier téléchargement)
+// et leurs états vides vivent DANS ces composants — il faut donc que le chunk
+// se résolve. Or ce chunk embarque `recharts` : sa TRANSFORMATION à froid,
+// quand 280 fichiers de test se disputent le pipeline vite-node, tombait dans
+// la fenêtre de 5 s du `findByText` et la débordait par intermittence.
+//
+// On ne masque pas le problème, on le SORT de la fenêtre chronométrée : les
+// deux modules sont importés une fois pour toutes ici, avec la MÊME spécifieuse
+// que `Dashboard.tsx`, donc sous la même clé de registre. Quand le test rend,
+// la promesse de `React.lazy` est déjà tenue et se règle en une microtâche ;
+// `findByText` la voit à son premier sondage. Le coût de transformation est
+// payé dans un `beforeAll` (timeout de hook : 30 s), pas dans une attente de 5 s.
+//
+// POURQUOI PAS UN `vi.mock` DES DEUX GRAPHES — l'autre issue possible. Il aurait
+// rendu le test déterministe en supprimant le `lazy`, mais il aurait aussi
+// supprimé ce que le test PROUVE : que l'état vide vient du vrai composant. Or
+// AUCUN autre test du dépôt ne couvre « No revenue data » ni « No sales today
+// yet » (relevé : ces deux chaînes n'existent que dans `RevenueTrendChart.tsx`,
+// `HourlySalesChart.tsx` et ce fichier). Un mock aurait aussi vidé de son sens
+// l'assertion du bloc d'erreur — « never claims there were no sales » — qui
+// vérifie que les graphes ne mentent PAS quand la RPC échoue : contre un
+// composant mocké, elle passe sans rien prouver. Le trou aurait été déplacé,
+// pas fermé.
+// Le délai du hook est porté à 90 s EXPRÈS. Le défaut du dépôt est 30 s, et il
+// suffit largement en isolation — mais ce préchargement transforme `recharts`
+// (443 ko) à froid, et quand 282 fichiers de test se disputent le pipeline
+// vite-node, cette transformation a dépassé les 30 s. Le symptôme n'était alors
+// plus un cas rouge mais le FICHIER entier en échec, ce qui est plus difficile
+// à lire. Un délai généreux ne coûte rien au cas passant : il ne borne que
+// l'échec.
+beforeAll(async () => {
+  await Promise.all([
+    import('@/features/dashboard/components/RevenueTrendChart.js'),
+    import('@/features/dashboard/components/HourlySalesChart.js'),
+  ]);
+}, 90_000);
 
 beforeEach(() => {
   cleanup();
@@ -286,7 +328,10 @@ describe('DashboardPage — écran 1c', () => {
     expect(screen.getByText(/Peak 07:00–09:00/)).toBeInTheDocument();
   });
 
-  it('renders empty states rather than zeros when the day has no activity', () => {
+  // Les deux états vides des graphes vivent DANS les composants `lazy` : ils
+  // n'existent qu'après résolution du chunk `charts`, d'où le `findByText`.
+  // Les deux autres sont rendus par la page elle-même, hors Suspense.
+  it('renders empty states rather than zeros when the day has no activity', async () => {
     const o = overviewFixture({
       revenue_30d: Array.from({ length: 30 }, (_, i) => ({
         date: `2026-07-${String(i + 1).padStart(2, '0')}`, net: 0, prev_net: 0,
@@ -297,8 +342,13 @@ describe('DashboardPage — écran 1c', () => {
       payments: { lines: [], total: 0, cash_expected_drawer: 0 },
     });
     renderWith(o);
-    expect(screen.getByText(/No revenue data/i)).toBeInTheDocument();
-    expect(screen.getByText(/No sales today yet/i)).toBeInTheDocument();
+    // Les deux états vides vivent DANS les graphes chargés à la demande, d'où
+    // le `findByText` : même préchargés (cf. `beforeAll`), ils passent par une
+    // frontière `Suspense`, donc par une microtâche. Le délai explicite reste
+    // en ceinture — il ne coûte RIEN au cas passant, `findBy` rendant la main
+    // dès que le nœud paraît ; il ne borne que l'échec.
+    expect(await screen.findByText(/No revenue data/i, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText(/No sales today yet/i, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByText(/No sale recorded today/i)).toBeInTheDocument();
     expect(screen.getByText(/No peak yet today/i)).toBeInTheDocument();
   });

@@ -41,7 +41,7 @@ export function DisplayStockCard({
 
   return (
     <DashboardCard
-      title="Display stock · vitrine"
+      title="Display stock"
       aside={<LiveMarker />}
       subtitle="Read-only · time since the product's last sale"
       isLoading={isLoading}
@@ -54,12 +54,12 @@ export function DisplayStockCard({
             <>
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" aria-hidden />
               <span className="text-text-secondary">
-                {empty} counter{empty > 1 ? 's' : ''} empty — POS blocks the sale
+                <span className="font-data tabular-nums">{empty}</span> counter{empty > 1 ? 's' : ''} empty — POS blocks the sale
               </span>
             </>
           )}
           <Link to="/backoffice/inventory/display" className="ml-auto font-medium text-gold">
-            Open vitrine
+            Open display case
           </Link>
         </>
       }

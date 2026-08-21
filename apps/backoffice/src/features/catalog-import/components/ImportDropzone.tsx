@@ -62,7 +62,9 @@ export function ImportDropzone({ onFile, disabled = false }: Props): JSX.Element
       className={cn(
         'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors cursor-pointer',
         isDragOver
-          ? 'border-gold bg-gold-soft'
+          // Le survol de dépôt se dit par le liseré seul (The Ink-Not-Gold Rule) :
+          // `border-gold` remplace `border-border-subtle`, l'état reste visible.
+          ? 'border-gold'
           : 'border-border-subtle hover:border-border-strong',
         disabled && 'opacity-50 pointer-events-none',
       )}

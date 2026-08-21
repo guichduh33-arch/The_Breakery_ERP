@@ -16,9 +16,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Split the heavy, independently-cacheable vendors out of the
-        // per-route chunks. recharts/xlsx are only pulled by lazy report and
-        // import/export pages, so they stay out of the initial download; a
-        // stable react-vendor chunk maximizes long-term cache hits across deploys.
+        // per-route chunks; a stable react-vendor chunk maximizes long-term
+        // cache hits across deploys.
+        //
+        // `charts` et `xlsx` ne sont tirés que par des imports DYNAMIQUES : ils
+        // ne descendent donc jamais avec le premier chargement. Ce n'était pas
+        // vrai pour `charts` jusqu'au 2026-08-21 — le Dashboard, page
+        // d'atterrissage après connexion, importait ses deux graphes en
+        // statique et payait 443 Ko bruts / 117 Ko gzip à l'ouverture. La
+        // promesse ne tient que tant qu'aucune route non-`lazy` n'importe
+        // recharts en statique : la vérifier au build, pas ici.
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id))

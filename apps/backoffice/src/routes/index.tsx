@@ -1,8 +1,11 @@
 // apps/backoffice/src/routes/index.tsx
-import { useEffect, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { lazy } from 'react';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import type { PermissionCode } from '@breakery/supabase';
+import { PageHeader } from '@/components/PageHeader.js';
+import { RestrictedState } from '@/components/RestrictedState.js';
+import type { RoleCode } from '@/lib/roleLabels.js';
 // Eager: pre-auth first paint + always-mounted shell. Everything else is
 // route-split via React.lazy so the initial bundle no longer carries recharts,
 // xlsx, and all ~90 page modules (see <Suspense> boundary in BackofficeLayout).
@@ -150,6 +153,22 @@ function Protected({ children }: { children: React.ReactNode }) {
 // get_expenses_by_category_v1 (gate reports.financial.read) ; avec un seul code
 // la route laissait entrer un porteur d'une seule des deux familles, qui se
 // prenait un 42501 opaque a l'affichage. Un code unique reste accepte.
+//
+// LOT 4 / TÂCHE C — le refus ne DÉPLACE plus l'utilisateur, il s'affiche.
+//
+// Jusqu'ici la route rendait `<Navigate to="/backoffice" replace />` avec un
+// toast. Le coût : on clique un rapport depuis un hub de 46 tuiles, on perd sa
+// place ET sa recherche, on atterrit sur l'accueil, et le seul message qui
+// nommait le problème s'efface tout seul au bout de quelques secondes — sans
+// jamais dire QUELLE permission manque ni à qui la demander. C'était l'exact
+// opposé du « restricted » carte-par-carte que le Dashboard réussit : deux
+// traitements du même refus dans le même produit.
+//
+// Le gate rend donc le bloc « restricted » DANS la coquille, à la place du
+// corps de route : la barre de navigation reste, l'URL reste (le lien partagé
+// garde un sens, et il suffit d'obtenir le droit puis de recharger), et le code
+// de permission est écrit à l'écran. Le toast disparaît avec la redirection —
+// il faisait doublon avec un bloc permanent, et un toast n'est pas copiable.
 function PermissionGate({
   required,
   children,
@@ -160,15 +179,51 @@ function PermissionGate({
   // `PermissionCode` est une union de littéraux : le test sur `typeof` narrow
   // proprement, là où `Array.isArray` sur un `readonly T[]` retombe sur `any[]`.
   const codes: readonly PermissionCode[] = typeof required === 'string' ? [required] : required;
+  // Par construction, un `false` ici est un refus GENUINE : quand un
+  // PermissionGate rend, la réhydratation du boot est terminée (cf. <BootGate>).
   const has = useAuthStore((s) => codes.every((code) => s.hasPermission(code)));
-  // P1 #4 — surface an explicit "access denied" toast instead of bouncing the
-  // user back to the dashboard with no explanation. By the time a PermissionGate
-  // renders, boot rehydration is done (see <BootGate>), so a `false` here is a
-  // genuine permission denial, not a not-yet-loaded state.
-  useEffect(() => {
-    if (!has) toast.error('Access denied — you do not have the permission this page requires.');
-  }, [has]);
-  return has ? <>{children}</> : <Navigate to="/backoffice" replace />;
+  return has ? <>{children}</> : <RouteDenied required={codes} />;
+}
+
+/** Le corps de route quand la permission manque. Une seule sortie explicite —
+ *  le reste de la navigation est resté à l'écran, c'est tout l'intérêt. */
+function RouteDenied({ required }: { required: readonly PermissionCode[] }) {
+  return (
+    <RouteDeniedShell subtitle="You stayed on this address — nothing was lost. Ask for the permission below, then reload.">
+      <RestrictedState what="this page" permission={required} />
+    </RouteDeniedShell>
+  );
+}
+
+/** Le corps de route quand le RÔLE ne convient pas — même coquille, même sortie. */
+function RouteDeniedByRole({ required }: { required: readonly RoleCode[] }) {
+  return (
+    <RouteDeniedShell subtitle="You stayed on this address — nothing was lost. Ask for the role below, then reload.">
+      <RestrictedState what="this page" role={required} />
+    </RouteDeniedShell>
+  );
+}
+
+/** La coquille partagée par les deux refus : titre, exigence, une sortie. */
+function RouteDeniedShell({
+  subtitle,
+  children,
+}: {
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-6" data-testid="route-denied">
+      <PageHeader title="Access restricted" subtitle={subtitle} />
+      {children}
+      <Link
+        to="/backoffice"
+        className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to dashboard
+      </Link>
+    </div>
+  );
 }
 
 // Settings History (ADR-006 déc. 9) is admin-only STRICT — role-gated, not
@@ -179,13 +234,22 @@ function PermissionGate({
 // Audit Reports 2026-08-01 — le rapport Audit Log (/reports/audit) tombait dans
 // exactement le même cas et n'avait PAS ce garde : mesuré, un MANAGER porteur de
 // reports.audit.read obtient 0 ligne. Il est passé sous AdminGate.
+//
+// LOT 9 — LE JUMEAU ÉJECTAIT ENCORE. `AdminGate` rendait
+// `<Navigate to="/backoffice" replace />` + un toast, c'est-à-dire exactement
+// ce que le lot 4 a défait sur `PermissionGate` : deux traitements du même
+// refus dans le même produit, ce que ce lot-là nommait comme LE défaut.
+// L'objection qui l'avait épargné — « un garde de rôle n'a aucun code de
+// permission à nommer » — visait le mauvais objet : ce qu'il doit nommer n'est
+// pas une permission, c'est le RÔLE requis, et cette information dit en plus à
+// l'opérateur à qui s'adresser. Le toast part avec la redirection : il faisait
+// doublon avec un bloc permanent, et un toast ne se recopie pas.
+const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'] as const satisfies readonly RoleCode[];
+
 function AdminGate({ children }: { children: React.ReactNode }) {
   const roleCode = useAuthStore((s) => s.user?.role_code);
-  const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
-  useEffect(() => {
-    if (!isAdmin) toast.error('Access denied — this page is restricted to administrators.');
-  }, [isAdmin]);
-  return isAdmin ? <>{children}</> : <Navigate to="/backoffice" replace />;
+  const isAdmin = (ADMIN_ROLES as readonly string[]).includes(roleCode ?? '');
+  return isAdmin ? <>{children}</> : <RouteDeniedByRole required={ADMIN_ROLES} />;
 }
 
 export function AppRoutes() {

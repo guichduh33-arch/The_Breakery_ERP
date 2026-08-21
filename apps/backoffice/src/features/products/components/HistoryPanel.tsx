@@ -84,12 +84,13 @@ export function HistoryPanel({ productId }: Props): JSX.Element {
     <Card variant="default" padding="none">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
+          <caption className="sr-only">Date, action, actor and details per change to this product</caption>
           <thead className="border-b border-border-subtle bg-surface-inert">
             <tr>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">When</SectionLabel></th>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Action</SectionLabel></th>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Actor</SectionLabel></th>
-              <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Details</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">When</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Action</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Actor</SectionLabel></th>
+              <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Details</SectionLabel></th>
             </tr>
           </thead>
           <tbody>

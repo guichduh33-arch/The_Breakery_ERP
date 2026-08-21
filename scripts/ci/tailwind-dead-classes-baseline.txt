@@ -26,14 +26,10 @@
 # exception. Un ajout par élargissement se documente en une ligne sous
 # « Dernier resserrement », en nommant ce que le détecteur voit désormais.
 #
-# Dernier resserrement : 2026-08-17
+# Dernier resserrement : 2026-08-21
 # Dernier élargissement du détecteur : 2026-08-17 (liste noire shadcn/ui —
 #   +1 entrée préexistante rendue visible : `accent-primary`)
-1	apps/backoffice/src/__tests__/loyalty-list.smoke.test.tsx	accent-primary
-1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	bg-red-as-text/5
-1	apps/backoffice/src/features/products/components/ModifiersPanel.tsx	border-red-as-text/40
 1	apps/pos/src/features/payment/split/SplitPaymentFlow.tsx	to-payment
-2	apps/pos/src/features/payment/split/__tests__/SplitPaymentFlow.smoke.test.tsx	to-payment
 1	packages/ui/src/components/IdleWarningToast.tsx	border-warning/40
 1	packages/ui/src/components/ModifierModal.tsx	bg-bg-input/80
 1	packages/ui/src/components/ModifierModal.tsx	text-danger/80

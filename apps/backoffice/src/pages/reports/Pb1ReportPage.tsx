@@ -238,7 +238,9 @@ export default function Pb1ReportPage(): JSX.Element {
               // Les totaux sont ceux du SERVEUR, pas une somme des lignes
               // affichées : sur un état fiscal, la page ne recalcule rien.
               <tfoot>
-                <tr className="border-t-2 border-border-subtle bg-gold-soft font-semibold">
+                {/* Papier inerte : DESIGN.md § Tableaux, « en-tête et pied sur
+                    papier inerte ». L'or ne remplit pas une surface. */}
+                <tr className="border-t-2 border-border-subtle bg-surface-inert font-semibold">
                   <td className="py-3">Month total</td>
                   <td className={`${NUM_CELL} py-3`}>{formatIdrFull(data.taxable_base)}</td>
                   <td className={`${NUM_CELL} py-3`}>{formatIdrFull(data.pb1_collected)}</td>

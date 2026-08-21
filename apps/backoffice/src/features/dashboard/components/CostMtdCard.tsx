@@ -60,7 +60,7 @@ export function CostMtdCard({
           <div className="flex gap-5">
             <div>
               <p className="text-xs text-text-muted">
-                COGS · {formatPct(cost.cogs_pct_of_sales)} of sales
+                COGS · <span className="font-data tabular-nums">{formatPct(cost.cogs_pct_of_sales)}</span> of sales
               </p>
               <p
                 className="font-data text-base font-semibold tabular-nums text-text-primary"
@@ -71,7 +71,7 @@ export function CostMtdCard({
             </div>
             <div>
               <p className="text-xs text-text-muted">
-                OpEx · {formatPct(cost.opex_pct_of_sales)} of sales
+                OpEx · <span className="font-data tabular-nums">{formatPct(cost.opex_pct_of_sales)}</span> of sales
               </p>
               <p
                 className="font-data text-base font-semibold tabular-nums text-text-primary"

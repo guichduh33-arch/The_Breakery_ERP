@@ -143,15 +143,16 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
       )}
       <div className="overflow-x-auto rounded-md border border-border-subtle">
         <table className="w-full text-xs" data-testid="stock-ledger-table">
+          <caption className="sr-only">Date, type, product, unit, opening, in, out, balance, price and amount per stock movement</caption>
           <thead className="sticky top-0 bg-surface-inert text-xs uppercase tracking-wide text-text-secondary">
             <tr className="border-b border-border-subtle">
-              <th className="w-8 px-2 py-2" aria-label="Expand" />
+              <th scope="col" className="w-8 px-2 py-2"><span className="sr-only">Expand</span></th>
               {HEADERS.map((h) => {
                 const active = h.sort !== undefined && sort?.key === h.sort;
                 const ariaSort = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : (h.sort ? 'none' : undefined);
                 const SortIcon = !active ? ChevronsUpDown : sort.dir === 'asc' ? ChevronUp : ChevronDown;
                 return (
-                  <th
+                  <th scope="col"
                     key={h.label}
                     aria-sort={ariaSort}
                     className={`whitespace-nowrap px-2 py-2 font-medium ${h.align === 'right' ? 'text-right' : 'text-left'}`}

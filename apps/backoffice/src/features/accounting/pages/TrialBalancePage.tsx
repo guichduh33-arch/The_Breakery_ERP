@@ -74,11 +74,11 @@ export default function TrialBalancePage(): JSX.Element {
         <>
           <div data-testid="tb-balanced-badge">
             {tb.data.balanced ? (
-              <span className="inline-flex items-center gap-2 rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success">
+              <span className="inline-flex items-center gap-2 rounded-sm bg-success-soft px-3 py-1 text-xs font-semibold text-success">
                 ✓ Balanced
               </span>
             ) : (
-              <span className="inline-flex items-center gap-2 rounded-full bg-red-soft px-3 py-1 text-xs font-semibold text-red">
+              <span className="inline-flex items-center gap-2 rounded-sm bg-red-soft px-3 py-1 text-xs font-semibold text-red">
                 ✗ Unbalanced — Δ {fmt(Math.abs(tb.data.delta))}
               </span>
             )}
@@ -86,14 +86,15 @@ export default function TrialBalancePage(): JSX.Element {
 
           <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
             <table className="w-full text-sm" data-testid="tb-table">
+              <caption className="sr-only">Code, name, class, debit, credit and balance per account</caption>
               <thead>
                 <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                  <th className="px-3 py-2">Code</th>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Class</th>
-                  <th className="px-3 py-2 text-right">Debit</th>
-                  <th className="px-3 py-2 text-right">Credit</th>
-                  <th className="px-3 py-2 text-right">Balance</th>
+                  <th scope="col" className="px-3 py-2">Code</th>
+                  <th scope="col" className="px-3 py-2">Name</th>
+                  <th scope="col" className="px-3 py-2">Class</th>
+                  <th scope="col" className="px-3 py-2 text-right">Debit</th>
+                  <th scope="col" className="px-3 py-2 text-right">Credit</th>
+                  <th scope="col" className="px-3 py-2 text-right">Balance</th>
                 </tr>
               </thead>
               <tbody>

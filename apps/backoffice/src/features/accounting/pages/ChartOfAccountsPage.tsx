@@ -118,14 +118,15 @@ export default function ChartOfAccountsPage(): JSX.Element {
       {filtered.length > 0 && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="coa-table">
+            <caption className="sr-only">Code, name, class, balance type and active status per account</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="px-3 py-2">Code</th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Class</th>
-                <th className="px-3 py-2">Balance type</th>
-                <th className="px-3 py-2 text-center">Active</th>
-                <th className="px-3 py-2 text-right">Action</th>
+                <th scope="col" className="px-3 py-2">Code</th>
+                <th scope="col" className="px-3 py-2">Name</th>
+                <th scope="col" className="px-3 py-2">Class</th>
+                <th scope="col" className="px-3 py-2">Balance type</th>
+                <th scope="col" className="px-3 py-2 text-center">Active</th>
+                <th scope="col" className="px-3 py-2 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -145,7 +146,7 @@ export default function ChartOfAccountsPage(): JSX.Element {
                   </td>
                   <td className="px-3 py-2 text-center">
                     <span
-                      className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-sm text-xs ${
                         row.is_active
                           ? 'bg-success-soft text-success'
                           : 'bg-bg-overlay text-text-muted'

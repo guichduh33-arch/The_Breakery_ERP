@@ -151,6 +151,7 @@ export default function SectionsPage(): JSX.Element {
         </QueryErrorBanner>
       ) : (
         <DataTable
+          caption="Code, name, display order and active status per inventory section"
           data-testid="sections-table"
           columns={columns}
           rows={rows}

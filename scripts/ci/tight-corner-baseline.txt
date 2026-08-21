@@ -1,0 +1,31 @@
+# Plafond compté de la garde 9 — tight-corner, hérité au 2026-08-21.
+#
+# Format : <compte>\t<chemin>
+#
+# PLAFOND, JAMAIS PLANCHER. Cette liste recense les 21 formes rondes LÉGITIMES
+# qui restaient le jour où la garde est née — spinners, pastilles d'avatar,
+# pistes et curseurs d'interrupteur, points d'état. Les familles d'exception sont
+# nommées et closes en tête de scripts/ci/tight-corner.mjs. Elle ne peut que
+# DÉCROÎTRE : --update-baseline refuse de tourner s'il reste une violation, il ne
+# sait que descendre un compte.
+#
+# Généré par `node scripts/ci/tight-corner.mjs --update-baseline`, jamais écrit
+# de mémoire.
+#
+# Dernier resserrement : 2026-08-21
+1	apps/backoffice/src/App.tsx
+1	apps/backoffice/src/components/PanelCard.tsx
+2	apps/backoffice/src/features/categories/components/CategoryFormDialog.tsx
+1	apps/backoffice/src/features/customers/components/CustomerAvatar.tsx
+2	apps/backoffice/src/features/inventory-production/components/BoulangerModeToggle.tsx
+1	apps/backoffice/src/features/orders/components/OrderDetailDrawer.tsx
+2	apps/backoffice/src/features/products/components/GeneralPanel.tsx
+2	apps/backoffice/src/features/products/components/StockAnalyticsPanel.tsx
+1	apps/backoffice/src/features/suppliers/components/SupplierPriceEvolutionTab.tsx
+1	apps/backoffice/src/layouts/CommandPalette.tsx
+1	apps/backoffice/src/layouts/TopBar.tsx
+1	apps/backoffice/src/pages/btob/B2BDashboardPage.tsx
+1	apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx
+1	apps/backoffice/src/pages/orders/OrderDetailPage.tsx
+1	apps/backoffice/src/pages/orders/OrdersListPage.tsx
+2	apps/backoffice/src/pages/settings/SettingsPermissionsPage.tsx

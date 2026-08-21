@@ -116,6 +116,7 @@ export function ConfigIssuesTab(): JSX.Element {
 
   return (
     <DataTable<StockConfigIssueRow>
+      caption="Product, issue, configuration, recipe and stock status per misconfigured product"
       columns={COLUMNS}
       rows={rows}
       getRowKey={(r) => `${r.product_id}-${r.issue_type}`}

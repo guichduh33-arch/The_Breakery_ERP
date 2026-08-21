@@ -380,9 +380,9 @@ export default function SalesByCustomerPage(): JSX.Element {
                   </caption>
                   <thead>
                     <tr className="border-b border-border-subtle text-text-secondary">
-                      <th className="py-2 pr-3 text-left font-normal">Customer</th>
-                      <th className="py-2 pr-3 text-right font-normal">Prev. revenue</th>
-                      <th className="py-2 pr-3 text-left font-normal">Last order</th>
+                      <th scope="col" className="py-2 pr-3 text-left font-normal">Customer</th>
+                      <th scope="col" className="py-2 pr-3 text-right font-normal">Prev. revenue</th>
+                      <th scope="col" className="py-2 pr-3 text-left font-normal">Last order</th>
                     </tr>
                   </thead>
                   <tbody>

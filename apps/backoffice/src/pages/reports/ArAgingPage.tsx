@@ -294,14 +294,14 @@ export default function ArAgingPage(): JSX.Element {
                 </caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-text-secondary">
-                    <th className="py-2 pr-3 text-left font-normal">Customer</th>
-                    <th className="py-2 pr-3 text-left font-normal">Invoice</th>
-                    <th className="py-2 pr-3 text-left font-normal">Issued</th>
-                    <th className="py-2 pr-3 text-left font-normal">Due</th>
-                    <th className="py-2 pr-3 text-left font-normal">Lateness</th>
-                    <th className="py-2 pr-3 text-right font-normal">Total</th>
-                    <th className="py-2 pr-3 text-right font-normal">Settled</th>
-                    <th className="py-2 pr-3 text-right font-normal">Outstanding</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Customer</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Invoice</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Issued</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Due</th>
+                    <th scope="col" className="py-2 pr-3 text-left font-normal">Lateness</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Total</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Settled</th>
+                    <th scope="col" className="py-2 pr-3 text-right font-normal">Outstanding</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -361,12 +361,12 @@ export default function ArAgingPage(): JSX.Element {
               </caption>
               <thead>
                 <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 pr-3 text-left font-normal">Customer</th>
-                  <th className="py-2 pr-3 text-right font-normal">Terms</th>
-                  <th className="py-2 pr-3 text-right font-normal">Credit limit</th>
-                  <th className="py-2 pr-3 text-right font-normal">Outstanding</th>
-                  <th className="py-2 pr-3 text-right font-normal">Max late</th>
-                  <th className="py-2 pr-3 text-right font-normal">Cached balance</th>
+                  <th scope="col" className="py-2 pr-3 text-left font-normal">Customer</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Terms</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Credit limit</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Outstanding</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Max late</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Cached balance</th>
                 </tr>
               </thead>
               <tbody>

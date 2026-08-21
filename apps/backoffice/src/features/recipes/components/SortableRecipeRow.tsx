@@ -54,7 +54,7 @@ export function SortableRecipeRow({
         </td>
       )}
       <td className="px-4 py-3 text-text-primary">
-        <div className="font-display text-base">{row.material_name}</div>
+        <div className="text-base">{row.material_name}</div>
       </td>
       <td className="px-4 py-3 text-right">
         <span className="rounded-md border border-border-subtle bg-bg-input px-3 py-1 font-mono tabular-nums text-text-primary">
@@ -75,7 +75,7 @@ export function SortableRecipeRow({
             aria-label={`Remove ${row.material_name}`}
             onClick={() => onRemove(row.recipe_id)}
             disabled={isRemoving}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-text-muted hover:bg-red-soft hover:text-red disabled:opacity-50"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-text-muted hover:bg-red-soft hover:text-red disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden />
           </button>

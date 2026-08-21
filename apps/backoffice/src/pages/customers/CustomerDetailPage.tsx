@@ -32,7 +32,7 @@ import {
   User as UserIcon,
   Wallet,
 } from 'lucide-react';
-import { Card, LoyaltyBadge } from '@breakery/ui';
+import { Button, Card, LoyaltyBadge } from '@breakery/ui';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
 import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -52,7 +52,8 @@ import { LoyaltyTab } from './customer-detail/LoyaltyTab.js';
 import { StoreCreditTab } from './customer-detail/StoreCreditTab.js';
 import { AnalyticsTab } from './customer-detail/AnalyticsTab.js';
 import { PricingTab } from './customer-detail/PricingTab.js';
-import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
 
@@ -145,13 +146,18 @@ export function CustomerDetailPage(): JSX.Element {
         <span className="text-text-secondary">{customer.name}</span>
       </nav>
 
-      {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <CustomerAvatar name={customer.name} />
-          <div className="leading-tight">
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{customer.name}</h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+      {/* Bandeau — `PageHeader` est la source UNIQUE du bandeau de page
+          (DESIGN.md § Boutons : « un bandeau écrit à la main est un second
+          défaut, pas une exception »). L'avatar reste à gauche du titre : il
+          n'entre pas dans le composant, on le pose donc en tête de la rangée et
+          le bandeau prend le reste de la largeur. */}
+      <header className="flex items-center gap-4">
+        <CustomerAvatar name={customer.name} />
+        <PageHeader
+          className="min-w-0 flex-1 items-center gap-4"
+          title={customer.name}
+          subtitle={
+            <div className="flex flex-wrap items-center gap-2">
               <CustomerCategoryChip
                 name={customer.category?.name ?? null}
                 slug={customer.category?.slug ?? null}
@@ -165,13 +171,15 @@ export function CustomerDetailPage(): JSX.Element {
                 {isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
-          </div>
-        </div>
-        {canUpdate && (
-          <button type="button" onClick={() => setEditing(true)} className={TOOLBAR_BTN_PRIMARY}>
-            <SquarePen className="h-3.5 w-3.5" aria-hidden /> Edit
-          </button>
-        )}
+          }
+          actions={
+            canUpdate ? (
+              <button type="button" onClick={() => setEditing(true)} className={TOOLBAR_BTN_PRIMARY}>
+                <SquarePen className="h-3.5 w-3.5" aria-hidden /> Edit
+              </button>
+            ) : undefined
+          }
+        />
       </header>
 
       {/* Loyalty hero — les valeurs sont des mesures : mono display, pas de
@@ -221,39 +229,42 @@ export function CustomerDetailPage(): JSX.Element {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             {canAdjust && (
               <>
-                <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setAdjusting(true)}>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setAdjusting(true)}>
                   <Plus className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Add points
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className={TOOLBAR_BTN_SECONDARY}
+                  size="sm"
+                  variant="secondary"
                   disabled={customer.loyalty_points <= 0}
                   onClick={() => setAdjusting(true)}
                 >
                   <Gift className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Redeem points
-                </button>
+                </Button>
               </>
             )}
             {canGrant && (
-              <button
+              <Button
                 type="button"
-                className={TOOLBAR_BTN_SECONDARY}
+                size="sm"
+                variant="secondary"
                 onClick={() => setGranting(true)}
                 data-testid="grant-store-credit"
               >
                 <Wallet className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Grant store credit
-              </button>
+              </Button>
             )}
             {canConvert && (
-              <button
+              <Button
                 type="button"
-                className={TOOLBAR_BTN_SECONDARY}
+                size="sm"
+                variant="secondary"
                 disabled={customer.loyalty_points < 100}
                 onClick={() => setConverting(true)}
                 data-testid="convert-store-credit"
               >
                 <Star className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Convert points to credit
-              </button>
+              </Button>
             )}
           </div>
         )}

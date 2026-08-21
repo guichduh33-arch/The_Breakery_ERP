@@ -184,7 +184,7 @@ function ViewToggleButton({
       onClick={onClick}
       className={cn(
         'inline-flex w-8 items-center justify-center transition-colors duration-fast',
-        active ? 'bg-gold-soft text-gold' : 'text-text-muted hover:text-text-primary',
+        active ? 'bg-surface-4 text-gold' : 'text-text-muted hover:text-text-primary',
       )}
     >
       {children}

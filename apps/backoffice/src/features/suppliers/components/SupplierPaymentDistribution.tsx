@@ -5,7 +5,9 @@
 import type { JSX } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@breakery/utils';
+import { SectionLabel } from '@breakery/ui';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
+import { CHART_TITLE } from './chartTitle.js';
 
 const PAID = 'var(--success)';
 const OVERDUE = 'var(--danger)';
@@ -27,7 +29,7 @@ export function SupplierPaymentDistribution({
 
   return (
     <div>
-      <h3 className="mb-3 font-display text-base text-text-primary">Payment Distribution</h3>
+      <SectionLabel as="h3" className={CHART_TITLE}>Payment Distribution</SectionLabel>
       {data.length === 0 ? (
         <p className="py-8 text-center text-sm text-text-muted">No payment data.</p>
       ) : (

@@ -88,7 +88,8 @@ export function SectionGridEditor({ tables, canUpdate, pending, onMove }: Sectio
           onDrop={(e) => { handleDrop(e, x, y); }}
           className={cn(
             'rounded border border-dashed border-border-subtle p-0.5',
-            dragOver === key && 'border-gold bg-gold-soft',
+            // Survol de dépôt porté par le liseré seul (The Ink-Not-Gold Rule).
+            dragOver === key && 'border-gold',
           )}
         >
           {occupant !== undefined && <TableChip table={occupant} canUpdate={canUpdate} />}

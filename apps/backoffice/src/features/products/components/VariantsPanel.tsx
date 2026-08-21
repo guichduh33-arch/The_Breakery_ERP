@@ -106,7 +106,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
       <div className="space-y-4">
         <div
           data-testid="variant-banner"
-          className="flex items-center gap-3 rounded-lg border border-gold bg-gold-soft p-4"
+          className="flex items-center gap-3 rounded-lg border border-gold p-4"
         >
           <Layers className="h-5 w-5 text-gold" aria-hidden />
           <div className="flex-1">
@@ -239,15 +239,16 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
       <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => { void handleDragEnd(e); }}>
           <table className="w-full text-sm" data-testid="variants-table">
+            <caption className="sr-only">Label, SKU, retail price, cost and status per variant</caption>
             <thead className="bg-bg-overlay text-left text-xs uppercase tracking-wider text-text-secondary">
               <tr>
-                <th className="px-2 py-2 w-8"></th>
-                <th className="px-3 py-2">Label</th>
-                <th className="px-3 py-2">SKU</th>
-                <th className="px-3 py-2 text-right">Retail</th>
-                <th className="px-3 py-2 text-right">Cost</th>
-                <th className="px-3 py-2 text-center">Status</th>
-                <th className="px-3 py-2 w-20"></th>
+                <th scope="col" className="px-2 py-2 w-8"><span className="sr-only">Reorder</span></th>
+                <th scope="col" className="px-3 py-2">Label</th>
+                <th scope="col" className="px-3 py-2">SKU</th>
+                <th scope="col" className="px-3 py-2 text-right">Retail</th>
+                <th scope="col" className="px-3 py-2 text-right">Cost</th>
+                <th scope="col" className="px-3 py-2 text-center">Status</th>
+                <th scope="col" className="px-3 py-2 w-20"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>

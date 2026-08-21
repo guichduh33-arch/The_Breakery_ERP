@@ -72,11 +72,12 @@ export function ModifierCostBreakdown({
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">{`Ingredient cost and total cost per option in ${g.group_name}`}</caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-secondary">
-                    <th className="py-1.5 pr-4 text-left font-medium">Option</th>
-                    <th className="py-1.5 pr-4 text-right font-medium">Ingredient cost</th>
-                    <th className="py-1.5 text-right font-medium">Total cost</th>
+                    <th scope="col" className="py-1.5 pr-4 text-left font-medium">Option</th>
+                    <th scope="col" className="py-1.5 pr-4 text-right font-medium">Ingredient cost</th>
+                    <th scope="col" className="py-1.5 text-right font-medium">Total cost</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -319,7 +319,12 @@ export default function ReportsIndexPage() {
           icon={SearchX}
           title="No report matches"
           description={`Nothing here answers "${query.trim()}". Try a shorter word, or clear the search to see all ${String(TOTAL_CARDS)} reports.`}
+          // The Ink-Not-Gold Rule — le défaut du primitif partagé est `gold`
+          // (la caisse), et ce bouton sortait donc en aplat d'or plein, en
+          // capitales interlettrées. C'est le seul état vide du back-office qui
+          // rende une action-objet.
           action={{ label: 'Clear search', onClick: () => { setQuery(''); } }}
+          actionVariant="ink"
         />
       )}
     </div>

@@ -287,7 +287,7 @@ export default function SettingsGeneralPage() {
         <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
           {SECTIONS.map(([section, sectionLabel]) => (
             <div key={section} className="space-y-5">
-              <h2 className="font-serif text-xl pt-2">{sectionLabel}</h2>
+              <h2 className="text-xl pt-2">{sectionLabel}</h2>
               {FIELDS.filter((f) => f.section === section).map((f) => {
                 const v = draft[f.key];
                 const inputId = `setting-${f.key}`;

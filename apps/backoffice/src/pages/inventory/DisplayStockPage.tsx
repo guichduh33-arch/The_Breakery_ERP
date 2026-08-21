@@ -36,7 +36,7 @@ const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
   },
   {
     id: 'quantity',
-    header: 'Vitrine qty',
+    header: 'Display-case qty',
     align: 'right',
     width: '140px',
     render: (r) => (
@@ -112,12 +112,12 @@ export default function DisplayStockPage(): JSX.Element {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Display Stock (Vitrine)"
-        subtitle="Read-only view of the POS display-case counter. These quantities live on a separate ledger (display_stock); selling a display item draws from the vitrine, not the global BO inventory. Mutations happen from the POS side."
+        title="Display stock"
+        subtitle="Read-only view of the POS display-case counter. These quantities live on a separate ledger (display_stock); selling a display item draws from the display case, not the global BO inventory. Mutations happen from the POS side."
       />
 
       <section className="space-y-3" aria-label="Display-stock counters">
-        <h2 className="font-display text-xl text-text-primary">Current counters</h2>
+        <h2 className="text-xl text-text-primary">Current counters</h2>
         {stock.error !== null ? (
           <QueryErrorBanner
             detail={errorDetailText(stock.error)}
@@ -129,19 +129,20 @@ export default function DisplayStockPage(): JSX.Element {
           </QueryErrorBanner>
         ) : (
           <DataTable
+            caption="Product, display-case quantity and last update per display product"
             data-testid="display-stock-table"
             columns={STOCK_COLUMNS}
             rows={stock.data ?? []}
             getRowKey={(r) => r.product_id}
             isLoading={stock.isLoading}
             emptyTitle="No display items yet"
-            emptyDescription="Flag a product as a display-case item to start tracking its vitrine counter."
+            emptyDescription="Flag a product as a display-case item to start tracking its display-case counter."
           />
         )}
       </section>
 
       <section className="space-y-3" aria-label="Display-movements ledger">
-        <h2 className="font-display text-xl text-text-primary">Recent movements</h2>
+        <h2 className="text-xl text-text-primary">Recent movements</h2>
         {movements.error !== null ? (
           <QueryErrorBanner
             detail={errorDetailText(movements.error)}
@@ -153,6 +154,7 @@ export default function DisplayStockPage(): JSX.Element {
           </QueryErrorBanner>
         ) : (
           <DataTable
+            caption="Time, product, movement type, quantity and reason per display-stock movement"
             data-testid="display-movements-table"
             columns={MOVEMENT_COLUMNS}
             rows={movements.data ?? []}

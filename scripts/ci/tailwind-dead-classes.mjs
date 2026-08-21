@@ -43,8 +43,14 @@
 //     `border-b`) sans réimplémenter Tailwind.
 //   · les clés numériques (`red-500`, `blue-50`) : la palette Tailwind par
 //     défaut survit à `extend`, elles sont donc légitimes, alpha compris.
-//   · les lignes de commentaire : une explication cite le défaut, elle ne le
-//     commet pas.
+//   · les COMMENTAIRES : une explication cite le défaut, elle ne le commet pas.
+//     Jusqu'au 2026-08-21 cette intention était FAUSSE en pratique — le test
+//     était un préfixe de ligne (`^\s*(//|\*|/\*)`), qui ne reconnaît ni le
+//     commentaire JSX `{/* … */}` (il ouvre sur une accolade) ni la deuxième
+//     ligne d'un bloc `/* */`. Deux entrées de la baseline étaient gelées sur
+//     une seule explication. On masque désormais avec `maskComments` du socle.
+//   · les TESTS : une assertion qui PROUVE l'absence d'une classe morte la cite
+//     forcément. Même périmètre que les gardes 5 à 8, même motif `IS_TEST`.
 //
 // RÉGIME — baseline sur apps/** et packages/**. PLAFOND COMPTÉ, JAMAIS PLANCHER,
 // exactement comme la garde 1 : la liste ne peut que décroître.
@@ -53,6 +59,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { maskComments, IS_TEST } from './_guard-lib.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -170,7 +177,6 @@ const SHADCN_RE = new RegExp(
 );
 
 const isNumericKey = (k) => k !== undefined && /^\d+$/.test(k);
-const isComment = (l) => /^\s*(\/\/|\*|\/\*)/.test(l);
 
 /** @returns {null | 'cle-inconnue' | 'alpha-mort'} */
 function judge(family, key, alpha) {
@@ -220,12 +226,26 @@ let scanned = 0;
 for (const file of tracked) {
   if (file === BASELINE) continue;
   if (!SCANNED.some((p) => file.startsWith(p)) || !EXT.test(file)) continue;
+  // Les TESTS sont hors périmètre, comme pour les gardes 5 à 8 : une assertion
+  // qui PROUVE l'absence d'une classe morte (`expect(…).not.toContain(…)`) la
+  // cite forcément. La juger, c'est faire crier la garde sur la preuve qu'elle a
+  // raison. Le motif est celui du socle — une seule définition pour les cinq.
+  if (IS_TEST.test(file)) continue;
   let content;
   try { content = readFileSync(join(ROOT, file), 'utf8'); } catch { continue; }
   scanned++;
   const lines = content.split(/\r?\n/);
+  // Masque ISOMÉTRIQUE plutôt qu'un test de préfixe de ligne : `{/* … */}` ouvre
+  // sur une ACCOLADE, jamais sur `//` ni `*`, et la deuxième ligne d'un bloc
+  // `/* */` ne commence par rien de reconnaissable. Le préfixe laissait donc
+  // passer les deux formes les plus courantes, et la garde comptait comme
+  // infraction une explication qui NOMME un défaut déjà corrigé.
+  const maskedLines = maskComments(content).split(/\r?\n/);
+  if (maskedLines.length !== lines.length) {
+    console.error(`::error file=${file}::masque de commentaires non isométrique — la garde 3 refuse de juger ce fichier.`);
+    process.exit(1);
+  }
   for (let i = 0; i < lines.length; i++) {
-    if (isComment(lines[i])) continue;
     const record = (token, verdict) => {
       const key = `${file}\t${token.replace(/^[a-z-]*:/, '')}`;
       const e = counted.get(key) ?? { count: 0, hits: [] };
@@ -238,7 +258,7 @@ for (const file of tracked) {
     };
     FAMILY_RE.lastIndex = 0;
     let m;
-    while ((m = FAMILY_RE.exec(lines[i])) !== null) {
+    while ((m = FAMILY_RE.exec(maskedLines[i])) !== null) {
       const verdict = judge(m[1], m[2], m[3]);
       if (verdict === null) continue;
       record(m[0], verdict);
@@ -247,7 +267,7 @@ for (const file of tracked) {
     // le segment qui suit le préfixe est soit une famille du preset, soit un nom
     // de la liste noire, jamais les deux (vérifié au démarrage).
     SHADCN_RE.lastIndex = 0;
-    while ((m = SHADCN_RE.exec(lines[i])) !== null) record(m[0], 'famille-shadcn');
+    while ((m = SHADCN_RE.exec(maskedLines[i])) !== null) record(m[0], 'famille-shadcn');
   }
 }
 

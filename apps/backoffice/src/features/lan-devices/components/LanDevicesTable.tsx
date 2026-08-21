@@ -63,16 +63,17 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
+        <caption className="sr-only">Code, name, type, address and port, station, status and last heartbeat per LAN device</caption>
         <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
           <tr>
-            <th className="py-2 text-left">Code</th>
-            <th className="py-2 text-left">Name</th>
-            <th className="py-2 text-left">Type</th>
-            <th className="py-2 text-left">IP : Port</th>
-            <th className="py-2 text-left">Station</th>
-            <th className="py-2 text-left">Status</th>
-            <th className="py-2 text-left">Last heartbeat</th>
-            {canManage && <th className="py-2 text-right">Actions</th>}
+            <th scope="col" className="py-2 text-left">Code</th>
+            <th scope="col" className="py-2 text-left">Name</th>
+            <th scope="col" className="py-2 text-left">Type</th>
+            <th scope="col" className="py-2 text-left">IP : Port</th>
+            <th scope="col" className="py-2 text-left">Station</th>
+            <th scope="col" className="py-2 text-left">Status</th>
+            <th scope="col" className="py-2 text-left">Last heartbeat</th>
+            {canManage && <th scope="col" className="py-2 text-right">Actions</th>}
           </tr>
         </thead>
         <tbody>

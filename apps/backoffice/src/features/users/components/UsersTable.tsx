@@ -49,14 +49,15 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
+        <caption className="sr-only">Employee number, full name, role, status and last login per user</caption>
         <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
           <tr>
-            <th className="text-left py-2 px-3">Employee #</th>
-            <th className="text-left py-2 px-3">Full name</th>
-            <th className="text-left py-2 px-3">Role</th>
-            <th className="text-left py-2 px-3">Status</th>
-            <th className="text-left py-2 px-3">Last login</th>
-            <th />
+            <th scope="col" className="text-left py-2 px-3">Employee #</th>
+            <th scope="col" className="text-left py-2 px-3">Full name</th>
+            <th scope="col" className="text-left py-2 px-3">Role</th>
+            <th scope="col" className="text-left py-2 px-3">Status</th>
+            <th scope="col" className="text-left py-2 px-3">Last login</th>
+            <th scope="col"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>

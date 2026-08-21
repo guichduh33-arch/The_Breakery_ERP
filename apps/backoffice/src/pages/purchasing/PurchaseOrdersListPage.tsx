@@ -292,6 +292,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         </div>
       ) : (
         <DataTable
+          caption="Purchase-order number, supplier, status, order date, expected date and total per purchase order"
           data-testid="po-table"
           columns={columns}
           rows={rows}

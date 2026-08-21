@@ -145,12 +145,13 @@ export default function SettingsHistoryPage(): JSX.Element {
             <Card variant="default" padding="none">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
+                  <caption className="sr-only">Date, setting, change and author per settings change</caption>
                   <thead className="border-b border-border-subtle bg-surface-inert">
                     <tr>
-                      <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">When</SectionLabel></th>
-                      <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Setting</SectionLabel></th>
-                      <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Change</SectionLabel></th>
-                      <th className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">By</SectionLabel></th>
+                      <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">When</SectionLabel></th>
+                      <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Setting</SectionLabel></th>
+                      <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">Change</SectionLabel></th>
+                      <th scope="col" className="px-4 py-3 text-left"><SectionLabel as="span" size="xs">By</SectionLabel></th>
                     </tr>
                   </thead>
                   <tbody>

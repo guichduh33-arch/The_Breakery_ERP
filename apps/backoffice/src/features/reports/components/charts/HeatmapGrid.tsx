@@ -27,20 +27,27 @@ export interface HeatmapGridProps {
   format: (v: number) => string;
   /** Libellé de la colonne de lignes (« Cashier »). */
   rowHeader: string;
+  /**
+   * Nom accessible de la matrice, rendu en `<caption class="sr-only">`. Sans
+   * lui, un lecteur d'écran n'annonce que « table » : le libellé de la colonne
+   * de lignes ne dit ni ce que sont les colonnes, ni ce que valent les cellules.
+   */
+  caption?: ReactNode;
   className?: string;
 }
 
 export function HeatmapGrid({
-  columns, rows, tone, format, rowHeader, className,
+  columns, rows, tone, format, rowHeader, caption, className,
 }: HeatmapGridProps): JSX.Element {
   return (
     <div className={cn('overflow-x-auto', className)}>
       <table className="w-full text-sm">
+        {caption !== undefined && <caption className="sr-only">{caption}</caption>}
         <thead>
           <tr className="border-b border-border-subtle text-text-secondary">
-            <th className="py-2 text-left">{rowHeader}</th>
+            <th scope="col" className="py-2 text-left">{rowHeader}</th>
             {columns.map((c) => (
-              <th key={c} className="py-2 text-right font-data text-xs font-semibold uppercase tracking-widest">
+              <th scope="col" key={c} className="py-2 text-right font-data text-xs font-semibold uppercase tracking-widest">
                 {c}
               </th>
             ))}
@@ -49,7 +56,12 @@ export function HeatmapGrid({
         <tbody>
           {rows.map((row) => (
             <tr key={row.key} className="border-b border-border-row">
-              <td className="py-1.5 pr-2">{row.label}</td>
+              {/* Le libellé de ligne EST l'en-tête de sa ligne : dans une matrice
+                  caissier × jour, une cellule ne se lit que nommée par les deux.
+                  `text-left font-normal` neutralise le style d'agent utilisateur
+                  du <th> (gras et centré, que Tailwind ne réinitialise pas) : le
+                  rendu reste exactement celui du <td> qu'il remplace. */}
+              <th scope="row" className="py-1.5 pr-2 text-left font-normal">{row.label}</th>
               {row.cells.map((v, i) => {
                 const t = v === null ? 'neutral' : tone(v);
                 return (

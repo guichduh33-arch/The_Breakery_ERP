@@ -199,20 +199,24 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
           </label>
 
           {isDisplayItem && (
-            /* Harden — `bg-gold/5` ne produisait AUCUN fond : Tailwind ne sait pas
-               appliquer un modificateur d'opacité à une couleur déclarée comme
-               `var(--gold-base)`, donc la règle n'est pas générée du tout. L'encart
-               perdait sa surface. `gold-soft` porte son alpha dans le token lui-même.
-               La bordure passe de `gold-soft` (12 % sur blanc, imperceptible) au
-               liseré plein : c'est un contour, pas un aplat — la règle Ink-Not-Gold
-               tient. */
+            /* L'encart n'a PAS de surface, et c'est la règle : The Ink-Not-Gold
+               Rule veut que l'or souligne sans remplir. Le liseré plein
+               (`border-gold`, 6,22:1 sur la feuille) porte seul l'encart — il
+               n'est pas `border-border-gold`, qui ne vaut que 1,64:1 et ne
+               serait donc pas une limite visible (WCAG 1.4.11).
+               Historique utile : l'encart a d'abord porté un modificateur
+               d'opacité sur l'or, qui ne produisait AUCUN fond — Tailwind ne
+               sait pas appliquer un alpha à une couleur déclarée
+               `var(--gold-base)` et supprime la règle en silence. L'aplat a
+               ensuite été porté par le cran doux ; il est aujourd'hui retiré,
+               pas remplacé. */
             <p
               data-testid="new-product-display-item-note"
-              className="rounded border border-gold bg-gold-soft px-2 py-1.5 text-xs text-text-secondary"
+              className="rounded border border-gold px-2 py-1.5 text-xs text-text-secondary"
             >
               <span className="font-semibold text-gold">Display-case counter starts at 0.</span>{' '}
-              Stock the display case from the POS («&nbsp;Mettre en vitrine&nbsp;») before selling,
-              or checkout will be blocked with «&nbsp;stock vitrine insuffisant&nbsp;».
+              Stock it from the POS Display Stock screen (Cafe Stock in the side menu)
+              before selling — until then the POS blocks checkout for this product.
             </p>
           )}
 

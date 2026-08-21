@@ -67,7 +67,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
         {/* Current cost (WAC) */}
         <Card padding="md" data-testid="costing-card-cost">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gold-soft text-gold">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md text-gold">
               <DollarSign className="h-4 w-4" aria-hidden />
             </div>
             <span className="text-xs uppercase tracking-wider text-text-secondary">
@@ -172,13 +172,14 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
           <div data-testid="bom-table">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">Quantity per unit, unit, unit cost and line cost per ingredient</caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-secondary">
-                    <th className="py-2 pr-4 text-left font-medium">Ingredient</th>
-                    <th className="py-2 pr-4 text-right font-medium">Qty / unit</th>
-                    <th className="py-2 pr-4 text-left font-medium">Unit</th>
-                    <th className="py-2 pr-4 text-right font-medium">Unit cost</th>
-                    <th className="py-2 text-right font-medium">Line cost</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Ingredient</th>
+                    <th scope="col" className="py-2 pr-4 text-right font-medium">Qty / unit</th>
+                    <th scope="col" className="py-2 pr-4 text-left font-medium">Unit</th>
+                    <th scope="col" className="py-2 pr-4 text-right font-medium">Unit cost</th>
+                    <th scope="col" className="py-2 text-right font-medium">Line cost</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -88,7 +88,7 @@ export function ListCounterStrip({
         const shell = cn(
           'flex flex-col gap-0.5 px-[18px] py-[11px] text-left',
           'border-r border-border-muted last:border-r-0',
-          isActive && 'bg-gold-soft shadow-[inset_2px_0_0_var(--gold-base)]',
+          isActive && 'shadow-[inset_2px_0_0_var(--gold-base)]',
         );
 
         if (counter.onSelect === undefined) {

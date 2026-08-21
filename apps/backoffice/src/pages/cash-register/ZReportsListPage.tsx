@@ -250,6 +250,7 @@ export default function ZReportsListPage(): JSX.Element {
         </p>
       ) : (
         <DataTable<ZReportListRow>
+          caption="Generation time, declared and counted cash, variance, status and signature per Z-report"
           columns={columns}
           rows={rows}
           getRowKey={(r) => r.id}

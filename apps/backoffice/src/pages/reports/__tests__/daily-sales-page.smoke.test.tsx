@@ -218,7 +218,10 @@ describe('DailySalesPage — archétype Report (maquette 4c)', () => {
     renderPage();
     const card = screen.getByTestId('breakdown-registers');
     expect(within(card).getByText(/not closed yet/)).toBeInTheDocument();
-    expect(within(card).getByText(/1 register not reconciled/)).toBeInTheDocument();
+    // Le compteur rend en `font-data` dans son propre <span> (The Mono-Carries-Data
+    // Rule) : la phrase est donc découpée en plusieurs nœuds texte. `getByText` ne
+    // lit que les nœuds DIRECTS, `toHaveTextContent` traverse les enfants.
+    expect(card).toHaveTextContent(/1 register not reconciled/);
     expect(within(card).getByRole('link', { name: 'Open Z-report' }))
       .toHaveAttribute('href', '/backoffice/cash-register/zreports');
     // La session close, elle, montre son écart réel.

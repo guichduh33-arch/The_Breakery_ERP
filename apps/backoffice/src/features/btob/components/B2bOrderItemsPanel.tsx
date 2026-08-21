@@ -61,12 +61,13 @@ export function B2bOrderItemsPanel({ orderId, orderTotal }: B2bOrderItemsPanelPr
     <div className="px-6 py-3" data-testid="b2b-items-panel">
       <div className="overflow-x-auto">
         <table className="w-full">
+          <caption className="sr-only">Item, quantity, unit price and line total for this B2B order</caption>
           <thead>
             <tr>
-              <th className="pb-1.5 text-left font-data text-xs uppercase tracking-widest text-text-muted">Item</th>
-              <th className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Qty</th>
-              <th className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Unit price</th>
-              <th className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Line total</th>
+              <th scope="col" className="pb-1.5 text-left font-data text-xs uppercase tracking-widest text-text-muted">Item</th>
+              <th scope="col" className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Qty</th>
+              <th scope="col" className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Unit price</th>
+              <th scope="col" className="pb-1.5 text-right font-data text-xs uppercase tracking-widest text-text-muted">Line total</th>
             </tr>
           </thead>
           <tbody>

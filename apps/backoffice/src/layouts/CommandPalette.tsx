@@ -298,10 +298,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                     // (#8a6820) recopié à la main. Ce token a été assombri en
                     // #7a5c1c le même jour (lot 8, AA sur les quatre fonds) :
                     // le littéral pointait déjà une couleur qui n'existe plus.
-                    // `bg-gold-soft` EST ce cran (--gold-soft, or du thème à
-                    // très faible opacité) et suit le token — aucun alpha posé
-                    // sur un `var()` nu, l'opacité vit dans le token lui-même.
-                    highlighted && 'bg-gold-soft',
+                    // Le correctif d'alors posait `bg-gold-soft`, un aplat d'or
+                    // que The Ink-Not-Gold Rule interdit. La surbrillance est
+                    // pourtant le SEUL porteur visible de l'option courante :
+                    // un retrait sec la ferait disparaître. Elle prend donc un
+                    // aplat NEUTRE (`surface-4`) doublé du liseré or interne de
+                    // 2 px — le geste que la règle autorise, celui de
+                    // ListCounterStrip.
+                    highlighted && 'bg-surface-4 shadow-[inset_2px_0_0_var(--gold-base)]',
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate text-sm text-text-primary">

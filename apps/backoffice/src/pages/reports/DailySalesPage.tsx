@@ -287,7 +287,9 @@ export default function DailySalesPage(): JSX.Element {
           title="Net revenue by day"
           aside={peak !== null ? (
             <span className="text-xs text-text-muted">
-              Peak {shortDate(peak.date)} · {formatIdrCompact(peak.net)}
+              Peak <span className="font-data tabular-nums">{shortDate(peak.date)}</span>
+              {' · '}
+              <span className="font-data tabular-nums">{formatIdrCompact(peak.net)}</span>
             </span>
           ) : undefined}
           isLoading={daily.isLoading}
@@ -339,8 +341,8 @@ export default function DailySalesPage(): JSX.Element {
           error={payments.error}
           footer={
             <span className="text-text-muted">
-              {formatCount(payments.data?.totalCount ?? 0)} payments across{' '}
-              {formatCount(payments.data?.totalOrders ?? 0)} orders
+              <span className="font-data tabular-nums">{formatCount(payments.data?.totalCount ?? 0)}</span> payments across{' '}
+              <span className="font-data tabular-nums">{formatCount(payments.data?.totalOrders ?? 0)}</span> orders
             </span>
           }
           testId="breakdown-payments"
@@ -356,8 +358,8 @@ export default function DailySalesPage(): JSX.Element {
             // Écart maquette : « Voids by cashier » n'existe dans aucun hook —
             // le total de la période est le fait disponible, on ne l'attribue pas.
             <span className="text-text-muted">
-              {formatCount(summary?.voids_count ?? 0)} voids ·{' '}
-              {formatIdrFull(summary?.voids_value ?? 0)} over the period
+              <span className="font-data tabular-nums">{formatCount(summary?.voids_count ?? 0)}</span> voids ·{' '}
+              <span className="font-data tabular-nums">{formatIdrFull(summary?.voids_value ?? 0)}</span> over the period
             </span>
           }
           testId="breakdown-cashiers"
@@ -375,7 +377,7 @@ export default function DailySalesPage(): JSX.Element {
             <>
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" aria-hidden />
               <span className="text-text-primary">
-                {formatCount(openSessions.length)} register
+                <span className="font-data tabular-nums">{formatCount(openSessions.length)}</span> register
                 {openSessions.length === 1 ? '' : 's'} not reconciled
               </span>
               <Link to="/backoffice/cash-register/zreports" className={`ml-auto shrink-0 font-medium ${INK_LINK}`}>
@@ -415,7 +417,10 @@ export default function DailySalesPage(): JSX.Element {
                         <span
                           title={r.holiday}
                           data-testid={`holiday-badge-${r.date}`}
-                          className="ml-2 inline-flex items-center rounded-sm border border-border-gold bg-gold-soft px-2 py-0.5 text-xs text-gold"
+                          /* Aplat retiré (The Ink-Not-Gold Rule) et liseré monté
+                             de `border-border-gold` (1,64:1, invisible au sens
+                             de WCAG 1.4.11) à `border-gold`. */
+                          className="ml-2 inline-flex items-center rounded-sm border border-gold px-2 py-0.5 text-xs text-gold"
                         >
                           {r.holiday}
                         </span>

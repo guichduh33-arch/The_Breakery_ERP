@@ -5,8 +5,9 @@
 //
 // Composition:
 //   - Breadcrumbs (Purchasing › Purchase Orders › PO-####).
-//   - Header row: Back, PO number + status pill, action buttons
-//     (Confirm/Receive, Cancel, Edit, Print).
+//   - Header row: PO number + status pill, action buttons
+//     (Confirm/Receive, Cancel, Edit, Print). Le « Back » qui l'ouvrait est
+//     parti au lot 9 : le fil d'Ariane est la seule sortie de la page.
 //   - Two-column layout:
 //       Left  — Order Information card (supplier, dates) + Ordered Items table
 //               + Goods Receipt Notes table + Notes.
@@ -17,7 +18,7 @@
 // presentation-only.
 
 import { useState, type JSX } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -65,8 +66,17 @@ import {
   type POFormDraftValue,
 } from '@/features/purchasing/components/POFormDraft.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { RestrictedState } from '@/components/RestrictedState.js';
+import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
+
+/** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data
+ *  Rule). `tabular-nums` seul ne suffit pas — sans `font-data`, le chiffre sort
+ *  dans la sans-serif de l'interface. */
+const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
 
 function fmtIdr(amount: number | string | null): string {
   return formatCurrency(Number(amount ?? 0));
@@ -80,8 +90,48 @@ function fmtQty(quantity: number | string | null): string {
   return formatQuantity(quantity ?? 0, null);
 }
 
+/**
+ * Le fil d'Ariane de la page — extrait pour être rendu AUSSI au-dessus des
+ * états dégradés. Les trois branches (droit manquant, chargement, échec de
+ * requête) rendaient une ligne de texte nue : plus de titre, plus de fil, plus
+ * de bouton, et pour seule issue le Retour du navigateur. Un manager qui suit
+ * un lien partagé vers un bon de commande qu'il ne peut pas lire doit au moins
+ * savoir OÙ il est et pouvoir repartir.
+ *
+ * `label` remplace le numéro de PO quand on ne l'a pas encore (ou plus).
+ */
+function PoBreadcrumb({ label }: { label: string }): JSX.Element {
+  return (
+    <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
+      <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
+      <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+      <Link to="/backoffice/purchasing/purchase-orders" className="hover:text-text-primary">Purchase Orders</Link>
+      <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+      <span className="font-mono text-text-secondary">{label}</span>
+    </nav>
+  );
+}
+
+/**
+ * Coquille des états dégradés : fil d'Ariane, titre, puis le corps.
+ *
+ * LOT 9 — le « ← Back to purchase orders » qui suivait le titre a été retiré.
+ * L'ossature commune (DESIGN.md § Page Archetypes) ne déclare QU'UN fil
+ * d'Ariane ; le retour en doublait le geste avec un second vocabulaire. Le fil
+ * reste rendu ici, donc l'écran dégradé garde bien une sortie — c'est la
+ * condition à laquelle le retrait était subordonné.
+ */
+function PoDetailShell({ children }: { children: JSX.Element }): JSX.Element {
+  return (
+    <div className="space-y-6">
+      <PoBreadcrumb label="—" />
+      <PageHeader title="Purchase order" />
+      {children}
+    </div>
+  );
+}
+
 export default function PurchaseOrderDetailPage(): JSX.Element {
-  const navigate      = useNavigate();
   const { id }        = useParams<{ id: string }>();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead       = hasPermission('purchasing.po.read');
@@ -111,23 +161,46 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const [editError,    setEditError]    = useState<string | undefined>(undefined);
 
   if (!canRead) {
-    return <div className="text-text-secondary">You do not have permission to view this purchase order.</div>;
+    return (
+      <PoDetailShell>
+        <RestrictedState what="this purchase order" permission="purchasing.po.read" />
+      </PoDetailShell>
+    );
   }
-  if (detail.isLoading) return <div className="text-text-secondary">Loading…</div>;
-  if (detail.isError)    return <div className="text-danger">Failed to load purchase order.</div>;
+  if (detail.isLoading) return <DetailPageSkeleton label="Loading purchase order" blocks={3} />;
+  // L'échec de requête passe par `QueryErrorBanner` — le geste que fait déjà
+  // `OpnameDetailPage` : une phrase humaine, le message SERVEUR en diagnostic,
+  // et un « Try again » câblé sur `refetch`. Avant, la page rendait « Failed to
+  // load purchase order. » en rouge, sans détail ni moyen de réessayer : la
+  // seule issue était de recharger l'onglet.
+  if (detail.isError) {
+    return (
+      <PoDetailShell>
+        <QueryErrorBanner
+          detail={errorDetailText(detail.error)}
+          onRetry={() => { void detail.refetch(); }}
+          data-testid="po-detail-error"
+        >
+          This purchase order could not be loaded — nothing below is shown, so no
+          figure here is a zero.
+        </QueryErrorBanner>
+      </PoDetailShell>
+    );
+  }
   const po = detail.data;
+  // LOT 9 — cette branche-là n'avait AUCUN fil d'Ariane : son « ← Back to
+  // purchase orders » était sa seule sortie, on ne pouvait donc pas le retirer
+  // sec. Elle passe par la coquille commune, qui rend le fil ; le retour part
+  // avec, et l'écran gagne au passage le titre qu'il n'avait pas.
   if (po === null || po === undefined) {
     return (
-      <div className="space-y-4">
-        <Link to="/backoffice/purchasing/purchase-orders" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to purchase orders
-        </Link>
+      <PoDetailShell>
         <EmptyState
           title="Purchase order not found"
           description="It may have been deleted, or you do not have access."
           size="md"
         />
-      </div>
+      </PoDetailShell>
     );
   }
 
@@ -288,20 +361,16 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
-        <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <Link to="/backoffice/purchasing/purchase-orders" className="hover:text-text-primary">Purchase Orders</Link>
-        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <span className="font-mono text-text-secondary">{po.po_number}</span>
-      </nav>
+      <PoBreadcrumb label={po.po_number} />
 
+      {/* LOT 9 — un bouton « ← Back » de bandeau vivait ici, juste sous le fil
+          d'Ariane, dont il doublait le geste avec un second vocabulaire. Le fil
+          est la seule sortie (DESIGN.md § Page Archetypes : l'ossature commune
+          n'en déclare qu'un). Il échappait aux relevés parce que son libellé est
+          « Back » et non « Back to purchase orders ». */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => { void navigate('/backoffice/purchasing/purchase-orders'); }}>
-            <ArrowLeft className={TOOLBAR_ICON} aria-hidden /> Back
-          </button>
-          <div className="mt-2 flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary tabular-nums">{po.po_number}</h1>
             <POStatusBadge status={status} />
           </div>
@@ -357,27 +426,27 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           </Card>
 
           <Card variant="default" padding="md" className="space-y-3">
-            <SectionLabel as="h2" size="sm" className="text-gold">Ordered Items</SectionLabel>
+            <SectionLabel as="h2" size="sm" id="po-ordered-items-heading" className="text-gold">Ordered Items</SectionLabel>
             <div className="overflow-x-auto rounded-md border border-border-subtle">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" aria-labelledby="po-ordered-items-heading">
                 <thead className="bg-surface-inert">
                   <tr>
-                    <th className="px-3 py-2 text-left">
+                    <th scope="col" className="px-3 py-2 text-left">
                       <SectionLabel as="span" size="xs">Product</SectionLabel>
                     </th>
-                    <th className="px-3 py-2 text-right w-24">
+                    <th scope="col" className="px-3 py-2 text-right w-24">
                       <SectionLabel as="span" size="xs">Quantity</SectionLabel>
                     </th>
-                    <th className="px-3 py-2 text-right w-24">
+                    <th scope="col" className="px-3 py-2 text-right w-24">
                       <SectionLabel as="span" size="xs">Received</SectionLabel>
                     </th>
-                    <th className="px-3 py-2 text-left w-20">
+                    <th scope="col" className="px-3 py-2 text-left w-20">
                       <SectionLabel as="span" size="xs">Unit</SectionLabel>
                     </th>
-                    <th className="px-3 py-2 text-right w-28">
+                    <th scope="col" className="px-3 py-2 text-right w-28">
                       <SectionLabel as="span" size="xs">Unit price</SectionLabel>
                     </th>
-                    <th className="px-3 py-2 text-right w-32">
+                    <th scope="col" className="px-3 py-2 text-right w-32">
                       <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
                     </th>
                   </tr>
@@ -389,11 +458,11 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
                         <span className="text-text-primary">{it.products?.name ?? '?'}</span>{' '}
                         <span className="text-text-secondary text-xs">({it.products?.sku ?? '—'})</span>
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtQty(it.quantity)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtQty(it.received_quantity)}</td>
+                      <td className={NUM_CELL}>{fmtQty(it.quantity)}</td>
+                      <td className={NUM_CELL}>{fmtQty(it.received_quantity)}</td>
                       <td className="px-3 py-2 text-text-secondary">{it.unit}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(it.unit_cost)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtIdr(it.subtotal)}</td>
+                      <td className={NUM_CELL}>{fmtIdr(it.unit_cost)}</td>
+                      <td className={`${NUM_CELL} font-medium`}>{fmtIdr(it.subtotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -402,7 +471,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           </Card>
 
           <Card variant="default" padding="md" className="space-y-3">
-            <SectionLabel as="h2" size="sm" className="text-gold">Goods Receipt Notes</SectionLabel>
+            <SectionLabel as="h2" size="sm" id="po-grn-heading" className="text-gold">Goods Receipt Notes</SectionLabel>
             {po.goods_receipt_notes.length === 0 ? (
               <EmptyState
                 title="No receipts recorded yet"
@@ -411,22 +480,22 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               />
             ) : (
               <div className="overflow-x-auto rounded-md border border-border-subtle">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" aria-labelledby="po-grn-heading">
                   <thead className="bg-surface-inert">
                     <tr>
-                      <th className="px-3 py-2 text-left">
+                      <th scope="col" className="px-3 py-2 text-left">
                         <SectionLabel as="span" size="xs">GRN</SectionLabel>
                       </th>
-                      <th className="px-3 py-2 text-left w-32">
+                      <th scope="col" className="px-3 py-2 text-left w-32">
                         <SectionLabel as="span" size="xs">Date</SectionLabel>
                       </th>
-                      <th className="px-3 py-2 text-right w-32">
+                      <th scope="col" className="px-3 py-2 text-right w-32">
                         <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
                       </th>
-                      <th className="px-3 py-2 text-right w-32">
+                      <th scope="col" className="px-3 py-2 text-right w-32">
                         <SectionLabel as="span" size="xs">VAT</SectionLabel>
                       </th>
-                      <th className="px-3 py-2 text-right w-32">
+                      <th scope="col" className="px-3 py-2 text-right w-32">
                         <SectionLabel as="span" size="xs">Total</SectionLabel>
                       </th>
                     </tr>
@@ -578,7 +647,7 @@ function SummaryRow({ label, value }: { label: string; value: string }): JSX.Ele
   return (
     <div className="flex items-center justify-between text-text-secondary">
       <span>{label}</span>
-      <span className="tabular-nums text-text-primary">{value}</span>
+      <span className="font-data tabular-nums text-text-primary">{value}</span>
     </div>
   );
 }

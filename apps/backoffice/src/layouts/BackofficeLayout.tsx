@@ -28,10 +28,16 @@ const DEAD_SIDEBAR_KEYS = [
  *  Une SILHOUETTE de page — bande de titre puis quelques blocs — plutôt qu'un
  *  spinner centré : l'œil garde la forme de ce qui arrive au lieu de fixer un
  *  disque qui tourne (audit UX/UI 2026-08-13, lot 8). */
+// LARGEUR : celle du contenu réel, pas une colonne centrée. Le repli rendait
+// dans `mx-auto max-w-6xl` (1152 px, centré) quand la page qui lui succède
+// occupe TOUTE la largeur du `<main>` ci-dessous (`flex-1 … px-[22px]`, sans
+// plafond). Écart mesuré : 128 px à 1280 px de fenêtre, 768 px à 1920 px — le
+// contenu sautait latéralement à chaque navigation entre routes. La silhouette
+// doit tomber là où le contenu tombera.
 function RouteFallback() {
   return (
     <div
-      className="mx-auto flex max-w-6xl flex-col gap-5"
+      className="flex flex-col gap-5"
       aria-busy="true"
       aria-live="polite"
       aria-label="Loading page"

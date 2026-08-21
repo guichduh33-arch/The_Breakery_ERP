@@ -21,7 +21,6 @@ import { GeneralInfoSection, type GeneralInfoDraft } from './GeneralInfoSection.
 import { ChoiceGroupCard, type GroupDraft } from './ChoiceGroupCard.js';
 import { PricePreview } from './PricePreview.js';
 import type { ComboDefinition } from '@breakery/domain';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
@@ -225,7 +224,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </button>
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md text-gold">
           <Box className="h-5 w-5" aria-hidden />
         </div>
         <div>
@@ -307,6 +306,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         <div>
           {mode === 'edit' && canDelete && (
             <Button
+              size="sm"
               variant="ghostDestructive"
               onClick={() => { void handleDelete(); }}
               disabled={isSaving}
@@ -318,6 +318,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         </div>
         <div className="flex items-center gap-3">
           <Button
+            size="sm"
             variant="ghost"
             onClick={() => { void navigate('/backoffice/products/combos'); }}
             disabled={isSaving}
@@ -325,15 +326,15 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
           >
             Cancel
           </Button>
-          <button
-            type="button"
-            className={TOOLBAR_BTN_PRIMARY}
+          <Button
+            size="sm"
+            variant="ink"
             onClick={() => { void handleSave(); }}
             disabled={isSaving || isLoading}
             data-testid="save-combo"
           >
             {isSaving ? 'Saving…' : mode === 'create' ? 'Create Combo' : 'Update Combo'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

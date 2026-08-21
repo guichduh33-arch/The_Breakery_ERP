@@ -301,12 +301,12 @@ export default function SalesByOriginPage(): JSX.Element {
               </caption>
               <thead>
                 <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 pr-3 text-left font-normal">Origin</th>
-                  <th className="py-2 pr-3 text-right font-normal">Orders</th>
-                  <th className="py-2 pr-3 text-right font-normal">Revenue</th>
-                  <th className="py-2 pr-3 text-right font-normal">vs prev</th>
-                  <th className="py-2 pr-3 text-right font-normal">Avg ticket</th>
-                  <th className="py-2 pr-3 text-right font-normal">Discounts</th>
+                  <th scope="col" className="py-2 pr-3 text-left font-normal">Origin</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Orders</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Revenue</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">vs prev</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Avg ticket</th>
+                  <th scope="col" className="py-2 pr-3 text-right font-normal">Discounts</th>
                 </tr>
               </thead>
               <tbody>

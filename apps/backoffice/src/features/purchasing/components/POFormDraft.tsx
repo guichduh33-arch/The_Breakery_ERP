@@ -13,7 +13,6 @@ import { useId, useMemo, type JSX } from 'react';
 import { Button } from '@breakery/ui';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
 import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 const NOTES_MAX = 500;
@@ -256,21 +255,21 @@ export function POFormDraft({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-text-primary">Line items</h3>
+          <h3 id="po-draft-line-items-heading" className="text-sm font-semibold text-text-primary">Line items</h3>
           <Button type="button" variant="secondary" size="sm" onClick={addItem} disabled={submitting}>
             + Add line
           </Button>
         </div>
         <div className="overflow-x-auto border border-border-subtle rounded-md">
-          <table className="w-full text-sm" data-testid="po-form-items">
+          <table className="w-full text-sm" data-testid="po-form-items" aria-labelledby="po-draft-line-items-heading">
             <thead className="bg-bg-overlay text-text-secondary text-xs uppercase tracking-widest">
               <tr>
-                <th className="text-left px-3 py-2">Product</th>
-                <th className="text-right px-3 py-2 w-24">Qty</th>
-                <th className="text-left px-3 py-2 w-20">Unit</th>
-                <th className="text-right px-3 py-2 w-32">Unit cost</th>
-                <th className="text-right px-3 py-2 w-32">Subtotal</th>
-                <th className="px-3 py-2 w-10" aria-hidden />
+                <th scope="col" className="text-left px-3 py-2">Product</th>
+                <th scope="col" className="text-right px-3 py-2 w-24">Qty</th>
+                <th scope="col" className="text-left px-3 py-2 w-20">Unit</th>
+                <th scope="col" className="text-right px-3 py-2 w-32">Unit cost</th>
+                <th scope="col" className="text-right px-3 py-2 w-32">Subtotal</th>
+                <th scope="col" className="px-3 py-2 w-10"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -405,9 +404,9 @@ export function POFormDraft({
       )}
 
       <div className="flex justify-end">
-        <button type="submit" disabled={submitting} className={TOOLBAR_BTN_PRIMARY}>
+        <Button type="submit" size="sm" variant="ink" disabled={submitting}>
           {submitting ? 'Saving…' : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
