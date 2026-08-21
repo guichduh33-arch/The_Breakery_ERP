@@ -156,18 +156,18 @@ export default function CustomerCategoriesPage(): JSX.Element {
       ),
     },
     {
-      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '5rem',
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '6rem',
       render: (cat) => (
-        <span className="inline-flex items-center gap-0.5">
+        <span className="inline-flex items-center gap-1.5">
           <button
             type="button"
             aria-label={`Edit ${cat.name}`}
             title={`Edit ${cat.name}`}
             disabled={!canUpdate}
             onClick={() => { setFormError(null); setEditTarget(cat); }}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-subtle transition-colors hover:bg-surface-4 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-subtle transition-colors hover:bg-surface-4 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
-            <PenSquare className="h-3.5 w-3.5" aria-hidden />
+            <PenSquare className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
@@ -175,9 +175,9 @@ export default function CustomerCategoriesPage(): JSX.Element {
             title={cat.is_default ? 'The default category cannot be deleted.' : `Delete ${cat.name}`}
             disabled={!canDelete || cat.is_default}
             onClick={() => { setDeleteError(null); setDeleteTarget(cat); }}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-subtle transition-colors hover:bg-red-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-subtle transition-colors hover:bg-red-soft hover:text-danger disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            <Trash2 className="h-4 w-4" aria-hidden />
           </button>
         </span>
       ),

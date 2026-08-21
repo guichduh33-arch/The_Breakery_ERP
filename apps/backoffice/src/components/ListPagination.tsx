@@ -24,6 +24,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
 import { Select } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export const LIST_PAGE_SIZES = [15, 50, 100] as const;
 export const LIST_PAGE_SIZE_DEFAULT = 15;
@@ -134,7 +135,11 @@ function PageButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-muted transition-colors hover:bg-surface-4 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-30"
+      // `FOCUS_RING` ajouté le 2026-08-21 : ces deux flèches étaient parmi les
+      // contrôles que la critique a mesurés sans anneau propre. C'est la
+      // pagination — au clavier, on y arrive précisément parce qu'on ne veut
+      // pas viser à la souris.
+      className={`inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-muted transition-colors hover:bg-surface-4 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-30 ${FOCUS_RING}`}
     >
       {children}
     </button>

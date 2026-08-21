@@ -10,6 +10,7 @@ import type { JSX } from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export function ProductsPageTabs(): JSX.Element {
   const canImport = useAuthStore((s) => s.hasPermission('catalog.import'));
@@ -30,6 +31,10 @@ export function ProductsPageTabs(): JSX.Element {
             className={({ isActive }) =>
               cn(
                 'relative -mb-px pb-2.5 text-sm transition-colors duration-fast',
+                // L'onglet actif se signale par un liseré or SOUS le texte ; au
+                // clavier, rien ne disait lequel on venait d'atteindre avant de
+                // valider. Anneau ajouté le 2026-08-21.
+                FOCUS_RING,
                 i === 0 ? 'px-0.5' : 'px-3',
                 isActive
                   ? 'font-semibold text-text-primary shadow-[inset_0_-2px_0_var(--gold-base)]'

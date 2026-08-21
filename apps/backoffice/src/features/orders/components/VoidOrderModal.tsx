@@ -48,7 +48,13 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="max-w-md">
+      {/* `alertdialog` et non `dialog` (critique du 2026-08-21) : la fenêtre ne
+          demande pas un renseignement, elle annonce une conséquence
+          irréversible. Le rôle fait annoncer la description AVANT le premier
+          champ par les lecteurs d'écran, au lieu de la laisser en note qu'on
+          n'entend qu'en revenant en arrière. Radix transmet la prop telle
+          quelle et elle écrase le rôle par défaut du contenu. */}
+      <DialogContent className="max-w-md" role="alertdialog">
         <DialogTitle>Void order {orderNumber}</DialogTitle>
         <DialogDescription className="sr-only">
           Voids the order, restoring inventory to stock. This action cannot be undone.
@@ -85,7 +91,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            className={`mt-1 w-full border border-border-strong rounded p-2 text-sm tracking-widest ${FOCUS_RING}`}
+            className={`mt-1 h-touch-min w-full border border-border-strong rounded px-2 text-sm tracking-widest ${FOCUS_RING}`}
             data-testid="void-pin"
           />
         </div>
