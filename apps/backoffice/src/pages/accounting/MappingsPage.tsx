@@ -59,7 +59,7 @@ export default function MappingsPage() {
             </thead>
             <tbody>
               {list.data?.map((row) => (
-                <tr key={row.mapping_key} className="border-t border-border-subtle hover:bg-bg-overlay">
+                <tr key={row.mapping_key} className="border-t border-border-subtle hover:bg-surface-4">
                   <td className="px-4 py-3 font-mono text-text-primary">{row.mapping_key}</td>
                   <td className="px-4 py-3 font-mono">{row.account_code}</td>
                   <td className="px-4 py-3">{row.account_name ?? '—'}</td>

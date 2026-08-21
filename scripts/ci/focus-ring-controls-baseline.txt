@@ -8,4 +8,7 @@
 # quelqu un a fait remonter le plafond — ce que --update-baseline REFUSE de faire.
 #
 # PLAFOND, JAMAIS PLANCHER.
-# Dernier resserrement : 2026-08-18
+# Dernier resserrement : 2026-08-21 — `focus:ring` retiré de l alternative RING
+# de la garde. Un anneau keyé sur `:focus` et non `:focus-visible` s allume aussi
+# au clic souris ; la garde le tenait pour conforme, elle ne le tient plus. Deux
+# appelants passaient au vert grace a lui, ils sont corriges. La liste reste vide.

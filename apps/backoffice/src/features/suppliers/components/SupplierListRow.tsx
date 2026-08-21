@@ -15,7 +15,7 @@ export interface SupplierListRowProps {
 
 export function SupplierListRow({ row, canUpdate, canDelete, onEdit, onToggleActive, onDelete }: SupplierListRowProps) {
   return (
-    <tr className="border-t border-border-subtle hover:bg-bg-overlay">
+    <tr className="border-t border-border-subtle hover:bg-surface-4">
       <td className="px-4 py-3 font-mono uppercase text-text-secondary">{row.code}</td>
       <td className="px-4 py-3 font-semibold">{row.name}</td>
       <td className="px-4 py-3 text-text-secondary text-sm">{row.contact_phone ?? '—'}</td>

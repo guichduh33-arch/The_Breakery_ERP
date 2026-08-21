@@ -42,7 +42,12 @@
 
 import { runGuard, readOpenTag, localClassConstants, expandConstants, lineOf } from './_guard-lib.mjs';
 
-const RING = /FOCUS_RING|focus-visible:outline-gold|focus-visible:ring|focus:ring|focus-visible:shadow-focus/;
+// `focus:ring` a été RETIRÉ de cette alternative le 2026-08-21. Un anneau keyé
+// sur `:focus` et non `:focus-visible` s'allume aussi au CLIC souris — sur un
+// `<textarea autoFocus>` il s'allumait à la seule ouverture de la modale. La
+// garde le tenait pour conforme ; elle ne le tient plus. `focus-visible:ring`
+// reste admis : c'est la bonne pseudo-classe, seule la technique diffère.
+const RING = /FOCUS_RING|focus-visible:outline-gold|focus-visible:ring|focus-visible:shadow-focus/;
 const CANONICAL = ['selectClassName', 'inputClassName'];
 const EXCLUDED = /\/Login\.tsx$/;
 
