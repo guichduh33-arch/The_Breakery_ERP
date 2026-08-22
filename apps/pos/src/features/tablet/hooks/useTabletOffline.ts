@@ -1,5 +1,17 @@
 // apps/pos/src/features/tablet/hooks/useTabletOffline.ts
 //
+// ⚠️ PLUS AUCUN APPELANT APPLICATIF depuis le lot D de l'audit du 2026-08-22.
+//    La pastille et le bandeau de la tablette lisent désormais
+//    `useTabletConnectionState`, qui dérive des MÊMES stores que
+//    `isOfflineMode()` — donc de la même source que la décision d'envoi. Ce
+//    hook-ci pingait de son côté toutes les 30 s en ignorant le hub LAN : il
+//    pouvait afficher « Offline » pendant que le code partait en ligne.
+//
+//    Il n'est plus monté nulle part, donc il ne ping plus : le garder ne coûte
+//    rien à l'exécution. Il n'est PAS supprimé parce qu'une suppression est une
+//    décision qui revient au propriétaire (CLAUDE.md règle 6) — elle est
+//    proposée dans le rapport d'audit. Ne pas le rebrancher entre-temps.
+//
 // Session 13 / Phase 4.D — Tablet polish.
 //
 // Detect online/offline state for the kiosk-style tablet. Two signals are

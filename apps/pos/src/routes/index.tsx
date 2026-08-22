@@ -112,6 +112,15 @@ export function AppRoutes() {
           </Suspense>
         }
       />
+      {/* /tablet reste hors <ProtectedLazy> à dessein : TabletLayout porte déjà
+          sa propre redirection vers /login ET son garde de rôle (waiter ou
+          sales.create), et la salle n'a pas besoin du pavé virtuel — une
+          tablette a son clavier tactile.
+          Le verrou, LUI, y manquait : idle et session morte posaient isLocked
+          sans que rien ne s'affiche, et l'appareil restait pilotable. Depuis le
+          lot D de l'audit du 2026-08-22, TabletLayout rend lui-même
+          <TerminalLockedOverlay>. Ajouter une surface ici sans son verrou
+          rouvre exactement ce trou. */}
       <Route
         path="/tablet"
         element={

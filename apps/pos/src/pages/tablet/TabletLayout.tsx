@@ -1,11 +1,12 @@
 import { useEffect, type JSX } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MapPin, Wifi, WifiOff, ClipboardList, History } from 'lucide-react';
+import { MapPin, Wifi, WifiOff, TriangleAlert, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
-import { useTabletOffline } from '@/features/tablet/hooks/useTabletOffline';
+import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
+import { useTabletConnectionState } from '@/features/tablet/hooks/useTabletConnectionState';
 import { isInFlight } from '@breakery/domain';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
@@ -44,8 +45,18 @@ export default function TabletLayout(): JSX.Element {
   // online/offline pill, and a live order count. These hooks are cheap (cached
   // queries / interval ping) and the data is already fetched elsewhere.
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
-  const { isOnline } = useTabletOffline();
+  // Lot D (audit 2026-08-22) — même source que isOfflineMode(), qui décide du
+  // chemin d'envoi réel. La pastille montrait auparavant un ping indépendant
+  // qui ignorait le hub LAN : elle pouvait annoncer « Offline » pendant que le
+  // code partait en ligne, et échouait.
+  const connection = useTabletConnectionState();
   const { data: orders = [] } = useMyTabletOrders();
+  // Le verrou d'inactivité (IdleTimeoutMount, monté dans App.tsx) et la mort de
+  // session (sessionDeathWatch) posent isLocked sur TOUTES les routes. L'écran
+  // de verrouillage, lui, n'était rendu que par /pos et les satellites : la
+  // tablette passait donc à l'état verrouillé sans jamais l'afficher, et restait
+  // pilotable — sur l'appareil justement laissé sans surveillance.
+  const isLocked = useAuthStore((s) => s.isLocked);
   // Le badge comptait TOUTES les commandes de l'historique : au bout d'un mois
   // il annonçait plusieurs centaines, et un compteur qui n'indique rien
   // d'actionnable cesse d'être regardé. On ne compte que ce qui est en vol.
@@ -75,23 +86,35 @@ export default function TabletLayout(): JSX.Element {
             {tableNumber ? `Table ${tableNumber}` : 'No table'}
           </span>
 
-          {/* Persistent online/offline pill */}
+          {/* Pastille d'état, trois valeurs — voir useTabletConnectionState.
+              « Offline » veut dire « la commande part quand même, par le bus » ;
+              « No network » veut dire « rien ne part ». Les confondre envoyait
+              la serveuse continuer alors que plus rien n'aboutissait. */}
           <span
             data-testid="tablet-connection-pill"
+            data-connection-state={connection.state}
             className={
-              isOnline
+              connection.state === 'online'
                 ? 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-success-soft text-success text-xs font-semibold uppercase tracking-wide'
-                : 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-warning-soft text-warning text-xs font-semibold uppercase tracking-wide'
+                : connection.state === 'offline_bus'
+                  ? 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-warning-soft text-warning text-xs font-semibold uppercase tracking-wide'
+                  : 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-danger-soft text-danger text-xs font-semibold uppercase tracking-wide'
             }
             role="status"
             aria-live="polite"
           >
-            {isOnline ? (
+            {connection.state === 'online' ? (
               <Wifi className="h-4 w-4 shrink-0" aria-hidden />
-            ) : (
+            ) : connection.state === 'offline_bus' ? (
               <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
+            ) : (
+              <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
             )}
-            {isOnline ? 'Online' : 'Offline'}
+            {connection.state === 'online'
+              ? 'Online'
+              : connection.state === 'offline_bus'
+                ? 'Offline'
+                : 'No network'}
           </span>
         </div>
       </header>
@@ -132,6 +155,8 @@ export default function TabletLayout(): JSX.Element {
           )}
         </NavLink>
       </nav>
+
+      {isLocked && <TerminalLockedOverlay />}
     </div>
   );
 }
