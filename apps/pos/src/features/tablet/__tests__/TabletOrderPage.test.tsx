@@ -64,8 +64,14 @@ vi.mock('../components/OfflineBanner', () => ({
 }));
 
 // Force the offline hook to a stable online state.
-vi.mock('../hooks/useTabletOffline', () => ({
-  useTabletOffline: () => ({ isOnline: true, lastSync: null }),
+vi.mock('../hooks/useTabletConnectionState', () => ({
+  useTabletConnectionState: () => ({
+    state: 'online',
+    isOnline: true,
+    canSendOrders: true,
+    lastSync: null,
+    offlineSince: null,
+  }),
 }));
 
 // Hoisted RPC + supabase stub.

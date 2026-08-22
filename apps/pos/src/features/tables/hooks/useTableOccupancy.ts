@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { TABLE_RELEASING_STATUSES_FILTER } from '../tableActivity';
 
 interface OccupiedRow {
   table_number: string;
@@ -21,7 +22,7 @@ async function fetchOccupied(): Promise<Set<string>> {
     .from('orders')
     .select('table_number')
     .not('table_number', 'is', null)
-    .not('status', 'in', '(completed,voided)');
+    .not('status', 'in', TABLE_RELEASING_STATUSES_FILTER);
 
   if (error) throw new Error(error.message);
   return new Set((data ?? []).map((r) => r.table_number));

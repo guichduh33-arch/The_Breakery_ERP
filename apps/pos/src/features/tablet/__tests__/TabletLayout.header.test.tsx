@@ -6,7 +6,7 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,10 +20,11 @@ vi.mock('@/lib/supabase', () => ({
   supabaseUrl: 'http://localhost:54321',
 }));
 
-const offlineMock = vi.hoisted(() => ({ isOnline: true }));
-vi.mock('@/features/tablet/hooks/useTabletOffline', () => ({
-  useTabletOffline: () => ({ isOnline: offlineMock.isOnline, lastSync: null }),
-}));
+// Lot D (audit 2026-08-22) — la pastille ne lit plus un ping à elle : elle lit
+// les DEUX stores dont dépend isOfflineMode(). On pilote donc les vrais stores
+// plutôt qu'un mock de hook, ce qui fait de ce test un test du vrai chemin.
+import { useCloudStatusStore } from '@/features/lan/cloudStatusStore';
+import { useHubConnectionStore } from '@/features/lan/hubConnectionStore';
 
 const ordersMock = vi.hoisted(() => ({ data: [] as unknown[] }));
 vi.mock('@/features/tablet/hooks/useMyTabletOrders', () => ({
@@ -37,7 +38,8 @@ function wrap(node: ReactNode): ReactNode {
 describe('TabletLayout header (LOT 6)', () => {
   beforeEach(() => {
     rpcMock.mockClear();
-    offlineMock.isOnline = true;
+    useCloudStatusStore.setState({ cloudOnline: true, lastSyncAt: null, offlineSince: null });
+    useHubConnectionStore.setState({ connected: false });
     ordersMock.data = [];
     usePosSettingsStore.setState({ deviceCode: '' });
     useAuthStore.setState({
@@ -47,6 +49,9 @@ describe('TabletLayout header (LOT 6)', () => {
       sessionToken: 'tok',
       isLoading: false,
       error: null,
+      // Sans cette remise à zéro, le test du verrou contaminerait les suivants.
+      isLocked: false,
+      lockReason: null,
     });
     useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in' });
   });
@@ -61,14 +66,69 @@ describe('TabletLayout header (LOT 6)', () => {
     expect(screen.getByTestId('tablet-active-table')).toHaveTextContent(/table t7/i);
   });
 
-  it('shows an Online pill when connected and Offline when not', async () => {
+  it('shows an Online pill when the cloud answers', async () => {
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
-    const { rerender } = render(wrap(<TabletLayout />));
-    expect(screen.getByTestId('tablet-connection-pill')).toHaveTextContent(/online/i);
+    render(wrap(<TabletLayout />));
+    const pill = screen.getByTestId('tablet-connection-pill');
+    expect(pill).toHaveTextContent(/online/i);
+    expect(pill).toHaveAttribute('data-connection-state', 'online');
+  });
 
-    offlineMock.isOnline = false;
-    rerender(wrap(<TabletLayout />));
-    expect(screen.getByTestId('tablet-connection-pill')).toHaveTextContent(/offline/i);
+  // Cloud coupé MAIS hub LAN debout : la commande part quand même en cuisine
+  // par le bus et attend en file. La serveuse peut continuer.
+  it('shows Offline when the cloud is down but the LAN bus is up', async () => {
+    useCloudStatusStore.setState({ cloudOnline: false });
+    useHubConnectionStore.setState({ connected: true });
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    const pill = screen.getByTestId('tablet-connection-pill');
+    expect(pill).toHaveTextContent(/offline/i);
+    expect(pill).toHaveAttribute('data-connection-state', 'offline_bus');
+  });
+
+  // Le cas que l'ancienne pastille annonçait à tort comme « Offline » : cloud
+  // ET hub coupés. isOfflineMode() vaut false, l'envoi part en ligne et échoue.
+  // Rien n'aboutit — la pastille doit le dire autrement.
+  it('shows No network when BOTH the cloud and the LAN bus are down', async () => {
+    useCloudStatusStore.setState({ cloudOnline: false });
+    useHubConnectionStore.setState({ connected: false });
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    const pill = screen.getByTestId('tablet-connection-pill');
+    expect(pill).toHaveTextContent(/no network/i);
+    expect(pill).toHaveAttribute('data-connection-state', 'no_network');
+    // Le mot « Offline » seul rendrait les deux situations indistinguables.
+    expect(pill).not.toHaveTextContent(/^offline$/i);
+  });
+
+  // Le verrou d'inactivité posait isLocked sur /tablet sans que rien ne
+  // s'affiche : la tablette restait entièrement pilotable, sur l'appareil
+  // justement laissé sans surveillance.
+  it('renders the lock overlay on /tablet when the terminal is locked', async () => {
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Ce que fait vraiment IdleTimeoutMount à l'expiration : il pose l'état dans
+    // le store, sans re-monter quoi que ce soit. C'est cette transition-là qui
+    // doit faire apparaître l'écran — d'où act(), et non un rerender manuel.
+    act(() => {
+      // Exactement l'appel d'IdleTimeoutMount : lock() sans argument, donc
+      // lockReason = 'manual'.
+      useAuthStore.getState().lock();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('dialog')).toHaveTextContent(/resume terminal/i);
+  });
+
+  it('says the session expired when that is the reason', async () => {
+    useAuthStore.setState({ isLocked: true, lockReason: 'session_expired' });
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.getByRole('heading', { name: /session expired/i })).toBeInTheDocument();
   });
 
   it('badges the Orders tab with the live order count', async () => {

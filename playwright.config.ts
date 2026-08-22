@@ -59,6 +59,19 @@ export default defineConfig({
         baseURL: process.env.E2E_POS_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5173',
       },
     },
+    // Lot E de l'audit POS Waiter du 2026-08-22 — projet DÉDIÉ, pas un ajout au
+    // projet `pos`. Une spec absente de tout `testMatch` n'est jouée par AUCUN
+    // projet : elle serait verte par silence. Et l'ajouter à `pos` la ferait
+    // entrer dans le gate PR money-path, qui doit rester court.
+    // La surface est servie par l'app POS, d'où E2E_POS_URL.
+    {
+      name: 'waiter',
+      testMatch: /waiter-flow\.spec\.ts$/,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.E2E_POS_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5173',
+      },
+    },
     {
       name: 'backoffice',
       testMatch: /(opname-finalize|po-receive|bo-admin-pin-reset|kiosk-display-realtime|s39-bo-completion|s40-reports|s41-catalog-import|stock-inventory-pages)\.spec\.ts$/,

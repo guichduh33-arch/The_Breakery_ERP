@@ -1,19 +1,28 @@
 // apps/pos/src/features/tablet/components/OfflineBanner.tsx
 //
-// Session 13 / Phase 4.D — Tablet polish.
+// Bandeau d'état réseau de la tablette de salle.
 //
-// Slim banner that mounts above the menu grid when the tablet has lost
-// network connectivity. Surfaces the time of the last successful sync so
-// the waiter knows whether the cached menu is fresh enough to keep using.
+// Lot D de l'audit du 2026-08-22 — il ne prend plus deux props séparées
+// (`isOnline` + `lastSync`) mais l'objet d'état complet. Deux props que
+// l'appelant peut faire diverger, c'est le défaut qu'on corrige : le bandeau
+// annonçait « Offline » dans un cas où le code, lui, partait en ligne.
+//
+// Trois états, parce que la question de la serveuse n'est pas « suis-je
+// connectée ? » mais « ma commande va-t-elle partir ? » :
+//
+//   · online      — rien à dire, le bandeau ne se monte pas.
+//   · offline_bus — cloud coupé, hub LAN debout. La commande part en cuisine
+//                   par le bus et attend en file. Elle peut continuer.
+//   · no_network  — cloud ET hub coupés. Rien ne part. Elle doit s'arrêter,
+//                   et c'est le seul cas où l'écran doit être alarmant.
 
 import { useEffect, useState, type JSX } from 'react';
-import { WifiOff } from 'lucide-react';
+import { WifiOff, TriangleAlert } from 'lucide-react';
+import type { TabletConnection } from '../hooks/useTabletConnectionState';
 
 export interface OfflineBannerProps {
-  /** When false the banner is shown ; when true the banner unmounts. */
-  isOnline: boolean;
-  /** Date of last successful sync, or null when no cache exists yet. */
-  lastSync: Date | null;
+  /** État de connexion complet — voir `useTabletConnectionState`. */
+  connection: TabletConnection;
 }
 
 function formatRelative(then: Date): string {
@@ -27,8 +36,11 @@ function formatRelative(then: Date): string {
   return `${hours} hours ago`;
 }
 
-export function OfflineBanner({ isOnline, lastSync }: OfflineBannerProps): JSX.Element | null {
-  // Re-render once a minute so the relative time stays fresh.
+export function OfflineBanner({ connection }: OfflineBannerProps): JSX.Element | null {
+  const { state, lastSync } = connection;
+  const isOnline = state === 'online';
+
+  // Re-render une fois par minute pour que le temps relatif reste juste.
   const [, setTick] = useState(0);
   useEffect(() => {
     if (isOnline) return undefined;
@@ -38,19 +50,34 @@ export function OfflineBanner({ isOnline, lastSync }: OfflineBannerProps): JSX.E
 
   if (isOnline) return null;
 
+  const noNetwork = state === 'no_network';
+
   return (
     <div
       role="status"
       aria-live="polite"
       data-testid="tablet-offline-banner"
-      className="flex items-center gap-3 border-b border-warning bg-warning-soft px-4 py-2 text-sm text-warning"
+      data-connection-state={state}
+      className={
+        noNetwork
+          ? 'flex items-center gap-3 border-b border-danger bg-danger-soft px-4 py-2 text-sm text-danger'
+          : 'flex items-center gap-3 border-b border-warning bg-warning-soft px-4 py-2 text-sm text-warning'
+      }
     >
-      <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
-      <span className="font-semibold uppercase tracking-widest text-xs">Offline</span>
+      {noNetwork ? (
+        <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
+      ) : (
+        <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
+      )}
+      <span className="font-semibold uppercase tracking-widest text-xs">
+        {noNetwork ? 'No network' : 'Offline'}
+      </span>
       <span className="text-text-secondary">
-        {lastSync !== null
-          ? `Showing cached menu — last synced ${formatRelative(lastSync)}.`
-          : 'No connection. Menu may be incomplete.'}
+        {noNetwork
+          ? 'Orders cannot be sent. Find a cashier before taking more.'
+          : lastSync !== null
+            ? `Orders still reach the kitchen — last synced ${formatRelative(lastSync)}.`
+            : 'Orders still reach the kitchen. Menu may be incomplete.'}
       </span>
     </div>
   );
