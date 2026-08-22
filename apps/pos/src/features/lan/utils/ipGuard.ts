@@ -1,4 +1,5 @@
-// apps/backoffice/src/features/lan-devices/utils/ipGuard.ts
+// apps/pos/src/features/lan/utils/ipGuard.ts
+// ADR-030 — déménagé depuis le back-office avec le balayage réseau.
 // Copie client de la validation préfixe privé (le bridge revalide côté serveur).
 const PREFIX_RE = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
 

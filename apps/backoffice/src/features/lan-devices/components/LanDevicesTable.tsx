@@ -1,14 +1,16 @@
 // apps/backoffice/src/features/lan-devices/components/LanDevicesTable.tsx
-// S13 (read-only) → 2026-07-06 : + IP/station + actions Edit/Delete/Test
+// S13 (read-only) → 2026-07-06 : + IP/station + actions Edit/Delete
 // (spec print-bridge §5.1). Actions gated lan.devices.manage.
+//
+// ADR-030 — le bouton « Test » (sonde + ticket) est parti dans POS » Settings »
+// Devices : il tape sur le print-bridge en clair sur le réseau local, hors de
+// portée d'une page servie en HTTPS.
 import { useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Pencil, Trash2, Radio, Loader2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import { formatDateTime } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
-import { resolveBridgeUrl } from '@/stores/bridgeSettingsStore.js';
-import { probePrinter, sendTestTicket } from '../api/bridgeApi.js';
 import { useLanDevices, type LanDeviceRow } from '../hooks/useLanDevices.js';
 import { useDeleteLanDevice } from '../hooks/useDeleteLanDevice.js';
 
@@ -17,34 +19,6 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
   const canManage = useAuthStore((s) => s.hasPermission('lan.devices.manage'));
   const deleteDevice = useDeleteLanDevice();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [testingId, setTestingId] = useState<string | null>(null);
-
-  async function runTest(d: LanDeviceRow): Promise<void> {
-    if (d.ip_address === null || d.port === null) {
-      toast.error('This printer has no IP/port configured.');
-      return;
-    }
-    setTestingId(d.id);
-    try {
-      const bridge = resolveBridgeUrl();
-      const probe = await probePrinter(bridge, d.ip_address, d.port);
-      if (!probe.reachable) {
-        toast.error(`${d.code}: printer unreachable on ${d.ip_address}:${d.port}`);
-        return;
-      }
-      const station = typeof d.capabilities.station === 'string' ? d.capabilities.station : 'kitchen';
-      const res = await sendTestTicket(bridge, { ip_address: d.ip_address, port: d.port }, station);
-      if (res.success) toast.success(`${d.code}: test ticket sent (${probe.latencyMs ?? '?'} ms)`);
-      else toast.error(`${d.code}: print failed — ${res.error ?? 'unknown'}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'unknown';
-      toast.error(msg === 'bridge_unreachable'
-        ? 'Print-bridge unreachable — check the bridge URL and that the service is running.'
-        : `Test failed: ${msg}`);
-    } finally {
-      setTestingId(null);
-    }
-  }
 
   if (isLoading) return <div className="text-sm text-text-secondary">Loading LAN devices…</div>;
   if (error !== null) {
@@ -55,7 +29,8 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
   if (rows.length === 0) {
     return (
       <div className="text-sm text-text-secondary">
-        No LAN devices registered yet. Add one manually or run a network scan above.
+        No LAN devices registered yet. Use &laquo; Add device &raquo; above — run a
+        network scan from POS &raquo; Settings &raquo; Devices to find a printer&apos;s address.
       </div>
     );
   }
@@ -107,15 +82,6 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
                 </td>
                 {canManage && (
                   <td className="py-2 text-right space-x-1 whitespace-nowrap">
-                    {d.device_type === 'printer' && (
-                      <Button variant="secondary" size="sm" aria-label={`Test ${d.code}`}
-                        disabled={testingId === d.id} onClick={() => void runTest(d)}>
-                        {testingId === d.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                          : <Radio className="h-4 w-4" aria-hidden />}
-                        Test
-                      </Button>
-                    )}
                     <Button variant="secondary" size="sm" aria-label={`Edit ${d.code}`} onClick={() => onEdit(d)}>
                       <Pencil className="h-4 w-4" aria-hidden /> Edit
                     </Button>

@@ -1,13 +1,16 @@
-// apps/backoffice/src/features/lan-devices/components/HubPanel.tsx
-// Spec 006x lot 1 — état du hub LAN vu depuis le print-bridge : joignable ou
-// non, appareils connectés au bus (présence temps réel LOCALE, distincte du
-// heartbeat cloud de la table lan_devices), stats du ring-buffer, token.
+// apps/pos/src/features/settings/components/HubStatusPanel.tsx
+//
+// ADR-030 — déménagé depuis le back-office (`features/lan-devices/components/HubPanel`),
+// qui ne peut plus joindre un `http://` local une fois publié en HTTPS.
+//
+// État du hub LAN vu depuis le print-bridge : joignable ou non, appareils
+// connectés au bus (présence temps réel LOCALE, distincte du heartbeat cloud de
+// la table lan_devices), stats du ring-buffer, token.
 import type { JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CloudOff, CloudUpload, Radio, ShieldCheck, ShieldOff } from 'lucide-react';
 import { formatTimeWita } from '@breakery/utils';
-import { resolveBridgeUrl } from '@/stores/bridgeSettingsStore.js';
-import { getHubStatus } from '../api/bridgeApi.js';
+import { getHubStatus } from '@/services/print/bridgeDiagnostics';
 
 const REFRESH_MS = 10_000;
 
@@ -17,10 +20,10 @@ function formatUptime(totalS: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m ${totalS % 60}s`;
 }
 
-export function HubPanel(): JSX.Element {
+export function HubStatusPanel(): JSX.Element {
   const { data, isError, isPending } = useQuery({
     queryKey: ['hub-status'],
-    queryFn: () => getHubStatus(resolveBridgeUrl()),
+    queryFn: () => getHubStatus(),
     refetchInterval: REFRESH_MS,
     retry: false,
   });
@@ -31,7 +34,7 @@ export function HubPanel(): JSX.Element {
   if (isError) {
     return (
       <p className="text-sm text-text-secondary">
-        Hub unreachable — check the bridge URL in the scan panel below and that
+        Hub unreachable — check the print server URL on the Printing tab and that
         the print-bridge service is running on the shop PC.
       </p>
     );
@@ -63,7 +66,6 @@ export function HubPanel(): JSX.Element {
         <span>
           Buffer: {data.buffer.count} message{data.buffer.count === 1 ? '' : 's'}
         </span>
-        {/* Spec 006x lot 2 — le hub est l'écrivain cloud du heartbeat. */}
         {data.cloud_sync?.enabled === true ? (
           <span className="inline-flex items-center gap-1">
             <CloudUpload
@@ -87,12 +89,14 @@ export function HubPanel(): JSX.Element {
       {data.devices.length === 0 ? (
         <p className="text-sm text-text-secondary">
           No device connected to the hub bus yet. Terminals join automatically
-          once their device code is set in POS Settings → Devices.
+          once their device code is set above.
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm max-w-2xl">
-            <caption className="sr-only">Device, type, IP address and last-seen time per terminal on the hub bus</caption>
+          <table className="w-full text-sm">
+            <caption className="sr-only">
+              Device, type, IP address and last-seen time per terminal on the hub bus
+            </caption>
             <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
               <tr>
                 <th scope="col" className="py-2 text-left">Device</th>

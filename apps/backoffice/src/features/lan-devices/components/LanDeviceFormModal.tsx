@@ -20,11 +20,10 @@ export interface LanDeviceFormModalProps {
   open: boolean;
   onClose: () => void;
   device: LanDeviceRow | null; // non-null = edit
-  prefill: { ip_address: string; port: number } | null; // depuis le scan
   allDevices: LanDeviceRow[];
 }
 
-export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices }: LanDeviceFormModalProps): JSX.Element {
+export function LanDeviceFormModal({ open, onClose, device, allDevices }: LanDeviceFormModalProps): JSX.Element {
   const upsert = useUpsertLanDevice();
 
   const [code, setCode] = useState('');
@@ -43,13 +42,13 @@ export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices 
     setCode(device?.code ?? '');
     setName(device?.name ?? '');
     setDeviceType(device?.device_type ?? 'printer');
-    setIp(device?.ip_address ?? prefill?.ip_address ?? '');
-    setPort(device?.port !== null && device?.port !== undefined ? String(device.port) : prefill ? String(prefill.port) : '');
+    setIp(device?.ip_address ?? '');
+    setPort(device?.port !== null && device?.port !== undefined ? String(device.port) : '');
     setLocation(device?.location ?? '');
     setIsActive(device?.is_active ?? true);
     const stationCap = device?.capabilities?.station;
     setStation(typeof stationCap === 'string' ? stationCap : '');
-  }, [open, device, prefill]);
+  }, [open, device]);
 
   const stationConflict = useMemo(() => {
     if (deviceType !== 'printer' || station === '' || !isActive) return null;
