@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ADR-029, conséquence 1 — l'autorisation du trafic en clair vers le hub LAN.
+
+  Android bloque le trafic en clair par défaut depuis l'API 28. Le bus LAN
+  (`ws://<hub>:3001/ws`, dérivé du `printerUrl`) et le serveur d'impression sont
+  en clair : sans autorisation explicite, ils ne partent pas.
+
+  L'ADR demande que cette autorisation soit ÉTROITE : « le faire trop large
+  annulerait le bénéfice de sécurité qu'on vient chercher ». D'où le refus par
+  défaut ci-dessous, et une liste d'hôtes nommés — jamais un
+  `cleartextTrafficPermitted="true"` global.
+
+  LIMITE D'ANDROID, à connaître avant de vouloir « simplifier » : la
+  configuration de sécurité réseau n'accepte QUE des domaines et des adresses
+  littérales. Elle ne connaît PAS les plages CIDR — on ne peut pas écrire
+  « tout 192.168.0.0/16 ». Chaque hôte en clair doit donc être nommé ici, ce
+  qui suppose que le hub de la boutique porte une adresse FIXE.
+
+  Or `getPrintServerUrl` (printService.ts) résout l'adresse à l'exécution :
+  réglage `printerUrl` de l'appareil, sinon `VITE_PRINT_SERVER_URL`, sinon
+  `localhost:3001`. Un hub en DHCP changerait d'adresse et tomberait hors de
+  cette liste sans prévenir — le symptôme serait « la cuisine ne reçoit plus
+  rien en coupure », c'est-à-dire précisément la panne que ce chantier corrige.
+
+  Tout le reste du trafic — Supabase, les Edge Functions — est en HTTPS et
+  n'est pas concerné.
+-->
+<network-security-config>
+
+  <!-- Refus par défaut : tout ce qui n'est pas nommé plus bas doit être chiffré. -->
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+
+  <!-- Hôtes de développement. Sûrs : ils ne désignent que l'appareil lui-même
+       ou la machine hôte de l'émulateur, jamais le réseau de la boutique. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">localhost</domain>
+    <domain includeSubdomains="false">127.0.0.1</domain>
+    <domain includeSubdomains="false">10.0.2.2</domain>
+  </domain-config>
+
+  <!-- ===================================================================
+       HUB LAN DE LA BOUTIQUE — À RENSEIGNER AVANT LA PREMIÈRE FABRICATION.
+
+       Remplacer l'adresse ci-dessous par l'IP FIXE du hub, puis retirer ce
+       bloc de commentaire. Tant que l'adresse est fausse, l'app fonctionne
+       normalement EN LIGNE (tout passe par HTTPS) et perd seulement le
+       repli LAN en coupure — une panne silencieuse, qui ne se voit qu'au
+       moment où l'on en a besoin.
+
+       Ajouter une ligne <domain> par hub si la boutique en compte plusieurs.
+       =================================================================== -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">192.168.1.10</domain>
+  </domain-config>
+
+</network-security-config>
