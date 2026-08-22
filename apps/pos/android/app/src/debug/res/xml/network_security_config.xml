@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  VARIANTE DEBUG UNIQUEMENT — ADR-029.
+
+  Ce fichier remplace `src/main/res/xml/network_security_config.xml` pour la
+  seule variante `debug`, par la fusion de ressources d'Android : à nom égal,
+  `src/debug/res` gagne sur `src/main/res`. L'APK de RELEASE n'en voit rien et
+  garde la liste de production, sans l'adresse de développement.
+
+  Pourquoi cette variante plutôt qu'un ajout dans le fichier principal : le
+  poste de développement n'a rien à faire dans une app installée en boutique.
+  L'y laisser reviendrait à autoriser en clair une machine qui n'existe pas sur
+  le réseau du magasin — une permission morte, donc invisible, donc jamais
+  retirée.
+
+  Pourquoi pas `<debug-overrides>` : cette balise n'accepte que des
+  `<trust-anchors>`. Elle ne sait pas ouvrir le trafic en clair. La séparation
+  par variante est le seul moyen propre.
+
+  Tout le reste — refus par défaut, hôtes de développement local, hub de la
+  boutique — est recopié à l'identique du fichier principal : une variante
+  REMPLACE, elle ne complète pas. Toute modification de la liste de production
+  doit être reportée ici, sinon les deux divergent en silence.
+-->
+<network-security-config>
+
+  <!-- Refus par défaut : identique à la production. -->
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+
+  <!-- Hôtes de développement local — l'appareil lui-même, et la machine hôte
+       de l'émulateur. Recopié du fichier principal. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">localhost</domain>
+    <domain includeSubdomains="false">127.0.0.1</domain>
+    <domain includeSubdomains="false">10.0.2.2</domain>
+  </domain-config>
+
+  <!-- Hub de la boutique — le poste de caisse principal. Recopié du fichier
+       principal ; à garder synchronisé avec lui. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">192.168.1.92</domain>
+  </domain-config>
+
+  <!-- AJOUT PROPRE À LA VARIANTE DEBUG — poste de développement, 2026-08-22.
+       Permet de faire tourner le pont d'impression sur la machine de travail
+       et d'y pointer une tablette de test, sans toucher à la liste de
+       production. Ne part JAMAIS dans un APK de release. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">192.168.40.66</domain>
+  </domain-config>
+
+</network-security-config>
