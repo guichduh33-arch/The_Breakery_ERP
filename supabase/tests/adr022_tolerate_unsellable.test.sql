@@ -13,7 +13,7 @@
 --   3. la tolérance laisse une trace : `audit_logs` / `order.sellability_tolerated`.
 --
 -- Les deux portes qui portent le drapeau sont couvertes (`fire_counter_order_v7`,
--- `create_tablet_order_v7`). `add_order_item_v5` n'en a pas : elle n'est ni
+-- `create_tablet_order_v8`). `add_order_item_v5` n'en a pas : elle n'est ni
 -- rejouée hors-ligne ni appelée en finalisation.
 --
 -- Run via MCP execute_sql (enveloppe BEGIN..ROLLBACK portée par ce fichier).
@@ -128,13 +128,13 @@ SELECT ok(current_setting('a22t.t4')::boolean,
   || current_setting('a22t.t4msg'));
 
 -- ===========================================================================
--- PORTE SALLE — create_tablet_order_v7
+-- PORTE SALLE — create_tablet_order_v8
 -- ===========================================================================
 DO $t5$ DECLARE v_oid UUID; v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22t.tab_auth'), true);
   BEGIN
-    v_oid := create_tablet_order_v7(
+    v_oid := create_tablet_order_v8(
       p_client_uuid  := gen_random_uuid(),
       p_waiter_id    := current_setting('a22t.tab_prof')::uuid,
       p_table_number := '',
@@ -168,7 +168,7 @@ DO $t8$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22t.tab_auth'), true);
   BEGIN
-    PERFORM create_tablet_order_v7(
+    PERFORM create_tablet_order_v8(
       p_client_uuid  := gen_random_uuid(),
       p_waiter_id    := current_setting('a22t.tab_prof')::uuid,
       p_table_number := '',
