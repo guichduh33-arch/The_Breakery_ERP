@@ -171,7 +171,7 @@ describe('TabletOrderPage', () => {
     expect(useTabletCartStore.getState().tableNumber).toBe('T1');
   });
 
-  it('calls create_tablet_order_v7 RPC, clears cart, toasts, and navigates on success', async () => {
+  it('calls create_tablet_order_v8 RPC, clears cart, toasts, and navigates on success', async () => {
     const { TabletOrderPage } = await import('../TabletOrderPage');
     const { toast } = await import('sonner');
 
@@ -191,7 +191,7 @@ describe('TabletOrderPage', () => {
 
     await waitFor(() => {
       expect(supaMocks.rpc).toHaveBeenCalledWith(
-        'create_tablet_order_v7',
+        'create_tablet_order_v8',
         expect.objectContaining({
           p_client_uuid: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) as unknown,
           p_waiter_id: 'waiter-001',

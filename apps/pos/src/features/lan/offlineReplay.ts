@@ -74,7 +74,7 @@ function emitPaymentFailure(intent: OfflineIntent, message: string): void {
 }
 
 type FireArgs = Database['public']['Functions']['fire_counter_order_v7']['Args'];
-type TabletArgs = Database['public']['Functions']['create_tablet_order_v7']['Args'];
+type TabletArgs = Database['public']['Functions']['create_tablet_order_v8']['Args'];
 
 interface FireEnvelope {
   order_id: string;
@@ -205,7 +205,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
   args.p_tolerate_unsellable = true;
   // Numérotation par origine — code T1/T2 de cette tablette (voir fire ci-dessus).
   if (getTabletSourceCode() !== null) args.p_source_code = getTabletSourceCode();
-  const { error } = await supabase.rpc('create_tablet_order_v7', args as TabletArgs);
+  const { error } = await supabase.rpc('create_tablet_order_v8', args as TabletArgs);
   if (error) throw Object.assign(new Error(error.message), { details: error });
 }
 

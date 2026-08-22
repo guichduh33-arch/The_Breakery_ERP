@@ -112,7 +112,7 @@ export function useCreateTabletOrder() {
       // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
       // le refus y arrive à temps. Seul le rejeu hors-ligne pose le drapeau.
       const tabletSourceCode = getTabletSourceCode();
-      const { data, error } = await supabase.rpc('create_tablet_order_v7', {
+      const { data, error } = await supabase.rpc('create_tablet_order_v8', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',
