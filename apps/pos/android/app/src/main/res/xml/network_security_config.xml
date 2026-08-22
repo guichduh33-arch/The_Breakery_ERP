@@ -43,19 +43,40 @@
     <domain includeSubdomains="false">10.0.2.2</domain>
   </domain-config>
 
-  <!-- ===================================================================
-       HUB LAN DE LA BOUTIQUE — À RENSEIGNER AVANT LA PREMIÈRE FABRICATION.
+  <!-- Hub LAN de la boutique — adresse donnée par le propriétaire le
+       2026-08-22. C'est la SEULE destination en clair de l'application.
 
-       Remplacer l'adresse ci-dessous par l'IP FIXE du hub, puis retirer ce
-       bloc de commentaire. Tant que l'adresse est fausse, l'app fonctionne
-       normalement EN LIGNE (tout passe par HTTPS) et perd seulement le
-       repli LAN en coupure — une panne silencieuse, qui ne se voit qu'au
-       moment où l'on en a besoin.
+       Le hub n'est pas une machine à part : 192.168.1.92 est le poste de
+       caisse PRINCIPAL, qui héberge le pont d'impression et le bus. C'est
+       donc lui qu'il faut allumer en premier le matin — les tablettes de
+       salle n'ont pas de repli hors ligne tant qu'il dort.
 
-       Ajouter une ligne <domain> par hub si la boutique en compte plusieurs.
-       =================================================================== -->
+       Vérifié dans le code plutôt que supposé : le seul point de sortie vers
+       le réseau local est `getPrintServerUrl()` (printService.ts). Il sert
+       deux usages, et un seul hôte : les requêtes d'impression en http, et
+       le bus LAN, dont `hubWsUrl` dérive `ws://<hub>:3001/ws` en remplaçant
+       le schéma. Tout le reste — Supabase, Edge Functions — est en HTTPS.
+
+       Les imprimantes ne figurent pas ici : l'app ne leur parle jamais en
+       direct. Elle poste au pont d'impression, qui joint le port 9100.
+
+       Les AUTRES appareils du parc — seconde caisse 192.168.1.128, tablette
+       de salle 192.168.1.101 — sont volontairement ABSENTS. Ce fichier
+       n'énumère pas les machines de la boutique, il énumère ce que
+       l'application COMPOSE. Ces deux-là exécutent l'app ; ils n'en sont pas
+       une destination. Les ajouter suggérerait une liaison d'appareil à
+       appareil qui n'existe pas — l'architecture ne compte qu'UN hub.
+
+       Réserve à lever si le comportement change : `printerUrl` est un réglage
+       PAR APPAREIL. Le jour où l'on pointerait une tablette vers un second
+       pont d'impression, son adresse devrait rejoindre cette liste, sans quoi
+       l'impression et le bus tomberaient sur ce seul appareil.
+
+       Cette adresse doit rester FIXE. Un hub passé en DHCP sortirait de cette
+       liste sans prévenir : l'app continuerait de fonctionner en ligne et
+       perdrait le seul repli LAN, en coupure — sans message d'erreur. -->
   <domain-config cleartextTrafficPermitted="true">
-    <domain includeSubdomains="false">192.168.1.10</domain>
+    <domain includeSubdomains="false">192.168.1.92</domain>
   </domain-config>
 
 </network-security-config>
