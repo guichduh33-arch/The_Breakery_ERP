@@ -1,15 +1,18 @@
 // apps/backoffice/src/pages/lan-devices/LanDevicesPage.tsx
-// S14 (read-only + KPIs) → 2026-07-06 : + CRUD (form modal), + ScanPanel
-// print-bridge (spec 2026-07-06). Route gated lan.devices.read (inchangé) ;
-// écritures gated lan.devices.manage.
+// S14 (read-only + KPIs) → 2026-07-06 : + CRUD (form modal). Route gated
+// lan.devices.read (inchangé) ; écritures gated lan.devices.manage.
+//
+// ADR-030 — le back-office est publié en HTTPS : il ne peut plus joindre le
+// print-bridge, qui écoute en clair sur le réseau local. L'état du hub, le
+// balayage réseau et le test d'imprimante ont donc quitté cette page pour
+// POS » Settings » Devices. Ce qui reste ici est le registre lui-même, qui est
+// une donnée cloud et se gère aussi bien à distance.
 import { useMemo, useState } from 'react';
 import { Wifi, CheckCircle2, AlertTriangle, Printer, Plus } from 'lucide-react';
 import { Button, Card, KpiTile, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { LanDevicesTable } from '@/features/lan-devices/components/LanDevicesTable.js';
-import { HubPanel } from '@/features/lan-devices/components/HubPanel.js';
 import { OfflineSettingsPanel } from '@/features/lan-devices/components/OfflineSettingsPanel.js';
-import { ScanPanel } from '@/features/lan-devices/components/ScanPanel.js';
 import { LanDeviceFormModal } from '@/features/lan-devices/components/LanDeviceFormModal.js';
 import { useLanDevices, type LanDeviceRow } from '@/features/lan-devices/hooks/useLanDevices.js';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -21,7 +24,6 @@ export default function LanDevicesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<LanDeviceRow | null>(null);
-  const [prefill, setPrefill] = useState<{ ip_address: string; port: number } | null>(null);
 
   const kpis = useMemo(() => {
     const now = Date.now();
@@ -39,11 +41,8 @@ export default function LanDevicesPage() {
     return { total: rows.length, online, stale, printers };
   }, [rows]);
 
-  function openCreate(): void { setEditing(null); setPrefill(null); setModalOpen(true); }
-  function openEdit(device: LanDeviceRow): void { setEditing(device); setPrefill(null); setModalOpen(true); }
-  function openFromScan(p: { ip_address: string; port: number }): void {
-    setEditing(null); setPrefill(p); setModalOpen(true);
-  }
+  function openCreate(): void { setEditing(null); setModalOpen(true); }
+  function openEdit(device: LanDeviceRow): void { setEditing(device); setModalOpen(true); }
 
   return (
     <div className="space-y-6">
@@ -65,11 +64,6 @@ export default function LanDevicesPage() {
         <KpiTile label="Printers"      value={kpis.printers} icon={Printer}        footer="ESC/POS printers in mesh" />
       </div>
 
-      <Card padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h2">Hub</SectionLabel>
-        <HubPanel />
-      </Card>
-
       {/* ADR-015 — activation de l'encaissement hors-ligne (catégorie network,
           clé unique offline_payments_enabled : la fenêtre de durée est supprimée). */}
       <Card padding="md" className="space-y-3">
@@ -77,22 +71,25 @@ export default function LanDevicesPage() {
         <OfflineSettingsPanel />
       </Card>
 
-      {canManage && (
-        <Card padding="md" className="space-y-3">
-          <SectionLabel size="sm" as="h2">Network scan</SectionLabel>
-          <ScanPanel devices={rows} onAdd={openFromScan} />
-        </Card>
-      )}
-
       <Card padding="md">
         <LanDevicesTable onEdit={openEdit} />
+      </Card>
+
+      {/* ADR-030 — ces gestes touchent le réseau local, qu'une page HTTPS ne peut
+          pas joindre. Ils vivent désormais sur le terminal, servi en local. */}
+      <Card padding="md" className="space-y-2">
+        <SectionLabel size="sm" as="h2">Hub, network scan and printer tests</SectionLabel>
+        <p className="text-sm text-text-secondary">
+          These live on the terminal, under POS &raquo; Settings &raquo; Devices.
+          They talk to the print-bridge over the shop network, which a page served
+          over HTTPS cannot reach.
+        </p>
       </Card>
 
       <LanDeviceFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         device={editing}
-        prefill={prefill}
         allDevices={rows}
       />
     </div>

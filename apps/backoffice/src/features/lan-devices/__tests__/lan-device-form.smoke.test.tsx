@@ -31,19 +31,19 @@ beforeEach(() => mutate.mockClear());
 
 describe('LanDeviceFormModal', () => {
   it('shows the station select only for printers', () => {
-    render(wrap(<LanDeviceFormModal open onClose={vi.fn()} device={null} prefill={null} allDevices={[]} />));
+    render(wrap(<LanDeviceFormModal open onClose={vi.fn()} device={null} allDevices={[]} />));
     // défaut = printer → station visible
     expect(screen.getByLabelText(/station/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/device type/i), { target: { value: 'kds' } });
     expect(screen.queryByLabelText(/station/i)).not.toBeInTheDocument();
   });
 
-  it('prefills ip/port from a scan hit and submits capabilities.station', () => {
+  it('submits ip/port and capabilities.station', () => {
     render(wrap(
-      <LanDeviceFormModal open onClose={vi.fn()} device={null}
-        prefill={{ ip_address: '192.168.1.60', port: 9100 }} allDevices={[]} />,
+      <LanDeviceFormModal open onClose={vi.fn()} device={null} allDevices={[]} />,
     ));
-    expect(screen.getByLabelText(/ip address/i)).toHaveValue('192.168.1.60');
+    fireEvent.change(screen.getByLabelText(/ip address/i), { target: { value: '192.168.1.60' } });
+    fireEvent.change(screen.getByLabelText(/^port/i), { target: { value: '9100' } });
     fireEvent.change(screen.getByLabelText(/^code/i), { target: { value: 'PRN-KITCHEN-1' } });
     fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'Kitchen printer' } });
     fireEvent.change(screen.getByLabelText(/station/i), { target: { value: 'kitchen' } });
@@ -56,7 +56,7 @@ describe('LanDeviceFormModal', () => {
 
   it('warns (non-blocking) when another active printer already has the station', () => {
     render(wrap(
-      <LanDeviceFormModal open onClose={vi.fn()} device={null} prefill={null}
+      <LanDeviceFormModal open onClose={vi.fn()} device={null}
         allDevices={[row({ id: 'other', capabilities: { station: 'kitchen' } })]} />,
     ));
     fireEvent.change(screen.getByLabelText(/station/i), { target: { value: 'kitchen' } });
@@ -66,7 +66,7 @@ describe('LanDeviceFormModal', () => {
   });
 
   it('requires ip+port for printers', () => {
-    render(wrap(<LanDeviceFormModal open onClose={vi.fn()} device={null} prefill={null} allDevices={[]} />));
+    render(wrap(<LanDeviceFormModal open onClose={vi.fn()} device={null} allDevices={[]} />));
     fireEvent.change(screen.getByLabelText(/^code/i), { target: { value: 'PRN-1' } });
     fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'P' } });
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
