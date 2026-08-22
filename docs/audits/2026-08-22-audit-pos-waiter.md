@@ -9,6 +9,50 @@
 
 ---
 
+## Suivi — état au 2026-08-22, après livraison
+
+> **Ce bloc est le seul ajout postérieur au constat.** Tout ce qui suit à partir
+> de la section 0 décrit l'état de la journée du 2026-08-22 **avant** correction,
+> et n'a pas été retouché : réécrire un relevé effacerait la mesure qui l'a
+> motivé. Lire le corps comme une photo, ce tableau comme la légende.
+
+| Lot | Sujet | État |
+|---|---|---|
+| A | `order_items` absente de `supabase_realtime` (§2.1) | **livré** |
+| B | tables occupées après paiement (§2.2) | **livré** |
+| D | verrou absent sur `/tablet` + deux états réseau contradictoires (§2.3, §2.4) | **livré** |
+| E | aucune couverture bout en bout (§2.8) | **livré** |
+| C | RLS décorative et `p_waiter_id` non vérifié (§2.3 a et b) | **ouvert — 2 décisions en attente** |
+| F | empaquetage Android (§2 ABSENT) | **ouvert — chantier neuf** |
+
+Repères durables, plutôt que des empreintes de commit qui bougeraient à la
+première fusion écrasante :
+
+- migration `supabase/migrations/20260822000001_realtime_publish_order_items.sql` ;
+- prédicat unique `apps/pos/src/features/tables/tableActivity.ts` ;
+- hook unique d'état réseau `apps/pos/src/features/tablet/hooks/useTabletConnectionState.ts` ;
+- filet de transport `supabase/tests/realtime_publication_orders.test.sql` ;
+- parcours de salle `tests/e2e/waiter-flow.spec.ts`, projet Playwright `waiter`.
+
+**Ce que la livraison n'a PAS établi**, et qui reste vrai du corps ci-dessous :
+
+- la preuve bout en bout du lot A **dans un navigateur** — un article passé
+  « prêt » qui déclenche le toast — n'a pas été faite ; elle demande une session
+  PIN. Le *transport* est en revanche asserté par le pgTAP nommé ci-dessus,
+  éprouvé dans les deux sens (vert en l'état, rouge après retrait de la table) ;
+- l'état de la publication **en production** n'a pas été relevé (§1.4) ;
+- la lenteur supposée des 376 cartes produit n'a pas été mesurée sur un appareil
+  réel (§2.7) ;
+- il n'existe toujours **aucun compte waiter dédié aux tests** : la spec E2E passe
+  par un compte porteur de `sales.create`, donc le garde `role_code = 'waiter'`
+  lui-même n'est pas éprouvé.
+
+**Décisions toujours en attente** : les points 2 à 7 de la section 6. Les points 2
+et 3 bloquent le lot C. Le point 1 est tranché — le dossier `docs/audits/` a été
+créé et ce rapport y est versionné.
+
+---
+
 ## 0. Deux corrections de prémisse, à lire avant tout
 
 Le mandat parlait de « tablettes Android / mini-POS » et d'une « config Capacitor ».
