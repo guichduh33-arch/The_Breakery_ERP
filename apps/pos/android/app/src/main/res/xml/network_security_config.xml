@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ADR-029, conséquence 1 — l'autorisation du trafic en clair vers le hub LAN.
+
+  Android bloque le trafic en clair par défaut depuis l'API 28. Le bus LAN
+  (`ws://<hub>:3001/ws`, dérivé du `printerUrl`) et le serveur d'impression sont
+  en clair : sans autorisation explicite, ils ne partent pas.
+
+  L'ADR demande que cette autorisation soit ÉTROITE : « le faire trop large
+  annulerait le bénéfice de sécurité qu'on vient chercher ». D'où le refus par
+  défaut ci-dessous, et une liste d'hôtes nommés — jamais un
+  `cleartextTrafficPermitted="true"` global.
+
+  LIMITE D'ANDROID, à connaître avant de vouloir « simplifier » : la
+  configuration de sécurité réseau n'accepte QUE des domaines et des adresses
+  littérales. Elle ne connaît PAS les plages CIDR — on ne peut pas écrire
+  « tout 192.168.0.0/16 ». Chaque hôte en clair doit donc être nommé ici, ce
+  qui suppose que le hub de la boutique porte une adresse FIXE.
+
+  Or `getPrintServerUrl` (printService.ts) résout l'adresse à l'exécution :
+  réglage `printerUrl` de l'appareil, sinon `VITE_PRINT_SERVER_URL`, sinon
+  `localhost:3001`. Un hub en DHCP changerait d'adresse et tomberait hors de
+  cette liste sans prévenir — le symptôme serait « la cuisine ne reçoit plus
+  rien en coupure », c'est-à-dire précisément la panne que ce chantier corrige.
+
+  Tout le reste du trafic — Supabase, les Edge Functions — est en HTTPS et
+  n'est pas concerné.
+-->
+<network-security-config>
+
+  <!-- Refus par défaut : tout ce qui n'est pas nommé plus bas doit être chiffré. -->
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+
+  <!-- Hôtes de développement. Sûrs : ils ne désignent que l'appareil lui-même
+       ou la machine hôte de l'émulateur, jamais le réseau de la boutique. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">localhost</domain>
+    <domain includeSubdomains="false">127.0.0.1</domain>
+    <domain includeSubdomains="false">10.0.2.2</domain>
+  </domain-config>
+
+  <!-- Hub LAN de la boutique — adresse donnée par le propriétaire le
+       2026-08-22. C'est la SEULE destination en clair de l'application.
+
+       Le hub n'est pas une machine à part : 192.168.1.92 est le poste de
+       caisse PRINCIPAL, qui héberge le pont d'impression et le bus. C'est
+       donc lui qu'il faut allumer en premier le matin — les tablettes de
+       salle n'ont pas de repli hors ligne tant qu'il dort.
+
+       Vérifié dans le code plutôt que supposé : le seul point de sortie vers
+       le réseau local est `getPrintServerUrl()` (printService.ts). Il sert
+       deux usages, et un seul hôte : les requêtes d'impression en http, et
+       le bus LAN, dont `hubWsUrl` dérive `ws://<hub>:3001/ws` en remplaçant
+       le schéma. Tout le reste — Supabase, Edge Functions — est en HTTPS.
+
+       Les imprimantes ne figurent pas ici : l'app ne leur parle jamais en
+       direct. Elle poste au pont d'impression, qui joint le port 9100.
+
+       Les AUTRES appareils du parc — seconde caisse 192.168.1.128, tablette
+       de salle 192.168.1.101 — sont volontairement ABSENTS. Ce fichier
+       n'énumère pas les machines de la boutique, il énumère ce que
+       l'application COMPOSE. Ces deux-là exécutent l'app ; ils n'en sont pas
+       une destination. Les ajouter suggérerait une liaison d'appareil à
+       appareil qui n'existe pas — l'architecture ne compte qu'UN hub.
+
+       Réserve à lever si le comportement change : `printerUrl` est un réglage
+       PAR APPAREIL. Le jour où l'on pointerait une tablette vers un second
+       pont d'impression, son adresse devrait rejoindre cette liste, sans quoi
+       l'impression et le bus tomberaient sur ce seul appareil.
+
+       Cette adresse doit rester FIXE. Un hub passé en DHCP sortirait de cette
+       liste sans prévenir : l'app continuerait de fonctionner en ligne et
+       perdrait le seul repli LAN, en coupure — sans message d'erreur. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">192.168.1.92</domain>
+  </domain-config>
+
+</network-security-config>
