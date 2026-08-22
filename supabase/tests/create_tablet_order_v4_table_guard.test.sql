@@ -47,24 +47,26 @@ BEGIN
 END $fx$;
 
 SELECT throws_ok(
-  format('SELECT create_tablet_order_v7(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v8(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), '', 'dine_in', current_setting('s72.items')),
   'P0011', 'table_required_for_dine_in',
   'T1: dine_in + blank table -> P0011 table_required_for_dine_in');
 
 SELECT lives_ok(
-  format('SELECT create_tablet_order_v7(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v8(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), current_setting('s72.tbl'), 'dine_in', current_setting('s72.items')),
   'T2: dine_in + valid table -> creates order');
 
 SELECT lives_ok(
-  format('SELECT create_tablet_order_v7(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v8(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), '', 'take_out', current_setting('s72.items')),
   'T3: take_out + blank table -> creates order (no table needed)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-    WHERE n.nspname='public' AND p.proname IN ('create_tablet_order_v3','create_tablet_order_v4','create_tablet_order_v5')),
+    WHERE n.nspname='public' AND p.proname IN ('create_tablet_order_v3','create_tablet_order_v4',
+                                               'create_tablet_order_v5','create_tablet_order_v6',
+                                               'create_tablet_order_v7')),
   0, 'T4: les versions précédentes de create_tablet_order sont droppées');
 
 SELECT * FROM finish();

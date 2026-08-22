@@ -2,7 +2,7 @@
 -- Numérotation par origine (2026-08-16) — <code><DDMMYYYY><NNN> sur la
 -- séquence quotidienne PARTAGÉE (order_sequences). Vérifie :
 --   T1. fire_counter_order_v7 numérote P<DDMMYYYY><NNN> (défaut 'P').
---   T2. create_tablet_order_v7 numérote T2… quand la tablette envoie T2.
+--   T2. create_tablet_order_v8 numérote T2… quand la tablette envoie T2.
 --   T3. Séquence partagée : le numéro tablette suit le fire (+1).
 --   T4. Un code invalide est refusé (check_violation).
 --   T5/T6. Le replay d'idempotence rend le MÊME numéro + drapeau.
@@ -68,7 +68,7 @@ BEGIN
   );
   PERFORM set_config('test.src_fire_number', v_fire->>'order_number', true);
 
-  v_tablet := create_tablet_order_v7(
+  v_tablet := create_tablet_order_v8(
     p_client_uuid  := gen_random_uuid(),
     p_waiter_id    := NULL,
     p_table_number := 'T-01',
