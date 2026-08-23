@@ -46,21 +46,29 @@ function wrap(ui: React.ReactNode) {
   return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
 }
 
+// The inputs mount empty and are seeded one effect-cycle after the RPC
+// resolves — waiting on their PRESENCE alone races the seed (and a change
+// fired before the seed gets overwritten by it). Every test must wait on
+// the seeded values before reading or firing events.
+async function waitForSeededValues() {
+  await waitFor(() => {
+    expect(screen.getByLabelText<HTMLInputElement>(/warning threshold/i).value).toBe('5');
+    expect(screen.getByLabelText<HTMLInputElement>(/urgent threshold/i).value).toBe('10');
+    expect(screen.getByLabelText<HTMLInputElement>(/ready auto-archive/i).value).toBe('5');
+  });
+}
+
 describe('SettingsKdsConfigPage', () => {
   it('renders the 3 threshold inputs seeded from the RPC', async () => {
     canUpdate = true;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => expect(screen.getByLabelText(/warning threshold/i)).toBeInTheDocument());
-
-    expect(screen.getByLabelText<HTMLInputElement>(/warning threshold/i).value).toBe('5');
-    expect(screen.getByLabelText<HTMLInputElement>(/urgent threshold/i).value).toBe('10');
-    expect(screen.getByLabelText<HTMLInputElement>(/ready auto-archive/i).value).toBe('5');
+    await waitForSeededValues();
   });
 
   it('disables the inputs and hides Save without settings.update', async () => {
     canUpdate = false;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => expect(screen.getByLabelText(/warning threshold/i)).toBeInTheDocument());
+    await waitForSeededValues();
 
     expect(screen.getByLabelText(/warning threshold/i)).toBeDisabled();
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
@@ -69,7 +77,7 @@ describe('SettingsKdsConfigPage', () => {
   it('warning >= urgent shows an inline error and disables Save', async () => {
     canUpdate = true;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => screen.getByLabelText(/warning threshold/i));
+    await waitForSeededValues();
 
     fireEvent.change(screen.getByLabelText(/warning threshold/i), { target: { value: '12' } });
 
@@ -80,7 +88,7 @@ describe('SettingsKdsConfigPage', () => {
   it('warning < urgent clears the error and enables Save', async () => {
     canUpdate = true;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => screen.getByLabelText(/warning threshold/i));
+    await waitForSeededValues();
 
     fireEvent.change(screen.getByLabelText(/warning threshold/i), { target: { value: '8' } });
 
@@ -92,7 +100,7 @@ describe('SettingsKdsConfigPage', () => {
     canUpdate = true;
     rpcCalls.length = 0;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => screen.getByLabelText(/warning threshold/i));
+    await waitForSeededValues();
 
     // 5/10 -> 8/9: urgent decreases, so warning (8, still < old urgent 10) must
     // commit first, then urgent (9, now > new warning 8).
@@ -111,7 +119,7 @@ describe('SettingsKdsConfigPage', () => {
     canUpdate = true;
     rpcCalls.length = 0;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => screen.getByLabelText(/warning threshold/i));
+    await waitForSeededValues();
 
     // 5/10 -> 11/15: urgent increases, so urgent must commit first (15, still
     // > old warning 5), then warning (11, now < new urgent 15).
@@ -130,7 +138,7 @@ describe('SettingsKdsConfigPage', () => {
     canUpdate = true;
     rpcCalls.length = 0;
     render(wrap(<SettingsKdsConfigPage />));
-    await waitFor(() => screen.getByLabelText(/warning threshold/i));
+    await waitForSeededValues();
 
     fireEvent.change(screen.getByLabelText(/warning threshold/i), { target: { value: '8' } });
     fireEvent.change(screen.getByLabelText(/urgent threshold/i), { target: { value: '9' } });
