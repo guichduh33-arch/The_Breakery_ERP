@@ -46,7 +46,10 @@ export function CurrentOrderCard({ order }: CurrentOrderCardProps) {
         Now Serving
       </p>
       <div className="flex items-baseline justify-between gap-6">
-        <h2 className="font-serif text-7xl text-gold tracking-tight">
+        {/* Arbitrage 2026-08-23 — le numéro de commande a UNE graphie à
+            l'écran : mono (forme du KDS). Le client doit apparier ce numéro
+            au retrait ; il rendait en serif ici et en mono au KDS. */}
+        <h2 className="font-mono font-extrabold tabular-nums text-7xl text-gold tracking-tight">
           {formatOrderNumberShort(order.order_number)}
         </h2>
         <div className="text-right">

@@ -46,7 +46,9 @@ export function RefundReceiptModal({
           <div className="text-xs uppercase tracking-widest text-text-secondary">
             {isFullVoid ? 'Order Voided' : 'Refund Issued'}
           </div>
-          <div className="font-serif text-3xl text-gold">{refundNumber}</div>
+          {/* Arbitrage 2026-08-23 — un numéro est une DONNÉE : mono, jamais
+              serif (Mono-Carries-Data ; le serif reste permis aux titres). */}
+          <div className="font-mono font-extrabold tabular-nums text-3xl text-gold">{refundNumber}</div>
           <div className="text-xs text-text-secondary">on order {orderNumber}</div>
 
           <div className="mt-4 text-center">

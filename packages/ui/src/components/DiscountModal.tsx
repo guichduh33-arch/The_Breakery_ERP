@@ -78,6 +78,12 @@ export function DiscountModal({
 
   const errors = useMemo(() => validateDiscount(discount, base), [discount, base]);
   const hasError = errors.length > 0;
+  // Critique 2026-08-23 (P1) — l'état VIDE est invalide par construction : sans
+  // gating, le bloc role="alert" s'affichait dès l'ouverture et le lecteur
+  // d'écran annonçait une erreur que l'utilisateur n'avait pas commise. Les
+  // erreurs n'apparaissent qu'après une première saisie ; le bouton Confirm,
+  // lui, reste désactivé dans tous les cas.
+  const touched = raw !== '' || reason.trim() !== '';
   const newTotal = base - discount.amount;
 
   async function handleConfirm(): Promise<void> {
@@ -224,7 +230,9 @@ export function DiscountModal({
                 <span>Subtotal</span>
                 <Currency amount={base} />
               </div>
-              <div className="flex justify-between text-red">
+              {/* red-as-text, jamais red : le rouge de remplissage tombe sous le
+                  seuil de lecture en texte sur la surface sombre du POS. */}
+              <div className="flex justify-between text-red-as-text">
                 <span>Discount</span>
                 <span>
                   −<Currency amount={discount.amount} />
@@ -237,11 +245,11 @@ export function DiscountModal({
             </div>
           )}
 
-          {/* Validation errors */}
-          {hasError && (
+          {/* Validation errors — seulement après interaction (cf. `touched`). */}
+          {hasError && touched && (
             <div className="space-y-1" role="alert">
               {errors.map((e, i) => (
-                <p key={`${e.code}-${i}`} className="text-red text-sm">
+                <p key={`${e.code}-${i}`} className="text-red-as-text text-sm">
                   {e.message}
                 </p>
               ))}

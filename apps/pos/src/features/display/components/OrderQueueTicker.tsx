@@ -81,7 +81,8 @@ export function OrderQueueTicker({
                 className="flex items-center justify-between rounded-2xl bg-success-soft border border-success px-8 py-5 transition-base"
                 data-testid="display-ready-row"
               >
-                <span className="text-4xl font-serif text-text-primary">
+                {/* Arbitrage 2026-08-23 — numéro de commande : mono partout. */}
+                <span className="text-4xl font-mono tabular-nums text-text-primary">
                   {formatOrderNumberShort(order.order_number)}
                 </span>
                 <span className="text-text-secondary text-sm">
@@ -117,7 +118,7 @@ export function OrderQueueTicker({
                   <span className="text-text-muted text-sm uppercase tracking-widest">
                     Order
                   </span>
-                  <span className="text-4xl font-serif text-text-primary">
+                  <span className="text-4xl font-mono tabular-nums text-text-primary">
                     {formatOrderNumberShort(order.order_number)}
                   </span>
                 </div>

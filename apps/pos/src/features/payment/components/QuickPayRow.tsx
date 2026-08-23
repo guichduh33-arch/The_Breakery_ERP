@@ -11,6 +11,8 @@ export interface QuickPayRowProps {
   isCashDraft: boolean;
   selectedMethod: PaymentMethod | null;
   total: number;
+  /** Montant saisi au brouillon (cash) — 0 quand rien n'est saisi. */
+  draftAmount: number;
   checkoutPending: boolean;
   cartEmpty: boolean;
   onProcess: () => void;
@@ -22,11 +24,21 @@ export function QuickPayRow({
   isCashDraft,
   selectedMethod,
   total,
+  draftAmount,
   checkoutPending,
   cartEmpty,
   onProcess,
   onSplitOpen,
 }: QuickPayRowProps) {
+  // Critique 2026-08-23 (P2) — le libellé était figé sur `total` : après une
+  // saisie cash SUPÉRIEURE à l'exact (Rp 100.000 sur un dû de Rp 70.000), le
+  // bouton le plus voyant de l'écran affichait encore « CASH EXACT — RP 70.000 »
+  // alors qu'il allait encaisser 100.000 et rendre 30.000. Le bouton dit
+  // désormais ce qu'il va faire : montant reçu + monnaie à rendre.
+  const cashOverpay = isCashDraft && draftAmount > total;
+  const fastPathLabel = cashOverpay
+    ? `Cash ${formatIdr(draftAmount)} — Change ${formatIdr(draftAmount - total)}`
+    : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatIdr(total)}`;
   // Critique run 4 lot 1 (adapt) — « Cash Exact — Rp 4.850.000 » +
   // « Split by Item » ne tiennent pas côte à côte à 390 px : empilés
   // pleine largeur sous md, chacun garde ses 56 px de haut.
@@ -40,9 +52,7 @@ export function QuickPayRow({
           data-testid="pay-cash-exact"
           className="flex-1 h-14 rounded-md bg-green hover:bg-green-hover active:bg-green-pressed text-green-fg font-bold uppercase tracking-widest text-sm transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
-          {checkoutPending
-            ? 'Processing…'
-            : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatIdr(total)}`}
+          {checkoutPending ? 'Processing…' : fastPathLabel}
         </button>
       ) : (
         <div className="flex-1 h-14 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">

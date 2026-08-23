@@ -27,8 +27,8 @@ export function useOfflineReplay(): void {
         if (res.replayed > 0) {
           toast.success(
             res.replayed === 1
-              ? '1 opération hors-ligne resynchronisée'
-              : `${res.replayed} opérations hors-ligne resynchronisées`,
+              ? '1 offline operation resynced'
+              : `${res.replayed} offline operations resynced`,
           );
           void queryClient.invalidateQueries({ queryKey: ['orders'] });
           void queryClient.invalidateQueries({ queryKey: ['products'] });
