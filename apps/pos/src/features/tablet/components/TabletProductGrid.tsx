@@ -128,7 +128,9 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
                 aria-hidden
                 className="rounded-lg overflow-hidden border border-border-subtle bg-bg-elevated motion-safe:animate-pulse"
               >
-                <div className="aspect-square bg-bg-input" />
+                {/* 4/3 comme la vraie carte (ProductCard) — un squelette carré
+                    provoquait un saut de mise en page au chargement. */}
+                <div className="aspect-[4/3] bg-bg-input" />
                 <div className="px-3 py-3 space-y-2">
                   <div className="h-4 w-3/4 rounded bg-bg-input" />
                   <div className="h-3 w-1/3 rounded bg-bg-input" />
