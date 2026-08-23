@@ -34,6 +34,8 @@ const buttonVariants = cva(
         //     de la rampe sombre (aucun de ses deux traits ne la tient), pas une
         //     régression de cette ligne. Pas de surcharge scopée : elle figerait
         //     le pire des deux états.
+        //     DETTE SOLDÉE le 2026-08-24 : --border-strong sombre est monté à
+        //     #746b5f (3,13:1 sur #231f1b) — arbitrage Mamat, critique POS.
         // Le SURVOL est `surface-4`, pas `bg-input` : c'est le cran « survol /
         // pressé » de la rampe dans les deux thèmes, et c'est déjà ce que rend
         // la chaîne de bandeau (`TOOLBAR_BTN_SECONDARY`). `bg-input` ne marquait

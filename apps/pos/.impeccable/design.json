@@ -38,13 +38,13 @@
         "role": "neutral",
         "displayName": "Brun Fournil",
         "canonical": "#12100e",
-        "tonalRamp": ["#0b0a09", "#12100e", "#1a1815", "#231f1b", "#2e2924", "#413a33", "#5c5449", "#7d7364"]
+        "tonalRamp": ["#0b0a09", "#12100e", "#1a1815", "#231f1b", "#2e2924", "#5c5449", "#746b5f", "#7d7364"]
       },
       "surface-2": {
         "role": "neutral",
         "displayName": "Brun Relevé",
         "canonical": "#1a1815",
-        "tonalRamp": ["#0b0a09", "#12100e", "#1a1815", "#231f1b", "#2e2924", "#413a33", "#5c5449", "#7d7364"]
+        "tonalRamp": ["#0b0a09", "#12100e", "#1a1815", "#231f1b", "#2e2924", "#5c5449", "#746b5f", "#7d7364"]
       },
       "text-primary": {
         "role": "neutral",
@@ -204,7 +204,7 @@
       "refersTo": "product-tile",
       "description": "L'objet le plus manipulé du produit. Ici dans son état « déjà au panier » : bordure et anneau dorés, pastille de quantité.",
       "html": "<button class=\"ds-tile ds-tile-in-cart\"><div class=\"ds-tile-media\"><span class=\"ds-tile-qty\">2</span></div><div class=\"ds-tile-body\"><div class=\"ds-tile-name\">Almond croissant</div><div class=\"ds-tile-price\">Rp 38,000</div></div></button>",
-      "css": ".ds-tile { display: block; width: 190px; padding: 0; text-align: left; background: var(--bg-elevated, #1a1815); border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-lg, 12px); overflow: hidden; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transition: transform 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms cubic-bezier(0.16,1,0.3,1), background-color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-tile:hover { transform: translateY(-2px); border-color: var(--border-strong, #413a33); background: var(--bg-overlay, #231f1b); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(0,0,0,0.55); } .ds-tile:active { transform: scale(0.97); } .ds-tile:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; } .ds-tile-in-cart { border-color: var(--gold-base, #d3ab5c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(211,171,92,0.5); } .ds-tile-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-input, #1f1c18); } .ds-tile-qty { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; background: var(--gold-base, #d3ab5c); color: var(--bg-base, #12100e); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 9999px; } .ds-tile-body { padding: 8px 10px; } .ds-tile-name { font-family: var(--font-body); font-size: 13px; font-weight: 500; line-height: 1.15; color: var(--text-primary, #f7f3ec); } .ds-tile-price { margin-top: 2px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold-base, #d3ab5c); }"
+      "css": ".ds-tile { display: block; width: 190px; padding: 0; text-align: left; background: var(--bg-elevated, #1a1815); border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-lg, 12px); overflow: hidden; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transition: transform 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms cubic-bezier(0.16,1,0.3,1), background-color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-tile:hover { transform: translateY(-2px); border-color: var(--border-strong, #746b5f); background: var(--bg-overlay, #231f1b); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(0,0,0,0.55); } .ds-tile:active { transform: scale(0.97); } .ds-tile:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; } .ds-tile-in-cart { border-color: var(--gold-base, #d3ab5c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(211,171,92,0.5); } .ds-tile-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-input, #1f1c18); } .ds-tile-qty { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; background: var(--gold-base, #d3ab5c); color: var(--bg-base, #12100e); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 9999px; } .ds-tile-body { padding: 8px 10px; } .ds-tile-name { font-family: var(--font-body); font-size: 13px; font-weight: 500; line-height: 1.15; color: var(--text-primary, #f7f3ec); } .ds-tile-price { margin-top: 2px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold-base, #d3ab5c); }"
     },
     {
       "name": "Kitchen Ticket (urgent)",
