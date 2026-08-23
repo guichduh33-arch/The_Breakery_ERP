@@ -46,6 +46,17 @@ describe('DiscountModal', () => {
     expect(pctTab).toHaveAttribute('aria-pressed', 'false');
   });
 
+  // Critique 2026-08-23 (P1) — l'état vide est invalide par construction : le
+  // bloc role="alert" ne doit PAS s'annoncer à l'ouverture, seulement après
+  // une première saisie.
+  it('shows no validation alert on open; alert appears after first input', () => {
+    render(<DiscountModal {...baseProps} />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    pressKey('5');
+    // Valeur posée mais raison encore vide → l'erreur peut maintenant se dire.
+    expect(screen.getByRole('alert')).toHaveTextContent(/reason required/i);
+  });
+
   it('numpad input updates value display', () => {
     render(<DiscountModal {...baseProps} />);
     pressKey('1');
