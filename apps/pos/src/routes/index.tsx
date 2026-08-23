@@ -5,6 +5,7 @@ import LoginPage from '@/pages/Login';
 import PosPage from '@/pages/Pos';
 import { useAuthStore } from '@/stores/authStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
+import { isNativeShell } from '@/lib/nativeShell';
 
 const KdsPage = lazy(() => import('@/pages/Kds'));
 const TabletLayout = lazy(() => import('@/pages/tablet/TabletLayout'));
@@ -147,7 +148,10 @@ export function AppRoutes() {
           }
         />
       </Route>
-      <Route path="*" element={<Navigate to="/pos" replace />} />
+      {/* La coquille Capacitor (ADR-029) est une tablette de salle : elle
+          démarre sur /tablet. Sur le web, rien ne change — /pos reste la
+          surface par défaut. */}
+      <Route path="*" element={<Navigate to={isNativeShell() ? '/tablet' : '/pos'} replace />} />
     </Routes>
   );
 }
