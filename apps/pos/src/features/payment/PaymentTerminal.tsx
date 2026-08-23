@@ -197,6 +197,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
               isCashDraft={isCashDraft}
               selectedMethod={selectedMethod}
               total={total}
+              draftAmount={draftAmount}
               checkoutPending={checkoutPending}
               cartEmpty={cart.items.length === 0}
               onProcess={() => { void handleProcess(); }}
