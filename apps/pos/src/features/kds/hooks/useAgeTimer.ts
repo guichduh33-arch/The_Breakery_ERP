@@ -47,12 +47,10 @@ function ensureEntry(periodMs: number): ClockEntry {
 function subscribe(periodMs: number, listener: (now: number) => void): () => void {
   const entry = ensureEntry(periodMs);
   entry.listeners.add(listener);
-  if (entry.intervalId === null) {
-    entry.intervalId = window.setInterval(() => {
-      entry.now = Date.now();
-      entry.listeners.forEach((l) => l(entry.now));
-    }, periodMs);
-  }
+  entry.intervalId ??= window.setInterval(() => {
+    entry.now = Date.now();
+    entry.listeners.forEach((l) => l(entry.now));
+  }, periodMs);
   return () => {
     entry.listeners.delete(listener);
     if (entry.listeners.size === 0 && entry.intervalId !== null) {

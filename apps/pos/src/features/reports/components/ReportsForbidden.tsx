@@ -21,7 +21,7 @@ export function ReportsForbidden(): JSX.Element {
           size="lg"
         />
         <div className="mt-6 flex justify-center">
-          <Button variant="secondary" onClick={() => navigate('/pos')}>
+          <Button variant="secondary" onClick={() => { void navigate('/pos'); }}>
             Back to POS
           </Button>
         </div>

@@ -67,7 +67,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
           variant="ghost"
           size="icon"
           aria-label="Close reports"
-          onClick={() => navigate('/pos')}
+          onClick={() => { void navigate('/pos'); }}
           data-testid="pos-reports-close"
         >
           <X className="h-5 w-5" aria-hidden />
@@ -99,7 +99,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
             <button
               key={t.id}
               type="button"
-              onClick={() => navigate(t.path)}
+              onClick={() => { void navigate(t.path); }}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'inline-flex shrink-0 items-center gap-2 px-4 h-12 -mb-px',

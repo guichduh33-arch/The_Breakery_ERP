@@ -58,9 +58,7 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
         el.dataset.vkp
       ) {
         // Capturé AVANT l'écrasement, restauré par close().
-        if (el.dataset.vkpPrevInputmode === undefined) {
-          el.dataset.vkpPrevInputmode = el.getAttribute('inputmode') ?? '';
-        }
+        el.dataset.vkpPrevInputmode ??= el.getAttribute('inputmode') ?? '';
         el.setAttribute('inputmode', 'none'); // suppress native iOS keyboard
         openFor(el, el.dataset.vkp as VkpLayout);
       }

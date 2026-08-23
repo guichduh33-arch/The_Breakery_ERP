@@ -161,10 +161,10 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
       setPending(null);
     }
     // groups.length > 0 → the ModifierModal opens; nothing to add here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- addWithPrice is a
-    // stable closure recreated each render; depending on it would re-run the
-    // effect on every render. The (pending, query-success, data) tuple fully
-    // captures when an auto-add should fire.
+    // addWithPrice is a stable closure recreated each render; depending on it
+    // would re-run the effect on every render. The (pending, query-success,
+    // data) tuple fully captures when an auto-add should fire.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending, modifiersQuery.isSuccess, modifiersQuery.data]);
 
   const groups = modifiersQuery.data ?? [];

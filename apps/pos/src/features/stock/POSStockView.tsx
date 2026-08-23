@@ -84,7 +84,9 @@ export default function POSStockView(): JSX.Element {
     }
   }
 
-  const rows = products.data ?? [];
+  // useMemo : `products.data ?? []` créait un tableau neuf à chaque render et
+  // invalidait les 3 useMemo dérivés (lint react-hooks/exhaustive-deps).
+  const rows = useMemo(() => products.data ?? [], [products.data]);
   const isMutating =
     receive.isPending ||
     returnToKitchen.isPending ||
