@@ -124,6 +124,7 @@ export function BottomActionBar({
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidPending, setVoidPending] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Close the More popover on outside click + Escape.
   useEffect(() => {
@@ -137,7 +138,12 @@ export function BottomActionBar({
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setMoreOpen(false);
+      if (e.key === 'Escape') {
+        setMoreOpen(false);
+        // Audit 2026-08-24 (a11y P2) — sans ça, Escape démontait l'élément
+        // focus et renvoyait l'utilisateur clavier sur <body>.
+        moreTriggerRef.current?.focus();
+      }
     }
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
@@ -250,8 +256,14 @@ export function BottomActionBar({
     <div
       // Règle du Filet (critique run 3) : la barre se détache par sa surface et
       // son border-t, pas par une ombre portée — supprimée.
+      // Audit 2026-08-24 (responsive P1) — safe-area : la barre porte Checkout,
+      // qui passait sous la barre gestuelle Android en Capacitor.
       className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap z-50"
-      role="toolbar"
+      style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom, 0px))' }}
+      // Audit 2026-08-24 (a11y P2) — role=toolbar promettait la navigation aux
+      // flèches (non câblée) ; group dit ce que le clavier sait faire, même
+      // doctrine que le popover More et les onglets du panier.
+      role="group"
       aria-label="Order actions"
     >
       {/* ── Left group : management ─────────────────────────────────────────
@@ -333,8 +345,11 @@ export function BottomActionBar({
         <div className="relative" ref={moreRef}>
           <button
             type="button"
+            ref={moreTriggerRef}
             className={GHOST_BTN}
             aria-expanded={moreOpen}
+            aria-haspopup="true"
+            aria-controls="more-actions-popover"
             onClick={() => setMoreOpen((o) => !o)}
           >
             <MoreHorizontal className="h-4 w-4 text-gold" aria-hidden />
@@ -353,6 +368,7 @@ export function BottomActionBar({
                Escape (WCAG 4.1.2) ; un groupe de boutons dit ce que le clavier
                sait faire : Tab + Enter. */
             <div
+              id="more-actions-popover"
               role="group"
               aria-label="More actions"
               className="absolute bottom-full left-0 mb-2 w-60 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"

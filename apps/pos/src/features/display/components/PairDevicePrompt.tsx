@@ -54,10 +54,11 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
           activate once the code is accepted.
         </p>
 
-        <label className="block text-text-muted text-xs uppercase tracking-widest mb-2">
+        <label htmlFor="display-pair-code" className="block text-text-muted text-xs uppercase tracking-widest mb-2">
           Pairing code
         </label>
         <input
+          id="display-pair-code"
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -67,10 +68,11 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
           placeholder="e.g. display-front-1"
         />
 
-        <label className="block text-text-muted text-xs uppercase tracking-widest mb-2">
+        <label htmlFor="display-pair-label" className="block text-text-muted text-xs uppercase tracking-widest mb-2">
           Device label (optional)
         </label>
         <input
+          id="display-pair-label"
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}

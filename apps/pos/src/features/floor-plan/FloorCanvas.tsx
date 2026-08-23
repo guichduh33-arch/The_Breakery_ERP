@@ -40,11 +40,16 @@ export function FloorCanvas({ tables, renderTable, gapClass }: FloorCanvasProps)
 
   return (
     <div className="space-y-6">
+      {/* Audit 2026-08-24 (responsive P0) — minmax(0,1fr) laissait les 12
+          colonnes rétrécir sous la cible tactile (23 px par table à 390 px de
+          large). Plancher à 3.5rem : en dessous, la grille garde sa taille et
+          défile dans le conteneur overflow-auto du parent au lieu d'écraser
+          les tables. */}
       <div
         data-testid="floor-grid"
         className="grid gap-1.5"
         style={{
-          gridTemplateColumns: `repeat(${FLOOR_GRID_COLS}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${FLOOR_GRID_COLS}, minmax(3.5rem, 1fr))`,
           gridTemplateRows: `repeat(${FLOOR_GRID_ROWS}, minmax(3.5rem, 5.5rem))`,
         }}
       >

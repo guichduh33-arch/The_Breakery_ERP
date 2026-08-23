@@ -8,10 +8,12 @@ interface DiscountButtonProps {
 }
 
 export function DiscountButton({ onClick, hasDiscount }: DiscountButtonProps) {
+  // Audit 2026-08-24 (responsive P1) — la remise modifie le montant
+  // encaissé : Règle des 56, pas le h-9 de size sm.
   return (
     <Button
       variant={hasDiscount ? 'primary' : 'secondary'}
-      size="sm"
+      size="md"
       onClick={onClick}
       className="w-full"
       aria-label="Apply cart discount"

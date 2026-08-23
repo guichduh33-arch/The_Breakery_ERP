@@ -47,8 +47,12 @@ export function FullScreenModal({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
+        {/* No backdrop-blur here: the Content below is opaque and covers the
+            full viewport, so a full-screen backdrop-filter is pure GPU cost
+            with zero visible effect (audit 2026-08-24 P1). CenterModal keeps
+            its blur — there the backdrop is actually visible. */}
         <DialogPrimitive.Overlay
-          className="fixed inset-0 bg-backdrop backdrop-blur-md z-50 motion-reduce:animate-none motion-reduce:transition-none"
+          className="fixed inset-0 bg-backdrop z-50 motion-reduce:animate-none motion-reduce:transition-none"
         />
         <DialogPrimitive.Content
           // When no description child is rendered, explicitly pass

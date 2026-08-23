@@ -85,7 +85,7 @@ export function ItemAssignStep({
       {/* LEFT — order items */}
       <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible">
         <div className="flex items-baseline justify-between mb-4">
-          <h3 className="text-xs uppercase tracking-widest text-gold">Order Items</h3>
+          <h3 className="text-xs uppercase tracking-widest text-text-muted">Order Items</h3>
           <span className="text-xs text-text-secondary">Tap item to assign to selected payer</span>
         </div>
 
@@ -99,77 +99,78 @@ export function ItemAssignStep({
             // Per-payer assignment count for THIS line
             const perPayerCount = activePayer.items.find((a) => a.cartItemId === line.id)?.quantity ?? 0;
 
+            // Audit 2026-08-24 (a11y P1) — la ligne épuisée était un <button
+            // disabled> contenant un span role="button" (le « − ») : contrôle
+            // imbriqué dans un sous-arbre inerte, inatteignable au clavier
+            // comme au tap. La carte épuisée est désormais un <div> et le
+            // « − » un vrai <button> vivant.
+            const cardHeader = (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-text-primary font-semibold leading-tight">{line.name}</div>
+                    {line.modifiers.length > 0 && (
+                      <div className="text-xs text-text-secondary mt-0.5 truncate">
+                        {line.modifiers.map((m) => m.option_label).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right text-sm whitespace-nowrap">
+                    <Currency amount={unitLine * line.quantity} className="text-text-primary" />
+                    <span className="text-text-secondary ml-1">×{line.quantity}</span>
+                  </div>
+                </div>
+              </>
+            );
             return (
               <li key={line.id}>
-                <button
-                  type="button"
-                  disabled={exhausted}
-                  onClick={() => onAssign(line.id)}
-                  data-testid={`split-assign-line-${line.id}`}
-                  className={cn(
-                    'w-full text-left rounded-md border p-3 transition-colors',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
-                    exhausted
-                      ? 'bg-bg-elevated border-border-subtle opacity-60 cursor-not-allowed'
-                      : 'bg-bg-base border-border-subtle hover:border-gold',
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-text-primary font-semibold leading-tight">{line.name}</div>
-                      {line.modifiers.length > 0 && (
-                        <div className="text-xs text-text-secondary mt-0.5 truncate">
-                          {line.modifiers.map((m) => m.option_label).join(' · ')}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right text-sm whitespace-nowrap">
-                      <Currency amount={unitLine * line.quantity} className="text-text-primary" />
-                      <span className="text-text-secondary ml-1">×{line.quantity}</span>
+                {exhausted ? (
+                  <div
+                    data-testid={`split-assign-line-${line.id}`}
+                    className="w-full text-left rounded-md border p-3 bg-bg-elevated border-border-subtle opacity-60"
+                  >
+                    {cardHeader}
+                    <div className="mt-2 flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest',
+                          activeColors.bg + ' ' + activeColors.border + ' ' + activeColors.text,
+                        )}
+                      >
+                        <span className={cn('h-1.5 w-1.5 rounded-full', activeColors.dot)} aria-hidden />
+                        {activePayer.label} ×{perPayerCount}
+                        {perPayerCount > 0 && (
+                          <button
+                            type="button"
+                            aria-label="Unassign one unit"
+                            onClick={() => onUnassign(line.id, activePayerId)}
+                            className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                          >
+                            −
+                          </button>
+                        )}
+                      </span>
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest',
-                        exhausted
-                          ? activeColors.bg + ' ' + activeColors.border + ' ' + activeColors.text
-                          : 'border-cat-violet/60 bg-cat-violet/10 text-cat-violet',
-                      )}
-                    >
-                      {exhausted ? (
-                        <>
-                          <span className={cn('h-1.5 w-1.5 rounded-full', activeColors.dot)} aria-hidden />
-                          {activePayer.label} ×{perPayerCount}
-                          {perPayerCount > 0 && (
-                            <span
-                              role="button"
-                              aria-label="Unassign one unit"
-                              tabIndex={0}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  onUnassign(line.id, activePayerId);
-                                }
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUnassign(line.id, activePayerId);
-                              }}
-                              className="ml-1 text-text-secondary hover:text-text-primary cursor-pointer"
-                            >
-                              −
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-2.5 w-2.5" aria-hidden /> {remaining} left
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onAssign(line.id)}
+                    data-testid={`split-assign-line-${line.id}`}
+                    className={cn(
+                      'w-full text-left rounded-md border p-3 transition-colors',
+                      'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
+                      'bg-bg-base border-border-subtle hover:border-gold',
+                    )}
+                  >
+                    {cardHeader}
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold uppercase tracking-widest border-cat-violet/60 bg-cat-violet/10 text-cat-violet">
+                        <Plus className="h-2.5 w-2.5" aria-hidden /> {remaining} left
+                      </span>
+                    </div>
+                  </button>
+                )}
               </li>
             );
           })}
@@ -191,7 +192,9 @@ export function ItemAssignStep({
                 onClick={() => onSetActivePayer(p.id)}
                 aria-pressed={isActive}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors',
+                  // Audit 2026-08-24 (responsive P1) — affecter un article au
+                  // mauvais payeur est une erreur d'argent : plancher 44 px.
+                  'inline-flex items-center gap-2 rounded-md px-3 py-2 min-h-touch-min text-xs font-bold uppercase tracking-widest transition-colors',
                   isActive
                     ? cn(colors.text, colors.bg, 'border-b-2', colors.border.replace('border-', 'border-b-'))
                     : 'text-text-muted hover:text-text-primary',
@@ -212,7 +215,7 @@ export function ItemAssignStep({
               type="button"
               onClick={onAddPayer}
               aria-label="Add payer"
-              className="inline-flex items-center justify-center h-7 w-7 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+              className="inline-flex items-center justify-center h-touch-min w-touch-min rounded-md text-text-muted hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
             >
               <Plus className="h-4 w-4" aria-hidden />
             </button>

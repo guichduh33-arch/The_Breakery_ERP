@@ -378,6 +378,9 @@ export function CloseShiftModal({
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
+              // Audit 2026-08-24 (a11y P1) — le placeholder n'est pas un nom
+              // accessible : il disparaît à la première frappe.
+              aria-label="Manager PIN (6 digits)"
               placeholder="Manager PIN (6 digits)"
               className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold"
               value={managerPin}

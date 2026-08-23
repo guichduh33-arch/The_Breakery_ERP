@@ -65,7 +65,7 @@ export function PerPayerCashStep({
       {/* LEFT — payer list */}
       <aside className="bg-bg-base p-5 overflow-y-auto max-md:overflow-visible">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs uppercase tracking-widest text-gold">Payers</h3>
+          <h3 className="text-xs uppercase tracking-widest text-text-muted">Payers</h3>
           <Button variant="ghost" size="sm" onClick={onBackToMethod}>
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" aria-hidden />
             Method
@@ -144,7 +144,7 @@ export function PerPayerCashStep({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Enter amount display */}
           <div>
-            <div className="text-xs uppercase tracking-widest text-gold mb-2">Enter Amount</div>
+            <div className="text-xs uppercase tracking-widest text-text-muted mb-2">Enter Amount</div>
             <div className="bg-bg-input border-2 border-gold rounded-md py-6 text-center">
               {/* Critique run 3 (polish) — saisie formatée dès la frappe, une seule graphie. */}
               <span className="font-mono tabular-nums text-3xl text-text-primary">
@@ -158,13 +158,16 @@ export function PerPayerCashStep({
             )}
             {/* Preset grid */}
             <div className="mt-4 space-y-2">
-              <div className="text-xs uppercase tracking-widest text-gold">Amount Received</div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="text-xs uppercase tracking-widest text-text-muted">Amount Received</div>
+              {/* Audit 2026-08-24 (responsive P1) — Regle des 56 : mêmes presets
+                  qu'en paiement simple (TenderDraftPanel, min-h-touch-comfy),
+                  et 2 colonnes sous md pour que « Exact (Rp 4.850.000) » tienne. */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => onCashChange(activePayer.id, String(total))}
                   className={cn(
-                    'rounded-md py-3 text-xs font-bold uppercase tracking-widest border',
+                    'min-h-touch-comfy rounded-md py-3 px-2 text-xs font-bold uppercase tracking-widest border',
                     received === total
                       ? 'bg-gold text-gold-fg border-gold'
                       : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
@@ -177,7 +180,7 @@ export function PerPayerCashStep({
                     key={q}
                     type="button"
                     onClick={() => onCashChange(activePayer.id, String(q))}
-                    className="rounded-md py-3 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
+                    className="min-h-touch-comfy rounded-md py-3 px-2 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
                   >
                     <Currency amount={q} />
                   </button>
@@ -188,7 +191,7 @@ export function PerPayerCashStep({
 
           {/* Numpad */}
           <div>
-            <div className="text-xs uppercase tracking-widest text-gold mb-2">Cash Received</div>
+            <div className="text-xs uppercase tracking-widest text-text-muted mb-2">Cash Received</div>
             <div className="bg-bg-input border border-border-subtle rounded-md px-4 py-3 mb-3 text-right">
               <span className="font-mono tabular-nums text-2xl text-text-primary">
                 {formatIdr(received)}

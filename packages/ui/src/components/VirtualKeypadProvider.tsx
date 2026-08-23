@@ -35,6 +35,16 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
     setLayout(l);
   }, []);
   const close = useCallback(() => {
+    // Audit 2026-08-24 (a11y P1) — restaurer l'inputmode d'origine : le 'none'
+    // posé au focusin restait pour toujours, et si l'overlay ne se remontait
+    // pas (champ déjà focus), le champ n'avait PLUS AUCUN clavier sur tablette.
+    const el = targetRef.current;
+    if (el) {
+      const prev = el.dataset.vkpPrevInputmode;
+      if (prev === undefined || prev === '') el.removeAttribute('inputmode');
+      else el.setAttribute('inputmode', prev);
+      delete el.dataset.vkpPrevInputmode;
+    }
     setLayout(null);
     setPortalEl(null);
     targetRef.current = null;
@@ -47,6 +57,8 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
         (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) &&
         el.dataset.vkp
       ) {
+        // Capturé AVANT l'écrasement, restauré par close().
+        el.dataset.vkpPrevInputmode ??= el.getAttribute('inputmode') ?? '';
         el.setAttribute('inputmode', 'none'); // suppress native iOS keyboard
         openFor(el, el.dataset.vkp as VkpLayout);
       }

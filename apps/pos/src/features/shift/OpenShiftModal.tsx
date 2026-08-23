@@ -251,7 +251,12 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 <SectionLabel as="div">Opening Cash — count by denomination</SectionLabel>
                 <DenominationGrid value={denoms} onChange={setDenoms} />
                 <div className="text-center pt-1">
-                  <Currency amount={amount} emphasis="gold" className="text-2xl font-display" />
+                  {/* Audit 2026-08-24 (theming P1) — font-display écrasait le
+                      font-mono de Currency via twMerge (même groupe
+                      font-family) : le montant du fond de caisse rendait en
+                      Playfair, chiffres proportionnels qui sautent à la
+                      frappe. Règle de la Serif Réservée. */}
+                  <Currency amount={amount} emphasis="gold" className="text-2xl" />
                 </div>
               </section>
             ) : (
@@ -275,7 +280,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 <Currency
                   amount={amount}
                   emphasis="gold"
-                  className="text-2xl font-display"
+                  className="text-2xl"
                 />
               </div>
             </section>
@@ -295,7 +300,10 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                       type="button"
                       onClick={() => handleQuickAmount(q)}
                       className={cn(
-                        'rounded-md py-2 text-xs font-mono tabular-nums border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
+                        // Audit 2026-08-24 (responsive P1) — Regle des 56 : le fond
+                        // de caisse d'ouverture est un geste d'argent (CloseShift
+                        // est deja a size lg).
+                        'min-h-touch-comfy rounded-md py-2 text-xs font-mono tabular-nums border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
                         selected
                           ? 'border-gold bg-gold-soft text-gold'
                           : 'bg-bg-input border-border-subtle text-text-primary hover:bg-bg-overlay',
@@ -334,6 +342,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
             <section className="space-y-2">
               <SectionLabel as="div">Notes (optional)</SectionLabel>
               <textarea
+                aria-label="Notes (optional)"
                 className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold resize-none"
                 rows={2}
                 value={notes}

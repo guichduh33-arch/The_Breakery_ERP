@@ -134,8 +134,12 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
 
   return (
     <>
-      <FullScreenModal open={open && !receipt} onOpenChange={(o) => { if (!o) handleClose(); }}>
-        <div className="flex flex-col h-screen bg-bg-base" role="dialog" aria-label="Order history">
+      <FullScreenModal
+        open={open && !receipt}
+        onOpenChange={(o) => { if (!o) handleClose(); }}
+        accessibleTitle="Order history"
+      >
+        <div className="flex flex-col h-dvh bg-bg-base">
           <header className="h-16 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
             <div className="flex items-center gap-3">
               <div
@@ -156,8 +160,12 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
             </Button>
           </header>
 
-          <div className="flex-1 grid grid-cols-[1fr_400px] overflow-hidden">
-            <section className="overflow-y-auto p-4 space-y-4">
+          {/* Audit 2026-08-24 (responsive P0) — la grille [1fr_400px] sans
+              breakpoint écrasait la liste à 0 sous 400 px de large. Sous lg :
+              master-detail à un seul volet — la liste, puis le détail plein
+              écran quand une commande est sélectionnée, avec retour. */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] overflow-hidden">
+            <section className={cn('overflow-y-auto p-4 space-y-4', selectedId && 'max-lg:hidden')}>
               <OrderHistoryStats stats={stats} />
 
               <SectionLabel size="xs" as="h3">Transactions</SectionLabel>
@@ -239,13 +247,24 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
               </ul>
             </section>
 
-            <aside className="overflow-hidden">
+            <aside className={cn('overflow-hidden flex flex-col', !selectedId && 'max-lg:hidden')}>
               {selectedId && detail.data ? (
-                <OrderDetailDrawer
-                  order={detail.data}
-                  onVoidClick={() => setVoidOpen(true)}
-                  onRefundClick={() => setRefundOpen(true)}
-                />
+                <>
+                  <div className="lg:hidden border-b border-border-subtle bg-bg-elevated px-4 py-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setSelectedId(null)}
+                      className="min-h-touch-min"
+                    >
+                      ← Back to list
+                    </Button>
+                  </div>
+                  <OrderDetailDrawer
+                    order={detail.data}
+                    onVoidClick={() => setVoidOpen(true)}
+                    onRefundClick={() => setRefundOpen(true)}
+                  />
+                </>
               ) : (
                 <div className="h-full grid place-items-center text-text-muted text-sm border-l border-border-subtle bg-bg-elevated">
                   Select an order

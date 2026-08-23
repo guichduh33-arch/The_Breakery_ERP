@@ -354,7 +354,9 @@ export function CustomerAttachModal({
           </button>
         </header>
 
-        <div className="grid grid-cols-4 gap-2 px-6 pt-4">
+        {/* Audit 2026-08-24 (responsive P2) — 2 colonnes sous sm : à 390 px,
+            « FAVORITES » + icône (~99 px) débordait de sa cellule de ~78 px. */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-6 pt-4">
           <TabButton
             active={tab === 'search'}
             onClick={() => setTab('search')}

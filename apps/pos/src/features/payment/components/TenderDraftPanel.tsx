@@ -35,7 +35,7 @@ export function TenderDraftPanel({
     <div className="space-y-4 mb-4">
       {/* ENTER AMOUNT — big centered display */}
       <div>
-        <SectionLabel as="div" className="text-gold mb-2 text-center">
+        <SectionLabel as="div" className="mb-2 text-center">
           Enter Amount
         </SectionLabel>
         {/* Critique run 3 (résiduel du lot 4) — saisie formatée dès la frappe,
@@ -58,7 +58,7 @@ export function TenderDraftPanel({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* AMOUNT RECEIVED preset grid */}
         <div>
-          <SectionLabel as="div" className="text-gold mb-2">Amount Received</SectionLabel>
+          <SectionLabel as="div" className="mb-2">Amount Received</SectionLabel>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setCashReceivedStr(String(remaining))}
@@ -73,7 +73,9 @@ export function TenderDraftPanel({
                   : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
               )}
             >
-              Exact ({formatIdr(remaining)})
+              {/* Audit 2026-08-24 (theming P3) — Règle du Chiffre Immobile :
+                  le montant du bouton Exact était le seul en Inter de l'écran. */}
+              Exact (<span className="font-mono tabular-nums normal-case">{formatIdr(remaining)}</span>)
             </button>
             {isCashDraft && quickAmounts.filter((q) => q >= remaining).slice(0, 4).map((q) => (
               <button
@@ -89,7 +91,7 @@ export function TenderDraftPanel({
 
         {/* Numpad */}
         <div>
-          <SectionLabel as="div" className="text-gold mb-2">Cash Received</SectionLabel>
+          <SectionLabel as="div" className="mb-2">Cash Received</SectionLabel>
           <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
         </div>
       </div>

@@ -61,13 +61,16 @@ export function VoidOrderModal({
     }
   }
 
+  // Audit 2026-08-24 (a11y P2) — le titre vit sur le FullScreenModal (qui
+  // porte déjà role dialog + aria-modal) ; le role="alertdialog" interne
+  // créait deux dialogues empilés dans l'arbre a11y.
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <div
-        role="alertdialog"
-        aria-label="Void order"
-        className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
-      >
+    <FullScreenModal
+      open={open}
+      onOpenChange={(o) => { if (!o) handleClose(); }}
+      accessibleTitle="Void order"
+    >
+      <div className="flex flex-col items-center justify-center min-h-dvh bg-bg-base p-6">
         <div className="w-full max-w-md space-y-6 rounded-lg border border-red-as-text bg-bg-elevated p-8">
           <div className="flex items-center justify-between">
             <div>

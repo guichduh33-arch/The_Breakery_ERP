@@ -34,7 +34,12 @@ export function useHeldOrdersQuery() {
         .from('orders')
         .select('id, order_number, table_number, notes, total, created_at, status, sent_to_kitchen_at')
         .or('is_held.eq.true,and(status.eq.pending_payment,created_via.eq.pos)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        // Audit 2026-08-24 (perf P1) — sans borne, cette requête rapatriait
+        // TOUTES les pending_payment jamais soldées depuis la mise en prod,
+        // en continu (elle alimente le badge de la barre d'action). 100 couvre
+        // largement les ardoises vivantes d'une journée de service.
+        .limit(100);
       if (error) throw error;
       return data ?? [];
     },

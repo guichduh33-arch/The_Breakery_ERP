@@ -2,7 +2,7 @@
 //
 // Session 43 — Wave E (P2-1, P2-2):
 //   P2-1 — the LOCAL void (cart not yet fired to the kitchen) no longer wipes
-//          the cart on a single tap: a `role="alertdialog"` confirmation is
+//          the cart on a single tap: a named dialog confirmation is
 //          shown first. Confirm wipes; Cancel keeps the cart intact.
 //          (The post-kitchen manager-PIN flow is untouched — see
 //          void-order.smoke.test.tsx / void-post-kitchen.smoke.test.tsx.)
@@ -71,7 +71,7 @@ describe('Void — under More, always reason + manager PIN', () => {
     render(wrapper(<BottomActionBar />));
     openVoid();
 
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog', { name: /void order/i });
     expect(dialog).toBeInTheDocument();
     expect(dialog).toHaveAccessibleName();
     expect(screen.getByLabelText(/void reason/i)).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('Void — under More, always reason + manager PIN', () => {
     fireEvent.click(screen.getByTestId('void-modal-cancel'));
 
     expect(useCartStore.getState().cart.items).toHaveLength(1);
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /void order/i })).not.toBeInTheDocument();
   });
 });
 

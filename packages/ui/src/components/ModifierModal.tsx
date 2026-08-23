@@ -95,10 +95,6 @@ export function ModifierModal({
     () => validateSelections(groups, selections),
     [groups, selections],
   );
-  const errorGroups = useMemo(
-    () => new Set(errors.map((e) => e.group_name)),
-    [errors],
-  );
   const hasError = errors.length > 0;
   const total = product.retail_price + calculatePriceAdjustment(selections);
 
@@ -181,7 +177,7 @@ export function ModifierModal({
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="h-8 w-8 grid place-items-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+            className="h-11 w-11 grid place-items-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
@@ -196,23 +192,30 @@ export function ModifierModal({
           ) : null}
 
           {groups.map((group) => {
-            const showRequiredError = errorGroups.has(group.group_name);
+            // Audit 2026-08-24 (a11y P1) — le groupe est un vrai role="group"
+            // nommé par son titre, et « required » vit DANS le nom du groupe
+            // (sr-only) au lieu d'un aria-label flottant sur l'astérisque.
+            const headingId = `mod-group-${group.group_name.replace(/\s+/g, '-')}`;
             return (
-              <section key={group.group_name} className="space-y-2">
-                <div className="flex items-center gap-1.5">
+              <section
+                key={group.group_name}
+                role="group"
+                aria-labelledby={headingId}
+                className="space-y-2"
+              >
+                <div id={headingId} className="flex items-center gap-1.5">
                   <span className="text-xs font-bold uppercase tracking-widest text-text-primary">
                     {group.group_name}
                   </span>
                   {group.group_required && (
-                    <span
-                      aria-label="required"
-                      className={cn(
-                        'text-base leading-none',
-                        showRequiredError ? 'text-danger' : 'text-danger/80',
-                      )}
-                    >
-                      *
-                    </span>
+                    <>
+                      {/* text-danger plein : la variante /80 est une classe
+                          morte (alpha impossible sur token var() nu). */}
+                      <span aria-hidden className="text-base leading-none text-danger">
+                        *
+                      </span>
+                      <span className={SR_ONLY}>(required)</span>
+                    </>
                   )}
                 </div>
 
@@ -230,7 +233,10 @@ export function ModifierModal({
                           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                           selected
                             ? 'border-gold bg-bg-input text-text-primary'
-                            : 'border-border-subtle bg-bg-input/80 text-text-secondary hover:text-text-primary hover:border-border-strong',
+                            // bg-bg-input plein — la variante /80 est une classe
+                            // morte (alpha sur token nu) : les tuiles rendaient
+                            // SANS fond, délimitées par une bordure à ~1,1:1.
+                            : 'border-border-subtle bg-bg-input text-text-secondary hover:text-text-primary hover:border-border-strong',
                         )}
                       >
                         {group.group_type === 'multi_select' && (
@@ -274,6 +280,20 @@ export function ModifierModal({
 
         {/* Footer CTA */}
         <footer className="px-5 pb-5">
+          {/* Audit 2026-08-24 (a11y P1) — la validation était muette : le seul
+              signal était un astérisque et un bouton disabled (donc hors du
+              parcours Tab). Le message nomme les groupes manquants, pour tout
+              le monde — et aria-live l'annonce aux lecteurs d'écran. */}
+          {hasError && (
+            <p
+              role="status"
+              aria-live="polite"
+              data-testid="modifier-required-hint"
+              className="mb-3 text-sm text-danger"
+            >
+              Required: choose {errors.map((e) => e.group_name).join(', ')}
+            </p>
+          )}
           <Button
             variant="gold"
             size="lg"
@@ -317,6 +337,7 @@ function ProductThumb({
           alt=""
           className="h-full w-full object-cover"
           loading="lazy"
+          decoding="async"
         />
       ) : (
         <span className="text-text-muted text-xs font-display uppercase">

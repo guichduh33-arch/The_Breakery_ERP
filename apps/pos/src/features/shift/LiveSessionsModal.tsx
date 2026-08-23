@@ -52,6 +52,7 @@ export function LiveSessionsModal({ open, onClose }: LiveSessionsModalProps): JS
     <CenterModal
       open={open}
       onOpenChange={(o) => !o && onClose()}
+      title="Live sessions"
       className="w-[min(640px,92vw)]"
       data-testid="live-sessions-modal"
     >
@@ -129,9 +130,12 @@ function LiveSessionRow({ session }: { session: LiveSession }): JSX.Element {
     >
       <div className="flex items-center justify-between gap-2">
         <div className="inline-flex items-center gap-2 min-w-0">
+          {/* Audit 2026-08-24 (theming P2) — le halo était figé sur un vert
+              étranger au thème (#2db348) : liseré désaccordé de sa propre
+              pastille. color-mix le dérive du token vivant. */}
           <span
             aria-hidden
-            className="h-2 w-2 rounded-full bg-green shadow-[0_0_6px_rgba(45,179,72,0.8)]"
+            className="h-2 w-2 rounded-full bg-green shadow-[0_0_6px_color-mix(in_srgb,var(--green-base)_80%,transparent)]"
           />
           <span className="font-mono text-sm font-bold text-text-primary truncate">
             {session.terminal_label}

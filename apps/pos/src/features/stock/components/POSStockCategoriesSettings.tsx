@@ -54,6 +54,7 @@ export function POSStockCategoriesSettings({
     <CenterModal
       open={open}
       onOpenChange={(o) => !o && onClose()}
+      title="Display stock categories"
       data-testid="pos-stock-categories-modal"
     >
       <header className="px-5 py-4 flex items-start justify-between border-b border-border-subtle">

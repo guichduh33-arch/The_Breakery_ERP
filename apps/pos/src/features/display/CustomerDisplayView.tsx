@@ -199,6 +199,7 @@ function LineRow({ line }: LineRowProps): JSX.Element {
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <BrandMark size="md" />
@@ -319,7 +320,9 @@ function TotalsBand({ totals }: TotalsBandProps): JSX.Element {
         )}
       </div>
       <div className="flex flex-col items-end gap-1">
-        <SectionLabel size="sm" className="text-gold">
+        {/* Audit 2026-08-24 (theming P2) — Règle de l'Encre Rare : l'or
+            appartient au MONTANT juste en dessous, pas au libellé de chrome. */}
+        <SectionLabel size="sm">
           Total
         </SectionLabel>
         <span data-testid="display-grand-total">

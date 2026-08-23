@@ -59,20 +59,26 @@ export function UndoBumpToast({ orderItemId, bumpedAtMs, onClose }: UndoBumpToas
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3 shadow-lg"
     >
+      {/* Audit 2026-08-24 (a11y P2) — l'annonce se fait UNE fois (message
+          stable) ; le compte à rebours saturait la file aria-live pendant 60 s.
+          Le compteur visuel est aria-hidden. */}
       <span className="text-sm text-text-secondary">
-        Bumped. Undo in{' '}
-        <span className="font-mono font-bold text-text-primary">{remainingSec}s</span>
+        <span role="status">Bumped. Undo available.</span>{' '}
+        <span className="font-mono font-bold text-text-primary tabular-nums" aria-hidden>
+          {remainingSec}s
+        </span>
       </span>
       <button
         type="button"
         onClick={handleUndo}
         disabled={undo.isPending}
         // Critique run 4 lot 7 — contrat -fg sur aplat ambre, tenu dans les deux thèmes
-        className="rounded-md border border-amber-warn px-3 py-1 text-sm font-semibold text-amber-warn hover:bg-amber-warn hover:text-amber-fg"
+        // Audit 2026-08-24 (responsive P1) — cible 56 px et texte plus grand :
+        // c'est le chemin de récupération d'un bump erroné, tapé avec des mains
+        // farinées sur la surface la plus éloignée de l'œil.
+        className="min-h-touch-comfy rounded-md border border-amber-warn px-4 py-1 text-base font-semibold text-amber-warn hover:bg-amber-warn hover:text-amber-fg"
         aria-label="Undo bump"
       >
         Undo

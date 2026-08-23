@@ -201,7 +201,8 @@ function NumpadVirtualInner({
               className={cn(
                 'h-touch-large rounded-lg text-2xl font-semibold transition-colors duration-fast motion-reduce:transition-none active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                 isAction
-                  ? 'bg-red-soft border border-red text-red hover:bg-red/30'
+                  // Même correctif que Numpad — classe morte + règle des deux rouges.
+                  ? 'bg-red-soft border border-red text-red-as-text hover:bg-red hover:text-red-on-fill'
                   : 'bg-bg-input border border-border-subtle text-text-primary hover:bg-bg-overlay',
               )}
             >

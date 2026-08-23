@@ -12,7 +12,7 @@ import { Button, EmptyState } from '@breakery/ui';
 export function ReportsForbidden(): JSX.Element {
   const navigate = useNavigate();
   return (
-    <div className="h-screen grid place-items-center bg-bg-base text-text-primary p-6">
+    <div className="h-dvh grid place-items-center bg-bg-base text-text-primary p-6">
       <div className="max-w-md w-full">
         <EmptyState
           icon={ShieldAlert}
@@ -21,7 +21,7 @@ export function ReportsForbidden(): JSX.Element {
           size="lg"
         />
         <div className="mt-6 flex justify-center">
-          <Button variant="secondary" onClick={() => navigate('/pos')}>
+          <Button variant="secondary" onClick={() => { void navigate('/pos'); }}>
             Back to POS
           </Button>
         </div>

@@ -55,7 +55,11 @@ function NumpadInner({ value, onChange, maxLength, className }: NumpadProps): JS
               // Only Clear ("C") is destructive-red; Backspace is neutral —
               // a backspace is not a destructive action (design audit 2026-07-08, T14).
               k.type === 'clear'
-                ? 'bg-red-soft border border-red text-red hover:bg-red/30'
+                // Audit 2026-08-24 — hover:bg-red/30 était une classe morte
+                // (alpha sur token nu) : la touche C n'avait aucun retour au
+                // survol ; et text-red est le token de REMPLISSAGE, pas de
+                // texte (règle des deux rouges).
+                ? 'bg-red-soft border border-red text-red-as-text hover:bg-red hover:text-red-on-fill'
                 : k.type === 'back'
                   ? 'bg-bg-overlay border border-border-subtle text-text-secondary hover:bg-surface-4'
                   : 'bg-bg-input border border-border-subtle text-text-primary hover:bg-bg-overlay',

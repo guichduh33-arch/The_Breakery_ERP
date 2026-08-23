@@ -69,7 +69,7 @@ export function OrderSummaryPanel({
             <div className="mb-3 pb-3 border-b border-border-subtle">
               <div className="flex items-center justify-between">
                 <LoyaltyBadge tier={tier} points={attachedCustomer.loyalty_points} />
-                <span className="text-xs text-text-secondary">
+                <span className="text-xs text-text-secondary font-mono tabular-nums">
                   +{ptsToEarn} pts to earn ({cumulMultiplier.toFixed(2)}x)
                 </span>
               </div>

@@ -42,8 +42,9 @@ describe('ModifierModal', () => {
     expect(screen.getByText('Americano')).toBeInTheDocument();
     expect(screen.getByText('Temperature')).toBeInTheDocument();
     expect(screen.getByText('Milk')).toBeInTheDocument();
-    // Session 14 redesign : required indicator = red asterisk (no "Required" badge).
-    expect(screen.getAllByLabelText('required').length).toBeGreaterThan(0);
+    // Audit 2026-08-24 (a11y) : « (required) » vit en sr-only dans le NOM du
+    // groupe ; l'astérisque visuel est aria-hidden.
+    expect(screen.getAllByText('(required)').length).toBeGreaterThan(0);
   });
 
   it('renders nothing when closed', () => {
@@ -217,10 +218,11 @@ describe('ModifierModal', () => {
         onConfirm={vi.fn()}
       />,
     );
-    // Session 14 redesign : the "Required" badge is replaced by a red asterisk
-    // next to the group label ; the error variant gets the full danger color.
-    const asterisk = screen.getByLabelText('required');
+    // Audit 2026-08-24 (a11y) : astérisque rouge aria-hidden + hint aria-live
+    // qui nomme le groupe manquant.
+    const asterisk = screen.getByText('*');
     expect(asterisk.className).toMatch(/text-danger/);
+    expect(screen.getByTestId('modifier-required-hint').textContent).toContain('Temperature');
   });
 });
 

@@ -69,7 +69,13 @@ export function POSStockCard({
           className="h-12 w-12 shrink-0 rounded-md bg-bg-overlay overflow-hidden border border-border-subtle"
         >
           {product.image_url ? (
-            <img src={product.image_url} alt="" className="h-full w-full object-cover" />
+            <img
+              src={product.image_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="h-full w-full grid place-items-center text-text-muted text-xs">
               {product.name.charAt(0)}
@@ -87,7 +93,7 @@ export function POSStockCard({
 
       {/* Threshold + unit label */}
       <div className="flex items-center justify-between text-xs text-text-secondary">
-        <span className="tabular-nums">
+        <span className="font-mono tabular-nums">
           Alert {product.min_stock_threshold > 0 ? product.min_stock_threshold : '—'}
         </span>
         <span>{product.unit}</span>

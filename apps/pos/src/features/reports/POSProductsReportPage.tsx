@@ -73,7 +73,7 @@ function TopProductRow({
     >
       <div
         aria-hidden
-        className="absolute inset-y-0 left-0 bg-gold-soft"
+        className="absolute inset-y-0 left-0 bg-[color-mix(in_srgb,var(--chart-1)_16%,transparent)]"
         style={{ width: `${Math.max(widthPct, 4)}%` }}
       />
       <div className="relative flex items-center gap-3 px-3 py-2.5">

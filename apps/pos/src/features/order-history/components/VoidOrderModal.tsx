@@ -54,17 +54,18 @@ export function VoidOrderModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <div
-        role="dialog"
-        aria-label={`Void order ${orderNumber}`}
-        className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
-      >
+    <FullScreenModal
+      open={open}
+      onOpenChange={(o) => { if (!o) handleClose(); }}
+      accessibleTitle={`Void order ${orderNumber}`}
+    >
+      <div className="flex flex-col items-center justify-center min-h-dvh bg-bg-base p-6">
         <div className="w-full max-w-md space-y-6 rounded-lg border border-red-as-text bg-bg-elevated p-8">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-widest text-red-as-text">Void Order</div>
-              <div className="font-bold text-xl text-text-primary mt-1">{orderNumber}</div>
+              {/* Arbitrage 2026-08-23 — numéro en mono, comme partout. */}
+              <div className="font-mono tabular-nums font-bold text-xl text-text-primary mt-1">{orderNumber}</div>
               <div className="text-xs text-text-secondary mt-1">
                 Total to refund: <Currency amount={total} className="text-text-primary" />
               </div>

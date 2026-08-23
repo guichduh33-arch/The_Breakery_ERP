@@ -58,8 +58,10 @@ export function TableCell({ table, selected, onTap, fit = false }: TableCellProp
         ? 'bg-surface-3 border-border-muted'
         : 'bg-success-soft border-green';
 
+  // Audit 2026-08-24 (theming P3) — Règle du Filet : le ring-gold porte déjà
+  // la sélection, l'ombre portée ne faisait que salir le fond sombre.
   const ring = selected
-    ? 'ring-2 ring-offset-2 ring-offset-bg-base ring-gold shadow-lg'
+    ? 'ring-2 ring-offset-2 ring-offset-bg-base ring-gold'
     : 'ring-0';
 
   return (

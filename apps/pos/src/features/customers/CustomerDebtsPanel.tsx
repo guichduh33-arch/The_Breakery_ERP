@@ -57,7 +57,7 @@ export default function CustomerDebtsPanel(): JSX.Element {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-bg-base text-text-primary">
+    <div className="h-dvh flex flex-col bg-bg-base text-text-primary">
       <header className="h-14 px-4 flex items-center gap-3 border-b border-border-subtle bg-bg-elevated">
         <Button
           variant="ghost"

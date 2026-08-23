@@ -77,12 +77,12 @@ export function CancelItemModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <div
-        role="dialog"
-        aria-label={`Cancel item: ${itemName}`}
-        className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
-      >
+    <FullScreenModal
+      open={open}
+      onOpenChange={(o) => { if (!o) handleClose(); }}
+      accessibleTitle={`Cancel item: ${itemName}`}
+    >
+      <div className="flex flex-col items-center justify-center min-h-dvh bg-bg-base p-6">
         <div className="w-full max-w-md space-y-6 rounded-lg border border-red-as-text bg-bg-elevated p-8">
           <div className="flex items-center justify-between">
             <div>
@@ -100,10 +100,16 @@ export function CancelItemModal({
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
+            {/* Audit 2026-08-24 (a11y P1) — htmlFor/id : deux champs d'un
+                parcours d'argent étaient annoncés « edit text, vide ». */}
+            <label
+              htmlFor="cancel-item-reason"
+              className="text-xs uppercase tracking-widest text-text-secondary mb-2 block"
+            >
               Reason
             </label>
             <Input
+              id="cancel-item-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. wrong order, customer changed mind…"
@@ -118,10 +124,14 @@ export function CancelItemModal({
 
           {locked && (
             <div>
-              <label className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
+              <label
+                htmlFor="cancel-item-waste-qty"
+                className="text-xs uppercase tracking-widest text-text-secondary mb-2 block"
+              >
                 Waste quantity (0–{itemQty})
               </label>
               <Input
+                id="cancel-item-waste-qty"
                 type="number"
                 min={0}
                 max={itemQty}

@@ -49,7 +49,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
   const visibleTabs = TABS.filter((t) => !t.permission || hasPermission(t.permission));
 
   return (
-    <div className="h-screen flex flex-col bg-bg-base text-text-primary">
+    <div className="h-dvh flex flex-col bg-bg-base text-text-primary">
       <header className="h-16 px-6 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <div
@@ -67,7 +67,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
           variant="ghost"
           size="icon"
           aria-label="Close reports"
-          onClick={() => navigate('/pos')}
+          onClick={() => { void navigate('/pos'); }}
           data-testid="pos-reports-close"
         >
           <X className="h-5 w-5" aria-hidden />
@@ -85,9 +85,12 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
         ))}
       </div>
 
+      {/* Audit 2026-08-24 (responsive P1) — 8 onglets ≈ 880 px sans wrap ni
+          scroll : la PAGE défilait horizontalement. Même traitement que la
+          rangée de chips juste au-dessus. */}
       <nav
         aria-label="Reports tabs"
-        className="px-6 flex items-center gap-1 border-b border-border-subtle"
+        className="px-6 flex items-center gap-1 border-b border-border-subtle overflow-x-auto"
       >
         {visibleTabs.map((t) => {
           const Icon = t.icon;
@@ -96,10 +99,10 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
             <button
               key={t.id}
               type="button"
-              onClick={() => navigate(t.path)}
+              onClick={() => { void navigate(t.path); }}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'inline-flex items-center gap-2 px-4 h-12 -mb-px',
+                'inline-flex shrink-0 items-center gap-2 px-4 h-12 -mb-px',
                 'border-b-2 transition-colors motion-reduce:transition-none',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-[-2px]',
                 isActive
@@ -114,7 +117,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
         })}
       </nav>
 
-      <main className="flex-1 overflow-y-auto p-6">{children(period)}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">{children(period)}</main>
     </div>
   );
 }

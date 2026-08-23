@@ -77,7 +77,9 @@ export function VariantSelectModal({
           )}
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-3">
+        {/* Audit 2026-08-24 (responsive P2) — 2 colonnes sous sm pour que les
+            prix IDR à 7 chiffres (Rp 4.850.000) tiennent dans la tuile. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {variants.map((v) => {
             const disabled = isVariantDisabled(v);
             return (

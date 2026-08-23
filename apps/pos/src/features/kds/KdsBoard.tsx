@@ -142,7 +142,9 @@ export function KdsBoard({
             <h1 className="font-bold text-2xl text-text-primary">
               Live Orders
             </h1>
-            <SectionLabel as="span" size="sm" className="text-gold">
+            {/* Audit 2026-08-24 (theming P2) — Règle de l'Encre Rare : libellé
+                de chrome, pas une valeur ni la marque. */}
+            <SectionLabel as="span" size="sm">
               KDS
             </SectionLabel>
           </div>
@@ -152,7 +154,7 @@ export function KdsBoard({
               onClick={() => setAlarmMuted(!alarmMuted)}
               aria-label={alarmMuted ? 'Unmute new-order alarm' : 'Mute new-order alarm'}
               aria-pressed={alarmMuted}
-              className="rounded-md border border-border-subtle p-2 text-text-secondary hover:text-text-primary"
+              className="inline-flex h-touch-min w-touch-min items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary"
             >
               {alarmMuted ? (
                 <VolumeX className="h-5 w-5" aria-hidden />

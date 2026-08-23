@@ -77,7 +77,7 @@ export function CashInOutModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) resetAndClose(); }}>
+    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) resetAndClose(); }} accessibleTitle="Cash in / out">
       <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6">
         <header className="flex items-center justify-between">
           <h2 className="font-semibold text-2xl">{title}</h2>

@@ -55,6 +55,8 @@ vi.mock('../hooks/useKdsConfig', () => ({
 // Don't tick — the board rerender loop is irrelevant for these assertions.
 vi.mock('../hooks/useAgeTimer', () => ({
   useAgeTimer: () => Date.parse('2026-05-14T12:00:00.000Z'),
+  useAgeDerived: (compute: (now: number) => unknown) =>
+    compute(Date.parse('2026-05-14T12:00:00.000Z')),
 }));
 
 // Bump / serve / prep-timer mutations are pulled in by KdsOrderCard.

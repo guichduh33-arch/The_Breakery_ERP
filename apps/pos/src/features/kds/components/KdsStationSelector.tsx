@@ -26,9 +26,12 @@ export function KdsStationSelector() {
         setStation(value as KdsStation);
       }}
     >
-      <TabsList>
+      {/* Audit 2026-08-24 (responsive P1) — surcharge locale du primitif
+          partagé : la commande principale du KDS se tape mains farinées et se
+          lit à 2-3 m ; le h-10/text-sm du BO est trop petit ici. */}
+      <TabsList className="h-14">
         {STATIONS.map(({ value, label }) => (
-          <TabsTrigger key={value} value={value}>
+          <TabsTrigger key={value} value={value} className="min-h-touch-min px-4 text-base">
             {label}
           </TabsTrigger>
         ))}

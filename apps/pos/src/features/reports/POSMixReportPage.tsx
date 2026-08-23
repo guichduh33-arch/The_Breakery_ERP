@@ -149,7 +149,7 @@ function OrderTypeRow({ row }: { row: POSReportsOrderTypeRow }): JSX.Element {
       </div>
       <div className="mt-2 h-2 rounded-full bg-bg-overlay overflow-hidden">
         <div
-          className="h-full rounded-full bg-gold"
+          className="h-full rounded-full bg-chart-1"
           style={{ width: `${Math.min(row.sharePct, 100)}%` }}
         />
       </div>
@@ -157,7 +157,7 @@ function OrderTypeRow({ row }: { row: POSReportsOrderTypeRow }): JSX.Element {
         <span>
           {row.orderCount} order(s) · avg <Currency amount={row.avgBasket} className="text-text-secondary" />
         </span>
-        <span className="tabular-nums">{row.sharePct.toFixed(1)}%</span>
+        <span className="font-mono tabular-nums">{row.sharePct.toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -172,7 +172,7 @@ function CategoryRow({ row }: { row: POSReportsCategoryRow }): JSX.Element {
           {row.categoryName} <span className="text-text-muted">· {row.qty.toLocaleString('id-ID')} sold</span>
         </span>
         <div className="flex items-baseline gap-3 shrink-0">
-          <span className="text-xs text-text-muted tabular-nums w-12 text-right">
+          <span className="text-xs text-text-muted font-mono tabular-nums w-12 text-right">
             {row.sharePct.toFixed(1)}%
           </span>
           <Currency amount={row.revenue} className="text-sm font-semibold" />
@@ -180,7 +180,7 @@ function CategoryRow({ row }: { row: POSReportsCategoryRow }): JSX.Element {
       </div>
       <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay overflow-hidden')}>
         <div
-          className="h-full rounded-full bg-gold"
+          className="h-full rounded-full bg-chart-1"
           style={{ width: `${Math.min(row.sharePct, 100)}%` }}
         />
       </div>

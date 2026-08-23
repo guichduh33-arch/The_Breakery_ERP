@@ -163,6 +163,7 @@ export function ChangePinModal({ open, onClose, userId }: ChangePinModalProps): 
     <CenterModal
       open={open}
       onOpenChange={(o) => { if (!o) close(); }}
+      title="Change PIN"
       className="w-[min(420px,92vw)]"
       data-testid="change-pin-modal"
     >
