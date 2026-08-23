@@ -69,7 +69,7 @@ describe('BottomActionBar — Void Order', () => {
 
     openVoid();
 
-    const dialog = screen.getByRole('alertdialog', { name: /void order/i });
+    const dialog = screen.getByRole('dialog', { name: /void order/i });
     expect(dialog).toBeInTheDocument();
     // Mandatory reason + manager PIN are both present.
     expect(screen.getByLabelText(/void reason/i)).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('BottomActionBar — Void Order', () => {
     render(wrapper(<BottomActionBar />));
     openVoid();
 
-    expect(screen.getByRole('alertdialog', { name: /void order/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /void order/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/void reason/i)).toBeInTheDocument();
     expect(useCartStore.getState().cart.items).toHaveLength(1);
   });

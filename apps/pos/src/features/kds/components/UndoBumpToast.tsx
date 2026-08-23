@@ -59,13 +59,16 @@ export function UndoBumpToast({ orderItemId, bumpedAtMs, onClose }: UndoBumpToas
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-elevated px-4 py-3 shadow-lg"
     >
+      {/* Audit 2026-08-24 (a11y P2) — l'annonce se fait UNE fois (message
+          stable) ; le compte à rebours saturait la file aria-live pendant 60 s.
+          Le compteur visuel est aria-hidden. */}
       <span className="text-sm text-text-secondary">
-        Bumped. Undo in{' '}
-        <span className="font-mono font-bold text-text-primary">{remainingSec}s</span>
+        <span role="status">Bumped. Undo available.</span>{' '}
+        <span className="font-mono font-bold text-text-primary tabular-nums" aria-hidden>
+          {remainingSec}s
+        </span>
       </span>
       <button
         type="button"

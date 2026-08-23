@@ -52,6 +52,7 @@ export function LiveSessionsModal({ open, onClose }: LiveSessionsModalProps): JS
     <CenterModal
       open={open}
       onOpenChange={(o) => !o && onClose()}
+      title="Live sessions"
       className="w-[min(640px,92vw)]"
       data-testid="live-sessions-modal"
     >

@@ -225,22 +225,28 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
       </header>
 
       {/* Items list ──────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-2" data-testid="cart-items">
+      {/* Audit 2026-08-24 (a11y P2) — ul/li : le lecteur d'écran annonce
+          « liste, N éléments » et navigue par article, comme le KDS et
+          l'historique le font déjà. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3" data-testid="cart-items">
         {isEmpty ? (
           <EmptyBagState />
         ) : (
-          cart.items.map((item) => (
-            <CartLineRow
-              key={item.id}
-              item={item}
-              locked={lockedIds.includes(item.id)}
-              onChangeQty={(q) => update(item.id, q)}
-              onEditQty={(it) => setQtyTarget(it)}
-              onRemove={() => removeWithUndo(item)}
-              onApplyLineDiscount={lineDiscount.openForItem}
-              {...(pickedUp ? { onRequestCancel: (it) => setCancelTarget(it) } : {})}
-            />
-          ))
+          <ul className="space-y-2">
+            {cart.items.map((item) => (
+              <li key={item.id}>
+                <CartLineRow
+                  item={item}
+                  locked={lockedIds.includes(item.id)}
+                  onChangeQty={(q) => update(item.id, q)}
+                  onEditQty={(it) => setQtyTarget(it)}
+                  onRemove={() => removeWithUndo(item)}
+                  onApplyLineDiscount={lineDiscount.openForItem}
+                  {...(pickedUp ? { onRequestCancel: (it) => setCancelTarget(it) } : {})}
+                />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

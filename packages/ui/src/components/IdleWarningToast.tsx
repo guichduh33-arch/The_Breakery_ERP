@@ -79,18 +79,23 @@ export function IdleWarningToast({ className }: IdleWarningToastProps): JSX.Elem
     }
   };
 
+  // Audit 2026-08-24 (a11y P1) — role="alert" sur un texte qui change chaque
+  // seconde faisait ré-annoncer le toast 30 fois d'affilée, pendant la fenêtre
+  // où l'utilisateur devait justement cliquer « Stay signed in ». L'alerte
+  // s'annonce UNE fois (message stable) ; le compteur visuel vit dans un span
+  // aria-hidden. border-warning pleine : /40 était une classe morte (alpha
+  // impossible sur token var() nu) — le toast n'avait AUCUNE bordure.
   return (
     <div
-      role="alert"
-      aria-live="assertive"
       data-testid="idle-warning-toast"
       className={
         className ??
-        'fixed top-4 right-4 z-50 flex items-center gap-3 rounded border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-warning shadow-lg'
+        'fixed top-4 right-4 z-50 flex items-center gap-3 rounded border border-warning bg-warning-soft px-4 py-3 text-sm text-warning shadow-lg'
       }
     >
-      <span data-testid="idle-countdown">
-        Session expires in {secondsLeft}s
+      <span role="alert">Session is about to expire.</span>
+      <span data-testid="idle-countdown" aria-hidden>
+        {secondsLeft}s
       </span>
       <button
         type="button"

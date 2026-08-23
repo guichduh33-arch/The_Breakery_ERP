@@ -74,7 +74,9 @@ export default function TabletLayout(): JSX.Element {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-bg-base">
       <header className="h-14 px-4 border-b border-border-subtle flex items-center justify-between gap-3 bg-bg-elevated shrink-0">
-        <span className="font-semibold text-xl truncate">{user?.full_name ?? 'Waiter'}</span>
+        {/* Audit 2026-08-24 (a11y P2) — h1 : la surface n'avait aucun titre de
+            page pour la navigation par titres. */}
+        <h1 className="font-semibold text-xl truncate">{user?.full_name ?? 'Waiter'}</h1>
 
         <div className="flex items-center gap-2">
           {/* Active table */}
@@ -119,9 +121,11 @@ export default function TabletLayout(): JSX.Element {
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden">
+      {/* main : landmark manquant — la navigation par landmarks était
+          impossible sur /tablet (a11y P2). */}
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-hidden">
         <Outlet />
-      </div>
+      </main>
 
       {/* Audit 2026-08-24 (responsive P1) — pb-safe-area : sur l'APK Capacitor
           la nav basse était collée sous la barre gestuelle Android. */}

@@ -117,7 +117,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
         })}
       </nav>
 
-      <main className="flex-1 overflow-y-auto p-6">{children(period)}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">{children(period)}</main>
     </div>
   );
 }

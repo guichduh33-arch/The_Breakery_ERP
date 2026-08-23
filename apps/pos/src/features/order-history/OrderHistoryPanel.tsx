@@ -134,8 +134,12 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
 
   return (
     <>
-      <FullScreenModal open={open && !receipt} onOpenChange={(o) => { if (!o) handleClose(); }}>
-        <div className="flex flex-col h-dvh bg-bg-base" role="dialog" aria-label="Order history">
+      <FullScreenModal
+        open={open && !receipt}
+        onOpenChange={(o) => { if (!o) handleClose(); }}
+        accessibleTitle="Order history"
+      >
+        <div className="flex flex-col h-dvh bg-bg-base">
           <header className="h-16 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
             <div className="flex items-center gap-3">
               <div

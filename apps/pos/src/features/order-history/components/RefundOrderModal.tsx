@@ -166,12 +166,12 @@ export function RefundOrderModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <div
-        role="dialog"
-        aria-label={`Refund lines on order ${order.order_number}`}
-        className="flex flex-col h-dvh bg-bg-base"
-      >
+    <FullScreenModal
+      open={open}
+      onOpenChange={(o) => { if (!o) handleClose(); }}
+      accessibleTitle={`Refund lines on order ${order.order_number}`}
+    >
+      <div className="flex flex-col h-dvh bg-bg-base">
         <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
           <div className="flex items-baseline gap-3">
             <span className="font-bold text-lg">Refund lines</span>

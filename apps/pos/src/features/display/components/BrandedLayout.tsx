@@ -44,7 +44,7 @@ export function BrandedLayout({ children, footer }: BrandedLayoutProps) {
         </p>
       </header>
 
-      <main className="flex-1 overflow-hidden px-12 py-10">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-hidden px-12 py-10">{children}</main>
 
       <footer className="px-12 py-6 border-t border-border-subtle text-xs text-text-muted tracking-wider uppercase">
         {footer ?? <span>Open daily · 07:00 — 21:00</span>}

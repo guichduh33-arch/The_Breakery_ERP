@@ -337,6 +337,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
             <section className="space-y-2">
               <SectionLabel as="div">Notes (optional)</SectionLabel>
               <textarea
+                aria-label="Notes (optional)"
                 className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold resize-none"
                 rows={2}
                 value={notes}

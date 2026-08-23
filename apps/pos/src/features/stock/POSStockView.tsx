@@ -307,7 +307,7 @@ export default function POSStockView(): JSX.Element {
       </div>
 
       {/* Grid / list */}
-      <main className="flex-1 overflow-y-auto p-4">
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4">
         {products.isLoading && (
           <div className="text-text-secondary text-sm">Loading stock…</div>
         )}

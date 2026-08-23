@@ -80,7 +80,7 @@ export default function POSSettingsPage(): JSX.Element {
         <TopTabButton icon={ShoppingCart} label="Devices" active={topTab === 'devices'} onClick={() => setTopTab('devices')} />
       </nav>
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">
         {topTab === 'pos' && <PosConfigSection readOnly={!canEdit} />}
         {topTab === 'printing' && <PrintingSettingsTab readOnly={!canEdit} />}
         {topTab === 'kds' && <DisplaySettingsTab readOnly={!canEdit} />}
