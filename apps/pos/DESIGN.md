@@ -10,7 +10,7 @@ colors:
   surface-inert: "#1f1c19"
   bg-input: "#1f1c18"
   border-subtle: "#2a2622"
-  border-strong: "#413a33"
+  border-strong: "#746b5f"
   border-muted: "#1f1c18"
   gold: "#d3ab5c"
   gold-hover: "#dfba72"
@@ -232,9 +232,17 @@ est acquis, le rouge pour ce qui est perdu ou dangereux.
 
 - **Or de Vitrine** (`#d3ab5c`) : la seule couleur d'identité. Prix d'un produit,
   montant d'une ligne, total, sélection de catégorie active, anneau d'un produit
-  déjà au panier, liseré de focus, monogramme de marque, étoile de favori. Il ne
-  remplit un bouton que pour l'action dorée (validation d'une saisie de montant,
-  action de marque), jamais pour l'action de confirmation d'une commande.
+  déjà au panier, liseré de focus, monogramme de marque, étoile de favori. En
+  remplissage de bouton, la doctrine est celle du code, arbitrée le 2026-08-23 :
+  **l'or MÈNE à l'argent, le vert l'ENGAGE.** L'or remplit le geste qui ouvre le
+  chemin du paiement (Checkout) et l'action dorée (validation d'une saisie de
+  montant, action de marque) ; l'engagement irréversible — payer, envoyer en
+  cuisine — reste au vert. Les deux cohabitent sur un même écran parce qu'ils
+  répondent à deux questions différentes ; deux CTA **verts**, eux, ne cohabitent
+  jamais (quand le fast-path « Exact » est visible, le pied du terminal se
+  rétrograde en secondaire). Ce paragraphe a longtemps interdit l'or sur « la
+  confirmation d'une commande » pendant que le code gravait l'inverse — c'est le
+  code qui fait loi.
 - **Or Éclairci** (`#dfba72`) et **Or Enfoncé** (`#bf9748`) : survol et appui.
   L'or enfoncé sert aussi de variante « forte » sur les surfaces déjà claires.
 - **Or Voilé** (`rgba(211, 171, 92, 0.14)`) : le seul remplissage doré autorisé
@@ -273,8 +281,11 @@ est acquis, le rouge pour ce qui est perdu ou dangereux.
   secondaires, touches du pavé.
 - **Brun Pressé** (`#2e2924`) : survol et appui. C'est aussi le fond des pastilles
   neutres, parce que c'est le seul cran visible dans les **deux** thèmes.
-- **Filet** (`#2a2622`) et **Arête** (`#413a33`) : bordure de repos, bordure de
-  contrôle. **Filet Sourd** (`#1f1c18`) : séparateur interne et fond de champ.
+- **Filet** (`#2a2622`) et **Arête** (`#746b5f`) : bordure de repos, bordure de
+  contrôle. L'Arête a été remontée de `#413a33` le 2026-08-24 (arbitrage du
+  propriétaire) : elle valait 1,3 à 1,7:1 sur les quatre fonds — la limite d'un
+  contrôle était invisible ; elle tient désormais les 3:1 de WCAG 1.4.11 partout
+  (3,13 à 3,63:1). **Filet Sourd** (`#1f1c18`) : séparateur interne et fond de champ.
 - **Ivoire Chaud** (`#f7f3ec`) : le texte principal. Puis quatre crans de retrait
   — secondaire (`#b3aa9d`), discret (`#968c7e`), sourd (`#7d7364`), désactivé
   (`#5c5449`) — et un cran sous le désactivé, **Inerte** (`#4a443c`), réservé à la
@@ -319,7 +330,10 @@ en concurrence avec Playfair sur les valeurs chiffrées.
   connexion. Nulle part ailleurs dans le parcours d'encaissement.
 - **Headline** (Inter, 600, 30px, 1.15) : titre d'écran plein — clôture de
   session, terminal de paiement.
-- **Title** (Inter, 600, 24px, 1.3) : titre de carte et de modale.
+- **Title** (Inter, 600, 24px, 1.3) : titre de carte. Les titres de **modales**
+  du kit partagé rendent en Playfair (arbitré le 2026-08-23 — l'usage du code
+  fait loi) : un titre de composition peut porter la serif, c'est la donnée et
+  le libellé fonctionnel qui ne le peuvent jamais.
 - **Body** (Inter, 400, 16px, 1.5) : le texte courant. Le cran au-dessus (19px)
   sert au corps emphatique — la ligne qu'on lit à un client.
 - **Label** (Inter, 700, 12px, interlettrage 0.12em, CAPITALES) : la signature du
@@ -341,6 +355,11 @@ caissière debout à 60 cm de l'écran.
 
 **La Règle de la Serif Réservée.** Playfair ne touche jamais une donnée ni un
 libellé fonctionnel. Si une serif apparaît sur un montant, le token est faux.
+Corollaire arbitré le 2026-08-23 : **le numéro de commande est une donnée et n'a
+qu'UNE graphie à l'écran — mono, la forme du KDS** (`font-mono tabular-nums`,
+or sur la pièce maîtresse). Il rendait en serif sur l'écran client et en mono en
+cuisine : le seul datum que le client doit apparier au retrait changeait de
+forme entre les surfaces.
 
 ## Layout
 

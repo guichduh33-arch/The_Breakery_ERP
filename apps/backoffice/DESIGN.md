@@ -264,9 +264,10 @@ même accent, même vocabulaire d'état, même échelle.
   que le bouton secondaire, pris par le propriétaire pour les deux apps : la
   bordure d'un champ est la limite d'un contrôle, elle tient les 3:1 de 1.4.11
   (3,33:1 mesuré sur le papier de page). Réserve honnête : dans le thème sombre
-  de la caisse, `--border-strong` (`#413a33` sur `#1f1c18`) vaut 1,52:1 — mieux
-  que les 1,13:1 d'avant, toujours sous le seuil. Monter le token du thème
-  sombre est un arbitrage POS distinct, non pris à ce jour.
+  de la caisse, `--border-strong` valait 1,52:1 (`#413a33` sur `#1f1c18`) —
+  mieux que les 1,13:1 d'avant, toujours sous le seuil. Cet arbitrage POS a été
+  **pris le 2026-08-24** : le token du thème sombre est monté à `#746b5f` et
+  tient désormais 3,1 à 3,6:1 sur ses quatre fonds. La réserve est close.
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
   (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
   plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
