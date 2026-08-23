@@ -85,7 +85,12 @@ function ProductCardImpl({
         // Perf (P2) — no permanent `will-change`, it pins a compositor layer
         // for every idle tile in the grid. Promote only while the browser is
         // actually about to animate the transform (hover/active).
-        'hover:will-change-transform active:will-change-transform',
+        // Critique 2026-08-23 — tout le vocabulaire de survol est conditionné à
+        // `(hover: hover)` : sur les surfaces tactiles (comptoir ET tablette),
+        // :hover COLLE après un tap — une tuile restait soulevée, image zoomée,
+        // jusqu'au tap suivant. Le survol ne sert que la souris ; le retour
+        // tactile passe par `active:`.
+        '[@media(hover:hover)]:hover:will-change-transform active:will-change-transform',
         'transition-[transform,box-shadow,border-color,background-color] duration-fast ease-motion-out',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2',
@@ -96,7 +101,7 @@ function ProductCardImpl({
         inCart ? 'border-gold ring-1 ring-gold' : 'border-border-subtle',
         disabled
           ? 'opacity-50 cursor-not-allowed'
-          : 'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:bg-bg-overlay hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
+          : 'cursor-pointer [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:border-border-strong [@media(hover:hover)]:hover:bg-bg-overlay [@media(hover:hover)]:hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
       )}
     >
       <div className="relative aspect-[4/3] bg-bg-input overflow-hidden">
@@ -108,7 +113,7 @@ function ProductCardImpl({
             onError={() => setImgError(true)}
             className={cn(
               'object-cover w-full h-full transition-transform duration-slow ease-motion-out motion-reduce:transition-none',
-              disabled ? 'grayscale' : 'group-hover:scale-[1.06]',
+              disabled ? 'grayscale' : '[@media(hover:hover)]:group-hover:scale-[1.06]',
             )}
           />
         ) : (
