@@ -9,7 +9,7 @@
 
 ---
 
-## Suivi — état au 2026-08-22, après livraison
+## Suivi — état au 2026-08-23, après livraison
 
 > **Ce bloc est le seul ajout postérieur au constat.** Tout ce qui suit à partir
 > de la section 0 décrit l'état de la journée du 2026-08-22 **avant** correction,
@@ -22,8 +22,8 @@
 | B | tables occupées après paiement (§2.2) | **livré** |
 | D | verrou absent sur `/tablet` + deux états réseau contradictoires (§2.3, §2.4) | **livré** |
 | E | aucune couverture bout en bout (§2.8) | **livré** |
-| C | RLS décorative et `p_waiter_id` non vérifié (§2.3 a et b) | **ouvert — 2 décisions en attente** |
-| F | empaquetage Android (§2 ABSENT) | **ouvert — chantier neuf** |
+| C | RLS décorative et `p_waiter_id` non vérifié (§2.3 a et b) | **livré** |
+| F | empaquetage Android (§2 ABSENT) | **livré (v1)** |
 
 Repères durables, plutôt que des empreintes de commit qui bougeraient à la
 première fusion écrasante :
@@ -32,7 +32,15 @@ première fusion écrasante :
 - prédicat unique `apps/pos/src/features/tables/tableActivity.ts` ;
 - hook unique d'état réseau `apps/pos/src/features/tablet/hooks/useTabletConnectionState.ts` ;
 - filet de transport `supabase/tests/realtime_publication_orders.test.sql` ;
-- parcours de salle `tests/e2e/waiter-flow.spec.ts`, projet Playwright `waiter`.
+- parcours de salle `tests/e2e/waiter-flow.spec.ts`, projet Playwright `waiter` ;
+- lot C : migrations `20260822000002_create_tablet_order_v8_waiter_identity.sql`
+  et `20260822000003_drop_decorative_tablet_waiter_policy.sql`, filet
+  `supabase/tests/create_tablet_order_v8_waiter_identity.test.sql` (rejoué
+  vert 9/9 sur la base dev le 2026-08-23), lecture large gravée dans l'ADR-028 ;
+- lot F : coquille Capacitor `apps/pos/capacitor.config.ts` + `apps/pos/android/`
+  (ADR-029), démarrage sur l'écran de salle via
+  `apps/pos/src/lib/nativeShell.ts`, runbook
+  `docs/runbooks/tablet-capacitor-build.md`.
 
 **Ce que la livraison n'a PAS établi**, et qui reste vrai du corps ci-dessous :
 
@@ -47,9 +55,20 @@ première fusion écrasante :
   par un compte porteur de `sales.create`, donc le garde `role_code = 'waiter'`
   lui-même n'est pas éprouvé.
 
-**Décisions toujours en attente** : les points 2 à 7 de la section 6. Les points 2
-et 3 bloquent le lot C. Le point 1 est tranché — le dossier `docs/audits/` a été
-créé et ce rapport y est versionné.
+**Décisions** : les points 1 à 4 de la section 6 sont tranchés. Le 1 — le dossier
+`docs/audits/` existe et ce rapport y est versionné. Les 2 et 3 — tranchés par le
+propriétaire le 2026-08-23, dans le sens de l'implémentation livrée : politique
+décorative supprimée et lecture large assumée (ADR-028) ; chacun signe ses
+commandes, pas de permission d'attribution. Le 4 — les ADR existent (ADR-028
+lecture large, ADR-029 empaquetage). Restent **ouverts** : le 5 (la publication
+temps réel en production n'a toujours pas été relevée), le 6 (la grille de 376
+produits n'a pas été mesurée sur appareil), et le 7 (le message en français de
+`usePickedUpOrderSync` est toujours en place).
+
+**Réserves du lot F (v1)** : la preuve sur appareil réel — APK debug remis au
+propriétaire, installation non confirmée — ainsi que l'icône et l'écran de
+démarrage à la marque, et l'APK signé de release. Le mode kiosque est écarté de
+la v1 (arbitrage du 2026-08-23).
 
 ---
 
