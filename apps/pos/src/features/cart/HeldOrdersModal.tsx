@@ -118,7 +118,7 @@ function HeldOrderCard({
             onClick={onDelete}
             aria-label={`Delete held order ${row.order_number}`}
             className={cn(
-              'h-10 w-10 inline-flex items-center justify-center rounded-md',
+              'h-touch-min w-touch-min inline-flex items-center justify-center rounded-md',
               'text-red-as-text border border-red bg-red-soft hover:bg-red hover:text-red-on-fill',
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
@@ -130,7 +130,7 @@ function HeldOrderCard({
             type="button"
             onClick={onRestore}
             className={cn(
-              'h-10 px-4 inline-flex items-center justify-center gap-2 rounded-md',
+              'h-touch-min px-4 inline-flex items-center justify-center gap-2 rounded-md',
               'bg-gold hover:bg-gold-hover text-gold-fg font-bold uppercase tracking-widest text-xs',
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
@@ -228,7 +228,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
               onClick={onClose}
               aria-label="Close"
               className={cn(
-                'h-10 w-10 inline-flex items-center justify-center rounded-md',
+                'h-touch-min w-touch-min inline-flex items-center justify-center rounded-md',
                 'text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
                 'transition-colors duration-fast motion-reduce:transition-none',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',

@@ -152,7 +152,7 @@ export function KdsBoard({
               onClick={() => setAlarmMuted(!alarmMuted)}
               aria-label={alarmMuted ? 'Unmute new-order alarm' : 'Mute new-order alarm'}
               aria-pressed={alarmMuted}
-              className="rounded-md border border-border-subtle p-2 text-text-secondary hover:text-text-primary"
+              className="inline-flex h-touch-min w-touch-min items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary"
             >
               {alarmMuted ? (
                 <VolumeX className="h-5 w-5" aria-hidden />

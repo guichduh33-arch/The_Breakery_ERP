@@ -250,7 +250,10 @@ export function BottomActionBar({
     <div
       // Règle du Filet (critique run 3) : la barre se détache par sa surface et
       // son border-t, pas par une ombre portée — supprimée.
+      // Audit 2026-08-24 (responsive P1) — safe-area : la barre porte Checkout,
+      // qui passait sous la barre gestuelle Android en Capacitor.
       className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap z-50"
+      style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom, 0px))' }}
       role="toolbar"
       aria-label="Order actions"
     >

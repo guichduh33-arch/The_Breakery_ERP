@@ -79,9 +79,11 @@ export function RecallButton({ orderId, orderNumber, disabled }: RecallButtonPro
           aria-label="Recall reason"
         />
         <DialogFooter>
+          {/* Audit 2026-08-24 (responsive P2) — size md : modale tapée mains
+              farinées, comme le reste du KDS. */}
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             onClick={() => setOpen(false)}
             disabled={recall.isPending}
           >
@@ -89,7 +91,7 @@ export function RecallButton({ orderId, orderNumber, disabled }: RecallButtonPro
           </Button>
           <Button
             variant="primary"
-            size="sm"
+            size="md"
             onClick={handleConfirm}
             disabled={recall.isPending}
           >

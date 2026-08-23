@@ -48,7 +48,7 @@ export default function POSSettingsPage(): JSX.Element {
   const [topTab, setTopTab] = useState<TopTab>('pos');
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-base text-text-primary">
+    <div className="min-h-dvh flex flex-col bg-bg-base text-text-primary">
       <header className="h-14 px-4 flex items-center gap-3 border-b border-border-subtle bg-bg-elevated">
         <Button
           variant="ghost"
@@ -68,9 +68,11 @@ export default function POSSettingsPage(): JSX.Element {
         )}
       </header>
 
+      {/* Audit 2026-08-24 (responsive P2) — 4 onglets ≈ 430 px minimum :
+          scroll confiné plutôt que débordement de page. */}
       <nav
         aria-label="Settings sections"
-        className="px-4 flex items-center gap-1 border-b border-border-subtle"
+        className="px-4 flex items-center gap-1 border-b border-border-subtle overflow-x-auto"
       >
         <TopTabButton icon={Cog} label="POS" active={topTab === 'pos'} onClick={() => setTopTab('pos')} />
         <TopTabButton icon={Printer} label="Printing" active={topTab === 'printing'} onClick={() => setTopTab('printing')} />
@@ -105,7 +107,7 @@ function TopTabButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex items-center gap-2 px-4 h-12 -mb-px',
+        'inline-flex shrink-0 items-center gap-2 px-4 h-12 -mb-px',
         'border-b-2 transition-colors motion-reduce:transition-none text-sm',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-[-2px]',
         active

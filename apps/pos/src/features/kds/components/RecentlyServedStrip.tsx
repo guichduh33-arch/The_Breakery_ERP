@@ -32,7 +32,9 @@ export function RecentlyServedStrip({ orders }: RecentlyServedStripProps) {
           key={order.order_id}
           className="flex items-center gap-2 rounded-md border border-border-subtle px-2 py-1 shrink-0"
         >
-          <span className="font-mono text-sm text-gold">{formatOrderNumberShort(order.order_number)}</span>
+          {/* Audit 2026-08-24 (responsive P2) — text-base : la bande de rappel
+              se lit à la même distance que le reste du KDS. */}
+          <span className="font-mono text-base tabular-nums text-gold">{formatOrderNumberShort(order.order_number)}</span>
           <RecallButton orderId={order.order_id} orderNumber={formatOrderNumberShort(order.order_number)} />
         </div>
       ))}

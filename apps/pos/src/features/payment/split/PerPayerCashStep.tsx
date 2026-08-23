@@ -159,12 +159,15 @@ export function PerPayerCashStep({
             {/* Preset grid */}
             <div className="mt-4 space-y-2">
               <div className="text-xs uppercase tracking-widest text-gold">Amount Received</div>
-              <div className="grid grid-cols-3 gap-2">
+              {/* Audit 2026-08-24 (responsive P1) — Regle des 56 : mêmes presets
+                  qu'en paiement simple (TenderDraftPanel, min-h-touch-comfy),
+                  et 2 colonnes sous md pour que « Exact (Rp 4.850.000) » tienne. */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => onCashChange(activePayer.id, String(total))}
                   className={cn(
-                    'rounded-md py-3 text-xs font-bold uppercase tracking-widest border',
+                    'min-h-touch-comfy rounded-md py-3 px-2 text-xs font-bold uppercase tracking-widest border',
                     received === total
                       ? 'bg-gold text-gold-fg border-gold'
                       : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
@@ -177,7 +180,7 @@ export function PerPayerCashStep({
                     key={q}
                     type="button"
                     onClick={() => onCashChange(activePayer.id, String(q))}
-                    className="rounded-md py-3 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
+                    className="min-h-touch-comfy rounded-md py-3 px-2 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
                   >
                     <Currency amount={q} />
                   </button>

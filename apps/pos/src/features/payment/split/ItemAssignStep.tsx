@@ -191,7 +191,9 @@ export function ItemAssignStep({
                 onClick={() => onSetActivePayer(p.id)}
                 aria-pressed={isActive}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors',
+                  // Audit 2026-08-24 (responsive P1) — affecter un article au
+                  // mauvais payeur est une erreur d'argent : plancher 44 px.
+                  'inline-flex items-center gap-2 rounded-md px-3 py-2 min-h-touch-min text-xs font-bold uppercase tracking-widest transition-colors',
                   isActive
                     ? cn(colors.text, colors.bg, 'border-b-2', colors.border.replace('border-', 'border-b-'))
                     : 'text-text-muted hover:text-text-primary',
@@ -212,7 +214,7 @@ export function ItemAssignStep({
               type="button"
               onClick={onAddPayer}
               aria-label="Add payer"
-              className="inline-flex items-center justify-center h-7 w-7 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+              className="inline-flex items-center justify-center h-touch-min w-touch-min rounded-md text-text-muted hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
             >
               <Plus className="h-4 w-4" aria-hidden />
             </button>

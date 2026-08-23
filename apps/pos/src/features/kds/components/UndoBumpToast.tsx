@@ -72,7 +72,10 @@ export function UndoBumpToast({ orderItemId, bumpedAtMs, onClose }: UndoBumpToas
         onClick={handleUndo}
         disabled={undo.isPending}
         // Critique run 4 lot 7 — contrat -fg sur aplat ambre, tenu dans les deux thèmes
-        className="rounded-md border border-amber-warn px-3 py-1 text-sm font-semibold text-amber-warn hover:bg-amber-warn hover:text-amber-fg"
+        // Audit 2026-08-24 (responsive P1) — cible 56 px et texte plus grand :
+        // c'est le chemin de récupération d'un bump erroné, tapé avec des mains
+        // farinées sur la surface la plus éloignée de l'œil.
+        className="min-h-touch-comfy rounded-md border border-amber-warn px-4 py-1 text-base font-semibold text-amber-warn hover:bg-amber-warn hover:text-amber-fg"
         aria-label="Undo bump"
       >
         Undo

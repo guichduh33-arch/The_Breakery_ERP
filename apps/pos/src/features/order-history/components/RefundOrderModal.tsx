@@ -170,14 +170,21 @@ export function RefundOrderModal({
       <div
         role="dialog"
         aria-label={`Refund lines on order ${order.order_number}`}
-        className="flex flex-col h-screen bg-bg-base"
+        className="flex flex-col h-dvh bg-bg-base"
       >
         <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
           <div className="flex items-baseline gap-3">
             <span className="font-bold text-lg">Refund lines</span>
             <span className="text-text-secondary text-sm">on {order.order_number}</span>
           </div>
-          <button type="button" aria-label="Close" onClick={handleClose} className="text-text-secondary hover:text-text-primary">
+          {/* Audit 2026-08-24 (responsive P1) — la cible faisait 20 px ; alignée
+              sur le h-11 w-11 des modales voisines (CustomerAttachModal). */}
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={handleClose}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-overlay"
+          >
             <X className="h-5 w-5" aria-hidden />
           </button>
         </header>

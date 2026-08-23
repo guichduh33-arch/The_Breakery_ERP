@@ -132,7 +132,7 @@ export default function LoginPage(): JSX.Element {
   const dots = useMemo(() => Array.from({ length: PIN_MAX }), []);
 
   return (
-    <div className="theme-pos min-h-screen grid place-items-center bg-bg-base p-6">
+    <div className="theme-pos min-h-dvh grid place-items-center bg-bg-base p-6">
       <main
         aria-labelledby="login-heading"
         // Règle du Filet (critique run 3) : bordure 1 px + ombre de 72 px de

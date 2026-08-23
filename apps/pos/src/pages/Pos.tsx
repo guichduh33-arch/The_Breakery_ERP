@@ -160,7 +160,7 @@ export default function PosPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-bg-base text-text-primary">
+    <div className="h-dvh flex flex-col bg-bg-base text-text-primary">
       {/* ADR-015 — la fenêtre de durée est supprimée. Il ne reste qu'un cas de
           blocage : le hors-ligne n'a jamais été activé en réglages. */}
       {offlineGate.offlineMode && offlineGate.blockedReason === 'payments_disabled' && (
@@ -187,7 +187,11 @@ export default function PosPage() {
             POS
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Audit 2026-08-24 (responsive P1) — min-w-0 sur le groupe et truncate
+            sur le nom : un caissier au nom long + pastille offline poussait un
+            défilement horizontal sur l'écran principal. Le nom est la seule
+            chose compressible du header. */}
+        <div className="flex items-center gap-2 min-w-0">
           {/* Critique run 4 lot 2 — vérité du poste : l'alerte « No shift »
               se balaye, et sans rappel le caissier compose une commande
               entière avant d'échouer au process. La pastille reste tant
@@ -224,7 +228,7 @@ export default function PosPage() {
                 : `Syncing · ${pendingIntents} queued`}
             </span>
           )}
-          <span className="text-text-secondary text-sm">
+          <span className="text-text-secondary text-sm min-w-0 truncate" title={user?.full_name}>
             Cashier:{' '}
             <span className="text-text-primary font-semibold">{user?.full_name}</span>
           </span>

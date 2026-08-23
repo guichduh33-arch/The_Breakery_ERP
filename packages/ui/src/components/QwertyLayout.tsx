@@ -27,8 +27,13 @@ function QwertyLayoutInner({
     onKey(shift ? c.toUpperCase() : c);
     if (shift) setShift(false);
   };
+  // Audit 2026-08-24 (responsive P0) — min-w-[2.25rem] × 10 touches + gaps
+  // donnait un plancher de ~446 px : sous cette largeur les touches de droite
+  // sortaient de l'écran, sur le SEUL moyen de saisie du comptoir. flex-1 +
+  // min-w-0 : la rangée se partage toujours la largeur réelle (un qwerty de
+  // téléphone vit très bien à ~32 px par touche sur 390 px).
   const keyCls =
-    'h-touch-comfy min-w-[2.25rem] flex-1 rounded-md bg-bg-input border border-border-subtle text-text-primary text-lg font-medium active:scale-95 transition-transform';
+    'h-touch-comfy min-w-0 flex-1 rounded-md bg-bg-input border border-border-subtle text-text-primary text-lg font-medium active:scale-95 transition-transform';
   const actCls =
     'h-touch-comfy rounded-md bg-bg-overlay border border-border-subtle text-text-secondary text-sm active:scale-95';
   return (
@@ -81,7 +86,7 @@ function QwertyLayoutInner({
           type="button"
           aria-label="Done"
           onClick={onDone}
-          className="h-touch-comfy rounded-md bg-gold text-black font-semibold px-6 active:scale-95"
+          className="h-touch-comfy rounded-md bg-gold text-gold-fg font-semibold px-6 active:scale-95"
         >
           Done
         </button>

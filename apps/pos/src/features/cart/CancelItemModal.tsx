@@ -81,7 +81,7 @@ export function CancelItemModal({
       <div
         role="dialog"
         aria-label={`Cancel item: ${itemName}`}
-        className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
+        className="flex flex-col items-center justify-center min-h-dvh bg-bg-base p-6"
       >
         <div className="w-full max-w-md space-y-6 rounded-lg border border-red-as-text bg-bg-elevated p-8">
           <div className="flex items-center justify-between">

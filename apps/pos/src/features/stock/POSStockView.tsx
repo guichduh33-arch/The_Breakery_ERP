@@ -208,9 +208,10 @@ export default function POSStockView(): JSX.Element {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-bg-base text-text-primary">
-      {/* Top bar */}
-      <header className="h-14 px-4 flex items-center gap-3 border-b border-border-subtle bg-bg-elevated">
+    <div className="h-dvh flex flex-col bg-bg-base text-text-primary">
+      {/* Top bar — Audit 2026-08-24 (responsive P1) : wrap sous md, sinon les
+          3 KpiChips forcent un défilement horizontal de la page à 390 px. */}
+      <header className="min-h-14 px-4 py-2 flex items-center gap-3 max-md:flex-wrap border-b border-border-subtle bg-bg-elevated">
         <Button
           variant="ghost"
           size="icon"
@@ -279,7 +280,7 @@ export default function POSStockView(): JSX.Element {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search…"
             aria-label="Search products"
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-elevated pl-9 pr-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            className="h-touch-min w-full rounded-md border border-border-subtle bg-bg-elevated pl-9 pr-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             data-testid="pos-stock-search"
           />
         </label>
@@ -435,7 +436,7 @@ function ViewToggleButton({
       aria-pressed={active}
       data-testid={testId}
       className={cn(
-        'h-9 w-10 inline-flex items-center justify-center transition-colors',
+        'h-touch-min w-touch-min inline-flex items-center justify-center transition-colors',
         active ? 'bg-gold-soft text-gold' : 'text-text-secondary hover:text-text-primary',
       )}
     >
@@ -461,7 +462,7 @@ function CategoryChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex items-center gap-1.5 px-3 h-8 rounded-full border text-xs font-semibold whitespace-nowrap',
+        'inline-flex items-center gap-1.5 px-3 h-touch-min rounded-full border text-xs font-semibold whitespace-nowrap',
         'transition-colors motion-reduce:transition-none',
         active
           ? 'bg-gold-soft border-gold text-gold'

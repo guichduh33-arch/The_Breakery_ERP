@@ -37,9 +37,11 @@ export function RetryBanner({
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-text-primary">Payment did not reach the server</div>
             <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
+            {/* Audit 2026-08-24 (responsive P1) — Regle des 56 : rejouer un
+                paiement est LE geste d'argent critique, il etait a 36 px. */}
             <Button
               variant="secondary"
-              size="sm"
+              size="md"
               className="mt-2"
               onClick={onRetry}
               disabled={checkoutPending}
@@ -68,7 +70,7 @@ export function RetryBanner({
             <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
             <Button
               variant="secondary"
-              size="sm"
+              size="md"
               className="mt-2"
               onClick={onDismissAlreadyPaid}
               data-testid="payment-already-paid-dismiss"
@@ -100,7 +102,7 @@ export function RetryBanner({
             {lastError.code === 'no_open_shift' && onOpenShift && (
               <Button
                 variant="gold"
-                size="sm"
+                size="md"
                 className="mt-2 uppercase tracking-widest"
                 onClick={onOpenShift}
                 data-testid="payment-open-shift-cta"
