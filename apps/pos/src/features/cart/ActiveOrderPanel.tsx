@@ -150,7 +150,11 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
       className="w-[340px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full max-md:w-full max-md:h-[42%] max-md:border-l-0 max-md:border-t"
     >
       {/* Header ──────────────────────────────────────────────────────────── */}
-      <header className="px-4 pt-4 pb-3 border-b border-border-subtle space-y-3">
+      {/* Critique 2026-08-23 (P2) — shrink-0 : sans lui, sous contrainte de
+          hauteur, le header se comprimait et sa dernière ligne (« Walk-in »)
+          finissait peinte SOUS la barre d'actions z-50 du shell (occlusion
+          100 % relevée à l'overlay). Seule la liste, scrollable, se comprime. */}
+      <header className="shrink-0 px-4 pt-4 pb-3 border-b border-border-subtle space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-2 min-w-0">
             <span className="font-bold uppercase tracking-widest text-sm text-text-primary">
@@ -242,7 +246,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
 
       {/* Totals footer — no buttons ──────────────────────────────────────── */}
       {!isEmpty && (
-        <footer className="px-4 py-3 border-t border-border-subtle space-y-1 bg-bg-elevated">
+        <footer className="shrink-0 px-4 py-3 border-t border-border-subtle space-y-1 bg-bg-elevated">
           {attachedCustomer && (
             <LoyaltyPointsLine
               total={total}
