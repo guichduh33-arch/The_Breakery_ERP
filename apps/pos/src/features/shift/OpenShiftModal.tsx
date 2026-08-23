@@ -251,7 +251,12 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 <SectionLabel as="div">Opening Cash — count by denomination</SectionLabel>
                 <DenominationGrid value={denoms} onChange={setDenoms} />
                 <div className="text-center pt-1">
-                  <Currency amount={amount} emphasis="gold" className="text-2xl font-display" />
+                  {/* Audit 2026-08-24 (theming P1) — font-display écrasait le
+                      font-mono de Currency via twMerge (même groupe
+                      font-family) : le montant du fond de caisse rendait en
+                      Playfair, chiffres proportionnels qui sautent à la
+                      frappe. Règle de la Serif Réservée. */}
+                  <Currency amount={amount} emphasis="gold" className="text-2xl" />
                 </div>
               </section>
             ) : (
@@ -275,7 +280,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 <Currency
                   amount={amount}
                   emphasis="gold"
-                  className="text-2xl font-display"
+                  className="text-2xl"
                 />
               </div>
             </section>

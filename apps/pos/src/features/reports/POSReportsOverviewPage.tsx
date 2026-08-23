@@ -139,7 +139,7 @@ function TrendChart({ bars }: { bars: TrendBar[] }): JSX.Element {
               <div
                 className={cn(
                   'w-full rounded-t-md transition-all motion-reduce:transition-none',
-                  b.value > 0 ? 'bg-gold' : 'bg-bg-overlay',
+                  b.value > 0 ? 'bg-chart-1' : 'bg-bg-overlay',
                 )}
                 style={{ height: `${b.value > 0 ? Math.max(heightPct, 2) : 0}%` }}
                 data-testid={`trend-bar-${b.key}`}
@@ -185,7 +185,7 @@ function PaymentMix({ period }: { period: ReportsPeriod }): JSX.Element {
               </div>
               <div className="mt-1 h-2 rounded-full bg-bg-overlay overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gold"
+                  className="h-full rounded-full bg-chart-1"
                   style={{ width: `${Math.min(Math.max(m.share_pct, 0), 100)}%` }}
                 />
               </div>

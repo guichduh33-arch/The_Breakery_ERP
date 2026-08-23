@@ -93,7 +93,7 @@ export function POSStockCard({
 
       {/* Threshold + unit label */}
       <div className="flex items-center justify-between text-xs text-text-secondary">
-        <span className="tabular-nums">
+        <span className="font-mono tabular-nums">
           Alert {product.min_stock_threshold > 0 ? product.min_stock_threshold : '—'}
         </span>
         <span>{product.unit}</span>

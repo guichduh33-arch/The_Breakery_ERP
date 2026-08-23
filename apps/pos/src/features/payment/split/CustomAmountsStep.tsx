@@ -85,7 +85,7 @@ export function CustomAmountsStep({
           </div>
         </div>
 
-        <h3 className="text-xs uppercase tracking-widest text-gold mb-3">Payers</h3>
+        <h3 className="text-xs uppercase tracking-widest text-text-muted mb-3">Payers</h3>
         <ul className="space-y-2 flex-1">
           {payers.map((p, i) => {
             const colors = COLOR_CLASSES[p.color];

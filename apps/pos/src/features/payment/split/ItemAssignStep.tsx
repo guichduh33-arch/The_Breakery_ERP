@@ -85,7 +85,7 @@ export function ItemAssignStep({
       {/* LEFT — order items */}
       <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible">
         <div className="flex items-baseline justify-between mb-4">
-          <h3 className="text-xs uppercase tracking-widest text-gold">Order Items</h3>
+          <h3 className="text-xs uppercase tracking-widest text-text-muted">Order Items</h3>
           <span className="text-xs text-text-secondary">Tap item to assign to selected payer</span>
         </div>
 

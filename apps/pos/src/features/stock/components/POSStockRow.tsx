@@ -80,7 +80,7 @@ export function POSStockRow({
         </div>
 
         {/* Threshold (hidden on narrow) */}
-        <span className="hidden md:inline text-xs text-text-secondary tabular-nums whitespace-nowrap">
+        <span className="hidden md:inline text-xs text-text-secondary font-mono tabular-nums whitespace-nowrap">
           Alert {product.min_stock_threshold > 0 ? product.min_stock_threshold : '—'}
         </span>
 

@@ -64,7 +64,8 @@ export function VoidOrderModal({
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-widest text-red-as-text">Void Order</div>
-              <div className="font-bold text-xl text-text-primary mt-1">{orderNumber}</div>
+              {/* Arbitrage 2026-08-23 — numéro en mono, comme partout. */}
+              <div className="font-mono tabular-nums font-bold text-xl text-text-primary mt-1">{orderNumber}</div>
               <div className="text-xs text-text-secondary mt-1">
                 Total to refund: <Currency amount={total} className="text-text-primary" />
               </div>

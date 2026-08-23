@@ -100,7 +100,7 @@ export function PerPayerMethodStep({
     <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden" data-testid="split-per-payer-method">
       {/* LEFT — payer list */}
       <aside className="bg-bg-base p-5 overflow-y-auto max-md:overflow-visible">
-        <h3 className="text-xs uppercase tracking-widest text-gold mb-4">Payers</h3>
+        <h3 className="text-xs uppercase tracking-widest text-text-muted mb-4">Payers</h3>
         <ul className="space-y-2">
           {payers.map((p) => {
             const colors = COLOR_CLASSES[p.color];
@@ -179,7 +179,7 @@ export function PerPayerMethodStep({
           )}
         </div>
 
-        <h3 className="text-xs uppercase tracking-widest text-gold mb-3">
+        <h3 className="text-xs uppercase tracking-widest text-text-muted mb-3">
           Payment for {activePayer.label}
         </h3>
 

@@ -226,7 +226,7 @@ function MarginLine({
         <span className="text-sm text-text-primary truncate">
           {title} <span className="text-text-muted">· {subtitle}</span>
         </span>
-        <div className="flex items-baseline gap-3 shrink-0 text-xs text-text-muted tabular-nums">
+        <div className="flex items-baseline gap-3 shrink-0 text-xs text-text-muted font-mono tabular-nums">
           <span>HT <Currency amount={revenueHt} className="text-text-secondary" /></span>
           <span>COGS <Currency amount={cogs} className="text-text-secondary" /></span>
           <span className="w-12 text-right">{marginPct.toFixed(1)}%</span>
@@ -235,7 +235,7 @@ function MarginLine({
       </div>
       <div className={cn('mt-1.5 h-1.5 rounded-full bg-bg-overlay overflow-hidden')}>
         <div
-          className="h-full rounded-full bg-gold"
+          className="h-full rounded-full bg-chart-1"
           style={{ width: `${Math.min(Math.max(marginPct, 0), 100)}%` }}
         />
       </div>

@@ -142,7 +142,9 @@ export function KdsBoard({
             <h1 className="font-bold text-2xl text-text-primary">
               Live Orders
             </h1>
-            <SectionLabel as="span" size="sm" className="text-gold">
+            {/* Audit 2026-08-24 (theming P2) — Règle de l'Encre Rare : libellé
+                de chrome, pas une valeur ni la marque. */}
+            <SectionLabel as="span" size="sm">
               KDS
             </SectionLabel>
           </div>

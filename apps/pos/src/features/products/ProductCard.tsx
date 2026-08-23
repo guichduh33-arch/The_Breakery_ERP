@@ -128,7 +128,7 @@ function ProductCardImpl({
           <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5 z-10">
             {inCart && (
               <span
-                className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold tabular-nums shadow-md"
+                className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold font-mono tabular-nums"
                 aria-label={`${cartQty} in cart`}
               >
                 {cartQty}
@@ -161,7 +161,7 @@ function ProductCardImpl({
           <div className="absolute inset-0 grid place-items-center bg-backdrop z-20">
             <span
               id={`pc-overlay-${product.id}`}
-              className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red-as-text shadow-lg"
+              className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red shadow-hairline"
             >
               {overlayLabel}
             </span>

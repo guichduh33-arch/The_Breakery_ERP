@@ -239,7 +239,9 @@ export function FloorPlanModal({
             // `bg-elevated` is a bare token — no alpha outside cat-*, the /40
             // was silently dropped (dead class). Solid `bg-bg-elevated`.
             'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-6',
-            'bg-[radial-gradient(circle,_rgba(201,165,87,0.08)_1px,_transparent_1px)] [background-size:18px_18px]',
+            // Audit 2026-08-24 (theming P2) — même correctif que FloorPlanView :
+            // trame dérivée du token vivant, plus de #c9a557 figé.
+            'bg-[radial-gradient(circle,_color-mix(in_srgb,var(--gold-base)_8%,transparent)_1px,_transparent_1px)] [background-size:18px_18px]',
           )}
         >
           {visible.length === 0 ? (

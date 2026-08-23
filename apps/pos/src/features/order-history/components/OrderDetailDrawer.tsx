@@ -36,7 +36,9 @@ export function OrderDetailDrawer({
     >
       <header className="p-4 border-b border-border-subtle">
         <div className="flex items-baseline justify-between">
-          <span className="font-bold text-2xl">{order.order_number}</span>
+          {/* Arbitrage 2026-08-23 — le numéro de commande a UNE graphie :
+              mono tabulaire, sur toutes les surfaces écran. */}
+          <span className="font-mono tabular-nums font-bold text-2xl">{order.order_number}</span>
           <span className={cn(
             'text-xs uppercase tracking-widest font-semibold',
             isVoided ? 'text-danger' : 'text-success',

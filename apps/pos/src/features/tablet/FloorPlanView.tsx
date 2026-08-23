@@ -179,7 +179,10 @@ export function FloorPlanView({
         <div
           className={cn(
             'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-8',
-            'bg-[radial-gradient(circle,_rgba(201,165,87,0.08)_1px,_transparent_1px)] [background-size:18px_18px]',
+            // Audit 2026-08-24 (theming P2) — la trame était figée sur
+            // l'ANCIEN or (#c9a557, retiré du thème) ; color-mix la fait
+            // dériver du token vivant.
+            'bg-[radial-gradient(circle,_color-mix(in_srgb,var(--gold-base)_8%,transparent)_1px,_transparent_1px)] [background-size:18px_18px]',
           )}
         >
           {visible.length === 0 ? (

@@ -41,7 +41,7 @@ export function PrepTimer({ prepStartedAt }: PrepTimerProps) {
   if (!prepStartedAt) {
     return (
       <span
-        className="font-mono text-lg text-text-muted"
+        className="font-mono tabular-nums text-lg text-text-muted"
         aria-label="Prep timer not started"
       >
         --:--
@@ -54,7 +54,7 @@ export function PrepTimer({ prepStartedAt }: PrepTimerProps) {
 
   return (
     <span
-      className={`font-mono text-lg ${colourClass(elapsed, cfg)}`}
+      className={`font-mono tabular-nums text-lg ${colourClass(elapsed, cfg)}`}
       aria-label={`Prep elapsed ${format(elapsed)}`}
     >
       {format(elapsed)}

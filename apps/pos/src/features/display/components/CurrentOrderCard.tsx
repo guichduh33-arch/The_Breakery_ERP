@@ -39,7 +39,9 @@ export function CurrentOrderCard({ order }: CurrentOrderCardProps) {
 
   return (
     <div
-      className="rounded-3xl border border-gold-soft bg-bg-elevated px-12 py-10 shadow-lg"
+      // Audit 2026-08-24 (theming P3) — Règle du Filet : surface + bordure,
+      // pas d'ombre portée au repos en thème sombre.
+      className="rounded-3xl border border-gold-soft bg-bg-elevated px-12 py-10 shadow-hairline"
       data-testid="display-current-card"
     >
       <p className="text-sm uppercase tracking-[0.3em] text-text-secondary mb-3">
