@@ -19,7 +19,7 @@
 // get_customer_product_price RPC before addItem. Combos use
 // `combo_base_price` (emitted by ComboConfigModal as `unitPrice`) and do NOT
 // go through the fetchPrice path.
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
@@ -85,7 +85,10 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
     }
   }
 
-  function handleSelect(product: Product) {
+  // useCallback : ce handler descend jusqu'à chaque <ProductCard> mémoïsée —
+  // une identité neuve à chaque render de ce composant (2× par tap, via le
+  // setPending/setPending(null) de l'auto-add) repassait toute la grille.
+  const handleSelect = useCallback((product: Product) => {
     // Session 27c — parent products open the variant picker first.
     if (product.has_variants) {
       setVariantParent(product);
@@ -98,7 +101,7 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
       return;
     }
     setPending(product);
-  }
+  }, []);
 
   function handleVariantPick(variant: POSVariantRow) {
     if (!variantParent) return;

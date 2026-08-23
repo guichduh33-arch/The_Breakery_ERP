@@ -8,7 +8,7 @@
 // search field, and the shared ProductCard tiles. The ModifierModal flow is
 // unchanged.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Search } from 'lucide-react';
 import { EmptyState, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
@@ -64,9 +64,11 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
     });
   }, [products, selectedSlug, selectedCat, query]);
 
-  function handleSelect(product: Product) {
+  // useCallback : identité stable pour préserver le React.memo de ProductCard —
+  // sans quoi chaque frappe de recherche repasse toutes les tuiles visibles.
+  const handleSelect = useCallback((product: Product) => {
     setPending(product);
-  }
+  }, []);
 
   function handleConfirm(selections: SelectedModifiers) {
     if (pending) addItem(pending, selections);
@@ -77,14 +79,28 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
     setPending(null);
   }
 
-  // Products with no modifier group add straight to the cart.
-  if (pending && modifiersQuery.isSuccess) {
-    const groups = modifiersQuery.data;
-    if (groups.length === 0) {
-      addItem(pending, []);
-      queueMicrotask(() => setPending(null));
+  // Products with no modifier group add straight to the cart. Effet + ref, pas
+  // le corps du render : `addItem` pendant le render est exactement le bug
+  // StrictMode double-ajout que ProductTapHandler documente (Session 36) —
+  // le queueMicrotask ne masquait que le setState, pas le double addItem.
+  const autoAddedRef = useRef<Product | null>(null);
+  useEffect(() => {
+    if (!pending || !modifiersQuery.isSuccess) {
+      autoAddedRef.current = null;
+      return;
     }
-  }
+    if (autoAddedRef.current === pending) return;
+    if ((modifiersQuery.data ?? []).length === 0) {
+      autoAddedRef.current = pending;
+      addItem(pending, []);
+      setPending(null);
+    }
+  }, [pending, modifiersQuery.isSuccess, modifiersQuery.data, addItem]);
+
+  // Élément unique partagé par toutes les tuiles combo — un <ComboBadge />
+  // créé dans le .map() casserait le memo de chaque tuile combo à chaque render
+  // (même raison que dans ProductGrid).
+  const comboBadge = useMemo(() => <ComboBadge />, []);
 
   const product: ModifierModalProduct | null = pending
     ? { id: pending.id, name: pending.name, retail_price: pending.retail_price }
@@ -173,7 +189,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
                   overlayLabel={overlayLabel}
                   lowStockLabel={lowStockLabel}
                   onSelect={handleSelect}
-                  topLeftSlot={p.product_type === 'combo' ? <ComboBadge /> : undefined}
+                  topLeftSlot={p.product_type === 'combo' ? comboBadge : undefined}
                 />
               );
             })}

@@ -317,6 +317,7 @@ function ProductThumb({
           alt=""
           className="h-full w-full object-cover"
           loading="lazy"
+          decoding="async"
         />
       ) : (
         <span className="text-text-muted text-xs font-display uppercase">

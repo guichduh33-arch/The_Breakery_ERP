@@ -110,6 +110,7 @@ function ProductCardImpl({
             src={product.image_url ?? undefined}
             alt=""
             loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
             className={cn(
               'object-cover w-full h-full transition-transform duration-slow ease-motion-out motion-reduce:transition-none',

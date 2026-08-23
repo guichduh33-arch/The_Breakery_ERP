@@ -199,6 +199,7 @@ function LineRow({ line }: LineRowProps): JSX.Element {
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <BrandMark size="md" />

@@ -19,6 +19,8 @@ vi.mock('../hooks/useKdsOrders', () => ({
 }));
 vi.mock('../hooks/useAgeTimer', () => ({
   useAgeTimer: () => Date.parse('2026-05-14T12:00:00.000Z'),
+  useAgeDerived: (compute: (now: number) => unknown) =>
+    compute(Date.parse('2026-05-14T12:00:00.000Z')),
 }));
 
 const storeState = {

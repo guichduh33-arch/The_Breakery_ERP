@@ -55,7 +55,13 @@ export function POSStockRow({
           className="h-10 w-10 shrink-0 rounded-md bg-bg-overlay overflow-hidden border border-border-subtle"
         >
           {product.image_url ? (
-            <img src={product.image_url} alt="" className="h-full w-full object-cover" />
+            <img
+              src={product.image_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="h-full w-full grid place-items-center text-text-muted text-xs">
               {product.name.charAt(0)}

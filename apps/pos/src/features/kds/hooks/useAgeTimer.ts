@@ -23,7 +23,7 @@
 // `forceStoreRerender`) kept re-firing. Plain local state, fed by the shared
 // interval via a normal `setState` call, sidesteps that mechanism entirely.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ClockEntry {
   now: number;
@@ -75,4 +75,45 @@ export function useAgeTimer(periodMs = 1_000): number {
   }, [periodMs]);
 
   return now;
+}
+
+/**
+ * Audit 2026-08-24 (perf P1) — subscribe to the shared tick but only
+ * re-render when the DERIVED value changes. `KdsOrderCard` used the raw
+ * `useAgeTimer()` for its age band, so every ticket re-rendered its whole
+ * subtree every second; the band itself only changes twice in a ticket's
+ * life. The MM:SS readout stays on `useAgeTimer` — inside a leaf component.
+ *
+ * `compute` is read through a ref: callers may pass a fresh closure each
+ * render (over items/config) without resubscribing. A changed closure is
+ * picked up at the next shared tick (≤ periodMs), which is within the
+ * clock's own resolution.
+ */
+export function useAgeDerived<T>(compute: (now: number) => T, periodMs = 1_000): T {
+  const computeRef = useRef(compute);
+  computeRef.current = compute;
+  const [value, setValue] = useState<T>(() => compute(ensureEntry(periodMs).now));
+
+  // Render-phase resync (React's "adjusting state during render" pattern):
+  // when the compute INPUTS change (new items, new thresholds) the derived
+  // value must not wait for the next shared tick. Cheap by contract — compute
+  // is a band lookup, not a layout pass.
+  const fresh = compute(ensureEntry(periodMs).now);
+  if (!Object.is(fresh, value)) {
+    setValue(fresh);
+  }
+
+  useEffect(() => {
+    const recompute = (now: number) => {
+      setValue((prev) => {
+        const next = computeRef.current(now);
+        return Object.is(prev, next) ? prev : next;
+      });
+    };
+    // Resync on mount/period change (same reason as useAgeTimer above).
+    recompute(ensureEntry(periodMs).now);
+    return subscribe(periodMs, recompute);
+  }, [periodMs]);
+
+  return fresh;
 }

@@ -61,6 +61,7 @@ function ShowcaseCard({ product }: ShowcaseCardProps): JSX.Element {
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <BrandMark size="lg" />

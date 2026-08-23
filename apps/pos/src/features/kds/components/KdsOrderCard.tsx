@@ -35,11 +35,12 @@
 //   - StrictMode-safe — no module-scoped mutable state ; the only timer is
 //     the shared `useAgeTimer` hook.
 
+import { memo } from 'react';
 import { Button, Badge } from '@breakery/ui';
 import { formatOrderNumberShort, orderTypeLabel } from '@breakery/domain';
 import { toast } from 'sonner';
 
-import { useAgeTimer } from '../hooks/useAgeTimer';
+import { useAgeDerived, useAgeTimer } from '../hooks/useAgeTimer';
 import { useKdsConfig, type KdsConfig } from '../hooks/useKdsConfig';
 import { useKdsStartPrepTimer } from '../hooks/useKdsStartPrepTimer';
 import { useMarkItemServed } from '../hooks/useMarkItemServed';
@@ -74,8 +75,18 @@ function formatAge(ms: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
-  if (ageMs >= cfg.urgentMs) {
+// Audit 2026-08-24 (perf P1) — la bande d'âge est la seule chose que le tick
+// 1 s change sur la carte, et elle ne change que deux fois dans la vie d'un
+// ticket. La carte s'abonne à la BANDE (useAgeDerived) ; le MM:SS vit dans la
+// feuille OrderAgeClock, seule à re-render chaque seconde.
+function bandOf(ageMs: number, cfg: KdsConfig): AgeStyle['bandLabel'] {
+  if (ageMs >= cfg.urgentMs) return 'urgent';
+  if (ageMs >= cfg.warningMs) return 'warning';
+  return 'fresh';
+}
+
+function ageStyle(band: AgeStyle['bandLabel']): AgeStyle {
+  if (band === 'urgent') {
     return {
       // Critique run 4 lot 5 — animate-pulse sur l'article entier faisait
       // passer « Late » et le minuteur à ~2,8:1 au creux : la pulsation vit
@@ -85,7 +96,7 @@ function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
       bandLabel: 'urgent',
     };
   }
-  if (ageMs >= cfg.warningMs) {
+  if (band === 'warning') {
     return {
       border: 'border-amber-warn',
       timer: 'text-amber-warn font-semibold',
@@ -97,6 +108,23 @@ function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
     timer: 'text-text-secondary',
     bandLabel: 'fresh',
   };
+}
+
+/** Feuille MM:SS — le seul abonné au tick 1 s brut dans la carte. */
+function OrderAgeClock({
+  earliestSent,
+  className,
+}: {
+  earliestSent: number;
+  className: string;
+}) {
+  const now = useAgeTimer();
+  const ageMs = Number.isFinite(earliestSent) ? now - earliestSent : 0;
+  return (
+    <span className={className} aria-label="Order age">
+      {formatAge(ageMs)}
+    </span>
+  );
 }
 
 function ItemCta({ item }: { item: KdsItemRow }) {
@@ -197,20 +225,25 @@ function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow
   );
 }
 
-export function KdsOrderCard({ items }: KdsOrderCardProps) {
-  const now = useAgeTimer();
+function KdsOrderCardImpl({ items }: KdsOrderCardProps) {
   const cfg = useKdsConfig();
-  const head = items[0];
-  if (!head) return null;
 
   // The card age is driven by the *oldest* item in the order (FIFO fairness).
   const earliestSent = items.reduce<number>((min, it) => {
     const t = new Date(it.sent_to_kitchen_at).getTime();
     return Number.isFinite(t) && t < min ? t : min;
   }, Number.POSITIVE_INFINITY);
-  const ageMs = Number.isFinite(earliestSent) ? now - earliestSent : 0;
 
-  const style = ageStyle(ageMs, cfg);
+  // Re-render de la carte seulement quand la bande change (2× par ticket),
+  // pas à chaque seconde. Les hooks restent AVANT le early-return.
+  const band = useAgeDerived((now) =>
+    bandOf(Number.isFinite(earliestSent) ? now - earliestSent : 0, cfg),
+  );
+
+  const head = items[0];
+  if (!head) return null;
+
+  const style = ageStyle(band);
 
   return (
     <article
@@ -278,12 +311,10 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
               {style.bandLabel === 'urgent' ? 'Late' : 'Waiting'}
             </span>
           )}
-          <span
+          <OrderAgeClock
+            earliestSent={earliestSent}
             className={`font-mono text-2xl tabular-nums ${style.timer}`}
-            aria-label="Order age"
-          >
-            {formatAge(ageMs)}
-          </span>
+          />
         </div>
       </header>
 
@@ -369,3 +400,17 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
     </article>
   );
 }
+
+/**
+ * Audit 2026-08-24 (perf P1) — memo avec comparateur par contenu : KdsBoard
+ * reconstruit ses groupes (tableaux neufs) à chaque tick d'archivage de 15 s,
+ * mais les lignes elles-mêmes (TanStack) gardent leur identité tant que les
+ * données n'ont pas changé. Comparer les références des items suffit donc à
+ * absorber les regroupements sans masquer une vraie mise à jour.
+ */
+export const KdsOrderCard = memo(
+  KdsOrderCardImpl,
+  (prev, next) =>
+    prev.items.length === next.items.length &&
+    prev.items.every((it, i) => it === next.items[i]),
+);
