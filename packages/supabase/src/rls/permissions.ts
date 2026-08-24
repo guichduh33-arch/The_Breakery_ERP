@@ -75,6 +75,7 @@ export type PermissionCode =
   | 'users.update'
   | 'users.view_audit'
   | 'rbac.read'
+  | 'rbac.manage'
   | 'promotions.read'
   | 'promotions.create'
   | 'promotions.update'

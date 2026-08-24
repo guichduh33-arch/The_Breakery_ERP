@@ -6711,6 +6711,10 @@ export type Database = {
       delete_restaurant_table_v1: { Args: { p_id: string }; Returns: undefined }
       delete_section_v1: { Args: { p_section_id: string }; Returns: Json }
       delete_table_section_v1: { Args: { p_id: string }; Returns: undefined }
+      delete_user_permission_override_v1: {
+        Args: { p_permission_code: string; p_user_profile_id: string }
+        Returns: boolean
+      }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
@@ -7056,7 +7060,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_permission_changes_v1: {
+      get_permission_changes_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -8228,6 +8232,14 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
+      set_role_permission_v1: {
+        Args: {
+          p_granted: boolean
+          p_permission_code: string
+          p_role_code: string
+        }
+        Returns: boolean
+      }
       set_setting_v13: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
@@ -8253,6 +8265,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_user_permission_override_v1: {
+        Args: {
+          p_expires_at?: string
+          p_granted: boolean
+          p_permission_code: string
+          p_reason: string
+          p_user_profile_id: string
+        }
+        Returns: boolean
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
