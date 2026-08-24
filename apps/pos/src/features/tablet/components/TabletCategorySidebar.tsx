@@ -11,7 +11,7 @@
 //
 // Ergonomie tablette conservée : rail ≥104px, labels text-xs, cibles min-h-16.
 
-import { Star } from 'lucide-react';
+import { LayoutGrid, Star } from 'lucide-react';
 import { cn } from '@breakery/ui';
 import type { JSX } from 'react';
 import { useCategories } from '@/features/products/hooks/useCategories';
@@ -23,8 +23,19 @@ import {
 
 export interface TabletCategorySidebarProps {
   selectedSlug: string | null;
-  onSelect: (slug: string) => void;
+  /** `null` = tout le catalogue (tuile « All »). */
+  onSelect: (slug: string | null) => void;
 }
+
+// Classes structurelles partagées par toutes les tuiles du rail — la tuile
+// « All » ne porte pas de teinte cat-* mais doit rester le même objet à l'œil.
+const TILE_BASE = cn(
+  'relative w-full min-h-16 px-2 py-3 flex flex-col items-center justify-center gap-1.5 rounded-md border',
+  'text-xs uppercase tracking-wide font-semibold text-center leading-tight',
+  'transition-colors duration-fast ease-motion-out',
+  // Critique 2026-08-24 (a11y) — le rail entier était sans focus visible.
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
+);
 
 function Tile({
   active,
@@ -46,9 +57,7 @@ function Tile({
       onClick={() => onSelect(slug)}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'relative w-full min-h-16 px-2 py-3 flex flex-col items-center justify-center gap-1.5 rounded-md border',
-        'text-xs uppercase tracking-wide font-semibold text-center leading-tight',
-        'transition-colors duration-fast ease-motion-out',
+        TILE_BASE,
         tone.text,
         // Le survol ne s'applique qu'à la tuile inactive (même règle que le
         // comptoir) — sur tablette il ne sert que le stylet/trackpad, il ne
@@ -85,6 +94,26 @@ export function TabletCategorySidebar({ selectedSlug, onSelect }: TabletCategory
       aria-label="Product categories"
       className="w-[104px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col items-stretch p-2 gap-1 overflow-y-auto"
     >
+      {/* Critique 2026-08-24 (P2) — l'état « tout le catalogue » (slug null)
+          était inatteignable une fois une catégorie touchée, et le rail ne le
+          représentait pas. Tuile neutre : l'or marque la sélection, pas une
+          teinte cat-* (ce n'est pas une famille de produits). */}
+      <button
+        onClick={() => onSelect(null)}
+        aria-current={selectedSlug === null ? 'page' : undefined}
+        className={cn(
+          TILE_BASE,
+          selectedSlug === null
+            ? 'bg-gold-soft text-gold border-gold-soft'
+            : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
+        )}
+      >
+        {selectedSlug === null && (
+          <span aria-hidden className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-gold" />
+        )}
+        <LayoutGrid className="h-6 w-6" strokeWidth={1.8} aria-hidden />
+        <span className="line-clamp-2">All</span>
+      </button>
       <Tile
         active={selectedSlug === 'favorites'}
         onSelect={onSelect}

@@ -27,8 +27,13 @@ vi.mock('../components/TabletMenuView', () => ({
   TabletMenuView: ({ toolbar }: { toolbar?: ReactNode }) => <div>{toolbar}</div>,
 }));
 
+// `useCreateTabletOrder` chains `.abortSignal(...)` on the `rpc()` builder
+// (Critique 2026-08-24 P0, 15s timeout) — the mock must expose it.
+function rpcResult(data: unknown, error: unknown = null) {
+  return { abortSignal: () => Promise.resolve({ data, error }) };
+}
 const mocks = vi.hoisted(() => ({
-  rpc: vi.fn().mockResolvedValue({ data: 'order-uuid', error: null }),
+  rpc: vi.fn(),
 }));
 
 // La page monte la sélection de table (tables + occupation realtime) : le mock
@@ -62,7 +67,7 @@ function wrap(node: ReactNode): ReactNode {
 
 describe('tablet order note — textarea → store → create_tablet_order_v8', () => {
   beforeEach(() => {
-    mocks.rpc.mockClear();
+    mocks.rpc.mockReset().mockReturnValue(rpcResult('order-uuid'));
     useTabletCartStore.setState({
       items: [
         { id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30_000, quantity: 1, modifiers: [] },

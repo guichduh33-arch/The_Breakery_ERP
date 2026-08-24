@@ -48,7 +48,9 @@ describe('FloorPlanView', () => {
         onTableSelect={vi.fn()}
       />,
     );
-    expect(screen.getByText('FLOOR PLAN')).toBeInTheDocument();
+    // Critique 2026-08-24 (theming) — capitales codées en dur retirées ; le
+    // titre est désormais une casse de titre normale, portée par un <h2>.
+    expect(screen.getByRole('heading', { name: 'Floor plan', level: 2 })).toBeInTheDocument();
     expect(screen.getByTestId('tablet-floor-plan')).toBeInTheDocument();
     expect(screen.getByTestId('tablet-floor-plan-canvas')).toBeInTheDocument();
     const interiorTab = screen.getByTestId('tablet-floor-plan-section-interior');

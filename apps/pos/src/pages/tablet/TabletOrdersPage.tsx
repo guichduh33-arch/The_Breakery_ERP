@@ -1,4 +1,4 @@
-import { useMemo, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { useLocation } from 'react-router-dom';
 import { TabletOrderCard } from '@breakery/ui';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
@@ -10,9 +10,22 @@ interface TabletOrdersLocationState {
   justSentOrderId?: string | null;
 }
 
+/** Horloge unique de la page — chaque carte montait son propre setInterval +
+ *  re-render à la seconde (jusqu'à 50 timers sur une liste pleine) ; un seul
+ *  tick suffit, passé aux cartes via la prop `now`. */
+function usePageNow(intervalMs = 1000): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const handle = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(handle);
+  }, [intervalMs]);
+  return now;
+}
+
 export default function TabletOrdersPage(): JSX.Element {
   const { data: orders = [], isLoading } = useMyTabletOrders();
   useTabletOrderStatusListener();
+  const now = usePageNow();
 
   const location = useLocation();
   const justSentOrderId = (location.state as TabletOrdersLocationState | null)?.justSentOrderId ?? null;
@@ -42,7 +55,7 @@ export default function TabletOrdersPage(): JSX.Element {
                   les retirer exige un manager ET une déclaration de perte, ce
                   que seul le flux cancel-item du POS sait faire. Ne pas passer
                   `onCancel` retire le bouton (la carte le conditionne dessus). */}
-              <TabletOrderCard order={order as unknown as TabletOrderCardOrder} />
+              <TabletOrderCard order={order as unknown as TabletOrderCardOrder} now={now} />
             </div>
           );
         })}

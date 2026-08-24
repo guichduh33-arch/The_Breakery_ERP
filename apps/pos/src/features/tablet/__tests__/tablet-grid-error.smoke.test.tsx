@@ -23,9 +23,12 @@ vi.mock('@/features/products/hooks/useActiveLotsByProduct', () => ({
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({
   useProductModifiers: () => ({ data: [], isSuccess: false }),
 }));
+// Critique 2026-08-24 (P1) — TabletProductGrid lit désormais `s.items` pour
+// dériver `cartQty` (badge « déjà au panier ») : un état sans ce champ fait
+// planter le render (`cartItems is not iterable`).
 vi.mock('@/stores/tabletCartStore', () => ({
-  useTabletCartStore: <T,>(selector: (s: { addItem: () => void }) => T) =>
-    selector({ addItem: vi.fn() }),
+  useTabletCartStore: <T,>(selector: (s: { addItem: () => void; items: unknown[] }) => T) =>
+    selector({ addItem: vi.fn(), items: [] }),
 }));
 
 function wrap(node: ReactNode) {

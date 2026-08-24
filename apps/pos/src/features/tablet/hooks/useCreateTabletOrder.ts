@@ -112,6 +112,14 @@ export function useCreateTabletOrder() {
       // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
       // le refus y arrive à temps. Seul le rejeu hors-ligne pose le drapeau.
       const tabletSourceCode = getTabletSourceCode();
+      // Critique 2026-08-24 (P0) — sans borne, un réseau mort (portail captif)
+      // laissait « Sending… » sans fin : le fetch n'abandonnait jamais. 15 s
+      // couvre le pire aller-retour légitime ; l'échec remonte en toast réseau.
+      // AbortController + setTimeout (pas AbortSignal.timeout) : le pattern
+      // portable du repo — l'API statique manque sur une WebView figée et sa
+      // TypeError synchrone casserait l'envoi à 100 % sur cet appareil.
+      const timeoutController = new AbortController();
+      const timeoutHandle = setTimeout(() => timeoutController.abort(), 15_000);
       const { data, error } = await supabase.rpc('create_tablet_order_v8', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
@@ -129,7 +137,8 @@ export function useCreateTabletOrder() {
         // (réglages appareil). Seul un code T-… est envoyé ; sinon le serveur
         // applique son défaut 'T1'. Inutile sur un append (numéro déjà posé).
         ...(!isAppend && tabletSourceCode !== null ? { p_source_code: tabletSourceCode } : {}),
-      });
+      }).abortSignal(timeoutController.signal);
+      clearTimeout(timeoutHandle);
       if (error) throw Object.assign(new Error(error.message), { details: error });
       return { orderId: data, localNumber: null };
     },

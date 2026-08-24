@@ -93,7 +93,10 @@ function ProductCardImpl({
         '[@media(hover:hover)]:hover:will-change-transform active:will-change-transform',
         'transition-[transform,box-shadow,border-color,background-color] duration-fast ease-motion-out',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100',
-        'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2',
+        // Critique 2026-08-24 (a11y) — `focus:` faisait COLLER l'anneau doré
+        // après un tap tactile (même bug que le :hover traité juste au-dessus) ;
+        // `focus-visible:` ne le rend qu'au clavier.
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
         // In-cart signal (#9): a gold ring so the cashier sees at a glance the
         // item is already on the ticket — cuts the rush double-add. `gold` is
         // a bare token (no alpha support outside the cat-* family) so the

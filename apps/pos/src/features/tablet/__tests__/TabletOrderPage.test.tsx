@@ -57,11 +57,9 @@ vi.mock('../components/TabletCartPanel', () => ({
     </div>
   ),
 }));
-vi.mock('../components/OfflineBanner', () => ({
-  OfflineBanner: ({ isOnline }: { isOnline: boolean }) => (
-    <div data-testid="mock-offline-banner" data-online={isOnline ? 'true' : 'false'} />
-  ),
-}));
+// OfflineBanner n'est plus rendu par TabletOrderPage (Critique 2026-08-24) —
+// il est monté une seule fois par TabletLayout pour toutes les vues. Rien à
+// mocker ici.
 
 // Force the offline hook to a stable online state.
 vi.mock('../hooks/useTabletConnectionState', () => ({
@@ -74,9 +72,15 @@ vi.mock('../hooks/useTabletConnectionState', () => ({
   }),
 }));
 
-// Hoisted RPC + supabase stub.
+// Hoisted RPC + supabase stub. `useCreateTabletOrder` chains
+// `.abortSignal(...)` on the `supabase.rpc(...)` builder (Critique
+// 2026-08-24 P0, 15s timeout) — the mock must expose that method and
+// return the thenable from it, not from `rpc()` itself.
+function rpcResult(data: unknown, error: unknown = null) {
+  return { abortSignal: () => Promise.resolve({ data, error }) };
+}
 const supaMocks = vi.hoisted(() => ({
-  rpc: vi.fn().mockResolvedValue({ data: 'new-order-uuid', error: null }),
+  rpc: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -122,7 +126,7 @@ describe('TabletOrderPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
-    supaMocks.rpc.mockResolvedValue({ data: 'new-order-uuid', error: null });
+    supaMocks.rpc.mockReturnValue(rpcResult('new-order-uuid'));
     useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in' });
     useAuthStore.setState({
       user: { id: 'waiter-001', full_name: 'Demo Waiter', role_code: 'waiter', employee_code: 'EMP002' },
@@ -138,16 +142,26 @@ describe('TabletOrderPage', () => {
     const { TabletOrderPage } = await import('../TabletOrderPage');
     render(wrap(<TabletOrderPage tablesOverride={TABLES} occupancyOverride={{}} />));
 
+    // Critique 2026-08-24 (P1) — panier vide et sans table, la vue INITIALE
+    // est désormais le plan de salle ; on revient au menu via « Back ».
+    fireEvent.click(screen.getByRole('button', { name: /back to menu/i }));
+
     expect(screen.getByTestId('tablet-order-page')).toBeInTheDocument();
     expect(screen.getByTestId('tablet-order-toolbar')).toBeInTheDocument();
 
+    // Critique 2026-08-24 (P1) — dine-in par défaut, sans table : le bouton
+    // annonce le motif du refus (ambre) au lieu du neutre « Pick a table ».
     const pickTableBtn = screen.getByTestId('tablet-order-pick-table');
-    expect(pickTableBtn).toHaveTextContent(/pick a table/i);
-    expect(pickTableBtn).toHaveClass('min-h-11');
+    expect(pickTableBtn).toHaveTextContent(/table required/i);
+    expect(pickTableBtn).toHaveClass('min-h-11', 'border-amber-warn', 'text-amber-warn');
 
     const sendBtn = screen.getByTestId('tablet-order-send');
-    expect(sendBtn).toBeDisabled(); // empty cart
-    expect(sendBtn).toHaveClass('min-h-11');
+    expect(sendBtn).toBeDisabled(); // empty cart AND missing table
+    expect(sendBtn).toHaveTextContent(/select a table first/i);
+    // Le CTA d'envoi est size="lg" (`h-touch-large`, plus grand que le
+    // min-h-11 générique) — pas une erreur du diff, l'ancienne assertion
+    // visait déjà la mauvaise classe.
+    expect(sendBtn).toHaveClass('h-touch-large');
     expect(screen.getByTestId('tablet-order-type-dine-in')).toHaveClass('min-h-11');
     expect(screen.getByTestId('tablet-order-type-take-out')).toHaveClass('min-h-11');
   });
@@ -156,6 +170,9 @@ describe('TabletOrderPage', () => {
     const { TabletOrderPage } = await import('../TabletOrderPage');
     render(wrap(<TabletOrderPage tablesOverride={TABLES} occupancyOverride={{}} />));
 
+    // La vue initiale (panier vide, pas de table) est déjà le plan de salle ;
+    // on repasse par le menu pour vérifier l'ouverture EXPLICITE via le chip.
+    fireEvent.click(screen.getByRole('button', { name: /back to menu/i }));
     fireEvent.click(screen.getByTestId('tablet-order-pick-table'));
 
     // Floor plan visible.
@@ -241,7 +258,10 @@ describe('TabletOrderPage', () => {
       expect(onSendOverride).toHaveBeenCalledWith('waiter-001');
     });
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('permission_denied');
+      // Critique 2026-08-24 (heuristique 9) — une erreur de code inconnu
+      // (ni réseau, ni append_unavailable_offline, ni table_required_for_dine_in)
+      // est préfixée d'une phrase lisible, le détail brut restant visible.
+      expect(toast.error).toHaveBeenCalledWith('Could not send the order (permission_denied)');
     });
     // Cart preserved on failure.
     expect(useTabletCartStore.getState().items).toHaveLength(1);
@@ -250,6 +270,7 @@ describe('TabletOrderPage', () => {
   it('toggles between dine-in and take-out via the order-type tabs', async () => {
     const { TabletOrderPage } = await import('../TabletOrderPage');
     render(wrap(<TabletOrderPage tablesOverride={TABLES} occupancyOverride={{}} />));
+    fireEvent.click(screen.getByRole('button', { name: /back to menu/i }));
 
     const dineIn = screen.getByTestId('tablet-order-type-dine-in');
     const takeOut = screen.getByTestId('tablet-order-type-take-out');

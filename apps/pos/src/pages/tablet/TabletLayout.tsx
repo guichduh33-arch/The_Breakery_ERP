@@ -1,12 +1,13 @@
 import { useEffect, type JSX } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MapPin, Wifi, WifiOff, TriangleAlert, ClipboardList, History } from 'lucide-react';
+import { MapPin, Wifi, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useTabletConnectionState } from '@/features/tablet/hooks/useTabletConnectionState';
+import { OfflineBanner } from '@/features/tablet/components/OfflineBanner';
 import { isInFlight } from '@breakery/domain';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
@@ -61,6 +62,13 @@ export default function TabletLayout(): JSX.Element {
   // il annonçait plusieurs centaines, et un compteur qui n'indique rien
   // d'actionnable cesse d'être regardé. On ne compte que ce qui est en vol.
   const orderCount = orders.filter((o) => isInFlight(o.status)).length;
+  // Critique 2026-08-24 (P1) — « Item ready » n'existait que 4 secondes (un
+  // toast). La moitié du métier du serveur est d'aller chercher ce qui est
+  // prêt : le compte des plats au passe est dérivé du cache déjà tiré par
+  // useMyTabletOrders et porté en pastille VERTE distincte sur l'onglet Orders.
+  const readyCount = orders
+    .filter((o) => isInFlight(o.status))
+    .reduce((n, o) => n + o.items.filter((i) => i.kitchen_status === 'ready').length, 0);
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
@@ -74,9 +82,12 @@ export default function TabletLayout(): JSX.Element {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-bg-base">
       <header className="h-14 px-4 border-b border-border-subtle flex items-center justify-between gap-3 bg-bg-elevated shrink-0">
-        {/* Audit 2026-08-24 (a11y P2) — h1 : la surface n'avait aucun titre de
-            page pour la navigation par titres. */}
-        <h1 className="font-semibold text-xl truncate">{user?.full_name ?? 'Waiter'}</h1>
+        {/* Critique 2026-08-24 (a11y) — le h1 nommait la serveuse : le titre le
+            plus fort de l'écran désignait l'élément le moins actionnable, et
+            chaque vue en ajoutait un second. Le h1 de la surface est masqué
+            visuellement ; le nom reste affiché, en simple texte. */}
+        <h1 className="sr-only">Tablet ordering</h1>
+        <span className="font-semibold text-xl truncate">{user?.full_name ?? 'Waiter'}</span>
 
         <div className="flex items-center gap-2">
           {/* Active table */}
@@ -88,38 +99,28 @@ export default function TabletLayout(): JSX.Element {
             {tableNumber ? `Table ${tableNumber}` : 'No table'}
           </span>
 
-          {/* Pastille d'état, trois valeurs — voir useTabletConnectionState.
-              « Offline » veut dire « la commande part quand même, par le bus » ;
-              « No network » veut dire « rien ne part ». Les confondre envoyait
-              la serveuse continuer alors que plus rien n'aboutissait. */}
-          <span
-            data-testid="tablet-connection-pill"
-            data-connection-state={connection.state}
-            className={
-              connection.state === 'online'
-                ? 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-success-soft text-success text-xs font-semibold uppercase tracking-wide'
-                : connection.state === 'offline_bus'
-                  ? 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-warning-soft text-warning text-xs font-semibold uppercase tracking-wide'
-                  : 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-danger-soft text-danger-as-text text-xs font-semibold uppercase tracking-wide'
-            }
-            role="status"
-            aria-live="polite"
-          >
-            {connection.state === 'online' ? (
+          {/* Pastille d'état — voir useTabletConnectionState. Critique
+              2026-08-24 : pastille ET bandeau disaient le même fait sur deux
+              lignes de l'écran le plus court. Un seul signal à la fois : la
+              pastille ne rend que le « Online » rassurant ; les deux états
+              dégradés sont portés par l'OfflineBanner (avec l'instruction),
+              rendu ci-dessous pour TOUTES les vues de la coquille. */}
+          {connection.state === 'online' && (
+            <span
+              data-testid="tablet-connection-pill"
+              data-connection-state={connection.state}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-success-soft text-success text-xs font-semibold uppercase tracking-wide"
+              role="status"
+              aria-live="polite"
+            >
               <Wifi className="h-4 w-4 shrink-0" aria-hidden />
-            ) : connection.state === 'offline_bus' ? (
-              <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
-            ) : (
-              <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
-            )}
-            {connection.state === 'online'
-              ? 'Online'
-              : connection.state === 'offline_bus'
-                ? 'Offline'
-                : 'No network'}
-          </span>
+              Online
+            </span>
+          )}
         </div>
       </header>
+
+      <OfflineBanner connection={connection} />
 
       {/* main : landmark manquant — la navigation par landmarks était
           impossible sur /tablet (a11y P2). */}
@@ -157,6 +158,15 @@ export default function TabletLayout(): JSX.Element {
               aria-label={`${orderCount} order${orderCount === 1 ? '' : 's'}`}
             >
               {orderCount}
+            </span>
+          )}
+          {readyCount > 0 && (
+            <span
+              data-testid="tablet-ready-badge"
+              className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-green text-green-fg text-xs font-bold"
+              aria-label={`${readyCount} item${readyCount === 1 ? '' : 's'} ready to serve`}
+            >
+              {readyCount}
             </span>
           )}
         </NavLink>

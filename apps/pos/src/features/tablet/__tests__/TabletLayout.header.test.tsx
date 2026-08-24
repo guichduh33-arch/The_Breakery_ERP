@@ -76,29 +76,36 @@ describe('TabletLayout header (LOT 6)', () => {
 
   // Cloud coupé MAIS hub LAN debout : la commande part quand même en cuisine
   // par le bus et attend en file. La serveuse peut continuer.
-  it('shows Offline when the cloud is down but the LAN bus is up', async () => {
+  //
+  // Critique 2026-08-24 — pastille ET bandeau disaient le même fait sur deux
+  // lignes de l'écran le plus court : la pastille ne rend plus QUE le
+  // « Online » rassurant, les deux états dégradés passent par l'OfflineBanner
+  // seul (rendu une fois par TabletLayout pour toutes les vues).
+  it('shows Offline via the banner (not the pill) when the cloud is down but the LAN bus is up', async () => {
     useCloudStatusStore.setState({ cloudOnline: false });
     useHubConnectionStore.setState({ connected: true });
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
-    const pill = screen.getByTestId('tablet-connection-pill');
-    expect(pill).toHaveTextContent(/offline/i);
-    expect(pill).toHaveAttribute('data-connection-state', 'offline_bus');
+    expect(screen.queryByTestId('tablet-connection-pill')).not.toBeInTheDocument();
+    const banner = screen.getByTestId('tablet-offline-banner');
+    expect(banner).toHaveTextContent(/offline/i);
+    expect(banner).toHaveAttribute('data-connection-state', 'offline_bus');
   });
 
   // Le cas que l'ancienne pastille annonçait à tort comme « Offline » : cloud
   // ET hub coupés. isOfflineMode() vaut false, l'envoi part en ligne et échoue.
-  // Rien n'aboutit — la pastille doit le dire autrement.
-  it('shows No network when BOTH the cloud and the LAN bus are down', async () => {
+  // Rien n'aboutit — le bandeau doit le dire autrement.
+  it('shows No network via the banner (not the pill) when BOTH the cloud and the LAN bus are down', async () => {
     useCloudStatusStore.setState({ cloudOnline: false });
     useHubConnectionStore.setState({ connected: false });
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
-    const pill = screen.getByTestId('tablet-connection-pill');
-    expect(pill).toHaveTextContent(/no network/i);
-    expect(pill).toHaveAttribute('data-connection-state', 'no_network');
+    expect(screen.queryByTestId('tablet-connection-pill')).not.toBeInTheDocument();
+    const banner = screen.getByTestId('tablet-offline-banner');
+    expect(banner).toHaveTextContent(/no network/i);
+    expect(banner).toHaveAttribute('data-connection-state', 'no_network');
     // Le mot « Offline » seul rendrait les deux situations indistinguables.
-    expect(pill).not.toHaveTextContent(/^offline$/i);
+    expect(banner).not.toHaveTextContent(/^offline$/i);
   });
 
   // Le verrou d'inactivité posait isLocked sur /tablet sans que rien ne
@@ -132,10 +139,12 @@ describe('TabletLayout header (LOT 6)', () => {
   });
 
   it('badges the Orders tab with the live order count', async () => {
+    // Critique 2026-08-24 (P1) — readyCount lit désormais o.items ; un ordre
+    // sans ce champ fait planter le render (o.items.filter sur undefined).
     ordersMock.data = [
-      { id: 'o1', status: 'pending_payment' },
-      { id: 'o2', status: 'pending_payment' },
-      { id: 'o3', status: 'draft' },
+      { id: 'o1', status: 'pending_payment', items: [] },
+      { id: 'o2', status: 'pending_payment', items: [] },
+      { id: 'o3', status: 'draft', items: [] },
     ];
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
@@ -146,10 +155,10 @@ describe('TabletLayout header (LOT 6)', () => {
   // plusieurs centaines, et cessait d'être regardé. Seul « en vol » compte.
   it('ne compte que les commandes encore en vol, pas l’historique encaissé', async () => {
     ordersMock.data = [
-      { id: 'o1', status: 'pending_payment' },
-      { id: 'o2', status: 'paid' },
-      { id: 'o3', status: 'completed' },
-      { id: 'o4', status: 'voided' },
+      { id: 'o1', status: 'pending_payment', items: [] },
+      { id: 'o2', status: 'paid', items: [] },
+      { id: 'o3', status: 'completed', items: [] },
+      { id: 'o4', status: 'voided', items: [] },
     ];
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
@@ -158,12 +167,40 @@ describe('TabletLayout header (LOT 6)', () => {
 
   it('n’affiche aucun badge quand tout est encaissé', async () => {
     ordersMock.data = [
-      { id: 'o1', status: 'paid' },
-      { id: 'o2', status: 'completed' },
+      { id: 'o1', status: 'paid', items: [] },
+      { id: 'o2', status: 'completed', items: [] },
     ];
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
     expect(screen.queryByLabelText(/order[s]?$/i)).not.toBeInTheDocument();
+  });
+
+  // Critique 2026-08-24 (P1) — la pastille verte compte les items PRÊTS des
+  // commandes en vol (dérivée du cache useMyTabletOrders, pas un canal à part).
+  it('badges the Orders tab with a green ready-count when items are ready to serve', async () => {
+    ordersMock.data = [
+      {
+        id: 'o1',
+        status: 'pending_payment',
+        items: [
+          { id: 'i1', kitchen_status: 'ready' },
+          { id: 'i2', kitchen_status: 'preparing' },
+        ],
+      },
+      { id: 'o2', status: 'draft', items: [{ id: 'i3', kitchen_status: 'ready' }] },
+    ];
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.getByTestId('tablet-ready-badge')).toHaveTextContent('2');
+  });
+
+  it('shows no ready-badge when nothing is ready', async () => {
+    ordersMock.data = [
+      { id: 'o1', status: 'pending_payment', items: [{ id: 'i1', kitchen_status: 'preparing' }] },
+    ];
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.queryByTestId('tablet-ready-badge')).not.toBeInTheDocument();
   });
 
   // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO

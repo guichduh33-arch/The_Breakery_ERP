@@ -74,6 +74,20 @@ describe('OfflineBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/last synced 5 minutes ago/i);
   });
 
+  // Critique 2026-08-24 — au-delà de 24h, "N hours ago" dérivait vers des
+  // valeurs à trois chiffres illisibles ; on dégrade en jours.
+  it('degrades to "yesterday" after exactly one day', () => {
+    const oneDayAgo = new Date(Date.now() - 26 * 60 * 60_000);
+    render(<OfflineBanner connection={conn('offline_bus', oneDayAgo)} />);
+    expect(screen.getByRole('status')).toHaveTextContent(/last synced yesterday/i);
+  });
+
+  it('degrades to "N days ago" beyond one day', () => {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60_000 - 60_000);
+    render(<OfflineBanner connection={conn('offline_bus', threeDaysAgo)} />);
+    expect(screen.getByRole('status')).toHaveTextContent(/last synced 3 days ago/i);
+  });
+
   // Cloud coupé, bus debout : la commande PART. Le bandeau doit rassurer, pas
   // alarmer — sinon la serveuse s'arrête alors que le service tient encore.
   it('says orders still reach the kitchen when the LAN bus is up', () => {

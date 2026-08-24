@@ -29,6 +29,12 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 // ── Helpers ──────────────────────────────────────────────────────────
+// `useCreateTabletOrder` chains `.abortSignal(...)` on the `rpc()` builder
+// (Critique 2026-08-24 P0, 15s timeout) — the mock must expose it.
+function rpcResult(data: unknown, error: unknown = null) {
+  return { abortSignal: () => Promise.resolve({ data, error }) };
+}
+
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return ({ children }: { children: ReactNode }) => (
@@ -51,7 +57,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
   });
 
   it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v8', async () => {
-    supaMocks.rpc.mockResolvedValue({ data: 'order-id-1', error: null });
+    supaMocks.rpc.mockReturnValue(rpcResult('order-id-1'));
 
     const wrapper = makeWrapper();
     const { result } = renderHook(() => useCreateTabletOrder(), { wrapper });
@@ -78,7 +84,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
   });
 
   it('C2: retry mutate with SAME clientUuid forwards the same p_client_uuid on both RPC calls', async () => {
-    supaMocks.rpc.mockResolvedValue({ data: 'order-id-2', error: null });
+    supaMocks.rpc.mockReturnValue(rpcResult('order-id-2'));
 
     const wrapper = makeWrapper();
     const { result } = renderHook(() => useCreateTabletOrder(), { wrapper });

@@ -27,7 +27,8 @@ import { useTabletMenuCacheRead, useTabletMenuCacheWriter } from '../hooks/useTa
 
 export interface TabletMenuViewProps {
   selectedSlug: string | null;
-  onSelectCategory: (slug: string) => void;
+  /** `null` = tuile « All » du rail — tout le catalogue. */
+  onSelectCategory: (slug: string | null) => void;
   /**
    * Optional toolbar rendered between the sidebar and the grid. Used by
    * the page to inject the table-picker + order-type tabs.

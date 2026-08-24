@@ -17,8 +17,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
+// `useCreateTabletOrder` chains `.abortSignal(...)` on the `rpc()` builder
+// (Critique 2026-08-24 P0, 15s timeout) — the mock must expose it.
+function rpcResult(data: unknown, error: unknown = null) {
+  return { abortSignal: () => Promise.resolve({ data, error }) };
+}
 const mocks = vi.hoisted(() => ({
-  rpc: vi.fn().mockResolvedValue({ data: 'order-cloud-1', error: null }),
+  rpc: vi.fn(),
 }));
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -100,14 +105,15 @@ function renderPage() {
   );
 }
 
-/** Entre en mode ajout comme le ferait Made : plan de salle → table servie. */
+/** Entre en mode ajout comme le ferait Made : plan de salle → table servie.
+ *  Critique 2026-08-24 (P1) — panier vide et sans table, la vue INITIALE est
+ *  déjà le plan de salle : pas besoin (et pas moyen) de taper le chip table. */
 function enterAppendMode(): void {
-  fireEvent.click(screen.getByTestId('tablet-order-pick-table'));
   fireEvent.click(screen.getByRole('button', { name: /Table 7/i }));
 }
 
 beforeEach(() => {
-  mocks.rpc.mockReset().mockResolvedValue({ data: 'order-cloud-1', error: null });
+  mocks.rpc.mockReset().mockReturnValue(rpcResult('order-cloud-1'));
   enqueueIntentMock.mockClear();
   publishMock.mockClear();
   isOfflineModeMock.mockReturnValue(false);
@@ -183,7 +189,7 @@ describe('ajout à une commande de salle existante', () => {
   it('une table dont la commande vient du comptoir reste inerte', () => {
     tableOrdersMock.data = { '7': { id: 'order-pos-1', order_number: '#0050', appendable: false } };
     renderPage();
-    fireEvent.click(screen.getByTestId('tablet-order-pick-table'));
+    // Vue initiale = plan de salle (panier vide, pas de table).
     fireEvent.click(screen.getByRole('button', { name: /Table 7/i }));
 
     expect(screen.queryByTestId('tablet-append-banner')).not.toBeInTheDocument();

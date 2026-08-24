@@ -27,18 +27,26 @@ export interface TabletOrderCardProps {
   order: TabletOrderCardOrder;
   onCancel?: (orderId: string) => void;
   isCancelling?: boolean;
+  /**
+   * Horloge partagée par la page hôte. Sans elle, chaque carte montait son
+   * propre setInterval + setState à la seconde — jusqu'à 50 timers et 50
+   * re-rendus/s sur une liste pleine. Absente, la carte garde son horloge
+   * interne (compat).
+   */
+  now?: Date;
 }
 
-function useNow(intervalMs = 1000): Date {
+function useNow(intervalMs: number, enabled: boolean): Date {
   const [now, setNow] = useState(() => new Date());
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (!enabled) return undefined;
     ref.current = setInterval(() => setNow(new Date()), intervalMs);
     return () => {
       if (ref.current !== null) clearInterval(ref.current);
     };
-  }, [intervalMs]);
+  }, [intervalMs, enabled]);
 
   return now;
 }
@@ -90,8 +98,9 @@ function KitchenPill({ status }: { status: KitchenStatus }): JSX.Element {
   );
 }
 
-export function TabletOrderCard({ order, onCancel, isCancelling = false }: TabletOrderCardProps): JSX.Element {
-  const now = useNow();
+export function TabletOrderCard({ order, onCancel, isCancelling = false, now: nowProp }: TabletOrderCardProps): JSX.Element {
+  const fallbackNow = useNow(1000, nowProp === undefined);
+  const now = nowProp ?? fallbackNow;
   const age = formatAge(order.sent_to_kitchen_at, now);
   const orderTypeLabel = order.order_type === 'dine_in' ? 'Dine in' : 'Take out';
   const showCancel = order.status === 'pending_payment' && onCancel !== undefined;
@@ -112,7 +121,9 @@ export function TabletOrderCard({ order, onCancel, isCancelling = false }: Table
           </span>
         )}
         <span>{orderTypeLabel}</span>
-        <span className="font-mono" data-testid="card-age-timer">{age}</span>
+        {/* tabular-nums — Règle du Chiffre Immobile : ce nombre change sous
+            l'œil à la seconde. */}
+        <span className="font-mono tabular-nums" data-testid="card-age-timer">{age}</span>
       </div>
 
       <ul className="px-4 pb-3 flex flex-col gap-1.5">
