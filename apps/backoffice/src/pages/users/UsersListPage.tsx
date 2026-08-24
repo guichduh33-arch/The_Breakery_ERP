@@ -16,7 +16,10 @@ import { PageHeader } from '@/components/PageHeader.js';
 export default function UsersListPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canCreate = hasPermission('users.create');
-  const canViewMatrix = hasPermission('rbac.read');
+  // ADR-031 — le raccourci mène à l'éditeur RBAC, gardé au seul SUPER_ADMIN.
+  // `rbac.manage` n'est seedée que sur ce rôle : le lien n'apparaît donc qu'à
+  // qui peut réellement ouvrir la page.
+  const canEditRbac = hasPermission('rbac.manage');
 
   const users = useUsersList();
   const roles = useRolesList();
@@ -43,11 +46,11 @@ export default function UsersListPage() {
         subtitle="Staff profiles + role assignments. Sign-in is via PIN — there are no passwords."
         actions={
           <>
-            {canViewMatrix && (
-              <Link to="/backoffice/users/permissions">
+            {canEditRbac && (
+              <Link to="/backoffice/settings/roles">
                 <Button variant="ghost">
                   <ShieldCheck className="h-4 w-4 mr-1.5" aria-hidden />
-                  Permission matrix
+                  Roles &amp; permissions
                 </Button>
               </Link>
             )}

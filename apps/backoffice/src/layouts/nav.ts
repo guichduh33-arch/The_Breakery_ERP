@@ -299,10 +299,13 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Access & network',
         links: [
-          { to: '/backoffice/settings/security', label: 'Session timeouts', permission: 'settings.security.manage' },
-          { to: '/backoffice/settings/permissions', label: 'Permissions matrix', permission: 'settings.read' },
+          // ADR-031 — le délai d'inactivité par rôle a migré vers la fiche du
+          // rôle ; Security ne garde que la politique de verrouillage du PIN.
+          { to: '/backoffice/settings/security', label: 'PIN policy', permission: 'settings.security.manage' },
+          // Un seul lien pour le RBAC, là où deux vues lecture-seule
+          // affichaient la même matrice sans jamais permettre de l'éditer.
+          { to: '/backoffice/settings/roles', label: 'Roles & permissions', permission: 'rbac.manage' },
           { to: '/backoffice/users', label: 'Users', end: true, permission: 'users.read' },
-          { to: '/backoffice/users/permissions', label: 'Permissions (read-only)', permission: 'rbac.read' },
           { to: '/backoffice/lan-devices', label: 'LAN devices', permission: 'lan.devices.read' },
         ],
       },

@@ -28,4 +28,3 @@
 1	apps/backoffice/src/pages/customers/CustomerCategoriesPage.tsx
 1	apps/backoffice/src/pages/orders/OrderDetailPage.tsx
 1	apps/backoffice/src/pages/orders/OrdersListPage.tsx
-2	apps/backoffice/src/pages/settings/SettingsPermissionsPage.tsx

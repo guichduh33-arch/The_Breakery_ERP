@@ -8,7 +8,7 @@
 // dit rien —, et pas de comparaison : une révocation ne se met pas en regard de
 // celle du mois dernier.
 //
-// CE QUI NE CHANGE PAS : les lignes viennent de `get_permission_changes_v1` et
+// CE QUI NE CHANGE PAS : les lignes viennent de `get_permission_changes` et
 // sont servies telles quelles ; la pastille d'action garde son code couleur
 // (accordé = vert, révoqué = rouge, le reste neutre) ; `detail` reste rendu
 // brut, en `<code>` — c'est un contexte libre, il n'a ni schéma ni ordre.

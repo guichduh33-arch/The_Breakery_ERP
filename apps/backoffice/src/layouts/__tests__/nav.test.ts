@@ -109,10 +109,13 @@ const LEGACY_DESTINATIONS = [
   '/backoffice/settings/expense-thresholds',
   '/backoffice/b2b/settings',
   '/backoffice/settings/security',
-  '/backoffice/settings/permissions',
+  // ADR-031 — `/settings/permissions` et `/users/permissions` sont SUPPRIMÉES,
+  // remplacées par l'éditeur unique `/settings/roles`. Ce n'est pas une
+  // destination perdue : c'est une fusion, et la ligne ci-dessous est ce qui la
+  // rend vérifiable au même titre que les autres.
+  '/backoffice/settings/roles',
   '/backoffice/lan-devices',
   '/backoffice/users',
-  '/backoffice/users/permissions',
 ];
 
 const allowAll = () => true;

@@ -8437,7 +8437,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_role_session_timeout_v1: {
+      update_role_session_timeout_v2: {
         Args: { p_minutes: number; p_role_code: string }
         Returns: boolean
       }

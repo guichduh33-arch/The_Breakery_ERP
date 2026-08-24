@@ -1,5 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/usePermissionChanges.ts
-// S40 Wave B3 — Query hook for get_permission_changes_v1 RPC.
+// Rapport « Permission changes » — lecture de la famille RPC
+// `get_permission_changes`. ADR-031 a bumpé la fonction : la v1 est droppée,
+// la v2 garde la même signature (p_date_start / p_date_end en texte).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -29,7 +31,7 @@ export function usePermissionChanges(params: UsePermissionChangesParams) {
   return useQuery<PermissionChangesData, Error>({
     queryKey: ['reports', 'permission-changes', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_permission_changes_v1', {
+      const { data, error } = await supabase.rpc('get_permission_changes_v2', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
