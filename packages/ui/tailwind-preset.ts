@@ -230,6 +230,12 @@ const preset: Partial<Config> = {
         'gutter-card':    'var(--gutter-card)',
         'gutter-page':    'var(--gutter-page)',
         'gutter-section': 'var(--gutter-section)',
+        // Re-audit 2026-08-24 — safe-area Capacitor. `safe-bottom` colle à la
+        // barre gestuelle ; `safe-bottom-gutter` garantit EN PLUS la gouttière
+        // minimale d'une barre d'actions (max avec 0.625rem). Remplacent les
+        // inline styles env() qui étaient les seules occurrences du repo.
+        'safe-bottom': 'env(safe-area-inset-bottom, 0px)',
+        'safe-bottom-gutter': 'max(0.625rem, env(safe-area-inset-bottom, 0px))',
       },
     },
   },

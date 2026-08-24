@@ -76,9 +76,19 @@ export default function CustomerDebtsPanel(): JSX.Element {
         </span>
       </header>
 
-      <div className="flex-1 grid grid-cols-[280px_1fr] overflow-hidden">
+      {/* Re-audit 2026-08-24 (responsive P1) — la grille [280px_1fr] sans
+          breakpoint écrasait le détail à ~0 sous 400 px : le règlement d'une
+          ardoise devenait inatteignable. Sous md : master-détail à un seul
+          volet, même doctrine qu'OrderHistoryPanel — la liste, puis le détail
+          plein écran sur sélection explicite, avec retour. */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] overflow-hidden">
         {/* Sidebar */}
-        <aside className="border-r border-border-subtle bg-bg-elevated flex flex-col">
+        <aside
+          className={cn(
+            'md:border-r border-border-subtle bg-bg-elevated flex flex-col',
+            selectedId && 'max-md:hidden',
+          )}
+        >
           <div className="p-3 border-b border-border-subtle">
             <label className="relative block">
               <Search className="h-4 w-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
@@ -120,7 +130,15 @@ export default function CustomerDebtsPanel(): JSX.Element {
         </aside>
 
         {/* Detail */}
-        <section className="overflow-y-auto p-6 space-y-4">
+        <section className={cn('overflow-y-auto p-6 space-y-4', !selectedId && 'max-md:hidden')}>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={() => setSelectedId(null)}
+            className="md:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden /> All customers
+          </Button>
           {selected ? (
             <DebtDetail
               debt={selected}

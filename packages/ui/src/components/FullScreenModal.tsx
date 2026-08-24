@@ -55,12 +55,20 @@ export function FullScreenModal({
           className="fixed inset-0 bg-backdrop z-50 motion-reduce:animate-none motion-reduce:transition-none"
         />
         <DialogPrimitive.Content
+          // Radix DialogContent does NOT set aria-modal (verified in the
+          // bundle, re-audit 2026-08-24) — without it, screen readers keep
+          // the page behind the payment terminal in the reading order.
+          aria-modal="true"
           // When no description child is rendered, explicitly pass
           // aria-describedby={undefined} so Radix doesn't warn. Spread to
           // preserve auto-linking when a Description child IS present.
           {...(description ? {} : { 'aria-describedby': undefined })}
           className={cn(
             'fixed inset-0 bg-bg-base text-text-primary z-50 flex flex-col focus:outline-none',
+            // pb-safe-bottom : sur l'APK Capacitor le pied de modale (Process
+            // Payment) passait sous la barre gestuelle Android ; vaut 0 sur
+            // desktop (fallback env()).
+            'pb-safe-bottom',
             'motion-reduce:animate-none motion-reduce:transition-none motion-reduce:duration-0',
             className,
           )}

@@ -129,10 +129,7 @@ export default function TabletLayout(): JSX.Element {
 
       {/* Audit 2026-08-24 (responsive P1) — pb-safe-area : sur l'APK Capacitor
           la nav basse était collée sous la barre gestuelle Android. */}
-      <nav
-        className="min-h-14 border-t border-border-subtle bg-bg-elevated flex shrink-0"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
+      <nav className="min-h-14 border-t border-border-subtle bg-bg-elevated flex shrink-0 pb-safe-bottom">
         <NavLink
           to="/tablet/order"
           className={({ isActive }) =>

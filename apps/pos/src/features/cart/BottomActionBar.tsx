@@ -258,8 +258,7 @@ export function BottomActionBar({
       // son border-t, pas par une ombre portée — supprimée.
       // Audit 2026-08-24 (responsive P1) — safe-area : la barre porte Checkout,
       // qui passait sous la barre gestuelle Android en Capacitor.
-      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap z-50"
-      style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom, 0px))' }}
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 pt-2.5 pb-safe-bottom-gutter flex items-center gap-2 max-md:flex-wrap z-50"
       // Audit 2026-08-24 (a11y P2) — role=toolbar promettait la navigation aux
       // flèches (non câblée) ; group dit ce que le clavier sait faire, même
       // doctrine que le popover More et les onglets du panier.

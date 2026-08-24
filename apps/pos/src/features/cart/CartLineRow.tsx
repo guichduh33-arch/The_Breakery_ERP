@@ -199,10 +199,10 @@ export function CartLineRow({
           </span>
         </button>
       ) : (
-        <div
-          className="h-11 min-w-[2.75rem] shrink-0 px-1.5 grid place-items-center"
-          aria-hidden
-        >
+        // NOT aria-hidden: on a locked/cancelled/gift line this chip is the
+        // ONLY place the quantity exists — hiding it hides the count from
+        // screen readers (re-audit 2026-08-24 P1).
+        <div className="h-11 min-w-[2.75rem] shrink-0 px-1.5 grid place-items-center">
           <span className="font-mono tabular-nums text-base font-bold leading-none text-text-secondary">
             {item.quantity}
             <span className="text-text-muted font-medium text-sm">×</span>

@@ -76,10 +76,13 @@ export function VoidOrderModal({
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
+            {/* htmlFor/id : sans l'association, le champ n'avait pour nom que
+                son placeholder (re-audit 2026-08-24 a11y). */}
+            <label htmlFor="void-hist-reason" className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
               Reason
             </label>
             <Input
+              id="void-hist-reason"
               value={reason}
               onChange={(e) => { setReason(e.target.value); setReasonError(false); }}
               placeholder="e.g. wrong order, customer cancelled…"
