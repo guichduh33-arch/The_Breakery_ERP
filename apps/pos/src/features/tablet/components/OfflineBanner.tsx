@@ -33,7 +33,11 @@ function formatRelative(then: Date): string {
   if (minutes < 60) return `${minutes} minutes ago`;
   const hours = Math.floor(minutes / 60);
   if (hours === 1) return '1 hour ago';
-  return `${hours} hours ago`;
+  if (hours < 24) return `${hours} hours ago`;
+  // « 26 hours ago » après une coupure d'un jour — on dégrade en jours.
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  return `${days} days ago`;
 }
 
 export function OfflineBanner({ connection }: OfflineBannerProps): JSX.Element | null {

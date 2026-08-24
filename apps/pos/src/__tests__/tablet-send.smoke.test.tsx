@@ -19,8 +19,13 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
+// `useCreateTabletOrder` chains `.abortSignal(...)` on the `rpc()` builder
+// (Critique 2026-08-24 P0, 15s timeout) — the mock must expose it.
+function rpcResult(data: unknown, error: unknown = null) {
+  return { abortSignal: () => Promise.resolve({ data, error }) };
+}
 const mocks = vi.hoisted(() => ({
-  rpc: vi.fn().mockResolvedValue({ data: 'new-order-uuid', error: null }),
+  rpc: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -67,7 +72,7 @@ describe('tablet-send smoke', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
-    mocks.rpc.mockResolvedValue({ data: 'new-order-uuid', error: null });
+    mocks.rpc.mockReturnValue(rpcResult('new-order-uuid'));
     useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in' });
     useAuthStore.setState({
       user: { id: 'waiter-001', full_name: 'Waiter Demo', role_code: 'waiter', employee_code: 'EMP002' },
@@ -81,7 +86,10 @@ describe('tablet-send smoke', () => {
 
   it('send-to-kitchen button is disabled when cart is empty', () => {
     render(wrapper(<TabletOrderPage />));
-    expect(screen.getByRole('button', { name: /send to kitchen/i })).toBeDisabled();
+    // Critique 2026-08-24 (P1) — panier vide et sans table, la vue INITIALE
+    // est désormais le plan de salle ; on revient au menu via « Back ».
+    fireEvent.click(screen.getByRole('button', { name: /back to menu/i }));
+    expect(screen.getByRole('button', { name: /select a table first/i })).toBeDisabled();
   });
 
   it('calls create_tablet_order_v8 RPC with correct payload and navigates to /tablet/orders on success', async () => {
@@ -124,7 +132,7 @@ describe('tablet-send smoke', () => {
   });
 
   it('shows error toast when RPC fails', async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: 'permission_denied' } });
+    mocks.rpc.mockReturnValueOnce(rpcResult(null, { message: 'permission_denied' }));
     const { toast } = await import('sonner');
     useTabletCartStore.setState({
       items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],

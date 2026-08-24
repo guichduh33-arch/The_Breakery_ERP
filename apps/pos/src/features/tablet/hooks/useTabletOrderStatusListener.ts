@@ -77,6 +77,14 @@ export function useTabletOrderStatusListener() {
           seen.add(key);
 
           toast.success(`Item ready: ${item.name_snapshot ?? 'item'}`);
+          // Critique 2026-08-24 (P1) — le toast était le SEUL canal, visuel et
+          // éphémère : tablette posée trente secondes, information perdue. La
+          // vibration double le signal (jamais seule — le badge vert de la nav
+          // porte le compte persistant) ; garde de capacité, l'API n'existe pas
+          // sur tous les navigateurs de tablette.
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate(200);
+          }
           void queryClient.invalidateQueries({ queryKey: ['tablet-orders', userId] });
         },
       )

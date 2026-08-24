@@ -42,6 +42,7 @@
 // an "Interior" bucket. Replaces the S14 `sort_order >= 100` heuristic.
 
 import { useMemo, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Home, Trees, MapPin, Users } from 'lucide-react';
 import type { JSX } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
@@ -80,6 +81,8 @@ export interface FloorPlanViewProps {
   onAppendSelect?: (tableName: string, order: AppendableOrderRef) => void;
   /** Optional: header subtitle override. */
   subtitle?: string;
+  /** Vrai pendant le chargement initial des tables (voir le canvas). */
+  loading?: boolean;
 }
 
 function toFloorPlanTable(
@@ -104,6 +107,7 @@ export function FloorPlanView({
   appendableByTable,
   onAppendSelect,
   subtitle,
+  loading = false,
 }: FloorPlanViewProps): JSX.Element {
   const sections = useMemo(() => bucketTablesBySection(tables), [tables]);
   const [sectionKey, setSectionKey] = useState<string | null>(null);
@@ -118,12 +122,20 @@ export function FloorPlanView({
         return;
       }
       // Table occupée : une 2ᵉ tournée est possible SI la commande en cours est
-      // née en salle et n'est pas encore payée. Sinon on reste inerte — c'était
-      // le seul comportement jusqu'ici.
+      // née en salle et n'est pas encore payée.
       const target = appendableByTable?.[table.name];
       if (target !== undefined && onAppendSelect !== undefined) {
         onAppendSelect(table.name, target);
+        return;
       }
+      // Critique 2026-08-24 (a11y) — le tap sortait en silence : impossible de
+      // distinguer « table inerte » de « j'ai raté la cible ». L'id fixe
+      // dédoublonne les taps répétés. Le message ne présume PAS la cause :
+      // une table est inerte si sa commande est née au comptoir OU si son
+      // état n'est plus complétable (useTableOrders) — deux cas distincts.
+      toast.error(`Table ${table.name} can't take a round from here right now.`, {
+        id: 'floor-plan-inert-table',
+      });
     },
     [occupancy, onTableSelect, appendableByTable, onAppendSelect],
   );
@@ -143,7 +155,10 @@ export function FloorPlanView({
           <Users className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="font-sans font-semibold text-2xl tracking-wide text-text-primary">FLOOR PLAN</h1>
+          {/* h2 (le h1 vit dans TabletLayout) ; casse de titre — les capitales
+              codées dans le texte n'étaient ni la Capitale Espacée (12px/0.12em)
+              ni un titre : un titre de 24 px qui crie. */}
+          <h2 className="font-sans font-semibold text-2xl text-text-primary">Floor plan</h2>
           <p className="text-text-secondary text-sm mt-1">
             {subtitle ??
               (onAppendSelect !== undefined
@@ -185,7 +200,17 @@ export function FloorPlanView({
             'bg-[radial-gradient(circle,_color-mix(in_srgb,var(--gold-base)_8%,transparent)_1px,_transparent_1px)] [background-size:18px_18px]',
           )}
         >
-          {visible.length === 0 ? (
+          {loading && visible.length === 0 ? (
+            // Critique 2026-08-24 (heuristique 1) — pendant le chargement,
+            // l'écran accusait une salle non configurée. Un état neutre le
+            // temps que les tables arrivent.
+            <div
+              className="h-full min-h-[300px] grid place-items-center text-text-muted text-sm motion-safe:animate-pulse"
+              aria-busy="true"
+            >
+              Loading tables…
+            </div>
+          ) : visible.length === 0 ? (
             <div className="h-full min-h-[300px] grid place-items-center text-text-muted text-sm">
               No tables configured for this section.
             </div>
@@ -209,10 +234,12 @@ export function FloorPlanView({
 
       {/* Footer legend */}
       <footer className="px-6 py-4 border-t border-border-subtle bg-bg-elevated">
+        {/* Critique 2026-08-24 — « Reserved » retiré : toFloorPlanTable ne
+            produit jamais ce statut, la légende offrait une clé de lecture
+            pour un état inexistant. */}
         <div className="flex items-center gap-6 text-xs uppercase tracking-widest font-semibold flex-wrap">
           <Legend tone="available" label="Available" />
           <Legend tone="occupied" label="Occupied" />
-          <Legend tone="reserved" label="Reserved" />
         </div>
       </footer>
     </section>

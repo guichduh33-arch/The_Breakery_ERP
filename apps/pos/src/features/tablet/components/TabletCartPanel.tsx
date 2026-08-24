@@ -13,9 +13,18 @@ export interface TabletCartPanelProps {
    * implémentations de l'envoi coexistaient — c'en est une de trop.
    */
   footer?: ReactNode;
+  /**
+   * Forme compacte de LA MÊME action, rendue au pied du rail replié
+   * (portrait). Sans elle, replier le panier faisait disparaître l'envoi —
+   * exactement ce que le commentaire du pied déclare vouloir éviter. Même
+   * handler côté page : deux rendus, une seule implémentation.
+   */
+  compactAction?: ReactNode;
 }
 
-export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Element {
+const COLLAPSED_KEY = 'breakery.tablet-cart.collapsed';
+
+export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps = {}): JSX.Element {
   const items = useTabletCartStore((s) => s.items);
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
@@ -35,7 +44,12 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
 
   // Ticket 5 — collapsible in portrait so the cart hands space back to the
   // product grid. Landscape always shows the full rail (CSS override below).
-  const [collapsed, setCollapsed] = useState(false);
+  // Persisté en sessionStorage comme le reste de la saisie : une mise en
+  // veille qui rouvrait le panneau plein contredisait le geste de repli.
+  const [collapsed, setCollapsed] = useState(() => sessionStorage.getItem(COLLAPSED_KEY) === '1');
+  useEffect(() => {
+    sessionStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
+  }, [collapsed]);
 
   // Ticket 2 — brief add-to-cart flash (<300ms) on the cart affordance when the
   // item count grows. Duration comes from the `--motion-base` token, which
@@ -73,25 +87,31 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
       )}
       data-testid="tablet-cart-panel"
     >
-      {/* Collapsed rail (portrait only) — tap to expand. Hidden in landscape. */}
+      {/* Collapsed rail (portrait only) — tap to expand. Hidden in landscape.
+          Le CTA compact vit HORS du bouton d'expansion (un bouton dans un
+          bouton est invalide) : l'envoi reste possible sans déplier. */}
       {collapsed && (
-        <button
-          type="button"
-          onClick={() => setCollapsed(false)}
-          aria-label={`Expand cart, ${itemCount} items`}
-          aria-expanded={false}
-          className={cn(
-            'landscape:hidden flex flex-col items-center gap-3 h-full w-full pt-4 px-2 text-text-secondary',
-            'transition-colors duration-base',
-            flash && 'bg-gold-soft',
-          )}
-        >
-          <ShoppingBag className="h-6 w-6" aria-hidden />
-          {countBadge}
-          {!isEmpty && (
-            <Currency amount={preview.total} className="text-xs tabular-nums text-center leading-tight" />
-          )}
-        </button>
+        <div className="landscape:hidden flex flex-col h-full w-full">
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label={`Expand cart, ${itemCount} items`}
+            aria-expanded={false}
+            className={cn(
+              'flex-1 flex flex-col items-center gap-3 pt-4 px-2 text-text-secondary',
+              'transition-colors duration-base',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:-outline-offset-2',
+              flash && 'bg-gold-soft',
+            )}
+          >
+            <ShoppingBag className="h-6 w-6" aria-hidden />
+            {countBadge}
+            {!isEmpty && (
+              <Currency amount={preview.total} className="text-xs tabular-nums text-center leading-tight" />
+            )}
+          </button>
+          {compactAction !== undefined && <div className="p-2 pb-3">{compactAction}</div>}
+        </div>
       )}
 
       {/* Full panel — hidden in portrait while collapsed, always shown in landscape. */}
@@ -112,7 +132,7 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
             onClick={() => setCollapsed(true)}
             aria-label="Collapse cart"
             aria-expanded
-            className="landscape:hidden h-11 w-11 -mr-2 grid place-items-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-overlay"
+            className="landscape:hidden h-11 w-11 -mr-2 grid place-items-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
           >
             <ChevronRight className="h-5 w-5" aria-hidden />
           </button>
@@ -141,7 +161,7 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
                     </div>
                     {/* h-12/w-12 remove target — tablet-comfortable (LOT 6). */}
                     <button
-                      className="h-12 w-12 shrink-0 grid place-items-center rounded-md bg-bg-input text-text-secondary hover:text-red-as-text text-lg"
+                      className="h-12 w-12 shrink-0 grid place-items-center rounded-md bg-bg-input text-text-secondary hover:text-red-as-text text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
                       onClick={() => removeItem(item.id)}
                       aria-label={`Remove ${item.name}`}
                     >
@@ -151,18 +171,29 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
                   {/* Quantity stepper — 48px targets (LOT 6). The shared
                       @breakery/ui QuantityStepper is h-8 (desktop) and not
                       size-configurable, so this row uses h-12 buttons inline. */}
+                  {/* Critique 2026-08-24 — le « − » à quantité 1 était désactivé
+                      et forçait à viser le « × » en haut de ligne ; il retire
+                      désormais l'article, comme le pouce s'y attend. */}
                   <div className="flex items-center gap-2">
                     <button
-                      className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay disabled:opacity-50"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
-                      aria-label={`Decrease ${item.name}`}
+                      className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
+                      onClick={() =>
+                        item.quantity <= 1
+                          ? removeItem(item.id)
+                          : updateQuantity(item.id, item.quantity - 1)
+                      }
+                      aria-label={
+                        // Libellé distinct du « × » (`Remove <name>`) : deux
+                        // boutons au même nom accessible sur la même ligne
+                        // sont indistinguables au lecteur d'écran.
+                        item.quantity <= 1 ? `Remove last ${item.name}` : `Decrease ${item.name}`
+                      }
                     >
                       −
                     </button>
                     <span className="min-w-10 text-center font-mono tabular-nums text-base">{item.quantity}</span>
                     <button
-                      className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay"
+                      className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       aria-label={`Increase ${item.name}`}
                     >

@@ -6,7 +6,7 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -58,7 +58,11 @@ describe('TabletCartPanel — touch targets (LOT 6)', () => {
     }
   });
 
-  it('disables decrement at quantity 1 (remove is the explicit delete path)', () => {
+  // Critique 2026-08-24 — le « − » à quantité 1 n'est plus désactivé : il
+  // retire l'article, comme le pouce s'y attend. Son nom accessible est
+  // DISTINCT du × de tête (`Remove last` vs `Remove`) — deux boutons au même
+  // nom sur une ligne étaient indistinguables au lecteur d'écran (review).
+  it('the − at quantity 1 removes the item instead of being disabled', () => {
     useTabletCartStore.setState({
       items: [
         { id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30_000, quantity: 1, modifiers: [] },
@@ -67,7 +71,12 @@ describe('TabletCartPanel — touch targets (LOT 6)', () => {
       orderType: 'dine_in',
     });
     render(wrap(<TabletCartPanel />));
-    expect(screen.getByLabelText(/decrease latte/i)).toBeDisabled();
-    expect(screen.getByLabelText(/remove latte/i)).not.toBeDisabled();
+
+    const stepperRemove = screen.getByLabelText('Remove last Latte');
+    expect(screen.getByLabelText('Remove Latte')).not.toBeDisabled(); // le × de tête
+    expect(stepperRemove).not.toBeDisabled();
+
+    fireEvent.click(stepperRemove);
+    expect(useTabletCartStore.getState().items).toHaveLength(0);
   });
 });

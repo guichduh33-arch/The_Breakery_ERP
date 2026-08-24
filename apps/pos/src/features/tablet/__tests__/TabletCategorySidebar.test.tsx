@@ -38,4 +38,22 @@ describe('TabletCategorySidebar (LOT 6)', () => {
     fireEvent.click(screen.getByRole('button', { name: /bread/i }));
     expect(onSelect).toHaveBeenCalledWith('bread');
   });
+
+  // Critique 2026-08-24 (P2) — l'état « tout le catalogue » (slug null) était
+  // inatteignable une fois une catégorie touchée. La tuile « All » vit en tête
+  // du rail, avant Favorites, et rappelle onSelect(null).
+  it('renders an "All" tile ahead of Favorites, marked current when selectedSlug is null', () => {
+    render(<TabletCategorySidebar selectedSlug={null} onSelect={vi.fn()} />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons[0]).toHaveTextContent(/all/i);
+    expect(buttons[1]).toHaveTextContent(/favorites/i);
+    expect(screen.getByRole('button', { name: /all/i })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('calls onSelect(null) when the "All" tile is tapped', () => {
+    const onSelect = vi.fn();
+    render(<TabletCategorySidebar selectedSlug="beverage" onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: /all/i }));
+    expect(onSelect).toHaveBeenCalledWith(null);
+  });
 });

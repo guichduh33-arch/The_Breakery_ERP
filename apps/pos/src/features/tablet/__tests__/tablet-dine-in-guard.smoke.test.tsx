@@ -33,6 +33,12 @@ vi.mock('@/features/cart/hooks/useStationMap', () => ({
 
 import { useCreateTabletOrder } from '../hooks/useCreateTabletOrder';
 
+// `useCreateTabletOrder` chains `.abortSignal(...)` on the `rpc()` builder
+// (Critique 2026-08-24 P0, 15s timeout) — the mock must expose it.
+function rpcResult(data: unknown, error: unknown = null) {
+  return { abortSignal: () => Promise.resolve({ data, error }) };
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
@@ -50,7 +56,7 @@ const DINE_IN_NO_TABLE = {
 };
 
 beforeEach(() => {
-  rpcMock.mockReset().mockResolvedValue({ data: 'order-1', error: null });
+  rpcMock.mockReset().mockReturnValue(rpcResult('order-1'));
   enqueueIntentMock.mockClear();
   publishMock.mockClear();
   isOfflineModeMock.mockReturnValue(false);

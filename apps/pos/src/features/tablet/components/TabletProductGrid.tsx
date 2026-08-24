@@ -28,11 +28,32 @@ export interface TabletProductGridProps {
 
 export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX.Element {
   const addItem = useTabletCartStore((s) => s.addItem);
+  const cartItems = useTabletCartStore((s) => s.items);
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState<Product | null>(null);
+
+  // Critique 2026-08-24 (P1) — la tuile perdait son signal « déjà au panier »
+  // sur la seule surface où la saisie est interrompue par le client qui parle.
+  // Même dérivation que le comptoir (ProductGrid) : le badge doré coupe le
+  // double-ajout, DESIGN.md § Product Tile.
+  const qtyByProduct = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const it of cartItems) {
+      m.set(it.product_id, (m.get(it.product_id) ?? 0) + it.quantity);
+    }
+    return m;
+  }, [cartItems]);
+
+  // Critique 2026-08-24 (P2) — la requête persistait en silence au changement
+  // de catégorie tout en ne cherchant QUE dedans : « croissant » depuis Coffee
+  // rendait « No matches » sur un produit qui existe. Changer de catégorie
+  // repart d'une recherche vide.
+  useEffect(() => {
+    setQuery('');
+  }, [selectedSlug]);
 
   const modifiersQuery = useProductModifiers({
     productId: pending?.id ?? '',
@@ -111,7 +132,9 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="px-5 py-3 flex items-center justify-between gap-4 border-b border-border-subtle">
-        <h1 className="font-sans font-semibold text-xl text-text-primary capitalize">{title}</h1>
+        {/* h2 — le h1 de la surface vit dans TabletLayout ; deux h1 simultanés
+            cassaient la navigation par titres (a11y). */}
+        <h2 className="font-sans font-semibold text-xl text-text-primary capitalize">{title}</h2>
         <div className="relative w-64">
           <Search
             aria-hidden
@@ -188,6 +211,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
                   disabled={disabled}
                   overlayLabel={overlayLabel}
                   lowStockLabel={lowStockLabel}
+                  cartQty={qtyByProduct.get(p.id) ?? 0}
                   onSelect={handleSelect}
                   topLeftSlot={p.product_type === 'combo' ? comboBadge : undefined}
                 />

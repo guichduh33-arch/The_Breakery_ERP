@@ -37,7 +37,7 @@
 import { useState, useCallback, useMemo, useRef, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, Send } from 'lucide-react';
 import type { RestaurantTable } from '@breakery/domain';
 import { Button, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
@@ -49,7 +49,6 @@ import { useTableOccupancy } from '@/features/tables/hooks/useTableOccupancy';
 import { useTableOrders } from '@/features/tables/hooks/useTableOrders';
 import { TabletMenuView } from './components/TabletMenuView';
 import { TabletCartPanel } from './components/TabletCartPanel';
-import { OfflineBanner } from './components/OfflineBanner';
 import { OrderTypeToggle } from './components/OrderTypeToggle';
 import { useTabletConnectionState } from './hooks/useTabletConnectionState';
 import { useCreateTabletOrder } from './hooks/useCreateTabletOrder';
@@ -76,11 +75,21 @@ export function TabletOrderPage({
   redirectAfterSend = '/tablet/orders',
   onSendOverride,
 }: TabletOrderPageProps = {}): JSX.Element {
-  const [view, setView] = useState<ViewMode>('menu');
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
-
   const items = useTabletCartStore((s) => s.items);
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
+  // Critique 2026-08-24 (P1) — l'ordre de l'écran suit l'ordre du métier : la
+  // première question du serveur est « quelle table ? ». Panier vide et sans
+  // table (l'état par défaut, invalide à l'envoi pour un dine-in), on ouvre
+  // sur le plan de salle ; « Back » mène au menu pour un take-out.
+  // L'initialiseur (exécuté UNE fois) est fiable parce que BootGate (App.tsx)
+  // monte les routes après l'hydratation du persist zustand — laquelle passe
+  // par une microtâche, jamais vraiment en synchrone. Si BootGate saute un
+  // jour, cet initialiseur lirait l'état pré-hydratation.
+  const [view, setView] = useState<ViewMode>(() =>
+    items.length === 0 && tableNumber === null ? 'floor-plan' : 'menu',
+  );
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+
   const setTableNumber = useTabletCartStore((s) => s.setTableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
   const setOrderType = useTabletCartStore((s) => s.setOrderType);
@@ -119,6 +128,23 @@ export function TabletOrderPage({
   const isSending = mutation.isPending;
 
   const isAppendMode = appendToOrderId !== null;
+  // Critique 2026-08-24 (P1) — le refus « table requise » arrivait au dernier
+  // tap. L'état est marqué AVANT : bouton table en ambre, CTA désactivé avec
+  // le motif en libellé. La garde de handleSend reste (défense en profondeur).
+  const tableMissing = !isAppendMode && orderType === 'dine_in' && !tableNumber?.trim();
+  // Critique 2026-08-24 (P0) — `canSendOrders` était calculé et consommé nulle
+  // part : en no_network le CTA restait actif et lançait un RPC sur un réseau
+  // mort. Le bandeau explique, le bouton dit pourquoi il refuse.
+  const sendDisabled = isEmpty || isSending || !connection.canSendOrders || tableMissing;
+  const sendLabel = isSending
+    ? 'Sending…'
+    : !connection.canSendOrders
+      ? 'Cannot send — no network'
+      : tableMissing
+        ? 'Select a table first'
+        : isAppendMode
+          ? 'Add to order'
+          : 'Send to Kitchen';
 
   const handleTableSelect = useCallback(
     (name: string) => {
@@ -185,12 +211,19 @@ export function TabletOrderPage({
       void navigate(redirectAfterSend, { state: { justSentOrderId } });
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Failed to send order';
+      // Critique 2026-08-24 (heuristique 9) — le message serveur brut était
+      // servi tel quel à la serveuse, debout devant le client. Les causes
+      // réseau (abort/timeout du RPC compris) parlent en clair ; le reste est
+      // préfixé d'une phrase lisible, le détail reste pour le diagnostic.
+      const isNetworkError = /abort|timed?\s?out|failed to fetch|network/i.test(raw);
       toast.error(
         raw === 'append_unavailable_offline'
           ? 'Append unavailable offline — start a new order'
           : raw === 'table_required_for_dine_in'
             ? 'Select a table for a dine-in order'
-            : raw,
+            : isNetworkError
+              ? 'Network problem — the order was NOT sent. Check the connection and try again.'
+              : `Could not send the order (${raw})`,
       );
     }
   }, [
@@ -215,7 +248,6 @@ export function TabletOrderPage({
   if (view === 'floor-plan') {
     return (
       <div className="flex flex-col h-full">
-        <OfflineBanner connection={connection} />
         <div className="px-6 py-3 border-b border-border-subtle bg-bg-elevated flex items-center gap-4">
           <Button
             variant="ghost"
@@ -232,6 +264,7 @@ export function TabletOrderPage({
           <FloorPlanView
             tables={tables}
             occupancy={occupancy}
+            loading={tablesOverride === undefined && tablesQuery.isLoading}
             selectedTable={tableNumber}
             onTableSelect={handleTableSelect}
             appendableByTable={appendableByTable}
@@ -251,12 +284,16 @@ export function TabletOrderPage({
       <Button
         variant="secondary"
         size="md"
-        className="min-h-11 gap-2"
+        className={
+          tableMissing
+            ? 'min-h-11 gap-2 border-amber-warn text-amber-warn'
+            : 'min-h-11 gap-2'
+        }
         onClick={() => setView('floor-plan')}
         data-testid="tablet-order-pick-table"
       >
         <MapPin className="h-5 w-5 shrink-0" aria-hidden />
-        {tableNumber ? `Table ${tableNumber}` : 'Pick a table'}
+        {tableNumber ? `Table ${tableNumber}` : tableMissing ? 'Table required' : 'Pick a table'}
       </Button>
 
       {/* En ajout, le type est celui de la commande visée — le proposer ici
@@ -272,7 +309,6 @@ export function TabletOrderPage({
 
   return (
     <div className="flex flex-col h-full" data-testid="tablet-order-page">
-      <OfflineBanner connection={connection} />
       {/* Bandeau permanent : sans lui, rien ne distingue une 2ᵉ tournée d'une
           commande neuve, et la serveuse enverrait un doublon à la table. */}
       {isAppendMode && (
@@ -310,18 +346,29 @@ export function TabletOrderPage({
             <Button
               variant="primary"
               size="lg"
-              className="w-full min-h-11"
-              disabled={isEmpty || isSending}
+              className="w-full"
+              disabled={sendDisabled}
               onClick={() => {
                 void handleSend();
               }}
               data-testid="tablet-order-send"
             >
-              {isSending
-                ? 'Sending…'
-                : isAppendMode
-                  ? 'Add to order'
-                  : 'Send to Kitchen'}
+              {sendLabel}
+            </Button>
+          }
+          compactAction={
+            <Button
+              variant="primary"
+              size="icon"
+              className="w-full"
+              disabled={sendDisabled}
+              onClick={() => {
+                void handleSend();
+              }}
+              aria-label={sendLabel}
+              data-testid="tablet-order-send-compact"
+            >
+              <Send className="h-5 w-5" aria-hidden />
             </Button>
           }
         />
