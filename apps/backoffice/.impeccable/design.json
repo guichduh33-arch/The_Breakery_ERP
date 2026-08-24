@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-17T18:17:20Z",
+  "generatedAt": "2026-08-24T07:35:30Z",
   "title": "Design System: The Breakery Backoffice",
   "extensions": {
     "colorMeta": {
@@ -8,139 +8,393 @@
         "role": "primary",
         "displayName": "Encre de fer",
         "canonical": "#201d19",
-        "tonalRamp": ["#100e0c", "#201d19", "#2e2925", "#3a342c", "#524a3f", "#7a7062", "#a8a094", "#d6d1c8"]
+        "tonalRamp": [
+          "#100e0c",
+          "#201d19",
+          "#2e2925",
+          "#3a342c",
+          "#524a3f",
+          "#7a7062",
+          "#a8a094",
+          "#d6d1c8"
+        ],
+        "note": "Fond SOMBRE dans un thème clair : n'appartient à aucun cran de la rampe --surface-N et porte sa propre famille de premiers plans (ink-fg, ink-fg-muted, ink-fg-dim, ink-fg-sub). Le filet --ink-border (#453e35) sépare deux blocs sur encre à 1,59:1 ; il ne délimite JAMAIS un contrôle, où la limite est --ink-fg-sub (5,82:1)."
       },
       "gold": {
         "role": "primary",
         "displayName": "Or d'encre",
         "canonical": "#7a5c1c",
-        "tonalRamp": ["#2e230a", "#43320f", "#574112", "#684d18", "#7a5c1c", "#9a7423", "#c7a357", "#e2d2b1"]
+        "tonalRamp": [
+          "#2e230a",
+          "#43320f",
+          "#574112",
+          "#684d18",
+          "#7a5c1c",
+          "#9a7423",
+          "#c7a357",
+          "#e2d2b1"
+        ],
+        "note": "Encre de sens, jamais un remplissage. AA clos sur les quatre fonds du thème : feuille blanche 6,22:1, en-tête inerte 5,95:1, papier 5,41:1, état pressé 5,03:1. L'utilitaire `border-gold` rend cette valeur pleine ; `border-border-gold` rend --border-gold, rgba(122, 92, 28, 0.35) à 1,64:1, qui n'est PAS une limite de contrôle."
       },
       "ink-gold": {
         "role": "secondary",
         "displayName": "Or éclairci (sur encre uniquement)",
         "canonical": "#d3ab5c",
-        "tonalRamp": ["#4a3a1c", "#6b552a", "#8c7038", "#ad8b46", "#d3ab5c", "#dfba72", "#e9cf9c", "#f5e8cd"]
+        "tonalRamp": [
+          "#4a3a1c",
+          "#6b552a",
+          "#8c7038",
+          "#ad8b46",
+          "#d3ab5c",
+          "#dfba72",
+          "#e9cf9c",
+          "#f5e8cd"
+        ],
+        "note": "Soulignement de l'onglet actif et anneau de focus dans la barre. Sur le papier, la valeur tombe sous le seuil de lecture."
       },
       "paper": {
         "role": "neutral",
         "displayName": "Papier de travail",
         "canonical": "#f0efec",
-        "tonalRamp": ["#26241f", "#4a463e", "#6e695e", "#948e81", "#b9b3a7", "#d6d1c7", "#e9e7e2", "#f0efec"]
+        "tonalRamp": [
+          "#26241f",
+          "#4a463e",
+          "#6e695e",
+          "#948e81",
+          "#b9b3a7",
+          "#d6d1c7",
+          "#e9e7e2",
+          "#f0efec"
+        ],
+        "note": "Fond de page ET panneaux de premier niveau, à la même valeur : ils se distinguent par la bordure des cartes, pas par le remplissage. C'est le PIRE fond du thème — toute couleur d'état s'y mesure (The Worst-Ground Rule)."
       },
       "sheet": {
         "role": "neutral",
         "displayName": "Feuille blanche",
-        "canonical": "#ffffff"
+        "canonical": "#ffffff",
+        "note": "Cartes, popovers, panneaux flottants. --bg-overlay et --bg-input valent tous deux cette valeur : un survol qui vise --bg-input depuis la feuille ne produit aucun delta (défaut corrigé le 2026-08-18)."
       },
       "paper-pressed": {
         "role": "neutral",
         "displayName": "Papier pressé",
-        "canonical": "#e9e7e2"
+        "canonical": "#e9e7e2",
+        "note": "Survol, état pressé, squelettes de chargement. Plus SOMBRE que la feuille blanche : au-dessus du blanc pur, la seule façon de marquer un pas « plus près de l'œil » est d'ajouter de la teinte."
       },
       "paper-inert": {
         "role": "neutral",
         "displayName": "Papier inerte",
-        "canonical": "#fafaf8"
+        "canonical": "#fafaf8",
+        "note": "En-tête et pied de tableau, champ non éditable. Hors rampe : ce n'est pas une distance à l'œil, c'est un fond qui dit « ce bloc ne se lit pas »."
       },
       "grid-dot": {
         "role": "neutral",
         "displayName": "Point de graduation",
-        "canonical": "#dfddd6"
+        "canonical": "#dfddd6",
+        "note": "Le seul relief du système : un point de 1 px tous les 22 px, décalé de -1 px."
+      },
+      "border-subtle": {
+        "role": "neutral",
+        "displayName": "Filet de carte",
+        "canonical": "#e3e1db",
+        "note": "Bordure d'une carte posée sur la page — un séparateur, pas la limite d'un contrôle. Un bouton ou un champ qui la porte n'a PAS de limite visible (1,31:1 sur la feuille blanche)."
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Bordure de contrôle",
+        "canonical": "#86827a",
+        "tonalRamp": [
+          "#221f1b",
+          "#3b3730",
+          "#545046",
+          "#6d685e",
+          "#86827a",
+          "#a9a59d",
+          "#cbc8c1",
+          "#e9e7e2"
+        ],
+        "note": "La limite d'un bouton secondaire et d'un champ : soumise aux 3:1 des objets graphiques (WCAG 1.4.11), pas au seuil du texte. Assombrie le 2026-08-18 — l'ancien #cdcac2 valait 1,42:1 sur le papier. Clôt le seuil sur les quatre fonds : 3,83:1 feuille blanche, 3,66:1 en-tête inerte, 3,33:1 papier, 3,10:1 pressé."
       },
       "text-primary": {
         "role": "neutral",
         "displayName": "Encre de texte",
         "canonical": "#1a1917",
-        "tonalRamp": ["#1a1917", "#39362f", "#55524c", "#6b6861", "#88847c", "#b3afa7", "#c2beb5", "#e3e1db"]
+        "tonalRamp": [
+          "#1a1917",
+          "#39362f",
+          "#55524c",
+          "#6b6861",
+          "#88847c",
+          "#b3afa7",
+          "#c2beb5",
+          "#e3e1db"
+        ],
+        "note": "17,6:1 sur la feuille blanche, 14,2:1 sur l'état pressé."
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Texte muet",
+        "canonical": "#6b6861",
+        "note": "Le cran le plus bas qui porte encore du TEXTE : libellé, placeholder, pourcentage, note de bas de tuile. 5,5:1 feuille blanche, 4,83:1 papier, 4,50:1 pressé. Un ratio annoncé contre le seul blanc surestime de ~0,6 point."
+      },
+      "text-subtle": {
+        "role": "neutral",
+        "displayName": "Texte discret (non-texte uniquement)",
+        "canonical": "#88847c",
+        "note": "Icône, tiret de cellule vide, glyphe d'un bouton d'action de ligne. Tient les 3:1 des objets graphiques (3,72:1 blanc, 3,24:1 papier, 3,01:1 pressé), JAMAIS les 4,5:1 du texte. Un libellé ou un placeholder prend le muet."
       },
       "text-inert": {
         "role": "neutral",
         "displayName": "Gris inerte",
         "canonical": "#c2beb5",
-        "note": "Séparateurs de fil d'Ariane, chevrons éteints, icônes sans action. Absent du code au 2026-08-07."
+        "note": "Séparateurs de fil d'Ariane, chevrons éteints, icônes sans action. Le cran SOUS le désactivé (#b3afa7) : en thème clair il est donc le plus pâle des cinq."
       },
       "chart-1": {
         "role": "tertiary",
         "displayName": "Rampe data-viz",
         "canonical": "#2b6c9c",
-        "tonalRamp": ["#2b6c9c", "#4f93bf", "#8cc3e0", "#c9dcea"],
-        "note": "Rampe monochrome à quatre pas pour les séries de graphique. Les teintes cat-* restent réservées à l'identité d'une catégorie de produit. Absente du code au 2026-08-07."
+        "tonalRamp": [
+          "#2b6c9c",
+          "#4f93bf",
+          "#8cc3e0",
+          "#c9dcea"
+        ],
+        "note": "Rampe monochrome à quatre pas pour les séries de graphique. N'EST PAS --blue-info : les deux ont valu #2b6c9c, ils sont déclarés séparément, et l'assombrissement de l'état du 2026-08-21 n'a pas bougé la série. Les teintes cat-* restent réservées à l'identité d'une catégorie de produit."
       },
       "success": {
         "role": "tertiary",
         "displayName": "Vert de validation",
-        "canonical": "#187a52",
-        "tonalRamp": ["#0a3324", "#126343", "#187a52", "#1a8c5e", "#3fb583", "#6fcda5", "#a5e2c6", "#d8f3e6"]
+        "canonical": "#156d49",
+        "tonalRamp": [
+          "#07281b",
+          "#0d4530",
+          "#105539",
+          "#156d49",
+          "#187a52",
+          "#3fb583",
+          "#a5e2c6",
+          "#d8f3e6"
+        ],
+        "note": "Assombri le 2026-08-21 (ancien #187a52). Le chip du primitif Badge pose ce texte sur sa propre teinte douce à 12 %, qui se compose avec le fond qui la porte : sur le PAPIER il rendait 3,96:1, sous AA. Mesure actuelle 4,65:1 sur le papier, 5,26–5,54:1 sur la feuille blanche. Sur ENCRE, on prend --ink-success (#86efac), jamais celui-ci."
       },
       "danger": {
         "role": "tertiary",
         "displayName": "Rouge d'alerte",
-        "canonical": "#b4342c",
-        "tonalRamp": ["#4d1512", "#7d231d", "#b4342c", "#cc4a41", "#e8695f", "#f0938b", "#f7c2bd", "#fce8e6"]
+        "canonical": "#b03029",
+        "tonalRamp": [
+          "#3d100d",
+          "#6b1c17",
+          "#8f2721",
+          "#b03029",
+          "#cc4a41",
+          "#e8695f",
+          "#f7c2bd",
+          "#fce8e6"
+        ],
+        "note": "Assombri le 2026-08-21 (ancien #b4342c). 4,61:1 sur sa teinte douce posée sur le papier ; 6,36:1 en premier plan sur la feuille blanche. Sur ENCRE, on prend --ink-danger (#fca5a5)."
       },
       "warning": {
         "role": "tertiary",
         "displayName": "Ambre d'attention",
-        "canonical": "#8a5a10"
+        "canonical": "#845611",
+        "tonalRamp": [
+          "#2c1c05",
+          "#4a300a",
+          "#68430d",
+          "#845611",
+          "#a26c1c",
+          "#c79239",
+          "#e2c281",
+          "#f3e5c8"
+        ],
+        "note": "Assombri le 2026-08-21 (ancien #8a5a10) — il tombait du même défaut que le vert et le rouge sans qu'aucun écran ne l'ait montré le jour de la mesure. 4,68:1 sur sa teinte douce posée sur le papier. L'ambre clair est une ENCRE : son premier plan sur remplissage est --amber-fg (#fffdf9), 5,82:1."
       },
       "info": {
         "role": "tertiary",
         "displayName": "Bleu d'information",
-        "canonical": "#2b6c9c"
+        "canonical": "#26618d",
+        "tonalRamp": [
+          "#0d2130",
+          "#153850",
+          "#1d4b6d",
+          "#26618d",
+          "#3d7cab",
+          "#6ba1c8",
+          "#a9c9de",
+          "#dbe9f2"
+        ],
+        "note": "Assombri le 2026-08-21 (ancien #2b6c9c). 4,86:1 sur sa teinte douce posée sur le papier. --info-soft suit désormais la base : rgba(38, 97, 141, 0.12)."
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Valeur héroïque",
-        "purpose": "La valeur de la tuile de KPI encrée, unique par écran. Mono tabulaire 26 px."
+        "purpose": "La valeur de la tuile de KPI encrée, unique par écran. Mono tabulaire 26 px. HORS RAMPE (offRamp) : aucun cran --type-* ne la porte, elle vit dans la constante partagée KPI_VALUE_HERO et se reprend en la recopiant, jamais en réécrivant le nombre."
       },
       "headline": {
         "displayName": "Titre de page",
-        "purpose": "L'unique h1 de la vue, servi par le composant PageHeader. Instrument Sans 23 px."
+        "purpose": "L'unique h1 de la vue, servi par le composant PageHeader. Instrument Sans 23 px. HORS RAMPE (offRamp), comme Display — les deux seuls rôles dans ce cas. C'est aussi le cran de la valeur d'une tuile de KPI ordinaire (mono 600, -0.02em, tabulaire)."
       },
       "title": {
         "displayName": "Titre de carte",
-        "purpose": "Le libellé d'une carte de dashboard — un libellé mono capitales, pas une phrase. Rend --type-xs (12 px) : le même palier que Label, pas un cran au-dessus."
+        "purpose": "Le libellé d'une carte de dashboard — un libellé mono capitales, pas une phrase. Rend --type-xs (12 px) : le MÊME palier que Label, pas un cran au-dessus. La distinction passe par la graisse, la couleur et la position, jamais par le corps."
       },
       "body": {
         "displayName": "Prose d'interface",
-        "purpose": "Descriptions, messages d'état, contenu explicatif. Ne porte jamais un chiffre à lire."
+        "purpose": "Descriptions, messages d'état, contenu explicatif. Ne porte jamais un chiffre à lire (The Mono-Carries-Data Rule)."
       },
       "label": {
         "displayName": "Label mono",
         "purpose": "En-tête de colonne de tableau, en-tête de colonne du panneau de navigation, libellé de tuile. Rend --type-xs (12 px). La graisse dépend de l'appelant : SectionLabel pose 700, les constantes de tuile redescendent à 600."
       },
+      "data": {
+        "displayName": "Donnée courante",
+        "purpose": "--type-lg (19 px) en mono tabulaire : les montants des TIROIRS et des PANNEAUX (AgingBucketsGrid, OrderDetailDrawer, CostingPanel). ⚠️ Ce cran ne se relève pas depuis une page de liste — il vit dans des surfaces qu'il faut ouvrir, et un balayage de dashboard le fait croire mort. À ne pas confondre avec les 23 px de la valeur de tuile, qui sont le rôle headline hors rampe."
+      },
       "brand": {
-        "displayName": "Monogramme",
-        "purpose": "Playfair Display, exclusivement sur le monogramme de la barre de navigation."
+        "displayName": "Marque",
+        "purpose": "Playfair Display, exclusivement sur le monogramme de la barre de navigation et la marque du splash de démarrage. Le SEUL utilitaire qui sorte le serif sous ce thème est `font-brand` : `font-display` et `font-serif` sont remappés sur la pile du corps et ne rendent aucun serif ici."
       }
     },
     "shadows": [
-      { "name": "filet", "value": "0 1px 2px rgba(45, 34, 15, 0.07)", "purpose": "Élément posé, à peine décollé du papier." },
-      { "name": "carte", "value": "0 2px 8px rgba(45, 34, 15, 0.09)", "purpose": "Carte en état survolé. Jamais au repos sur un dashboard." },
-      { "name": "flottant", "value": "0 18px 40px rgba(28, 23, 18, 0.20)", "purpose": "Panneau de navigation déroulant, menu utilisateur." },
-      { "name": "modale", "value": "0 20px 56px rgba(45, 34, 15, 0.22)", "purpose": "Dialogues et feuilles." },
-      { "name": "focus", "value": "0 0 0 3px rgba(138, 104, 32, 0.32)", "purpose": "Halo de focus, dérivé de l'accent — liseré et halo de la même teinte. ÉCART CONNU (relevé du 2026-08-18) : cette valeur est celle du code (elevation.css), mais son rgb dérive de l'or d'AVANT l'assombrissement du 2026-08-13, alors que --border-focus suit --gold-base. Le liseré et son halo ne sont donc plus de la même couleur, contrairement à la règle." },
-      { "name": "inset", "value": "inset 0 1px 2px rgba(45, 34, 15, 0.06)", "purpose": "Surface en creux (carte inset)." }
+      {
+        "name": "discret",
+        "value": "0 1px 1px rgba(45, 34, 15, 0.05)",
+        "purpose": "--shadow-xs. Déclaré par le thème et employé NULLE PART : ne pas le choisir sans avoir d'abord écarté --shadow-sm, dont il n'est qu'une nuance."
+      },
+      {
+        "name": "filet",
+        "value": "0 1px 2px rgba(45, 34, 15, 0.07)",
+        "purpose": "--shadow-sm. Élément posé, à peine décollé du papier."
+      },
+      {
+        "name": "carte",
+        "value": "0 2px 8px rgba(45, 34, 15, 0.09)",
+        "purpose": "--shadow-md. Carte en état survolé. Jamais au repos sur un dashboard."
+      },
+      {
+        "name": "détaché",
+        "value": "0 8px 24px rgba(45, 34, 15, 0.12)",
+        "purpose": "--shadow-lg. Le cran le plus employé du dépôt — il n'était documenté nulle part jusqu'au 2026-08-22."
+      },
+      {
+        "name": "profond",
+        "value": "0 16px 48px rgba(45, 34, 15, 0.16)",
+        "purpose": "--shadow-xl. Réservé, deux usages."
+      },
+      {
+        "name": "flottant",
+        "value": "0 18px 40px rgba(45, 34, 15, 0.20)",
+        "purpose": "--shadow-float. Panneau de navigation déroulant, menu utilisateur, menu Columns. Devenu un token le 2026-08-22 : la valeur était recopiée à la main dans trois fichiers et sur une base de teinte à elle, rgba(28, 23, 18, ·), qui contredisait la règle de réchauffement du thème. Géométrie et opacité inchangées."
+      },
+      {
+        "name": "modale",
+        "value": "0 20px 56px rgba(45, 34, 15, 0.22)",
+        "purpose": "--shadow-modal. Dialogues et feuilles."
+      },
+      {
+        "name": "focus",
+        "value": "0 0 0 3px color-mix(in srgb, var(--gold-base) 32%, transparent)",
+        "purpose": "--shadow-focus. Halo DÉRIVÉ de l'accent, jamais recopié : le liseré (--border-focus, qui vaut var(--gold-base)) et le halo sont toujours de la même couleur. La forme dérivée ferme la classe de défaut au lieu de la corriger — la valeur avait divergé deux fois d'un rgb figé, la seconde lors de l'assombrissement de l'or du 2026-08-13 (corrigé le 2026-08-18). Un moteur sans color-mix perd le halo, pas l'anneau : les 2 px de focus sont portés par `outline`."
+      },
+      {
+        "name": "creux-sm",
+        "value": "inset 0 1px 2px rgba(45, 34, 15, 0.06)",
+        "purpose": "--shadow-inset-sm. Surface en creux. Déclaré par le thème, hors du vocabulaire des six crans que DESIGN.md nomme."
+      },
+      {
+        "name": "creux-md",
+        "value": "inset 0 2px 6px rgba(45, 34, 15, 0.10)",
+        "purpose": "--shadow-inset-md. Même réserve que creux-sm."
+      }
     ],
     "motion": [
-      { "name": "fast", "value": "120ms", "purpose": "Changement de couleur : survol, focus, état d'onglet." },
-      { "name": "base", "value": "200ms", "purpose": "Transition d'ombre et de forme." },
-      { "name": "slow", "value": "320ms", "purpose": "Entrée d'une surface flottante." },
-      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Sortie par défaut — décélération franche." },
-      { "name": "ease-in", "value": "cubic-bezier(0.7, 0, 0.84, 0)", "purpose": "Entrée par défaut." },
-      { "name": "reduced-motion", "value": "0ms", "purpose": "Les trois durées s'effondrent à 0 sous prefers-reduced-motion, au niveau de la variable CSS — aucun composant n'a à le gérer." }
+      {
+        "name": "fast",
+        "value": "120ms",
+        "purpose": "--motion-fast. Changement de couleur : survol, focus, état d'onglet."
+      },
+      {
+        "name": "base",
+        "value": "200ms",
+        "purpose": "--motion-base. Transition d'ombre et de forme."
+      },
+      {
+        "name": "slow",
+        "value": "320ms",
+        "purpose": "--motion-slow. Entrée d'une surface flottante."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "--motion-ease-out. Sortie par défaut — décélération franche."
+      },
+      {
+        "name": "ease-in",
+        "value": "cubic-bezier(0.7, 0, 0.84, 0)",
+        "purpose": "--motion-ease-in. Entrée par défaut."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0ms",
+        "purpose": "Les trois durées s'effondrent à 0 sous prefers-reduced-motion, au niveau de la variable CSS — aucun composant n'a à le gérer."
+      }
     ],
     "breakpoints": [
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" },
-      { "name": "xl", "value": "1280px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px",
+        "purpose": "La largeur cible du produit. La bande de KPI passe à 4 colonnes ici — pas un réglage de densité mais une conséquence de The Value-Width Rule : à sept colonnes la tuile n'offrait que 134 px de contenu quand la valeur héro en demande 148,2 px."
+      }
     ],
     "grid": [
-      { "name": "module", "value": "22px", "purpose": "Pas de la grille de fond, gouttière de page, espacement horizontal de la barre, gouttière entre colonnes du panneau." },
-      { "name": "page-grid", "value": "radial-gradient(#dfddd6 1px, transparent 1px) 0 0 / 22px 22px", "purpose": "Le fond gradué, décalé de -1px pour que la première rangée ne soit pas coupée." }
+      {
+        "name": "module",
+        "value": "22px",
+        "purpose": "Pas de la grille de fond, gouttière de page, espacement horizontal de la barre, gouttière entre colonnes du panneau. Un espacement qui ne retombe pas dessus se voit contre les points du fond."
+      },
+      {
+        "name": "page-grid",
+        "value": "radial-gradient(#dfddd6 1px, transparent 1px) -1px -1px / 22px 22px",
+        "purpose": "Le fond gradué, décalé de -1 px pour que la première rangée ne soit pas coupée par le bord du conteneur."
+      },
+      {
+        "name": "cellule de tableau",
+        "value": "10px 14px",
+        "purpose": "MESURÉ au navigateur le 2026-08-22 : les deux valeurs les plus posées de tout le back-office (14 px, 1053 occurrences ; 10 px, 996). Un tableau dense EST le produit — son remplissage de cellule est l'unité de base du système, pas un détail d'implémentation."
+      },
+      {
+        "name": "paliers morts",
+        "value": "28px, 48px",
+        "purpose": "--gutter-page et --gutter-section existent dans spacing.css et ne sont rendus NULLE PART dans le back-office (zéro occurrence, relevé du 2026-08-22). Ne pas les citer comme l'échelle du produit."
+      }
     ],
+    "corpus": {
+      "surveyedAt": "2026-08-21",
+      "screens": 15,
+      "archetypes": 9,
+      "built": 6,
+      "builtScreens": [
+        "Today (shell + landing — hors des neuf archétypes)",
+        "Products (List)",
+        "B2B orders (List)",
+        "Settings (Hub)",
+        "Production log (Append-only log)",
+        "New expense (Form)"
+      ],
+      "note": "« Construit » veut dire refait depuis l'archétype, pas « la page existe ». La plupart des quinze ont une page en production depuis longtemps ; le test est l'invariant propre à l'archétype, jamais la présence du fichier. Recipe reste le plus loin du sien : il annonce une cascade et rend une table plate."
+    },
     "archetypes": [
       {
         "name": "List",
@@ -149,11 +403,19 @@
         "invariants": [
           "Trié par urgence, pas par ordre alphabétique",
           "La dernière colonne porte l'action de ligne",
-          "La sélection alimente une action groupée annoncée dans le bandeau",
-          "Le pied se rend même sur une table vide"
+          "L'état de liste — filtre actif, recherche, tri, progression — vit dans l'URL : un lien vers « les six produits sans prix de revient » doit pouvoir se coller dans une conversation",
+          "Le pied se rend même sur une table vide",
+          "PAS de sélection multiple ni d'action groupée : retirées de l'archétype le 2026-08-18, faute de RPC de masse gatées et auditées. Une case à cocher qui n'ouvre sur rien promet une capacité que l'écran n'a pas."
         ],
-        "instances": ["Stock alerts", "B2B orders", "Products", "Z-reports"],
-        "built": ["Products"]
+        "instances": [
+          "Stock alerts",
+          "B2B orders",
+          "Products"
+        ],
+        "built": [
+          "Products",
+          "B2B orders"
+        ]
       },
       {
         "name": "Report",
@@ -165,7 +427,10 @@
           "L'assertion qui compte est le titre, jamais une note de bas de page",
           "Toute réserve de mesure s'affiche à côté de la mesure"
         ],
-        "instances": ["Daily sales", "Trial balance"],
+        "instances": [
+          "Daily sales",
+          "Trial balance"
+        ],
         "built": []
       },
       {
@@ -177,7 +442,9 @@
           "La frise montre les étapes à venir en creux",
           "Le rail droit porte l'argent et le temps, jamais la saisie"
         ],
-        "instances": ["Purchase order"],
+        "instances": [
+          "Purchase order"
+        ],
         "built": []
       },
       {
@@ -187,10 +454,15 @@
         "invariants": [
           "Les champs dérivés sont en lecture seule et se disent tels",
           "La chaîne d'approbation se lit avant de soumettre, pas après",
-          "Le statut du brouillon vit dans l'en-tête"
+          "Le statut du brouillon vit dans l'en-tête",
+          "Le rail PRÉVOIT et le dit — la résolution finale reste au serveur"
         ],
-        "instances": ["New expense"],
-        "built": []
+        "instances": [
+          "New expense"
+        ],
+        "built": [
+          "New expense"
+        ]
       },
       {
         "name": "Hub",
@@ -198,10 +470,15 @@
         "structure": "Grille de tuiles groupées par famille, chaque groupe comptant ses surfaces.",
         "invariants": [
           "Chaque tuile porte sa valeur courante sous son libellé — c'est ce qui distingue un hub d'un menu",
+          "Un tiret honnête quand la section est vide, et le lien laissé intact",
           "Recherche transverse en tête"
         ],
-        "instances": ["Settings"],
-        "built": []
+        "instances": [
+          "Settings"
+        ],
+        "built": [
+          "Settings"
+        ]
       },
       {
         "name": "Bulk entry",
@@ -213,7 +490,9 @@
           "Deux paliers quand l'écriture est irréversible : valider, puis poster",
           "Un encart décrit l'irréversibilité juste avant le bouton"
         ],
-        "instances": ["Stock count (opname)"],
+        "instances": [
+          "Stock count (opname)"
+        ],
         "built": []
       },
       {
@@ -221,11 +500,14 @@
         "oneLine": "Seul le motif de différence se lit.",
         "structure": "Lignes décrites, colonnes courtes, cellules réduites à un signe.",
         "invariants": [
-          "Le filtre « différences seulement » est un contrôle de premier plan",
-          "Légende obligatoire, distinguant l'accordé de l'accordé-par-héritage",
-          "Lecture seule assumée, avec renvoi explicite vers l'endroit où l'on édite"
+          "Légende obligatoire, nommant EXACTEMENT les états que la grille calcule — en annoncer un qu'elle ne calcule pas est un mensonge d'interface",
+          "Lecture seule assumée, avec renvoi explicite vers l'endroit où l'on édite",
+          "La réserve est dite quand une source de vérité n'est pas reflétée",
+          "PAS de filtre « différences seulement » : retiré le 2026-08-19 — 143 permissions sur 151 sont discriminantes, le filtre aurait masqué 8 lignes. Il reviendra si la grille devient majoritairement uniforme, pas avant."
         ],
-        "instances": ["Roles & permissions"],
+        "instances": [
+          "Roles & permissions"
+        ],
         "built": []
       },
       {
@@ -238,7 +520,9 @@
           "Une colonne de part nomme ce qui pèse",
           "Un encart final nomme le matériau dominant et son mouvement"
         ],
-        "instances": ["Recipe"],
+        "instances": [
+          "Recipe"
+        ],
         "built": []
       },
       {
@@ -249,17 +533,27 @@
           "Le panneau de saisie est la seule surface encrée de la page",
           "Il annonce ce que l'enregistrement va produire avant de le produire",
           "Tout ce qui est en dessous porte LOCKED",
-          "On corrige par contre-écriture, jamais par édition"
+          "On corrige par contre-écriture, jamais par édition — et la contre-écriture est ATTEIGNABLE : elle ne l'était pas jusqu'au 2026-08-21, le composant qui la montait n'avait aucun importeur"
         ],
-        "instances": ["Production log"],
-        "built": []
+        "instances": [
+          "Production log"
+        ],
+        "built": [
+          "Production log"
+        ]
       },
       {
         "name": "Hors shell",
         "oneLine": "Ce qui précède l'authentification n'est l'instance de rien.",
         "structure": "Deux moitiés : l'encre porte la marque et l'état du jour, la lumière porte le geste.",
-        "invariants": ["Pas de barre de navigation", "Le geste est en deux temps : qui, puis la preuve"],
-        "instances": ["Login"],
+        "invariants": [
+          "Pas de barre de navigation",
+          "Le geste est en deux temps : qui, puis la preuve",
+          "La marque qu'elle porte est celle de l'ENSEIGNE, pas celle de l'instrument — logo complet, croissant illustré. Arbitrage du propriétaire du 2026-08-19, borné à cette seule page : avant l'authentification on entre dans la boulangerie, après on prend l'instrument."
+        ],
+        "instances": [
+          "Login"
+        ],
         "built": []
       }
     ]
@@ -269,23 +563,30 @@
       "name": "Bouton de bandeau — primaire",
       "kind": "button",
       "refersTo": "toolbar-button-primary",
-      "description": "L'action qui crée quelque chose. Un seul par bandeau de page, rempli d'encre.",
-      "html": "<button class=\"ds-toolbar-primary\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>New product</button>",
-      "css": ".ds-toolbar-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: none; border-radius: 3px; background: #201d19; color: #fffdf9; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-primary:hover { background: #2e2925; } .ds-toolbar-primary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-toolbar-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+      "description": "L'action qui crée quelque chose. Un seul par bandeau de page, rempli d'encre. Les chaînes TOOLBAR_BTN_* appartiennent au bandeau de page et à lui seul.",
+      "html": "<button class=\"ds-toolbar-primary\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>New product</button> <button class=\"ds-toolbar-primary\" disabled>Post entry</button>",
+      "css": ".ds-toolbar-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: none; border-radius: 3px; background: #201d19; color: #fffdf9; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-primary:hover:not(:disabled) { background: #2e2925; } .ds-toolbar-primary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-toolbar-primary:disabled { background: #e9e7e2; color: #6b6861; cursor: not-allowed; }"
     },
     {
       "name": "Bouton de bandeau — secondaire",
       "kind": "button",
       "refersTo": "toolbar-button-secondary",
-      "description": "Toutes les autres actions du bandeau. Feuille blanche bordée ; son icône est grise pour ne pas concurrencer le libellé.",
+      "description": "Toutes les autres actions du bandeau. Feuille blanche bordée border-strong — son trait est le SEUL objet qui le délimite, il tient donc les 3:1 de WCAG 1.4.11. Son icône est grise pour ne pas concurrencer le libellé.",
       "html": "<button class=\"ds-toolbar-secondary\"><svg class=\"ds-toolbar-icon\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3\"/></svg>Export</button>",
-      "css": ".ds-toolbar-secondary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #cdcac2; border-radius: 3px; background: #ffffff; color: #1a1917; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-secondary:hover { background: #e9e7e2; } .ds-toolbar-secondary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-toolbar-icon { color: #6b6861; }"
+      "css": ".ds-toolbar-secondary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #86827a; border-radius: 3px; background: #ffffff; color: #1a1917; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-toolbar-secondary:hover:not(:disabled) { background: #e9e7e2; } .ds-toolbar-secondary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-toolbar-secondary:disabled { background: #e9e7e2; color: #6b6861; cursor: not-allowed; } .ds-toolbar-icon { color: #6b6861; }"
+    },
+    {
+      "name": "Bouton primitif partagé — encre",
+      "kind": "button",
+      "description": "Le bouton des modales, formulaires, panneaux et pieds de table — tout ce qui n'est PAS le bandeau de page. Rayon 4 px. Le back-office emploie les variants en casse de phrase (ink, secondary, ghost, ghostDestructive, link) ; primary est vert (chemin de l'argent) et gold remplit en or, tous deux en capitales interlettrées. ⚠️ Le primitif rend 56 px par défaut (`size: md`) : 180 boutons du back-office dans 87 fichiers portent ce cran sans l'avoir demandé, contre 113 qui demandent `sm` à 36 px. La conformité s'obtient par un opt-out que l'auteur doit connaître.",
+      "html": "<button class=\"ds-btn-ink\">Save changes</button> <button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-ink { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; border: none; border-radius: 4px; background: #201d19; color: #fffdf9; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-ink:hover:not(:disabled) { background: #2e2925; } .ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; border: 1px solid #86827a; border-radius: 4px; background: #ffffff; color: #1a1917; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-secondary:hover:not(:disabled) { background: #e9e7e2; } .ds-btn-ink:focus-visible, .ds-btn-secondary:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; } .ds-btn-ink:disabled, .ds-btn-secondary:disabled { background: #e9e7e2; color: #6b6861; border-color: #86827a; cursor: not-allowed; }"
     },
     {
       "name": "Tuile de KPI — héroïque",
       "kind": "custom",
       "refersTo": "kpi-tile-hero",
-      "description": "La première tuile de la bande, remplie d'encre. Une seule par écran : une deuxième détruirait la hiérarchie qu'elle installe.",
+      "description": "La première tuile de la bande, remplie d'encre, valeur à 26 px. Une seule par écran : une deuxième détruirait la hiérarchie qu'elle installe. Sans icône — la place gagnée sert aux comparaisons, qui portent l'information.",
       "html": "<div class=\"ds-kpi-hero\"><h3 class=\"ds-kpi-hero-label\">Net revenue</h3><span class=\"ds-kpi-hero-value\">Rp 8,42 jt</span><div class=\"ds-kpi-hero-deltas\"><span class=\"ds-kpi-delta-up\">▲ 12,4% <em>yest</em></span><span class=\"ds-kpi-delta-down\">▼ 3,1% <em>D-7</em></span></div></div>",
       "css": ".ds-kpi-hero { display: flex; flex-direction: column; gap: 5px; padding: 13px 15px; border: 1px solid #201d19; border-radius: 4px; background: #201d19; } .ds-kpi-hero-label { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #a09789; } .ds-kpi-hero-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: #fffdf9; } .ds-kpi-hero-deltas { display: flex; flex-wrap: wrap; gap: 0 12px; min-height: 16px; align-items: baseline; } .ds-kpi-delta-up, .ds-kpi-delta-down { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-variant-numeric: tabular-nums; } .ds-kpi-delta-up { color: #86efac; } .ds-kpi-delta-down { color: #fca5a5; } .ds-kpi-hero-deltas em { font-style: normal; color: #a09789; }"
     },
@@ -293,54 +594,53 @@
       "name": "Carte de dashboard",
       "kind": "card",
       "refersTo": "card",
-      "description": "Feuille blanche sans ombre, titre en label mono, slot droit pour le marqueur live ou la période.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-title\">Open orders</h2><span class=\"ds-live\"><i></i>live</span></div><p class=\"ds-card-sub\">Unpaid tickets across every terminal</p><div class=\"ds-card-body\"><span class=\"ds-card-value\">7</span></div><div class=\"ds-card-foot\">3 older than 2 hours</div></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6861; } .ds-live i { width: 6px; height: 6px; border-radius: 50%; background: #187a52; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: #6b6861; } .ds-card-body { margin-top: 12px; flex: 1; } .ds-card-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 23px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #1a1917; } .ds-card-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid #eceae5; font-size: 12px; color: #6b6861; }"
+      "description": "Feuille blanche SANS ombre sur un dashboard — c'est son blanc et son filet qui la détachent du papier (The Border-Before-Shadow Rule). Titre en label mono, padding 16 px. Quatre états qui ne sont pas cosmétiques : chargement, restreint, erreur, contenu — la page dégrade carte par carte quand une permission manque, en disant « restricted » plutôt qu'en affichant une erreur rouge.",
+      "html": "<div class=\"ds-cards\"><div class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-title\">Open orders</h2><span class=\"ds-live\"><i></i>live</span></div><p class=\"ds-card-sub\">Unpaid tickets across every terminal</p><div class=\"ds-card-body\"><span class=\"ds-card-value\">7</span></div><div class=\"ds-card-foot\">3 older than 2 hours</div></div><div class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-title\">Cash treasury</h2></div><div class=\"ds-restricted\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"/></svg>Restricted — your role does not have access to this data.</div></div></div>",
+      "css": ".ds-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; } .ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; transition: box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6861; } .ds-live i { width: 6px; height: 6px; border-radius: 50%; background: #156d49; } .ds-card-sub { margin: 4px 0 0; font-size: 12px; color: #6b6861; } .ds-card-body { margin-top: 12px; flex: 1; } .ds-card-value { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 23px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #1a1917; } .ds-card-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid #eceae5; font-size: 12px; color: #6b6861; } .ds-restricted { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 0; font-size: 12px; color: #6b6861; }"
     },
     {
-      "name": "Carte restreinte",
-      "kind": "card",
-      "refersTo": "card",
-      "description": "L'état d'une carte quand le rôle n'a pas le droit sur sa donnée. La page dégrade carte par carte, sans erreur rouge.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-title\">Cash treasury</h2></div><div class=\"ds-restricted\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"/></svg>Restricted — your role does not have access to this data.</div></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; padding: 16px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; } .ds-card-title { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1917; } .ds-restricted { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 0; font-size: 12px; color: #6b6861; }"
-    },
-    {
-      "name": "Champ de saisie",
+      "name": "Champs — les deux hauteurs",
       "kind": "input",
       "refersTo": "input",
-      "description": "Hauteur 44 px, bordure ferme, focus or — liseré et halo de la même teinte.",
-      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search products, SKU…\" />",
-      "css": ".ds-input { display: flex; width: 100%; height: 44px; padding: 8px 12px; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; color: #1a1917; } .ds-input::placeholder { color: #6b6861; } .ds-input:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(138, 104, 32, 0.32); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+      "description": "DEUX hauteurs, et deux seulement (arbitrage du 2026-08-21, après une mesure qui en avait relevé cinq à l'écran). Le cran se lit sur le RÔLE du champ, jamais sur la place disponible. 44 px (h-touch-min) pour un champ de FORMULAIRE — dialogue, page de saisie ; c'est la hauteur des primitifs Input et Select de @breakery/ui. 36 px (h-9) pour un champ EN LIGNE — barre de filtres, cellule éditable, sélecteur de période. Bordure de contrôle border-strong, focus or : liseré et halo de la même teinte.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Supplier</span><input class=\"ds-input\" type=\"text\" placeholder=\"Search suppliers…\" /></label><label class=\"ds-field\"><span class=\"ds-field-label\">Period</span><input class=\"ds-input ds-input-inline\" type=\"text\" placeholder=\"Aug 2026\" /></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-field-label { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6861; } .ds-input { display: flex; width: 100%; height: 44px; padding: 8px 12px; border: 1px solid #86827a; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; color: #1a1917; } .ds-input-inline { height: 36px; padding: 6px 10px; } .ds-input::placeholder { color: #6b6861; } .ds-input:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(122, 92, 28, 0.32); } .ds-input:disabled { background: #fafaf8; color: #b3afa7; cursor: not-allowed; }"
     },
     {
       "name": "Tableau de données",
       "kind": "custom",
       "refersTo": "table-header",
-      "description": "En-tête et pied sur papier inerte, labels mono capitales, colonnes numériques tabulaires alignées à droite. Le pied se rend même quand la table est vide.",
-      "html": "<div class=\"ds-table-wrap\"><table class=\"ds-table\"><thead><tr><th>Product</th><th>SKU</th><th class=\"ds-num\">Stock</th><th class=\"ds-num\">Retail</th></tr></thead><tbody><tr><td>Croissant beurre</td><td class=\"ds-mono\">VIE-001</td><td class=\"ds-num\">42</td><td class=\"ds-num ds-price\">Rp 18,000</td></tr><tr class=\"ds-zebra\"><td>Pain au chocolat</td><td class=\"ds-mono\">VIE-002</td><td class=\"ds-num\">18</td><td class=\"ds-num ds-price\">Rp 22,000</td></tr><tr><td>Baguette tradition</td><td class=\"ds-mono\">BOU-004</td><td class=\"ds-num\">6</td><td class=\"ds-num ds-price\">Rp 35,000</td></tr></tbody></table><div class=\"ds-table-foot\">3 of 318</div></div>",
-      "css": ".ds-table-wrap { width: 100%; overflow: hidden; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-table { width: 100%; border-collapse: collapse; } .ds-table thead { background: #fafaf8; border-bottom: 1px solid #e3e1db; } .ds-table th { padding: 10px 14px; text-align: left; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6861; } .ds-table td { padding: 10px 14px; border-top: 1px solid #f3f1ec; font-size: 14px; color: #1a1917; } .ds-table .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-table .ds-mono { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 14px; color: #55524c; } .ds-table .ds-price { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; color: #7a5c1c; } .ds-table tbody tr:hover { background: rgba(233, 231, 226, 0.6); } .ds-table .ds-zebra { background: #f0efec; } .ds-table-foot { padding: 10px 14px; border-top: 1px solid #e3e1db; background: #fafaf8; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; color: #6b6861; }"
+      "description": "En-tête et pied sur papier inerte, labels mono capitales, colonnes numériques tabulaires alignées à droite. Le remplissage de cellule 10/14 px est l'unité de base du système. Le pied se rend MÊME quand la table est vide : « 0 sur 318 » est une information, pas un vide.",
+      "html": "<div class=\"ds-table-wrap\"><table class=\"ds-table\"><thead><tr><th>Product</th><th>SKU</th><th class=\"ds-num\">Stock</th><th class=\"ds-num\" aria-sort=\"descending\">Retail <span class=\"ds-sort\">▼</span></th></tr></thead><tbody><tr><td>Croissant beurre</td><td class=\"ds-mono\">VIE-001</td><td class=\"ds-num\">42</td><td class=\"ds-num ds-price\">Rp 18,000</td></tr><tr class=\"ds-zebra\"><td>Pain au chocolat</td><td class=\"ds-mono\">VIE-002</td><td class=\"ds-num\">18</td><td class=\"ds-num ds-price\">Rp 22,000</td></tr><tr><td>Baguette tradition</td><td class=\"ds-mono\">BOU-004</td><td class=\"ds-num\">6</td><td class=\"ds-num ds-price\">Rp 35,000</td></tr></tbody></table><div class=\"ds-table-foot\">3 of 318</div></div>",
+      "css": ".ds-table-wrap { width: 100%; overflow: hidden; border: 1px solid #e3e1db; border-radius: 4px; background: #ffffff; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-table { width: 100%; border-collapse: collapse; } .ds-table thead { background: #fafaf8; border-bottom: 1px solid #e3e1db; } .ds-table th { padding: 10px 14px; text-align: left; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6861; } .ds-table .ds-sort { color: #7a5c1c; } .ds-table td { padding: 10px 14px; border-top: 1px solid #f3f1ec; font-size: 14px; color: #1a1917; } .ds-table .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-table .ds-mono { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 14px; color: #55524c; } .ds-table .ds-price { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; color: #7a5c1c; } .ds-table tbody tr:hover { background: rgba(233, 231, 226, 0.6); } .ds-table .ds-zebra { background: #f0efec; } .ds-table-foot { padding: 10px 14px; border-top: 1px solid #e3e1db; background: #fafaf8; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; color: #6b6861; }"
     },
     {
       "name": "Barre de navigation",
       "kind": "nav",
       "refersTo": "nav-tab",
-      "description": "52 px d'encre fermés par un filet or. L'onglet actif porte un soulignement or interne ; l'onglet ouvert porte un fond relevé. Les deux états se cumulent.",
+      "description": "52 px d'encre fermés par un filet or plein (border-gold, #7a5c1c) : sans lui, l'encre et le papier se touchent à cru et la barre paraît posée sur la page au lieu d'en être le bord. L'onglet actif porte un soulignement or interne de 2 px, l'onglet ouvert un fond relevé — deux états distincts qui se cumulent. Le monogramme lit font-brand (Playfair) : c'est le SEUL utilitaire qui sorte le serif sous ce thème, et il portait font-display — donc Instrument Sans — jusqu'au 2026-08-18.",
       "html": "<header class=\"ds-nav\"><a class=\"ds-nav-brand\"><span class=\"ds-nav-mark\">B</span>The Breakery</a><nav class=\"ds-nav-tabs\"><a class=\"ds-tab ds-tab-active\">Today</a><a class=\"ds-tab\">Sales</a><a class=\"ds-tab ds-tab-open\">Stock</a><a class=\"ds-tab\">Purchase</a><a class=\"ds-tab\">Finance</a><a class=\"ds-tab\">Reports</a><a class=\"ds-tab\">Admin</a></nav></header>",
-      "css": ".ds-nav { display: flex; align-items: center; gap: 22px; height: 52px; padding: 0 22px; background: #201d19; border-bottom: 1px solid rgba(122, 92, 28, 0.35); font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-nav-brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #fffdf9; text-decoration: none; } .ds-nav-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 3px; background: #7a5c1c; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; font-size: 14px; line-height: 1; color: #fffdf9; } .ds-nav-tabs { display: flex; align-items: center; } .ds-tab { display: flex; align-items: center; height: 52px; padding: 0 13px; font-size: 14px; color: #c4bcae; text-decoration: none; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: #fffdf9; } .ds-tab-active { font-weight: 500; color: #fffdf9; box-shadow: inset 0 -2px 0 #d3ab5c; } .ds-tab-open { background: #2e2925; color: #fffdf9; } .ds-tab:focus-visible { outline: 2px solid #d3ab5c; outline-offset: -2px; }"
+      "css": ".ds-nav { display: flex; align-items: center; gap: 22px; height: 52px; padding: 0 22px; background: #201d19; border-bottom: 1px solid #7a5c1c; font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-nav-brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #fffdf9; text-decoration: none; } .ds-nav-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 3px; background: #7a5c1c; font-family: 'Playfair Display', 'Times New Roman', Georgia, serif; font-size: 14px; line-height: 1; color: #fffdf9; } .ds-nav-tabs { display: flex; align-items: center; } .ds-tab { display: flex; align-items: center; height: 52px; padding: 0 13px; font-size: 14px; color: #c4bcae; text-decoration: none; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: #fffdf9; } .ds-tab-active { font-weight: 500; color: #fffdf9; box-shadow: inset 0 -2px 0 #d3ab5c; } .ds-tab-open { background: #2e2925; color: #fffdf9; } .ds-tab:focus-visible { outline: 2px solid #d3ab5c; outline-offset: -2px; }"
+    },
+    {
+      "name": "Panneau de navigation déroulant",
+      "kind": "nav",
+      "refersTo": "nav-panel",
+      "description": "Feuille blanche à largeur VARIABLE — une colonne de 172 px par groupe déclaré, bornée à la fenêtre et recalée vers la gauche si elle déborderait à droite. Coins bas à 6 px (le cran réservé à ce qui flotte), ombre flottante, colonnes coiffées d'un label mono. Menubar : clic pour ouvrir, survol pour basculer une fois la barre ouverte, ←/→ entre onglets, ↓ pour entrer, Échap pour fermer et rendre le focus à l'onglet.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-panel-col\"><h4 class=\"ds-panel-label\">Catalog</h4><a class=\"ds-panel-link ds-panel-link-active\">Products</a><a class=\"ds-panel-link\">Categories</a><a class=\"ds-panel-link\">Modifiers</a></div><div class=\"ds-panel-col\"><h4 class=\"ds-panel-label\">Stock</h4><a class=\"ds-panel-link\">Stock alerts</a><a class=\"ds-panel-link\">Stock count</a><a class=\"ds-panel-link\">Transfers</a></div></div>",
+      "css": ".ds-panel { display: flex; gap: 22px; width: max-content; padding: 18px 20px; border: 1px solid #86827a; border-radius: 0 0 6px 6px; background: #ffffff; box-shadow: 0 18px 40px rgba(45, 34, 15, 0.20); font-family: 'Instrument Sans Variable', 'Inter Variable', system-ui, sans-serif; } .ds-panel-col { display: flex; flex-direction: column; gap: 2px; width: 172px; } .ds-panel-label { margin: 0 0 6px; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6861; } .ds-panel-link { padding: 5px 0; font-size: 14px; color: #1a1917; text-decoration: none; cursor: pointer; transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-panel-link:hover { color: #7a5c1c; } .ds-panel-link-active { color: #7a5c1c; font-weight: 500; } .ds-panel-link:focus-visible { outline: 2px solid #7a5c1c; outline-offset: 2px; }"
     },
     {
       "name": "Badge d'état",
       "kind": "chip",
-      "refersTo": "toolbar-button-secondary",
-      "description": "Pastille de statut sur fond teinté à 12 % — la couleur porte le sens, jamais un remplissage plein.",
-      "html": "<span class=\"ds-badge ds-badge-ok\">Received</span> <span class=\"ds-badge ds-badge-warn\">Partial</span> <span class=\"ds-badge ds-badge-danger\">Overdue</span> <span class=\"ds-badge ds-badge-gold\">Retail</span>",
-      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; } .ds-badge-ok { background: rgba(24, 122, 82, 0.12); color: #187a52; } .ds-badge-warn { background: rgba(138, 90, 16, 0.12); color: #8a5a10; } .ds-badge-danger { background: rgba(180, 52, 44, 0.12); color: #b4342c; } .ds-badge-gold { background: rgba(122, 92, 28, 0.12); color: #7a5c1c; }"
+      "description": "Pastille de statut sur sa propre teinte douce à 12 % — la couleur porte le sens, jamais un remplissage plein. Les quatre bases ont été assombries le 2026-08-21 : cette teinte douce se COMPOSE avec le fond qui la porte, et sur le papier de page les quatre variantes tombaient entre 3,96 et 4,41:1, sous AA, invisibles à qui ne vérifie que sur blanc (The Worst-Ground Rule). Elles mesurent désormais 4,61 à 4,86:1 sur le papier.",
+      "html": "<span class=\"ds-badge ds-badge-ok\">Received</span> <span class=\"ds-badge ds-badge-warn\">Partial</span> <span class=\"ds-badge ds-badge-danger\">Overdue</span> <span class=\"ds-badge ds-badge-info\">Draft</span> <span class=\"ds-badge ds-badge-gold\">Retail</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; } .ds-badge-ok { background: rgba(21, 109, 73, 0.12); color: #156d49; } .ds-badge-warn { background: rgba(132, 86, 17, 0.12); color: #845611; } .ds-badge-danger { background: rgba(176, 48, 41, 0.12); color: #b03029; } .ds-badge-info { background: rgba(38, 97, 141, 0.12); color: #26618d; } .ds-badge-gold { background: rgba(122, 92, 28, 0.12); color: #7a5c1c; }"
     }
   ],
   "narrative": {
     "northStar": "The Measuring Instrument",
-    "overview": "Le back-office n'est pas la vitrine de la boulangerie, c'est l'instrument avec lequel on la mesure. La page se présente comme un plan de travail gradué : un point de 1 px tous les 22 px sur un papier gris chaud, et rien d'autre en fond — pas de dégradé, pas de texture, pas d'aplat coloré. Cette graduation n'est pas un ornement, c'est la déclaration d'intention du système : ici on relève des valeurs, on ne raconte pas une histoire de croissants.\n\nL'identité tient dans trois matières et une discipline. L'encre, presque noire et légèrement chaude, occupe la barre de navigation, un seul bouton par écran et une seule tuile de KPI — c'est le poids qui dit ce qui compte. L'or, descendu en version encre pour tenir le contraste sur le papier, ne remplit plus rien : il souligne l'onglet actif, il porte les liens, il marque les prix. Le papier et la feuille blanche portent tout le reste, séparés non par des ombres mais par des bordures fermes. La discipline, c'est que toute donnée — une valeur monétaire, un SKU, un horodatage, un libellé de section — rend en JetBrains Mono tabulaire, tandis qu'Instrument Sans ne porte que la prose de l'interface.\n\nCe que le système a délibérément écarté est aussi net que ce qu'il a retenu. L'ivoire chaud et Playfair Display sur les titres de page ont été retirés le 2026-08-05 : ils étaient le signal « boulangerie artisanale » le plus fort dans un outil de gestion. Playfair survit au seul monogramme de marque. Les coins arrondis sont tombés de 12 px à 4 px pour la même raison.",
+    "overview": "Le back-office n'est pas la vitrine de la boulangerie, c'est l'instrument avec lequel on la mesure. La page se présente comme un plan de travail gradué : un point de 1 px tous les 22 px sur un papier gris chaud, et rien d'autre en fond — pas de dégradé, pas de texture, pas d'aplat coloré. Cette graduation n'est pas un ornement, c'est la déclaration d'intention du système : ici on relève des valeurs, on ne raconte pas une histoire de croissants.\n\nL'identité tient dans trois matières et une discipline. L'encre, presque noire et légèrement chaude, occupe la barre de navigation, un seul bouton par écran et une seule tuile de KPI — c'est le poids qui dit ce qui compte. L'or, descendu en version encre pour tenir le contraste sur le papier, ne remplit plus rien : il souligne l'onglet actif, il porte les liens, il marque les prix. Le papier et la feuille blanche portent tout le reste, séparés non par des ombres mais par des bordures fermes. La discipline, c'est que toute donnée — une valeur monétaire, un SKU, un horodatage, un libellé de section — rend en JetBrains Mono tabulaire, tandis qu'Instrument Sans ne porte que la prose de l'interface. On sait au premier regard ce qui est un fait relevé et ce qui est une explication.\n\nCe que le système a délibérément écarté est aussi net que ce qu'il a retenu. L'ivoire chaud et Playfair Display sur les titres de page ont été retirés le 2026-08-05 : ils étaient le signal « boulangerie artisanale » le plus fort dans un outil de gestion, et ils faisaient lire la page comme un site vitrine. Playfair survit à la seule marque — le monogramme de la barre de navigation et la marque du splash de démarrage, qui lisent tous deux --font-brand. Les coins arrondis sont tombés de 12 px à 4 px pour la même raison — la rondeur lisait « application grand public », la serre lit « instrument ».",
     "keyCharacteristics": [
       "Fond gradué à 22 px, le seul relief du système",
       "Encre comme poids, jamais comme décor : une seule surface encrée par écran",
@@ -350,16 +650,61 @@
       "Bordure avant ombre : l'ombre n'existe que pour ce qui se détache de la page"
     ],
     "rules": [
-      { "name": "The Ink-Not-Gold Rule", "body": "L'or ne remplit jamais une surface dans le back-office. Il souligne, il colore un texte, il marque un focus. Un bouton doré appartient à la caisse, pas ici. Test : si vous retirez tous les aplats d'or de l'écran, rien ne doit disparaître — seul le sens de lecture s'appauvrit.", "section": "colors" },
-      { "name": "The One Ink Fill Rule", "body": "Un seul bloc encré par écran en plus de la barre de navigation : soit le bouton qui crée, soit la tuile qui répond à la question qu'on pose en ouvrant la page. Un second détruit la hiérarchie que le premier installe.", "section": "colors" },
-      { "name": "The Ink Semantics Rule", "body": "Le vert et le rouge du thème sont taillés pour un fond blanc. Sur l'encre, on utilise ink-success / ink-danger, les mêmes teintes remontées en luminosité — et nulle part ailleurs.", "section": "colors" },
-      { "name": "The Mono-Carries-Data Rule", "body": "Tout chiffre qu'on lit pour décider rend en mono tabulaire. Un montant, un compteur, un pourcentage ou un horodatage en sans-serif est un défaut, pas une variante.", "section": "typography" },
-      { "name": "The Playfair-Is-Brand-Only Rule", "body": "Playfair Display ne rend que le monogramme de la barre de navigation. Un titre de page en serif fait relire la boulangerie au lieu de l'outil — c'est le geste que la refonte a explicitement défait.", "section": "typography" },
-      { "name": "The Value-Width Rule", "body": "Le corps de la valeur KPI est tendu contre la largeur de tuile : Rp 4,850,000 doit tenir sur une ligne. Toute remontée du corps au-dessus de 34 px sur une tuile de dashboard redonne le même défaut de coupure.", "section": "typography" },
-      { "name": "The 22px Module Rule", "body": "La grille de fond, la marge de page et les gouttières du panneau tombent toutes sur le même pas. Un espacement qui ne retombe pas sur le module se voit contre les points du fond.", "section": "layout" },
-      { "name": "The Archetype-First Rule", "body": "Avant de dessiner une page, on nomme son archétype parmi les neuf. Si aucun ne convient, c'est presque toujours qu'on a mal nommé le travail de la page — et si un dixième est réellement nécessaire, il s'ajoute au système avant d'être dessiné, pas après.", "section": "layout" },
-      { "name": "The Border-Before-Shadow Rule", "body": "Si deux surfaces doivent se distinguer et qu'elles sont toutes deux posées sur la page, on les sépare par une bordure. On ne dépense une ombre que lorsqu'un élément quitte réellement le plan.", "section": "elevation" },
-      { "name": "The Tight-Corner Rule", "body": "Au-delà de 6 px, un rayon dans le back-office est une erreur. La rondeur appartient à la caisse, dont les cibles tactiles font 44 px et plus.", "section": "shapes" }
+      {
+        "name": "The Ink-Not-Gold Rule",
+        "section": "colors",
+        "body": "L'or ne remplit jamais une surface dans le back-office. Il souligne, il colore un texte, il marque un focus. Un bouton doré appartient à la caisse, pas ici. Test : si vous retirez tous les aplats d'or de l'écran, rien ne doit disparaître — seul le sens de lecture s'appauvrit. Trois aplats seulement échappent à la règle, et la liste ne s'allonge pas d'elle-même : la piste d'interrupteur et le point d'état (le test les excuse — retirer leur remplissage fait disparaître l'INFORMATION D'ÉTAT, pas seulement le sens de lecture), et la plaque du monogramme, qui échoue au test et est maintenue par arbitrage du propriétaire. L'exception ne s'étend ni aux badges, ni aux pastilles, ni aux puces de sélection."
+      },
+      {
+        "name": "The One Ink Fill Rule",
+        "section": "colors",
+        "body": "Un seul bloc encré par écran en plus de la barre de navigation : soit le bouton qui crée, soit la tuile qui répond à la question qu'on pose en ouvrant la page. Un second détruit la hiérarchie que le premier installe."
+      },
+      {
+        "name": "The Ink Semantics Rule",
+        "section": "colors",
+        "body": "Le vert et le rouge du thème sont taillés pour le papier. Sur l'encre, on utilise ink-success / ink-danger, les mêmes teintes remontées en luminosité — et nulle part ailleurs."
+      },
+      {
+        "name": "The Worst-Ground Rule",
+        "section": "colors",
+        "body": "Une couleur d'état se mesure contre le PIRE fond sur lequel elle peut atterrir, jamais contre le plus flatteur. Le chip d'état pose sa couleur pleine sur sa propre teinte douce à 12 %, et cette teinte se compose avec ce qui la porte : sur la feuille blanche les quatre variantes tenaient 5,26 à 5,54:1, sur le PAPIER de page elles tombaient sous AA. Deux conséquences opposables : un ratio annoncé sans son fond ne vaut rien, et une famille se corrige entière — deux variantes réparées sur quatre laissent le défaut derrière une moitié propre."
+      },
+      {
+        "name": "The Mono-Carries-Data Rule",
+        "section": "typography",
+        "body": "Tout chiffre qu'on lit pour décider rend en mono tabulaire. Un montant, un compteur, un pourcentage ou un horodatage en sans-serif est un défaut, pas une variante. Piège de relevé : `tabular-nums` sans `font-data` produit le défaut, mais un grep des deux rend des centaines de lignes majorantes — la famille peut venir d'un parent. Seul le rendu tranche."
+      },
+      {
+        "name": "The Playfair-Is-Brand-Only Rule",
+        "section": "typography",
+        "body": "Playfair Display ne rend que la marque : le monogramme de la barre de navigation et la marque du splash de démarrage. Un titre de page en serif fait relire la boulangerie au lieu de l'outil — c'est le geste que la refonte a explicitement défait. La règle porte sur ce qui REND, pas sur ce qui est écrit : une surface de marque prend `font-brand`, jamais `font-display` ; et un `font-serif` / `font-display` restant n'est pas une violation de cette règle puisqu'il ne produit aucun serif ici — c'est une classe qui nomme le contraire de ce qu'elle fait, et le défaut est là."
+      },
+      {
+        "name": "The Value-Width Rule",
+        "section": "typography",
+        "body": "Le corps de la valeur KPI est tendu contre la largeur de tuile : `Rp 4.850.000` doit tenir sur une ligne. Toute remontée du corps au-dessus de 34 px sur une tuile de dashboard redonne le même défaut de coupure. Leçon de méthode : une largeur de contenu comparée à une largeur de tuile SUPPOSÉE fixe ne dit rien d'une tuile qui s'élargit — la mesure se fait sur le nœud réel."
+      },
+      {
+        "name": "The 22px Module Rule",
+        "section": "layout",
+        "body": "La grille de fond, la marge de page et les gouttières du panneau tombent toutes sur le même pas. Un espacement qui ne retombe pas sur le module se voit contre les points du fond."
+      },
+      {
+        "name": "The Archetype-First Rule",
+        "section": "layout",
+        "body": "Avant de dessiner une page, on nomme son archétype parmi les neuf. Si aucun ne convient, c'est presque toujours qu'on a mal nommé le travail de la page — et si un dixième est réellement nécessaire, il s'ajoute au document avant d'être dessiné, pas après."
+      },
+      {
+        "name": "The Border-Before-Shadow Rule",
+        "section": "elevation",
+        "body": "Si deux surfaces doivent se distinguer et qu'elles sont toutes deux posées sur la page, on les sépare par une bordure. On ne dépense une ombre que lorsqu'un élément quitte réellement le plan."
+      },
+      {
+        "name": "The Tight-Corner Rule",
+        "section": "shapes",
+        "body": "Au-delà de 6 px, un rayon dans le back-office est une erreur. La rondeur appartient à la caisse, dont les cibles tactiles font 44 px et plus."
+      }
     ],
     "dos": [
       "Do faire rendre toute donnée chiffrée en JetBrains Mono tabulaire, y compris dans une cellule de tableau et dans une note de bas de tuile.",
@@ -370,7 +715,7 @@
       "Do afficher la réserve d'une mesure à côté de la mesure, pas dans une note de bas de page.",
       "Do faire dégrader une page carte par carte quand une permission manque, en disant « restricted » plutôt qu'en affichant une erreur rouge.",
       "Do nommer l'archétype d'une page avant de la dessiner, et en reprendre les invariants plutôt que réinventer sa structure.",
-      "Do annoncer ce qu'une écriture irréversible va produire avant le bouton qui la produit, et verrouiller ce bouton tant que la saisie est incomplète en disant ce qui manque."
+      "Do annoncer ce qu'une écriture irréversible va produire AVANT le bouton qui la produit, et verrouiller ce bouton tant que la saisie est incomplète en disant ce qui manque."
     ],
     "donts": [
       "Don't remplir quoi que ce soit en or. L'or est une encre de sens : nav active, lien, prix, focus.",
@@ -378,10 +723,12 @@
       "Don't utiliser Playfair Display ailleurs que sur le monogramme de marque.",
       "Don't monter un rayon au-dessus de 6 px, ni descendre les contrôles au-dessous de 3 px.",
       "Don't employer le vert ou le rouge du thème sur un fond encre : ils y tombent sous le seuil de lecture. Utiliser ink-success / ink-danger.",
-      "Don't réintroduire l'ivoire chaud ni aucun signal de boulangerie artisanale dans le chrome — c'est l'anti-référence explicite du système.",
+      "Don't réintroduire l'ivoire chaud ni aucun signal de boulangerie artisanale dans le chrome — c'est l'anti-référence explicite du système. Une seule surface y échappe, par arbitrage : la page de connexion.",
       "Don't écrire une couleur en dur dans un composant. Toute la direction est scopée au thème pour rester commutable ; une valeur en dur dans un composant la fige.",
       "Don't employer une teinte catégorielle (cat-*) comme couleur de série dans un graphique : elle est réservée à l'identité d'une catégorie de produit. Les séries prennent la rampe chart-1..4.",
-      "Don't offrir de modifier une écriture déjà enregistrée dans un journal. L'affordance est la contre-écriture ; un bouton « Éditer » sur une ligne verrouillée est un défaut de conception, pas un manque de fonctionnalité."
+      "Don't offrir de modifier une écriture déjà enregistrée dans un journal. L'affordance est la contre-écriture ; un bouton « Éditer » sur une ligne verrouillée est un défaut de conception, pas un manque de fonctionnalité.",
+      "Don't border un bouton ou un champ en border-subtle : c'est un filet de carte à 1,31:1, pas la limite d'un contrôle. La limite d'un contrôle est border-strong, et sur encre elle est ink-fg-sub — jamais ink-border.",
+      "Don't retirer un aplat d'or d'un encart bordé border-border-gold sans monter son liseré : rgba(122, 92, 28, 0.35) vaut 1,64:1 et laisse l'encart SANS limite visible."
     ]
   }
 }
