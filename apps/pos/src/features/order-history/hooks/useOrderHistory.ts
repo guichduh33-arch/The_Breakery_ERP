@@ -56,7 +56,8 @@ interface QueryResult<T> {
 interface SelectBuilder {
   eq: (col: string, val: unknown) => SelectBuilder;
   in: (col: string, vals: readonly unknown[]) => SelectBuilder;
-  order: (col: string, opts: { ascending: boolean }) => Promise<QueryResult<unknown[]>>;
+  order: (col: string, opts: { ascending: boolean }) => SelectBuilder;
+  limit: (n: number) => Promise<QueryResult<unknown[]>>;
 }
 interface LooseFromBuilder {
   select: (cols: string) => SelectBuilder;
@@ -66,7 +67,15 @@ interface LooseSupabase {
 }
 const sb = supabase as unknown as LooseSupabase;
 
-export function useOrderHistory() {
+/**
+ * Garde-fou re-audit 2026-08-24 (perf P1) : plafond LARGEMENT au-dessus d'un
+ * shift réel (cible métier : 200 commandes/JOUR, toutes sessions confondues).
+ * Les stats du panneau sont dérivées de ces lignes — un plafond trop bas les
+ * ferait mentir ; celui-ci ne borne que le pathologique.
+ */
+export const ORDER_HISTORY_LIMIT = 500;
+
+export function useOrderHistory(enabled: boolean = true) {
   const sessionId = useShiftStore((s) => s.current?.id);
 
   return useQuery<OrderHistoryRow[]>({
@@ -82,7 +91,8 @@ export function useOrderHistory() {
         )
         .eq('session_id', sessionId)
         .in('status', FINALIZED_ORDER_STATUSES)
-        .order('paid_at', { ascending: false });
+        .order('paid_at', { ascending: false })
+        .limit(ORDER_HISTORY_LIMIT);
 
       if (error) throw new Error(error.message);
 
@@ -109,7 +119,11 @@ export function useOrderHistory() {
         };
       });
     },
-    enabled: Boolean(sessionId),
+    // `enabled` (re-audit 2026-08-24 perf P1) : le panel est monté en
+    // permanence dans Pos.tsx — la requête (jointures refunds+payments sur
+    // tout le shift) tournait modale FERMÉE sur chaque terminal. Le panel
+    // passe `open` ; son refetch-on-open existant couvre la réouverture.
+    enabled: Boolean(sessionId) && enabled,
     staleTime: 10_000,
   });
 }

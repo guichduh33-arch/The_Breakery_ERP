@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TABLE_RELEASING_STATUSES_FILTER } from '../tableActivity';
 
@@ -28,6 +28,37 @@ async function fetchOccupied(): Promise<Set<string>> {
   return new Set((data ?? []).map((r) => r.table_number));
 }
 
+// Re-audit 2026-08-24 (perf P1) — le hook est monté DEUX fois sur /pos via
+// BottomActionBar (TableSelectorButton + useDineInTableGuard) : chaque mount
+// ouvrait son propre canal sur `orders` et doublait le trafic realtime pour la
+// même invalidation. Canal partagé refcompté au niveau module : le premier
+// consommateur l'ouvre, le dernier le ferme. StrictMode reste sûr — ses
+// mount/unmount sont séquentiels, donc chaque cycle recrée un canal au nom
+// UUID frais (pas de collision avec le removeChannel asynchrone du précédent ;
+// pattern ref: useKdsRealtime.ts).
+let sharedChannel: ReturnType<typeof supabase.channel> | null = null;
+let subscriberCount = 0;
+
+function acquireOccupancyChannel(queryClient: QueryClient): () => void {
+  subscriberCount += 1;
+  if (subscriberCount === 1) {
+    const channelName = `table_occupancy_realtime-${crypto.randomUUID()}`;
+    sharedChannel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        void queryClient.invalidateQueries({ queryKey: OCCUPANCY_KEY });
+      })
+      .subscribe();
+  }
+  return () => {
+    subscriberCount -= 1;
+    if (subscriberCount === 0 && sharedChannel) {
+      void supabase.removeChannel(sharedChannel);
+      sharedChannel = null;
+    }
+  };
+}
+
 export function useTableOccupancy(): Record<string, boolean> {
   const queryClient = useQueryClient();
 
@@ -40,23 +71,7 @@ export function useTableOccupancy(): Record<string, boolean> {
     refetchInterval: 30_000,
   });
 
-  useEffect(() => {
-    // StrictMode double-invokes effects in dev; a static channel name would
-    // collide with the still-subscribed channel from the first mount
-    // (removeChannel is async). We generate the UUID INSIDE the effect, NOT
-    // via a component-body `useMemo` — the memo from the first render is
-    // discarded in StrictMode and the second-render UUID would be reused
-    // across both effect mounts. Pattern ref: useKdsRealtime.ts.
-    const channelName = `table_occupancy_realtime-${crypto.randomUUID()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        void queryClient.invalidateQueries({ queryKey: OCCUPANCY_KEY });
-      })
-      .subscribe();
-
-    return () => { void supabase.removeChannel(channel); };
-  }, [queryClient]);
+  useEffect(() => acquireOccupancyChannel(queryClient), [queryClient]);
 
   return Object.fromEntries([...occupied].map((name) => [name, true]));
 }
