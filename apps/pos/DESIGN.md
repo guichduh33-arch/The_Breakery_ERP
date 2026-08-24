@@ -27,6 +27,7 @@ colors:
   red-as-text: "#f0837b"
   red-on-fill: "#180e0c"
   amber-warn: "#d99a3a"
+  amber-fg: "#1b1105"
   blue-info: "#6fa8d8"
   text-primary: "#f7f3ec"
   text-secondary: "#b3aa9d"
@@ -263,7 +264,9 @@ est acquis, le rouge pour ce qui est perdu ou dangereux.
 ### Tertiary
 
 - **Ambre d'Attente** (`#d99a3a`) : l'avertissement qui n'est pas encore une
-  faute — stock bas, minuteur de cuisine entré dans la bande d'alerte.
+  faute — stock bas, minuteur de cuisine entré dans la bande d'alerte. Son
+  premier plan sur aplat est un brun quasi-noir tiré vers l'ambre (`#1b1105`,
+  7,65:1) — le même contrat `-fg` que l'or et le vert.
 - **Bleu d'Information** (`#6fa8d8`) : la note neutre, sans urgence.
 - **Violet Carte** (`#8b5cf6`) et **Ambre QRIS** (`#f59e0b`) : deux teintes
   d'identité de moyen de paiement. Ce sont des **étiquettes**, jamais des boutons.
@@ -302,7 +305,10 @@ qu'un autre token manquait : on ajoute le token, on n'étend pas l'or.
 `red-as-text` (`#f0837b`) est le rouge *en* premier plan, à écrire sur la surface
 sombre. `red-on-fill` (`#180e0c`) est le premier plan à poser *sur* un aplat
 rouge. Les confondre a déjà produit un badge à 1,00:1, illisible. Même contrat
-pour l'or et le vert : le suffixe `-fg` signifie toujours « sur remplissage ».
+pour l'or, le vert et l'ambre : le suffixe `-fg` signifie toujours « sur
+remplissage ». Depuis le re-audit du 2026-08-24, la couche sémantique suit le
+même contrat : le danger **écrit** (texte, icône) passe par `danger-as-text`,
+jamais par le rouge d'aplat que rend `text-danger`.
 
 **La Règle des Teintes de Catégorie.** Les douze teintes catégorielles
 (`--cat-amber` … `--cat-red`) sont l'**identité** d'une famille de produits. Elles
@@ -312,7 +318,8 @@ rampe monochrome `chart-1..4`.
 
 ## Typography
 
-**Display Font:** Playfair Display (avec Times New Roman, Georgia en secours)
+**Display Font:** Playfair Display (avec Times New Roman, Georgia en secours —
+seule l'italique 400 est chargée dans le bundle POS)
 **Body Font:** Inter Variable (avec system-ui, -apple-system en secours)
 **Label/Mono Font:** JetBrains Mono Variable (avec ui-monospace en secours)
 
@@ -382,6 +389,11 @@ sélection, onglet), **80 px** large (touches de pavé numérique, action pleine
 largeur). Le rail de catégories masque sa barre de défilement tout en restant
 défilable — un doigt fait glisser, aucune gouttière ne mange l'espace.
 
+Sur la tablette (Capacitor), la barre gestuelle du système est absorbée par
+deux tokens d'espacement ajoutés au re-audit du 2026-08-24 : `safe-bottom`
+(l'encoche seule) et `safe-bottom-gutter` (au moins la gouttière de 10 px si
+l'encoche est plus petite). Aucun `env()` ne s'écrit en style en ligne.
+
 ### Named Rules
 
 **La Règle des 56.** Toute action du parcours d'argent — ajouter, envoyer,
@@ -418,12 +430,18 @@ se lit à l'ombre). Le même token produit donc deux comportements corrects.
   crans `xs` / `sm` / `md`.
 - **Détachement** (`0 16px 40px rgba(0,0,0,0.55)`, cran `lg`) : ce qui survole le
   plan — popover, tuile de produit au survol.
+- **Flottant** (`0 18px 40px rgba(0,0,0,0.58)`, cran `float`) : le cran entre
+  `lg` et `modal` — panneau déroulant, menu. Défini dans les deux thèmes depuis
+  le 2026-08-22 pour qu'un primitif partagé ne rende jamais une ombre vide ;
+  aucun écran POS ne le consomme à ce jour.
 - **Modale** (`0 28px 72px rgba(0,0,0,0.65)`) : le seul cran autorisé sur une
   surface qui prend le focus de l'écran entier.
 - **Creux** (`inset 0 1px 2px rgba(0,0,0,0.35)`) : les surfaces en retrait —
   cartes en creux, champs enfoncés.
-- **Halo de focus** (`0 0 0 3px rgba(211,171,92,0.40)`) : dérivé de l'or, comme
-  la bordure de focus. Le liseré et le halo sont toujours de la même couleur.
+- **Halo de focus** (`0 0 0 3px color-mix(in srgb, var(--gold-base) 40%,
+  transparent)`) : dérivé de l'or par `color-mix` depuis le 2026-08-18 — même
+  rendu au pixel près que l'ancien rgba figé, mais qui suit l'accent. Le liseré
+  et le halo sont toujours de la même couleur.
 
 ### Named Rules
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-08T00:00:00Z",
+  "generatedAt": "2026-08-24T00:00:00Z",
   "title": "Design System: The Breakery POS",
   "extensions": {
     "colorMeta": {
@@ -76,7 +76,7 @@
       },
       "title": {
         "displayName": "Title — Inter 24",
-        "purpose": "Titre de carte et de modale."
+        "purpose": "Titre de carte. Les titres de modales du kit partagé rendent en Playfair (arbitrage 2026-08-23 — l'usage du code fait loi)."
       },
       "body": {
         "displayName": "Body — Inter 16",
@@ -107,6 +107,11 @@
         "purpose": "Premier cran où une ombre portée devient visible : ce qui survole le plan (popover, tuile de produit au survol)."
       },
       {
+        "name": "shadow-float",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px rgba(0, 0, 0, 0.58)",
+        "purpose": "Le cran entre lg et modal — panneau déroulant, menu. Défini dans les deux thèmes depuis le 2026-08-22 ; aucun écran POS ne le consomme à ce jour."
+      },
+      {
         "name": "shadow-xl",
         "value": "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 28px 72px rgba(0, 0, 0, 0.60)",
         "purpose": "Feuille latérale et surface détachée de grande taille."
@@ -124,7 +129,7 @@
       {
         "name": "shadow-focus",
         "value": "0 0 0 3px rgba(211, 171, 92, 0.40)",
-        "purpose": "Halo de focus dérivé de l'accent. Le liseré et le halo sont toujours de la même couleur."
+        "purpose": "Halo de focus dérivé de l'accent — la source est color-mix(in srgb, var(--gold-base) 40%, transparent) depuis le 2026-08-18, rendu identique au pixel près. Le liseré et le halo sont toujours de la même couleur."
       },
       {
         "name": "backdrop",
@@ -204,7 +209,7 @@
       "refersTo": "product-tile",
       "description": "L'objet le plus manipulé du produit. Ici dans son état « déjà au panier » : bordure et anneau dorés, pastille de quantité.",
       "html": "<button class=\"ds-tile ds-tile-in-cart\"><div class=\"ds-tile-media\"><span class=\"ds-tile-qty\">2</span></div><div class=\"ds-tile-body\"><div class=\"ds-tile-name\">Almond croissant</div><div class=\"ds-tile-price\">Rp 38,000</div></div></button>",
-      "css": ".ds-tile { display: block; width: 190px; padding: 0; text-align: left; background: var(--bg-elevated, #1a1815); border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-lg, 12px); overflow: hidden; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transition: transform 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms cubic-bezier(0.16,1,0.3,1), background-color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-tile:hover { transform: translateY(-2px); border-color: var(--border-strong, #746b5f); background: var(--bg-overlay, #231f1b); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(0,0,0,0.55); } .ds-tile:active { transform: scale(0.97); } .ds-tile:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; } .ds-tile-in-cart { border-color: var(--gold-base, #d3ab5c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(211,171,92,0.5); } .ds-tile-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-input, #1f1c18); } .ds-tile-qty { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; background: var(--gold-base, #d3ab5c); color: var(--bg-base, #12100e); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 9999px; } .ds-tile-body { padding: 8px 10px; } .ds-tile-name { font-family: var(--font-body); font-size: 13px; font-weight: 500; line-height: 1.15; color: var(--text-primary, #f7f3ec); } .ds-tile-price { margin-top: 2px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold-base, #d3ab5c); }"
+      "css": ".ds-tile { display: block; width: 190px; padding: 0; text-align: left; background: var(--bg-elevated, #1a1815); border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-lg, 12px); overflow: hidden; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transition: transform 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms cubic-bezier(0.16,1,0.3,1), background-color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-tile:hover { transform: translateY(-2px); border-color: var(--border-strong, #746b5f); background: var(--bg-overlay, #231f1b); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(0,0,0,0.55); } .ds-tile:active { transform: scale(0.97); } .ds-tile:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; } .ds-tile-in-cart { border-color: var(--gold-base, #d3ab5c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(211,171,92,0.5); } .ds-tile-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-input, #1f1c18); } .ds-tile-qty { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; background: var(--gold-base, #d3ab5c); color: var(--gold-fg, #1a1408); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 9999px; } .ds-tile-body { padding: 8px 10px; } .ds-tile-name { font-family: var(--font-body); font-size: 13px; font-weight: 500; line-height: 1.15; color: var(--text-primary, #f7f3ec); } .ds-tile-price { margin-top: 2px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold-base, #d3ab5c); }"
     },
     {
       "name": "Kitchen Ticket (urgent)",
@@ -250,7 +255,7 @@
       },
       {
         "name": "La Règle des Deux Rouges",
-        "body": "Le rouge a deux rôles qui ne se substituent jamais. red-as-text (#f0837b) est le rouge en premier plan, à écrire sur la surface sombre. red-on-fill (#180e0c) est le premier plan à poser sur un aplat rouge. Les confondre a déjà produit un badge à 1,00:1, illisible. Même contrat pour l'or et le vert : le suffixe -fg signifie toujours « sur remplissage ».",
+        "body": "Le rouge a deux rôles qui ne se substituent jamais. red-as-text (#f0837b) est le rouge en premier plan, à écrire sur la surface sombre. red-on-fill (#180e0c) est le premier plan à poser sur un aplat rouge. Les confondre a déjà produit un badge à 1,00:1, illisible. Même contrat pour l'or, le vert et l'ambre : le suffixe -fg signifie toujours « sur remplissage ». Depuis le re-audit du 2026-08-24, la couche sémantique suit : le danger écrit passe par danger-as-text, jamais par le rouge d'aplat de text-danger.",
         "section": "colors"
       },
       {
@@ -270,7 +275,7 @@
       },
       {
         "name": "La Règle de la Serif Réservée",
-        "body": "Playfair ne touche jamais une donnée ni un libellé fonctionnel. Si une serif apparaît sur un montant, le token est faux.",
+        "body": "Playfair ne touche jamais une donnée ni un libellé fonctionnel. Si une serif apparaît sur un montant, le token est faux. Corollaire arbitré le 2026-08-23 : le numéro de commande est une donnée et n'a qu'UNE graphie à l'écran — mono tabulaire, la forme du KDS — sur toutes les surfaces.",
         "section": "typography"
       },
       {
