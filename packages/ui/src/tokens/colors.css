@@ -364,6 +364,9 @@
   --warning-soft: rgba(132, 86, 17, 0.12);
   --danger:       var(--red-base);
   --danger-soft:  var(--red-soft);
+  /* Re-audit 2026-08-24 — Règle des Deux Rouges : le danger ÉCRIT suit
+   * --red-as-text (ici le rouge de base, déjà 6,36:1 sur l'ivoire). */
+  --danger-as-text: var(--red-as-text);
   --info:         var(--blue-info);
   /* Corrigé : --info-soft utilisait rgba(45,143,224,·), une couleur qui
    * n'existait plus depuis l'assombrissement de --blue-info. */

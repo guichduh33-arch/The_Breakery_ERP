@@ -82,7 +82,7 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
 
         {errorHint ? (
           <p
-            className="text-danger text-sm mb-4"
+            className="text-danger-as-text text-sm mb-4"
             data-testid="display-pair-error"
             role="alert"
           >

@@ -45,8 +45,8 @@ export function TerminalLockedOverlay() {
     <FullScreenModal open onOpenChange={() => { /* gate — cannot dismiss */ }} title={expired ? 'Session expired' : 'Resume terminal'}>
       <div className="m-auto w-full max-w-sm space-y-6 text-center">
         <div className="grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-gold-soft border border-gold grid place-items-center">
-            <Lock className="h-7 w-7 text-gold" aria-hidden />
+          <div className="h-16 w-16 rounded-full bg-surface-4 border border-border-subtle grid place-items-center">
+            <Lock className="h-7 w-7 text-text-secondary" aria-hidden />
           </div>
         </div>
         <div className="space-y-1">

@@ -204,7 +204,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
                     as a warning, not a neutral fact (fire/checkout will block). */}
                 {cart.tableNumber ? (
                   <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4 text-gold" aria-hidden />
+                    <MapPin className="h-4 w-4" aria-hidden />
                     Table {cart.tableNumber}
                   </span>
                 ) : (
@@ -217,7 +217,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               </>
             )}
             <span className="flex items-center gap-1">
-              <User className="h-4 w-4 text-gold" aria-hidden />
+              <User className="h-4 w-4" aria-hidden />
               Walk-in
             </span>
           </div>

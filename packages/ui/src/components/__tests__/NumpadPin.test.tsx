@@ -5,7 +5,10 @@ import { NumpadPin } from '../NumpadPin.js';
 describe('NumpadPin', () => {
   it('renders PIN dots and numpad', () => {
     render(<NumpadPin onSubmit={vi.fn()} />);
-    expect(screen.getByLabelText('PIN dots')).toBeInTheDocument();
+    // Harden re-audit 2026-08-24 : les pastilles sont une région role=status
+    // avec compteur sr-only — plus un div générique à aria-label muet.
+    expect(screen.getByRole('status', { name: 'PIN progress' })).toBeInTheDocument();
+    expect(screen.getByText('0 of 6 digits entered')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument();
   });
 

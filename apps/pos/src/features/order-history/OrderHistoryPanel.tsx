@@ -88,7 +88,9 @@ function HistoryRowSkeleton(): JSX.Element {
 }
 
 export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JSX.Element {
-  const history = useOrderHistory();
+  // `open` gate le fetch : le panel est monté en permanence, la requête ne
+  // doit vivre que modale ouverte (re-audit 2026-08-24 perf P1).
+  const history = useOrderHistory(open);
   // P1-3 : le panel est monté en permanence — sans refetch à l'ouverture, la
   // liste et les KPI (même query, via bucketStats) restent figés au dernier
   // mount (constaté live : vente tablette absente du shift history).
@@ -144,7 +146,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
             <div className="flex items-center gap-3">
               <div
                 aria-hidden
-                className="h-10 w-10 inline-flex items-center justify-center rounded-md bg-gold-soft text-gold"
+                className="h-10 w-10 inline-flex items-center justify-center rounded-md bg-surface-4 text-text-secondary"
               >
                 <Receipt className="h-5 w-5" />
               </div>

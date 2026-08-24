@@ -258,8 +258,7 @@ export function BottomActionBar({
       // son border-t, pas par une ombre portée — supprimée.
       // Audit 2026-08-24 (responsive P1) — safe-area : la barre porte Checkout,
       // qui passait sous la barre gestuelle Android en Capacitor.
-      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap z-50"
-      style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom, 0px))' }}
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 pt-2.5 pb-safe-bottom-gutter flex items-center gap-2 max-md:flex-wrap z-50"
       // Audit 2026-08-24 (a11y P2) — role=toolbar promettait la navigation aux
       // flèches (non câblée) ; group dit ce que le clavier sait faire, même
       // doctrine que le popover More et les onglets du panier.
@@ -286,7 +285,7 @@ export function BottomActionBar({
             setHeldOpen(true);
           }}
         >
-          <Clock className="h-4 w-4 text-gold" aria-hidden />
+          <Clock className="h-4 w-4" aria-hidden />
           <span>Held Orders</span>
           {heldCount > 0 && (
             <span
@@ -322,15 +321,15 @@ export function BottomActionBar({
             void handleReholdFired();
           }}
         >
-          <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
+          <PauseCircle className="h-4 w-4" aria-hidden />
           <span>Hold</span>
         </button>
 
         <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
           {attachedCustomer ? (
-            <User className="h-4 w-4 text-gold" aria-hidden />
+            <User className="h-4 w-4" aria-hidden />
           ) : (
-            <UserPlus className="h-4 w-4 text-gold" aria-hidden />
+            <UserPlus className="h-4 w-4" aria-hidden />
           )}
           <span className="max-w-[140px] truncate">
             {attachedCustomer ? attachedCustomer.name : 'Customer'}
@@ -352,7 +351,7 @@ export function BottomActionBar({
             aria-controls="more-actions-popover"
             onClick={() => setMoreOpen((o) => !o)}
           >
-            <MoreHorizontal className="h-4 w-4 text-gold" aria-hidden />
+            <MoreHorizontal className="h-4 w-4" aria-hidden />
             <span>More</span>
             {pendingTablet > 0 && (
               <span
@@ -385,7 +384,7 @@ export function BottomActionBar({
                   discount.openDiscountModal();
                 }}
               >
-                <Percent className="h-4 w-4 text-gold" aria-hidden />
+                <Percent className="h-4 w-4" aria-hidden />
                 <span>Apply discount</span>
               </button>
               {attachedCustomer && (
@@ -397,7 +396,7 @@ export function BottomActionBar({
                     setRedeemOpen(true);
                   }}
                 >
-                  <Star className="h-4 w-4 text-gold" aria-hidden />
+                  <Star className="h-4 w-4" aria-hidden />
                   <span>Redeem points</span>
                 </button>
               )}

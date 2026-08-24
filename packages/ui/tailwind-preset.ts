@@ -107,6 +107,10 @@ const preset: Partial<Config> = {
         danger: {
           DEFAULT: 'var(--danger)',
           soft: 'var(--danger-soft)',
+          // Règle des Deux Rouges (re-audit 2026-08-24) : `text-danger` rendait
+          // le rouge d'APLAT en texte sur le thème sombre. Le danger écrit
+          // passe par `danger-as-text` ; DEFAULT reste le remplissage.
+          'as-text': 'var(--danger-as-text)',
           // `text-danger-fg` se pose sur `bg-danger` : c'est un on-fill.
           // Il pointait vers l'ancien --red-fg, c'est-à-dire vers la même
           // couleur que le remplissage.
@@ -230,6 +234,12 @@ const preset: Partial<Config> = {
         'gutter-card':    'var(--gutter-card)',
         'gutter-page':    'var(--gutter-page)',
         'gutter-section': 'var(--gutter-section)',
+        // Re-audit 2026-08-24 — safe-area Capacitor. `safe-bottom` colle à la
+        // barre gestuelle ; `safe-bottom-gutter` garantit EN PLUS la gouttière
+        // minimale d'une barre d'actions (max avec 0.625rem). Remplacent les
+        // inline styles env() qui étaient les seules occurrences du repo.
+        'safe-bottom': 'env(safe-area-inset-bottom, 0px)',
+        'safe-bottom-gutter': 'max(0.625rem, env(safe-area-inset-bottom, 0px))',
       },
     },
   },

@@ -230,7 +230,9 @@ export function ComboConfigModal({
             {/* Price summary */}
             <div className="mt-4 flex items-center justify-between rounded-lg bg-bg-overlay px-4 py-3">
               <span className="text-sm font-medium text-text-muted">Total</span>
-              <span className="font-mono text-xl font-bold text-gold">
+              {/* tabular-nums : ce total bouge sous l'œil à chaque sélection
+                  (Règle du Chiffre Immobile). */}
+              <span className="font-mono tabular-nums text-xl font-bold text-gold">
                 {formatIdr(totalPrice)}
               </span>
             </div>
@@ -443,7 +445,7 @@ function ComponentModifierSections({
                 <span
                   className={
                     unanswered
-                      ? 'text-xs font-semibold uppercase tracking-wide text-danger'
+                      ? 'text-xs font-semibold uppercase tracking-wide text-danger-as-text'
                       : 'text-xs font-medium text-text-muted'
                   }
                   data-testid={`required-${option.id}-${mg.group_name}`}

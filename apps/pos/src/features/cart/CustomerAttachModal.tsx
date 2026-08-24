@@ -334,7 +334,7 @@ export function CustomerAttachModal({
 
         <header className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-2 min-w-0">
-            <UserPlus className="h-5 w-5 text-gold" aria-hidden />
+            <UserPlus className="h-5 w-5 text-text-secondary" aria-hidden />
             <h2 className="font-bold text-lg text-text-primary">
               Select a Customer
             </h2>

@@ -58,7 +58,7 @@ export function LiveSessionsModal({ open, onClose }: LiveSessionsModalProps): JS
     >
       <header className="px-5 py-4 flex items-center justify-between border-b border-border-subtle">
         <div className="flex items-center gap-3">
-          <Monitor className="h-5 w-5 text-gold" aria-hidden />
+          <Monitor className="h-5 w-5 text-text-secondary" aria-hidden />
           <DialogTitle asChild>
             <SectionLabel as="h2" size="sm" className="text-text-primary">
               Live Sessions

@@ -37,7 +37,8 @@ const { fromSpy } = vi.hoisted(() => {
     builder.select = () => builder;
     builder.eq = () => builder;
     builder.in = () => builder;
-    builder.order = () => Promise.resolve(result);
+    builder.order = () => builder;
+    builder.limit = () => builder;
     builder.maybeSingle = () => Promise.resolve({ data: null, error: null });
     builder.single = () => Promise.resolve({ data: null, error: null });
     builder.then = (
@@ -85,7 +86,7 @@ afterEach(() => {
 });
 
 describe('OrderHistoryPanel — refetch on open (P1-3)', () => {
-  it('refetches the history when the panel opens', async () => {
+  it('does not fetch while closed, fetches when the panel opens', async () => {
     const Wrapper = makeWrapper();
     const { rerender } = render(
       <Wrapper>
@@ -93,9 +94,10 @@ describe('OrderHistoryPanel — refetch on open (P1-3)', () => {
       </Wrapper>,
     );
 
-    // The panel is permanently mounted → the query fires once on mount.
-    await waitFor(() => expect(ordersFetchCount()).toBeGreaterThan(0));
-    const callsBefore = ordersFetchCount();
+    // Re-audit 2026-08-24 (perf P1) — le panel est monté en permanence mais la
+    // requête est gatée par `open` : modale fermée, AUCUN fetch sur orders.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(ordersFetchCount()).toBe(0);
 
     rerender(
       <Wrapper>
@@ -103,7 +105,7 @@ describe('OrderHistoryPanel — refetch on open (P1-3)', () => {
       </Wrapper>,
     );
 
-    await waitFor(() => expect(ordersFetchCount()).toBeGreaterThan(callsBefore));
+    await waitFor(() => expect(ordersFetchCount()).toBeGreaterThan(0));
   });
 });
 

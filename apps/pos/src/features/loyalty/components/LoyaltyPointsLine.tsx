@@ -21,7 +21,7 @@ export function LoyaltyPointsLine({ total, multiplier = 1.0 }: LoyaltyPointsLine
         <Star className="h-3 w-3 text-gold" aria-hidden />
         Points to earn
       </span>
-      <span className="font-mono text-gold font-semibold">{points} pts</span>
+      <span className="font-mono tabular-nums text-gold font-semibold">{points} pts</span>
     </div>
   );
 }

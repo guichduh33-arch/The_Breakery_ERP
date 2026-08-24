@@ -20,8 +20,11 @@ describe('NumpadVirtual', () => {
 
   it('pin mode shows dots above keypad', () => {
     render(<NumpadVirtual mode="pin" onSubmit={vi.fn()} />);
-    const dots = screen.getByLabelText('PIN dots');
-    expect(dots.children.length).toBe(6); // default maxLength=6 for pin
+    // Harden re-audit 2026-08-24 : région role=status + compteur sr-only.
+    const dots = screen.getByRole('status', { name: 'PIN progress' });
+    // 6 pastilles (default maxLength=6) + le compteur sr-only.
+    expect(dots.children.length).toBe(7);
+    expect(screen.getByText('0 of 6 digits entered')).toBeInTheDocument();
   });
 
   it('appends digit on click', () => {

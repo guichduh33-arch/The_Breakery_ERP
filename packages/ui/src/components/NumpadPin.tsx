@@ -26,10 +26,17 @@ function NumpadPinInner({ onSubmit, maxLength = 6, isLoading, error }: NumpadPin
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-center gap-2" aria-label="PIN dots">
+      {/* Dots are visual only; the sr-only counter inside the role="status"
+          live region announces progress (same pattern as Login) — an
+          aria-label on a generic div is ignored by screen readers. */}
+      <div className="flex justify-center gap-2" role="status" aria-label="PIN progress">
+        <span className="sr-only">
+          {pin.length} of {maxLength} digits entered
+        </span>
         {Array.from({ length: maxLength }).map((_, i) => (
           <div
             key={i}
+            aria-hidden
             className={cn(
               'h-3 w-3 rounded-full border border-border-strong',
               i < pin.length && 'bg-gold border-gold',

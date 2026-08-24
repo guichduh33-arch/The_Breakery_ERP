@@ -56,7 +56,7 @@ const STATUS_BADGE_CLASS: Record<OrderStatus, string> = {
   pending_payment: 'border-transparent bg-warning-soft text-warning',
   draft: 'border-transparent bg-info-soft text-info',
   paid: 'border-transparent bg-success-soft text-success',
-  voided: 'border-transparent bg-danger-soft text-danger',
+  voided: 'border-transparent bg-danger-soft text-danger-as-text',
 };
 
 const STATUS_LABEL: Record<OrderStatus, string> = {

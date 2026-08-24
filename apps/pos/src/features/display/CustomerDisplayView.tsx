@@ -230,7 +230,7 @@ function LineRow({ line }: LineRowProps): JSX.Element {
           {isCancelled && (
             <SectionLabel
               as="span"
-              className="text-danger tracking-widest"
+              className="text-danger-as-text tracking-widest"
               data-testid="display-line-cancelled-badge"
             >
               Cancelled

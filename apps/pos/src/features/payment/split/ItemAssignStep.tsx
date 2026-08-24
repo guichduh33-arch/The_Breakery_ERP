@@ -139,17 +139,20 @@ export function ItemAssignStep({
                       >
                         <span className={cn('h-1.5 w-1.5 rounded-full', activeColors.dot)} aria-hidden />
                         {activePayer.label} ×{perPayerCount}
-                        {perPayerCount > 0 && (
-                          <button
-                            type="button"
-                            aria-label="Unassign one unit"
-                            onClick={() => onUnassign(line.id, activePayerId)}
-                            className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-                          >
-                            −
-                          </button>
-                        )}
                       </span>
+                      {/* Hors de la capsule : à 32px dedans, le bouton était
+                          sous le plancher tactile — 44px en frère de la
+                          pastille (re-audit 2026-08-24, responsive P1). */}
+                      {perPayerCount > 0 && (
+                        <button
+                          type="button"
+                          aria-label="Unassign one unit"
+                          onClick={() => onUnassign(line.id, activePayerId)}
+                          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                        >
+                          −
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (

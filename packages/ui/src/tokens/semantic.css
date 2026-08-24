@@ -18,6 +18,10 @@
 
   --danger:       var(--red-base);
   --danger-soft:  var(--red-soft);
+  /* Re-audit 2026-08-24 — Règle des Deux Rouges : le danger ÉCRIT (texte,
+   * icône) suit --red-as-text, jamais le rouge d'aplat. Résout par thème :
+   * identique au rouge de base sur l'ivoire, éclairci sur le thème sombre. */
+  --danger-as-text: var(--red-as-text);
 
   --info:         var(--blue-info);
   --info-soft:    rgba(59, 130, 246, 0.12);

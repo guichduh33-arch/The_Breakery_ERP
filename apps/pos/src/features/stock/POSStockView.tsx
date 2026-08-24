@@ -223,7 +223,7 @@ export default function POSStockView(): JSX.Element {
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </Button>
-        <Package className="h-5 w-5 text-gold" aria-hidden />
+        <Package className="h-5 w-5 text-text-secondary" aria-hidden />
         {/* Functional header, not the brand monogram — DESIGN.md "La Règle
             de la Serif Réservée" keeps Playfair off everything but the
             login screen. */}

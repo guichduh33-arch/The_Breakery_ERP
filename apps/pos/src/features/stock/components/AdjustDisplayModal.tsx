@@ -62,7 +62,7 @@ export function AdjustDisplayModal({
     >
       <div className="p-6 space-y-5">
         <header className="flex items-center gap-2">
-          <SlidersHorizontal className="h-5 w-5 text-gold" aria-hidden />
+          <SlidersHorizontal className="h-5 w-5 text-text-secondary" aria-hidden />
           <h2 className="font-serif text-xl">Correct the count</h2>
         </header>
 

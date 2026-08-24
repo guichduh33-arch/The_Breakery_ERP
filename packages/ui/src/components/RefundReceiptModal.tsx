@@ -37,11 +37,15 @@ export function RefundReceiptModal({
   onClose,
 }: RefundReceiptModalProps): JSX.Element {
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <FullScreenModal
+      open={open}
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      accessibleTitle={isFullVoid ? `Order ${orderNumber} voided` : `Refund issued for order ${orderNumber}`}
+    >
       <div className="flex flex-col items-center justify-center min-h-screen bg-bg-base">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-danger-soft bg-bg-elevated px-12 py-10">
           <div className="rounded-full bg-danger-soft p-3">
-            <CheckCircle2 className="h-12 w-12 text-danger" aria-hidden />
+            <CheckCircle2 className="h-12 w-12 text-danger-as-text" aria-hidden />
           </div>
           <div className="text-xs uppercase tracking-widest text-text-secondary">
             {isFullVoid ? 'Order Voided' : 'Refund Issued'}

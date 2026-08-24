@@ -164,12 +164,18 @@ function NumpadVirtualInner({
 
   return (
     <div className={cn('flex flex-col gap-6', className)} role="group" aria-label="Numpad">
-      {/* Value display */}
+      {/* Value display. PIN dots are visual only; the sr-only counter inside
+          the role="status" live region announces progress (same pattern as
+          Login) — an aria-label on a generic div is ignored by screen readers. */}
       {mode === 'pin' && effectiveMaxLength !== undefined ? (
-        <div className="flex justify-center gap-2" aria-label="PIN dots">
+        <div className="flex justify-center gap-2" role="status" aria-label="PIN progress">
+          <span className="sr-only">
+            {value.length} of {effectiveMaxLength} digits entered
+          </span>
           {Array.from({ length: effectiveMaxLength }).map((_, i) => (
             <div
               key={i}
+              aria-hidden
               className={cn(
                 'h-3 w-3 rounded-full border border-border-strong',
                 i < value.length && 'bg-gold border-gold',
@@ -217,7 +223,7 @@ function NumpadVirtualInner({
       </div>
 
       {error && (
-        <p role="alert" className="text-danger text-sm text-center">
+        <p role="alert" className="text-danger-as-text text-sm text-center">
           {error}
         </p>
       )}

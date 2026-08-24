@@ -238,10 +238,13 @@ export function RefundOrderModal({
           </section>
 
           <section>
-            <label className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
+            {/* htmlFor/id : sans l'association, le champ n'avait pour nom que
+                son placeholder (re-audit 2026-08-24 a11y). */}
+            <label htmlFor="refund-reason" className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
               Reason
             </label>
             <Input
+              id="refund-reason"
               value={reason}
               onChange={(e) => { setReason(e.target.value); setPinError(null); }}
               placeholder="e.g. spilled latte, customer return…"

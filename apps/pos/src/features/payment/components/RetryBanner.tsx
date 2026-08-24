@@ -95,9 +95,9 @@ export function RetryBanner({
         className="mb-4 rounded-md border border-danger bg-danger-soft p-3 text-sm"
       >
         <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 mt-0.5 text-danger shrink-0" aria-hidden />
+          <AlertCircle className="h-4 w-4 mt-0.5 text-danger-as-text shrink-0" aria-hidden />
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-danger">Payment failed</div>
+            <div className="font-semibold text-danger-as-text">Payment failed</div>
             <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
             {lastError.code === 'no_open_shift' && onOpenShift && (
               <Button

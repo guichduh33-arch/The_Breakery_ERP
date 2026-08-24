@@ -41,7 +41,7 @@ export function OrderDetailDrawer({
           <span className="font-mono tabular-nums font-bold text-2xl">{order.order_number}</span>
           <span className={cn(
             'text-xs uppercase tracking-widest font-semibold',
-            isVoided ? 'text-danger' : 'text-success',
+            isVoided ? 'text-danger-as-text' : 'text-success',
           )}>
             {order.status}
           </span>
@@ -55,7 +55,7 @@ export function OrderDetailDrawer({
           </div>
         )}
         {isVoided && order.void_reason && (
-          <div className="mt-2 rounded-md border border-danger bg-danger-soft px-2 py-1 text-xs text-danger">
+          <div className="mt-2 rounded-md border border-danger bg-danger-soft px-2 py-1 text-xs text-danger-as-text">
             Void reason: {order.void_reason}
           </div>
         )}
@@ -111,8 +111,8 @@ export function OrderDetailDrawer({
           {order.total_refunded > 0 && (
             <div className="flex justify-between text-text-secondary">
               <span>Refunded</span>
-              <span className="font-mono text-danger">
-                -<Currency amount={order.total_refunded} className="text-danger" />
+              <span className="font-mono text-danger-as-text">
+                -<Currency amount={order.total_refunded} className="text-danger-as-text" />
               </span>
             </div>
           )}

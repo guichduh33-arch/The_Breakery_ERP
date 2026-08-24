@@ -138,7 +138,7 @@ export function FloorPlanView({
       <header className="px-6 py-5 flex items-start gap-4 border-b border-border-subtle bg-bg-elevated">
         <div
           aria-hidden
-          className="h-12 w-12 inline-flex items-center justify-center rounded-md bg-gold-soft text-gold shrink-0"
+          className="h-12 w-12 inline-flex items-center justify-center rounded-md bg-surface-4 text-text-secondary shrink-0"
         >
           <Users className="h-6 w-6" />
         </div>

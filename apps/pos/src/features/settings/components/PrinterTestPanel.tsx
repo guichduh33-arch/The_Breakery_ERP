@@ -57,7 +57,7 @@ export function PrinterTestPanel({ readOnly }: { readOnly: boolean }): JSX.Eleme
 
   if (isLoading) return <p className="text-sm text-text-secondary">Loading printers…</p>;
   if (error !== null) {
-    return <p className="text-sm text-danger">Failed to load printers: {error.message}</p>;
+    return <p className="text-sm text-danger-as-text">Failed to load printers: {error.message}</p>;
   }
 
   const rows = data ?? [];
