@@ -107,16 +107,18 @@ SELECT ok(
   EXISTS(SELECT 1 FROM permissions WHERE code = 'kds.operate'),
   'T_KDS_03a permission kds.operate exists'
 );
+-- ADR-031 : les grants des rôles non-SUPER_ADMIN sont de la donnée éditable à
+-- chaud depuis /settings/roles — on n'affirme plus « qui l'a », seulement la
+-- ligne SUPER_ADMIN (verrouillée par l'éditeur) et le catalogue.
 SELECT ok(
-  (SELECT COUNT(*)::INT FROM role_permissions
-    WHERE permission_code = 'kds.operate' AND is_granted = TRUE
-      AND role_code IN ('SUPER_ADMIN','ADMIN','MANAGER','CASHIER')) = 4,
-  'T_KDS_03b kds.operate granted to SUPER_ADMIN, ADMIN, MANAGER, CASHIER'
+  EXISTS(SELECT 1 FROM role_permissions
+    WHERE permission_code = 'kds.operate' AND role_code = 'SUPER_ADMIN' AND is_granted = TRUE),
+  'T_KDS_03b kds.operate granted to SUPER_ADMIN (editor-locked row)'
 );
-SELECT ok(
-  NOT EXISTS(SELECT 1 FROM role_permissions
-              WHERE permission_code = 'kds.operate' AND role_code = 'waiter' AND is_granted = TRUE),
-  'T_KDS_03c kds.operate NOT granted to waiter'
+SELECT is(
+  (SELECT module FROM permissions WHERE code = 'kds.operate'),
+  'kds',
+  'T_KDS_03c kds.operate catalogued under the kds module'
 );
 
 -- ---------------------------------------------------------------------------

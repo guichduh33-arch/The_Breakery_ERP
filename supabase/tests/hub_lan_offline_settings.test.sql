@@ -29,8 +29,15 @@ BEGIN
 END $seed$;
 
 -- 1: la colonne renommée existe, défaut false INCHANGÉ (activation explicite).
-SELECT ok(
-  (SELECT offline_payments_enabled = false FROM business_config WHERE id = 1),
+-- On lit le DÉFAUT du catalogue, pas la valeur vivante : le réglage est éditable
+-- en production (BO LAN Devices) et sa valeur courante n'est pas un invariant.
+SELECT is(
+  (SELECT pg_get_expr(d.adbin, d.adrelid)
+     FROM pg_attrdef d
+     JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
+    WHERE d.adrelid = 'public.business_config'::regclass
+      AND a.attname = 'offline_payments_enabled'),
+  'false',
   'business_config.offline_payments_enabled exists, defaults to false');
 
 -- 2: les deux anciennes colonnes ont disparu.
@@ -48,6 +55,9 @@ SELECT ok(
   'set_setting_v10 and get_settings_by_category_v8 are dropped');
 
 -- 4: la catégorie network expose EXACTEMENT une clé.
+-- Remise au défaut DANS la transaction (rollback final) : la valeur vivante
+-- peut légitimement être true en dev, le test ne doit pas en dépendre.
+UPDATE business_config SET offline_payments_enabled = false WHERE id = 1;
 SELECT is(
   get_settings_by_category_v10('network')->'settings',
   jsonb_build_object('offline_payments_enabled', false),

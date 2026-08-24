@@ -46,7 +46,8 @@ const ExpenseDetailPage = lazy(() => import('@/pages/expenses/ExpenseDetailPage.
 const UsersListPage = lazy(() => import('@/pages/users/UsersListPage.js'));
 const NewUserPage = lazy(() => import('@/pages/users/NewUserPage.js'));
 const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage.js'));
-const PermissionsMatrixPage = lazy(() => import('@/pages/users/PermissionsMatrixPage.js'));
+const RolesPage = lazy(() => import('@/pages/settings/roles/RolesPage.js'));
+const RoleDetailPage = lazy(() => import('@/pages/settings/roles/RoleDetailPage.js'));
 const ReportsIndexPage = lazy(() => import('@/pages/reports/ReportsIndexPage.js'));
 const SalesByHourPage = lazy(() => import('@/pages/reports/SalesByHourPage.js'));
 const SalesByCategoryPage = lazy(() => import('@/pages/reports/SalesByCategoryPage.js'));
@@ -104,7 +105,6 @@ const SettingsBusinessHoursPage = lazy(() => import('@/pages/settings/SettingsBu
 const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsEmailTemplatesPage.js'));
 const SettingsNotificationsPage = lazy(() => import('@/pages/settings/SettingsNotificationsPage.js'));
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
-const SettingsPermissionsPage = lazy(() => import('@/pages/settings/SettingsPermissionsPage.js'));
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
 const SettingsHistoryPage = lazy(() => import('@/pages/settings/SettingsHistoryPage.js'));
 const LanDevicesPage = lazy(() => import('@/pages/lan-devices/LanDevicesPage.js'));
@@ -250,6 +250,19 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   const roleCode = useAuthStore((s) => s.user?.role_code);
   const isAdmin = (ADMIN_ROLES as readonly string[]).includes(roleCode ?? '');
   return isAdmin ? <>{children}</> : <RouteDeniedByRole required={ADMIN_ROLES} />;
+}
+
+// ADR-031 — l'éditeur RBAC se garde par RÔLE, et par le seul SUPER_ADMIN.
+// Un garde par permission ne servirait à rien ici : SUPER_ADMIN et ADMIN
+// portent exactement les mêmes codes, et `hasPermission` répond vrai
+// d'office au SUPER_ADMIN. Seul le rôle les distingue — comme le fait déjà
+// `set_role_permission_v1`, qui refuse tout appelant non SUPER_ADMIN.
+const RBAC_ROLES = ['SUPER_ADMIN'] as const satisfies readonly RoleCode[];
+
+function SuperAdminGate({ children }: { children: React.ReactNode }) {
+  const roleCode = useAuthStore((s) => s.user?.role_code);
+  const isSuperAdmin = (RBAC_ROLES as readonly string[]).includes(roleCode ?? '');
+  return isSuperAdmin ? <>{children}</> : <RouteDeniedByRole required={RBAC_ROLES} />;
 }
 
 export function AppRoutes() {
@@ -697,14 +710,6 @@ export function AppRoutes() {
           element={
             <PermissionGate required="users.create">
               <NewUserPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="users/permissions"
-          element={
-            <PermissionGate required="rbac.read">
-              <PermissionsMatrixPage />
             </PermissionGate>
           }
         />
@@ -1174,12 +1179,23 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
+        {/* ADR-031 — l'éditeur RBAC remplace les deux vues lecture-seule
+            (`settings/permissions` et `users/permissions`), qui affichaient la
+            même matrice à deux endroits sans jamais permettre de l'éditer. */}
         <Route
-          path="settings/permissions"
+          path="settings/roles"
           element={
-            <PermissionGate required="settings.read">
-              <SettingsPermissionsPage />
-            </PermissionGate>
+            <SuperAdminGate>
+              <RolesPage />
+            </SuperAdminGate>
+          }
+        />
+        <Route
+          path="settings/roles/:roleCode"
+          element={
+            <SuperAdminGate>
+              <RoleDetailPage />
+            </SuperAdminGate>
           }
         />
         <Route

@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase.js', () => ({
       if (simulateError) {
         return Promise.resolve({ data: null, error: { message: 'RPC permission changes error' } });
       }
-      if (fn === 'get_permission_changes_v1') {
+      if (fn === 'get_permission_changes_v2') {
         return Promise.resolve({
           data: {
             period:  { start: '2026-05-13', end: '2026-06-12' },

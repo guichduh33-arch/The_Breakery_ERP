@@ -35,8 +35,8 @@ Les deux faces convergent sur **une mécanique d'authentification par PIN** rapi
 | Vue | Job-to-be-done | Accès |
 |---|---|---|
 | **Users** (`/users`) | Créer / modifier / activer / désactiver les fiches employés, attribuer leurs rôles, gérer leur PIN | `users.view`, `users.create` |
-| **Permissions Matrix** (`/users/permissions`) | Définir qui-peut-quoi via une grille rôles × permissions | `users.roles` |
-| **Roles** (**non livré** — aucune page de gestion des rôles n'existe) | Créer / cloner / renommer / supprimer des rôles métier | `users.roles` |
+| **Permissions Matrix** (`/settings/roles`, ADR-031 — SUPER_ADMIN seul) | Définir qui-peut-quoi via une grille rôles × permissions | `users.roles` |
+| **Roles** (**CRUD non livré** — `/settings/roles` liste les rôles et édite leurs réglages, mais aucun écran ne crée/clone/supprime un rôle) | Créer / cloner / renommer / supprimer des rôles métier | `users.roles` |
 | **Audit Log** (`/reports/audit`) | Tracer toutes les actions sensibles attribuées à un utilisateur | `reports.audit.read` |
 
 Le module est complété par le sous-système **PIN** (Edge Functions `auth-verify-pin`, `auth-change-pin`, `verify-manager-pin`) qui fournit le mécanisme d'authentification rapide à la caisse, sans clavier ni mot de passe long.
@@ -171,7 +171,11 @@ Bénéfice métier : **chaque permission est un curseur risque/productivité**. 
 
 ## 6. Vue **Roles** — Définir les profils métier
 
-Avant de remplir la matrice, il faut **créer les rôles**. La page Roles est **non livrée** — aucune route ne l'expose aujourd'hui. Elle doit permettre de :
+Avant de remplir la matrice, il faut **créer les rôles**. Depuis l'ADR-031, une page
+Roles existe (`/settings/roles` : liste des rôles, permissions par module, timeout,
+overrides par utilisateur) — mais le **cycle de vie des rôles reste non livré** :
+aucun écran ne crée, clone, renomme ou supprime un rôle. La vue cible doit
+permettre de :
 
 ### 6.1 Créer un rôle
 
@@ -317,7 +321,7 @@ Bénéfice : **un utilisateur qui contournerait le frontend** (via un appel API 
 |---|---|---|
 | 🔴 | **Détection auto d'escalade de privilèges** | Alerte temps réel si un utilisateur modifie ses propres permissions ou celles d'un complice. |
 | 🔴 | **Approval workflow pour permissions sensibles** | Donner `accounting.manage` à un nouvel utilisateur exige une double validation (deux managers ou owner + manager). |
-| 🟠 | **Gestion des rôles : aucune interface** | Créer, cloner, renommer ou supprimer un rôle n'est possible par aucun écran. La matrice livrée est en **lecture seule** : accorder ou révoquer une permission se fait aujourd'hui **par migration**. Contrainte d'exploitation jamais décidée comme telle. |
+| 🟠 | **Gestion des rôles : CRUD absent** | Créer, cloner, renommer ou supprimer un rôle n'est possible par aucun écran — le cycle de vie des rôles reste par migration. Depuis l'ADR-031, accorder/révoquer une permission et poser un override se font dans `/settings/roles` (SUPER_ADMIN seul). |
 | 🟠 | **Permissions à seuil** | `sales.discount` jusqu'à 5% seul, 10% avec validation manager — au-delà refusé. Aujourd'hui binaire (a / a pas). |
 | 🟠 | **Sessions multiples par utilisateur** | Voir et fermer à distance les sessions actives d'un employé (utile en cas de départ). |
 | 🟠 | **Two-factor authentication (2FA)** | Pour les rôles à fort pouvoir (Owner, Manager, Accountant) — SMS ou app TOTP. |

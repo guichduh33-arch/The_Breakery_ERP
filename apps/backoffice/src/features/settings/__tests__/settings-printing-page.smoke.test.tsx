@@ -39,10 +39,13 @@ describe('SettingsPrintingPage', () => {
     canUpdate = true;
     mockSettings = { pos_auto_print_receipt: true, pos_auto_open_drawer: false };
     render(wrap(<SettingsPrintingPage />));
-    await waitFor(() => expect(screen.getByLabelText(/auto-print receipt/i)).toBeInTheDocument());
-
+    // La page rend d'abord ses défauts (ON) puis applique la réponse RPC : on
+    // attend l'ÉTAT attendu, pas la seule présence du label, sinon l'assertion
+    // court-circuite le rerender sur un runner lent (flake CI du 2026-08-24).
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/auto-open cash drawer/i).checked).toBe(false),
+    );
     expect(screen.getByLabelText<HTMLInputElement>(/auto-print receipt/i).checked).toBe(true);
-    expect(screen.getByLabelText<HTMLInputElement>(/auto-open cash drawer/i).checked).toBe(false);
   });
 
   it('defaults missing keys to ON, matching the DB default and the POS fallback', async () => {
@@ -70,9 +73,10 @@ describe('SettingsPrintingPage', () => {
     canUpdate = true;
     mockSettings = { kot_copies_kitchen: 2, kot_copies_barista: 0 }; // display absent
     render(wrap(<SettingsPrintingPage />));
-    await waitFor(() => expect(screen.getByLabelText(/^kitchen$/i)).toBeInTheDocument());
-
-    expect(screen.getByLabelText<HTMLInputElement>(/^kitchen$/i).value).toBe('2');
+    // Même course que le 1er test : attendre l'état, pas le label.
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/^kitchen$/i).value).toBe('2'),
+    );
     expect(screen.getByLabelText<HTMLInputElement>(/^barista$/i).value).toBe('0');
     expect(screen.getByLabelText<HTMLInputElement>(/^display case$/i).value).toBe('1');
   });

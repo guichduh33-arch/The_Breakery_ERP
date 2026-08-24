@@ -108,13 +108,15 @@ SELECT is(
   'T_OPN_08: opname permissions seeded'
 );
 
--- T_OPN_09 — role_permissions wired
-SELECT cmp_ok(
+-- T_OPN_09 — grants SUPER_ADMIN, la seule ligne que l'éditeur ADR-031 verrouille.
+-- Les grants des autres rôles sont de la donnée éditable à chaud depuis
+-- /settings/roles : les affirmer ici casserait la CI à chaque réglage réel.
+SELECT is(
   (SELECT COUNT(*)::INT FROM role_permissions
-    WHERE permission_code IN ('inventory.opname.create','inventory.opname.finalize')),
-  '>=',
-  5,
-  'T_OPN_09: opname role_permissions wired for MANAGER/ADMIN/SUPER_ADMIN'
+    WHERE role_code = 'SUPER_ADMIN' AND is_granted
+      AND permission_code IN ('inventory.opname.create','inventory.opname.finalize')),
+  2,
+  'T_OPN_09: opname permissions granted to SUPER_ADMIN (editor-locked row)'
 );
 
 -- T_OPN_10 — finalize_opname_v3 status guard — call as anonymous (should raise forbidden)

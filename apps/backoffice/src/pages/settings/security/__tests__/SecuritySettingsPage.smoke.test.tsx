@@ -1,5 +1,10 @@
 // apps/backoffice/src/pages/settings/security/__tests__/SecuritySettingsPage.smoke.test.tsx
-// Session 19 / Phase 3.A — Smoke test for the per-role timeout editor.
+//
+// ADR-006 déc. 9 — politique de verrouillage du PIN.
+// ADR-031 — les délais d'inactivité par rôle ont quitté cette page pour la
+// fiche du rôle : les tests qui les couvraient vivent désormais dans
+// `features/settings/roles/__tests__/RoleDetailPage.smoke.test.tsx`. Ce qui
+// reste ici couvre la seule politique globale du login.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -19,42 +24,19 @@ vi.mock('@/stores/authStore.js', () => ({
     sel({ hasPermission: (p: string) => currentPerms.has(p) }),
 }));
 
-const MOCK_ROLES = [
-  { code: 'CASHIER', name: 'Cashier', session_timeout_minutes: 30 },
-  { code: 'ADMIN',   name: 'Admin',   session_timeout_minutes: 120 },
-];
-
-interface RpcResult { data: unknown; error: { message: string } | null }
-
-interface MockChain {
-  select: () => MockChain;
-  order:  () => Promise<RpcResult>;
-}
-
-vi.mock('@/lib/supabase.js', () => {
-  function buildChain(): MockChain {
-    const chain: MockChain = {
-      select: () => chain,
-      order:  () => Promise.resolve({ data: MOCK_ROLES, error: null }),
-    };
-    return chain;
-  }
-  return {
-    supabase: {
-      from: () => buildChain(),
-      // ADR-006 déc. 9 : la page charge aussi la catégorie security (PIN policy).
-      rpc: vi.fn().mockImplementation((fn: string) => {
-        if (fn === 'get_settings_by_category_v10') {
-          return Promise.resolve({
-            data: { category: 'security', settings: { pin_max_failed: 5, pin_lockout_minutes: 15 } },
-            error: null,
-          });
-        }
-        return Promise.resolve({ data: true, error: null });
-      }),
-    },
-  };
-});
+vi.mock('@/lib/supabase.js', () => ({
+  supabase: {
+    rpc: vi.fn().mockImplementation((fn: string) => {
+      if (fn === 'get_settings_by_category_v10') {
+        return Promise.resolve({
+          data: { category: 'security', settings: { pin_max_failed: 5, pin_lockout_minutes: 15 } },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: true, error: null });
+    }),
+  },
+}));
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -75,73 +57,21 @@ describe('SecuritySettingsPage', () => {
     currentPerms.add('settings.update');
   });
 
-  it('renders the 2 mocked roles with their timeouts', async () => {
-    renderPage();
-    expect(await screen.findByText('CASHIER')).toBeInTheDocument();
-    expect(screen.getByText('ADMIN')).toBeInTheDocument();
-    await waitFor(() => {
-      const cashierInput = screen.getByTestId<HTMLInputElement>('timeout-input-CASHIER');
-      expect(cashierInput.value).toBe('30');
-      const adminInput = screen.getByTestId<HTMLInputElement>('timeout-input-ADMIN');
-      expect(adminInput.value).toBe('120');
-    });
-  });
-
-  it('enables the save button when the timeout input changes to a valid value', async () => {
-    renderPage();
-    const input = await screen.findByTestId('timeout-input-CASHIER');
-    const save  = screen.getByTestId('timeout-save-CASHIER');
-    expect(save).toBeDisabled(); // not dirty yet
-    fireEvent.change(input, { target: { value: '45' } });
-    expect(save).not.toBeDisabled();
-  });
-
-  it('keeps the save button disabled for out-of-range input', async () => {
-    renderPage();
-    const input = await screen.findByTestId('timeout-input-CASHIER');
-    fireEvent.change(input, { target: { value: '4' } });
-    expect(screen.getByTestId('timeout-save-CASHIER')).toBeDisabled();
-    expect(screen.getByTestId('timeout-invalid-CASHIER')).toBeInTheDocument();
-  });
-
-  it('disables inputs when the user lacks settings.update', async () => {
-    currentPerms.delete('settings.update');
-    renderPage();
-    const input = await screen.findByTestId('timeout-input-CASHIER');
-    expect(input).toBeDisabled();
-    expect(screen.getByTestId('timeout-save-CASHIER')).toBeDisabled();
-  });
-
-  it('still renders read-only content without settings.read (route gate owns access)', async () => {
-    currentPerms.clear();
-    renderPage();
-    expect(screen.getByText(/session timeouts/i)).toBeInTheDocument();
-    const input = await screen.findByTestId('timeout-input-CASHIER');
-    expect(input).toBeDisabled();
-  });
-
-  it('calls update_role_session_timeout_v1 with correct args when save is clicked', async () => {
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() mock, no `this` to lose
-    const rpcSpy = vi.mocked(supabase.rpc);
-    renderPage();
-    const input = await screen.findByTestId('timeout-input-CASHIER');
-    fireEvent.change(input, { target: { value: '45' } });
-    fireEvent.click(screen.getByTestId('timeout-save-CASHIER'));
-    await waitFor(() => {
-      expect(rpcSpy).toHaveBeenCalledWith('update_role_session_timeout_v1', {
-        p_role_code: 'CASHIER',
-        p_minutes: 45,
-      });
-    });
-  });
-
-  // ADR-006 déc. 9 — PIN policy (lockout login configurable).
   it('renders the PIN policy card populated from the security category', async () => {
     renderPage();
     const maxInput = await screen.findByTestId<HTMLInputElement>('pin-input-pin_max_failed');
     expect(maxInput.value).toBe('5');
     expect(screen.getByTestId<HTMLInputElement>('pin-input-pin_lockout_minutes').value).toBe('15');
     expect(screen.getByTestId('pin-policy-save')).toBeDisabled(); // clean
+  });
+
+  // ADR-031 — la preuve que la table des timeouts est bien PARTIE : elle vivait
+  // sous ce titre, et aucune ligne de rôle ne doit subsister ici.
+  it('no longer renders the per-role session timeout table', async () => {
+    renderPage();
+    await screen.findByTestId('pin-input-pin_max_failed');
+    expect(screen.queryByText(/session timeouts/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('timeout-input-CASHIER')).not.toBeInTheDocument();
   });
 
   it('blocks the PIN save for out-of-bounds values', async () => {
@@ -151,6 +81,14 @@ describe('SecuritySettingsPage', () => {
     await waitFor(() => expect(maxInput).not.toBeDisabled());
     fireEvent.change(maxInput, { target: { value: '11' } });
     expect(screen.getByTestId('pin-invalid-pin_max_failed')).toBeInTheDocument();
+    expect(screen.getByTestId('pin-policy-save')).toBeDisabled();
+  });
+
+  it('disables the inputs when the user lacks settings.update', async () => {
+    currentPerms.delete('settings.update');
+    renderPage();
+    const maxInput = await screen.findByTestId('pin-input-pin_max_failed');
+    expect(maxInput).toBeDisabled();
     expect(screen.getByTestId('pin-policy-save')).toBeDisabled();
   });
 

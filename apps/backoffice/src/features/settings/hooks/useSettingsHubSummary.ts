@@ -146,7 +146,7 @@ const FORMATTERS: Record<string, Formatter> = {
     s.receipt_templates
       ? `${s.receipt_templates.total} templates${s.receipt_templates.default_name !== null ? ` · default ${s.receipt_templates.default_name}` : ''}`
       : null,
-  '/backoffice/settings/permissions': (s) =>
+  '/backoffice/settings/roles': (s) =>
     s.permissions ? `${s.permissions.roles} roles` : null,
   '/backoffice/settings/security': (s) =>
     s.security

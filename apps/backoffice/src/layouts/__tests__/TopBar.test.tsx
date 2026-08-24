@@ -33,7 +33,9 @@ const ALL_PERMS = [
   'accounting.read', 'accounting.period.close', 'accounting.cash.read',
   'zreports.read', 'reports.read', 'reports.sales.read', 'reports.inventory.read',
   'reports.financial.read', 'reports.audit.read', 'lan.devices.read',
-  'users.read', 'rbac.read', 'display.read', 'settings.security.manage',
+  // ADR-031 — le lien RBAC de la barre exige `rbac.manage` (l'éditeur), plus
+  // `rbac.read` (les deux vues lecture-seule supprimées).
+  'users.read', 'rbac.manage', 'display.read', 'settings.security.manage',
   'tables.update', 'b2b.read',
 ];
 

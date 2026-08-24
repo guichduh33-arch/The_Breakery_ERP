@@ -97,7 +97,10 @@ const SECTIONS: SettingSection[] = [
     title: 'Security & Access',
     tiles: [
       { to: '/backoffice/settings/security', title: 'Security', blurb: 'Per-role session timeout + PIN lockout policy.', icon: ShieldCheck, permission: 'settings.security.manage' },
-      { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
+      // ADR-031 — la tuile mène désormais à l'ÉDITEUR. Sa permission est
+      // `rbac.manage`, seedée au seul SUPER_ADMIN : les profils qui ne peuvent
+      // pas ouvrir la route ne voient pas la tuile.
+      { to: '/backoffice/settings/roles', title: 'Roles & Permissions', blurb: 'Edit role permissions, session timeouts, and per-user overrides.', icon: ShieldCheck, permission: 'rbac.manage' },
       // Admin-only strict (role, not permission): audit_logs' admin_read RLS
       // only serves ADMIN/SUPER_ADMIN — don't show the tile to anyone else.
       { to: '/backoffice/settings/history', adminOnly: true, title: 'Settings History', blurb: 'Audit trail of every setting change.', icon: History },

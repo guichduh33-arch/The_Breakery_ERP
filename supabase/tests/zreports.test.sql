@@ -46,6 +46,20 @@ UPDATE user_profiles
        locked_until = NULL, failed_login_attempts = 0
  WHERE auth_user_id = '00000000-0000-0000-0000-000000000004';
 
+-- ADR-031 : les grants d'ADMIN et de MANAGER sont éditables à chaud depuis
+-- /settings/roles. Les gates testés ici sont épinglés par des overrides
+-- utilisateur (posés dans la transaction, rollback final) pour rester
+-- déterministes quel que soit l'état vivant de la matrice :
+--   * l'ADMIN de fixture PEUT sign et void ;
+--   * le MANAGER 004 PEUT sign mais PAS void (DENY explicite — T9).
+INSERT INTO user_permission_overrides (user_profile_id, permission_code, is_granted, reason, granted_by)
+VALUES
+  ('cccccccc-0000-0000-0000-000000000029', 'zreports.void', true,  'pgTAP fixture — deterministic gate', '00000000-0000-0000-0000-000000000001'),
+  ('cccccccc-0000-0000-0000-000000000029', 'zreports.sign', true,  'pgTAP fixture — deterministic gate', '00000000-0000-0000-0000-000000000001'),
+  ('00000000-0000-0000-0000-000000000004', 'zreports.sign', true,  'pgTAP fixture — deterministic gate', '00000000-0000-0000-0000-000000000001'),
+  ('00000000-0000-0000-0000-000000000004', 'zreports.void', false, 'pgTAP fixture — deterministic gate (T9 deny)', '00000000-0000-0000-0000-000000000001')
+ON CONFLICT (user_profile_id, permission_code) DO UPDATE SET is_granted = EXCLUDED.is_granted;
+
 -- Main test session (closed) — used for T1/T2/T3/T4/T5/T6/T7
 INSERT INTO pos_sessions (id, opened_by, opened_at, opening_cash, status, closed_at, closed_by, closing_cash, expected_cash)
 VALUES (
