@@ -75,7 +75,7 @@ const sb = supabase as unknown as LooseSupabase;
  */
 export const ORDER_HISTORY_LIMIT = 500;
 
-export function useOrderHistory(enabled: boolean = true) {
+export function useOrderHistory(enabled = true) {
   const sessionId = useShiftStore((s) => s.current?.id);
 
   return useQuery<OrderHistoryRow[]>({
