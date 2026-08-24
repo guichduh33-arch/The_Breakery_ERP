@@ -330,7 +330,7 @@ function AddOverrideDialog({ open, onOpenChange, users }: AddDialogProps): JSX.E
             <label htmlFor="override-reason" className={LABEL_CLS}>Reason</label>
             <input
               id="override-reason"
-              className={FIELD_CLS}
+              className={`${FIELD_CLS} placeholder:text-text-muted`}
               value={reason}
               maxLength={REASON_MAX}
               onChange={(e) => { setReason(e.target.value); }}

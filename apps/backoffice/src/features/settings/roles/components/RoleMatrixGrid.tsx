@@ -16,7 +16,7 @@
 // (`super_admin_row_locked`), l'écran ne fait que dire pourquoi avant le refus.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Lock } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useRbacMatrix,
@@ -192,12 +192,22 @@ export function RoleMatrixGrid(): JSX.Element {
         data-testid="matrix-legend"
       >
         <span className="font-data text-xs uppercase tracking-widest text-text-muted">Legend</span>
+        {/* Échantillons purement décoratifs : des <span>, pas des <input> — un
+            contrôle non focusable dans une légende serait un mensonge d'a11y. */}
         <span className="inline-flex items-center gap-2 text-xs text-text-secondary">
-          <input type="checkbox" checked readOnly aria-hidden tabIndex={-1} className="h-3.5 w-3.5 accent-gold" />
+          <span
+            aria-hidden
+            className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-sm border border-border-strong"
+          >
+            <Check className="h-3 w-3 text-gold" />
+          </span>
           Granted to the role
         </span>
         <span className="inline-flex items-center gap-2 text-xs text-text-secondary">
-          <input type="checkbox" checked={false} readOnly aria-hidden tabIndex={-1} className="h-3.5 w-3.5" />
+          <span
+            aria-hidden
+            className="inline-block h-3.5 w-3.5 rounded-sm border border-border-strong"
+          />
           Not granted
         </span>
         <span className="inline-flex items-center gap-2 text-xs text-text-secondary">

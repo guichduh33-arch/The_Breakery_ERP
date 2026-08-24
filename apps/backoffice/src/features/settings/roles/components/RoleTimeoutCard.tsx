@@ -12,7 +12,7 @@ import { useState, type JSX } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { Button } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { RBAC_MATRIX_KEY, rbacErrorMessage, type RbacRole } from '../hooks/useRbacMatrix.js';
 
@@ -78,15 +78,16 @@ export function RoleTimeoutCard({ role }: Props): JSX.Element {
               ? `${role.session_timeout_minutes} min → ${draftNum} min`
               : `Currently ${role.session_timeout_minutes} min`}
           </span>
-          <button
+          <Button
             type="button"
-            className={TOOLBAR_BTN_PRIMARY}
+            size="sm"
+            variant="ink"
             disabled={!dirty || save.isPending}
             onClick={() => { save.mutate(draftNum); }}
             data-testid="role-timeout-save"
           >
             {save.isPending ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
         {invalid && (
           <p className="text-xs text-danger-as-text" data-testid="role-timeout-invalid">
