@@ -188,8 +188,11 @@ SELECT ok(
 DO $$
 DECLARE v_uid UUID;
 BEGIN
+  -- ADR-031 : les grants d'ADMIN sont éditables à chaud depuis /settings/roles ;
+  -- seul SUPER_ADMIN a une ligne verrouillée par l'éditeur. On épingle donc le
+  -- test sur SUPER_ADMIN pour qu'un réglage réel ne casse pas la CI.
   SELECT auth_user_id INTO v_uid FROM user_profiles
-   WHERE role_code IN ('ADMIN', 'SUPER_ADMIN') AND deleted_at IS NULL
+   WHERE role_code = 'SUPER_ADMIN' AND deleted_at IS NULL
      -- SYS-CRON (SUPER_ADMIN, inactif, sans compte auth) ferait sortir NULL,
      -- et has_permission(NULL, ...) repond faux : T14 rouge une fois sur deux.
      AND auth_user_id IS NOT NULL AND is_active
@@ -205,7 +208,7 @@ END $$;
 
 SELECT ok(
   current_setting('breakery.t14_pass', true)::BOOLEAN,
-  'T14: ADMIN/SUPER_ADMIN a les perms ADMIN+ inventory Phase 1 restantes (via unconditional-true branch)'
+  'T14: SUPER_ADMIN a les perms ADMIN+ inventory Phase 1 restantes (ligne verrouillée par l''éditeur ADR-031)'
 );
 
 -- ---------------------------------------------------------------------------

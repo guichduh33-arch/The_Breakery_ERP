@@ -18,6 +18,16 @@ SELECT throws_ok('SELECT public.get_settings_hub_summary_v1()', '28000', 'not_au
   'sans JWT: refus');
 
 -- Sous le profil E2E owner (seed S71) : sections libres + section gatée.
+-- ADR-031 : ce profil est de rôle ADMIN, dont les grants sont éditables à chaud
+-- depuis /settings/roles. On pose ici un override GRANT (rollback en fin de
+-- fichier) pour que la section gatée ne dépende pas de la matrice vivante.
+INSERT INTO user_permission_overrides
+  (user_profile_id, permission_code, is_granted, reason, granted_by)
+VALUES
+  ('0e2e0000-0000-4000-a000-000000000001', 'expenses.thresholds.read', true,
+   'pgTAP fixture — gated hub section', '00000000-0000-0000-0000-000000000001')
+ON CONFLICT (user_profile_id, permission_code) DO UPDATE SET is_granted = true;
+
 SELECT set_config('request.jwt.claims',
   json_build_object('sub', (SELECT auth_user_id FROM user_profiles
                              WHERE id='0e2e0000-0000-4000-a000-000000000001'))::text, true);
