@@ -341,7 +341,7 @@ export function CloseShiftModal({
               {...(noteRequired ? { 'aria-describedby': 'close-notes-error' } : {})}
             />
             {noteRequired && (
-              <p id="close-notes-error" className="text-xs text-danger" role="alert">
+              <p id="close-notes-error" className="text-xs text-danger-as-text" role="alert">
                 Variance above threshold — a note explaining the difference is required.
               </p>
             )}
@@ -389,7 +389,7 @@ export function CloseShiftModal({
               {...(pinIncomplete ? { 'aria-describedby': 'approver-error' } : {})}
             />
             {pinIncomplete && (
-              <p id="approver-error" className="text-xs text-danger" role="alert">
+              <p id="approver-error" className="text-xs text-danger-as-text" role="alert">
                 Select the approving manager and enter their 6-digit PIN.
               </p>
             )}
@@ -397,7 +397,7 @@ export function CloseShiftModal({
         )}
 
         {submitError && (
-          <p role="alert" className="text-xs text-danger">
+          <p role="alert" className="text-xs text-danger-as-text">
             {submitError}
           </p>
         )}

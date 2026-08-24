@@ -189,8 +189,10 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
           <div className="flex items-center gap-2">
             {step === 'pin' ? (
               <>
-                <span className="h-10 w-10 grid place-items-center rounded-md bg-gold-soft">
-                  <Lock className="h-5 w-5 text-gold" aria-hidden />
+                {/* Pastille neutre (re-audit 2026-08-24, Encre Rare) : l'or
+                    ne marque pas le chrome d'en-tête. */}
+                <span className="h-10 w-10 grid place-items-center rounded-md bg-surface-4">
+                  <Lock className="h-5 w-5 text-text-secondary" aria-hidden />
                 </span>
                 <div>
                   <h2 className="font-semibold text-xl text-text-primary">Open a Shift</h2>

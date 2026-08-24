@@ -113,10 +113,13 @@ function toneOf(e: PosJournalEvent): { bg: string; fg: string; icon: LucideIcon 
   if (HOT_TYPES.has(e.event_type) || manualDrawer) {
     return { bg: 'bg-red-soft', fg: 'text-red-as-text', icon: ShieldAlert };
   }
+  // Re-audit 2026-08-24 (Encre Rare) — l'or n'est pas une identité d'événement,
+  // et control/kitchen collapsaient sur la même couleur : control prend l'ambre
+  // (avertissement), kitchen le bleu (note opérationnelle sans urgence).
   switch (fam) {
-    case 'control': return { bg: 'bg-gold-soft', fg: 'text-gold', icon: AlertTriangle };
+    case 'control': return { bg: 'bg-warning-soft', fg: 'text-warning', icon: AlertTriangle };
     case 'payment': return { bg: 'bg-success-soft', fg: 'text-success', icon: Banknote };
-    case 'kitchen': return { bg: 'bg-gold-soft', fg: 'text-gold', icon: ChefHat };
+    case 'kitchen': return { bg: 'bg-info-soft', fg: 'text-info', icon: ChefHat };
     case 'session': return { bg: 'bg-bg-elevated', fg: 'text-text-secondary', icon: UserRound };
     default:        return { bg: 'bg-bg-elevated', fg: 'text-text-secondary', icon: ShoppingCart };
   }

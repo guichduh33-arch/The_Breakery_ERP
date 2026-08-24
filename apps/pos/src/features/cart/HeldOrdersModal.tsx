@@ -214,7 +214,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
 
           <header className="flex items-center justify-between gap-4 px-6 py-5 border-b border-border-subtle">
             <div className="flex items-center gap-3 min-w-0">
-              <Clock className="h-5 w-5 text-gold shrink-0" aria-hidden />
+              <Clock className="h-5 w-5 text-text-secondary shrink-0" aria-hidden />
               <div className="min-w-0">
                 <h2 className="font-bold text-xl text-text-primary">
                   Active Orders

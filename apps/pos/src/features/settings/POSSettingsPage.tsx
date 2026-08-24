@@ -59,7 +59,7 @@ export default function POSSettingsPage(): JSX.Element {
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </Button>
-        <Settings className="h-5 w-5 text-gold" aria-hidden />
+        <Settings className="h-5 w-5 text-text-secondary" aria-hidden />
         <h1 className="font-semibold text-lg">POS Settings</h1>
         {!canEdit && (
           <span className="ml-2 text-xs uppercase tracking-widest text-text-muted inline-flex items-center gap-1">
@@ -127,7 +127,7 @@ function PosConfigSection({ readOnly }: { readOnly: boolean }): JSX.Element {
     <div className="space-y-6">
       <div>
         <h2 className="font-semibold text-xl inline-flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5 text-gold" aria-hidden />
+          <ShoppingCart className="h-5 w-5 text-text-secondary" aria-hidden />
           POS Configuration
         </h2>
         <p className="text-text-secondary text-sm mt-1">
@@ -475,7 +475,7 @@ function DiscountPresetsGroup({
             key={`${d.name}-${idx}`}
             className="flex items-center gap-3 rounded-md border border-border-subtle bg-bg-input px-3 py-2"
           >
-            <Tag className="h-4 w-4 text-gold" aria-hidden />
+            <Tag className="h-4 w-4 text-text-secondary" aria-hidden />
             <span className="font-mono text-sm font-semibold w-12 tabular-nums">{d.value}%</span>
             <span className="text-sm text-text-secondary">{d.name}</span>
             <span className="flex-1" />

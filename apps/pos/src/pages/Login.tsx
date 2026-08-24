@@ -159,7 +159,7 @@ export default function LoginPage(): JSX.Element {
           <p className="text-text-secondary text-sm" data-testid="login-users-loading">Loading staff…</p>
         ) : usersError ? (
           <div className="flex flex-col items-center gap-2" data-testid="login-users-error">
-            <p className="text-danger text-sm text-center">Could not load staff list. Check your connection.</p>
+            <p className="text-danger-as-text text-sm text-center">Could not load staff list. Check your connection.</p>
             <Button
               variant="secondary"
               size="md"
@@ -255,7 +255,7 @@ export default function LoginPage(): JSX.Element {
 
         {/* Error */}
         {errorCopy && (
-          <p role="alert" className="text-danger text-sm text-center -mt-2">
+          <p role="alert" className="text-danger-as-text text-sm text-center -mt-2">
             {errorCopy}
           </p>
         )}

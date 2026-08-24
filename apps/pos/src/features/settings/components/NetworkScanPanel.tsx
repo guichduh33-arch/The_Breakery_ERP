@@ -109,7 +109,7 @@ export function NetworkScanPanel({ readOnly }: { readOnly: boolean }): JSX.Eleme
         )}
       </div>
 
-      {errorMsg !== null && <p className="text-sm text-danger">{errorMsg}</p>}
+      {errorMsg !== null && <p className="text-sm text-danger-as-text">{errorMsg}</p>}
 
       {state === 'done' && hits.length === 0 && (
         <p className="text-sm text-text-secondary">

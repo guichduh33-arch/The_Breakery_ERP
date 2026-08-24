@@ -60,7 +60,7 @@ export function OfflineBanner({ connection }: OfflineBannerProps): JSX.Element |
       data-connection-state={state}
       className={
         noNetwork
-          ? 'flex items-center gap-3 border-b border-danger bg-danger-soft px-4 py-2 text-sm text-danger'
+          ? 'flex items-center gap-3 border-b border-danger bg-danger-soft px-4 py-2 text-sm text-danger-as-text'
           : 'flex items-center gap-3 border-b border-warning bg-warning-soft px-4 py-2 text-sm text-warning'
       }
     >

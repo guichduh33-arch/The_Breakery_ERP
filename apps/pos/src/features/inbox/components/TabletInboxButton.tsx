@@ -28,7 +28,7 @@ export function TabletInboxButton({ className }: TabletInboxButtonProps = {}): J
         disabled={count === 0}
         data-testid="tablet-inbox-button"
       >
-        <TabletSmartphone className="h-4 w-4 text-gold" aria-hidden />
+        <TabletSmartphone className="h-4 w-4" aria-hidden />
         <span>Tablet orders</span>
         {count > 0 && (
           <span

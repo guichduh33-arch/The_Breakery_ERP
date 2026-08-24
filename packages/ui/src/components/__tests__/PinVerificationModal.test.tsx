@@ -64,7 +64,8 @@ describe('PinVerificationModal', () => {
         verifyFn={makeVerifyFn({ ok: true, userId: 'u1' })}
       />,
     );
-    const dots = screen.getByLabelText('PIN dots');
+    // Harden re-audit 2026-08-24 : région role=status + compteur sr-only.
+    const dots = screen.getByRole('status', { name: 'PIN progress' });
     expect(dots).toBeInTheDocument();
     pressKey('1');
     pressKey('2');

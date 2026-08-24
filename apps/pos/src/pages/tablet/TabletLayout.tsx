@@ -84,7 +84,7 @@ export default function TabletLayout(): JSX.Element {
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-bg-input text-sm text-text-primary"
             data-testid="tablet-active-table"
           >
-            <MapPin className="h-4 w-4 text-gold shrink-0" aria-hidden />
+            <MapPin className="h-4 w-4 text-text-secondary shrink-0" aria-hidden />
             {tableNumber ? `Table ${tableNumber}` : 'No table'}
           </span>
 
@@ -100,7 +100,7 @@ export default function TabletLayout(): JSX.Element {
                 ? 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-success-soft text-success text-xs font-semibold uppercase tracking-wide'
                 : connection.state === 'offline_bus'
                   ? 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-warning-soft text-warning text-xs font-semibold uppercase tracking-wide'
-                  : 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-danger-soft text-danger text-xs font-semibold uppercase tracking-wide'
+                  : 'inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-danger-soft text-danger-as-text text-xs font-semibold uppercase tracking-wide'
             }
             role="status"
             aria-live="polite"

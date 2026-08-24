@@ -107,6 +107,10 @@ const preset: Partial<Config> = {
         danger: {
           DEFAULT: 'var(--danger)',
           soft: 'var(--danger-soft)',
+          // Règle des Deux Rouges (re-audit 2026-08-24) : `text-danger` rendait
+          // le rouge d'APLAT en texte sur le thème sombre. Le danger écrit
+          // passe par `danger-as-text` ; DEFAULT reste le remplissage.
+          'as-text': 'var(--danger-as-text)',
           // `text-danger-fg` se pose sur `bg-danger` : c'est un on-fill.
           // Il pointait vers l'ancien --red-fg, c'est-à-dire vers la même
           // couleur que le remplissage.

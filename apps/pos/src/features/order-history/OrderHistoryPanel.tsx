@@ -146,7 +146,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
             <div className="flex items-center gap-3">
               <div
                 aria-hidden
-                className="h-10 w-10 inline-flex items-center justify-center rounded-md bg-gold-soft text-gold"
+                className="h-10 w-10 inline-flex items-center justify-center rounded-md bg-surface-4 text-text-secondary"
               >
                 <Receipt className="h-5 w-5" />
               </div>

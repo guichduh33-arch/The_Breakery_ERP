@@ -66,7 +66,7 @@ export function ModeSelectStep({ onSelect }: ModeSelectStepProps): JSX.Element {
                 'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold hover:bg-bg-overlay',
               )}
             >
-              <Icon className="h-6 w-6 text-gold shrink-0" aria-hidden />
+              <Icon className="h-6 w-6 text-text-secondary shrink-0" aria-hidden />
               <div>
                 <div className="text-base font-bold tracking-wide">{label}</div>
                 <div className="text-xs text-text-secondary mt-0.5">{sub}</div>

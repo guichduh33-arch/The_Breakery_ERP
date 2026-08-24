@@ -127,7 +127,7 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
               </span>
             )}
             {probe === 'fail' && (
-              <span className="inline-flex items-center gap-1 text-xs text-danger">
+              <span className="inline-flex items-center gap-1 text-xs text-danger-as-text">
                 <XCircle className="h-4 w-4" aria-hidden /> Unreachable
               </span>
             )}
@@ -212,7 +212,7 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
               Format: P16082026001.
             </p>
             {!sourceCodeValid && (
-              <p className="text-xs text-danger">
+              <p className="text-xs text-danger-as-text">
                 Invalid code — use P, T1, T2… or BO. The server default applies until this is fixed.
               </p>
             )}

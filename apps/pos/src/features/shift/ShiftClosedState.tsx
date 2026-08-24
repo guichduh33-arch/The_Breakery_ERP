@@ -43,8 +43,8 @@ export function ShiftClosedState({
       <div className="m-auto bg-bg-overlay rounded-2xl border border-border-subtle shadow-modal w-full max-w-md p-8 text-center space-y-6"
            data-testid="shift-closed-state">
         <div className="grid place-items-center">
-          <div className="h-12 w-12 grid place-items-center rounded-full bg-gold-soft">
-            <Clock className="h-6 w-6 text-gold" aria-hidden />
+          <div className="h-12 w-12 grid place-items-center rounded-full bg-surface-4">
+            <Clock className="h-6 w-6 text-text-secondary" aria-hidden />
           </div>
         </div>
 

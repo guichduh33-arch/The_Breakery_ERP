@@ -73,7 +73,7 @@ function DeltaPill({ delta }: { delta: KpiDelta }): JSX.Element {
       className={cn(
         'inline-flex items-center gap-1 text-xs font-medium tabular-nums',
         direction === 'up' && 'text-success',
-        direction === 'down' && 'text-danger',
+        direction === 'down' && 'text-danger-as-text',
         direction === 'neutral' && 'text-text-secondary',
       )}
     >

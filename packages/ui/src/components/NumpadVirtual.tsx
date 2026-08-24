@@ -223,7 +223,7 @@ function NumpadVirtualInner({
       </div>
 
       {error && (
-        <p role="alert" className="text-danger text-sm text-center">
+        <p role="alert" className="text-danger-as-text text-sm text-center">
           {error}
         </p>
       )}

@@ -209,9 +209,9 @@ export function ModifierModal({
                   </span>
                   {group.group_required && (
                     <>
-                      {/* text-danger plein : la variante /80 est une classe
+                      {/* text-danger-as-text plein : la variante /80 est une classe
                           morte (alpha impossible sur token var() nu). */}
-                      <span aria-hidden className="text-base leading-none text-danger">
+                      <span aria-hidden className="text-base leading-none text-danger-as-text">
                         *
                       </span>
                       <span className={SR_ONLY}>(required)</span>
@@ -289,7 +289,7 @@ export function ModifierModal({
               role="status"
               aria-live="polite"
               data-testid="modifier-required-hint"
-              className="mb-3 text-sm text-danger"
+              className="mb-3 text-sm text-danger-as-text"
             >
               Required: choose {errors.map((e) => e.group_name).join(', ')}
             </p>
