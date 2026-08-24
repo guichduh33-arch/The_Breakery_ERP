@@ -97,8 +97,8 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | `/settings/printing` | auto-print / auto-drawer → POS ; **copies KOT par station** (`kot_copies_{kitchen,barista,display}`, [0,5], 0 = station paperless — le KDS écran reçoit toujours) → `useFireToStations` imprime N copies séquentielles au fire (PR #239) ; steppers miroir dans l'onglet Printing du POS |
 | `/settings/pos` | presets paiement / fond de caisse / remises → POS |
 | `/settings/notifications` | templates → `enqueue_notification` → outbox (toggle `is_active` effectif) |
-| `/settings/permissions` | matrice read-only (édition dans `/backoffice/users/permissions`) |
-| `/settings/security` | timeout de session par rôle → `update_role_session_timeout` ; **politique PIN** (`pin_max_failed`, `pin_lockout_minutes`, catégorie `security`) → lockout login lu par l'EF `auth-verify-pin` (PR #276) |
+| `/settings/roles` (+ `/settings/roles/:roleCode`, **SUPER_ADMIN seul** — gate par rôle, ADR-031) | matrice rôle × permission **éditable** + fiche rôle : permissions par module, timeout de session (`update_role_session_timeout`), overrides par utilisateur (`set_user_permission_override`) → `set_role_permission`, effet à la prochaine connexion |
+| `/settings/security` | **politique PIN** (`pin_max_failed`, `pin_lockout_minutes`, catégorie `security`) → lockout login lu par l'EF `auth-verify-pin` (PR #276) ; le timeout de session par rôle a déménagé dans la fiche rôle (ADR-031) |
 | `/settings/history` (admin-only) | Vue **Settings History** : filtre dédié d'`audit_logs` sur les changements de settings (PR #268) — aucune table nouvelle |
 | `/settings/accounting` | périodes fiscales, clôture période + clôture annuelle |
 | `/settings/expense-thresholds` | seuils → chaîne d'approbation `submit_expense` |
@@ -157,8 +157,10 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 
 ## 4. Ce que le module ne fait pas (par design — inchangé et confirmé par le code)
 
-- **Pas de création d'utilisateurs ni d'édition de rôles** ici — matrice read-only,
-  édition dans `/backoffice/users/permissions`.
+- **Pas de création d'utilisateurs ni de création/suppression de rôles** ici — les
+  comptes vivent dans `/users` ; le cycle de vie des rôles reste par migration.
+  L'édition des permissions et des réglages d'un rôle vit dans `/settings/roles`
+  (ADR-031, SUPER_ADMIN seul).
 - **Pas de catalogue** — produits, catégories, types produits vivent dans `/products`.
 - **Pas de programme fidélité** — page dédiée `/backoffice/loyalty`.
 - **Pas de consultation d'audit** — l'Audit Log vit dans Reports (`AuditPage`).
