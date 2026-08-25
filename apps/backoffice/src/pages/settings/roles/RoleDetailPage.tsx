@@ -12,6 +12,7 @@ import { ChevronLeft, Info } from 'lucide-react';
 import { Badge } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { DeleteRoleAction } from '@/features/settings/roles/components/DeleteRoleAction.js';
 import { RolePermissionsPanel } from '@/features/settings/roles/components/RolePermissionsPanel.js';
 import { RoleTimeoutCard } from '@/features/settings/roles/components/RoleTimeoutCard.js';
 import { UserOverridesPanel } from '@/features/settings/roles/components/UserOverridesPanel.js';
@@ -90,6 +91,10 @@ export default function RoleDetailPage() {
       <RolePermissionsPanel roleCode={role.code} roleName={role.name} />
       <RoleTimeoutCard role={role} />
       <UserOverridesPanel roleCode={role.code} />
+
+      {/* ADR-032 — dernier de la page : la suppression se lit après tout le
+          reste, et jamais sur le chemin d'un autre geste. */}
+      <DeleteRoleAction role={role} />
     </div>
   );
 }

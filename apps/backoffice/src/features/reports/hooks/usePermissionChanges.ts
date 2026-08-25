@@ -1,7 +1,9 @@
 // apps/backoffice/src/features/reports/hooks/usePermissionChanges.ts
 // Rapport « Permission changes » — lecture de la famille RPC
-// `get_permission_changes`. ADR-031 a bumpé la fonction : la v1 est droppée,
-// la v2 garde la même signature (p_date_start / p_date_end en texte).
+// `get_permission_changes`. Deux bumps successifs, à signature constante
+// (p_date_start / p_date_end en texte) : ADR-031 a droppé la v1, ADR-032 a
+// droppé la v2 pour couvrir les naissances et morts de rôles (`role.created`,
+// `role.deleted`) que le filtre d'actions ignorait.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -31,7 +33,7 @@ export function usePermissionChanges(params: UsePermissionChangesParams) {
   return useQuery<PermissionChangesData, Error>({
     queryKey: ['reports', 'permission-changes', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_permission_changes_v2', {
+      const { data, error } = await supabase.rpc('get_permission_changes_v3', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

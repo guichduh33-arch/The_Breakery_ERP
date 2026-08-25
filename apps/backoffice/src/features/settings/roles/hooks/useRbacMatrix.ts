@@ -94,9 +94,13 @@ export function grantedCount(matrix: RbacMatrix | undefined, roleCode: string): 
 }
 
 // ── Traduction des erreurs serveur ──────────────────────────────────────────
-// Les trois RPC lèvent des textes courts, faits pour être reconnus, pas lus.
+// Les RPC du RBAC lèvent des textes courts, faits pour être reconnus, pas lus.
 // On les traduit ici pour que le toast dise à l'opérateur ce qui s'est passé
 // plutôt que de lui recracher un identifiant.
+//
+// L'ordre compte : la première entrée dont la clé apparaît dans le message
+// gagne. Les clés les plus spécifiques passent donc avant les plus générales
+// (`super_admin_only` avant `forbidden`).
 
 const RBAC_ERRORS: [string, string][] = [
   ['super_admin_only',          'Only a super admin can change permissions.'],
@@ -104,9 +108,20 @@ const RBAC_ERRORS: [string, string][] = [
   ['super_admin_target_locked', 'A SUPER_ADMIN profile cannot carry an override.'],
   ['invalid_reason',            'The reason must be 3 to 200 characters long.'],
   ['invalid_expiry',            'The expiry date must be in the future.'],
+  // ADR-032 — cycle de vie des rôles.
+  ['invalid_code',              'The code must start with a letter and hold 3 to 30 letters, digits or underscores.'],
+  ['role_exists',               'A role already carries this code. Codes are unique regardless of case.'],
+  ['invalid_name',              'The name must be 2 to 60 characters long.'],
+  ['invalid_description',       'The description must be 200 characters at most.'],
+  ['invalid_minutes',           'The session timeout must be between 5 and 480 minutes.'],
+  ['clone_source_not_found',    'The role to clone no longer exists.'],
+  ['system_role_locked',        'System roles cannot be deleted.'],
+  ['role_in_use',               'Employees still hold this role. Reassign them from the Users page first.'],
   ['role_not_found',            'Unknown role.'],
   ['permission_not_found',      'Unknown permission.'],
   ['profile_not_found',         'Unknown user profile.'],
+  ['unauthenticated',           'Your session has expired. Sign in again.'],
+  ['forbidden',                 'You are not allowed to manage roles.'],
 ];
 
 export function rbacErrorMessage(error: Error): string {

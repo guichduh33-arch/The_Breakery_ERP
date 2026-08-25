@@ -6613,6 +6613,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_role_v1: {
+        Args: {
+          p_clone_from?: string
+          p_code: string
+          p_description?: string
+          p_name: string
+          p_session_timeout_minutes?: number
+        }
+        Returns: string
+      }
       create_stock_lot_v1: {
         Args: {
           p_batch_number?: string
@@ -6709,6 +6719,7 @@ export type Database = {
       }
       delete_promotion_v1: { Args: { p_promotion_id: string }; Returns: Json }
       delete_restaurant_table_v1: { Args: { p_id: string }; Returns: undefined }
+      delete_role_v1: { Args: { p_code: string }; Returns: boolean }
       delete_section_v1: { Args: { p_section_id: string }; Returns: Json }
       delete_table_section_v1: { Args: { p_id: string }; Returns: undefined }
       delete_user_permission_override_v1: {
@@ -7060,7 +7071,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_permission_changes_v2: {
+      get_permission_changes_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }

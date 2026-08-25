@@ -8,6 +8,13 @@
 // (SUPER_ADMIN, waiter) fuitait dans l'UI — le menu utilisateur et la table
 // des utilisateurs. Un code inconnu retombe sur un titlecase de sa propre
 // valeur plutôt que sur un vide ou le code cru.
+//
+// ADR-032 — les rôles se créent désormais depuis l'écran, et cette table ne
+// les connaîtra JAMAIS : elle est écrite à la main, eux naissent en base. Le
+// repli titlecase les sauve du code cru mais invente leur graphie
+// (`CASHIER_SENIOR` → « Cashier senior », là où la base porte « Cashier
+// Senior »). D'où le second argument : l'appelant qui A le `roles.name` sous
+// la main le passe, et il gagne. Personne n'est obligé de l'avoir.
 
 const ROLE_LABEL = {
   SUPER_ADMIN: 'Super admin',
@@ -34,7 +41,24 @@ function titleCase(code: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
 
-/** Libellé humain d'un code de rôle, avec repli titlecase pour l'inconnu. */
-export function roleLabel(code: string): string {
-  return (ROLE_LABEL as Record<string, string>)[code] ?? titleCase(code);
+/**
+ * Libellé humain d'un code de rôle.
+ *
+ * Ordre de préférence : la table de libellés ci-dessus > le `roles.name` de la
+ * base quand l'appelant l'a > un titlecase du code.
+ *
+ * La table passe AVANT le nom de la base et non l'inverse : elle ne couvre que
+ * les cinq rôles système, dont la graphie est un choix de produit (« Super
+ * admin », pas « Super Admin »), et cet ordre garantit que l'ajout du second
+ * argument ne déplace pas un seul libellé existant. Le nom de la base ne sert
+ * donc qu'à ce pour quoi il est là : les rôles que la table ignore.
+ *
+ * @param code Code de rôle porté par le profil.
+ * @param name `roles.name` si l'appelant l'a chargé — sinon rien.
+ */
+export function roleLabel(code: string, name?: string | null): string {
+  const known = (ROLE_LABEL as Record<string, string>)[code];
+  if (known !== undefined) return known;
+  if (typeof name === 'string' && name.trim() !== '') return name.trim();
+  return titleCase(code);
 }
