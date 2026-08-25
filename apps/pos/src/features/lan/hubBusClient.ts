@@ -156,7 +156,16 @@ function connect(): void {
   state.ws = socket;
   state.welcomed = false;
 
+  // Un socket qui n'est plus `state.ws` est périmé : en StrictMode le close du
+  // socket démonté est délivré APRÈS le connect() du remontage, et son handler
+  // écrasait l'état global (state.ws = null, clearTimers, reconnexion) — le
+  // socket neuf restait ouvert côté hub mais orphelin côté client (présence
+  // dupliquée), et un troisième naissait au backoff. Chaque handler vérifie
+  // donc qu'il parle bien pour le socket courant.
+  const isStale = (): boolean => state.ws !== socket;
+
   socket.onopen = () => {
+    if (isStale()) { socket.close(); return; }
     state.backoffMs = RECONNECT_MIN_MS;
     socket.send(JSON.stringify({
       type: 'hello',
@@ -172,6 +181,7 @@ function connect(): void {
   };
 
   socket.onmessage = (event: MessageEvent<string>) => {
+    if (isStale()) return;
     let msg: unknown;
     try {
       msg = JSON.parse(event.data);
@@ -212,6 +222,7 @@ function connect(): void {
   };
 
   socket.onclose = () => {
+    if (isStale()) return; // stop() ou un remontage a déjà repris la main
     state.welcomed = false;
     useHubConnectionStore.getState().setConnected(false);
     clearTimers();

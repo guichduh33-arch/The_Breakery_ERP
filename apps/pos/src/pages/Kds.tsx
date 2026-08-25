@@ -15,11 +15,8 @@ import { useState } from 'react';
 import { useKdsStore } from '@/stores/kdsStore';
 import { useKdsRealtime } from '@/features/kds/hooks/useKdsRealtime';
 import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
-import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
-import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useKdsOfflineBus } from '@/features/kds/hooks/useKdsOfflineBus';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { KdsBoard } from '@/features/kds/KdsBoard';
 
 export default function KdsPage() {
@@ -32,12 +29,8 @@ export default function KdsPage() {
   // keeps a stale queue silently (backlog TASK-04-006). Reuses the canonical
   // reconnect net already wired on the other realtime hooks (display, tablet…).
   useReconnectInvalidate([['kds', station]]);
-  // Session 59 (21 D1.1) — heartbeat so BO "LAN Devices" reflects this screen
-  // as online. No-ops until an operator sets a device code in POS Settings →
-  // Devices. Spec 006x lot 1 — also join the LAN hub bus (presence only).
-  const deviceCode = usePosSettingsStore((s) => s.deviceCode);
-  useLanHeartbeat({ deviceCode, deviceType: 'kds' });
-  useHubPresence({ deviceCode, deviceType: 'kds' });
+  // Heartbeat LAN + présence bus : montés au shell (HubPresenceMount, App.tsx)
+  // depuis le 2026-08-25 — le device_type kds est dérivé de la route.
   // Spec 006x lot 3 — détection de coupure internet + tickets par le bus LAN
   // (order.fired / order.item_status, catchup au join).
   useCloudPing();

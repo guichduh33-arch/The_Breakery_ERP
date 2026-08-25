@@ -4,14 +4,11 @@ import { toast } from 'sonner';
 import { MapPin, Wifi, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useTabletConnectionState } from '@/features/tablet/hooks/useTabletConnectionState';
 import { OfflineBanner } from '@/features/tablet/components/OfflineBanner';
 import { isInFlight } from '@breakery/domain';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
-import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
-import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 
@@ -31,12 +28,8 @@ export default function TabletLayout(): JSX.Element {
   const user = useAuthStore((s) => s.user);
   const permissions = useAuthStore((s) => s.permissions);
 
-  // Session 59 (21 D1.1) — heartbeat so BO "LAN Devices" reflects this tablet
-  // as online. No-ops until an operator sets a device code in POS Settings →
-  // Devices. Spec 006x lot 1 — also join the LAN hub bus (presence only).
-  const deviceCode = usePosSettingsStore((s) => s.deviceCode);
-  useLanHeartbeat({ deviceCode, deviceType: 'tablet' });
-  useHubPresence({ deviceCode, deviceType: 'tablet' });
+  // Heartbeat LAN + présence bus : montés au shell (HubPresenceMount, App.tsx)
+  // depuis le 2026-08-25 — le device_type tablet est dérivé de la route.
   // Spec 006x lot 3 — détection internet down (mode offline du bus LAN).
   useCloudPing();
   // Spec 006x lot 4 — replay des envois tablette hors-ligne au retour cloud.

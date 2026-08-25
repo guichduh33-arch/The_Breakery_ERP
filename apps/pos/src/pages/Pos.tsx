@@ -46,9 +46,6 @@ import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useCartStore } from '@/stores/cartStore';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
-import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
-import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
@@ -103,13 +100,9 @@ export default function PosPage() {
   const attachCustomer = useCartStore((s) => s.attachCustomer);
   const detachCustomer = useCartStore((s) => s.detachCustomer);
 
-  // Session 59 (21 D1.1) — emit a heartbeat so BO "LAN Devices" reflects this
-  // terminal as online. No-ops until an operator sets a device code in
-  // Settings → Devices. Spec 006x lot 1 — also join the LAN hub bus
-  // (presence only; cloud heartbeat stays the writer until lot 2).
-  const deviceCode = usePosSettingsStore((s) => s.deviceCode);
-  useLanHeartbeat({ deviceCode, deviceType: 'pos' });
-  useHubPresence({ deviceCode, deviceType: 'pos' });
+  // Heartbeat LAN + présence bus : montés au shell (HubPresenceMount,
+  // App.tsx) depuis le 2026-08-25 — la présence survit à la navigation
+  // vers les satellites (/pos/settings en tête).
   // Spec 006x lot 3 — détection internet down (le fire bascule sur le bus LAN).
   useCloudPing();
   // Spec 006x lot 4 — replay de l'outbox offline au retour du cloud. ADR-015 :

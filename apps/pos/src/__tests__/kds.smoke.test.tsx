@@ -189,27 +189,6 @@ describe('KDS smoke', () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
-  // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO
-  // "LAN Devices" can see the KDS screen as online.
-  it('emits a LAN heartbeat when a device code is configured', async () => {
-    usePosSettingsStore.setState({ deviceCode: 'KDS-KITCHEN-01' });
-
-    render(wrapper(<KdsPage />));
-
-    await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
-        p_device_codes: ['KDS-KITCHEN-01'],
-      });
-    });
-  });
-
-  it('does not emit a heartbeat when no device code is configured', async () => {
-    render(wrapper(<KdsPage />));
-    await screen.findByText(/no active tickets/i);
-
-    expect(rpcMock).not.toHaveBeenCalledWith(
-      'update_lan_heartbeat_v2',
-      expect.anything(),
-    );
-  });
+  // 2026-08-25 — heartbeat + présence bus montés au SHELL (HubPresenceMount,
+  // App.tsx), plus par page : la garantie vit dans HubPresenceMount.test.tsx.
 });
