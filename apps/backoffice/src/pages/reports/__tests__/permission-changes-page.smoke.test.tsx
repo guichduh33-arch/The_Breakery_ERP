@@ -22,7 +22,9 @@ vi.mock('@/lib/supabase.js', () => ({
       if (simulateError) {
         return Promise.resolve({ data: null, error: { message: 'RPC permission changes error' } });
       }
-      if (fn === 'get_permission_changes_v2') {
+      // ADR-032 — la v2 est droppée : le mock ne répond qu'à la v3, si bien
+      // qu'un call-site resté sur l'ancienne version rendrait la page vide.
+      if (fn === 'get_permission_changes_v3') {
         return Promise.resolve({
           data: {
             period:  { start: '2026-05-13', end: '2026-06-12' },

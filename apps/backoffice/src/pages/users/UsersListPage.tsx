@@ -38,6 +38,15 @@ export default function UsersListPage() {
 
   const definedRoles = roles.data?.length ?? 0;
 
+  // ADR-032 — la liste des rôles est déjà chargée pour le KPI ; on en tire les
+  // noms pour que la table sache nommer un rôle créé depuis l'écran, qu'aucune
+  // table de libellés du front ne connaîtra jamais.
+  const roleNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const r of roles.data ?? []) map[r.code] = r.name;
+    return map;
+  }, [roles.data]);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -80,6 +89,7 @@ export default function UsersListPage() {
         rows={rows}
         loading={users.isLoading}
         error={users.error}
+        roleNames={roleNames}
       />
     </div>
   );

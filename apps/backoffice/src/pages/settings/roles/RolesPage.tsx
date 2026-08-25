@@ -10,11 +10,13 @@
 // portent exactement les mêmes permissions, un garde par code ne les
 // distinguerait pas.
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Info } from 'lucide-react';
-import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
+import { Info, Plus } from 'lucide-react';
+import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { CreateRoleDialog } from '@/features/settings/roles/components/CreateRoleDialog.js';
 import { RoleMatrixGrid } from '@/features/settings/roles/components/RoleMatrixGrid.js';
 import { useRbacMatrix, grantedCount } from '@/features/settings/roles/hooks/useRbacMatrix.js';
 
@@ -23,12 +25,30 @@ export default function RolesPage() {
   const roles = matrix.data?.roles ?? [];
   const total = matrix.data?.permissions.length ?? 0;
 
+  // ADR-032 — la création vit dans le bandeau, à côté du titre : c'est le seul
+  // geste de la page qui fabrique quelque chose.
+  const [createOpen, setCreateOpen] = useState<boolean>(false);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Roles & permissions"
         subtitle="What each role can do, and the exceptions granted to individual people."
+        actions={
+          <Button
+            variant="ink"
+            size="sm"
+            type="button"
+            onClick={() => { setCreateOpen(true); }}
+            data-testid="role-create-btn"
+          >
+            <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+            New role
+          </Button>
+        }
       />
+
+      <CreateRoleDialog open={createOpen} onOpenChange={setCreateOpen} />
 
       {/* Les permissions sont figées au login : le client les reçoit à
           l'ouverture de session et ne les relit pas. Le dire ici évite le

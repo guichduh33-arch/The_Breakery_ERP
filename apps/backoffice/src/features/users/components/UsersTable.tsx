@@ -12,6 +12,13 @@ export interface UsersTableProps {
   rows:     UserRow[];
   loading?: boolean;
   error?:   Error | null;
+  /**
+   * ADR-032 — `roles.name` par code, quand la page l'a déjà chargé. Sans lui,
+   * un rôle créé depuis l'écran s'affiche en titlecase de son code (« Cashier
+   * senior ») au lieu de son vrai nom (« Cashier Senior »). Les rôles système
+   * gardent le libellé de produit dans tous les cas.
+   */
+  roleNames?: Record<string, string>;
 }
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
@@ -22,7 +29,7 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
   waiter:      'bg-cat-violet/15 text-cat-violet border border-cat-violet/30',
 };
 
-export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Element {
+export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps): JSX.Element {
   if (loading === true) {
     // Silhouette de la table plutôt qu'un « Loading users… » nu (audit UX/UI
     // 2026-08-13, lot 8) : quelques lignes fantômes qui gardent la forme de ce
@@ -71,7 +78,7 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
                     ROLE_BADGE_CLASS[u.role_code] ?? 'bg-bg-overlay text-text-secondary'
                   }`}
                 >
-                  {roleLabel(u.role_code)}
+                  {roleLabel(u.role_code, roleNames?.[u.role_code])}
                 </span>
               </td>
               <td className="py-2 px-3 text-xs">
