@@ -34,10 +34,10 @@
 //     `@breakery/domain` — never raw inserts. After success, the cart
 //     is cleared and the host typically navigates to `/tablet/orders`.
 
-import { useState, useCallback, useMemo, useRef, type JSX } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, MapPin, Send } from 'lucide-react';
 import type { RestaurantTable } from '@breakery/domain';
 import { Button, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
@@ -120,6 +120,21 @@ export function TabletOrderPage({
   const mutation = useCreateTabletOrder();
   const clientUuidRef = useRef<string>(crypto.randomUUID());
 
+  // Critique 2026-08-25 (P1) — un envoi HORS-LIGNE ne laissait qu'un toast de 4 s ;
+  // la preuve d'envoi disparaissait juste au moment où la serveuse doute le plus
+  // que la commande soit partie, l'invitant à ré-envoyer un doublon. En ligne, la
+  // grande bannière (page Orders) porte cette preuve ; hors-ligne, la commande
+  // n'existe pas au cloud, donc on la porte EN PLACE, en bande persistante — jusqu'à
+  // ce que la serveuse compose la commande suivante (1er article) ou la ferme.
+  const [offlineSent, setOfflineSent] = useState<{
+    localNumber: string;
+    tableNumber: string | null;
+    orderType: 'dine_in' | 'take_out';
+  } | null>(null);
+  useEffect(() => {
+    if (items.length > 0) setOfflineSent(null);
+  }, [items.length]);
+
   // Server tax config (rate + inclusive mode) — the header total must match
   // the amount the money-path will charge (mirror of _pb1_split_v1).
   const { taxRate, taxInclusive } = useTaxConfig();
@@ -153,6 +168,8 @@ export function TabletOrderPage({
       setTableNumber(name);
       setOrderType('dine_in');
       setView('menu');
+      // Nouvelle commande : la confirmation hors-ligne précédente n'a plus lieu.
+      setOfflineSent(null);
     },
     [setAppendTarget, setTableNumber, setOrderType],
   );
@@ -161,12 +178,15 @@ export function TabletOrderPage({
     (name: string, order: { id: string; order_number: string }) => {
       setAppendTarget({ id: order.id, orderNumber: order.order_number, tableNumber: name });
       setView('menu');
+      setOfflineSent(null);
     },
     [setAppendTarget],
   );
 
   const handleSend = useCallback(async () => {
     if (!userId || isEmpty) return;
+    // Un nouvel envoi remplace la confirmation hors-ligne précédente.
+    setOfflineSent(null);
     // S72 audit P1: a dine-in order needs a table (owner rule 2026-07-07). The
     // counter path enforces this (useDineInTableGuard + fire_counter_order
     // P0011); the tablet path did not, so a waiter could fire a dine-in order
@@ -199,6 +219,9 @@ export function TabletOrderPage({
       // à afficher dans la liste, on reste sur la prise de commande.
       if (offlineLocalNumber !== null) {
         toast.success(`Order ${offlineLocalNumber} sent to kitchen (offline)`);
+        // Le toast disparaît en 4 s ; la bande, elle, reste comme preuve d'envoi
+        // jusqu'à la commande suivante — pas de doute, donc pas de doublon.
+        setOfflineSent({ localNumber: offlineLocalNumber, tableNumber, orderType });
         return;
       }
       if (appendedTo !== null) {
@@ -309,6 +332,35 @@ export function TabletOrderPage({
 
   return (
     <div className="flex flex-col h-full" data-testid="tablet-order-page">
+      {/* Critique 2026-08-25 (P1) — preuve d'envoi PERSISTANTE en coupure. Le
+          ticket est parti à la cuisine par le réseau local ; il se synchronisera
+          au retour du cloud. La bande reste jusqu'à la commande suivante. */}
+      {offlineSent && (
+        <div
+          className="px-6 py-2 flex items-center justify-between gap-4 bg-success-soft text-success border-b border-success"
+          role="status"
+          aria-live="polite"
+          data-testid="tablet-offline-confirmation"
+        >
+          <span className="flex items-center gap-2 min-w-0 text-sm font-semibold">
+            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />
+            <span className="min-w-0">
+              Order {offlineSent.localNumber} sent to the kitchen offline
+              {offlineSent.tableNumber ? ` · Table ${offlineSent.tableNumber}` : ''} — syncs
+              when you are back online.
+            </span>
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 shrink-0"
+            onClick={() => setOfflineSent(null)}
+            data-testid="tablet-offline-confirmation-dismiss"
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
       {/* Bandeau permanent : sans lui, rien ne distingue une 2ᵉ tournée d'une
           commande neuve, et la serveuse enverrait un doublon à la table. */}
       {isAppendMode && (
