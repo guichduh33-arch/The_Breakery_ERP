@@ -27,7 +27,13 @@ async function pingCloud(supabaseUrl: string, anonKey: string): Promise<boolean>
       cache: 'no-store',
       headers: { apikey: anonKey },
     });
-    return res.ok || res.status === 401; // 401 = l'hôte a répondu.
+    // Toute réponse HTTP < 500 prouve que l'hôte a répondu = cloud joignable.
+    // NE PAS restreindre à ok||401 : GoTrue répond 405 à un HEAD
+    // /auth/v1/health quand l'apikey est fournie (le cas RÉEL du client), ce
+    // qui gelait `cloudOnline` à false et bloquait l'envoi tablette en
+    // `no_network` sur tout poste sans hub LAN, cloud pourtant joignable.
+    // Seuls un 5xx ou un échec réseau (catch → false) valent « injoignable ».
+    return res.status < 500;
   } catch {
     return false;
   } finally {
