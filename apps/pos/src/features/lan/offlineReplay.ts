@@ -178,7 +178,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     // ADR-020 déc. 5 (2026-08-03) — v16 → v17 : l'acquisition de points est
     // réservée aux clients retail dont la catégorie a `loyalty_enabled`. La
     // signature ne bouge pas, le replay d'un intent en file est donc inchangé.
-    const { error } = await supabase.rpc('pay_existing_order_v17', {
+    const { error } = await supabase.rpc('pay_existing_order_v18', {
       p_order_id: orderId,
       ...tenderArgs,
       p_idempotency_key: intent.id,
