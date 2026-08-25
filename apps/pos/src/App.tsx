@@ -10,6 +10,7 @@ import { AppRoutes } from './routes';
 import { ErrorState } from './components/ErrorState';
 import { IdleTimeoutMount } from './components/IdleTimeoutMount';
 import { PosEventOutboxMount } from './features/audit/PosEventOutboxMount';
+import { HubPresenceMount } from './features/lan/HubPresenceMount';
 import { SettingsRealtimeMount } from './components/SettingsRealtimeMount';
 import { CatalogRealtimeMount } from './components/CatalogRealtimeMount';
 import { useAuthStore } from './stores/authStore';
@@ -80,6 +81,11 @@ export default function App() {
         <IdleTimeoutMount />
         {/* S72 Lot 2 — audit-journal outbox flusher (all POS routes). */}
         <PosEventOutboxMount />
+        {/* 2026-08-25 — présence bus LAN + heartbeat cloud au SHELL : la
+            présence est un attribut du terminal, pas de l'écran affiché.
+            Montée par page, elle quittait le bus dès qu'on ouvrait
+            /pos/settings — la page qui affiche la liste des appareils. */}
+        <HubPresenceMount />
         {/* Settings §6.C — push < 2 s des réglages BO vers les surfaces PIN
             (ADR-006 déc. 4) ; la surface kiosk display a son propre mount. */}
         <SettingsRealtimeMount />

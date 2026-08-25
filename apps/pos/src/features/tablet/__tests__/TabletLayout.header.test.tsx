@@ -203,28 +203,6 @@ describe('TabletLayout header (LOT 6)', () => {
     expect(screen.queryByTestId('tablet-ready-badge')).not.toBeInTheDocument();
   });
 
-  // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO
-  // "LAN Devices" can see the waiter tablet as online.
-  it('emits a LAN heartbeat when a device code is configured', async () => {
-    usePosSettingsStore.setState({ deviceCode: 'TABLET-01' });
-    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
-    render(wrap(<TabletLayout />));
-
-    await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
-        p_device_codes: ['TABLET-01'],
-      });
-    });
-  });
-
-  it('does not emit a heartbeat when no device code is configured', async () => {
-    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
-    render(wrap(<TabletLayout />));
-    expect(screen.getByTestId('tablet-active-table')).toBeInTheDocument();
-
-    expect(rpcMock).not.toHaveBeenCalledWith(
-      'update_lan_heartbeat_v2',
-      expect.anything(),
-    );
-  });
+  // 2026-08-25 — heartbeat + présence bus montés au SHELL (HubPresenceMount,
+  // App.tsx), plus par page : la garantie vit dans HubPresenceMount.test.tsx.
 });

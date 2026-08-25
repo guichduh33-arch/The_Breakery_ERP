@@ -163,6 +163,31 @@ describe('hubBus', () => {
     expect(MockWebSocket.instances).toHaveLength(3);
   });
 
+  // Diagnostic 2026-08-25 — présence dupliquée sur le hub. En StrictMode le
+  // close du socket démonté est délivré APRÈS le connect() du remontage ; le
+  // handler périmé écrasait l'état global (state.ws = null, clearTimers,
+  // reconnexion) : le socket neuf restait ouvert côté hub mais orphelin côté
+  // client, et un troisième naissait au backoff. Un événement d'un socket qui
+  // n'est plus `state.ws` doit être ignoré.
+  it('StrictMode remount: a stale close never orphans the fresh socket', () => {
+    hubBus.start(OPTS);
+    const wsA = MockWebSocket.instances[0]!;
+    const staleClose = wsA.onclose!; // handler posé par connect()
+    wsA.onclose = null; // le navigateur délivre le close de façon asynchrone
+    hubBus.stop(); // démontage StrictMode → close(A) demandé, pas encore délivré
+    hubBus.start(OPTS); // remontage immédiat → socket B
+    expect(MockWebSocket.instances).toHaveLength(2);
+    const wsB = MockWebSocket.instances[1]!;
+    wsB.join();
+
+    staleClose(); // le close de A arrive maintenant
+
+    expect(useHubConnectionStore.getState().connected).toBe(true);
+    expect(hubBus.publish('order.fired', { x: 1 })).toBe(true); // B reste le socket courant
+    vi.advanceTimersByTime(60_000);
+    expect(MockWebSocket.instances).toHaveLength(2); // pas de socket fantôme
+  });
+
   it('refcounts start/stop — the socket closes only at zero', () => {
     hubBus.start(OPTS);
     hubBus.start(OPTS);
