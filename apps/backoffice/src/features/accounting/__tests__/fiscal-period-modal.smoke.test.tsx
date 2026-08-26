@@ -62,7 +62,7 @@ describe('FiscalPeriodModal (S26b Wave 5)', () => {
   it('T1 — PIN must be 6 digits ; bad PIN surfaces inline error, no RPC', async () => {
     renderModal();
     await waitFor(() => {
-      expect(screen.queryByRole('option', { name: /2026-04-01/i })).not.toBeNull();
+      expect(screen.queryByRole('option', { name: /April 2026/i })).not.toBeNull();
     });
 
     fireEvent.change(screen.getByTestId('fp-modal-period-select'),
@@ -86,7 +86,7 @@ describe('FiscalPeriodModal (S26b Wave 5)', () => {
   it('T2 — submit calls close_fiscal_period_v1 with p_lock=true when checkbox ticked', async () => {
     renderModal();
     await waitFor(() => {
-      expect(screen.queryByRole('option', { name: /2026-04-01/i })).not.toBeNull();
+      expect(screen.queryByRole('option', { name: /April 2026/i })).not.toBeNull();
     });
 
     fireEvent.change(screen.getByTestId('fp-modal-period-select'),

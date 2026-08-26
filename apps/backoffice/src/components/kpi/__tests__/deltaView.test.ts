@@ -2,20 +2,22 @@
 //
 // Critique design 2026-08-26 — une variation non plafonnée sortait « ▲ 5.158,2% ».
 // Le chiffre a l'air d'une mesure ; il ne dit en réalité qu'une chose : la
-// période de référence était quasi vide. Les preuves ci-dessous tiennent les
-// DEUX bords — le plafond ne doit pas manger les variations qui, elles, mesurent
-// quelque chose, et la doctrine du tiret cadratin (donnée absente ≠ zéro) reste
-// intacte.
+// période de référence était quasi vide. La critique du soir a poussé d'un
+// cran : même plafonné, « ▲ >999% » vert se lisait « croissance massive » —
+// la hausse sans baseline se rend donc « New », neutre et sans flèche. Les
+// preuves ci-dessous tiennent les DEUX bords — le plafond ne doit pas manger
+// les variations qui, elles, mesurent quelque chose, et la doctrine du tiret
+// cadratin (donnée absente ≠ zéro) reste intacte.
 
 import { describe, it, expect } from 'vitest';
 import { deltaView, DELTA_CAP_HINT } from '../deltaView.js';
 
 describe('deltaView', () => {
-  it('caps a runaway positive variation and carries the reason', () => {
+  it('renders a runaway positive variation as a neutral "New", not a gain', () => {
     const d = deltaView(5158.2);
-    expect(d.text).toBe('>999%');
-    expect(d.direction).toBe('up');
-    expect(d.glyph).toBe('▲');
+    expect(d.text).toBe('New');
+    expect(d.direction).toBe('new');
+    expect(d.glyph).toBe('');
     expect(d.hint).toBe(DELTA_CAP_HINT);
   });
 
@@ -33,8 +35,12 @@ describe('deltaView', () => {
     expect(d.hint).toBeUndefined();
   });
 
-  it('caps the points unit with its own suffix', () => {
-    expect(deltaView(1200, 'pt').text).toBe('>999pt');
+  it('caps the points unit with its own suffix on the downside', () => {
+    expect(deltaView(-1200, 'pt').text).toBe('>999pt');
+  });
+
+  it('renders a runaway positive points gap as "New" too', () => {
+    expect(deltaView(1200, 'pt').text).toBe('New');
   });
 
   it('keeps ordinary variations untouched and unexplained', () => {

@@ -1,14 +1,17 @@
 // apps/backoffice/src/features/accounting/components/JournalEntryDetailDrawer.tsx
 // Session 26b / Wave 2.B — Drilldown drawer for a single journal_entry.
 
-import type { JSX } from 'react';
+import { useMemo, type JSX } from 'react';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useJournalEntryLines } from '../hooks/useJournalEntryLines.js';
 import type { JournalEntryRow } from '../hooks/useJournalEntries.js';
+import { useEntityNames } from '../hooks/useEntityNames.js';
 import { resolveJeSourceEntity } from '../utils/resolveJeSourceEntity.js';
+import { collectUuids } from '../utils/journalDescription.js';
+import { ResolvedDescription } from './ResolvedDescription.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 export interface JournalEntryDetailDrawerProps {
@@ -24,6 +27,18 @@ export function JournalEntryDetailDrawer({
 }: JournalEntryDetailDrawerProps): JSX.Element | null {
   const lines = useJournalEntryLines(entry?.id ?? null);
 
+  // La LISTE humanisait déjà ses identifiants ; ouvrir le tiroir depuis la
+  // même ligne rendait de nouveau « session 4d11cb01-… » (critique design
+  // 2026-08-26). Même résolution ici, en-tête ET lignes — un seul lot.
+  const uuids = useMemo(
+    () => collectUuids([
+      entry?.description ?? null,
+      ...(lines.data ?? []).map((l) => l.description),
+    ]),
+    [entry?.description, lines.data],
+  );
+  const names = useEntityNames(uuids);
+
   if (entry === null) return null;
 
   const source = resolveJeSourceEntity(entry.reference_type, entry.reference_id);
@@ -34,7 +49,10 @@ export function JournalEntryDetailDrawer({
         <SheetHeader>
           <SheetTitle className="font-mono text-base">{entry.entry_number}</SheetTitle>
           <SheetDescription>
-            {entry.entry_date} — {entry.description ?? '(no description)'}
+            {entry.entry_date} —{' '}
+            {entry.description === null || entry.description === ''
+              ? '(no description)'
+              : <ResolvedDescription text={entry.description} names={names} />}
           </SheetDescription>
         </SheetHeader>
 
@@ -81,7 +99,9 @@ export function JournalEntryDetailDrawer({
                         {line.credit > 0 ? fmt(line.credit) : ''}
                       </td>
                       <td className="px-2 py-2 text-xs text-text-secondary">
-                        {line.description ?? ''}
+                        {line.description === null || line.description === ''
+                          ? ''
+                          : <ResolvedDescription text={line.description} names={names} />}
                       </td>
                     </tr>
                   ))}

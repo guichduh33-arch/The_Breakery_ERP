@@ -47,8 +47,10 @@ export function Delta({
   const positive = onInk ? 'text-ink-success' : 'text-success';
   const negative = onInk ? 'text-ink-danger'  : 'text-danger';
 
+  // « New » est neutre À DESSEIN : la mesure n'a pas monté, elle n'existait pas
+  // la période d'avant — la peindre en vert redirait le mensonge qu'elle corrige.
   const tone =
-    d.direction === 'none' || d.direction === 'flat'
+    d.direction === 'none' || d.direction === 'flat' || d.direction === 'new'
       ? neutral
       : (d.direction === 'up') !== invert
         ? positive
@@ -57,8 +59,9 @@ export function Delta({
   const direction =
     d.direction === 'none' ? 'no comparison available'
       : d.direction === 'flat' ? 'unchanged'
-        : d.direction === 'up' ? `up ${d.text}`
-          : `down ${d.text}`;
+        : d.direction === 'new' ? 'new'
+          : d.direction === 'up' ? `up ${d.text}`
+            : `down ${d.text}`;
 
   // La variation plafonnée dit POURQUOI elle l'est — au survol comme à l'écoute.
   // Sans cette phrase, « >999% » remplacerait un chiffre faux par un chiffre muet.
