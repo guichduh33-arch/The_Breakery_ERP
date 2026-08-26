@@ -102,6 +102,25 @@ export function percentFromFraction(value: number): number {
   return Math.round(asPercent * 1000) / 1000;
 }
 
+/**
+ * « N chose » ou « N choses ». Le hub écrivait « 1 methods enabled », « 1 active
+ * tables », « 1 roles », « 1 approval tiers », « 1 quick amounts · 1 discount
+ * presets » et « 1 showcase items » — six tuiles, une seule faute, répétée parce
+ * qu'aucune n'avait de raison de regarder les autres (critique du 2026-08-26).
+ * Une tuile l'avait déjà corrigée pour son propre compte, en ternaire inline ;
+ * elle passe ici comme les autres, faute de quoi la septième repartirait à
+ * l'écriture suivante.
+ *
+ * Pas de bibliothèque, pas de `Intl.PluralRules` : l'interface est en anglais et
+ * ne s'internationalise pas (CLAUDE.md — aucune lib i18n dans ce dépôt). Le
+ * pluriel irrégulier se passe explicitement en troisième argument ; à ce jour
+ * aucun appelant n'en a besoin, mais l'oublier obligerait le suivant à
+ * réinventer le helper à côté.
+ */
+export function plural(n: number, singular: string, pluralForm?: string): string {
+  return `${n} ${n === 1 ? singular : pluralForm ?? `${singular}s`}`;
+}
+
 type Formatter = (s: HubSummary) => string | null;
 
 const FORMATTERS: Record<string, Formatter> = {
@@ -118,23 +137,23 @@ const FORMATTERS: Record<string, Formatter> = {
       : null,
   '/backoffice/settings/pos': (s) =>
     s.pos_config
-      ? `${s.pos_config.quick_amounts} quick amounts · ${s.pos_config.discount_presets} discount presets`
+      ? `${plural(s.pos_config.quick_amounts, 'quick amount')} · ${plural(s.pos_config.discount_presets, 'discount preset')}`
       : null,
   '/backoffice/settings/payment-methods': (s) =>
-    s.payment_methods ? `${s.payment_methods.enabled} methods enabled` : null,
+    s.payment_methods ? `${plural(s.payment_methods.enabled, 'method')} enabled` : null,
   '/backoffice/settings/printing': (s) =>
     s.printing
       ? `Auto-print ${s.printing.auto_print_receipt ? 'on' : 'off'} · drawer ${s.printing.auto_open_drawer ? 'on' : 'off'}`
       : null,
   '/backoffice/settings/floor-plan': (s) =>
-    s.floor_plan ? `${s.floor_plan.active_tables} active tables` : null,
+    s.floor_plan ? plural(s.floor_plan.active_tables, 'active table') : null,
   '/backoffice/settings/kds': (s) =>
     s.kds
       ? `Warn ${s.kds.warning_minutes} min · urgent ${s.kds.urgent_minutes} min · archive ${s.kds.auto_archive_minutes} min`
       : null,
   '/backoffice/settings/customer-display': (s) =>
     s.customer_display
-      ? `${s.customer_display.slogan_set ? 'Slogan set' : 'No slogan'} · ${s.customer_display.showcase_count} showcase items`
+      ? `${s.customer_display.slogan_set ? 'Slogan set' : 'No slogan'} · ${plural(s.customer_display.showcase_count, 'showcase item')}`
       : null,
   '/backoffice/settings/inventory': (s) =>
     s.inventory ? `Negative stock ${s.inventory.allow_negative_stock ? 'allowed' : 'blocked'}` : null,
@@ -144,10 +163,10 @@ const FORMATTERS: Record<string, Formatter> = {
     s.email_templates ? `${s.email_templates.active}/${s.email_templates.total} active` : null,
   '/backoffice/settings/templates/receipt': (s) =>
     s.receipt_templates
-      ? `${s.receipt_templates.total} templates${s.receipt_templates.default_name !== null ? ` · default ${s.receipt_templates.default_name}` : ''}`
+      ? `${plural(s.receipt_templates.total, 'template')}${s.receipt_templates.default_name !== null ? ` · default ${s.receipt_templates.default_name}` : ''}`
       : null,
   '/backoffice/settings/roles': (s) =>
-    s.permissions ? `${s.permissions.roles} roles` : null,
+    s.permissions ? plural(s.permissions.roles, 'role') : null,
   '/backoffice/settings/security': (s) =>
     s.security
       ? `${s.security.pin_max_failed} PIN attempts · lockout ${s.security.pin_lockout_minutes} min`
@@ -159,7 +178,7 @@ const FORMATTERS: Record<string, Formatter> = {
         : 'No open period'
       : null,
   '/backoffice/settings/expense-thresholds': (s) =>
-    s.expense_thresholds ? `${s.expense_thresholds.tiers} approval tiers` : null,
+    s.expense_thresholds ? plural(s.expense_thresholds.tiers, 'approval tier') : null,
   '/backoffice/lan-devices': (s) =>
     s.lan_devices ? `${s.lan_devices.active}/${s.lan_devices.total} active` : null,
 };

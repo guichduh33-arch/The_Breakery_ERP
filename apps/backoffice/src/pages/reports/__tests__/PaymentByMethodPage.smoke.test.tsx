@@ -95,13 +95,21 @@ describe('PaymentByMethodPage (smoke)', () => {
     });
   });
 
+  // Les libellés viennent de `paymentMethodLabel` (features/orders/statusMeta),
+  // source unique du produit. La table rendait le JETON d'enum brut, habillé
+  // d'un `capitalize` CSS : le DOM disait « qris » et l'écran « Qris », là où le
+  // reste du back-office écrit « QRIS » (critique du 2026-08-26). Le test
+  // épinglait cet état — il vérifie désormais le libellé, pas la clé.
   it('renders all payment method rows once data loads', async () => {
     renderPage();
-    await screen.findByText('cash');
-    const table = screen.getByTestId('pbm-method-detail');
-    expect(within(table).getByText('cash')).toBeInTheDocument();
-    expect(within(table).getByText('qris')).toBeInTheDocument();
-    expect(within(table).getByText('gopay')).toBeInTheDocument();
+    // La recherche est SCOPÉE à la table : « Cash » se lit désormais aussi dans
+    // la carte « Method share », qui tire du même helper. Un `findByText` global
+    // trouverait deux nœuds et échouerait — ce que le jeton brut « cash »
+    // masquait, puisqu'il n'existait qu'ici.
+    const table = await screen.findByTestId('pbm-method-detail');
+    expect(await within(table).findByText('Cash')).toBeInTheDocument();
+    expect(within(table).getByText('QRIS')).toBeInTheDocument();
+    expect(within(table).getByText('GoPay')).toBeInTheDocument();
   });
 
   // Lot C (ADR-006 déc. 9) — frais informatifs : colonnes Fee / Fee est. / Net est.

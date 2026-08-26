@@ -50,6 +50,9 @@ import { usePaymentsByMethod } from '@/features/reports/hooks/usePaymentsByMetho
 import { useSalesByStaff } from '@/features/reports/hooks/useSalesByStaff.js';
 import { useGrossMargin } from '@/features/reports/hooks/useGrossMargin.js';
 import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
+// Source UNIQUE des libellés de méthode de règlement — la même que le filtre de
+// la liste des commandes, vers laquelle cette carte draine son drill-down.
+import { paymentMethodLabel } from '@/features/orders/statusMeta.js';
 import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
 import {
   CHART_1, TEXT_INERT, categoricalColor, formatIdrCompact, formatIdrFull,
@@ -116,10 +119,6 @@ const LINE_LEVEL_SCOPE =
  *  que lorsque le jeu dépasse la coupe. L'une ne remplace pas l'autre. */
 function withLineLevelScope(sliceNote: string | undefined): string {
   return sliceNote === undefined ? LINE_LEVEL_SCOPE : `${sliceNote} ${LINE_LEVEL_SCOPE}`;
-}
-
-function capitalize(s: string): string {
-  return s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1);
 }
 
 /** Valeur compacte + montant exact, la paire qu'attend `KpiTile`. */
@@ -204,7 +203,10 @@ export default function DailySalesPage(): JSX.Element {
   const paymentRows: BreakdownRow[] = (payments.data?.lines ?? []).map((l) => {
     const url = buildDrilldownUrl('order_list', '', { payment_method: l.method, start, end });
     return {
-      key: l.method, label: capitalize(l.method), amount: l.amount, sharePct: l.share_pct,
+      // Une capitalisation naïve rendait « Qris » et « Edc » là où le filtre de
+      // la liste des commandes écrit « QRIS » et « EDC » : deux orthographes
+      // pour la même méthode, à un clic de drill-down l'une de l'autre.
+      key: l.method, label: paymentMethodLabel(l.method), amount: l.amount, sharePct: l.share_pct,
       ...(url !== null ? { to: url } : {}),
     };
   });
@@ -260,8 +262,9 @@ export default function DailySalesPage(): JSX.Element {
 
   const refundsVoids     = (summary?.refund_total ?? 0) + (summary?.voids_value ?? 0);
   const prevRefundsVoids = prev !== undefined ? prev.refund_total + prev.voids_value : undefined;
+  const discountTickets  = summary?.discount_orders_count ?? 0;
   const discountNote     = `${formatPct1(sharePct(summary?.discount_total ?? 0, summary?.total ?? 0))}`
-    + ` of gross · ${formatCount(summary?.discount_orders_count ?? 0)} tickets`;
+    + ` of gross · ${formatCount(discountTickets)} ticket${discountTickets === 1 ? '' : 's'}`;
 
   // La bande de la maquette 4c : six tuiles, la première en encre, chacune avec
   // sa variation contre la période précédente.

@@ -147,22 +147,26 @@ describe('OrderDetailPage', () => {
     expect(screen.getAllByText(/-\s?(Rp\s?)?4\.000|−\s?(Rp\s?)?4\.000|4,000/).length).toBeGreaterThan(0);
   });
 
-  // « Completedpending » : deux nœuds texte adjacents, séparés par une marge
-  // CSS que ni le presse-papier ni un lecteur d'écran ne voient.
-  it('T11 (lot 6a) an unreached timeline step carries a TEXTUAL separator', async () => {
-    orderOverrides = { status: 'paid' }; // « Completed » reste à franchir
+  // Une étape à venir se nomme au FUTUR. « Completed — pending » accolait un
+  // état franchi à sa propre négation (critique design 2026-08-26) ; le défaut
+  // d'origine — « Completedpending », deux nœuds texte que seule une marge CSS
+  // séparait (lot 6a) — reste couvert : le libellé est un nœud unique.
+  it('T11 an unreached timeline step is named in the future, never as an oxymoron', async () => {
+    orderOverrides = { status: 'paid' }; // l'achèvement reste à franchir
     renderAt('/backoffice/orders/o-1');
-    const step = await screen.findByText(/Completed/);
-    expect(step.textContent).toContain('— pending');
-    expect(step.textContent).not.toContain('Completedpending');
+    const step = await screen.findByText('Completion pending');
+    expect(step.textContent).toBe('Completion pending');
+    expect(screen.queryByText(/Completed\s*—\s*pending/)).toBeNull();
+    expect(screen.queryByText(/Completedpending/)).toBeNull();
   });
 
-  // L'étape Paid non franchie passe par la MÊME construction.
-  it('T12 (lot 6a) the unreached Paid step is separated the same way', async () => {
+  // L'étape de règlement non franchie passe par la MÊME construction.
+  it('T12 the unreached payment step is named the same way', async () => {
     orderOverrides = { status: 'draft', paid_at: null, payments: [] };
     renderAt('/backoffice/orders/o-1');
-    const step = await screen.findByText(/^Paid/);
-    expect(step.textContent).toContain('— pending');
+    const step = await screen.findByText('Payment pending');
+    expect(step.textContent).toBe('Payment pending');
+    expect(screen.queryByText(/Paid\s*—\s*pending/)).toBeNull();
   });
 
   // Réglé par `paid_at` seul (règlement B2B, zéro ligne order_payments) :
@@ -173,5 +177,24 @@ describe('OrderDetailPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: /ORD-001/ })).toBeInTheDocument());
     expect(screen.queryByText('Unpaid')).toBeNull();
     expect(screen.getAllByText('Paid').length).toBeGreaterThan(0);
+  });
+
+  // ── Critique design 2026-08-26 ────────────────────────────────────────────
+
+  // L'explication AR est une affirmation sur le CANAL de la commande. Servie
+  // sans condition, elle racontait du B2B sur un Dine-in réglé sans ligne de
+  // paiement — une anomalie de données déguisée en fonctionnement normal.
+  it('T14 a paid non-B2B order with no payment row states the anomaly, without inventing B2B', async () => {
+    orderOverrides = { order_type: 'dine_in', status: 'paid', payments: [] };
+    renderAt('/backoffice/orders/o-1');
+    expect(await screen.findByText('Paid status without a recorded payment row.')).toBeInTheDocument();
+    expect(screen.queryByText(/AR ledger/)).toBeNull();
+  });
+
+  // Sur le canal B2B, l'absence de ligne EST le fonctionnement normal.
+  it('T15 a paid B2B order with no payment row keeps the AR ledger explanation', async () => {
+    orderOverrides = { order_type: 'b2b', status: 'paid', payments: [] };
+    renderAt('/backoffice/orders/o-1');
+    expect(await screen.findByText(/B2B settlements are recorded in the AR ledger/)).toBeInTheDocument();
   });
 });

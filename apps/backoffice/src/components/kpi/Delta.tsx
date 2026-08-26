@@ -54,15 +54,22 @@ export function Delta({
         ? positive
         : negative;
 
-  const spoken =
+  const direction =
     d.direction === 'none' ? 'no comparison available'
       : d.direction === 'flat' ? 'unchanged'
         : d.direction === 'up' ? `up ${d.text}`
           : `down ${d.text}`;
 
+  // La variation plafonnée dit POURQUOI elle l'est — au survol comme à l'écoute.
+  // Sans cette phrase, « >999% » remplacerait un chiffre faux par un chiffre muet.
+  const spoken = `${direction}${d.hint !== undefined ? ` — ${d.hint}` : ''}`;
+
   return (
     <span className={cn('inline-flex items-baseline gap-1 font-data text-xs', className)}>
-      <span className={cn('font-semibold tabular-nums', tone)}>
+      <span
+        className={cn('font-semibold tabular-nums', tone)}
+        {...(d.hint !== undefined ? { title: d.hint } : {})}
+      >
         <span aria-hidden>{d.glyph}</span>
         <span className="sr-only">{spoken}{period != null ? ` versus ${period}` : ''}</span>
         <span aria-hidden>{d.text}</span>

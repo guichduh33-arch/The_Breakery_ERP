@@ -9,7 +9,53 @@ import {
   Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { useVoidOrder } from '@/features/orders/hooks/useVoidOrder.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+
+/**
+ * Traduction des JETONS de l'EF `void-order`. `useVoidOrder` construit son
+ * `Error` avec `err.error ?? 'void_failed'` — c'est-à-dire, TOUJOURS, un jeton
+ * machine : `order_not_voidable`, `cross_shift_not_allowed`, `wrong_pin`… La
+ * fenêtre les rendait bruts dans un `role="alert"`, donc un lecteur d'écran les
+ * ÉPELAIT (critique du 2026-08-26). Même forme que `AnnualCloseModal` : une map
+ * locale au geste, parce que la phrase juste dépend de ce que l'écran propose
+ * de faire ensuite, pas seulement du code.
+ *
+ * Les clés viennent de `supabase/functions/void-order/index.ts` — les rejets de
+ * garde (méthode, JSON, PIN, idempotence) comme les codes que la RPC remonte.
+ */
+const ERROR_COPY: Record<string, string> = {
+  missing_manager_pin:            'Manager PIN is required.',
+  invalid_pin_format:             'PIN must be exactly 6 digits.',
+  wrong_pin:                      'Invalid manager PIN.',
+  authorization_required:         'Your session expired. Sign in again.',
+  not_authenticated:              'Your session expired. Sign in again.',
+  permission_denied:              'You do not have permission to void an order (needs orders.void).',
+  not_found:                      'This order no longer exists.',
+  reason_too_short:               'Reason must be at least 10 characters.',
+  invalid_order_id:               'This order reference is not valid.',
+  invalid_idempotency_key:        'Retry key rejected — close this window and start again.',
+  cross_shift_not_allowed:        'This order belongs to a closed shift and can no longer be voided.',
+  cash_void_requires_open_session:'A cash payment can only be voided while its POS session is open.',
+  check_violation:                'The server refused this void — the order is no longer in a voidable state.',
+  method_not_allowed:             'Something went wrong. Please retry.',
+  invalid_json:                   'Something went wrong. Please retry.',
+  internal_error:                 'Something went wrong. Please retry.',
+  void_failed:                    'Something went wrong. Please retry.',
+  unknown:                        'Something went wrong. Please retry.',
+};
+
+/**
+ * Phrase affichable pour une erreur de void. Le jeton connu gagne ; sinon on
+ * repasse par `errorDetailText`, dont toute la doctrine est de TAIRE ce qui
+ * n'est pas lisible (jeton snake_case, code Postgres, « [object Object] »). Un
+ * message serveur en clair — un `logAndRedact` d'un 500, par exemple — passe
+ * donc, et rien d'autre ne fuit à l'écran.
+ */
+export function voidErrorText(e: unknown): string {
+  const code = e instanceof Error ? e.message : '';
+  return ERROR_COPY[code] ?? errorDetailText(e) ?? ERROR_COPY.unknown!;
+}
 
 interface Props {
   open:        boolean;
@@ -95,7 +141,11 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             data-testid="void-pin"
           />
         </div>
-        {m.error && <p role="alert" className="text-sm text-danger" data-testid="void-error">{m.error.message}</p>}
+        {m.error && (
+          <p role="alert" className="text-sm text-danger-as-text" data-testid="void-error">
+            {voidErrorText(m.error)}
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="void-cancel">Cancel</button>
           <button

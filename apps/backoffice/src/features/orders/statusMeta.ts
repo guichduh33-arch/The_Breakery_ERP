@@ -92,6 +92,24 @@ export function isOrderDetailPaid(order: OrderSettlementFacts): boolean {
   return order.payments.length > 0 || isSettledStatus(order.status) || order.paid_at != null;
 }
 
+/**
+ * Le canal B2B, désigné par sa valeur d'ENUM — `satisfies` casse le build si
+ * Postgres la renomme, là où un littéral recopié pourrirait en silence (la
+ * classe de bug `take_away` / `take_out`). `create_b2b_order_v6` pose
+ * `order_type = 'b2b'` : c'est le seul fait qui distingue le canal.
+ */
+const B2B_ORDER_TYPE = 'b2b' satisfies OrderType;
+
+/**
+ * Vrai pour une commande du canal B2B — les seules dont le règlement n'écrit
+ * jamais dans `order_payments` (il vit au grand livre AR). Toute copie qui
+ * EXPLIQUE une absence de ligne de paiement par l'AR doit s'y adosser :
+ * servie sans condition, elle affirme du B2B sur un Dine-in.
+ */
+export function isB2BOrder(order: { order_type: string }): boolean {
+  return order.order_type === B2B_ORDER_TYPE;
+}
+
 export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
   dine_in:  'Dine in',
   take_out: 'Takeaway',
@@ -118,3 +136,31 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 
 export const PAYMENT_METHODS = Object.keys(PAYMENT_METHOD_LABEL) as readonly PaymentMethod[];
 export const ORDER_TYPES = Object.keys(ORDER_TYPE_LABEL) as readonly OrderType[];
+
+/**
+ * Valeurs SYNTHÉTIQUES que le serveur pose à la place d'une méthode : elles
+ * n'appartiennent pas à l'enum Postgres. `mixed` est calculé par
+ * `get_orders_list_v*` quand une commande porte plus d'une méthode distincte ;
+ * `other` est la dixième colonne du pivot de `get_payments_by_method_v3`, le
+ * panier des règlements qu'aucune valeur d'enum ne nomme.
+ *
+ * Map SÉPARÉE, et non une entrée de plus dans `PAYMENT_METHOD_LABEL` : cette
+ * dernière est un `Record<PaymentMethod, …>` — c'est ce qui casse le build
+ * quand l'enum bouge — et elle alimente les OPTIONS du filtre, où « Mixed »
+ * n'est pas une valeur filtrable côté serveur.
+ */
+const SYNTHETIC_PAYMENT_LABEL: Record<string, string> = {
+  mixed: 'Mixed',
+  other: 'Other',
+};
+
+/**
+ * Libellé d'affichage d'une méthode de règlement, enum ou valeur synthétique.
+ * Source UNIQUE de toutes les surfaces qui rendent une méthode : sans elle, un
+ * `mixed` non traduit sortait en minuscule à côté de « Cash » et « QRIS ».
+ */
+export function paymentMethodLabel(method: string): string {
+  return (PAYMENT_METHOD_LABEL as Record<string, string>)[method]
+    ?? SYNTHETIC_PAYMENT_LABEL[method]
+    ?? method;
+}

@@ -234,8 +234,13 @@ export default function LoginPage() {
               </p>
             )}
 
+            {/* La ligne promettait des flèches que le roster n'écoute nulle
+                part (aucun `onKeyDown` sur la liste) : elle décrit désormais
+                ce qui EXISTE — la tabulation native entre boutons, Entrée qui
+                les active, et l'Échap du champ PIN, qui vide aussi la
+                sélection. Une aide clavier fausse coûte plus qu'aucune aide. */}
             <p className="login-alt">
-              Arrow keys and Tab move through the list, Enter selects. Escape clears the PIN.
+              Tab moves through the list, Enter selects. Escape clears the PIN and the selection.
             </p>
           </div>
         </div>

@@ -15,7 +15,15 @@
 import { SectionLabel } from '@breakery/ui';
 import type { WalletLedgerRow } from '../hooks/useCashWalletLedger.js';
 
-const idr = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+// Le préfixe « Rp » manquait ICI et nulle part ailleurs sur la page : les
+// tuiles de portefeuille (`WalletCard`) formatent en `style: 'currency'`, la
+// table rendait des nombres nus. Le même écran donnait donc « Rp 14.000.000 »
+// en haut et « 14.000.000 » en dessous, pour la même unité (critique du
+// 2026-08-26). L'unité se déclare une fois par écran, ou à chaque montant —
+// jamais à moitié. Décimales à zéro : la roupie n'en porte pas (DESIGN.md).
+const idr = new Intl.NumberFormat('id-ID', {
+  style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
+});
 
 const HEAD: readonly { label: string; right: boolean }[] = [
   { label: 'Date',        right: false },

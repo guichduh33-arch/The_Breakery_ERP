@@ -68,17 +68,24 @@ function renderPage() {
 }
 
 describe('PaymentByMethodPage drilldown', () => {
+  // Le LIBELLÉ du lien et la CLÉ du filtre sont deux choses différentes, et ce
+  // test est l'endroit où ça se prouve : on lit « QRIS » (map partagée de
+  // `features/orders/statusMeta`), on filtre sur `qris` (jeton d'enum Postgres).
+  // La table rendait le jeton brut sous un `capitalize` CSS jusqu'au
+  // 2026-08-26 — « Qris » à l'écran, à côté d'une carte de ventilation qui
+  // écrivait déjà « QRIS ». Le test épinglait cet état ; il épingle maintenant
+  // la séparation.
   it('T1 each method cell wraps in DrilldownLink to /backoffice/orders?payment_method=...', () => {
     renderPage();
     const detail = screen.getByTestId('pbm-method-detail');
-    const cashLink = within(detail).getByRole('link', { name: 'cash' });
+    const cashLink = within(detail).getByRole('link', { name: 'Cash' });
     const href = cashLink.getAttribute('href') ?? '';
     expect(href).toContain('/backoffice/orders');
     expect(href).toContain('payment_method=cash');
     expect(href).toMatch(/[?&]start=\d{4}-\d{2}-\d{2}/);
     expect(href).toMatch(/[?&]end=\d{4}-\d{2}-\d{2}/);
 
-    const qrisLink = within(detail).getByRole('link', { name: 'qris' });
+    const qrisLink = within(detail).getByRole('link', { name: 'QRIS' });
     expect(qrisLink.getAttribute('href') ?? '').toContain('payment_method=qris');
   });
 

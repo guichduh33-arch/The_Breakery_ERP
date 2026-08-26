@@ -55,7 +55,9 @@ export default function ChartOfAccountsPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Chart of Accounts"
+        // Casse de phrase — DESIGN.md § Boutons (« c'est ce que le back-office
+        // emploie ») et `layouts/nav.ts`, qui écrit déjà « Chart of accounts ».
+        title="Chart of accounts"
         // Le compteur se recalcule à chaque frappe du filtre, sans que le focus
         // bouge : hors région live, le changement de résultat n'était annoncé
         // nulle part (WCAG 4.1.3, AA).

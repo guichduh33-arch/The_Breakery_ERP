@@ -205,11 +205,27 @@ describe('InventoryPage', () => {
   });
 
   // ADR-024 déc. 1 — le pied compte le panier affiché, jamais la page.
+  //
+  // Le fait était énoncé DEUX FOIS jusqu'au 2026-08-26 — « 2 of 42 » dans le
+  // `leading` du pied, « Showing 1–15 of 42 rows » dans le compteur de
+  // `ListPagination`. C'est ce dernier, l'idiome de l'archétype Liste, qui reste
+  // seul : il porte le total du panier, qui est ce que la décision d'ADR-024
+  // protège.
   it('footer counts the active bucket, not the rendered page', async () => {
     renderPage();
     await waitFor(() => screen.getByText('Americano'));
-    // 2 lignes rendues, 42 au total dans le panier « all ».
-    expect(screen.getByText('2 of 42')).toBeInTheDocument();
+    // 42 au total dans le panier « all », quel que soit le nombre de lignes.
+    expect(screen.getByTestId('list-page-range')).toHaveTextContent('of 42');
+  });
+
+  // La contrepartie de la déduplication : quand la liste revient plus COURTE que
+  // la tranche annoncée, le pied ne peut plus se contenter de « 1–15 » — les
+  // deux comptes divergent, et ce n'est donc plus un doublon mais un avertis-
+  // sement. Le mock rend 2 lignes pour un panier de 42, exactement ce cas.
+  it('footer keeps the rendered count when the page comes back short', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+    expect(screen.getByTestId('stock-levels-short-page')).toHaveTextContent('2 shown');
   });
 
   // La recherche partait au serveur À CHAQUE FRAPPE : « croissant » coûtait

@@ -43,6 +43,14 @@ import {
   categoricalColor, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
 import { formatCount, formatPct1, periodLabel } from '@/features/reports/utils/reportFigures.js';
+// Le libellé d'une méthode est écrit à UN endroit (`features/orders/statusMeta`),
+// jamais recalculé. Cette page portait un troisième `methodLabel` local qui
+// capitalisait le jeton d'enum : il rendait « Qris » et « Edc » là où le reste du
+// produit écrit « QRIS » et « EDC » — dans la table, dans la légende du graphe et
+// dans la note du leader, soit trois endroits sur le même écran
+// (critique du 2026-08-26). La CLÉ reste celle de Postgres ; seul l'affichage
+// passe par la map.
+import { paymentMethodLabel } from '@/features/orders/statusMeta.js';
 import {
   usePaymentsByMethod, PAYMENT_METHOD_KEYS, type PaymentByMethodLine,
 } from '@/features/reports/hooks/usePaymentsByMethod.js';
@@ -61,13 +69,6 @@ const csvColumns: CsvColumn<PaymentByMethodLine>[] = [
 
 const idr = formatIdrFull;
 const NUM_CELL = 'py-2 text-right font-data tabular-nums';
-
-/** Le libellé d'affichage d'une méthode. La CLÉ, elle, reste celle de l'enum
- *  Postgres : aucun littéral n'est réécrit côté TS. */
-function methodLabel(method: string): string {
-  const spaced = method.replace('_', ' ');
-  return spaced.length === 0 ? spaced : spaced[0]!.toUpperCase() + spaced.slice(1);
-}
 
 interface KpiDescriptor {
   key: string; label: string; value: string; title?: string; note?: string | undefined;
@@ -89,7 +90,7 @@ export default function PaymentByMethodPage(): JSX.Element {
   const series = useMemo<StackedSeries[]>(
     () => PAYMENT_METHOD_KEYS
       .filter((k) => byDay.some((d) => d[k] > 0))
-      .map((k, i) => ({ key: k, name: methodLabel(k), color: categoricalColor(i) })),
+      .map((k, i) => ({ key: k, name: paymentMethodLabel(k), color: categoricalColor(i) })),
     [byDay],
   );
 
@@ -97,7 +98,7 @@ export default function PaymentByMethodPage(): JSX.Element {
     const url = buildDrilldownUrl('order_list', '', { payment_method: l.method, start, end });
     return {
       key:      l.method,
-      label:    methodLabel(l.method),
+      label:    paymentMethodLabel(l.method),
       amount:   l.amount,
       sharePct: l.share_pct,
       color:    categoricalColor(i),
@@ -116,7 +117,7 @@ export default function PaymentByMethodPage(): JSX.Element {
     {
       key: 'collected', label: 'Total collected',
       value: formatIdrCompact(data?.total ?? 0), title: formatIdrFull(data?.total ?? 0),
-      note:  leader !== null ? `${methodLabel(leader.method)} leads` : undefined,
+      note:  leader !== null ? `${paymentMethodLabel(leader.method)} leads` : undefined,
     },
     { key: 'payments', label: 'Payments', value: formatCount(totalCount) },
     { key: 'orders',   label: 'Orders',   value: formatCount(totalOrders) },
@@ -250,11 +251,14 @@ export default function PaymentByMethodPage(): JSX.Element {
             <tbody>
               {lines.map((r) => (
                 <tr key={r.method} className="border-b border-border-subtle">
-                  <td className="py-2 font-medium capitalize">
+                  {/* `capitalize` retiré avec le helper local : la classe
+                      transformait le JETON d'enum en « Qris », et elle aurait
+                      re-cassé « QRIS » que la map rend maintenant correctement. */}
+                  <td className="py-2 font-medium">
                     <DrilldownLink
                       entity="order_list"
                       id=""
-                      label={r.method}
+                      label={paymentMethodLabel(r.method)}
                       filter={{ payment_method: r.method, start, end }}
                       icon={false}
                     />

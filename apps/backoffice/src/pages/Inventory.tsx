@@ -298,6 +298,16 @@ export default function InventoryPage() {
   /** Le total est-il SU ? C'est cette question-là qui gouverne ce qui se lit. */
   const totalKnown = c !== undefined && !countersDown;
 
+  /**
+   * Combien de lignes la tranche PROMET — la même arithmétique que
+   * `ListPagination` fait pour écrire « 1–50 of 376 ». Elle est recopiée ici, et
+   * pas exportée, parce qu'elle ne sert qu'à une chose : savoir si le pied dit
+   * deux fois le même fait, ou deux faits différents (cf. le `leading` plus
+   * bas). L'exporter en ferait une API que d'autres listes croiraient devoir
+   * consommer.
+   */
+  const sliceExpected = Math.max(0, Math.min(pageSize, activeTotal - page * pageSize));
+
   function pick(next: StockBucket): void {
     patchParams({ bucket: next === 'all' ? null : next, page: null });
   }
@@ -543,17 +553,34 @@ export default function InventoryPage() {
               onPage={(next) => { setPage(next - 1); }}
               onPageSize={setPageSize}
               leading={
-                // Le compte RÉEL des lignes rendues, à côté de la tranche
-                // théorique. Les deux divergent quand la liste revient vide sur
-                // un panier que les compteurs disent peuplé — et c'est
-                // précisément là qu'un pied qui annoncerait « 1–50 » mentirait.
-                // Sans total su, on compte le chargé et on s'arrête là : « 50
-                // of 0 » était le même mensonge dans l'autre sens.
-                <span className="font-data text-xs tabular-nums text-text-muted">
-                  {totalKnown
-                    ? `${pageRows.length} of ${activeTotal.toLocaleString('id-ID')}`
-                    : `${pageRows.length} loaded`}
-                </span>
+                // Le pied disait DEUX FOIS le même fait : « 50 of 376 » ici, et
+                // « Showing 1–50 of 376 rows » dans le compteur que
+                // `ListPagination` rend lui-même deux contrôles plus loin
+                // (critique du 2026-08-26). L'idiome de l'archétype Liste est
+                // celui du composant PARTAGÉ : sur une page pleine, il dit tout,
+                // et il reste donc seul.
+                //
+                // Deux cas seulement le laissent muet ou menteur, et ce sont
+                // exactement les deux où cette ligne survit — parce qu'alors
+                // elle n'énonce plus le même fait que lui :
+                //  · total INCONNU (compteurs tombés) — il annoncerait
+                //    « 1–50 of 0 » ; on compte le chargé et on s'arrête là ;
+                //  · page COURTE — la liste revient avec moins de lignes que la
+                //    tranche n'en promet (panier que les compteurs disent
+                //    peuplé, requête de liste qui ne suit pas). Il écrirait
+                //    « 1–50 » pour deux lignes rendues.
+                !totalKnown ? (
+                  <span className="font-data text-xs tabular-nums text-text-muted">
+                    {pageRows.length} loaded
+                  </span>
+                ) : pageRows.length !== sliceExpected ? (
+                  <span
+                    className="font-data text-xs tabular-nums text-text-muted"
+                    data-testid="stock-levels-short-page"
+                  >
+                    {pageRows.length} shown
+                  </span>
+                ) : undefined
               }
             />
           }

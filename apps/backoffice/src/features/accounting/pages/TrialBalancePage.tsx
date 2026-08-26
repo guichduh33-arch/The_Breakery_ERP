@@ -32,8 +32,8 @@ export default function TrialBalancePage(): JSX.Element {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Trial Balance"
-        subtitle={<span className="italic">Asserts Σ debit = Σ credit across active accounts</span>}
+        title="Trial balance"
+        subtitle="Asserts Σ debit = Σ credit across active accounts"
         actions={tb.data ? (
           <Button
             variant="secondary"

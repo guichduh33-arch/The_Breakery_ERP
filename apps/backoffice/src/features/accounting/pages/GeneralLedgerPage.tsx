@@ -100,8 +100,8 @@ export default function GeneralLedgerPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="General Ledger"
-        subtitle={<span className="italic">Drilldown by account with running balance</span>}
+        title="General ledger"
+        subtitle="Drilldown by account with running balance"
       />
 
       <div className="flex flex-wrap items-end gap-3">

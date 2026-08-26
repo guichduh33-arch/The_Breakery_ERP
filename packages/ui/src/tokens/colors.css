@@ -255,9 +255,21 @@
    * sous AA sur trois des quatre fonds (audit /impeccable 2026-08-08). */
   --text-primary:   #1a1917;   /* 17,6:1 blanc — 14,2:1 pressé */
   --text-secondary: #55524c;   /* 7,8:1 blanc — 6,3:1 pressé */
-  /* Remonté de #7a766e (3,93:1 sur le papier de page, 4,33:1 sur l'en-tête de
-   * tableau : sous AA) à ≥4,5:1 sur les QUATRE fonds. */
-  --text-muted:     #6b6861;   /* 5,5:1 blanc — 4,83:1 papier — 4,50:1 pressé */
+  /* Remonté une SECONDE fois le 2026-08-26 (critique du BO, ×8 sur Dashboard et
+   * Réglages). La passe précédente comptait QUATRE fonds — feuille, en-tête
+   * inerte, papier, pressé — et oubliait le cinquième, qui est pourtant sous
+   * presque tout le texte discret du produit : le POINT de la grille de mesure
+   * (#dfddd6, cf. --page-grid). `.bg-page-grid` est monté sur le conteneur
+   * scrollant de TOUTES les pages (BackofficeLayout), donc un libellé posé hors
+   * carte a ses jambages sur ces points-là. #6b6861 y valait 4,09:1, et 4,498:1
+   * sur le pressé — c'est-à-dire sous AA sur les deux fonds les plus sombres du
+   * thème, dont l'un est la page elle-même.
+   *
+   * Les trois canaux descendent de 10 : les écarts de teinte (R−G = 3, G−B = 7)
+   * sont ceux de l'ancienne valeur, le gris chaud ne vire pas. La hiérarchie
+   * tient — --text-secondary reste nettement plus soutenu (7,79:1 blanc contre
+   * 6,47:1) et --text-primary les domine tous les deux. */
+  --text-muted:     #615e57;   /* 6,47:1 blanc — 6,19:1 inerte — 5,63:1 papier — 5,23:1 pressé — 4,76:1 point de grille */
   /* NON-TEXTE UNIQUEMENT — icône, tiret de cellule vide, glyphe de contrôle.
    * Remonté de #9b968d (2,94:1) au seuil WCAG 1.4.11 des objets graphiques.
    * Il ne portera plus de libellé, de placeholder ni de valeur : ces rôles-là
