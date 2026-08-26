@@ -44,6 +44,12 @@ export interface JournalEntryRow {
 export interface JournalEntriesFilter {
   startDate?: string; // ISO YYYY-MM-DD
   endDate?:   string;
+  /** Texte libre, cherché dans la description ET le numéro d'écriture. */
+  search?: string;
+  /** Famille d'émetteur — une valeur de `reference_type`. */
+  referenceType?: string;
+  /** Compte touché par au moins une ligne (`accounts.id`). */
+  accountId?: string;
 }
 
 /** Position keyset de la dernière ligne rendue. */
@@ -80,6 +86,15 @@ const COLUMNS =
 const CURSOR_DATE_RE   = /^\d{4}-\d{2}-\d{2}$/;
 const CURSOR_NUMBER_RE = /^[A-Za-z0-9-]+$/;
 
+// Même règle que la recherche loyalty : la syntaxe `.or()` de PostgREST réserve
+// `,()` comme séparateurs, `*` comme joker, `%_` comme métacaractères ilike —
+// un `(` tapé dans le champ ressortirait en 400. On retire, on ne remplace
+// pas : aucun terme légitime (nom de produit, numéro JE-…, client) n'en porte.
+const OR_FILTER_UNSAFE = /[,()*%_\\]/g;
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(OR_FILTER_UNSAFE, '').slice(0, 64);
+}
+
 function cursorOf(row: JournalEntryRow | undefined): JournalEntriesCursor | null {
   if (row === undefined) return null;
   if (!CURSOR_DATE_RE.test(row.entry_date)) return null;
@@ -88,19 +103,40 @@ function cursorOf(row: JournalEntryRow | undefined): JournalEntriesCursor | null
 }
 
 export function useJournalEntries(filter: JournalEntriesFilter = {}) {
+  const term = sanitizeSearchTerm((filter.search ?? '').trim());
+
   return useInfiniteQuery<JournalEntriesSlice, Error>({
-    queryKey: [...JOURNAL_ENTRIES_KEY, filter.startDate ?? null, filter.endDate ?? null],
+    queryKey: [
+      ...JOURNAL_ENTRIES_KEY,
+      filter.startDate ?? null, filter.endDate ?? null,
+      term || null, filter.referenceType ?? null, filter.accountId ?? null,
+    ],
     staleTime: 30_000,
     initialPageParam: null as JournalEntriesCursor | null,
     queryFn: async ({ pageParam }) => {
       const cursor = pageParam as JournalEntriesCursor | null;
 
+      // Le filtre par compte passe par un embed `!inner` FILTRANT : PostgREST
+      // ne rend que les écritures dont AU MOINS une ligne touche le compte,
+      // sans dupliquer la ligne mère, et le `count` de première page reste un
+      // compte d'écritures. La colonne embarquée est jetée au mapping.
+      const columns = filter.accountId
+        ? `${COLUMNS}, journal_entry_lines!inner(account_id)`
+        : COLUMNS;
+
       let q = cursor === null
-        ? supabase.from('journal_entries').select(COLUMNS, { count: 'exact' })
-        : supabase.from('journal_entries').select(COLUMNS);
+        ? supabase.from('journal_entries').select(columns, { count: 'exact' })
+        : supabase.from('journal_entries').select(columns);
 
       if (filter.startDate) q = q.gte('entry_date', filter.startDate);
       if (filter.endDate)   q = q.lte('entry_date', filter.endDate);
+      if (filter.referenceType) q = q.eq('reference_type', filter.referenceType);
+      if (filter.accountId) q = q.eq('journal_entry_lines.account_id', filter.accountId);
+      // Deux `.or()` (celui-ci et le curseur) partent en paramètres `or=`
+      // distincts, que PostgREST combine en ET — c'est le comportement voulu.
+      if (term !== '') {
+        q = q.or(`description.ilike.%${term}%,entry_number.ilike.%${term}%`);
+      }
       if (cursor !== null) {
         // « strictement après le curseur dans l'ordre décroissant » : jour
         // antérieur, ou même jour et numéro inférieur.
@@ -116,7 +152,14 @@ export function useJournalEntries(filter: JournalEntriesFilter = {}) {
         .limit(JOURNAL_ENTRIES_PAGE_SIZE);
       if (error) throw error;
 
-      const rows = (data ?? []) as JournalEntryRow[];
+      const rows = ((data ?? []) as unknown as (JournalEntryRow & {
+        journal_entry_lines?: unknown;
+      })[]).map((r): JournalEntryRow => {
+        if (!('journal_entry_lines' in r)) return r;
+        const { journal_entry_lines: _lines, ...rest } = r;
+        void _lines;
+        return rest;
+      });
       return {
         rows,
         total: cursor === null ? count ?? null : null,

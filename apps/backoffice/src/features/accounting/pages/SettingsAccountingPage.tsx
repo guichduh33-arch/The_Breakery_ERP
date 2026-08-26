@@ -4,8 +4,10 @@
 
 import { useState, type JSX } from 'react';
 import { Button } from '@breakery/ui';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { Lock, ChevronRight, CalendarCheck } from 'lucide-react';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';
+import { fiscalPeriodLabel } from '../utils/fiscalPeriodLabel.js';
 import { FiscalPeriodModal } from '../components/FiscalPeriodModal.js';
 import { AnnualCloseModal } from '../components/AnnualCloseModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -91,8 +93,11 @@ export default function SettingsAccountingPage(): JSX.Element {
                   data-testid={`fp-row-${row.period_start}`}
                   className="border-t border-border-subtle"
                 >
+                  {/* Un mois se nomme (« December 2027 ») — les bornes ISO
+                      parlaient le dialecte de la base à l'endroit le plus
+                      irréversible de l'app (critique design 2026-08-26). */}
                   <td className="px-3 py-2">
-                    {row.period_start} → {row.period_end}
+                    {fiscalPeriodLabel(row.period_start, row.period_end)}
                   </td>
                   <td className="px-3 py-2">
                     <span
@@ -101,11 +106,13 @@ export default function SettingsAccountingPage(): JSX.Element {
                       {row.status}
                     </span>
                   </td>
+                  {/* Le cran « ligne de table » du récapitulatif de dates.ts —
+                      l'ISO à microsecondes reste dans l'audit-log, pas ici. */}
                   <td className="px-3 py-2 text-xs text-text-secondary">
-                    {row.closed_at ?? '—'}
+                    {row.closed_at === null ? '—' : formatDateTimeShortWita(row.closed_at)}
                   </td>
                   <td className="px-3 py-2 text-xs text-text-secondary">
-                    {row.locked_at ?? '—'}
+                    {row.locked_at === null ? '—' : formatDateTimeShortWita(row.locked_at)}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {canClose && row.status !== 'locked' && (

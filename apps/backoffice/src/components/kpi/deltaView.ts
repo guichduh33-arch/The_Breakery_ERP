@@ -6,8 +6,9 @@
 // cette vue : **une donnée absente ne se rend pas en zéro** — un `null` sort en
 // tiret cadratin, jamais en « 0,0% » qui affirmerait que rien n'a bougé.
 
-/** Sens d'une variation. `none` = pas de comparaison possible. */
-export type DeltaDirection = 'up' | 'down' | 'flat' | 'none';
+/** Sens d'une variation. `none` = pas de comparaison possible ; `new` = la
+ *  période comparée était (quasi) vide, la mesure est neuve, pas en hausse. */
+export type DeltaDirection = 'up' | 'down' | 'flat' | 'none' | 'new';
 
 export interface DeltaView {
   direction: DeltaDirection;
@@ -26,9 +27,13 @@ const TIRET = '—';
 
 /**
  * Plafond d'affichage d'une variation. Au-delà, le chiffre ne mesure plus une
- * évolution : il dit qu'il n'y avait presque rien à quoi se comparer. « ▲
- * 5.158,2% » se lit alors comme une précision qu'il n'a pas — on plafonne, et
- * la raison part en infobulle (critique design 2026-08-26).
+ * évolution : il dit qu'il n'y avait presque rien à quoi se comparer. Un
+ * « ▲ >999% » vert restait pourtant lu comme une croissance massive — quatre
+ * tuiles sur six du rapport Daily sales la revendiquaient un jour sans
+ * baseline. À la hausse, la vue dit donc « New », neutre et sans flèche ; la
+ * raison reste en infobulle (critiques design 2026-08-26, matin puis soir).
+ * À la baisse le plafond chiffré demeure : une chute ne peut dépasser −100%
+ * qu'en points, et « New » y serait un contresens.
  */
 const CAP = 999;
 
@@ -55,10 +60,9 @@ export function deltaView(v: number | null | undefined, unit: 'pct' | 'pt' = 'pc
   }
   const suffix = unit === 'pct' ? '%' : 'pt';
   if (v === 0) return { direction: 'flat', glyph: '=', text: `0,0${suffix}` };
-  // Le SENS reste porté par la flèche : seule la magnitude est plafonnée.
   if (Math.abs(v) > CAP) {
     return v > 0
-      ? { direction: 'up',   glyph: '▲', text: `>${CAP}${suffix}`, hint: DELTA_CAP_HINT }
+      ? { direction: 'new',  glyph: '',  text: 'New', hint: DELTA_CAP_HINT }
       : { direction: 'down', glyph: '▼', text: `>${CAP}${suffix}`, hint: DELTA_CAP_HINT };
   }
   if (v > 0)   return { direction: 'up',   glyph: '▲', text: `${fixed1(v)}${suffix}` };

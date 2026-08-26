@@ -11,6 +11,7 @@ import {
 } from '@breakery/ui';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';
 import { useCloseFiscalPeriod } from '../hooks/useCloseFiscalPeriod.js';
+import { fiscalPeriodLabel } from '../utils/fiscalPeriodLabel.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface FiscalPeriodModalProps {
@@ -89,7 +90,7 @@ export function FiscalPeriodModal({
                 <option value="">— select a period —</option>
                 {openable.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.period_start} — {p.period_end} ({p.status})
+                    {fiscalPeriodLabel(p.period_start, p.period_end)} ({p.status})
                   </option>
                 ))}
               </Select>
@@ -114,7 +115,7 @@ export function FiscalPeriodModal({
 
             {selectedPeriod && (
               <div className="rounded border border-border-subtle bg-bg-overlay px-3 py-2 text-xs">
-                <div>Period : {selectedPeriod.period_start} → {selectedPeriod.period_end}</div>
+                <div>Period : {fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}</div>
                 <div>Current status : <span className="font-mono">{selectedPeriod.status}</span></div>
                 <div>New status : <span className="font-mono">{lock ? 'locked' : 'closed'}</span></div>
               </div>
@@ -126,7 +127,11 @@ export function FiscalPeriodModal({
           <div className="space-y-4">
             <div className="rounded border border-warning bg-warning-soft px-3 py-2 text-xs text-warning">
               You are about to <strong>{lock ? 'LOCK' : 'CLOSE'}</strong> period{' '}
-              <strong>{selectedPeriod?.period_start} → {selectedPeriod?.period_end}</strong>.
+              <strong>
+                {selectedPeriod === null
+                  ? '—'
+                  : fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}
+              </strong>.
               This action is audit-logged and cannot be undone via UI.
             </div>
             <label className="flex flex-col text-sm">

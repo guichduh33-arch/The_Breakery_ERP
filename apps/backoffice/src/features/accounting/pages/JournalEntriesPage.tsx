@@ -2,8 +2,8 @@
 // Session 26b / Wave 2.B — Journal entries cockpit page.
 // Gate route : accounting.gl.read ; "+ New manual JE" gated par accounting.je.create_manual.
 
-import { Fragment, useMemo, useRef, useState, type JSX } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { Button, Input, Select, useDebouncedValue } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Plus } from 'lucide-react';
 import {
@@ -11,10 +11,10 @@ import {
   type JournalEntryRow,
 } from '@/features/accounting/hooks/useJournalEntries.js';
 import { useEntityNames } from '@/features/accounting/hooks/useEntityNames.js';
-import {
-  collectUuids,
-  segmentDescription,
-} from '@/features/accounting/utils/journalDescription.js';
+import { usePostableAccounts } from '@/features/accounting/hooks/usePostableAccounts.js';
+import { collectUuids } from '@/features/accounting/utils/journalDescription.js';
+import { JOURNAL_SOURCE_OPTIONS } from '@/features/accounting/utils/journalSources.js';
+import { ResolvedDescription } from '@/features/accounting/components/ResolvedDescription.js';
 import { JournalEntryDetailDrawer } from '@/features/accounting/components/JournalEntryDetailDrawer.js';
 import { CreateManualJEModal } from '@/features/accounting/components/CreateManualJEModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -51,6 +51,33 @@ export default function JournalEntriesPage(): JSX.Element {
   const startDate = params.get('start') ?? monthStartIsoDate();
   const endDate   = params.get('end')   ?? todayIsoDate();
 
+  // Les trois filtres nés de la critique du 2026-08-26 : 591 écritures ne se
+  // filtraient QUE par date, sur l'écran le plus fréquenté du comptable. Ils
+  // vivent dans l'URL comme les bornes, et pour la même raison : un filtre qui
+  // se partage et survit au retour arrière.
+  const sourceFilter  = params.get('source')  ?? '';
+  const accountFilter = params.get('account') ?? '';
+  const urlSearch     = params.get('q')       ?? '';
+
+  // La saisie vit en local et l'URL ne reçoit que la valeur POSÉE (250 ms,
+  // le cran du Command Palette) : écrire l'URL à la frappe déclencherait une
+  // requête par touche.
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebouncedValue(searchInput, 250);
+  useEffect(() => {
+    patchParams({ q: debouncedSearch.trim() === '' ? null : debouncedSearch.trim() });
+  }, [debouncedSearch, patchParams]);
+
+  const accounts = usePostableAccounts();
+  // Une valeur d'URL hors liste (émetteur plus récent que la liste, compte
+  // désactivé) reste sélectionnable telle quelle : un filtre posé ne doit
+  // jamais devenir irreprésentable, il se retire, il ne disparaît pas.
+  const sourceUnknown = sourceFilter !== ''
+    && !JOURNAL_SOURCE_OPTIONS.some((o) => o.value === sourceFilter);
+  const accountUnknown = accountFilter !== ''
+    && accounts.data !== undefined
+    && !accounts.data.some((a) => a.id === accountFilter);
+
   const [selected,  setSelected]  = useState<JournalEntryRow | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
@@ -69,7 +96,13 @@ export default function JournalEntriesPage(): JSX.Element {
     if (el !== null) requestAnimationFrame(() => { el.focus(); });
   }
 
-  const entries = useJournalEntries({ startDate, endDate });
+  const entries = useJournalEntries({
+    startDate,
+    endDate,
+    search:        urlSearch,
+    referenceType: sourceFilter,
+    accountId:     accountFilter,
+  });
   const canCreate = useAuthStore((s) => s.hasPermission('accounting.je.create_manual'));
 
   const rows = useMemo<JournalEntryRow[]>(
@@ -99,6 +132,13 @@ export default function JournalEntriesPage(): JSX.Element {
     total === null      ? `${num(rows.length)} loaded`
     : rows.length >= total ? `${num(total)} ${total === 1 ? 'entry' : 'entries'}`
     : `${num(rows.length)} loaded of ${num(total)}`;
+
+  // Le vide d'une PÉRIODE et le vide d'un FILTRE ne disent pas la même chose :
+  // le premier est un fait sur le grand livre, le second invite à élargir.
+  const refined = urlSearch !== '' || sourceFilter !== '' || accountFilter !== '';
+  const emptyLabel = refined
+    ? 'No journal entries match these filters.'
+    : 'No journal entries in this period.';
 
   return (
     <div className="space-y-6">
@@ -151,6 +191,47 @@ export default function JournalEntriesPage(): JSX.Element {
             data-testid="je-filter-end"
           />
         </label>
+        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+          Search
+          <Input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Description or entry #"
+            className="mt-1 w-56"
+            data-testid="je-filter-search"
+          />
+        </label>
+        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+          Source
+          <Select
+            value={sourceFilter}
+            onChange={(e) => { patchParams({ source: e.target.value }); }}
+            className="mt-1"
+            data-testid="je-filter-source"
+          >
+            <option value="">All sources</option>
+            {JOURNAL_SOURCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+            {sourceUnknown && <option value={sourceFilter}>{sourceFilter}</option>}
+          </Select>
+        </label>
+        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+          Account
+          <Select
+            value={accountFilter}
+            onChange={(e) => { patchParams({ account: e.target.value }); }}
+            className="mt-1 max-w-64"
+            data-testid="je-filter-account"
+          >
+            <option value="">All accounts</option>
+            {(accounts.data ?? []).map((a) => (
+              <option key={a.id} value={a.id}>{a.code} {a.name}</option>
+            ))}
+            {accountUnknown && <option value={accountFilter}>{accountFilter}</option>}
+          </Select>
+        </label>
       </div>
 
       {/* Région live UNIQUE et toujours montée : le pied de table se démonte
@@ -161,7 +242,7 @@ export default function JournalEntriesPage(): JSX.Element {
         {entries.isLoading || listError !== null
           ? ''
           : rows.length === 0
-            ? 'No journal entries in this period.'
+            ? emptyLabel
             : countLabel}
       </span>
 
@@ -180,7 +261,7 @@ export default function JournalEntriesPage(): JSX.Element {
 
       {/* L'état vide n'est vrai que si le serveur a répondu. */}
       {!entries.isLoading && listError === null && rows.length === 0 && (
-        <p className="text-sm text-text-secondary">No journal entries in this period.</p>
+        <p className="text-sm text-text-secondary">{emptyLabel}</p>
       )}
 
       {rows.length > 0 && (
@@ -243,23 +324,7 @@ export default function JournalEntriesPage(): JSX.Element {
                     <td className="px-3 py-2" data-testid={`je-desc-${row.entry_number}`}>
                       {row.description === null || row.description === ''
                         ? '—'
-                        : segmentDescription(row.description, names).map((seg) =>
-                            seg.uuid === null ? (
-                              <Fragment key={seg.key}>{seg.text}</Fragment>
-                            ) : (
-                              // Le nom REMPLACE l'identifiant, il ne l'efface
-                              // pas : le pointillé signale la substitution et le
-                              // `title` rend l'original — un comptable qui
-                              // rapproche une ligne avec un export en a besoin.
-                              <span
-                                key={seg.key}
-                                title={seg.uuid}
-                                className="border-b border-dotted border-border-strong"
-                              >
-                                {seg.text}
-                              </span>
-                            ),
-                          )}
+                        : <ResolvedDescription text={row.description} names={names} />}
                     </td>
                     <td className="px-3 py-2 text-right font-mono">{fmt(row.total_debit)}</td>
                     <td className="px-3 py-2 text-right font-mono">{fmt(row.total_credit)}</td>

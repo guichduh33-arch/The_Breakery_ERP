@@ -86,14 +86,18 @@ const SERVER_COUNT = 137;
 const spy = vi.hoisted(() => ({
   rpc: vi.fn(),
   orders:    [] as { table: string; column: string; ascending: boolean | undefined }[],
-  selects:   [] as { table: string; count: string | undefined }[],
+  selects:   [] as { table: string; cols: string; count: string | undefined }[],
   inFilters: [] as { table: string; ids: readonly string[] }[],
+  eqs:       [] as { table: string; column: string; value: unknown }[],
+  ors:       [] as { table: string; expr: string }[],
   /** Message d'erreur à renvoyer pour `journal_entries`, ou `null`. */
   jeError:   null as string | null,
   reset(): void {
     this.orders.length = 0;
     this.selects.length = 0;
     this.inFilters.length = 0;
+    this.eqs.length = 0;
+    this.ors.length = 0;
     this.jeError = null;
   },
 }));
@@ -118,15 +122,21 @@ vi.mock('@/lib/supabase.js', () => {
     const result = tableData(table);
     type Resolver = (v: TableResult) => unknown;
     const chain: Record<string, unknown> = {
-      select: (_cols: string, opts?: { count?: string }) => {
-        spy.selects.push({ table, count: opts?.count });
+      select: (cols: string, opts?: { count?: string }) => {
+        spy.selects.push({ table, cols, count: opts?.count });
         return chain;
       },
       is:  () => chain,
-      eq:  () => chain,
+      eq:  (column: string, value: unknown) => {
+        spy.eqs.push({ table, column, value });
+        return chain;
+      },
       gte: () => chain,
       lte: () => chain,
-      or:  () => chain,
+      or:  (expr: string) => {
+        spy.ors.push({ table, expr });
+        return chain;
+      },
       in:  (_col: string, ids: readonly string[]) => {
         spy.inFilters.push({ table, ids });
         return chain;
@@ -312,6 +322,50 @@ describe('JournalEntriesPage (S26b Wave 2)', () => {
 
     // Toujours un seul aller-retour pour toute la liste.
     expect(spy.inFilters.filter((f) => f.table === 'pos_sessions')).toHaveLength(1);
+  });
+
+  // T8 — critique 2026-08-26 (soir) : 591 écritures ne se filtraient QUE par
+  // date. Les trois filtres neufs vivent dans l'URL (comme les bornes) et
+  // atteignent la requête : `eq` sur la famille d'émetteur, `eq` sur le compte
+  // via l'embed `!inner`, `.or(ilike)` sur description + numéro.
+  it('T8 — source, account and search filters write the URL and reach the query', async () => {
+    renderPage();
+    await screen.findByTestId('je-table');
+
+    fireEvent.change(screen.getByTestId('je-filter-source'),
+      { target: { value: 'shift_close' } });
+    fireEvent.change(screen.getByTestId('je-filter-account'),
+      { target: { value: 'a1' } });
+    fireEvent.change(screen.getByTestId('je-filter-search'),
+      { target: { value: 'variance' } });
+
+    // L'URL d'abord : un filtre se partage et survit au retour arrière. La
+    // recherche y arrive APRÈS le debounce (250 ms), d'où le waitFor commun.
+    await waitFor(() => {
+      const search = new URLSearchParams(
+        screen.getByTestId('probe-search').textContent ?? '');
+      expect(search.get('source')).toBe('shift_close');
+      expect(search.get('account')).toBe('a1');
+      expect(search.get('q')).toBe('variance');
+    });
+
+    await waitFor(() => {
+      expect(spy.eqs.some((e) =>
+        e.table === 'journal_entries'
+        && e.column === 'reference_type' && e.value === 'shift_close')).toBe(true);
+      expect(spy.eqs.some((e) =>
+        e.table === 'journal_entries'
+        && e.column === 'journal_entry_lines.account_id' && e.value === 'a1')).toBe(true);
+      expect(spy.ors.some((o) =>
+        o.table === 'journal_entries'
+        && o.expr.includes('description.ilike.%variance%')
+        && o.expr.includes('entry_number.ilike.%variance%'))).toBe(true);
+      // Le filtre par compte passe par l'embed filtrant, pas par une seconde
+      // requête : la première page filtrée le demande dans ses colonnes.
+      expect(spy.selects.some((s) =>
+        s.table === 'journal_entries'
+        && s.cols.includes('journal_entry_lines!inner'))).toBe(true);
+    });
   });
 
   // T7 — LE MENSONGE. Requête en échec, la page annonçait « No journal entries

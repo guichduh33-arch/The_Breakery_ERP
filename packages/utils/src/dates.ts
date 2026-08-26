@@ -32,9 +32,9 @@ export function formatDateTimeShortWita(d: Date | string): string {
 // nom générique — même fuseau ADR-019.
 //
 // ⚠️ CES DEUX-LÀ ONT LONGTEMPS ÉTÉ APPELÉES « les deux formats canoniques de
-// l'app ». Le fichier en exporte SIX depuis, et la phrase faisait croire à un
-// lecteur pressé que les quatre autres étaient des accidents à supprimer. Elles
-// ne le sont pas : ce sont SIX RÔLES distincts, et le rôle est ce qui autorise
+// l'app ». Le fichier en exporte SEPT depuis, et la phrase faisait croire à un
+// lecteur pressé que les autres étaient des accidents à supprimer. Elles
+// ne le sont pas : ce sont SEPT RÔLES distincts, et le rôle est ce qui autorise
 // la forme. Récapitulatif tenu à jour ici, et nulle part ailleurs :
 //
 //   formatDateTimeWita       yyyy-MM-dd HH:mm:ss   horodatage exact (audit, export)
@@ -43,8 +43,9 @@ export function formatDateTimeShortWita(d: Date | string): string {
 //   formatTimeWita           HH:mm                 heure seule, dans un jour déjà nommé
 //   formatDateShortWita      dd MMM                seconde ligne d'une cellule
 //   formatDateLong           MMMM d, yyyy          titre de page
+//   formatMonthYearWita      MMMM yyyy             nom d'un MOIS entier (période fiscale)
 //
-// Une SEPTIÈME forme rendue à l'écran est une forme de trop : elle vient d'un
+// Une HUITIÈME forme rendue à l'écran est une forme de trop : elle vient d'un
 // `toLocaleDateString()` oublié quelque part, et sa place est ici.
 export function formatDate(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
@@ -78,6 +79,16 @@ export function formatDateShortWita(d: Date | string): string {
 export function formatDateLong(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return formatInTimeZone(date, TIMEZONE, 'MMMM d, yyyy');
+}
+
+// Le nom d'un MOIS entier (« December 2027 ») — pour un objet dont l'unité EST
+// le mois : une période fiscale, jamais un instant. La page des périodes
+// rendait `2027-12-01 → 2027-12-31` au moment le plus lourd de conséquences de
+// l'application (critique design 2026-08-26) ; un mois se nomme, il ne se
+// borne pas.
+export function formatMonthYearWita(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return formatInTimeZone(date, TIMEZONE, 'MMMM yyyy');
 }
 
 export function todayIsoDate(): string {
