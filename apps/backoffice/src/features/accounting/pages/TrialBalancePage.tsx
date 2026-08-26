@@ -3,7 +3,7 @@
 
 import { useState, type JSX } from 'react';
 import { Button, Input } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Download } from 'lucide-react';
 import {
   useTrialBalance,
@@ -16,17 +16,14 @@ const CLASS_LABELS: Record<number, string> = {
 };
 
 const fmt = formatCurrency;
-function defaultPeriodStart(): string {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-}
-function defaultPeriodEnd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function TrialBalancePage(): JSX.Element {
-  const [startDate, setStartDate] = useState(defaultPeriodStart());
-  const [endDate,   setEndDate]   = useState(defaultPeriodEnd());
+  // Défaut MUTUALISÉ (`@breakery/utils`) : le calcul local passait par
+  // `toISOString()`, donc par l'UTC, et rendait la veille entre minuit et 08 h
+  // WITA. Le hub comptable précharge la balance avec ces mêmes helpers pour que
+  // les deux clés de requête coïncident.
+  const [startDate, setStartDate] = useState(monthStartIsoDate());
+  const [endDate,   setEndDate]   = useState(todayIsoDate());
   const tb = useTrialBalance(startDate, endDate);
 
   return (

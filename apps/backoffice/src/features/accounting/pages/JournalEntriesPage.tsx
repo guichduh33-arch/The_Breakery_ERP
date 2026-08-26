@@ -4,7 +4,7 @@
 
 import { Fragment, useMemo, useRef, useState, type JSX } from 'react';
 import { Button, Input } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Plus } from 'lucide-react';
 import {
   useJournalEntries,
@@ -20,6 +20,8 @@ import { CreateManualJEModal } from '@/features/accounting/components/CreateManu
 import { useAuthStore } from '@/stores/authStore.js';
 import { useListParams } from '@/hooks/useListParams.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 const fmt = formatCurrency;
@@ -27,14 +29,6 @@ const num = (n: number): string => n.toLocaleString('id-ID');
 
 const CREATE_JE_REASON =
   'You need the accounting.je.create_manual permission to post a manual journal entry.';
-
-function defaultPeriodStart(): string {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-}
-function defaultPeriodEnd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function JournalEntriesPage(): JSX.Element {
   // La période vit dans l'URL, comme sur Products et OrdersListPage. Elle
@@ -47,9 +41,15 @@ export default function JournalEntriesPage(): JSX.Element {
   // quand elles égalent le défaut : ce défaut dépend de la date du jour, donc
   // une borne omise ferait qu'un lien partagé aujourd'hui ne montre pas la
   // même fenêtre demain.
+  //
+  // Le défaut vient des helpers de `@breakery/utils`, pas d'un calcul local :
+  // les quatre écrans comptables et le hub qui les précharge doivent tomber sur
+  // la MÊME chaîne, faute de quoi la clé de requête du hub et celle de l'écran
+  // divergent et le clic repaie l'aller-retour. Ils sortent du fuseau métier —
+  // un calcul local rendait la veille entre minuit et 08 h WITA.
   const [params, patchParams] = useListParams();
-  const startDate = params.get('start') ?? defaultPeriodStart();
-  const endDate   = params.get('end')   ?? defaultPeriodEnd();
+  const startDate = params.get('start') ?? monthStartIsoDate();
+  const endDate   = params.get('end')   ?? todayIsoDate();
 
   const [selected,  setSelected]  = useState<JournalEntryRow | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -83,6 +83,14 @@ export default function JournalEntriesPage(): JSX.Element {
   // requête par ligne.
   const uuids = useMemo(() => collectUuids(rows.map((r) => r.description)), [rows]);
   const names = useEntityNames(uuids);
+
+  // Quand la requête échoue, la page annonçait « No journal entries in this
+  // period. » — la phrase la plus dangereuse qu'un écran comptable puisse
+  // rendre : elle affirme un FAIT sur le grand livre là où le serveur n'a rien
+  // répondu, et un comptable qui la croit clôture sur une période qu'il pense
+  // vide. On sort donc le bandeau de la flotte (Products, OrdersListPage) et
+  // l'état vide se tait tant qu'il y a une erreur.
+  const listError = entries.isError ? entries.error : null;
 
   // « X loaded of Y », jamais un plafond présenté comme un total. Quand tout est
   // chargé la phrase redevient un simple décompte : « 12 loaded of 12 » se lit
@@ -150,16 +158,28 @@ export default function JournalEntriesPage(): JSX.Element {
           là ne pourrait jamais annoncer la transition vers zéro — le seul
           moment où l'annonce sert (WCAG 4.1.3). */}
       <span role="status" className="sr-only">
-        {entries.isLoading
+        {entries.isLoading || listError !== null
           ? ''
           : rows.length === 0
             ? 'No journal entries in this period.'
             : countLabel}
       </span>
 
+      {listError !== null && (
+        <QueryErrorBanner
+          detail={errorDetailText(listError)}
+          onRetry={() => { void entries.refetch(); }}
+          data-testid="je-error"
+        >
+          Journal entries could not be loaded — the period may well hold entries
+          this request never reached.
+        </QueryErrorBanner>
+      )}
+
       {entries.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
 
-      {!entries.isLoading && rows.length === 0 && (
+      {/* L'état vide n'est vrai que si le serveur a répondu. */}
+      {!entries.isLoading && listError === null && rows.length === 0 && (
         <p className="text-sm text-text-secondary">No journal entries in this period.</p>
       )}
 

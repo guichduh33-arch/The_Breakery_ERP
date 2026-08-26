@@ -10,6 +10,11 @@
 //   T4 — les identifiants techniques des descriptions sont résolus À
 //        L'AFFICHAGE.
 //   T5 — la période vit dans l'URL : elle se lit au montage et s'y réécrit.
+//
+// Arbitrages du 2026-08-26 :
+//   T6 — une session de caisse se rend « <jour métier> · <poste> », le poste
+//        n'étant pas garanti.
+//   T7 — une requête en échec ne se lit PAS « aucune écriture sur la période ».
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { JSX } from 'react';
@@ -19,6 +24,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import JournalEntriesPage from '@/features/accounting/pages/JournalEntriesPage.js';
 
 const PRODUCT_ID = '998c9eee-a28e-4a59-9d27-3d14e6d150f3';
+const SESSION_ID = '4d11cb01-1775-4f9e-b180-94decdb74584';
+const SESSION_BARE_ID = '9acb24cc-d56a-4a53-939b-e63a902dcbe6';
 
 const ENTRIES = [
   {
@@ -40,12 +47,36 @@ const ENTRIES = [
     status: 'posted', total_debit: 4500, total_credit: 4500,
     created_at: '2026-05-21T11:00:00Z',
   },
+  {
+    id: 'je4', entry_number: 'JE-20260521-0004',
+    description: `Shift close variance (session ${SESSION_ID})`,
+    entry_date: '2026-05-21',
+    reference_type: 'shift_close', reference_id: SESSION_ID,
+    status: 'posted', total_debit: 2500, total_credit: 2500,
+    created_at: '2026-05-21T22:00:00Z',
+  },
+  {
+    id: 'je5', entry_number: 'JE-20260521-0005',
+    description: `Shift close variance (session ${SESSION_BARE_ID})`,
+    entry_date: '2026-05-21',
+    reference_type: 'shift_close', reference_id: SESSION_BARE_ID,
+    status: 'posted', total_debit: 1000, total_credit: 1000,
+    created_at: '2026-05-21T23:00:00Z',
+  },
 ];
 const ACCOUNTS = [
   { id: 'a1', code: '1110', name: 'Cash', account_class: 1 },
   { id: 'a2', code: '5810', name: 'Rent Expense', account_class: 6 },
 ];
 const PRODUCTS = [{ id: PRODUCT_ID, name: 'Croissant au beurre' }];
+// Deux sessions : l'une rattachée à un poste, l'autre non — `terminal_id` est
+// nullable et l'embed `lan_devices` retombe aussi à `null` quand le profil n'a
+// pas `lan.devices.read`. Les deux heures d'ouverture sont choisies de part et
+// d'autre de minuit WITA, pour que le libellé prouve qu'il rend le JOUR MÉTIER.
+const POS_SESSIONS = [
+  { id: SESSION_ID,      opened_at: '2026-05-21T14:20:00Z', terminal: { name: 'Register 1' } },
+  { id: SESSION_BARE_ID, opened_at: '2026-05-21T17:30:00Z', terminal: null },
+];
 
 // Le serveur en connaît 137 ; la page n'en a chargé que 3. C'est exactement le
 // mensonge que la critique a relevé : « 200 entries » pour un plafond de
@@ -57,10 +88,13 @@ const spy = vi.hoisted(() => ({
   orders:    [] as { table: string; column: string; ascending: boolean | undefined }[],
   selects:   [] as { table: string; count: string | undefined }[],
   inFilters: [] as { table: string; ids: readonly string[] }[],
+  /** Message d'erreur à renvoyer pour `journal_entries`, ou `null`. */
+  jeError:   null as string | null,
   reset(): void {
     this.orders.length = 0;
     this.selects.length = 0;
     this.inFilters.length = 0;
+    this.jeError = null;
   },
 }));
 
@@ -68,10 +102,15 @@ interface TableResult { data: unknown; error: { message: string } | null; count:
 
 vi.mock('@/lib/supabase.js', () => {
   function tableData(table: string): TableResult {
-    if (table === 'journal_entries')      return { data: ENTRIES,  error: null, count: SERVER_COUNT };
+    if (table === 'journal_entries') {
+      return spy.jeError === null
+        ? { data: ENTRIES, error: null, count: SERVER_COUNT }
+        : { data: null, error: { message: spy.jeError }, count: null };
+    }
     if (table === 'accounts')             return { data: ACCOUNTS, error: null, count: null };
     if (table === 'products')             return { data: PRODUCTS, error: null, count: null };
     if (table === 'customers')            return { data: [],       error: null, count: null };
+    if (table === 'pos_sessions')         return { data: POS_SESSIONS, error: null, count: null };
     if (table === 'journal_entry_lines')  return { data: [],       error: null, count: null };
     return { data: [], error: null, count: null };
   }
@@ -221,7 +260,7 @@ describe('JournalEntriesPage (S26b Wave 2)', () => {
     // Première page : le total est DEMANDÉ au serveur…
     expect(spy.selects.some((s) => s.table === 'journal_entries' && s.count === 'exact')).toBe(true);
     // …et le pied de table l'écrit sans le confondre avec ce qui est chargé.
-    expect(screen.getByTestId('je-count').textContent).toBe('3 loaded of 137');
+    expect(screen.getByTestId('je-count').textContent).toBe('5 loaded of 137');
   });
 
   it('T4 — resolves product identifiers in descriptions at render time', async () => {
@@ -247,6 +286,56 @@ describe('JournalEntriesPage (S26b Wave 2)', () => {
       const search = screen.getByTestId('probe-search').textContent ?? '';
       expect(new URLSearchParams(search).get('start')).toBe('2026-02-01');
       expect(new URLSearchParams(search).get('end')).toBe('2026-01-31');
+    });
+  });
+
+  // T6 — un `pos_sessions.id` nu ne dit ni quand ni où. Le libellé rend la date
+  // d'ouverture en JOUR MÉTIER, et le poste quand il est connu.
+  it('T6 — renders a shift_close session id as a date, plus the station when known', async () => {
+    renderPage();
+
+    const withStation = await screen.findByTestId('je-desc-JE-20260521-0004');
+    await waitFor(() => {
+      // Le libellé ne redit PAS « session » : la description le dit déjà.
+      expect(withStation.textContent)
+        .toBe('Shift close variance (session 21 May · Register 1)');
+    });
+    // L'UUID d'origine reste à un survol de distance — un rapprochement avec un
+    // export en a besoin.
+    expect(withStation.querySelector(`[title="${SESSION_ID}"]`)).not.toBeNull();
+
+    // Sans poste : la date seule, jamais un séparateur orphelin. Ouverte à
+    // 17:30 UTC, soit 01:30 le LENDEMAIN à Makassar — c'est le jour métier qui
+    // s'écrit.
+    const bare = screen.getByTestId('je-desc-JE-20260521-0005');
+    expect(bare.textContent).toBe('Shift close variance (session 22 May)');
+
+    // Toujours un seul aller-retour pour toute la liste.
+    expect(spy.inFilters.filter((f) => f.table === 'pos_sessions')).toHaveLength(1);
+  });
+
+  // T7 — LE MENSONGE. Requête en échec, la page annonçait « No journal entries
+  // in this period. » : une affirmation sur le grand livre là où le serveur
+  // n'avait rien répondu.
+  it('T7 — a failed query shows the error banner, never the empty state', async () => {
+    spy.jeError = 'permission denied for table journal_entries';
+    renderPage();
+
+    const banner = await screen.findByTestId('je-error');
+    expect(banner.getAttribute('role')).toBe('alert');
+    expect(banner.textContent).toContain('could not be loaded');
+    expect(banner.textContent).toContain('permission denied for table journal_entries');
+
+    // L'état vide se tait, et la table ne se rend pas.
+    expect(screen.queryByText('No journal entries in this period.')).toBeNull();
+    expect(screen.queryByTestId('je-table')).toBeNull();
+
+    // « Try again » relance la requête — ici elle réussit, la liste apparaît.
+    spy.jeError = null;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => {
+      expect(screen.queryByTestId('je-table')).not.toBeNull();
+      expect(screen.queryByTestId('je-error')).toBeNull();
     });
   });
 });

@@ -32,6 +32,7 @@ import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, ClipboardList, LineChart, Scale } from 'lucide-react';
 import { Skeleton } from '@breakery/ui';
+import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import type { PermissionCode } from '@breakery/supabase';
@@ -49,15 +50,13 @@ interface Tile {
   Value?:      () => JSX.Element;
 }
 
-/** Premier jour du mois courant — la période d'ouverture de `JournalEntriesPage`
- *  et de `TrialBalancePage`. Recopiée ici pour que les clés de requête coïncident. */
-function monthStart(): string {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-}
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+// La période d'ouverture du hub est celle de `JournalEntriesPage` et de
+// `TrialBalancePage` — c'est ce qui fait que le clic suivant lit le cache au
+// lieu de repayer l'aller-retour. Elle était RECOPIÉE ici, et les copies
+// partageaient le même défaut : `toISOString()` rend de l'UTC, donc entre minuit
+// et 08 h WITA la borne haute était la veille et la borne basse pouvait tomber
+// au mois précédent. Un seul helper désormais (`@breakery/utils`), qui sort du
+// fuseau métier — les copies ne peuvent plus diverger.
 
 const idr = new Intl.NumberFormat('id-ID', {
   style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
@@ -86,7 +85,7 @@ function CoaValue(): JSX.Element {
 }
 
 function JournalValue(): JSX.Element {
-  const q = useJournalEntries({ startDate: monthStart(), endDate: today() });
+  const q = useJournalEntries({ startDate: monthStartIsoDate(), endDate: todayIsoDate() });
   const first = q.data?.pages[0];
   const latest = first?.rows[0];
   // `total` n'est demandé que sur la première page — c'est le compte EXACT des
@@ -100,7 +99,7 @@ function JournalValue(): JSX.Element {
 }
 
 function TrialBalanceValue(): JSX.Element {
-  const q = useTrialBalance(monthStart(), today());
+  const q = useTrialBalance(monthStartIsoDate(), todayIsoDate());
   const d = q.data;
   const text = d === undefined
     ? null

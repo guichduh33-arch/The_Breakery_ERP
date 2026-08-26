@@ -271,11 +271,24 @@
    * 6,47:1) et --text-primary les domine tous les deux. */
   --text-muted:     #615e57;   /* 6,47:1 blanc — 6,19:1 inerte — 5,63:1 papier — 5,23:1 pressé — 4,76:1 point de grille */
   /* NON-TEXTE UNIQUEMENT — icône, tiret de cellule vide, glyphe de contrôle.
-   * Remonté de #9b968d (2,94:1) au seuil WCAG 1.4.11 des objets graphiques.
-   * Il ne portera plus de libellé, de placeholder ni de valeur : ces rôles-là
-   * sont passés à --text-muted, faute de quoi le cran devrait valoir 4,5:1 et
-   * deviendrait indiscernable de lui. */
-  --text-subtle:    #88847c;   /* 3,72:1 blanc — 3,24:1 papier — 3,01:1 pressé */
+   * Remonté une première fois de #9b968d (2,94:1) au seuil WCAG 1.4.11 des
+   * objets graphiques. Il ne portera plus de libellé, de placeholder ni de
+   * valeur : ces rôles-là sont passés à --text-muted, faute de quoi le cran
+   * devrait valoir 4,5:1 et deviendrait indiscernable de lui.
+   *
+   * Remonté une SECONDE fois le 2026-08-26, pour la raison qui avait déjà
+   * rattrapé --text-muted deux crans plus haut : le comptage oubliait le POINT
+   * de la grille de mesure (#dfddd6, cf. --page-grid), monté par
+   * BackofficeLayout sous toutes les pages. #88847c n'y valait que 2,78:1 —
+   * SOUS le seuil 1.4.11 sur le fond le plus courant du produit, alors même que
+   * ce token n'existe que pour tenir ce seuil.
+   *
+   * Les trois canaux descendent de 14 : les écarts de teinte (R−G = 4, G−B = 8)
+   * sont ceux de l'ancienne valeur, le gris chaud ne vire pas. La hiérarchie
+   * tient — --text-subtle reste franchement plus pâle que --text-muted
+   * (4,52:1 contre 6,47:1 sur la feuille), et il reste sous AA sur les fonds
+   * sombres du thème, ce qui est ce qui l'empêche d'usurper un rôle de texte. */
+  --text-subtle:    #7a766e;   /* 4,52:1 blanc — 4,33:1 inerte — 3,93:1 papier — 3,66:1 pressé — 3,33:1 point de grille */
   --text-disabled:  #b3afa7;
   /* Inerte — le cran SOUS le désactivé. En clair il est donc le plus PÂLE des
    * cinq : séparateur de fil d'Ariane, chevron éteint, icône sans action. */

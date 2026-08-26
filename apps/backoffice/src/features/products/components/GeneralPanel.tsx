@@ -406,8 +406,8 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
       {/* Harden — l'état ÉTEINT était `bg-bg-input`, c'est-à-dire #ffffff, avec un
           curseur #ffffff, sur une carte #ffffff : contraste 1,00:1, l'état ne se
           lisait pas. Il se lit maintenant par un remplissage (papier pressé) ET
-          un liseré `text-subtle` (#88847c), le token que le système réserve aux
-          objets graphiques non textuels — 3,6:1 sur la feuille blanche, au-dessus
+          un liseré `text-subtle` (#7a766e), le token que le système réserve aux
+          objets graphiques non textuels — 4,5:1 sur la feuille blanche, au-dessus
           du seuil WCAG 1.4.11. Le survol de ligne, lui, passait de #ffffff à
           #ffffff : il ne produisait rien. */}
       <span

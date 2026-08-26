@@ -4,6 +4,7 @@
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button, Card } from '@breakery/ui';
+import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useCashWallets } from '../hooks/useCashWallets.js';
 import { useCashWalletLedger } from '../hooks/useCashWalletLedger.js';
@@ -23,17 +24,15 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 
 const SMALL_MONEY_FLOAT = 4_000_000;
 
-const monthStart = (): string => {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-};
-const todayISO = (): string => new Date().toISOString().slice(0, 10);
-
 export default function CashTreasuryPage() {
   const { data: wallets = [], isLoading } = useCashWallets();
   const [selected, setSelected]   = useState('1110');
-  const [start, setStart]         = useState(monthStart());
-  const [end, setEnd]             = useState(todayISO());
+  // Défaut MUTUALISÉ (`@breakery/utils`) — cinquième copie du même calcul local,
+  // et du même défaut : `toISOString()` rend de l'UTC, donc le ledger s'ouvrait
+  // sur la veille entre minuit et 08 h WITA, soit précisément l'heure où l'on
+  // rapproche une caisse fermée.
+  const [start, setStart]         = useState(monthStartIsoDate());
+  const [end, setEnd]             = useState(todayIsoDate());
   const [modalOpen, setModalOpen] = useState(false);
 
   const ledger = useCashWalletLedger(selected, start, end);
