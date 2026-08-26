@@ -400,20 +400,38 @@ export const useCartStore = create<CartState>()(
 
       setOrderType: (type) => {
         const prev = get().cart.order_type;
-        set((s) => ({ cart: setOrderType(s.cart, type) }));
+        const prevTable = get().cart.tableNumber ?? null;
+        set((s) => {
+          // Bug 2026-08-25 — invariant table ⇔ dine_in : une table attachée à un
+          // panier take-out/delivery produisait une commande payée « take away »
+          // avec numéro de table (chip table invisible hors dine-in).
+          const next = setOrderType(s.cart, type);
+          if (type === 'dine_in') return { cart: next };
+          const { tableNumber: _t, ...rest } = next;
+          return { cart: rest };
+        });
         if (prev !== type) emitPosEvent('order_type_changed', { payload: { from: prev, to: type } });
+        if (type !== 'dine_in' && prevTable !== null) {
+          emitPosEvent('table_assigned', { payload: { from: prevTable, to: null } });
+        }
       },
 
       setTableNumber: (name) => {
         const prev = get().cart.tableNumber ?? null;
+        const prevType = get().cart.order_type;
         set((s) => {
           const { tableNumber: _t, ...rest } = s.cart;
-          if (name) return { cart: { ...rest, tableNumber: name } };
+          // Invariant table ⇔ dine_in (bug 2026-08-25) : poser une table depuis
+          // le plan de salle engage un service à table — le type suit.
+          if (name) return { cart: { ...rest, tableNumber: name, order_type: 'dine_in' } };
           return { cart: rest };
         });
         // S72 audit — table assignment / reassignment / clear on the ticket.
         if (prev !== (name ?? null)) {
           emitPosEvent('table_assigned', { payload: { from: prev, to: name ?? null } });
+        }
+        if (name && prevType !== 'dine_in') {
+          emitPosEvent('order_type_changed', { payload: { from: prevType, to: 'dine_in' } });
         }
       },
 
