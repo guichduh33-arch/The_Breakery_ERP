@@ -15,19 +15,80 @@
 // La colonne SUPER_ADMIN est verrouillée : le serveur la refuse
 // (`super_admin_row_locked`), l'écran ne fait que dire pourquoi avant le refus.
 
-import { useMemo, useState, type JSX } from 'react';
+import { memo, useCallback, useMemo, useState, type JSX } from 'react';
 import { Check, Lock } from 'lucide-react';
+import { useDebouncedValue } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useRbacMatrix,
-  isRoleGranted,
+  grantKey,
   SUPER_ADMIN_ROLE,
   type RbacPermission,
+  type RbacRole,
 } from '../hooks/useRbacMatrix.js';
 import { useSetRolePermission } from '../hooks/useSetRolePermission.js';
 
 const CONTROL_CLS =
   `h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
+
+interface MatrixRowProps {
+  permission:    RbacPermission;
+  roles:         readonly RbacRole[];
+  grants:        ReadonlySet<string>;
+  moduleChanged: boolean;
+  /** Le rôle dont la cellule est en cours d'écriture SUR CETTE LIGNE, sinon
+   *  `null` : les autres lignes reçoivent une valeur inchangée et `memo` les
+   *  saute. */
+  pendingRole:   string | null;
+  onToggle:      (roleCode: string, permissionCode: string, granted: boolean) => void;
+}
+
+// Une ligne = autant de cases que de rôles ; la grille en compte ~760. Sans
+// `memo`, chaque frappe du filtre les réconciliait toutes. Les props sont
+// choisies pour rester STABLES d'un rendu à l'autre (le `Set` de grants et le
+// tableau de rôles viennent du cache, le rappel est mémoïsé).
+const MatrixRow = memo(function MatrixRow({
+  permission: p, roles, grants, moduleChanged, pendingRole, onToggle,
+}: MatrixRowProps): JSX.Element {
+  return (
+    <tr
+      className={`border-t border-border-subtle ${moduleChanged ? 'border-t-2 border-t-border-strong' : ''}`}
+    >
+      {/* En-tête de ligne, pas une cellule : c'est ce qui permet à
+          un lecteur d'écran d'annoncer « accounting.cash.read,
+          MANAGER, coché » au lieu de « coché » seul. */}
+      <th scope="row" className="sticky left-0 z-10 bg-bg-base px-3 py-1.5 text-left font-normal">
+        <div className="font-mono">{p.code}</div>
+        {p.description !== null && (
+          <div className="mt-0.5 text-xs leading-tight text-text-secondary">
+            {p.description}
+          </div>
+        )}
+      </th>
+      {roles.map((r) => {
+        const locked  = r.code === SUPER_ADMIN_ROLE;
+        const granted = grants.has(grantKey(r.code, p.code));
+        return (
+          <td key={r.code} className="px-3 py-1.5 text-center">
+            <input
+              type="checkbox"
+              checked={granted}
+              // L'attente ne gèle QUE la case postée : `setPermission.isPending`
+              // désactivait les ~760 cases de la grille le temps d'un
+              // aller-retour, y compris celles d'autres rôles.
+              disabled={locked || pendingRole === r.code}
+              title={locked ? 'Locked to prevent lockout' : undefined}
+              aria-label={`${p.code} for ${r.name}`}
+              data-testid={`rbac-cell-${r.code}-${p.code}`}
+              onChange={(e) => { onToggle(r.code, p.code, e.target.checked); }}
+              className={`h-4 w-4 accent-gold ${FOCUS_RING}`}
+            />
+          </td>
+        );
+      })}
+    </tr>
+  );
+});
 
 export function RoleMatrixGrid(): JSX.Element {
   const matrix = useRbacMatrix();
@@ -35,10 +96,15 @@ export function RoleMatrixGrid(): JSX.Element {
   const [search, setSearch] = useState<string>('');
   const [moduleFilter, setModuleFilter] = useState<string>('');
 
+  // La saisie vit en local, le FILTRAGE attend 250 ms (le cran du Command
+  // Palette et du journal) : à la frappe, la grille entière se recalculait et se
+  // réconciliait à chaque touche.
+  const debouncedSearch = useDebouncedValue(search, 250);
+
   const allPermissions = matrix.data?.permissions;
 
   const filtered: RbacPermission[] = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+    const needle = debouncedSearch.trim().toLowerCase();
     return (allPermissions ?? []).filter((p) => {
       if (moduleFilter !== '' && p.module !== moduleFilter) return false;
       if (needle === '') return true;
@@ -48,7 +114,19 @@ export function RoleMatrixGrid(): JSX.Element {
         || (p.description ?? '').toLowerCase().includes(needle)
       );
     });
-  }, [allPermissions, search, moduleFilter]);
+  }, [allPermissions, debouncedSearch, moduleFilter]);
+
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- la mutation
+  // de React Query est déjà liée ; on ne fait que la refermer dans un rappel.
+  const mutate = setPermission.mutate;
+  const handleToggle = useCallback(
+    (roleCode: string, permissionCode: string, granted: boolean) => {
+      mutate({ roleCode, permissionCode, granted });
+    },
+    [mutate],
+  );
+
+  const pending = setPermission.isPending ? setPermission.variables : undefined;
 
   if (matrix.isLoading) {
     return <div className="text-sm text-text-secondary">Loading matrix…</div>;
@@ -136,48 +214,16 @@ export function RoleMatrixGrid(): JSX.Element {
             )}
             {filtered.map((p, idx) => {
               const prev = idx > 0 ? filtered[idx - 1] : undefined;
-              const moduleChanged = prev?.module !== p.module;
               return (
-                <tr
+                <MatrixRow
                   key={p.code}
-                  className={`border-t border-border-subtle ${moduleChanged ? 'border-t-2 border-t-border-strong' : ''}`}
-                >
-                  {/* En-tête de ligne, pas une cellule : c'est ce qui permet à
-                      un lecteur d'écran d'annoncer « accounting.cash.read,
-                      MANAGER, coché » au lieu de « coché » seul. */}
-                  <th scope="row" className="sticky left-0 z-10 bg-bg-base px-3 py-1.5 text-left font-normal">
-                    <div className="font-mono">{p.code}</div>
-                    {p.description !== null && (
-                      <div className="mt-0.5 text-xs leading-tight text-text-secondary">
-                        {p.description}
-                      </div>
-                    )}
-                  </th>
-                  {data.roles.map((r) => {
-                    const locked  = r.code === SUPER_ADMIN_ROLE;
-                    const granted = isRoleGranted(data, r.code, p.code);
-                    return (
-                      <td key={r.code} className="px-3 py-1.5 text-center">
-                        <input
-                          type="checkbox"
-                          checked={granted}
-                          disabled={locked || setPermission.isPending}
-                          title={locked ? 'Locked to prevent lockout' : undefined}
-                          aria-label={`${p.code} for ${r.name}`}
-                          data-testid={`rbac-cell-${r.code}-${p.code}`}
-                          onChange={(e) => {
-                            setPermission.mutate({
-                              roleCode:       r.code,
-                              permissionCode: p.code,
-                              granted:        e.target.checked,
-                            });
-                          }}
-                          className={`h-4 w-4 accent-gold ${FOCUS_RING}`}
-                        />
-                      </td>
-                    );
-                  })}
-                </tr>
+                  permission={p}
+                  roles={data.roles}
+                  grants={data.grants}
+                  moduleChanged={prev?.module !== p.module}
+                  pendingRole={pending?.permissionCode === p.code ? pending.roleCode : null}
+                  onToggle={handleToggle}
+                />
               );
             })}
           </tbody>

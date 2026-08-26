@@ -111,7 +111,10 @@ export function useJournalEntries(filter: JournalEntriesFilter = {}) {
       filter.startDate ?? null, filter.endDate ?? null,
       term || null, filter.referenceType ?? null, filter.accountId ?? null,
     ],
-    staleTime: 30_000,
+    // Le journal est IMMUABLE sous les yeux du lecteur : à 30 s, chaque retour
+    // de focus refetchait TOUTES les pages chargées en série, `count: 'exact'`
+    // de la première comprise.
+    staleTime: 5 * 60_000,
     initialPageParam: null as JournalEntriesCursor | null,
     queryFn: async ({ pageParam }) => {
       const cursor = pageParam as JournalEntriesCursor | null;

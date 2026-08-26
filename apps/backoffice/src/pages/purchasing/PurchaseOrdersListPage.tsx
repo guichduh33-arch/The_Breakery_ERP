@@ -37,7 +37,8 @@ import {
   type DataTableColumn,
 } from '@breakery/ui';
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
-import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
+// `buildEntityWorkbook` tire `xlsx` (159 Ko gzip) : chargé à la demande dans les
+// deux handlers, pas à l'ouverture de la liste.
 import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
 import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
@@ -106,13 +107,19 @@ export default function PurchaseOrdersListPage(): JSX.Element {
 
   const exportMut = useHistoricalPurchasesExport();
 
-  function handleTemplate(): void {
+  async function handleTemplate(): Promise<void> {
+    const { buildTemplateWorkbook, downloadWorkbook } = await import(
+      '@/features/data-import/buildEntityWorkbook.js'
+    );
     downloadWorkbook(buildTemplateWorkbook(purchasesImportDef), 'breakery-purchases-template.xlsx');
   }
   async function handleExport(): Promise<void> {
     try {
       const exportRows = await exportMut.mutateAsync();
       if (exportRows.length === 0) { toast.info('No historical imports to export yet'); return; }
+      const { buildExportWorkbook, downloadWorkbook } = await import(
+        '@/features/data-import/buildEntityWorkbook.js'
+      );
       downloadWorkbook(
         buildExportWorkbook(purchasesImportDef, exportRows),
         `breakery-purchases-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
@@ -232,7 +239,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         subtitle="Track open and historical POs; receive goods to post inventory + accounting entries."
         actions={
           <>
-            <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download purchases template">
+            <Button variant="ghost" size="sm" onClick={() => void handleTemplate()} aria-label="Download purchases template">
               <FileText className="h-4 w-4" aria-hidden /> Template
             </Button>
             {canCreate && (

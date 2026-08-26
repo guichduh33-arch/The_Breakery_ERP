@@ -28,8 +28,18 @@
 // assouplissement de RLS — deux gestes qui se décident, ils ne se glissent pas
 // dans un embellissement d'affichage.
 
+// CACHE PAR ENTITÉ, pas par LOT. La clé de requête était l'ensemble complet des
+// identifiants triés : chaque cran « Load more » de la liste en formait un
+// nouveau, donc re-résolvait TOUT depuis zéro (coût quadratique en nombre de
+// crans), et le tiroir de détail, ouvert sur une ligne déjà humanisée, ne
+// touchait jamais ce cache. Chaque nom vit désormais sous SA clé
+// `[...ENTITY_NAMES_KEY, <uuid>]` : la requête reste groupée — un aller-retour
+// pour tout un lot — mais ne demande que les identifiants ABSENTS du cache.
+// Un identifiant résolu à rien (produit supprimé, cf. plus haut) s'y écrit
+// `null` : c'est ce qui l'empêche d'être redemandé à chaque rendu.
+
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDateShortWita } from '@breakery/utils';
 import { supabase } from '@/lib/supabase.js';
 
@@ -41,7 +51,10 @@ export const ENTITY_NAMES_KEY = ['accounting', 'entity-names'] as const;
 // le nombre de crans « Load more ».
 const CHUNK = 100;
 
-const EMPTY: ReadonlyMap<string, string> = new Map();
+// Un nom d'entité ne périme pas à l'échelle d'une session de consultation :
+// on le garde une demi-heure après le démontage du dernier écran qui l'observe,
+// pour qu'un aller-retour liste → tiroir → liste ne le repaie pas.
+const NAME_GC_TIME = 30 * 60_000;
 
 /** Une session de caisse, telle que PostgREST la rend avec son poste embarqué. */
 interface SessionRow {
@@ -86,23 +99,46 @@ export function shiftLabel(row: SessionRow): string {
 }
 
 export function useEntityNames(ids: readonly string[]): ReadonlyMap<string, string> {
-  // Clé STABLE : `ids` est un tableau neuf à chaque rendu, et un tri rend la
-  // clé indépendante de l'ordre d'arrivée des lignes.
-  const key = useMemo(() => [...ids].sort().join(','), [ids]);
+  const qc = useQueryClient();
 
-  const query = useQuery<ReadonlyMap<string, string>>({
-    queryKey: [...ENTITY_NAMES_KEY, key],
-    enabled: key !== '',
-    staleTime: 5 * 60_000,
+  // Liste STABLE : `ids` est un tableau neuf à chaque rendu ; on dédoublonne et
+  // on trie pour que l'ordre d'arrivée des lignes ne change rien.
+  const key = useMemo(
+    () => [...new Set(ids.map((i) => i.toLowerCase()))].sort().join(','),
+    [ids],
+  );
+  const wanted = useMemo(() => (key === '' ? [] : key.split(',')), [key]);
+
+  // LECTEURS DE CACHE. Une entrée par identifiant, jamais fetchée (`enabled:
+  // false`) : ces observateurs existent pour lire le cache ET pour re-rendre
+  // quand le résolveur ci-dessous y écrit. `undefined` = jamais résolu,
+  // `null` = résolu à rien (entité supprimée ou hors RLS).
+  const cached = useQueries({
+    queries: wanted.map((id) => ({
+      queryKey: [...ENTITY_NAMES_KEY, id],
+      queryFn: (): string | null => null,
+      enabled:   false,
+      staleTime: Infinity,
+      gcTime:    NAME_GC_TIME,
+    })),
+  });
+
+  const missing = wanted.filter((_, i) => cached[i]?.data === undefined);
+  const missingKey = missing.join(',');
+
+  // RÉSOLVEUR GROUPÉ. Sa clé ne porte que les identifiants ABSENTS : un
+  // « Load more » n'y met que le delta, et un tiroir ouvert sur une ligne déjà
+  // humanisée ne le déclenche pas du tout.
+  useQuery({
+    queryKey: [...ENTITY_NAMES_KEY, 'resolve', missingKey],
+    enabled: missingKey !== '',
+    staleTime: Infinity,
     retry: false,
-    // Un « Load more » ajoute des identifiants, donc change la clé : sans ceci
-    // les noms déjà affichés retomberaient sur leur UUID le temps du refetch.
-    placeholderData: (prev) => prev,
-    queryFn: async () => {
-      const wanted = key.split(',');
-      const out = new Map<string, string>();
-      for (let i = 0; i < wanted.length; i += CHUNK) {
-        const slice = wanted.slice(i, i + CHUNK);
+    queryFn: async (): Promise<null> => {
+      const targets = missingKey.split(',');
+      let partial = false;
+      for (let i = 0; i < targets.length; i += CHUNK) {
+        const slice = targets.slice(i, i + CHUNK);
         const [products, customers, sessions] = await Promise.all([
           supabase.from('products').select('id, name').in('id', slice),
           supabase.from('customers').select('id, name').in('id', slice),
@@ -113,15 +149,43 @@ export function useEntityNames(ids: readonly string[]): ReadonlyMap<string, stri
           // pas une erreur.
           supabase.from('pos_sessions').select('id, opened_at, terminal:lan_devices(name)').in('id', slice),
         ]);
-        for (const r of products.data ?? [])  out.set(r.id.toLowerCase(), r.name);
-        for (const r of customers.data ?? []) out.set(r.id.toLowerCase(), r.name);
+        const resolved = new Map<string, string>();
+        for (const r of products.data ?? [])  resolved.set(r.id.toLowerCase(), r.name);
+        for (const r of customers.data ?? []) resolved.set(r.id.toLowerCase(), r.name);
         for (const r of (sessions.data ?? []) as SessionRow[]) {
-          out.set(r.id.toLowerCase(), shiftLabel(r));
+          resolved.set(r.id.toLowerCase(), shiftLabel(r));
+        }
+        for (const [id, name] of resolved) {
+          qc.setQueryData([...ENTITY_NAMES_KEY, id], name);
+        }
+        // Le `null` de non-résolution ne s'écrit QUE si les trois requêtes ont
+        // répondu : figer « inconnu » sur un refus passager rendrait l'UUID
+        // définitif pour toute la session.
+        if (products.error === null && customers.error === null && sessions.error === null) {
+          for (const id of slice) {
+            if (!resolved.has(id)) qc.setQueryData([...ENTITY_NAMES_KEY, id], null);
+          }
+        } else {
+          partial = true;
         }
       }
-      return out;
+      // BEST-EFFORT ASSUMÉ côté AFFICHAGE (cf. l'en-tête) : la carte rendue
+      // porte déjà ce qui a été résolu. L'échec n'est signalé qu'à React Query,
+      // pour qu'un remontage ou un retour de focus retente le reste.
+      if (partial) throw new Error('entity_names_partially_resolved');
+      return null;
     },
   });
 
-  return query.data ?? EMPTY;
+  return useMemo(() => {
+    const out = new Map<string, string>();
+    wanted.forEach((id, i) => {
+      const name = cached[i]?.data;
+      if (typeof name === 'string' && name !== '') out.set(id, name);
+    });
+    return out;
+    // `cached` est un tableau neuf à chaque rendu : la mémo ne coupe que le
+    // travail, pas les re-rendus — elle reste moins chère que la carte rebâtie
+    // par chaque consommateur.
+  }, [wanted, cached]);
 }

@@ -42,7 +42,9 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
 
   return useInfiniteQuery<AuditLogRow[], Error>({
     queryKey: [...AUDIT_LOGS_QK, filters] as const,
-    staleTime: 30_000,
+    // Journal immuable : à 30 s, un retour de focus refetchait en série toutes
+    // les pages déjà déroulées.
+    staleTime: 5 * 60_000,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       const args: {

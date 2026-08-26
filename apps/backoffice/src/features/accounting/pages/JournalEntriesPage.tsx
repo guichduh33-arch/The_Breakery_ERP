@@ -64,8 +64,18 @@ export default function JournalEntriesPage(): JSX.Element {
   // requête par touche.
   const [searchInput, setSearchInput] = useState(urlSearch);
   const debouncedSearch = useDebouncedValue(searchInput, 250);
+  // `patchParams` se referme sur `setSearchParams`, dont react-router refait
+  // l'identité à CHAQUE navigation : sans garde, régler la source ou le compte
+  // relançait cet effet et ré-émettait un `navigate` replace pour une valeur de
+  // `q` inchangée. La comparaison passe par une réf plutôt que par une
+  // dépendance : mettre `q` dans les deps ferait repousser la saisie locale
+  // par-dessus un `q` arrivé du bouton Retour.
+  const urlSearchRef = useRef(urlSearch);
+  urlSearchRef.current = urlSearch;
   useEffect(() => {
-    patchParams({ q: debouncedSearch.trim() === '' ? null : debouncedSearch.trim() });
+    const next = debouncedSearch.trim();
+    if (urlSearchRef.current === next) return;
+    patchParams({ q: next === '' ? null : next });
   }, [debouncedSearch, patchParams]);
 
   const accounts = usePostableAccounts();

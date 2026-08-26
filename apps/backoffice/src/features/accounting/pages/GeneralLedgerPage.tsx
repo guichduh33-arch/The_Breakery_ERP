@@ -3,7 +3,7 @@
 // Account selector + date range picker + lines table (running_balance computed
 // client-side from opening_balance) + Load more button.
 
-import { useMemo, useState, useEffect, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Input } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
@@ -42,46 +42,34 @@ export default function GeneralLedgerPage(): JSX.Element {
   const [accountId, setAccountId] = useState<string>(initialAccountId);
   const [startDate, setStartDate] = useState(initialStart);
   const [endDate,   setEndDate]   = useState(initialEnd);
-  const [cursor,    setCursor]    = useState<{ last_date: string; last_id: string } | null>(null);
-  const [pages,     setPages]     = useState<GLLineRaw[][]>([]);
-  const [openingBalance, setOpeningBalance] = useState<number>(0);
 
-  const gl = useGeneralLedger({ accountId: accountId || null, startDate, endDate, cursor });
+  // `useInfiniteQuery` : plus d'accumulateur maison. Changer de compte ou de
+  // période change la clé de requête, donc réinitialise les pages — l'effet de
+  // remise à zéro et celui qui poussait chaque page (avec un `setState` posé
+  // dans l'updater d'un autre, que StrictMode pouvait rejouer) n'ont plus
+  // d'objet.
+  const gl = useGeneralLedger({ accountId: accountId || null, startDate, endDate });
 
-  // Reset accumulator when account / period changes.
-  useEffect(() => {
-    setPages([]);
-    setCursor(null);
-  }, [accountId, startDate, endDate]);
-
-  // Push each new page into the accumulator.
-  useEffect(() => {
-    if (!gl.data) return;
-    setPages((prev) => {
-      if (cursor === null) {
-        setOpeningBalance(gl.data.opening_balance);
-        return [gl.data.lines];
-      }
-      // Avoid duplicating the same page on re-render.
-      const last = prev[prev.length - 1];
-      if (last?.length === gl.data.lines.length && last[0]?.je_id === gl.data.lines[0]?.je_id) {
-        return prev;
-      }
-      return [...prev, gl.data.lines];
-    });
-  }, [gl.data, cursor]);
+  // Période et solde d'ouverture sont calculés sur la période entière côté RPC :
+  // identiques sur toutes les pages, on les lit sur la première.
+  const firstPage = gl.data?.pages[0] ?? null;
+  const openingBalance = firstPage?.opening_balance ?? 0;
 
   const account = useMemo(
     () => (accounts.data ?? []).find((a) => a.id === accountId) ?? null,
     [accounts.data, accountId],
   );
 
+  const lines = useMemo<GLLineRaw[]>(
+    () => (gl.data?.pages ?? []).flatMap((p) => p.lines),
+    [gl.data],
+  );
+
   const accumulated = useMemo<AccumulatedLine[]>(() => {
     if (!account) return [];
-    const flat = pages.flat();
     const out: AccumulatedLine[] = [];
     let running = openingBalance;
-    for (const line of flat) {
+    for (const line of lines) {
       const delta =
         account.balance_type === 'debit'
           ? (Number(line.debit) - Number(line.credit))
@@ -90,11 +78,7 @@ export default function GeneralLedgerPage(): JSX.Element {
       out.push({ ...line, running_balance: running });
     }
     return out;
-  }, [pages, openingBalance, account]);
-
-  function handleLoadMore() {
-    if (gl.data?.next_cursor) setCursor(gl.data.next_cursor);
-  }
+  }, [lines, openingBalance, account]);
 
   // Aucune branche d'échec n'existait : un compte choisi et une requête refusée
   // laissaient la page sur ses trois filtres, sans table ni un mot. Même remède
@@ -165,11 +149,11 @@ export default function GeneralLedgerPage(): JSX.Element {
         </QueryErrorBanner>
       )}
 
-      {accountId !== '' && gl.isLoading && pages.length === 0 && (
+      {accountId !== '' && gl.isLoading && (
         <p className="text-sm text-text-secondary">Loading ledger…</p>
       )}
 
-      {accountId !== '' && gl.data && (
+      {accountId !== '' && firstPage !== null && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="gl-table">
             <caption className="sr-only">Date, entry number, description, source, debit, credit and running balance for the selected account</caption>
@@ -229,8 +213,8 @@ export default function GeneralLedgerPage(): JSX.Element {
               })}
               <tr className="border-t-2 border-border-strong font-semibold">
                 <td colSpan={4} className="px-3 py-2 text-right">Period totals</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(gl.data.total_debit)}</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(gl.data.total_credit)}</td>
+                <td className="px-3 py-2 text-right font-mono">{fmt(firstPage.total_debit)}</td>
+                <td className="px-3 py-2 text-right font-mono">{fmt(firstPage.total_credit)}</td>
                 <td></td>
               </tr>
             </tbody>
@@ -238,18 +222,18 @@ export default function GeneralLedgerPage(): JSX.Element {
         </div>
       )}
 
-      {gl.data?.next_cursor && (
+      {gl.hasNextPage && (
         <Button
           variant="secondary"
           // `sm` (36 px) : le cran unique de « Load more » dans tout le
           // back-office. Sans lui ce bouton rendait au défaut `md`, soit 56 px —
           // le même contrôle existait en 32, 36 et 56 px sur six pages.
           size="sm"
-          onClick={handleLoadMore}
-          disabled={gl.isFetching}
+          onClick={() => { void gl.fetchNextPage(); }}
+          disabled={gl.isFetchingNextPage}
           data-testid="gl-load-more"
         >
-          {gl.isFetching ? 'Loading…' : 'Load more'}
+          {gl.isFetchingNextPage ? 'Loading…' : 'Load more'}
         </Button>
       )}
     </div>
