@@ -100,7 +100,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
       }
     }
     if (!totals.balanced) {
-      setError(`Unbalanced : debit ${fmt(totals.debit)} vs credit ${fmt(totals.credit)}.`);
+      setError(`Unbalanced: debit ${fmt(totals.debit)} vs credit ${fmt(totals.credit)}.`);
       return;
     }
     if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {

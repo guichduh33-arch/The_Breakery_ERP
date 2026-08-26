@@ -60,7 +60,10 @@ export default function CashTreasuryPage() {
   const selectedWallet = ordered.find((w) => w.account_code === selected);
 
   return (
-    <div className="space-y-6 p-6">
+    // Le `<main>` du shell pose DÉJÀ `px-[22px] py-5` : le `p-6` d'ici s'y
+    // ajoutait, et cette page rendait donc une gouttière de ~46 px là où ses
+    // quatre sœurs du module accounting en rendent 22.
+    <div className="space-y-6">
       <PageHeader
         className="items-center"
         title="Cash Treasury"

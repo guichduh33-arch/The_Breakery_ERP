@@ -135,9 +135,9 @@ export function FiscalPeriodModal({
 
             {selectedPeriod && (
               <div className="rounded border border-border-subtle bg-bg-overlay px-3 py-2 text-xs">
-                <div>Period : {fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}</div>
-                <div>Current status : <span className="font-mono">{selectedPeriod.status}</span></div>
-                <div>New status : <span className="font-mono">{lock ? 'locked' : 'closed'}</span></div>
+                <div>Period: {fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}</div>
+                <div>Current status: <span className="font-mono">{selectedPeriod.status}</span></div>
+                <div>New status: <span className="font-mono">{lock ? 'locked' : 'closed'}</span></div>
               </div>
             )}
           </div>

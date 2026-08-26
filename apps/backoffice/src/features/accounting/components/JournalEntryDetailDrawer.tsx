@@ -66,7 +66,7 @@ export function JournalEntryDetailDrawer({
         </SheetHeader>
 
         <div className="mt-4 text-xs text-text-secondary">
-          Source :{' '}
+          Source:{' '}
           {source !== null ? (
             <DrilldownLink
               entity={source.entity}
@@ -77,7 +77,7 @@ export function JournalEntryDetailDrawer({
           ) : (
             <span className="font-mono">{entry.reference_type ?? '—'}</span>
           )}
-          {' · '}Status : <span className="font-mono">{entry.status}</span>
+          {' · '}Status: <span className="font-mono">{entry.status}</span>
         </div>
 
         <div className="mt-6">

@@ -106,13 +106,30 @@ function LedgerRows({ rows }: { rows: WalletLedgerRow[] }) {
           {rows.map((r, i) => (
             <tr key={i} className="border-b border-border-row last:border-0">
               <td className="whitespace-nowrap px-3 py-1.5 font-data text-xs text-text-secondary">{r.row_date}</td>
-              <td className="max-w-[220px] truncate px-3">{r.remark}</td>
-              <td className="max-w-[140px] truncate px-3">{r.category ?? ''}</td>
-              <td className="max-w-[200px] truncate px-3">{r.description ?? ''}</td>
-              <td className="max-w-[160px] truncate px-3">{r.supplier ?? ''}</td>
-              <td className="px-3 text-right font-data tabular-nums">{r.in_amount ? idr.format(r.in_amount) : ''}</td>
-              <td className="px-3 text-right font-data tabular-nums">{r.out_amount ? idr.format(r.out_amount) : ''}</td>
-              <td className="px-3 text-right font-data font-medium tabular-nums">{idr.format(r.saldo)}</td>
+              {/* La troncature vit sur un ENFANT du `<td>`, jamais sur le `<td>`
+                  lui-même : l'algorithme de table `auto` n'honore pas une
+                  `max-width` posée sur une cellule — l'ellipsis promise
+                  n'apparaissait donc jamais, tandis que le `white-space: nowrap`
+                  de `truncate` gonflait la min-content de ces quatre colonnes de
+                  texte et ÉCRASAIT les trois colonnes de montants (critique du
+                  2026-08-26). Le `title` n'est pas décoratif : ces libellés sont
+                  la donnée de rapprochement, ce que l'ellipsis coupe doit rester
+                  atteignable. */}
+              <td className="px-3">
+                <div className="max-w-[220px] truncate" title={r.remark ?? ''}>{r.remark}</div>
+              </td>
+              <td className="px-3">
+                <div className="max-w-[140px] truncate" title={r.category ?? ''}>{r.category ?? ''}</div>
+              </td>
+              <td className="px-3">
+                <div className="max-w-[200px] truncate" title={r.description ?? ''}>{r.description ?? ''}</div>
+              </td>
+              <td className="px-3">
+                <div className="max-w-[160px] truncate" title={r.supplier ?? ''}>{r.supplier ?? ''}</div>
+              </td>
+              <td className="whitespace-nowrap px-3 text-right font-data tabular-nums">{r.in_amount ? idr.format(r.in_amount) : ''}</td>
+              <td className="whitespace-nowrap px-3 text-right font-data tabular-nums">{r.out_amount ? idr.format(r.out_amount) : ''}</td>
+              <td className="whitespace-nowrap px-3 text-right font-data font-medium tabular-nums">{idr.format(r.saldo)}</td>
             </tr>
           ))}
         </tbody>

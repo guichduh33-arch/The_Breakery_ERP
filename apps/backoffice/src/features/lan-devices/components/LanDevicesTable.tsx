@@ -44,7 +44,9 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
             <th scope="col" className="py-2 text-left">Code</th>
             <th scope="col" className="py-2 text-left">Name</th>
             <th scope="col" className="py-2 text-left">Type</th>
-            <th scope="col" className="py-2 text-left">IP : Port</th>
+            {/* La cellule rend `192.168.1.5:9100` — l'en-tête écrit donc la
+                notation telle qu'elle apparaît dans la colonne. */}
+            <th scope="col" className="py-2 text-left">IP:Port</th>
             <th scope="col" className="py-2 text-left">Station</th>
             <th scope="col" className="py-2 text-left">Status</th>
             <th scope="col" className="py-2 text-left">Last heartbeat</th>

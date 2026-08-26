@@ -260,9 +260,11 @@ export function OrderDetailPage(): JSX.Element {
               ))}
               {/* Seule ligne FISCALE du bloc : elle cesse d'être en creux. */}
               <MoneyRow label="PB1 (included)" value={rp(data.tax_amount)} />
-              <div className="flex items-baseline justify-between border-t border-border-subtle pt-2">
-                <dt className="text-sm font-semibold text-text-primary">Total (incl. PB1)</dt>
-                <dd className="font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">
+              {/* Même invariant que `MoneyRow` — et il compte davantage ici :
+                  c'est le montant payé. */}
+              <div className="flex items-baseline justify-between gap-3 border-t border-border-subtle pt-2">
+                <dt className="min-w-0 truncate text-sm font-semibold text-text-primary">Total (incl. PB1)</dt>
+                <dd className="whitespace-nowrap font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary">
                   {rp(data.total)}
                 </dd>
               </div>
@@ -292,10 +294,16 @@ export function OrderDetailPage(): JSX.Element {
                       <span className="capitalize text-text-primary">{p.method.replace('_', ' ')}</span>
                       <span className="font-data tabular-nums">{rp(p.amount)}</span>
                     </div>
-                    <div className="mt-0.5 flex items-baseline justify-between text-xs text-text-muted">
+                    {/* Le rail d'argent fait ~326 px : « Rp 100.000 given ·
+                        Rp 12.500 change » et l'horodatage n'y tiennent pas sur
+                        une ligne, et un `justify-between` sans repli fendait la
+                        mention EN PLEIN MILIEU d'un montant. Elle descend donc
+                        ENTIÈRE sous la date (`flex-wrap` + `whitespace-nowrap`) :
+                        un montant ne se coupe pas. */}
+                    <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-2 text-xs text-text-muted">
                       <span className="font-data tabular-nums">{fmtDateTime(p.paid_at)}</span>
                       {p.cash_received !== null && p.change_given !== null && (
-                        <span className="font-data tabular-nums">
+                        <span className="whitespace-nowrap font-data tabular-nums">
                           {rp(p.cash_received)} given · {rp(p.change_given)} change
                         </span>
                       )}
@@ -347,15 +355,20 @@ function MetaPair({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
+// Le libellé PLIE, le montant JAMAIS. Une ligne de promotion porte une
+// description libre venue de la base : sans `min-w-0`, le `<dt>` refusait de
+// rétrécir sous sa min-content et poussait le `<dd>`, qui se coupait au milieu
+// d'un montant (critique du 2026-08-26). `truncate` + `title` gardent le libellé
+// entier atteignable ; `whitespace-nowrap` sur le montant tient l'invariant.
 function MoneyRow({
   label, value, tone,
 }: {
   label: string; value: string; tone?: 'danger';
 }): JSX.Element {
   return (
-    <div className="flex items-baseline justify-between">
-      <dt className="text-sm text-text-secondary">{label}</dt>
-      <dd className={cn('font-data text-sm tabular-nums', tone === 'danger' ? 'text-danger' : 'text-text-primary')}>
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="min-w-0 truncate text-sm text-text-secondary" title={label}>{label}</dt>
+      <dd className={cn('whitespace-nowrap font-data text-sm tabular-nums', tone === 'danger' ? 'text-danger' : 'text-text-primary')}>
         {value}
       </dd>
     </div>
