@@ -130,8 +130,8 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
               </Select>
             </label>
             <div className="rounded border border-border-subtle bg-bg-overlay px-3 py-2 text-xs space-y-1">
-              <div>Preconditions : all 12 periods of the year closed or locked, and no prior annual close.</div>
-              <div>Effect : classes 4/5/6 are zeroed into <span className="font-mono">3200 Retained Earnings</span> (JE dated Dec 31) and the 12 periods of the next year are seeded.</div>
+              <div>Preconditions: all 12 periods of the year closed or locked, and no prior annual close.</div>
+              <div>Effect: classes 4/5/6 are zeroed into <span className="font-mono">3200 Retained Earnings</span> (JE dated Dec 31) and the 12 periods of the next year are seeded.</div>
             </div>
           </div>
         )}

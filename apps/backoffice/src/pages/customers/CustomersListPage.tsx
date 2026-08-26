@@ -49,7 +49,10 @@ import { useCustomersStats } from '@/features/customers/hooks/useCustomersStats.
 import { CustomerFormModal } from '@/features/loyalty/components/CustomerFormModal.js';
 import { toast } from 'sonner';
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
-import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
+// `buildEntityWorkbook` tire `xlsx` (159 Ko gzip). En import STATIQUE, ce poids
+// partait dans le chargement de la liste alors qu'il ne sert qu'au clic sur
+// « Template » ou « Export ». Import dynamique DANS le handler — patron de
+// `ProductsImportExportPage`.
 import { customersImportDef } from '@/features/customers/import/customersImportDef.js';
 import { useCustomersExport } from '@/features/customers/hooks/useCustomersExport.js';
 
@@ -142,12 +145,18 @@ export default function CustomersListPage(): JSX.Element {
   const cats  = useCustomerCategories();
   const stats = useCustomersStats();
 
-  function handleTemplate(): void {
+  async function handleTemplate(): Promise<void> {
+    const { buildTemplateWorkbook, downloadWorkbook } = await import(
+      '@/features/data-import/buildEntityWorkbook.js'
+    );
     downloadWorkbook(buildTemplateWorkbook(customersImportDef), 'breakery-customers-template.xlsx');
   }
   async function handleExport(): Promise<void> {
     try {
       const rows = await exportMut.mutateAsync();
+      const { buildExportWorkbook, downloadWorkbook } = await import(
+        '@/features/data-import/buildEntityWorkbook.js'
+      );
       downloadWorkbook(
         buildExportWorkbook(customersImportDef, rows),
         `breakery-customers-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
@@ -346,7 +355,7 @@ export default function CustomersListPage(): JSX.Element {
                 <Tag className={TOOLBAR_ICON} aria-hidden /> Categories
               </Link>
             )}
-            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={handleTemplate} aria-label="Download customers template">
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => void handleTemplate()} aria-label="Download customers template">
               <FileText className={TOOLBAR_ICON} aria-hidden /> Template
             </button>
             {canCreate && (

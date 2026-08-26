@@ -205,7 +205,10 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     className={`w-16 border border-border-strong rounded px-1 py-0.5 text-sm ${FOCUS_RING}`}
                     data-testid={`qty-${l.id}`}
                   />
-                  <span className="w-20 text-right tabular-nums">{formatCurrency(l.line_total)}</span>
+                  {/* `tabular-nums` seul ALIGNE les chiffres d'Instrument Sans,
+                      il ne les rend pas en mono : la famille ne vient d'aucun
+                      parent ici (The Mono-Carries-Data Rule). */}
+                  <span className="w-20 text-right font-data tabular-nums">{formatCurrency(l.line_total)}</span>
                   {l.isPending ? (
                     <button
                       type="button"
@@ -239,7 +242,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
               ))}
             </ul>
             <p className="mt-3 text-sm border-t pt-2">
-              Subtotal preview: <strong className="tabular-nums">{formatCurrency(previewSubtotal)}</strong>
+              Subtotal preview: <strong className="font-data tabular-nums">{formatCurrency(previewSubtotal)}</strong>
             </p>
             <p className="text-xs text-text-muted">Tax + total recalculated server-side at apply.</p>
           </div>

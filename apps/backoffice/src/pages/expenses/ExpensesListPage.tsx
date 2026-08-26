@@ -31,7 +31,6 @@ import {
   Tag,
 } from 'lucide-react';
 import {
-  Button,
   DataTable,
   EmptyState,
   Tabs,
@@ -51,7 +50,11 @@ import {
   type ExpensesListFilters,
   type ExpenseStatus,
 } from '@/features/expenses/hooks/useExpensesList.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import {
+  TOOLBAR_BTN_PRIMARY,
+  TOOLBAR_BTN_SECONDARY,
+  TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -228,9 +231,12 @@ export default function ExpensesListPage(): JSX.Element {
         subtitle="Manage and track your bakery's expenditure."
         actions={
           <>
-            <Button variant="ghost" size="sm" disabled aria-label="Export (coming soon)">
-              <Download className="h-4 w-4" aria-hidden /> Export
-            </Button>
+            {/* Une seule hauteur dans le bandeau : l'export passe des 36 px du
+                primitif aux 32 px de la chaîne de bandeau, comme le lien encre
+                qui le suit. */}
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} disabled aria-label="Export (coming soon)">
+              <Download className={TOOLBAR_ICON} aria-hidden /> Export
+            </button>
             {canCreate && (
               <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
                 <Plus className="h-3.5 w-3.5" aria-hidden /> New expense

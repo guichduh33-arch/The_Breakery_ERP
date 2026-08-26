@@ -4,7 +4,7 @@
 //   Step 2 : PIN entry + confirm.
 //   Gate : permission accounting.period.close (enforced by RPC).
 
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import {
   Button, Input, Select,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -31,6 +31,16 @@ export function FiscalPeriodModal({
   const [lock, setLock]           = useState(false);
   const [pin, setPin]             = useState('');
   const [error, setError]         = useState<string | null>(null);
+
+  // « Next → » remplace tout le corps du dialogue, mais Radix laisse le focus
+  // sur un bouton de pied qui a changé de sens sous les doigts : l'opérateur
+  // arrivait à l'étape du PIN sans savoir qu'un champ l'attendait, et devait
+  // tabuler à l'aveugle depuis le bas (WCAG 2.4.3). Le seul champ de l'étape 2
+  // prend donc le focus, ce qui fait AUSSI annoncer son étiquette.
+  const pinRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (step === 2) pinRef.current?.focus();
+  }, [step]);
 
   const openable: FiscalPeriodRow[] = (periods.data ?? []).filter(
     (p) => p.status === 'open' || (p.status === 'closed' && true /* allow re-lock */),
@@ -96,28 +106,38 @@ export function FiscalPeriodModal({
               </Select>
             </label>
 
-            <label className="flex items-start gap-2 text-sm">
+            {/* Le `<label>` implicite englobait le paragraphe entier : le nom
+                accessible de la case devenait « Lock (no backdating) Once
+                locked, no JE can be inserted… », soit deux phrases annoncées à
+                chaque passage sur le contrôle. L'étiquette se réduit au nom du
+                geste, l'explication est rattachée par `aria-describedby` — elle
+                se lit une fois, à la demande. */}
+            <div className="flex items-start gap-2 text-sm">
               <input
+                id="fp-modal-lock"
                 type="checkbox"
                 checked={lock}
                 onChange={(e) => setLock(e.target.checked)}
                 className={`mt-1 ${FOCUS_RING}`}
+                aria-describedby="fp-modal-lock-help"
                 data-testid="fp-modal-lock-checkbox"
               />
               <div>
-                <div className="font-semibold">Lock (no backdating)</div>
-                <div className="text-xs text-text-secondary">
+                <label htmlFor="fp-modal-lock" className="font-semibold">
+                  Lock (no backdating)
+                </label>
+                <div id="fp-modal-lock-help" className="text-xs text-text-secondary">
                   Once locked, no JE can be inserted with entry_date in this period —
                   even by admins. Use to seal a closed accounting period.
                 </div>
               </div>
-            </label>
+            </div>
 
             {selectedPeriod && (
               <div className="rounded border border-border-subtle bg-bg-overlay px-3 py-2 text-xs">
-                <div>Period : {fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}</div>
-                <div>Current status : <span className="font-mono">{selectedPeriod.status}</span></div>
-                <div>New status : <span className="font-mono">{lock ? 'locked' : 'closed'}</span></div>
+                <div>Period: {fiscalPeriodLabel(selectedPeriod.period_start, selectedPeriod.period_end)}</div>
+                <div>Current status: <span className="font-mono">{selectedPeriod.status}</span></div>
+                <div>New status: <span className="font-mono">{lock ? 'locked' : 'closed'}</span></div>
               </div>
             )}
           </div>
@@ -125,7 +145,15 @@ export function FiscalPeriodModal({
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="rounded border border-warning bg-warning-soft px-3 py-2 text-xs text-warning">
+            {/* `role="alert"` : cet avertissement n'existe pas au montage, il
+                APPARAÎT au passage à l'étape 2 — et il annonce le geste le plus
+                irréversible de l'application. Sans rôle, il ne se lit qu'en
+                revenant en arrière dans le document ; avec, il est annoncé au
+                moment où il paraît (WCAG 4.1.3). */}
+            <div
+              role="alert"
+              className="rounded border border-warning bg-warning-soft px-3 py-2 text-xs text-warning"
+            >
               You are about to <strong>{lock ? 'LOCK' : 'CLOSE'}</strong> period{' '}
               <strong>
                 {selectedPeriod === null
@@ -137,6 +165,7 @@ export function FiscalPeriodModal({
             <label className="flex flex-col text-sm">
               Manager PIN (6 digits)
               <Input
+                ref={pinRef}
                 type="password"
                 inputMode="numeric"
                 maxLength={6}

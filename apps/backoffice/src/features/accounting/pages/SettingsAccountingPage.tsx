@@ -12,6 +12,11 @@ import { FiscalPeriodModal } from '../components/FiscalPeriodModal.js';
 import { AnnualCloseModal } from '../components/AnnualCloseModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import {
+  TOOLBAR_BTN_PRIMARY,
+  TOOLBAR_BTN_SECONDARY,
+  TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 
 function statusBadgeClass(status: string): string {
   if (status === 'locked') return 'bg-red-soft text-red';
@@ -38,34 +43,35 @@ export default function SettingsAccountingPage(): JSX.Element {
     <div className="space-y-6">
       <PageHeader
         title="Accounting settings"
-        subtitle={
-          <span className="italic">
-            Manage fiscal periods (close / lock for backdating prevention)
-          </span>
-        }
+        // `italic` retiré : l'italique n'est pas un rôle typographique de ce
+        // thème (DESIGN.md § Typographie).
+        subtitle="Manage fiscal periods (close / lock for backdating prevention)"
+        // Bandeau de page = `TOOLBAR_BTN_*` (32 px) et non le primitif partagé
+        // (56 px) — DESIGN.md § Components. Un SEUL aplat encre : la clôture de
+        // période, geste courant ; la clôture annuelle, rare, reste secondaire.
         actions={
           <>
             {canClose && (
-              <Button
-                variant="ink"
+              <button
+                type="button"
+                className={TOOLBAR_BTN_PRIMARY}
                 onClick={() => openModalFor(null)}
-                className="inline-flex items-center gap-2"
                 data-testid="fp-new-btn"
               >
-                <Lock className="h-4 w-4" aria-hidden />
+                <Lock className="h-3.5 w-3.5" aria-hidden />
                 Close a period
-              </Button>
+              </button>
             )}
             {canCloseYear && (
-              <Button
-                variant="secondary"
+              <button
+                type="button"
+                className={TOOLBAR_BTN_SECONDARY}
                 onClick={() => setShowAnnual(true)}
-                className="inline-flex items-center gap-2"
                 data-testid="ac-open-btn"
               >
-                <CalendarCheck className="h-4 w-4" aria-hidden />
+                <CalendarCheck className={TOOLBAR_ICON} aria-hidden />
                 Annual close
-              </Button>
+              </button>
             )}
           </>
         }

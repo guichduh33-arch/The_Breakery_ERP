@@ -24,6 +24,7 @@ import { formatQuantity } from '@breakery/utils';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
+import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDetail.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
@@ -123,7 +124,7 @@ export default function OpnameDetailPage(): JSX.Element {
           <ArrowLeft className="h-3 w-3" aria-hidden /> Back to counts
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary font-mono">{d.count_number}</h1>
+          <h1 className={`${PAGE_TITLE_CLS} font-mono`}>{d.count_number}</h1>
           <OpnameStatusBadge status={d.status} />
         </div>
       </header>

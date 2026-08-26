@@ -35,6 +35,7 @@ import { Skeleton } from '@breakery/ui';
 import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { PermissionCode } from '@breakery/supabase';
 import { useChartOfAccounts } from '../hooks/useChartOfAccounts.js';
 import { useJournalEntries } from '../hooks/useJournalEntries.js';
@@ -166,7 +167,10 @@ export default function AccountingIndexPage(): JSX.Element {
             <Link
               key={tile.to}
               to={tile.to}
-              className="rounded-lg border border-border-subtle bg-bg-elevated p-4 hover:border-border-strong transition-colors"
+              // `FOCUS_RING` : ces quatre tuiles sont les portes du module, et
+              // leur seul retour était le survol SOURIS — au clavier, on
+              // traversait le hub sans savoir où l'on était (WCAG 2.4.11).
+              className={`rounded-lg border border-border-subtle bg-bg-elevated p-4 hover:border-border-strong transition-colors ${FOCUS_RING}`}
               data-testid={`accounting-tile-${tile.permission}`}
             >
               <div className="flex items-center gap-3">

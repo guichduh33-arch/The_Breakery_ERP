@@ -11,6 +11,8 @@ import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Info } from 'lucide-react';
 import { Badge } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { DeleteRoleAction } from '@/features/settings/roles/components/DeleteRoleAction.js';
 import { RolePermissionsPanel } from '@/features/settings/roles/components/RolePermissionsPanel.js';
@@ -47,9 +49,13 @@ export default function RoleDetailPage() {
     return (
       <div className="space-y-4">
         {backLink}
-        <div className="text-sm text-danger-as-text" data-testid="role-detail-error">
-          Failed to load the role: {matrix.error.message}
-        </div>
+        <QueryErrorBanner
+          detail={errorDetailText(matrix.error)}
+          onRetry={() => { void matrix.refetch(); }}
+          data-testid="role-detail-error"
+        >
+          This role could not be loaded — nothing below reflects what it grants.
+        </QueryErrorBanner>
       </div>
     );
   }

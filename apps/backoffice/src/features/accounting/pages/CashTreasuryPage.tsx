@@ -15,6 +15,8 @@ import { CashReconciliationPanel } from '../components/CashReconciliationPanel.j
 import { CashAnalysisPanel } from '../components/CashAnalysisPanel.js';
 import { exportCashWalletCsv } from '../components/exportCashWalletCsv.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 // Les deux champs de période rendaient ~29 px (`px-2 py-1`) sans aucun anneau de
 // focus, là où DESIGN.md § Champs impose 44 px et l'anneau or. `h-touch-min`
 // vaut 44 px dans les deux thèmes (luxe-dark.css) ; c'est la hauteur que porte
@@ -25,7 +27,17 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 const SMALL_MONEY_FLOAT = 4_000_000;
 
 export default function CashTreasuryPage() {
-  const { data: wallets = [], isLoading } = useCashWallets();
+  // La requête entière, plus seulement ses données : son échec n'était rendu
+  // NULLE PART. Un `get_cash_wallet_balances_v2` refusé (permission, réseau)
+  // laissait la rangée de tuiles vide sous un titre « Cash Treasury », ce qui se
+  // lit « aucun coffre » — l'écran affirmait alors qu'il n'y a pas d'argent.
+  const walletsQuery = useCashWallets();
+  // `useMemo` et non un `??` nu : le tableau de repli serait une NOUVELLE
+  // référence à chaque rendu, et la mémoïsation de `ordered` juste en dessous
+  // ne tiendrait plus (react-hooks/exhaustive-deps).
+  const wallets = useMemo(() => walletsQuery.data ?? [], [walletsQuery.data]);
+  const isLoading = walletsQuery.isLoading;
+  const walletsError = walletsQuery.isError ? walletsQuery.error : null;
   const [selected, setSelected]   = useState('1110');
   // Défaut MUTUALISÉ (`@breakery/utils`) — cinquième copie du même calcul local,
   // et du même défaut : `toISOString()` rend de l'UTC, donc le ledger s'ouvrait
@@ -48,7 +60,10 @@ export default function CashTreasuryPage() {
   const selectedWallet = ordered.find((w) => w.account_code === selected);
 
   return (
-    <div className="space-y-6 p-6">
+    // Le `<main>` du shell pose DÉJÀ `px-[22px] py-5` : le `p-6` d'ici s'y
+    // ajoutait, et cette page rendait donc une gouttière de ~46 px là où ses
+    // quatre sœurs du module accounting en rendent 22.
+    <div className="space-y-6">
       <PageHeader
         className="items-center"
         title="Cash Treasury"
@@ -65,6 +80,17 @@ export default function CashTreasuryPage() {
           </button>
         }
       />
+
+      {walletsError !== null && (
+        <QueryErrorBanner
+          detail={errorDetailText(walletsError)}
+          onRetry={() => { void walletsQuery.refetch(); }}
+          data-testid="cash-wallets-error"
+        >
+          Wallet balances could not be loaded — no balance below is current, and
+          the ledger cannot be opened until this request succeeds.
+        </QueryErrorBanner>
+      )}
 
       <div className="flex flex-wrap gap-3">
         {isLoading && (
@@ -122,7 +148,12 @@ export default function CashTreasuryPage() {
             Export CSV
           </Button>
         </div>
-        <WalletLedgerTable rows={ledger.data ?? []} loading={ledger.isLoading} />
+        <WalletLedgerTable
+          rows={ledger.data ?? []}
+          loading={ledger.isLoading}
+          error={ledger.isError ? errorDetailText(ledger.error) ?? '' : null}
+          onRetry={() => { void ledger.refetch(); }}
+        />
       </Card>
 
       {selectedWallet && (

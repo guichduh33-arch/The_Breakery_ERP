@@ -65,7 +65,7 @@ import {
   validatePOFormDraft,
   type POFormDraftValue,
 } from '@/features/purchasing/components/POFormDraft.js';
-import { PageHeader } from '@/components/PageHeader.js';
+import { PageHeader, PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { RestrictedState } from '@/components/RestrictedState.js';
 import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
@@ -379,7 +379,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary tabular-nums">{po.po_number}</h1>
+            <h1 className={`${PAGE_TITLE_CLS} tabular-nums`}>{po.po_number}</h1>
             <POStatusBadge status={status} />
           </div>
           <p className="mt-1 text-sm text-text-secondary">{po.suppliers?.name ?? '—'}</p>

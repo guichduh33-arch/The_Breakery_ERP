@@ -30,8 +30,11 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
   // Preflight Tailwind, à 2,21:1 sur le papier de page. `text-text-muted` vaut
   // 4,83:1 sur ce même fond. L'anneau de focus fait maison, de 1 px, laissait
   // par ailleurs six champs sous le contrat de 2 px de la direction.
+  // `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
+  // (WCAG 1.4.11) — six champs de plus que la garde n'attrapait pas tant
+  // qu'elle ne lisait que le littéral des balises (réparée le 2026-08-26).
   const inputCls =
-    `w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`;
+    `w-full px-2 py-2 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`;
   // Toute donnée qu'on lit pour décider rend en mono tabulaire — ici un montant
   // en IDR à sept chiffres et un rang d'affichage.
   const numCls = `${inputCls} font-mono tabular-nums`;

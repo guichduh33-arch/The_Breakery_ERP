@@ -16,7 +16,7 @@
 // / useCustomerCategoryPrices / useCustomerAnalytics). Mutations reuse the
 // existing CustomerFormModal (edit) + LoyaltyAdjustModal (points).
 
-import { useMemo, useState, type JSX } from 'react';
+import { lazy, Suspense, useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -50,12 +50,31 @@ import { InfoTab } from './customer-detail/InfoTab.js';
 import { OrdersTab } from './customer-detail/OrdersTab.js';
 import { LoyaltyTab } from './customer-detail/LoyaltyTab.js';
 import { StoreCreditTab } from './customer-detail/StoreCreditTab.js';
-import { AnalyticsTab } from './customer-detail/AnalyticsTab.js';
 import { PricingTab } from './customer-detail/PricingTab.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { PageHeader } from '@/components/PageHeader.js';
 
 type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
+
+// Le seul consommateur de `recharts` de la fiche (443 Ko bruts / 117 Ko gzip),
+// pour un onglet sur six — et jamais celui qu'on ouvre en arrivant. En `lazy`,
+// le chunk n'arrive qu'au clic. Export NOMMÉ : d'où le `.then()`.
+const AnalyticsTab = lazy(() =>
+  import('./customer-detail/AnalyticsTab.js').then((m) => ({ default: m.AnalyticsTab })),
+);
+
+/** Attente discrète du chunk `charts` — papier pressé, animation coupée sous
+ *  `motion-reduce`. Même geste que le Dashboard. */
+function ChartSkeleton(): JSX.Element {
+  return (
+    <div
+      data-testid="chart-skeleton"
+      role="status"
+      aria-label="Loading chart"
+      className="h-44 animate-pulse rounded bg-surface-4 motion-reduce:animate-none"
+    />
+  );
+}
 
 export function CustomerDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -318,7 +337,11 @@ export function CustomerDetailPage(): JSX.Element {
       {tab === 'orders' && <OrdersTab data={data} />}
       {tab === 'loyalty' && <LoyaltyTab customerId={id ?? null} />}
       {tab === 'store-credit' && <StoreCreditTab customerId={id ?? null} />}
-      {tab === 'analytics' && <AnalyticsTab customerId={id ?? null} />}
+      {tab === 'analytics' && (
+        <Suspense fallback={<ChartSkeleton />}>
+          <AnalyticsTab customerId={id ?? null} />
+        </Suspense>
+      )}
       {tab === 'pricing' && <PricingTab customer={customer} />}
 
       {/* Modals */}

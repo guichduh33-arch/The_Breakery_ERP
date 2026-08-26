@@ -18,7 +18,7 @@
 // monthly_volume`) that have not landed yet. We render explanatory empty
 // states there so the tab stack is consistent.
 
-import { useMemo, useState, type JSX, type ReactNode } from 'react';
+import { lazy, Suspense, useMemo, useState, type JSX, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -51,6 +51,7 @@ import {
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useSupplierDetail } from '@/features/suppliers/hooks/useSupplierDetail.js';
 import {
   useSupplierPurchases,
@@ -60,10 +61,39 @@ import { useSupplierMetrics } from '@/features/suppliers/hooks/useSupplierMetric
 import { useSupplierPurchaseItems } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { useUpdateSupplier } from '@/features/suppliers/hooks/useUpdateSupplier.js';
 import { SupplierFormModal } from '@/features/suppliers/components/SupplierFormModal.js';
-import { SupplierAnalyticsTab } from '@/features/suppliers/components/SupplierAnalyticsTab.js';
-import { SupplierPriceEvolutionTab } from '@/features/suppliers/components/SupplierPriceEvolutionTab.js';
-import { SupplierPaymentDistribution } from '@/features/suppliers/components/SupplierPaymentDistribution.js';
 import type { SupplierRow } from '@/features/suppliers/hooks/useSuppliersList.js';
+
+// Les trois seuls consommateurs de `recharts` de cette fiche (443 Ko bruts /
+// 117 Ko gzip). Statiques, ils partaient dans le chargement de la page alors que
+// l'onglet ouvert par défaut est « Purchases » — un tableau. En `lazy`, le chunk
+// n'arrive qu'au clic sur l'onglet qui en a besoin, Radix ne montant pas le
+// contenu d'un onglet inactif. Exports NOMMÉS : d'où le `.then()` qui les remet
+// en `default`.
+const SupplierAnalyticsTab = lazy(() =>
+  import('@/features/suppliers/components/SupplierAnalyticsTab.js')
+    .then((m) => ({ default: m.SupplierAnalyticsTab })),
+);
+const SupplierPriceEvolutionTab = lazy(() =>
+  import('@/features/suppliers/components/SupplierPriceEvolutionTab.js')
+    .then((m) => ({ default: m.SupplierPriceEvolutionTab })),
+);
+const SupplierPaymentDistribution = lazy(() =>
+  import('@/features/suppliers/components/SupplierPaymentDistribution.js')
+    .then((m) => ({ default: m.SupplierPaymentDistribution })),
+);
+
+/** Attente discrète du chunk `charts` — même geste que le Dashboard : papier
+ *  pressé plutôt que blanc sur blanc, animation coupée sous `motion-reduce`. */
+function ChartSkeleton(): JSX.Element {
+  return (
+    <div
+      data-testid="chart-skeleton"
+      role="status"
+      aria-label="Loading chart"
+      className="h-44 animate-pulse rounded bg-surface-4 motion-reduce:animate-none"
+    />
+  );
+}
 
 function StatusBadge({ active }: { active: boolean }): JSX.Element {
   return active ? (
@@ -237,7 +267,7 @@ export default function SupplierDetailPage(): JSX.Element {
                   <Building2 className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{supplier.name}</h1>
+                  <h1 className={PAGE_TITLE_CLS}>{supplier.name}</h1>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="font-mono text-xs uppercase text-text-muted">{supplier.code}</span>
                     <StatusBadge active={supplier.is_active} />
@@ -320,7 +350,9 @@ export default function SupplierDetailPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="price" className="mt-4">
-          <SupplierPriceEvolutionTab items={items.data ?? []} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <SupplierPriceEvolutionTab items={items.data ?? []} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4">
@@ -328,10 +360,12 @@ export default function SupplierDetailPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <SupplierAnalyticsTab
-            items={items.data ?? []}
-            spendByPo={purchaseRows.map((r) => ({ order_date: r.order_date, total_amount: Number(r.total_amount ?? 0) }))}
-          />
+          <Suspense fallback={<ChartSkeleton />}>
+            <SupplierAnalyticsTab
+              items={items.data ?? []}
+              spendByPo={purchaseRows.map((r) => ({ order_date: r.order_date, total_amount: Number(r.total_amount ?? 0) }))}
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
 
@@ -412,7 +446,9 @@ function PaymentsSection({
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
           <Card variant="default" padding="md">
-            <SupplierPaymentDistribution paidAmount={metrics.paidAmount} overdueAmount={overdue} />
+            <Suspense fallback={<ChartSkeleton />}>
+              <SupplierPaymentDistribution paidAmount={metrics.paidAmount} overdueAmount={overdue} />
+            </Suspense>
           </Card>
           <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
           <table className="w-full text-sm">

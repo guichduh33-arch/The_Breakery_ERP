@@ -37,7 +37,8 @@ import {
   type DataTableColumn,
 } from '@breakery/ui';
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
-import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
+// `buildEntityWorkbook` tire `xlsx` (159 Ko gzip) : chargé à la demande dans les
+// deux handlers, pas à l'ouverture de la liste.
 import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
 import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
@@ -50,7 +51,11 @@ import {
 } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import {
+  TOOLBAR_BTN_PRIMARY,
+  TOOLBAR_BTN_SECONDARY,
+  TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -106,13 +111,19 @@ export default function PurchaseOrdersListPage(): JSX.Element {
 
   const exportMut = useHistoricalPurchasesExport();
 
-  function handleTemplate(): void {
+  async function handleTemplate(): Promise<void> {
+    const { buildTemplateWorkbook, downloadWorkbook } = await import(
+      '@/features/data-import/buildEntityWorkbook.js'
+    );
     downloadWorkbook(buildTemplateWorkbook(purchasesImportDef), 'breakery-purchases-template.xlsx');
   }
   async function handleExport(): Promise<void> {
     try {
       const exportRows = await exportMut.mutateAsync();
       if (exportRows.length === 0) { toast.info('No historical imports to export yet'); return; }
+      const { buildExportWorkbook, downloadWorkbook } = await import(
+        '@/features/data-import/buildEntityWorkbook.js'
+      );
       downloadWorkbook(
         buildExportWorkbook(purchasesImportDef, exportRows),
         `breakery-purchases-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
@@ -232,17 +243,20 @@ export default function PurchaseOrdersListPage(): JSX.Element {
         subtitle="Track open and historical POs; receive goods to post inventory + accounting entries."
         actions={
           <>
-            <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download purchases template">
-              <FileText className="h-4 w-4" aria-hidden /> Template
-            </Button>
+            {/* Une seule hauteur dans le bandeau : les trois gestes de service
+                passent des 36 px du primitif aux 32 px des chaînes de bandeau,
+                à côté de l'unique aplat encre (« New purchase order »). */}
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => void handleTemplate()} aria-label="Download purchases template">
+              <FileText className={TOOLBAR_ICON} aria-hidden /> Template
+            </button>
             {canCreate && (
-              <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import historical purchases">
-                <Upload className="h-4 w-4" aria-hidden /> Import
-              </Button>
+              <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setImporting(true)} aria-label="Import historical purchases">
+                <Upload className={TOOLBAR_ICON} aria-hidden /> Import
+              </button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => void handleExport()} disabled={exportMut.isPending} aria-label="Export historical purchases">
-              <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
-            </Button>
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => void handleExport()} disabled={exportMut.isPending} aria-label="Export historical purchases">
+              <Download className={TOOLBAR_ICON} aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
+            </button>
             {canCreate && (
               <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
                 <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order

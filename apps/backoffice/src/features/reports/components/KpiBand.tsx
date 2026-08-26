@@ -27,6 +27,15 @@ export interface KpiBandProps {
 
 const GRID = 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6';
 
+/**
+ * Les tuiles portent leur libellé en `<h3>` et la page son titre en `<h1>` :
+ * sans ce palier, tout écran de rapport saute de h1 à h3, et la liste des
+ * titres d'un lecteur d'écran perd le niveau qui NOMME la bande (WCAG 1.3.1).
+ * `sr-only` est `position: absolute` — il sort du flux de la grille et ne
+ * devient donc jamais une septième tuile.
+ */
+const BAND_HEADING = <h2 className="sr-only">Key figures</h2>;
+
 export function KpiBand({
   isLoading = false,
   error = null,
@@ -38,6 +47,7 @@ export function KpiBand({
   if (!isLoading && error !== null) {
     return (
       <div className={cn(GRID, className)} data-testid="report-kpi-band">
+        {BAND_HEADING}
         {Array.from({ length: tiles }).map((_, i) => (
           <Card
             key={i}
@@ -62,6 +72,7 @@ export function KpiBand({
   if (isLoading) {
     return (
       <div className={cn(GRID, className)} data-testid="report-kpi-band">
+        {BAND_HEADING}
         {Array.from({ length: tiles }).map((_, i) => (
           <Card
             key={i}
@@ -83,6 +94,7 @@ export function KpiBand({
 
   return (
     <div className={cn(GRID, className)} data-testid="report-kpi-band">
+      {BAND_HEADING}
       {children}
     </div>
   );

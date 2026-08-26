@@ -59,9 +59,9 @@ export function CohortHeatmap({ buckets }: CohortHeatmapProps) {
   return (
     <div className="space-y-3">
       <div className="text-sm text-text-secondary">
-        Cohort month : <span className="text-text-primary font-medium">{cohortMonth}</span>
+        Cohort month: <span className="text-text-primary font-medium">{cohortMonth}</span>
         {' · '}
-        Cohort size  : <span className="text-text-primary font-medium">{cohortSize}</span>
+        Cohort size: <span className="text-text-primary font-medium">{cohortSize}</span>
       </div>
 
       <div className="overflow-x-auto">

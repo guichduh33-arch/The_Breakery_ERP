@@ -3,10 +3,14 @@
 
 import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
-import { Skeleton } from '@breakery/ui';
+import { useQueryClient } from '@tanstack/react-query';
+import { SectionLabel, Skeleton } from '@breakery/ui';
 import { formatDateTime } from '@breakery/utils';
 import { roleLabel } from '@/lib/roleLabels.js';
-import type { UserRow } from '../hooks/useUsersList.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
+import { USERS_LIST_KEY, type UserRow } from '../hooks/useUsersList.js';
 
 export interface UsersTableProps {
   rows:     UserRow[];
@@ -21,6 +25,20 @@ export interface UsersTableProps {
   roleNames?: Record<string, string>;
 }
 
+const USERS_HEAD = ['Employee #', 'Full name', 'Role', 'Status', 'Last login'] as const;
+
+/**
+ * Forme du badge de rôle — RECOPIE littérale de `ORDER_STATUS_BADGE`
+ * (`features/orders/statusMeta.ts`), le canon partagé des badges en cellule :
+ * coins 3 px, label mono capitales interlettrées. Le badge d'ici rendait en
+ * Instrument Sans casse mixte avec `rounded` (6 px) — deux badges de tableau
+ * dans la même app, deux formes. Recopiée plutôt qu'importée : `statusMeta`
+ * appartient au domaine des commandes, la table des utilisateurs n'a rien à y
+ * faire dépendre.
+ */
+const ROLE_BADGE_SHAPE =
+  'inline-flex rounded-sm px-1.5 py-0.5 font-data text-xs font-semibold uppercase tracking-widest';
+
 const ROLE_BADGE_CLASS: Record<string, string> = {
   SUPER_ADMIN: 'bg-cat-rose/15 text-cat-rose border border-cat-rose/30',
   ADMIN:       'bg-cat-amber/15 text-cat-amber border border-cat-amber/30',
@@ -30,6 +48,11 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
 };
 
 export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps): JSX.Element {
+  // La reprise se prend ICI plutôt qu'en prop : la table n'a qu'un appelant, et
+  // sa requête a une clé publique. `invalidateQueries` fait du préfixe, donc la
+  // variante `['users-list','with-deleted']` repart avec la liste courante.
+  const qc = useQueryClient();
+
   if (loading === true) {
     // Silhouette de la table plutôt qu'un « Loading users… » nu (audit UX/UI
     // 2026-08-13, lot 8) : quelques lignes fantômes qui gardent la forme de ce
@@ -48,7 +71,16 @@ export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps)
     );
   }
   if (error != null) {
-    return <div className="text-sm text-danger">Failed to load users: {error.message}</div>;
+    return (
+      <QueryErrorBanner
+        detail={errorDetailText(error)}
+        onRetry={() => { void qc.invalidateQueries({ queryKey: USERS_LIST_KEY }); }}
+        data-testid="users-error"
+      >
+        The staff list could not be loaded — accounts exist that this page
+        cannot show right now.
+      </QueryErrorBanner>
+    );
   }
   if (rows.length === 0) {
     return <div className="text-sm text-text-secondary">No users yet.</div>;
@@ -57,14 +89,17 @@ export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps)
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <caption className="sr-only">Employee number, full name, role, status and last login per user</caption>
-        <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-          <tr>
-            <th scope="col" className="text-left py-2 px-3">Employee #</th>
-            <th scope="col" className="text-left py-2 px-3">Full name</th>
-            <th scope="col" className="text-left py-2 px-3">Role</th>
-            <th scope="col" className="text-left py-2 px-3">Status</th>
-            <th scope="col" className="text-left py-2 px-3">Last login</th>
-            <th scope="col"><span className="sr-only">Actions</span></th>
+        {/* Canon des tableaux (patron `WalletLedgerTable`) : papier inerte et
+            libellés en label mono capitales. L'en-tête rendait en Instrument
+            Sans, capitales SANS interlettrage — ni le corps, ni le canon. */}
+        <thead>
+          <tr className="border-b border-border-subtle bg-surface-inert text-left">
+            {USERS_HEAD.map((label) => (
+              <th key={label} scope="col" className="px-3 py-2.5 font-data">
+                <SectionLabel as="span" size="xs">{label}</SectionLabel>
+              </th>
+            ))}
+            <th scope="col" className="px-3 py-2.5"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
@@ -74,7 +109,7 @@ export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps)
               <td className="py-2 px-3">{u.full_name}</td>
               <td className="py-2 px-3">
                 <span
-                  className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                  className={`${ROLE_BADGE_SHAPE} ${
                     ROLE_BADGE_CLASS[u.role_code] ?? 'bg-bg-overlay text-text-secondary'
                   }`}
                 >
@@ -90,15 +125,24 @@ export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps)
                   <span className="text-text-secondary">Inactive</span>
                 )}
               </td>
-              <td className="py-2 px-3 text-xs text-text-secondary">
+              {/* The Mono-Carries-Data Rule : une date de dernière connexion
+                  est un chiffre qu'on compare d'une ligne à l'autre. */}
+              <td className="whitespace-nowrap py-2 px-3 font-data text-xs tabular-nums text-text-secondary">
                 {u.last_login_at !== null
                   ? formatDateTime(u.last_login_at)
                   : '—'}
               </td>
               <td className="py-2 px-3 text-right">
+                {/* « Open », « Open », « Open »… — sorti de sa ligne (liste des
+                    liens d'un lecteur d'écran), le libellé ne dit PAS qui l'on
+                    ouvre. Le nom est repris dans le nom accessible. */}
+                {/* `FOCUS_RING` : le seul retour de ce lien était le survol
+                    SOURIS — au clavier, la tabulation traversait la colonne
+                    sans rien montrer (WCAG 2.4.11). */}
                 <Link
                   to={`/backoffice/users/${u.id}`}
-                  className="text-xs text-gold hover:underline"
+                  className={`rounded-sm text-xs text-gold hover:underline ${FOCUS_RING}`}
+                  aria-label={`Open ${u.full_name}`}
                   data-testid={`user-open-${u.id}`}
                 >
                   Open

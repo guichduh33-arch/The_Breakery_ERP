@@ -11,7 +11,9 @@ import { ImportDropzone } from '@/features/catalog-import/components/ImportDropz
 import { ImportErrorsTable } from '@/features/catalog-import/components/ImportErrorsTable.js';
 import { EntitySummaryGrid } from './EntitySummaryGrid.js';
 import { useImportEntity } from '../hooks/useImportEntity.js';
-import { parseEntityWorkbook } from '../parseEntityWorkbook.js';
+// `parseEntityWorkbook` tire `xlsx` (159 Ko gzip). La modale est montée par
+// TROIS listes (clients, fournisseurs, achats) et le parseur ne sert qu'au dépôt
+// d'un fichier : import dynamique dans le handler.
 import type {
   EntityImportDef, EntityRow, ImportError, ImportReport, StructureError,
 } from '../entityImportDef.js';
@@ -55,6 +57,7 @@ export function ImportEntityModal({ open, onClose, def, title, description }: Pr
 
   async function handleFile(buf: ArrayBuffer, filename: string): Promise<void> {
     idemKeyRef.current = crypto.randomUUID();
+    const { parseEntityWorkbook } = await import('../parseEntityWorkbook.js');
     const { rows, structureErrors, rowMap } = parseEntityWorkbook(buf, def);
     setStage({ step: 'parsed', payload: rows, structureErrors, filename, rowMap });
     if (structureErrors.length === 0 && rows.length > 0) {

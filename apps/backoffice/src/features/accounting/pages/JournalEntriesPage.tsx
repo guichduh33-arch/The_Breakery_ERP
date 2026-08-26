@@ -3,7 +3,7 @@
 // Gate route : accounting.gl.read ; "+ New manual JE" gated par accounting.je.create_manual.
 
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
-import { Button, Input, Select, useDebouncedValue } from '@breakery/ui';
+import { Button, Input, Select, SectionLabel, useDebouncedValue } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Plus } from 'lucide-react';
 import {
@@ -23,9 +23,19 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const fmt = formatCurrency;
 const num = (n: number): string => n.toLocaleString('id-ID');
+
+const JE_HEAD: readonly { label: string; right: boolean }[] = [
+  { label: 'Date',        right: false },
+  { label: 'Entry #',     right: false },
+  { label: 'Description', right: false },
+  { label: 'Debit',       right: true  },
+  { label: 'Credit',      right: true  },
+  { label: 'Source',      right: false },
+];
 
 const CREATE_JE_REASON =
   'You need the accounting.je.create_manual permission to post a manual journal entry.';
@@ -64,8 +74,18 @@ export default function JournalEntriesPage(): JSX.Element {
   // requête par touche.
   const [searchInput, setSearchInput] = useState(urlSearch);
   const debouncedSearch = useDebouncedValue(searchInput, 250);
+  // `patchParams` se referme sur `setSearchParams`, dont react-router refait
+  // l'identité à CHAQUE navigation : sans garde, régler la source ou le compte
+  // relançait cet effet et ré-émettait un `navigate` replace pour une valeur de
+  // `q` inchangée. La comparaison passe par une réf plutôt que par une
+  // dépendance : mettre `q` dans les deps ferait repousser la saisie locale
+  // par-dessus un `q` arrivé du bouton Retour.
+  const urlSearchRef = useRef(urlSearch);
+  urlSearchRef.current = urlSearch;
   useEffect(() => {
-    patchParams({ q: debouncedSearch.trim() === '' ? null : debouncedSearch.trim() });
+    const next = debouncedSearch.trim();
+    if (urlSearchRef.current === next) return;
+    patchParams({ q: next === '' ? null : next });
   }, [debouncedSearch, patchParams]);
 
   const accounts = usePostableAccounts();
@@ -154,17 +174,22 @@ export default function JournalEntriesPage(): JSX.Element {
         // texte `sr-only` référencé par `aria-describedby`.
         actions={
           <>
-            <Button
-              variant="ink"
+            {/* Bandeau de page = `TOOLBAR_BTN_*` (32 px), pas le primitif partagé
+                (56 px) : c'est le contrat du bandeau (DESIGN.md § Components).
+                L'aplat encre est l'UNIQUE de ce bandeau — c'est l'action qui crée.
+                La raison du refus reste doublée (`title` + `aria-describedby`),
+                un `<button disabled>` n'étant pas focalisable. */}
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2"
               disabled={!canCreate}
               {...(canCreate ? {} : { title: CREATE_JE_REASON, 'aria-describedby': 'je-create-reason' })}
               data-testid="je-new-btn"
             >
-              <Plus className="h-4 w-4" aria-hidden />
+              <Plus className="h-3.5 w-3.5" aria-hidden />
               New manual JE
-            </Button>
+            </button>
             {!canCreate && <span id="je-create-reason" className="sr-only">{CREATE_JE_REASON}</span>}
           </>
         }
@@ -269,14 +294,21 @@ export default function JournalEntriesPage(): JSX.Element {
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="je-table">
               <caption className="sr-only">Date, entry number, description, debit, credit and source per journal entry</caption>
+              {/* Canon des tableaux (DESIGN.md § Tableaux, patron
+                  `WalletLedgerTable`) : en-tête sur papier inerte, libellés en
+                  label mono capitales via `SectionLabel`. L'en-tête rendait en
+                  Instrument Sans sur fond blanc — indiscernable du corps. */}
               <thead>
-                <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                  <th scope="col" className="px-3 py-2">Date</th>
-                  <th scope="col" className="px-3 py-2">Entry #</th>
-                  <th scope="col" className="px-3 py-2">Description</th>
-                  <th scope="col" className="px-3 py-2 text-right">Debit</th>
-                  <th scope="col" className="px-3 py-2 text-right">Credit</th>
-                  <th scope="col" className="px-3 py-2">Source</th>
+                <tr className="border-b border-border-subtle bg-surface-inert text-left">
+                  {JE_HEAD.map((h) => (
+                    <th
+                      key={h.label}
+                      scope="col"
+                      className={`px-3 py-2.5 font-data ${h.right ? 'text-right' : ''}`}
+                    >
+                      <SectionLabel as="span" size="xs">{h.label}</SectionLabel>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -287,7 +319,7 @@ export default function JournalEntriesPage(): JSX.Element {
                     className="border-t border-border-subtle cursor-pointer hover:bg-surface-4"
                     onClick={() => { triggerRef.current = null; setSelected(row); }}
                   >
-                    <td className="px-3 py-2">{row.entry_date}</td>
+                    <td className="whitespace-nowrap px-3 py-2 font-data tabular-nums">{row.entry_date}</td>
                     <td className="px-3 py-2 font-mono text-xs">
                       {/* Le tiroir de détail ne s'ouvrait QUE par le `onClick` du
                           `<tr>` : les cellules étaient du texte pur et rien
@@ -326,8 +358,10 @@ export default function JournalEntriesPage(): JSX.Element {
                         ? '—'
                         : <ResolvedDescription text={row.description} names={names} />}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(row.total_debit)}</td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(row.total_credit)}</td>
+                    {/* `whitespace-nowrap` : sans lui, « Rp 4.850.000 » se coupe
+                        au « Rp » dès que la colonne se resserre. */}
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(row.total_debit)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(row.total_credit)}</td>
                     <td className="px-3 py-2 text-xs text-text-secondary">
                       {row.reference_type ?? '—'}
                     </td>

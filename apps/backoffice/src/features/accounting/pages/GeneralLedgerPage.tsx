@@ -3,9 +3,9 @@
 // Account selector + date range picker + lines table (running_balance computed
 // client-side from opening_balance) + Load more button.
 
-import { useMemo, useState, useEffect, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, SectionLabel } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
@@ -15,6 +15,8 @@ import {
 import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSourceEntity.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 const fmt = formatCurrency;
@@ -22,6 +24,16 @@ const fmt = formatCurrency;
 // les coffres et le hub. Le calcul local qu'il remplace passait par
 // `toISOString()`, donc par l'UTC : entre minuit et 08 h WITA, la période
 // s'ouvrait la veille, et le premier du mois métier tombait au mois précédent.
+
+const GL_HEAD: readonly { label: string; right: boolean }[] = [
+  { label: 'Date',            right: false },
+  { label: 'Entry #',         right: false },
+  { label: 'Description',     right: false },
+  { label: 'Source',          right: false },
+  { label: 'Debit',           right: true  },
+  { label: 'Credit',          right: true  },
+  { label: 'Running balance', right: true  },
+];
 
 interface AccumulatedLine extends GLLineRaw {
   running_balance: number;
@@ -40,46 +52,34 @@ export default function GeneralLedgerPage(): JSX.Element {
   const [accountId, setAccountId] = useState<string>(initialAccountId);
   const [startDate, setStartDate] = useState(initialStart);
   const [endDate,   setEndDate]   = useState(initialEnd);
-  const [cursor,    setCursor]    = useState<{ last_date: string; last_id: string } | null>(null);
-  const [pages,     setPages]     = useState<GLLineRaw[][]>([]);
-  const [openingBalance, setOpeningBalance] = useState<number>(0);
 
-  const gl = useGeneralLedger({ accountId: accountId || null, startDate, endDate, cursor });
+  // `useInfiniteQuery` : plus d'accumulateur maison. Changer de compte ou de
+  // période change la clé de requête, donc réinitialise les pages — l'effet de
+  // remise à zéro et celui qui poussait chaque page (avec un `setState` posé
+  // dans l'updater d'un autre, que StrictMode pouvait rejouer) n'ont plus
+  // d'objet.
+  const gl = useGeneralLedger({ accountId: accountId || null, startDate, endDate });
 
-  // Reset accumulator when account / period changes.
-  useEffect(() => {
-    setPages([]);
-    setCursor(null);
-  }, [accountId, startDate, endDate]);
-
-  // Push each new page into the accumulator.
-  useEffect(() => {
-    if (!gl.data) return;
-    setPages((prev) => {
-      if (cursor === null) {
-        setOpeningBalance(gl.data.opening_balance);
-        return [gl.data.lines];
-      }
-      // Avoid duplicating the same page on re-render.
-      const last = prev[prev.length - 1];
-      if (last?.length === gl.data.lines.length && last[0]?.je_id === gl.data.lines[0]?.je_id) {
-        return prev;
-      }
-      return [...prev, gl.data.lines];
-    });
-  }, [gl.data, cursor]);
+  // Période et solde d'ouverture sont calculés sur la période entière côté RPC :
+  // identiques sur toutes les pages, on les lit sur la première.
+  const firstPage = gl.data?.pages[0] ?? null;
+  const openingBalance = firstPage?.opening_balance ?? 0;
 
   const account = useMemo(
     () => (accounts.data ?? []).find((a) => a.id === accountId) ?? null,
     [accounts.data, accountId],
   );
 
+  const lines = useMemo<GLLineRaw[]>(
+    () => (gl.data?.pages ?? []).flatMap((p) => p.lines),
+    [gl.data],
+  );
+
   const accumulated = useMemo<AccumulatedLine[]>(() => {
     if (!account) return [];
-    const flat = pages.flat();
     const out: AccumulatedLine[] = [];
     let running = openingBalance;
-    for (const line of flat) {
+    for (const line of lines) {
       const delta =
         account.balance_type === 'debit'
           ? (Number(line.debit) - Number(line.credit))
@@ -88,11 +88,13 @@ export default function GeneralLedgerPage(): JSX.Element {
       out.push({ ...line, running_balance: running });
     }
     return out;
-  }, [pages, openingBalance, account]);
+  }, [lines, openingBalance, account]);
 
-  function handleLoadMore() {
-    if (gl.data?.next_cursor) setCursor(gl.data.next_cursor);
-  }
+  // Aucune branche d'échec n'existait : un compte choisi et une requête refusée
+  // laissaient la page sur ses trois filtres, sans table ni un mot. Même remède
+  // que le journal et la balance — le bandeau dit ce qui manque, et « Try
+  // again » évite de perdre le compte et la période déjà saisis.
+  const glError = gl.isError ? gl.error : null;
 
   return (
     <div className="space-y-6">
@@ -146,29 +148,50 @@ export default function GeneralLedgerPage(): JSX.Element {
         <p className="text-sm text-text-secondary">Pick an account to see its ledger.</p>
       )}
 
-      {accountId !== '' && gl.isLoading && pages.length === 0 && (
+      {glError !== null && (
+        <QueryErrorBanner
+          detail={errorDetailText(glError)}
+          onRetry={() => { void gl.refetch(); }}
+          data-testid="gl-error"
+        >
+          This account&apos;s ledger could not be loaded — the period may well
+          hold entries this request never reached.
+        </QueryErrorBanner>
+      )}
+
+      {accountId !== '' && gl.isLoading && (
         <p className="text-sm text-text-secondary">Loading ledger…</p>
       )}
 
-      {accountId !== '' && gl.data && (
+      {accountId !== '' && firstPage !== null && (
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="gl-table">
             <caption className="sr-only">Date, entry number, description, source, debit, credit and running balance for the selected account</caption>
+            {/* Canon des tableaux (patron `WalletLedgerTable`) : papier inerte
+                et libellés en label mono capitales. */}
             <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th scope="col" className="px-3 py-2">Date</th>
-                <th scope="col" className="px-3 py-2">Entry #</th>
-                <th scope="col" className="px-3 py-2">Description</th>
-                <th scope="col" className="px-3 py-2">Source</th>
-                <th scope="col" className="px-3 py-2 text-right">Debit</th>
-                <th scope="col" className="px-3 py-2 text-right">Credit</th>
-                <th scope="col" className="px-3 py-2 text-right">Running balance</th>
+              <tr className="border-b border-border-subtle bg-surface-inert text-left">
+                {GL_HEAD.map((h) => (
+                  <th
+                    key={h.label}
+                    scope="col"
+                    className={`px-3 py-2.5 font-data ${h.right ? 'text-right' : ''}`}
+                  >
+                    <SectionLabel as="span" size="xs">{h.label}</SectionLabel>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
+              {/* Le solde d'ouverture OUVRE le corps, il ne le clôt pas : il
+                  reste donc en `tbody` et non en `tfoot`. Mais c'est bien un
+                  en-tête de ligne, pas une donnée — `<th scope="row">`. */}
               <tr className="border-t border-border-subtle bg-bg-overlay font-semibold">
-                <td colSpan={6} className="px-3 py-2 text-right">Opening balance</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(openingBalance)}</td>
+                {/* `font-semibold` REDIT le poids de la ligne : le style UA
+                    d'un `<th>` est `bold` (700) et l'emporte sur le 600 hérité
+                    du `<tr>` — la ligne serait sortie plus grasse qu'avant. */}
+                <th scope="row" colSpan={6} className="px-3 py-2 text-right font-semibold">Opening balance</th>
+                <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(openingBalance)}</td>
               </tr>
               {accumulated.map((line, idx) => {
                 const source = resolveJeSourceEntity(line.reference_type, line.reference_id);
@@ -178,7 +201,7 @@ export default function GeneralLedgerPage(): JSX.Element {
                     data-testid={`gl-row-${line.entry_number}`}
                     className="border-t border-border-subtle"
                   >
-                    <td className="px-3 py-2">{line.entry_date}</td>
+                    <td className="whitespace-nowrap px-3 py-2 font-data tabular-nums">{line.entry_date}</td>
                     <td className="px-3 py-2 font-mono text-xs">{line.entry_number}</td>
                     <td className="px-3 py-2">
                       {line.description ?? '—'}
@@ -198,39 +221,47 @@ export default function GeneralLedgerPage(): JSX.Element {
                         <span className="text-text-secondary">{line.reference_type ?? '—'}</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    {/* `whitespace-nowrap` : « Rp 4.850.000 » se coupait au
+                        « Rp » quand la colonne se resserre. */}
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">
                       {Number(line.debit) > 0 ? fmt(Number(line.debit)) : ''}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">
                       {Number(line.credit) > 0 ? fmt(Number(line.credit)) : ''}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(line.running_balance)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(line.running_balance)}</td>
                   </tr>
                 );
               })}
+            </tbody>
+            {/* Le total de période est un PIED de tableau, pas une ligne de
+                données : `<tfoot>` + `<th scope="row">` (patron
+                `DailySalesPage`). En `tbody`, il se lisait comme une écriture
+                de plus au lecteur d'écran. */}
+            <tfoot>
               <tr className="border-t-2 border-border-strong font-semibold">
-                <td colSpan={4} className="px-3 py-2 text-right">Period totals</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(gl.data.total_debit)}</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(gl.data.total_credit)}</td>
+                <th scope="row" colSpan={4} className="px-3 py-2 text-right font-semibold">Period totals</th>
+                <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(firstPage.total_debit)}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(firstPage.total_credit)}</td>
                 <td></td>
               </tr>
-            </tbody>
+            </tfoot>
           </table>
         </div>
       )}
 
-      {gl.data?.next_cursor && (
+      {gl.hasNextPage && (
         <Button
           variant="secondary"
           // `sm` (36 px) : le cran unique de « Load more » dans tout le
           // back-office. Sans lui ce bouton rendait au défaut `md`, soit 56 px —
           // le même contrôle existait en 32, 36 et 56 px sur six pages.
           size="sm"
-          onClick={handleLoadMore}
-          disabled={gl.isFetching}
+          onClick={() => { void gl.fetchNextPage(); }}
+          disabled={gl.isFetchingNextPage}
           data-testid="gl-load-more"
         >
-          {gl.isFetching ? 'Loading…' : 'Load more'}
+          {gl.isFetchingNextPage ? 'Loading…' : 'Load more'}
         </Button>
       )}
     </div>

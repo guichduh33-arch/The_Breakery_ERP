@@ -48,7 +48,7 @@ export function PromoRoiSummary({ data }: PromoRoiSummaryProps) {
           </span>
         </CardTitle>
         <div className="text-xs text-text-secondary">
-          Period : <span className="font-mono">{data.period.start}</span> →{' '}
+          Period: <span className="font-mono">{data.period.start}</span> →{' '}
           <span className="font-mono">{data.period.end}</span>
         </div>
       </CardHeader>

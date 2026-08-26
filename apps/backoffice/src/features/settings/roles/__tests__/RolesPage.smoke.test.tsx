@@ -139,9 +139,15 @@ describe('RolesPage', () => {
     expect(screen.getByTestId('rbac-cell-ADMIN-settings.read')).not.toBeDisabled();
   });
 
+  // Le bloc nu a laissé la place au bandeau partagé : phrase humaine, message
+  // serveur relégué en diagnostic, et une reprise (« Try again ») qui évite de
+  // recharger la page. C'est le bandeau qu'on épingle, plus une formulation.
   it('surfaces a load failure instead of rendering an empty table', async () => {
     failTables = true;
     renderPage();
-    expect(await screen.findByTestId('roles-error')).toHaveTextContent(/Failed to load roles/i);
+    const banner = await screen.findByTestId('roles-error');
+    expect(banner).toHaveTextContent(/Roles could not be loaded/i);
+    expect(banner).toHaveAttribute('role', 'alert');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });

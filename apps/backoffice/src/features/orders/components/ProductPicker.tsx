@@ -78,7 +78,10 @@ export function ProductPicker({ onPick }: Props) {
                 <span className="text-xs text-text-muted font-mono shrink-0">
                   {p.sku}
                 </span>
-                <span className="text-xs text-text-secondary shrink-0 tabular-nums">
+                {/* `font-data` : `tabular-nums` seul aligne les chiffres
+                    d'Instrument Sans sans les rendre en mono, et aucun parent
+                    ne pose la famille ici. */}
+                <span className="text-xs text-text-secondary shrink-0 font-data tabular-nums">
                   {formatCurrency(p.retail_price)}
                 </span>
               </button>

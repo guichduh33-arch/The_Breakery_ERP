@@ -7,7 +7,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 
-const idr = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+// `style: 'currency'` comme `WalletCard` et `WalletLedgerTable` : ce panneau
+// vit sur le MÊME écran que les tuiles de portefeuille, qui préfixent « Rp ».
+// Sans le style, la page rendait « Rp 14.000.000 » en haut et « 14.000.000 »
+// ici, pour la même unité. L'unité se déclare une fois par écran, ou à chaque
+// montant — jamais à moitié.
+const idr = new Intl.NumberFormat('id-ID', {
+  style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
+});
 
 interface Analysis {
   revenue_by_shift:        { d: string; shift: string; total: number }[];
@@ -46,7 +53,7 @@ export function CashAnalysisPanel({ start, end }: { start: string; end: string }
                   {c.category}{' '}
                   <span className="text-text-muted">×{c.occurrences}</span>
                 </span>
-                <span className="tabular-nums">{idr.format(c.total)}</span>
+                <span className="font-data tabular-nums">{idr.format(c.total)}</span>
               </li>
             ))}
           </ul>
@@ -57,11 +64,11 @@ export function CashAnalysisPanel({ start, end }: { start: string; end: string }
         <h3 className="font-medium mb-2">Movements summary</h3>
         <div className="flex justify-between text-sm">
           <span>Bank deposits</span>
-          <span className="tabular-nums">{idr.format(data.deposits_total)}</span>
+          <span className="font-data tabular-nums">{idr.format(data.deposits_total)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span>Boss withdrawals</span>
-          <span className="tabular-nums">{idr.format(data.boss_withdrawals_total)}</span>
+          <span className="font-data tabular-nums">{idr.format(data.boss_withdrawals_total)}</span>
         </div>
       </Card>
     </div>

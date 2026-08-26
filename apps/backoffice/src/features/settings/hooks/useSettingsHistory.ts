@@ -85,7 +85,9 @@ function parseB2bRow(row: RawAuditRow): SettingsHistoryEntry {
 function useAuditFeed(action: string) {
   return useInfiniteQuery<RawAuditRow[], Error>({
     queryKey: [...SETTINGS_HISTORY_QK, action] as const,
-    staleTime: 30_000,
+    // Journal immuable : à 30 s, un retour de focus refetchait en série toutes
+    // les pages déjà déroulées — et il y a DEUX flux ici.
+    staleTime: 5 * 60_000,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       const args: { p_action: string; p_limit: number; p_cursor?: string } = {
