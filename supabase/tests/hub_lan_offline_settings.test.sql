@@ -4,7 +4,7 @@
 --   * business_config.offline_payments_enabled (ex offline_cash_enabled) ;
 --   * offline_max_hours SUPPRIMÉE (plus de fenêtre de blocage) ;
 --   * set_setting_v13 / get_settings_by_category_v10 ;
---   * pay_existing_order_v17 : p_payments multi-règlements + p_offline_replay,
+--   * pay_existing_order_v18 : p_payments multi-règlements + p_offline_replay,
 --     qui ne bypasse PAS le gate store_credit.
 --
 -- Remplace la suite spec 006x lot 4, devenue caduque (elle appelait
@@ -106,21 +106,21 @@ END $audit$;
 SELECT ok(current_setting('breakery.t_audit_pass')::BOOLEAN,
   'audit_logs setting.update row for offline_payments_enabled has key/old/new/category');
 
--- 11: pay_existing_order_v17 porte p_payments ET p_offline_replay.
+-- 11: pay_existing_order_v18 porte p_payments ET p_offline_replay.
 SELECT ok(
   (SELECT pg_get_function_identity_arguments(p.oid) LIKE '%p_payments jsonb%'
       AND pg_get_function_identity_arguments(p.oid) LIKE '%p_offline_replay boolean%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v17'),
-  'pay_existing_order_v17 carries p_payments and p_offline_replay');
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v18'),
+  'pay_existing_order_v18 carries p_payments and p_offline_replay');
 
 -- 12: le multi-règlements est borné 1..5 côté serveur (ADR-015 : le split
 --     hors-ligne s'appuie dessus, il ne le contourne pas).
 SELECT ok(
   (SELECT prosrc LIKE '%Invalid tender count%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v17'),
-  'pay_existing_order_v17 enforces the 1..5 tender bound');
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v18'),
+  'pay_existing_order_v18 enforces the 1..5 tender bound');
 
 -- 13: p_offline_replay force allow_negative MAIS ne bypasse PAS le gate
 --     store_credit — c'est ce qui justifie l'exclusion de l'avoir (ADR-015).
@@ -129,7 +129,7 @@ SELECT ok(
       AND prosrc LIKE '%v_allow_negative := true%'
       AND prosrc LIKE '%Insufficient store credit%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v17'),
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v18'),
   'offline replay forces allow_negative but the store-credit gate still fires');
 
 -- 14: defense-in-depth — anon n'exécute aucune des 3 fonctions.
@@ -137,8 +137,8 @@ SELECT ok(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
-     AND p.proname IN ('set_setting_v13', 'get_settings_by_category_v10', 'pay_existing_order_v17')),
-  'anon has no EXECUTE on set_setting_v13 / get_settings_by_category_v10 / pay_existing_order_v17');
+     AND p.proname IN ('set_setting_v13', 'get_settings_by_category_v10', 'pay_existing_order_v18')),
+  'anon has no EXECUTE on set_setting_v13 / get_settings_by_category_v10 / pay_existing_order_v18');
 
 SELECT * FROM finish();
 ROLLBACK;

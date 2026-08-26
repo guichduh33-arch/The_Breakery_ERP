@@ -596,8 +596,8 @@ SELECT ok(
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v17'),
-  'T35: pay_existing_order dropped ; pay_existing_order_v17 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v18'),
+  'T35: pay_existing_order dropped ; pay_existing_order_v18 exists'
 );
 
 -- ---------------------------------------------------------------------------
