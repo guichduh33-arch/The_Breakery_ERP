@@ -15,7 +15,7 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
-import { VoidOrderModal } from '../components/VoidOrderModal.js';
+import { VoidOrderModal, voidErrorText } from '../components/VoidOrderModal.js';
 
 function renderModal() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -49,5 +49,32 @@ describe('VoidOrderModal — étiquetage programmatique', () => {
     const errorId = reason.getAttribute('aria-describedby');
     expect(errorId).toBeTruthy();
     expect(document.getElementById(errorId!)).toHaveTextContent('Min. 10 characters');
+  });
+});
+
+// Critique du 2026-08-26 — le chemin d'erreur rendait `m.error.message` brut
+// dans un `role="alert"`. `useVoidOrder` y met TOUJOURS un jeton machine
+// (`err.error ?? 'void_failed'`), donc la région live épelait
+// « cross_shift_not_allowed » à qui n'y voit pas.
+describe('voidErrorText — aucun jeton machine ne sort à l’écran', () => {
+  it('traduit les jetons connus de l’EF', () => {
+    expect(voidErrorText(new Error('wrong_pin'))).toBe('Invalid manager PIN.');
+    expect(voidErrorText(new Error('cross_shift_not_allowed')))
+      .toBe('This order belongs to a closed shift and can no longer be voided.');
+    expect(voidErrorText(new Error('missing_manager_pin'))).toBe('Manager PIN is required.');
+  });
+
+  it('tait un jeton INCONNU au lieu de l’afficher', () => {
+    // La doctrine `errorDetailText` : ce qui ressemble à du snake_case ou à un
+    // code Postgres n'apprend rien au lecteur et ne sort pas.
+    expect(voidErrorText(new Error('order_not_voidable'))).toBe('Something went wrong. Please retry.');
+    expect(voidErrorText(new Error('P0001'))).toBe('Something went wrong. Please retry.');
+    expect(voidErrorText({ nothing: true })).toBe('Something went wrong. Please retry.');
+    expect(voidErrorText(new Error('[object Object]'))).toBe('Something went wrong. Please retry.');
+  });
+
+  it('laisse passer un message serveur écrit en clair', () => {
+    expect(voidErrorText(new Error('The shift was closed at 21:04.')))
+      .toBe('The shift was closed at 21:04.');
   });
 });

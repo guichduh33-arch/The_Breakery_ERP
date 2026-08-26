@@ -119,10 +119,19 @@ describe('Inventory page shell (LIST archetype)', () => {
   // lignes et disparaissait donc avec elles. Le pied disait « 0 of 0 », ou ne
   // se rendait pas du tout — au moment précis où l'utilisateur a besoin de
   // savoir que son filtre est trop étroit, et non que l'écran est cassé.
+  //
+  // Le pied énonçait ces deux faits DEUX FOIS jusqu'au 2026-08-26 (« 0 of 318 »
+  // dans son `leading`, « Showing 1–15 of 318 rows » dans le compteur partagé).
+  // Le doublon est retiré ; les deux faits que l'ADR protège restent, et ils
+  // sont désormais portés chacun par un seul nœud :
+  //   · le TOTAL du panier survit à une liste vide — compteur partagé ;
+  //   · le compte RÉEL des lignes rendues ne se déduit pas de la tranche, qui
+  //     en promet quinze — d'où la mention de page courte.
   it('still counts when the list comes back empty', { timeout: 15_000 }, async () => {
     mockRows = [];
     const InventoryPage = (await import('@/pages/Inventory.js')).default;
     const w = within(renderPage(InventoryPage).container);
-    expect(w.getByText('0 of 318')).toBeInTheDocument();
+    expect(w.getByTestId('list-page-range')).toHaveTextContent('of 318');
+    expect(w.getByTestId('stock-levels-short-page')).toHaveTextContent('0 shown');
   });
 });

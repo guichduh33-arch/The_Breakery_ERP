@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import {
   ORDER_STATUS_BADGE,
+  isB2BOrder,
   isOrderDetailPaid,
   isSettledStatus,
   orderStatusBadgeTone,
@@ -102,6 +103,10 @@ export function OrderDetailPage(): JSX.Element {
     refundTotal <= 0 ? 'none' : refundTotal >= data.total ? 'full' : 'partial';
   // RÉGLÉ : définition unique partagée avec le tiroir (isOrderDetailPaid).
   const isPaid = isOrderDetailPaid(data);
+  // Le canal décide de la COPIE qui explique une absence de ligne de paiement :
+  // seul le B2B se règle au grand livre AR. Ailleurs, l'absence est une
+  // anomalie qu'on CONSTATE — on ne lui invente pas une cause.
+  const isB2B = isB2BOrder(data);
   const orderNo = data.order_number.replace(/^#+/, '');
 
   return (
@@ -265,7 +270,9 @@ export function OrderDetailPage(): JSX.Element {
                 {data.status === 'voided'
                   ? 'Voided before payment.'
                   : isPaid
-                    ? 'Settled without a POS payment row — B2B settlements are recorded in the AR ledger.'
+                    ? isB2B
+                      ? 'Settled without a POS payment row — B2B settlements are recorded in the AR ledger.'
+                      : 'Paid status without a recorded payment row.'
                     : 'Not paid yet.'}
               </p>
             ) : (
@@ -369,12 +376,20 @@ function Timeline({
     if (isPaid) steps.push({ key: 'paid', label: 'Paid', ...(paidAt !== undefined ? { at: paidAt } : {}), done: true });
     steps.push({ key: 'voided', label: 'Voided', done: true, tone: 'danger' });
   } else {
+    // Une étape À VENIR se nomme au futur. « Paid — pending » et « Completed —
+    // pending » collaient un état franchi à sa propre négation : l'oxymore se
+    // lisait comme une contradiction de données, pas comme une attente
+    // (critique design 2026-08-26). Le libellé porte donc l'état, entier.
     steps.push(
       isPaid
         ? { key: 'paid', label: 'Paid', ...(paidAt !== undefined ? { at: paidAt } : {}), done: true }
-        : { key: 'paid', label: 'Paid', done: false },
+        : { key: 'paid', label: 'Payment pending', done: false },
     );
-    steps.push({ key: 'completed', label: 'Completed', done: data.status === 'completed' });
+    steps.push(
+      data.status === 'completed'
+        ? { key: 'completed', label: 'Completed', done: true }
+        : { key: 'completed', label: 'Completion pending', done: false },
+    );
   }
   if (refundState !== 'none') {
     const last = data.refunds[data.refunds.length - 1];
@@ -404,12 +419,14 @@ function Timeline({
             )}
           />
           <span className="min-w-0 flex-1">
-            {/* Le séparateur est TEXTUEL, pas une marge : deux nœuds texte
-                adjacents se copient et se lisent « Completedpending » (audit
-                UX/UI 2026-08-13, lot 6a). Vaut pour Paid comme pour Completed. */}
+            {/* UN SEUL nœud texte, dont le libellé dit déjà l'état de l'étape :
+                l'attente n'est plus un suffixe accolé au nom de l'étape
+                franchie. Le suffixe séparé demandait un séparateur textuel,
+                faute de quoi la copie sortait « Completedpending » (audit
+                UX/UI 2026-08-13, lot 6a) — le problème disparaît avec lui.
+                Toute étape ajoutée ici nomme donc son propre état à venir. */}
             <span className={cn('block text-sm', step.done ? 'text-text-primary' : 'text-text-muted')}>
               {step.label}
-              {!step.done && <span className="text-xs text-text-muted">{' — pending'}</span>}
             </span>
             {step.at !== undefined && (
               <span className="block font-data text-xs tabular-nums text-text-muted">{fmtDateTime(step.at)}</span>

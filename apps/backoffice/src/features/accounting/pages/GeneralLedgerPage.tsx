@@ -6,7 +6,7 @@
 import { useMemo, useState, useEffect, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Input } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
   useGeneralLedger,
@@ -18,13 +18,10 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 const fmt = formatCurrency;
-function defaultPeriodStart(): string {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-}
-function defaultPeriodEnd(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+// Défaut MUTUALISÉ (`@breakery/utils`) — même helper que le journal, la balance,
+// les coffres et le hub. Le calcul local qu'il remplace passait par
+// `toISOString()`, donc par l'UTC : entre minuit et 08 h WITA, la période
+// s'ouvrait la veille, et le premier du mois métier tombait au mois précédent.
 
 interface AccumulatedLine extends GLLineRaw {
   running_balance: number;
@@ -37,8 +34,8 @@ export default function GeneralLedgerPage(): JSX.Element {
   // S32 — seed initial state from URL params (?account_id=&start=&end=).
   // No 2-way sync — user changes don't write URL (deferred S33+).
   const initialAccountId = searchParams.get('account_id') ?? '';
-  const initialStart     = searchParams.get('start')      ?? defaultPeriodStart();
-  const initialEnd       = searchParams.get('end')        ?? defaultPeriodEnd();
+  const initialStart     = searchParams.get('start')      ?? monthStartIsoDate();
+  const initialEnd       = searchParams.get('end')        ?? todayIsoDate();
 
   const [accountId, setAccountId] = useState<string>(initialAccountId);
   const [startDate, setStartDate] = useState(initialStart);
@@ -100,8 +97,8 @@ export default function GeneralLedgerPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="General Ledger"
-        subtitle={<span className="italic">Drilldown by account with running balance</span>}
+        title="General ledger"
+        subtitle="Drilldown by account with running balance"
       />
 
       <div className="flex flex-wrap items-end gap-3">

@@ -13,11 +13,27 @@ export interface DeltaView {
   direction: DeltaDirection;
   /** Glyphe seul — rendu `aria-hidden`, la valeur est portée par `text`. */
   glyph: string;
-  /** Valeur formatée, unité comprise : « 12,4% », « 1,4pt », « — ». */
+  /** Valeur formatée, unité comprise : « 12,4% », « 1,4pt », « >999% », « — ». */
   text: string;
+  /**
+   * Raison à porter en infobulle ET dans le texte lu, quand la valeur affichée
+   * n'est pas la valeur brute. Absent = rien à expliquer.
+   */
+  hint?: string;
 }
 
 const TIRET = '—';
+
+/**
+ * Plafond d'affichage d'une variation. Au-delà, le chiffre ne mesure plus une
+ * évolution : il dit qu'il n'y avait presque rien à quoi se comparer. « ▲
+ * 5.158,2% » se lit alors comme une précision qu'il n'a pas — on plafonne, et
+ * la raison part en infobulle (critique design 2026-08-26).
+ */
+const CAP = 999;
+
+/** Portée en `title` et dans le texte lu quand la variation est plafonnée. */
+export const DELTA_CAP_HINT = 'no comparable baseline';
 
 function fixed1(v: number): string {
   return Math.abs(v).toLocaleString('id-ID', {
@@ -39,6 +55,12 @@ export function deltaView(v: number | null | undefined, unit: 'pct' | 'pt' = 'pc
   }
   const suffix = unit === 'pct' ? '%' : 'pt';
   if (v === 0) return { direction: 'flat', glyph: '=', text: `0,0${suffix}` };
+  // Le SENS reste porté par la flèche : seule la magnitude est plafonnée.
+  if (Math.abs(v) > CAP) {
+    return v > 0
+      ? { direction: 'up',   glyph: '▲', text: `>${CAP}${suffix}`, hint: DELTA_CAP_HINT }
+      : { direction: 'down', glyph: '▼', text: `>${CAP}${suffix}`, hint: DELTA_CAP_HINT };
+  }
   if (v > 0)   return { direction: 'up',   glyph: '▲', text: `${fixed1(v)}${suffix}` };
   return { direction: 'down', glyph: '▼', text: `${fixed1(v)}${suffix}` };
 }

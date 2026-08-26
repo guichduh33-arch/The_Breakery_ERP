@@ -84,6 +84,28 @@ export function todayIsoDate(): string {
   return formatInTimeZone(new Date(), TIMEZONE, 'yyyy-MM-dd');
 }
 
+// Le PREMIER JOUR du mois métier courant — la borne basse par défaut de toutes
+// les périodes du module comptable (journal, balance, grand livre, coffres) et
+// du hub qui les précharge.
+//
+// LE DÉFAUT QU'IL FERME. Ces écrans écrivaient chacun leur copie de
+// `new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)` : le
+// `Date` était construit dans le fuseau du NAVIGATEUR, puis `toISOString` le
+// reconvertissait en UTC. Sur un poste réglé à l'heure de Bali (UTC+8), minuit
+// du 1ᵉʳ août redevient le 31 juillet 16:00, et la chaîne sortait
+// « 2026-07-31 » — un jour ET un mois trop tôt. Le même calcul sur
+// « aujourd'hui » (`new Date().toISOString()`) rendait la VEILLE entre minuit et
+// 08 h WITA — les heures de fermeture de caisse, précisément celles où un
+// comptable ouvre ces écrans. Même famille que le bug de `formatDateLong`
+// corrigé le 2026-08-21, et même remède : passer par le fuseau métier.
+//
+// On compose `yyyy-MM` + `-01` plutôt que de formater un `Date` construit au
+// premier du mois : la construction locale ramènerait le fuseau du navigateur
+// dans le calcul, qui est exactement ce dont on sort.
+export function monthStartIsoDate(): string {
+  return `${formatInTimeZone(new Date(), TIMEZONE, 'yyyy-MM')}-01`;
+}
+
 // Le JOUR MÉTIER d'un instant quelconque — pendant de `todayIsoDate` pour une
 // date qui n'est pas maintenant. Sert à comparer deux dates en jours de
 // calendrier plutôt qu'en tranches de 24 h : un mouvement d'hier 23 h et un

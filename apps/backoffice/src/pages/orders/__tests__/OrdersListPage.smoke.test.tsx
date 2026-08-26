@@ -11,7 +11,7 @@
 // T4 (C2/BO-03) : toast.error fired when order_items fetch fails.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import OrdersListPage from '../OrdersListPage.js';
@@ -228,5 +228,24 @@ describe('OrdersListPage smoke', () => {
     const table = screen.getByTestId('orders-table');
     expect(table).toHaveTextContent('Paid');
     expect(table).not.toHaveTextContent('Unpaid');
+  });
+
+  // Critique design 2026-08-26 : `mixed` est une valeur SYNTHÉTIQUE de la RPC,
+  // hors enum `payment_method` — sans libellé, elle sortait en minuscule à côté
+  // de « Cash » et « QRIS ».
+  it('T9 the synthetic mixed payment value renders as a label, not as a raw enum', async () => {
+    const mixedRow = { ...SAMPLE_ROW, id: 'o-3', order_number: 'ORD-MIX', payment_method_primary: 'mixed' };
+    rpcMock.mockImplementation((name: unknown) =>
+      Promise.resolve(
+        name === 'get_orders_counters_v2'
+          ? { data: SAMPLE_COUNTERS, error: null }
+          : { data: { lines: [mixedRow], next_cursor_val: null, next_cursor_id: null }, error: null },
+      ),
+    );
+    renderRoute('/backoffice/orders');
+    await screen.findByText(/ORD-MIX/);
+    const table = screen.getByTestId('orders-table');
+    expect(table).toHaveTextContent('Mixed');
+    expect(within(table).queryByText('mixed')).toBeNull();
   });
 });

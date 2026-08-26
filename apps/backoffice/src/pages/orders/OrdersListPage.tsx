@@ -56,6 +56,7 @@ import {
   orderStatusBadgeTone,
   orderStatusLabel,
   orderTypeLabel,
+  paymentMethodLabel,
   type OrderStatus,
 } from '@/features/orders/statusMeta.js';
 import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js';
@@ -366,7 +367,7 @@ export default function OrdersListPage(): JSX.Element {
       // plus « Unpaid » à côté d'un badge Paid (review PR #367).
       render: (o) => (
         o.payment_method_primary !== null
-          ? <span className="text-text-secondary">{(PAYMENT_METHOD_LABEL as Record<string, string>)[o.payment_method_primary] ?? o.payment_method_primary}</span>
+          ? <span className="text-text-secondary">{paymentMethodLabel(o.payment_method_primary)}</span>
           : isSettledStatus(o.status)
             ? <span className="text-success">Paid</span>
             : o.status === 'voided'

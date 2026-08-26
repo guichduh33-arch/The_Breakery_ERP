@@ -3,7 +3,17 @@
 
 export { useChartOfAccounts, type AccountRow, CHART_OF_ACCOUNTS_KEY } from './hooks/useChartOfAccounts.js';
 export { useUpdateAccountActive, type UpdateAccountActiveArgs } from './hooks/useUpdateAccountActive.js';
-export { useJournalEntries, type JournalEntryRow, type JournalEntriesFilter, JOURNAL_ENTRIES_KEY } from './hooks/useJournalEntries.js';
+export {
+  useJournalEntries,
+  type JournalEntryRow,
+  type JournalEntriesFilter,
+  type JournalEntriesCursor,
+  type JournalEntriesSlice,
+  JOURNAL_ENTRIES_KEY,
+  JOURNAL_ENTRIES_PAGE_SIZE,
+} from './hooks/useJournalEntries.js';
+export { useEntityNames, ENTITY_NAMES_KEY } from './hooks/useEntityNames.js';
+export { collectUuids, segmentDescription, type DescriptionSegment } from './utils/journalDescription.js';
 export { useJournalEntryLines, type JournalEntryLineRow, JE_LINES_KEY } from './hooks/useJournalEntryLines.js';
 export { useCreateManualJournalEntry, type CreateManualJEArgs, type ManualJELine } from './hooks/useCreateManualJournalEntry.js';
 export { usePostableAccounts, type PostableAccountOption, POSTABLE_ACCOUNTS_FULL_KEY } from './hooks/usePostableAccounts.js';

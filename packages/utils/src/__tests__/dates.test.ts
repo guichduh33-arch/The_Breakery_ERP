@@ -1,6 +1,6 @@
 // packages/utils/src/__tests__/dates.test.ts
-import { describe, it, expect } from 'vitest';
-import { formatDate, formatDateTime, formatDateTimeWita, formatDateTimeShortWita, formatTimeWita, formatDateLong, todayIsoDate, businessDateIso } from '../dates';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { formatDate, formatDateTime, formatDateTimeWita, formatDateTimeShortWita, formatTimeWita, formatDateLong, todayIsoDate, monthStartIsoDate, businessDateIso } from '../dates';
 
 describe('dates', () => {
   const utc = new Date('2026-05-03T10:30:00Z');  // 18:30 WITA
@@ -40,6 +40,49 @@ describe('dates', () => {
 
   it('todayIsoDate returns YYYY-MM-DD', () => {
     expect(todayIsoDate()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  // monthStartIsoDate — la borne basse par défaut des périodes comptables.
+  // Les instants choisis sont ceux où le fuseau MORD : entre minuit et 08 h à
+  // Makassar, l'UTC est encore la veille, donc un `toISOString()` rendait un
+  // jour — et parfois un MOIS — antérieurs.
+  describe('monthStartIsoDate', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    function at(iso: string): void {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(iso));
+    }
+
+    it('rend le premier jour du mois, au format ISO', () => {
+      expect(monthStartIsoDate()).toMatch(/^\d{4}-\d{2}-01$/);
+    });
+
+    // LE DÉFAUT. 2026-07-31 16:30 UTC = 2026-08-01 00:30 à Makassar : le mois
+    // métier vient de changer, l'UTC pas encore. L'ancien calcul rendait
+    // « 2026-07-31 », donc une période d'ouverture qui commençait un mois trop
+    // tôt ET un jour trop tôt.
+    it('reste sur le mois MÉTIER quand l’UTC est encore au mois précédent', () => {
+      at('2026-07-31T16:30:00Z');
+      expect(monthStartIsoDate()).toBe('2026-08-01');
+      expect(todayIsoDate()).toBe('2026-08-01');
+      // Le témoin du bug : la voie UTC, elle, se trompe de mois.
+      expect(new Date().toISOString().slice(0, 10)).toBe('2026-07-31');
+    });
+
+    it('ne dérive pas en milieu de mois', () => {
+      at('2026-08-14T16:30:00Z'); // 2026-08-15 00:30 WITA
+      expect(monthStartIsoDate()).toBe('2026-08-01');
+      expect(todayIsoDate()).toBe('2026-08-15');
+    });
+
+    it('borne basse et borne haute appartiennent toujours au même mois', () => {
+      for (const iso of ['2026-01-31T17:00:00Z', '2026-02-28T16:00:00Z', '2026-12-31T23:59:00Z']) {
+        at(iso);
+        expect(monthStartIsoDate().slice(0, 7)).toBe(todayIsoDate().slice(0, 7));
+        vi.useRealTimers();
+      }
+    });
   });
 
   it('accepts string input for formatDateTimeWita', () => {

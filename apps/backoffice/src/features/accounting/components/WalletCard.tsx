@@ -24,6 +24,21 @@ export function WalletCard({
 }) {
   const label = LABELS[wallet.account_code] ?? wallet.account_name;
   const lentOut = fixedFloat != null && wallet.balance !== fixedFloat;
+  /**
+   * Un coffre NÉGATIF est un solde à découvert — dans un commerce qui n'a pas de
+   * découvert, c'est une erreur de saisie ou un coffre non compté. « Petty Cash
+   * -Rp 14.000.000 » s'affichait exactement comme un coffre sain, alors que la
+   * même mesure sur le tableau de bord dit déjà « overdrawn » en danger
+   * (`DashboardKpiStrip.tsx`, tuile « Cash on hand »). Deux écrans, une seule
+   * lecture : c'est le même traitement de sévérité qui est repris ici.
+   *
+   * Trois signaux, comme là-bas, et la couleur n'est jamais le premier : le
+   * SIGNE vient du formatteur, le MOT de la ligne sous la valeur, la teinte
+   * n'arrive qu'en renfort (WCAG 1.4.1). Le rouge écrit passe par
+   * `danger-as-text` — Règle des Deux Rouges — et sans alpha : `text-danger/70`
+   * sur un token `var()` nu serait supprimé en silence par Tailwind.
+   */
+  const overdrawn = wallet.balance < 0;
 
   return (
     <button
@@ -60,7 +75,17 @@ export function WalletCard({
             </Badge>
           )}
         </div>
-        <div className="mt-2 text-2xl font-semibold tabular-nums">{idr.format(wallet.balance)}</div>
+        <div
+          className={`mt-2 text-2xl font-semibold tabular-nums ${overdrawn ? 'text-danger-as-text' : ''}`}
+          data-testid="wallet-balance"
+        >
+          {idr.format(wallet.balance)}
+        </div>
+        {overdrawn && (
+          <div className="mt-1 text-xs text-danger-as-text" data-testid="wallet-overdrawn">
+            Overdrawn
+          </div>
+        )}
         {fixedFloat != null && (
           <div className="mt-1 text-xs text-text-muted">
             Fixed float: {idr.format(fixedFloat)}
