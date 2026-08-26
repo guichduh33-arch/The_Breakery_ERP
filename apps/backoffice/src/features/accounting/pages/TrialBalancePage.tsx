@@ -2,7 +2,7 @@
 // Session 26b / Wave 4 — Trial Balance page.
 
 import { useState, type JSX } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, SectionLabel } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Download } from 'lucide-react';
 import {
@@ -18,6 +18,15 @@ const CLASS_LABELS: Record<number, string> = {
 };
 
 const fmt = formatCurrency;
+
+const TB_HEAD: readonly { label: string; right: boolean }[] = [
+  { label: 'Code',    right: false },
+  { label: 'Name',    right: false },
+  { label: 'Class',   right: false },
+  { label: 'Debit',   right: true  },
+  { label: 'Credit',  right: true  },
+  { label: 'Balance', right: true  },
+];
 
 export default function TrialBalancePage(): JSX.Element {
   // Défaut MUTUALISÉ (`@breakery/utils`) : le calcul local passait par
@@ -90,12 +99,16 @@ export default function TrialBalancePage(): JSX.Element {
         <>
           <div data-testid="tb-balanced-badge">
             {tb.data.balanced ? (
+              // Le GLYPHE est du bruit au lecteur d'écran — « check mark
+              // Balanced » — là où le MOT porte déjà tout le fait. Il reste à
+              // l'œil, `aria-hidden`, comme un simple renfort visuel.
               <span className="inline-flex items-center gap-2 rounded-sm bg-success-soft px-3 py-1 text-xs font-semibold text-success">
-                ✓ Balanced
+                <span aria-hidden>✓</span> Balanced
               </span>
             ) : (
               <span className="inline-flex items-center gap-2 rounded-sm bg-red-soft px-3 py-1 text-xs font-semibold text-red">
-                ✗ Unbalanced — Δ {fmt(Math.abs(tb.data.delta))}
+                <span aria-hidden>✗</span> Unbalanced — Δ{' '}
+                <span className="font-data tabular-nums">{fmt(Math.abs(tb.data.delta))}</span>
               </span>
             )}
           </div>
@@ -103,14 +116,19 @@ export default function TrialBalancePage(): JSX.Element {
           <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
             <table className="w-full text-sm" data-testid="tb-table">
               <caption className="sr-only">Code, name, class, debit, credit and balance per account</caption>
+              {/* Canon des tableaux (patron `WalletLedgerTable`) : papier
+                  inerte et libellés en label mono capitales. */}
               <thead>
-                <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                  <th scope="col" className="px-3 py-2">Code</th>
-                  <th scope="col" className="px-3 py-2">Name</th>
-                  <th scope="col" className="px-3 py-2">Class</th>
-                  <th scope="col" className="px-3 py-2 text-right">Debit</th>
-                  <th scope="col" className="px-3 py-2 text-right">Credit</th>
-                  <th scope="col" className="px-3 py-2 text-right">Balance</th>
+                <tr className="border-b border-border-subtle bg-surface-inert text-left">
+                  {TB_HEAD.map((h) => (
+                    <th
+                      key={h.label}
+                      scope="col"
+                      className={`px-3 py-2.5 font-data ${h.right ? 'text-right' : ''}`}
+                    >
+                      <SectionLabel as="span" size="xs">{h.label}</SectionLabel>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -125,18 +143,25 @@ export default function TrialBalancePage(): JSX.Element {
                     <td className="px-3 py-2 text-xs text-text-secondary">
                       {CLASS_LABELS[line.account_class] ?? line.account_class}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(line.total_debit)}</td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(line.total_credit)}</td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(line.balance)}</td>
+                    {/* `whitespace-nowrap` : « Rp 4.850.000 » se coupait au
+                        « Rp » quand la colonne se resserre. */}
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(line.total_debit)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(line.total_credit)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(line.balance)}</td>
                   </tr>
                 ))}
+              </tbody>
+              {/* Le total est un PIED de tableau, pas une ligne de compte :
+                  `<tfoot>` + `<th scope="row">` (patron `DailySalesPage`). En
+                  `tbody`, il se lisait comme un compte de plus. */}
+              <tfoot>
                 <tr className="border-t-2 border-border-strong font-semibold">
-                  <td colSpan={3} className="px-3 py-2 text-right">Total</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(tb.data.total_debit)}</td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(tb.data.total_credit)}</td>
+                  <th scope="row" colSpan={3} className="px-3 py-2 text-right font-semibold">Total</th>
+                  <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(tb.data.total_debit)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(tb.data.total_credit)}</td>
                   <td className="px-3 py-2"></td>
                 </tr>
-              </tbody>
+              </tfoot>
             </table>
           </div>
         </>

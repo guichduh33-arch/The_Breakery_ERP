@@ -3,7 +3,7 @@
 // Gate route : accounting.coa.read ; toggle gated par accounting.coa.write.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, EmptyState, Input } from '@breakery/ui';
+import { Button, EmptyState, Input, SectionLabel } from '@breakery/ui';
 import { FileText } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader.js';
 import {
@@ -22,6 +22,15 @@ const CLASS_LABELS: Record<number, string> = {
   5: 'COGS',
   6: 'Expense',
 };
+
+const COA_HEAD: readonly { label: string; align: string }[] = [
+  { label: 'Code',         align: '' },
+  { label: 'Name',         align: '' },
+  { label: 'Class',        align: '' },
+  { label: 'Balance type', align: '' },
+  { label: 'Active',       align: 'text-center' },
+  { label: 'Action',       align: 'text-right' },
+];
 
 export default function ChartOfAccountsPage(): JSX.Element {
   const accounts = useChartOfAccounts();
@@ -61,8 +70,11 @@ export default function ChartOfAccountsPage(): JSX.Element {
         // Le compteur se recalcule à chaque frappe du filtre, sans que le focus
         // bouge : hors région live, le changement de résultat n'était annoncé
         // nulle part (WCAG 4.1.3, AA).
+        // `italic` retiré : l'italique n'est pas un rôle typographique de ce
+        // thème (DESIGN.md § Typographie) — le sous-titre se distingue déjà par
+        // sa taille et sa couleur.
         subtitle={
-          <span className="italic" role="status">
+          <span role="status">
             {filtered.length} of {accounts.data?.length ?? 0} accounts
             {canWrite ? ' — toggle active inline' : ' — read-only (no write permission)'}
           </span>
@@ -121,14 +133,19 @@ export default function ChartOfAccountsPage(): JSX.Element {
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="coa-table">
             <caption className="sr-only">Code, name, class, balance type and active status per account</caption>
+            {/* Canon des tableaux (patron `WalletLedgerTable`) : papier inerte
+                et libellés en label mono capitales. */}
             <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th scope="col" className="px-3 py-2">Code</th>
-                <th scope="col" className="px-3 py-2">Name</th>
-                <th scope="col" className="px-3 py-2">Class</th>
-                <th scope="col" className="px-3 py-2">Balance type</th>
-                <th scope="col" className="px-3 py-2 text-center">Active</th>
-                <th scope="col" className="px-3 py-2 text-right">Action</th>
+              <tr className="border-b border-border-subtle bg-surface-inert text-left">
+                {COA_HEAD.map((h) => (
+                  <th
+                    key={h.label}
+                    scope="col"
+                    className={`px-3 py-2.5 font-data ${h.align}`}
+                  >
+                    <SectionLabel as="span" size="xs">{h.label}</SectionLabel>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>

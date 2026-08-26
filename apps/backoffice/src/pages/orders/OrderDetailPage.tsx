@@ -177,7 +177,16 @@ export function OrderDetailPage(): JSX.Element {
               <MetaPair label="Served by">
                 {data.served_by_name !== null
                   ? <DrilldownLink entity="user" id={data.served_by ?? ''} label={data.served_by_name} icon={false} />
-                  : <span className="text-text-subtle" aria-hidden>—</span>}
+                  : (
+                    // Le tiret est décoratif et `aria-hidden` : sans texte de
+                    // remplacement, le champ « Served by » sortait MUET au
+                    // lecteur d'écran — indiscernable d'un serveur dont le nom
+                    // n'a pas été lu.
+                    <>
+                      <span className="text-text-subtle" aria-hidden>—</span>
+                      <span className="sr-only">not recorded</span>
+                    </>
+                  )}
               </MetaPair>
               <MetaPair label="Type">
                 {orderTypeLabel(data.order_type)}

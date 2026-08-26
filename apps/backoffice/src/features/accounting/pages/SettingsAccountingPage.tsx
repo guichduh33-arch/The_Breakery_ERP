@@ -38,11 +38,9 @@ export default function SettingsAccountingPage(): JSX.Element {
     <div className="space-y-6">
       <PageHeader
         title="Accounting settings"
-        subtitle={
-          <span className="italic">
-            Manage fiscal periods (close / lock for backdating prevention)
-          </span>
-        }
+        // `italic` retiré : l'italique n'est pas un rôle typographique de ce
+        // thème (DESIGN.md § Typographie).
+        subtitle="Manage fiscal periods (close / lock for backdating prevention)"
         actions={
           <>
             {canClose && (

@@ -3,7 +3,7 @@
 
 import { useMemo, type JSX } from 'react';
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SectionLabel,
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useJournalEntryLines } from '../hooks/useJournalEntryLines.js';
@@ -22,6 +22,13 @@ export interface JournalEntryDetailDrawerProps {
 }
 
 const fmt = formatCurrency;
+
+const LINE_HEAD: readonly { label: string; right: boolean }[] = [
+  { label: 'Account',     right: false },
+  { label: 'Debit',       right: true  },
+  { label: 'Credit',      right: true  },
+  { label: 'Description', right: false },
+];
 
 export function JournalEntryDetailDrawer({
   entry,
@@ -102,12 +109,19 @@ export function JournalEntryDetailDrawer({
           {lines.data && lines.data.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm" data-testid="je-lines-table">
+                {/* Canon des tableaux (patron `WalletLedgerTable`) : papier
+                    inerte et libellés en label mono capitales. */}
                 <thead>
-                  <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-                    <th scope="col" className="px-2 py-2">Account</th>
-                    <th scope="col" className="px-2 py-2 text-right">Debit</th>
-                    <th scope="col" className="px-2 py-2 text-right">Credit</th>
-                    <th scope="col" className="px-2 py-2">Description</th>
+                  <tr className="border-b border-border-subtle bg-surface-inert text-left">
+                    {LINE_HEAD.map((h) => (
+                      <th
+                        key={h.label}
+                        scope="col"
+                        className={`px-2 py-2.5 font-data ${h.right ? 'text-right' : ''}`}
+                      >
+                        <SectionLabel as="span" size="xs">{h.label}</SectionLabel>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -118,10 +132,12 @@ export function JournalEntryDetailDrawer({
                         {' '}
                         <span>{line.account_name}</span>
                       </td>
-                      <td className="px-2 py-2 text-right font-mono">
+                      {/* `whitespace-nowrap` : « Rp 4.850.000 » se coupait au
+                          « Rp » dans un tiroir déjà étroit. */}
+                      <td className="whitespace-nowrap px-2 py-2 text-right font-data tabular-nums">
                         {line.debit > 0 ? fmt(line.debit) : ''}
                       </td>
-                      <td className="px-2 py-2 text-right font-mono">
+                      <td className="whitespace-nowrap px-2 py-2 text-right font-data tabular-nums">
                         {line.credit > 0 ? fmt(line.credit) : ''}
                       </td>
                       <td className="px-2 py-2 text-xs text-text-secondary">
@@ -131,13 +147,18 @@ export function JournalEntryDetailDrawer({
                       </td>
                     </tr>
                   ))}
+                </tbody>
+                {/* Les totaux sont un PIED de tableau, pas une ligne
+                    d'écriture : `<tfoot>` + `<th scope="row">` (patron
+                    `DailySalesPage`). */}
+                <tfoot>
                   <tr className="border-t-2 border-border-strong font-semibold">
-                    <td className="px-2 py-2 text-right">Totals</td>
-                    <td className="px-2 py-2 text-right font-mono">{fmt(entry.total_debit)}</td>
-                    <td className="px-2 py-2 text-right font-mono">{fmt(entry.total_credit)}</td>
+                    <th scope="row" className="px-2 py-2 text-right font-semibold">Totals</th>
+                    <td className="whitespace-nowrap px-2 py-2 text-right font-data tabular-nums">{fmt(entry.total_debit)}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right font-data tabular-nums">{fmt(entry.total_credit)}</td>
                     <td></td>
                   </tr>
-                </tbody>
+                </tfoot>
               </table>
             </div>
           )}

@@ -5,7 +5,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, SectionLabel } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
@@ -24,6 +24,16 @@ const fmt = formatCurrency;
 // les coffres et le hub. Le calcul local qu'il remplace passait par
 // `toISOString()`, donc par l'UTC : entre minuit et 08 h WITA, la période
 // s'ouvrait la veille, et le premier du mois métier tombait au mois précédent.
+
+const GL_HEAD: readonly { label: string; right: boolean }[] = [
+  { label: 'Date',            right: false },
+  { label: 'Entry #',         right: false },
+  { label: 'Description',     right: false },
+  { label: 'Source',          right: false },
+  { label: 'Debit',           right: true  },
+  { label: 'Credit',          right: true  },
+  { label: 'Running balance', right: true  },
+];
 
 interface AccumulatedLine extends GLLineRaw {
   running_balance: number;
@@ -157,21 +167,31 @@ export default function GeneralLedgerPage(): JSX.Element {
         <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="gl-table">
             <caption className="sr-only">Date, entry number, description, source, debit, credit and running balance for the selected account</caption>
+            {/* Canon des tableaux (patron `WalletLedgerTable`) : papier inerte
+                et libellés en label mono capitales. */}
             <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th scope="col" className="px-3 py-2">Date</th>
-                <th scope="col" className="px-3 py-2">Entry #</th>
-                <th scope="col" className="px-3 py-2">Description</th>
-                <th scope="col" className="px-3 py-2">Source</th>
-                <th scope="col" className="px-3 py-2 text-right">Debit</th>
-                <th scope="col" className="px-3 py-2 text-right">Credit</th>
-                <th scope="col" className="px-3 py-2 text-right">Running balance</th>
+              <tr className="border-b border-border-subtle bg-surface-inert text-left">
+                {GL_HEAD.map((h) => (
+                  <th
+                    key={h.label}
+                    scope="col"
+                    className={`px-3 py-2.5 font-data ${h.right ? 'text-right' : ''}`}
+                  >
+                    <SectionLabel as="span" size="xs">{h.label}</SectionLabel>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
+              {/* Le solde d'ouverture OUVRE le corps, il ne le clôt pas : il
+                  reste donc en `tbody` et non en `tfoot`. Mais c'est bien un
+                  en-tête de ligne, pas une donnée — `<th scope="row">`. */}
               <tr className="border-t border-border-subtle bg-bg-overlay font-semibold">
-                <td colSpan={6} className="px-3 py-2 text-right">Opening balance</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(openingBalance)}</td>
+                {/* `font-semibold` REDIT le poids de la ligne : le style UA
+                    d'un `<th>` est `bold` (700) et l'emporte sur le 600 hérité
+                    du `<tr>` — la ligne serait sortie plus grasse qu'avant. */}
+                <th scope="row" colSpan={6} className="px-3 py-2 text-right font-semibold">Opening balance</th>
+                <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(openingBalance)}</td>
               </tr>
               {accumulated.map((line, idx) => {
                 const source = resolveJeSourceEntity(line.reference_type, line.reference_id);
@@ -181,7 +201,7 @@ export default function GeneralLedgerPage(): JSX.Element {
                     data-testid={`gl-row-${line.entry_number}`}
                     className="border-t border-border-subtle"
                   >
-                    <td className="px-3 py-2">{line.entry_date}</td>
+                    <td className="whitespace-nowrap px-3 py-2 font-data tabular-nums">{line.entry_date}</td>
                     <td className="px-3 py-2 font-mono text-xs">{line.entry_number}</td>
                     <td className="px-3 py-2">
                       {line.description ?? '—'}
@@ -201,23 +221,31 @@ export default function GeneralLedgerPage(): JSX.Element {
                         <span className="text-text-secondary">{line.reference_type ?? '—'}</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    {/* `whitespace-nowrap` : « Rp 4.850.000 » se coupait au
+                        « Rp » quand la colonne se resserre. */}
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">
                       {Number(line.debit) > 0 ? fmt(Number(line.debit)) : ''}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">
                       {Number(line.credit) > 0 ? fmt(Number(line.credit)) : ''}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono">{fmt(line.running_balance)}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(line.running_balance)}</td>
                   </tr>
                 );
               })}
+            </tbody>
+            {/* Le total de période est un PIED de tableau, pas une ligne de
+                données : `<tfoot>` + `<th scope="row">` (patron
+                `DailySalesPage`). En `tbody`, il se lisait comme une écriture
+                de plus au lecteur d'écran. */}
+            <tfoot>
               <tr className="border-t-2 border-border-strong font-semibold">
-                <td colSpan={4} className="px-3 py-2 text-right">Period totals</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(firstPage.total_debit)}</td>
-                <td className="px-3 py-2 text-right font-mono">{fmt(firstPage.total_credit)}</td>
+                <th scope="row" colSpan={4} className="px-3 py-2 text-right font-semibold">Period totals</th>
+                <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(firstPage.total_debit)}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-right font-data tabular-nums">{fmt(firstPage.total_credit)}</td>
                 <td></td>
               </tr>
-            </tbody>
+            </tfoot>
           </table>
         </div>
       )}

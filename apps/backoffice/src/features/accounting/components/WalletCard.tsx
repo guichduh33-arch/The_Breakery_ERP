@@ -76,7 +76,11 @@ export function WalletCard({
           )}
         </div>
         <div
-          className={`mt-2 text-2xl font-semibold tabular-nums ${overdrawn ? 'text-danger-as-text' : ''}`}
+          // The Mono-Carries-Data Rule : `tabular-nums` seul ALIGNE les chiffres
+          // d'une police proportionnelle, il ne la remplace pas. Ce solde décide
+          // d'un écart de caisse porté au grand livre — il rend en JetBrains
+          // Mono comme les colonnes du ledger juste dessous.
+          className={`mt-2 font-data text-2xl font-semibold tabular-nums ${overdrawn ? 'text-danger-as-text' : ''}`}
           data-testid="wallet-balance"
         >
           {idr.format(wallet.balance)}
@@ -88,7 +92,8 @@ export function WalletCard({
         )}
         {fixedFloat != null && (
           <div className="mt-1 text-xs text-text-muted">
-            Fixed float: {idr.format(fixedFloat)}
+            Fixed float:{' '}
+            <span className="font-data tabular-nums">{idr.format(fixedFloat)}</span>
           </div>
         )}
       </Card>
