@@ -9,6 +9,7 @@ import { formatDateTime } from '@breakery/utils';
 import { roleLabel } from '@/lib/roleLabels.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { USERS_LIST_KEY, type UserRow } from '../hooks/useUsersList.js';
 
 export interface UsersTableProps {
@@ -135,9 +136,12 @@ export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps)
                 {/* « Open », « Open », « Open »… — sorti de sa ligne (liste des
                     liens d'un lecteur d'écran), le libellé ne dit PAS qui l'on
                     ouvre. Le nom est repris dans le nom accessible. */}
+                {/* `FOCUS_RING` : le seul retour de ce lien était le survol
+                    SOURIS — au clavier, la tabulation traversait la colonne
+                    sans rien montrer (WCAG 2.4.11). */}
                 <Link
                   to={`/backoffice/users/${u.id}`}
-                  className="text-xs text-gold hover:underline"
+                  className={`rounded-sm text-xs text-gold hover:underline ${FOCUS_RING}`}
                   aria-label={`Open ${u.full_name}`}
                   data-testid={`user-open-${u.id}`}
                 >

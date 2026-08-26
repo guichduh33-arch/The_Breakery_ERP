@@ -16,7 +16,6 @@ import {
   Users as UsersIcon,
 } from 'lucide-react';
 import {
-  Button,
   Card,
   EmptyState,
   SectionLabel,
@@ -43,7 +42,11 @@ import {
 import { useB2bBalanceDrift } from '@/features/btob/hooks/useB2bBalanceDrift.js';
 import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
 import { AgingBucketsGrid } from '@/features/btob/components/AgingBucketsGrid.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import {
+  TOOLBAR_BTN_PRIMARY,
+  TOOLBAR_BTN_SECONDARY,
+  TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 
 // Rampe de GRAVITÉ uniquement — `cat-*` est réservé à l'identité d'une
 // catégorie de produit, jamais à une sévérité (DESIGN.md, Named Rules).
@@ -89,11 +92,13 @@ export default function B2BDashboardPage(): JSX.Element {
         subtitle="Manage your wholesale customers and B2B orders."
         actions={
           <>
-            <Button asChild variant="ghost" size="md">
-              <Link to="/backoffice/b2b/payments">
-                <CreditCard className="h-4 w-4" aria-hidden /> Payments
-              </Link>
-            </Button>
+            {/* Le bandeau ne mélange pas deux familles de boutons : le lien
+                Payments prend la MÊME chaîne de 32 px que l'action voisine —
+                `TOOLBAR_BTN_*` s'applique indifféremment à un `<button>` ou à
+                un `<Link>`, c'est le motif de la constante. */}
+            <Link to="/backoffice/b2b/payments" className={TOOLBAR_BTN_SECONDARY}>
+              <CreditCard className={TOOLBAR_ICON} aria-hidden /> Payments
+            </Link>
             <button
               type="button"
               className={TOOLBAR_BTN_PRIMARY}

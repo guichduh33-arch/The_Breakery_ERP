@@ -24,7 +24,7 @@ import {
   Upload,
   XCircle,
 } from 'lucide-react';
-import { Button, EmptyState, KpiTile } from '@breakery/ui';
+import { EmptyState, KpiTile } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { SupplierCard } from '@/features/suppliers/components/SupplierCard.js';
@@ -41,7 +41,11 @@ import { ImportEntityModal } from '@/features/data-import/components/ImportEntit
 // `buildEntityWorkbook` tire `xlsx` (159 Ko gzip) : chargé à la demande dans les
 // deux handlers, pas à l'ouverture de la page.
 import { suppliersImportDef } from '@/features/suppliers/import/suppliersImportDef.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import {
+  TOOLBAR_BTN_PRIMARY,
+  TOOLBAR_BTN_SECONDARY,
+  TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface SuppliersKpi {
@@ -120,20 +124,23 @@ export default function SuppliersPage(): JSX.Element {
         subtitle="Manage your suppliers and their contact information."
         actions={
           <>
-            <Button variant="ghost" size="sm" disabled aria-label="Categories (coming soon)">
-              <Tag className="h-4 w-4" aria-hidden /> Categories
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => void handleTemplate()} aria-label="Download suppliers template">
-              <FileText className="h-4 w-4" aria-hidden /> Template
-            </Button>
+            {/* Le bandeau ne porte qu'UNE hauteur : les quatre gestes de service
+                passent des 36 px du primitif aux 32 px des chaînes de bandeau,
+                à côté de l'unique aplat encre (« Add new supplier »). */}
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} disabled aria-label="Categories (coming soon)">
+              <Tag className={TOOLBAR_ICON} aria-hidden /> Categories
+            </button>
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => void handleTemplate()} aria-label="Download suppliers template">
+              <FileText className={TOOLBAR_ICON} aria-hidden /> Template
+            </button>
             {canCreate && (
-              <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import suppliers">
-                <Upload className="h-4 w-4" aria-hidden /> Import
-              </Button>
+              <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => setImporting(true)} aria-label="Import suppliers">
+                <Upload className={TOOLBAR_ICON} aria-hidden /> Import
+              </button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => void handleExport()} aria-label="Export suppliers">
-              <Download className="h-4 w-4" aria-hidden /> Export
-            </Button>
+            <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={() => void handleExport()} aria-label="Export suppliers">
+              <Download className={TOOLBAR_ICON} aria-hidden /> Export
+            </button>
             {canCreate && (
               <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setCreating(true)}>
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add new supplier

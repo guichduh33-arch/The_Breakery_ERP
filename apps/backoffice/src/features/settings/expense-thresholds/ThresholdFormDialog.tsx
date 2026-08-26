@@ -24,8 +24,10 @@ interface Props {
 const ROLE_OPTIONS = ['CASHIER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'] as const;
 
 const LABEL_CLS = 'text-xs uppercase tracking-widest text-text-secondary';
-const INPUT_CLS  = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
-const SELECT_CLS = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
+// `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
+// (WCAG 1.4.11). Les bordures de BLOC de ce dialogue restent en `subtle`.
+const INPUT_CLS  = `h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
+const SELECT_CLS = `h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
 
 export function ThresholdFormDialog({ open, onOpenChange, initial, categories }: Props): JSX.Element {
   const [categoryId, setCategoryId] = useState<string | null>(null);

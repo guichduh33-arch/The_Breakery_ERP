@@ -14,7 +14,7 @@
 
 import { useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@breakery/ui';
+import { Button, Dialog, DialogContent, DialogTitle, DialogDescription } from '@breakery/ui';
 import { Minus, Plus, Undo2 } from 'lucide-react';
 import { formatCurrency } from '@breakery/utils';
 import {
@@ -334,16 +334,31 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
             Refund total:{' '}
             <span className="font-data tabular-nums text-text-primary">{formatCurrency(refundTotal)}</span>
           </span>
+          {/* Même correctif que `VoidOrderModal` : primitif partagé pour les
+              boutons de modale, et l'aplat rouge NEUTRALISE sa couleur au lieu
+              de se faner (`disabled:opacity-50` rendait un bouton mort à
+              l'allure vivante, sur le geste le plus irréversible de l'écran). */}
           <div className="flex gap-2">
-            <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="refund-cancel">Cancel</button>
-            <button
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleClose}
+              data-testid="refund-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="ink"
+              size="sm"
+              className="bg-danger text-red-on-fill hover:opacity-90"
               onClick={() => { void handleSubmit(); }}
               disabled={!canSubmit}
-              className="rounded bg-danger px-4 py-2 text-sm text-white disabled:opacity-50"
               data-testid="refund-submit"
             >
               {m.isPending ? 'Refunding…' : 'Refund'}
-            </button>
+            </Button>
           </div>
         </div>
       </DialogContent>

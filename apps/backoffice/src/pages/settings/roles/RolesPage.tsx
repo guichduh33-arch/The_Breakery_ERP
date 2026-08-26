@@ -13,11 +13,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Info, Plus } from 'lucide-react';
-import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
+import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { CreateRoleDialog } from '@/features/settings/roles/components/CreateRoleDialog.js';
 import { RoleMatrixGrid } from '@/features/settings/roles/components/RoleMatrixGrid.js';
 import { useRbacMatrix, grantedCount } from '@/features/settings/roles/hooks/useRbacMatrix.js';
@@ -36,17 +37,18 @@ export default function RolesPage() {
       <PageHeader
         title="Roles & permissions"
         subtitle="What each role can do, and the exceptions granted to individual people."
+        // Bandeau de page = `TOOLBAR_BTN_*` (32 px) — le primitif rendait ici
+        // 36 px, une troisième hauteur de plus dans la flotte.
         actions={
-          <Button
-            variant="ink"
-            size="sm"
+          <button
             type="button"
+            className={TOOLBAR_BTN_PRIMARY}
             onClick={() => { setCreateOpen(true); }}
             data-testid="role-create-btn"
           >
-            <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+            <Plus className="h-3.5 w-3.5" aria-hidden />
             New role
-          </Button>
+          </button>
         }
       />
 

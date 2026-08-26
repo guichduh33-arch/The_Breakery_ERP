@@ -148,7 +148,9 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
   }
 
   const suppliers = refData.data?.suppliers ?? [];
-  const fieldCls = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
+  // `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
+  // (WCAG 1.4.11). Les cadres de bloc du formulaire restent en `subtle`.
+  const fieldCls = `h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
 
   const listOpen = pickerOpen && filtered.length > 0;
   const keyboard = useListboxKeyboard<PoProductRow>({

@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const fmt = formatCurrency;
 const num = (n: number): string => n.toLocaleString('id-ID');
@@ -173,17 +174,22 @@ export default function JournalEntriesPage(): JSX.Element {
         // texte `sr-only` référencé par `aria-describedby`.
         actions={
           <>
-            <Button
-              variant="ink"
+            {/* Bandeau de page = `TOOLBAR_BTN_*` (32 px), pas le primitif partagé
+                (56 px) : c'est le contrat du bandeau (DESIGN.md § Components).
+                L'aplat encre est l'UNIQUE de ce bandeau — c'est l'action qui crée.
+                La raison du refus reste doublée (`title` + `aria-describedby`),
+                un `<button disabled>` n'étant pas focalisable. */}
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2"
               disabled={!canCreate}
               {...(canCreate ? {} : { title: CREATE_JE_REASON, 'aria-describedby': 'je-create-reason' })}
               data-testid="je-new-btn"
             >
-              <Plus className="h-4 w-4" aria-hidden />
+              <Plus className="h-3.5 w-3.5" aria-hidden />
               New manual JE
-            </Button>
+            </button>
             {!canCreate && <span id="je-create-reason" className="sr-only">{CREATE_JE_REASON}</span>}
           </>
         }

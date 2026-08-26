@@ -21,7 +21,10 @@ import { useRbacMatrix, rbacErrorMessage } from '../hooks/useRbacMatrix.js';
 import { useCreateRole } from '../hooks/useCreateRole.js';
 
 const LABEL_CLS = 'text-xs uppercase tracking-widest text-text-secondary';
-const FIELD_CLS = `h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
+// `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
+// (WCAG 1.4.11). `border-border-subtle` sépare des blocs, il ne borde pas une
+// zone de saisie.
+const FIELD_CLS = `h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
 const HINT_CLS  = 'text-xs text-text-muted';
 
 /** Miroir exact du contrôle serveur — `^[A-Za-z][A-Za-z0-9_]{2,29}$`. */

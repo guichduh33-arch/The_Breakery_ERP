@@ -220,7 +220,10 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       onOpenChange={(next) => { if (!next) onClose(); }}
       title="Command palette"
       data-testid="command-palette"
-      className="top-[14vh] w-[560px] max-w-[calc(100vw-32px)] translate-y-0 overflow-hidden rounded-xl border-border-strong bg-surface-3 shadow-[0_18px_48px_rgba(28,23,18,0.22)]"
+      // `shadow-float` : le cran du système pour un panneau flottant. L'ombre
+      // était écrite en dur, donc invisible au thème et impossible à accorder
+      // aux autres panneaux.
+      className="top-[14vh] w-[560px] max-w-[calc(100vw-32px)] translate-y-0 overflow-hidden rounded-xl border-border-strong bg-surface-3 shadow-float"
     >
       <div onKeyDown={onKeyDown} className="flex min-h-0 flex-col">
         <div className="flex items-center gap-3 border-b border-border-muted px-4 py-3.5">

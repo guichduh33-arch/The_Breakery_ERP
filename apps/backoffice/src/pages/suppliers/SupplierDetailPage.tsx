@@ -51,6 +51,7 @@ import {
 } from '@breakery/ui';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
+import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useSupplierDetail } from '@/features/suppliers/hooks/useSupplierDetail.js';
 import {
   useSupplierPurchases,
@@ -266,7 +267,7 @@ export default function SupplierDetailPage(): JSX.Element {
                   <Building2 className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{supplier.name}</h1>
+                  <h1 className={PAGE_TITLE_CLS}>{supplier.name}</h1>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="font-mono text-xs uppercase text-text-muted">{supplier.code}</span>
                     <StatusBadge active={supplier.is_active} />

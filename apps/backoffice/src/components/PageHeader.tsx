@@ -18,6 +18,14 @@
 import type { ReactNode } from 'react';
 import { cn } from '@breakery/ui';
 
+// Le titre de page, EXPORTÉ — six écrans qui n'entrent pas dans le moule du
+// bandeau (fiche à statut, page « coming soon », constructeur de combo) en
+// recopiaient les classes à la main, cinq d'entre eux en `text-[23px]` : la même
+// taille, mais en pixels, donc sourde au réglage de corps du navigateur. La
+// recopie diverge toujours ; la constante, non.
+export const PAGE_TITLE_CLS =
+  'text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary';
+
 export interface PageHeaderProps {
   /** Page title, rendered as the single `<h1>` for the view. */
   title: string;
@@ -46,12 +54,7 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0">
-        <h1
-          className={cn(
-            'text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary',
-            titleClassName,
-          )}
-        >
+        <h1 className={cn(PAGE_TITLE_CLS, titleClassName)}>
           {title}
         </h1>
         {subtitle != null &&

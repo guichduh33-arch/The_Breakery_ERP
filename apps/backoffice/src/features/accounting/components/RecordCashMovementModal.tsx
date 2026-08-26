@@ -37,8 +37,11 @@ const ADJUST_TYPES = new Set<CashMovementType>(['adjustment_gain', 'adjustment_l
 const DEFAULT_TYPE: CashMovementType = 'undepo_to_petty';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+// `border-border-strong` : la bordure d'un CHAMP est un objet graphique, elle
+// doit tenir le 3:1 de WCAG 1.4.11 — `border-border-subtle` sépare des blocs,
+// il ne dessine pas une zone de saisie.
 const inputCls =
-  `h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
+  `h-touch-min w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;
 
 export function RecordCashMovementModal({
   open,

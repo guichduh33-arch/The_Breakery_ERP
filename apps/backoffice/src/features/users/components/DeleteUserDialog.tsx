@@ -98,7 +98,9 @@ export function DeleteUserDialog(
             variant="ink"
             onClick={handleSubmit}
             disabled={del.isPending}
-            className="bg-danger hover:opacity-90 text-white"
+            // `text-white` était une couleur écrite en dur : le premier plan
+            // d'un aplat rouge est un TOKEN (`--red-on-fill`), qui suit le thème.
+            className="bg-danger hover:opacity-90 text-red-on-fill"
           >
             {del.isPending ? 'Deleting…' : 'Delete user'}
           </Button>

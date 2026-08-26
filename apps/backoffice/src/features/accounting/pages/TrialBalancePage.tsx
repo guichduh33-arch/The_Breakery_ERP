@@ -2,7 +2,7 @@
 // Session 26b / Wave 4 — Trial Balance page.
 
 import { useState, type JSX } from 'react';
-import { Button, Input, SectionLabel } from '@breakery/ui';
+import { Input, SectionLabel } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Download } from 'lucide-react';
 import {
@@ -12,6 +12,7 @@ import { downloadTrialBalanceCsv } from '@/features/accounting/components/export
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 
 const CLASS_LABELS: Record<number, string> = {
   1: 'Asset', 2: 'Liability', 3: 'Equity', 4: 'Revenue', 5: 'COGS', 6: 'Expense',
@@ -48,16 +49,19 @@ export default function TrialBalancePage(): JSX.Element {
       <PageHeader
         title="Trial balance"
         subtitle="Asserts Σ debit = Σ credit across active accounts"
+        // Bandeau de page = `TOOLBAR_BTN_*` (32 px), pas le primitif partagé
+        // (56 px) — DESIGN.md § Components. Un export n'est pas une création :
+        // il reste secondaire, la page ne porte donc aucun aplat encre.
         actions={tb.data ? (
-          <Button
-            variant="secondary"
+          <button
+            type="button"
+            className={TOOLBAR_BTN_SECONDARY}
             onClick={() => downloadTrialBalanceCsv(tb.data)}
-            className="inline-flex items-center gap-2"
             data-testid="tb-csv-export"
           >
-            <Download className="h-4 w-4" aria-hidden />
+            <Download className={TOOLBAR_ICON} aria-hidden />
             Export CSV
-          </Button>
+          </button>
         ) : undefined}
       />
 

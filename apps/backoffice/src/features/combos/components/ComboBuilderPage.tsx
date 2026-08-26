@@ -12,6 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, Box, ArrowLeft } from 'lucide-react';
 import { Button } from '@breakery/ui';
+import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useComboDetail } from '../hooks/useComboDetail.js';
@@ -228,7 +229,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
           <Box className="h-5 w-5" aria-hidden />
         </div>
         <div>
-          <h1 className="text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary">
+          <h1 className={PAGE_TITLE_CLS}>
             {mode === 'create' ? 'New Combo' : 'Edit Combo'}
           </h1>
           <p className="text-xs italic text-text-secondary">

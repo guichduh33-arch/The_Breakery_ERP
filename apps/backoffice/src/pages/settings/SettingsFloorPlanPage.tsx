@@ -21,10 +21,38 @@ import {
 import { TableFormDialog } from '@/features/floor-plan/components/TableFormDialog.js';
 import { SectionFormDialog } from '@/features/floor-plan/components/SectionFormDialog.js';
 import { SectionGridEditor } from '@/features/floor-plan/components/SectionGridEditor.js';
-import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import {
+  TOOLBAR_BTN_PRIMARY,
+  TOOLBAR_BTN_SECONDARY,
+  TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const INTERIOR_FALLBACK_KEY = '__interior_fallback__';
 const INTERIOR_LABEL = 'Interior';
+
+// Sélecteur de vue segmenté — deux boutons COLLÉS dans une feuille bordée, à la
+// hauteur de bandeau (32 px). Choisir une vue n'engage rien : le segment reste
+// neutre, et l'état actif se dit par l'encre (`text-gold`) posée sur le cran de
+// surface, jamais par un aplat — l'or ne remplit pas dans le back-office, et
+// l'aplat encre est réservé à l'unique action qui crée.
+// Pas d'`overflow-hidden` sur le groupe : un ancêtre qui masque son
+// débordement CLIPPE l'anneau de focus décalé de ses enfants — le segment
+// deviendrait invisible au clavier. Ce sont les boutons qui portent leur rayon.
+const SEGMENT_GROUP =
+  'inline-flex h-8 rounded-sm border border-border-strong bg-bg-elevated';
+
+function segmentCls(active: boolean): string {
+  return [
+    // Le liseré est porté par les DEUX crans (transparent au repos) : sans
+    // cela, activer une vue décalerait le libellé de 2 px.
+    'inline-flex h-full items-center gap-1.5 rounded-sm border-b-2 px-3 text-sm font-medium transition-colors',
+    FOCUS_RING,
+    active
+      ? 'border-gold bg-surface-4 text-gold'
+      : 'border-transparent text-text-secondary hover:bg-surface-4 hover:text-text-primary',
+  ].join(' ');
+}
 
 interface TableGroup {
   key:        string;
@@ -157,30 +185,48 @@ export default function SettingsFloorPlanPage(): JSX.Element {
       <PageHeader
         title="Floor Plan"
         subtitle="Tables and room sections used by the POS floor plan."
+        // Ce bandeau cumulait DEUX familles de boutons (primitif 56 px et chaîne
+        // de bandeau 32 px) et, en vue « list », DEUX aplats encre — l'aplat
+        // encre ne désigne qu'UNE action par bandeau, celle qui crée. Le choix
+        // de vue n'en est pas une : il devient un sélecteur segmenté neutre,
+        // marqué par l'or COMME ENCRE (pas d'aplat, cf. garde CI « gold-fills »).
         actions={
           <>
-            <Button
-              variant={view === 'list' ? 'ink' : 'secondary'}
-              onClick={() => setView('list')}
-              aria-pressed={view === 'list'}
-              data-testid="fp-view-list"
+            <div
+              className={SEGMENT_GROUP}
+              role="group"
+              aria-label="Floor plan view"
             >
-              <List className="h-4 w-4" aria-hidden />
-              List
-            </Button>
-            <Button
-              variant={view === 'plan' ? 'ink' : 'secondary'}
-              onClick={() => setView('plan')}
-              aria-pressed={view === 'plan'}
-              data-testid="fp-view-plan"
+              <button
+                type="button"
+                className={segmentCls(view === 'list')}
+                onClick={() => setView('list')}
+                aria-pressed={view === 'list'}
+                data-testid="fp-view-list"
+              >
+                <List className="h-3.5 w-3.5" aria-hidden />
+                List
+              </button>
+              <button
+                type="button"
+                className={`${segmentCls(view === 'plan')} border-l border-border-strong`}
+                onClick={() => setView('plan')}
+                aria-pressed={view === 'plan'}
+                data-testid="fp-view-plan"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+                Plan
+              </button>
+            </div>
+            <button
+              type="button"
+              className={TOOLBAR_BTN_SECONDARY}
+              onClick={() => setSectionDialog({ mode: 'create' })}
+              disabled={!canUpdate}
             >
-              <LayoutGrid className="h-4 w-4" aria-hidden />
-              Plan
-            </Button>
-            <Button variant="secondary" onClick={() => setSectionDialog({ mode: 'create' })} disabled={!canUpdate}>
-              <Plus className="h-4 w-4" aria-hidden />
+              <Plus className={TOOLBAR_ICON} aria-hidden />
               Add section
-            </Button>
+            </button>
             <button type="button" onClick={() => setTableDialog({ mode: 'create' })} disabled={!canUpdate} className={TOOLBAR_BTN_PRIMARY}>
               <Plus className="h-3.5 w-3.5" aria-hidden />
               Add table

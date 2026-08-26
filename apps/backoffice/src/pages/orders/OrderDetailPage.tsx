@@ -33,6 +33,7 @@ import {
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
 import { TOOLBAR_BTN_SECONDARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
 const fmtDateTime = formatDateTimeShortWita;
@@ -52,7 +53,9 @@ function Crumbs({ leaf }: { leaf?: string }): JSX.Element {
     <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
       <span>Sales</span>
       <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-      <Link to="/backoffice/orders" className="hover:text-text-primary">Orders</Link>
+      {/* `FOCUS_RING` : le retour vers la liste ne se signalait qu'au SURVOL —
+          au clavier, le premier lien de la page était invisible (WCAG 2.4.11). */}
+      <Link to="/backoffice/orders" className={`rounded-sm hover:text-text-primary ${FOCUS_RING}`}>Orders</Link>
       {leaf !== undefined && (
         <>
           <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />

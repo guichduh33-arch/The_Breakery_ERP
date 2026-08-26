@@ -6,7 +6,7 @@
 
 import { useState, useRef, type JSX } from 'react';
 import {
-  Dialog, DialogContent, DialogTitle, DialogDescription,
+  Button, Dialog, DialogContent, DialogTitle, DialogDescription,
 } from '@breakery/ui';
 import { useVoidOrder } from '@/features/orders/hooks/useVoidOrder.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
@@ -159,16 +159,35 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             {voidErrorText(m.error)}
           </p>
         )}
+        {/* Les boutons d'une MODALE prennent le primitif partagé (DESIGN.md
+            § Boutons) : le Cancel était un `<button>` nu — ni bordure, ni
+            hauteur, ni anneau de focus — et le submit un aplat rouge écrit à la
+            main qui se FANAIT en `disabled:opacity-50`, c'est-à-dire un bouton
+            mort gardant l'allure d'un bouton vivant. Le variant `ink` porte la
+            neutralisation (`disabled:bg-surface-4 …opacity-100`) ; seule sa
+            couleur de remplissage est remplacée, comme dans les trois autres
+            dialogues destructifs du back-office. */}
         <div className="flex justify-end gap-2">
-          <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="void-cancel">Cancel</button>
-          <button
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleClose}
+            data-testid="void-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="ink"
+            size="sm"
+            className="bg-danger text-red-on-fill hover:opacity-90"
             onClick={() => { void handleSubmit(); }}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm bg-danger text-white rounded disabled:opacity-50"
             data-testid="void-submit"
           >
             {m.isPending ? 'Voiding…' : 'Void order'}
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
