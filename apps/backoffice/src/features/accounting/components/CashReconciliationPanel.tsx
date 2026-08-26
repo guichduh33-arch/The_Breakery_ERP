@@ -4,6 +4,7 @@
 // via useRecordCashMovement, which creates a balanced JE.
 import { useState } from 'react';
 import { Card, Button } from '@breakery/ui';
+import { todayIsoDate } from '@breakery/utils';
 import type { WalletBalance } from '../hooks/useCashWallets.js';
 import { useRecordCashMovement } from '../hooks/useRecordCashMovement.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -14,7 +15,13 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 
 const idr = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
-const todayISO = (): string => new Date().toISOString().slice(0, 10);
+// La date du mouvement passe par le helper MUTUALISÉ du fuseau métier. Le
+// calcul local qu'il remplace — `new Date().toISOString().slice(0, 10)` —
+// rendait de l'UTC : entre minuit et 08 h WITA, l'écart de caisse partait au
+// grand livre DATÉ DE LA VEILLE. C'est précisément la plage où l'on compte une
+// caisse fermée, et une période déjà close refuse l'écriture (ou pire,
+// l'accepte et fausse un rapprochement déjà signé). Même famille de bug que
+// `monthStartIsoDate`, même remède.
 
 export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
   const canAdjust = useAuthStore((s) => s.hasPermission('accounting.cash.adjust'));
@@ -28,7 +35,7 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
       {
         movementType: diff > 0 ? 'adjustment_gain' : 'adjustment_loss',
         amount: Math.abs(diff),
-        movementDate: todayISO(),
+        movementDate: todayIsoDate(),
         remark: `Reconciliation ${wallet.account_code}: counted ${counted} vs GL ${wallet.balance}`,
         walletCode: wallet.account_code as '1110' | '1111' | '1117',
       },

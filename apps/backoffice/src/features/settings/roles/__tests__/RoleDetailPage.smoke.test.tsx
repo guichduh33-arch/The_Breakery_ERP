@@ -178,9 +178,14 @@ describe('RoleDetailPage', () => {
     expect(screen.getByRole('heading', { name: /Role not found/i })).toBeInTheDocument();
   });
 
+  // Même bandeau partagé que la liste : la phrase dit ce qui est en jeu, le
+  // message serveur passe en diagnostic, et « Try again » relance la requête.
   it('surfaces a load failure', async () => {
     failTables = true;
     renderPage();
-    expect(await screen.findByTestId('role-detail-error')).toHaveTextContent(/Failed to load the role/i);
+    const banner = await screen.findByTestId('role-detail-error');
+    expect(banner).toHaveTextContent(/This role could not be loaded/i);
+    expect(banner).toHaveAttribute('role', 'alert');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });

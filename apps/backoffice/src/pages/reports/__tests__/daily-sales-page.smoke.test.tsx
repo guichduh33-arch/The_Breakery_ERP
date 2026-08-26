@@ -175,8 +175,12 @@ describe('DailySalesPage — archétype Report (maquette 4c)', () => {
     expect(nav).toHaveTextContent('Reports');
     expect(nav).toHaveTextContent('Sales');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Daily sales');
-    expect(screen.getByText(/2 register sessions/)).toBeInTheDocument();
-    expect(screen.getByText(/figures net of refunds/)).toBeInTheDocument();
+    // `selector: 'p'` — la ligne méta est le `<p>` du bandeau. Le même texte
+    // vit désormais AUSSI dans la région live `sr-only` de `ReportShell` (un
+    // `<span>`), qui annonce l'arrivée des nouveaux chiffres après un
+    // changement de période : on désigne la ligne VISIBLE, pas l'annonce.
+    expect(screen.getByText(/2 register sessions/, { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText(/figures net of refunds/, { selector: 'p' })).toBeInTheDocument();
   });
 
   it('bande de six tuiles : héro Net revenue + une comparaison sur chacune', () => {

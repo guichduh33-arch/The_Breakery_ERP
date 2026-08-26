@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
-import { useRbacMatrix } from '../hooks/useRbacMatrix.js';
+import { useRbacMatrix, rbacErrorMessage } from '../hooks/useRbacMatrix.js';
 import { useCreateRole } from '../hooks/useCreateRole.js';
 
 const LABEL_CLS = 'text-xs uppercase tracking-widest text-text-secondary';
@@ -68,12 +68,31 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
     !timeoutInvalid &&
     !create.isPending;
 
+  // Le bouton était DÉSACTIVÉ sans dire pourquoi : sur un formulaire à cinq
+  // champs dont deux seulement sont requis, « rien ne se passe au clic » est
+  // une énigme. Patron `JournalEntriesPage` — un `<button disabled>` n'est pas
+  // focalisable, le `title` seul n'atteint donc ni le clavier ni le lecteur
+  // d'écran, et la raison est doublée d'un texte `sr-only` référencé par
+  // `aria-describedby`. L'ordre suit celui des champs : on nomme le PREMIER
+  // obstacle, pas la liste entière.
+  const blocking: string | null =
+    !CODE_RE.test(code)                                        ? 'a code'
+    : trimmedName.length < NAME_MIN || name.length > NAME_MAX  ? 'a name of 2 to 60 characters'
+    : description.length > DESC_MAX                            ? 'a shorter description'
+    : timeoutInvalid                                           ? 'a session timeout between 5 and 480 minutes'
+    : null;
+  const submitReason =
+    blocking === null ? null : `This role still needs ${blocking}.`;
+
   function reset(): void {
     setCode('');
     setName('');
     setDesc('');
     setTimeoutStr('');
     setCloneFrom('');
+    // Sans ça, un refus serveur survit à la fermeture et rouvre le dialogue
+    // avec l'erreur de la tentative précédente.
+    create.reset();
   }
 
   function close(next: boolean): void {
@@ -106,6 +125,11 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Chaque champ portait sa contrainte dans un `<p>` que RIEN ne
+              rattachait à l'input : au lecteur d'écran, le format du code et
+              les bornes du timeout n'existaient pas, et le message d'erreur
+              non plus. Le hint et l'erreur s'excluent, ils partagent donc le
+              même `id` — patron `VoidOrderModal`. */}
           <div className="space-y-1">
             <label htmlFor="new-role-code" className={LABEL_CLS}>Code</label>
             <input
@@ -116,14 +140,19 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
               onChange={(e) => { setCode(e.target.value); }}
               placeholder="CASHIER_SENIOR"
               aria-invalid={codeInvalid}
+              aria-describedby="new-role-code-help"
               data-testid="new-role-code"
             />
             {codeInvalid ? (
-              <p className="text-xs text-danger-as-text" data-testid="new-role-code-invalid">
+              <p
+                id="new-role-code-help"
+                className="text-xs text-danger-as-text"
+                data-testid="new-role-code-invalid"
+              >
                 Start with a letter, then 3 to 30 letters, digits or underscores.
               </p>
             ) : (
-              <p className={HINT_CLS}>
+              <p id="new-role-code-help" className={HINT_CLS}>
                 3 to 30 characters, starting with a letter. Letters, digits and
                 underscores only. Permanent — a code is never renamed.
               </p>
@@ -140,14 +169,21 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
               onChange={(e) => { setName(e.target.value); }}
               placeholder="Cashier Senior"
               aria-invalid={nameInvalid}
+              aria-describedby="new-role-name-help"
               data-testid="new-role-name"
             />
             {nameInvalid ? (
-              <p className="text-xs text-danger-as-text" data-testid="new-role-name-invalid">
+              <p
+                id="new-role-name-help"
+                className="text-xs text-danger-as-text"
+                data-testid="new-role-name-invalid"
+              >
                 The name must be {NAME_MIN} to {NAME_MAX} characters long.
               </p>
             ) : (
-              <p className={HINT_CLS}>Shown wherever the role appears.</p>
+              <p id="new-role-name-help" className={HINT_CLS}>
+                Shown wherever the role appears.
+              </p>
             )}
           </div>
 
@@ -181,14 +217,19 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
               onChange={(e) => { setTimeoutStr(e.target.value); }}
               placeholder="30"
               aria-invalid={timeoutInvalid}
+              aria-describedby="new-role-timeout-help"
               data-testid="new-role-timeout"
             />
             {timeoutInvalid ? (
-              <p className="text-xs text-danger-as-text" data-testid="new-role-timeout-invalid">
+              <p
+                id="new-role-timeout-help"
+                className="text-xs text-danger-as-text"
+                data-testid="new-role-timeout-invalid"
+              >
                 Between {TIMEOUT_MIN} and {TIMEOUT_MAX} minutes.
               </p>
             ) : (
-              <p className={HINT_CLS}>
+              <p id="new-role-timeout-help" className={HINT_CLS}>
                 Minutes of inactivity before sign-out. Leave empty to inherit
                 from the cloned role, or to take the 30-minute default.
               </p>
@@ -221,6 +262,22 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
           </div>
         </div>
 
+        {/* Le refus serveur ne vivait QUE dans un toast — donc hors du
+            dialogue, et parti avant qu'on ait fini de lire. Un `role_exists`
+            se corrige dans le champ juste au-dessus : il se lit ici, à côté du
+            bouton qui vient d'échouer. Patron `FiscalPeriodModal`, et le même
+            traducteur que le hook — `rbacErrorMessage` — pour que l'écran et
+            le toast ne racontent pas deux histoires. */}
+        {create.error !== null && (
+          <p
+            role="alert"
+            className="rounded border border-red bg-red-soft px-3 py-2 text-sm text-red"
+            data-testid="new-role-error"
+          >
+            {rbacErrorMessage(create.error)}
+          </p>
+        )}
+
         <DialogFooter>
           <Button variant="ghost" type="button" onClick={() => { close(false); }}>
             Cancel
@@ -230,10 +287,16 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps):
             type="button"
             disabled={!canSubmit}
             onClick={submit}
+            {...(submitReason !== null
+              ? { title: submitReason, 'aria-describedby': 'new-role-submit-reason' }
+              : {})}
             data-testid="new-role-submit"
           >
             {create.isPending ? 'Creating…' : 'Create role'}
           </Button>
+          {submitReason !== null && (
+            <span id="new-role-submit-reason" className="sr-only">{submitReason}</span>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

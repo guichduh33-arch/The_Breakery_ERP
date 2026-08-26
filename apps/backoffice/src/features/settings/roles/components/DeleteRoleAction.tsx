@@ -23,7 +23,7 @@ import {
 } from '@breakery/ui';
 import { useUsersList } from '@/features/users/hooks/useUsersList.js';
 import { useDeleteRole } from '../hooks/useDeleteRole.js';
-import type { RbacRole } from '../hooks/useRbacMatrix.js';
+import { rbacErrorMessage, type RbacRole } from '../hooks/useRbacMatrix.js';
 
 export interface DeleteRoleActionProps {
   role: RbacRole;
@@ -81,7 +81,13 @@ export function DeleteRoleAction({ role }: DeleteRoleActionProps): JSX.Element {
         </Button>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      {/* Fermer le dialogue efface le refus qu'on vient d'y lire : la tentative
+          suivante repart d'un panneau propre, elle n'hérite pas de l'erreur de
+          la précédente. */}
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(next) => { setConfirmOpen(next); if (!next) del.reset(); }}
+      >
         <DialogContent className="max-w-md" data-testid="role-delete-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -95,12 +101,28 @@ export function DeleteRoleAction({ role }: DeleteRoleActionProps): JSX.Element {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Les refus serveur de ce geste — `role_in_use`, `system_role_locked`
+              — appellent une ACTION (réassigner des employés, renoncer). Ils se
+              lisaient dans un toast, au-dessus d'un dialogue qui venait de se
+              refermer : l'opérateur perdait à la fois la phrase et le contexte
+              où elle s'applique. Le dialogue reste donc ouvert et porte le
+              refus. Le toast du hook reste, pour qui regardait ailleurs. */}
+          {del.error !== null && (
+            <p
+              role="alert"
+              className="rounded border border-red bg-red-soft px-3 py-2 text-sm text-red"
+              data-testid="role-delete-error"
+            >
+              {rbacErrorMessage(del.error)}
+            </p>
+          )}
+
           <DialogFooter>
             <Button
               variant="ghost"
               type="button"
               disabled={del.isPending}
-              onClick={() => { setConfirmOpen(false); }}
+              onClick={() => { setConfirmOpen(false); del.reset(); }}
             >
               Cancel
             </Button>
@@ -117,7 +139,8 @@ export function DeleteRoleAction({ role }: DeleteRoleActionProps): JSX.Element {
                       setConfirmOpen(false);
                       void navigate('/backoffice/settings/roles');
                     },
-                    onError: () => { setConfirmOpen(false); },
+                    // Pas de `onError` qui referme : l'échec se lit DANS le
+                    // dialogue, et le geste se reprend sans le rouvrir.
                   },
                 );
               }}

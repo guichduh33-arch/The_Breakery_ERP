@@ -15,6 +15,8 @@ import { Link } from 'react-router-dom';
 import { Info, Plus } from 'lucide-react';
 import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { CreateRoleDialog } from '@/features/settings/roles/components/CreateRoleDialog.js';
 import { RoleMatrixGrid } from '@/features/settings/roles/components/RoleMatrixGrid.js';
@@ -69,10 +71,18 @@ export default function RolesPage() {
 
         <TabsContent value="roles" className="space-y-3">
           {matrix.isLoading && <div className="text-sm text-text-secondary">Loading roles…</div>}
+          {/* Le bloc nu qu'il remplace collait `error.message` en clair et
+              n'offrait aucune reprise : la seule issue était de recharger la
+              page. Le bandeau partagé relègue le diagnostic serveur en petit
+              mono et câble « Try again » sur le refetch. */}
           {matrix.error !== null && (
-            <div className="text-sm text-danger-as-text" data-testid="roles-error">
-              Failed to load roles: {matrix.error.message}
-            </div>
+            <QueryErrorBanner
+              detail={errorDetailText(matrix.error)}
+              onRetry={() => { void matrix.refetch(); }}
+              data-testid="roles-error"
+            >
+              Roles could not be loaded — this list may be missing roles that exist.
+            </QueryErrorBanner>
           )}
 
           {!matrix.isLoading && matrix.error === null && (

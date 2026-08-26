@@ -13,6 +13,8 @@ import { resolveJeSourceEntity } from '../utils/resolveJeSourceEntity.js';
 import { collectUuids } from '../utils/journalDescription.js';
 import { ResolvedDescription } from './ResolvedDescription.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 export interface JournalEntryDetailDrawerProps {
   entry: JournalEntryRow | null;
@@ -73,6 +75,30 @@ export function JournalEntryDetailDrawer({
 
         <div className="mt-6">
           {lines.isLoading && <p className="text-sm text-text-secondary">Loading lines…</p>}
+
+          {/* Le tiroir n'avait NI branche d'échec NI branche vide : une lecture
+              refusée rendait l'en-tête de l'écriture, ses totaux dans la liste
+              derrière, et un panneau muet — indiscernable d'une écriture sans
+              ligne, qui est un tout autre fait (et une anomalie comptable).
+              Les deux se disent donc séparément, et jamais l'un pour l'autre. */}
+          {lines.isError && (
+            <QueryErrorBanner
+              detail={errorDetailText(lines.error)}
+              onRetry={() => { void lines.refetch(); }}
+              data-testid="je-lines-error"
+            >
+              The lines of this entry could not be loaded — what it debits and
+              credits is unknown here, not absent.
+            </QueryErrorBanner>
+          )}
+
+          {!lines.isLoading && !lines.isError && lines.data?.length === 0 && (
+            <p className="text-sm text-text-secondary" data-testid="je-lines-empty">
+              This entry carries no line. Nothing was debited or credited — check
+              the source that posted it.
+            </p>
+          )}
+
           {lines.data && lines.data.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm" data-testid="je-lines-table">

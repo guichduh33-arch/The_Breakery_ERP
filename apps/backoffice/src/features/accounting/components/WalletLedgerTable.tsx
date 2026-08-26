@@ -13,6 +13,7 @@
 // `tabular-nums` seul ne suffit pas : il aligne les chiffres d'une police
 // proportionnelle, il ne la remplace pas.
 import { SectionLabel } from '@breakery/ui';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import type { WalletLedgerRow } from '../hooks/useCashWalletLedger.js';
 
 // Le préfixe « Rp » manquait ICI et nulle part ailleurs sur la page : les
@@ -39,16 +40,51 @@ const HEAD: readonly { label: string; right: boolean }[] = [
 export function WalletLedgerTable({
   rows,
   loading,
+  error,
+  onRetry,
 }: {
   rows: WalletLedgerRow[];
   loading: boolean;
+  /**
+   * Diagnostic serveur quand le ledger n'a PAS pu être lu, `null` sinon.
+   *
+   * LE DÉFAUT QUE CETTE PROP FERME. Le composant ne connaissait que deux
+   * états — « en cours » et « rien » — et rendait donc « No movements in this
+   * period. » quand la requête ÉCHOUAIT. C'est la phrase la plus dangereuse
+   * qu'un écran de trésorerie puisse rendre : elle affirme un fait sur le
+   * coffre là où le serveur n'a rien répondu, et un comptable qui la croit
+   * rapproche une caisse sur une période qu'il pense vide (même motif que
+   * `JournalEntriesPage`, corrigé au même endroit).
+   */
+  error: string | null;
+  /** Relance la requête depuis le « Try again » du bandeau. */
+  onRetry: () => void;
 }) {
   if (loading) {
     return <div className="p-4 text-sm text-text-muted">Loading ledger…</div>;
   }
-  if (rows.length === 0) {
-    return <div className="p-4 text-sm text-text-muted">No movements in this period.</div>;
-  }
+  return (
+    <>
+      {/* Le bandeau SURPLOMBE la table, il ne la remplace pas : les lignes
+          déjà chargées restent lisibles, avec l'avertissement au-dessus. */}
+      {error !== null && (
+        <QueryErrorBanner detail={error} onRetry={onRetry} data-testid="wallet-ledger-error">
+          These movements could not be loaded — the period may well hold
+          movements this request never reached.
+        </QueryErrorBanner>
+      )}
+
+      {/* L'état vide n'est vrai que si le serveur a répondu. */}
+      {error === null && rows.length === 0 && (
+        <div className="p-4 text-sm text-text-muted">No movements in this period.</div>
+      )}
+
+      {rows.length > 0 && <LedgerRows rows={rows} />}
+    </>
+  );
+}
+
+function LedgerRows({ rows }: { rows: WalletLedgerRow[] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">

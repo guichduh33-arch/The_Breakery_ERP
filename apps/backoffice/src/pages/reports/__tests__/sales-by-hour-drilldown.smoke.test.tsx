@@ -94,12 +94,18 @@ describe('SalesByHourPage — archétype Report + drill-down horaire', () => {
     expect(nav).toHaveTextContent('Reports');
     expect(nav).toHaveTextContent('Sales');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Sales by Hour');
-    expect(screen.getByText(/Sunday, 7 June 2026/)).toBeInTheDocument();
+    // `selector: 'p'` — la ligne méta est le `<p>` du bandeau. Le même texte
+    // vit désormais AUSSI dans la région live `sr-only` de `ReportShell` (un
+    // `<span>`), qui est ce qui annonce l'arrivée des nouveaux chiffres après
+    // un changement de période : on désigne la ligne VISIBLE, pas l'annonce.
+    expect(screen.getByText(/Sunday, 7 June 2026/, { selector: 'p' })).toBeInTheDocument();
   });
 
   it('fenêtre multi-jours : la ligne méta dit que seul le dernier jour est lu', () => {
     renderPage('?start=2026-06-01&end=2026-06-07');
-    expect(screen.getByText(/last day of the selected period/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/last day of the selected period/, { selector: 'p' }),
+    ).toBeInTheDocument();
   });
 
   it('bande KPI : revenu en héro avec sa variation, pic sans variation mais avec sa note', () => {

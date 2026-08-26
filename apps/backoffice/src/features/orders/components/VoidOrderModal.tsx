@@ -128,6 +128,12 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             <p id="void-reason-error" className="text-xs text-danger mt-1">Min. 10 characters</p>
           )}
         </div>
+        {/* Le champ au-dessus annonce sa contrainte (« Min. 10 characters ») et
+            rattache son message d'erreur ; celui-ci n'avait NI l'un NI l'autre,
+            alors qu'il porte la même règle côté serveur (`invalid_pin_format`)
+            et qu'il est masqué — donc invérifiable à l'œil. Même patron : un
+            indice permanent, un message quand la saisie est entamée et fausse,
+            les deux sous le même `id` puisqu'ils s'excluent. */}
         <div>
           <label htmlFor="void-pin-input" className="block text-sm font-medium">Manager PIN</label>
           <input
@@ -138,8 +144,15 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
             className={`mt-1 h-touch-min w-full border border-border-strong rounded px-2 text-sm tracking-widest ${FOCUS_RING}`}
+            aria-invalid={pin.length > 0 && !pinOk}
+            aria-describedby="void-pin-hint"
             data-testid="void-pin"
           />
+          {!pinOk && pin.length > 0 ? (
+            <p id="void-pin-hint" className="text-xs text-danger mt-1">Exactly 6 digits</p>
+          ) : (
+            <p id="void-pin-hint" className="text-xs text-text-muted mt-1">6 digits</p>
+          )}
         </div>
         {m.error && (
           <p role="alert" className="text-sm text-danger-as-text" data-testid="void-error">

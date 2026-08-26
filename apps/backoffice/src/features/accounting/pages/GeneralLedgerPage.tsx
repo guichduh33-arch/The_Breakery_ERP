@@ -15,6 +15,8 @@ import {
 import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSourceEntity.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 const fmt = formatCurrency;
@@ -94,6 +96,12 @@ export default function GeneralLedgerPage(): JSX.Element {
     if (gl.data?.next_cursor) setCursor(gl.data.next_cursor);
   }
 
+  // Aucune branche d'échec n'existait : un compte choisi et une requête refusée
+  // laissaient la page sur ses trois filtres, sans table ni un mot. Même remède
+  // que le journal et la balance — le bandeau dit ce qui manque, et « Try
+  // again » évite de perdre le compte et la période déjà saisis.
+  const glError = gl.isError ? gl.error : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -144,6 +152,17 @@ export default function GeneralLedgerPage(): JSX.Element {
 
       {accountId === '' && (
         <p className="text-sm text-text-secondary">Pick an account to see its ledger.</p>
+      )}
+
+      {glError !== null && (
+        <QueryErrorBanner
+          detail={errorDetailText(glError)}
+          onRetry={() => { void gl.refetch(); }}
+          data-testid="gl-error"
+        >
+          This account&apos;s ledger could not be loaded — the period may well
+          hold entries this request never reached.
+        </QueryErrorBanner>
       )}
 
       {accountId !== '' && gl.isLoading && pages.length === 0 && (

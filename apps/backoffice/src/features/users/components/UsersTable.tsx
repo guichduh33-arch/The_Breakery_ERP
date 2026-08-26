@@ -3,10 +3,13 @@
 
 import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@breakery/ui';
 import { formatDateTime } from '@breakery/utils';
 import { roleLabel } from '@/lib/roleLabels.js';
-import type { UserRow } from '../hooks/useUsersList.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
+import { USERS_LIST_KEY, type UserRow } from '../hooks/useUsersList.js';
 
 export interface UsersTableProps {
   rows:     UserRow[];
@@ -30,6 +33,11 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
 };
 
 export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps): JSX.Element {
+  // La reprise se prend ICI plutôt qu'en prop : la table n'a qu'un appelant, et
+  // sa requête a une clé publique. `invalidateQueries` fait du préfixe, donc la
+  // variante `['users-list','with-deleted']` repart avec la liste courante.
+  const qc = useQueryClient();
+
   if (loading === true) {
     // Silhouette de la table plutôt qu'un « Loading users… » nu (audit UX/UI
     // 2026-08-13, lot 8) : quelques lignes fantômes qui gardent la forme de ce
@@ -48,7 +56,16 @@ export function UsersTable({ rows, loading, error, roleNames }: UsersTableProps)
     );
   }
   if (error != null) {
-    return <div className="text-sm text-danger">Failed to load users: {error.message}</div>;
+    return (
+      <QueryErrorBanner
+        detail={errorDetailText(error)}
+        onRetry={() => { void qc.invalidateQueries({ queryKey: USERS_LIST_KEY }); }}
+        data-testid="users-error"
+      >
+        The staff list could not be loaded — accounts exist that this page
+        cannot show right now.
+      </QueryErrorBanner>
+    );
   }
   if (rows.length === 0) {
     return <div className="text-sm text-text-secondary">No users yet.</div>;

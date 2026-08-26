@@ -70,6 +70,32 @@ export function ReportShell({
     ?? [{ label: 'Reports', to: '/backoffice/reports' }, { label: title }];
   const showEmpty = isEmpty === true && emptyState !== undefined;
 
+  // Région live UNIQUE et toujours montée — patron `JournalEntriesPage`.
+  //
+  // LE DÉFAUT QU'ELLE FERME. Changer de période sur un rapport ne déplace pas
+  // le focus : les tuiles, le graphe et les ventilations se réécrivent en
+  // silence, et qui n'y voit pas n'a AUCUN moyen de savoir que les chiffres
+  // sous ses doigts ne sont plus les mêmes (WCAG 4.1.3). Elle vit ici, dans
+  // l'ossature, et pas dans les pages : montée HORS des branches erreur et
+  // vide, elle survit à la bascule vers zéro ligne — le seul moment où
+  // l'annonce sert vraiment. Une région qui se démonte n'annonce rien.
+  //
+  // Le texte doit CHANGER pour être annoncé : la ligne méta des rapports porte
+  // la période, elle est donc ce qui fait la différence d'une fenêtre à
+  // l'autre. Un `subtitle` en JSX n'a pas de texte lisible ici — on retombe
+  // alors sur l'état seul, qui annonce au moins l'entrée dans le vide.
+  //
+  // Le vide se dit en GÉNÉRIQUE et ne recopie pas le titre de l'`EmptyState` :
+  // celui-ci est du texte VISIBLE, déjà lisible là où il s'affiche, et le rôle
+  // de la région est de signaler la bascule, pas de doubler la page.
+  const periodNote = typeof subtitle === 'string' && subtitle !== '' ? subtitle : null;
+  const liveMessage =
+    // L'échec parle déjà dans sa propre bannière `role="alert"`, plus urgente.
+    error !== null          ? ''
+    : showEmpty             ? `${title} — no figures for this window.`
+    : periodNote !== null    ? `${title} updated — ${periodNote}.`
+    :                         `${title} updated.`;
+
   return (
     <div className="space-y-3.5">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
@@ -96,6 +122,8 @@ export function ReportShell({
       </nav>
 
       <PageHeader title={title} subtitle={subtitle} actions={toolbar} />
+
+      <span role="status" className="sr-only" data-testid="report-live">{liveMessage}</span>
 
       {error !== null && (
         <p

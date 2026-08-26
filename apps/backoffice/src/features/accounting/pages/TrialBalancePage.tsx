@@ -10,6 +10,8 @@ import {
 } from '@/features/accounting/hooks/useTrialBalance.js';
 import { downloadTrialBalanceCsv } from '@/features/accounting/components/exportTrialBalanceCsv.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
+import { errorDetailText } from '@/components/errorDetailText.js';
 
 const CLASS_LABELS: Record<number, string> = {
   1: 'Asset', 2: 'Liability', 3: 'Equity', 4: 'Revenue', 5: 'COGS', 6: 'Expense',
@@ -25,6 +27,12 @@ export default function TrialBalancePage(): JSX.Element {
   const [startDate, setStartDate] = useState(monthStartIsoDate());
   const [endDate,   setEndDate]   = useState(todayIsoDate());
   const tb = useTrialBalance(startDate, endDate);
+
+  // La page n'avait AUCUNE branche d'échec : requête refusée, elle rendait son
+  // titre, ses deux champs de date, et plus rien — un écran qui se lit
+  // « la période est vide » alors que le serveur n'a pas répondu. Patron du
+  // journal (QueryErrorBanner + état vide qui se tait sous l'erreur).
+  const tbError = tb.isError ? tb.error : null;
 
   return (
     <div className="space-y-6">
@@ -64,6 +72,17 @@ export default function TrialBalancePage(): JSX.Element {
           />
         </label>
       </div>
+
+      {tbError !== null && (
+        <QueryErrorBanner
+          detail={errorDetailText(tbError)}
+          onRetry={() => { void tb.refetch(); }}
+          data-testid="tb-error"
+        >
+          The trial balance could not be loaded — this period may well hold
+          activity this request never reached.
+        </QueryErrorBanner>
+      )}
 
       {tb.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
 
@@ -123,7 +142,8 @@ export default function TrialBalancePage(): JSX.Element {
         </>
       )}
 
-      {!tb.isLoading && tb.data?.lines.length === 0 && (
+      {/* L'état vide n'est vrai que si le serveur a répondu. */}
+      {!tb.isLoading && tbError === null && tb.data?.lines.length === 0 && (
         <p className="text-sm text-text-secondary">No activity in this period.</p>
       )}
     </div>
