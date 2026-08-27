@@ -7,9 +7,10 @@
 //     (`ListCounterStrip`). Ici les compteurs sont INFORMATIFS et non
 //     cliquables : aucun filtre serveur ne correspond à « actif ce mois » ou
 //     « encours B2B », et un compteur qui ne filtre pas ne doit pas se
-//     présenter comme un contrôle. Le jeu est borné (la liste charge tous les
-//     clients), le comptage en mémoire est donc légitime au sens de
-//     l'ADR-024 — ce n'est pas le cas paginé des commandes (ADR-025).
+//     présenter comme un contrôle. Les compteurs viennent d'une RPC dédiée
+//     (`useCustomersStats`), pas des lignes rendues : ils restent donc justes
+//     alors même que la requête de liste est bornée (`CUSTOMERS_FETCH_CAP`) —
+//     ce n'est pas le cas paginé des commandes (ADR-025).
 //   · La recherche héroïque cartée et les filtres en cartes cèdent à une
 //     rangée de contrôles plats de 34 px.
 //   · Le `DataTable` passe en densité compacte avec un pied TOUJOURS rendu
@@ -25,6 +26,7 @@ import {
   Input,
   LoyaltyBadge,
   Select,
+  useDebouncedValue,
   type DataTableColumn,
 } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
@@ -40,6 +42,7 @@ import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.j
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
 import {
   useCustomersList,
+  CUSTOMERS_FETCH_CAP,
   type CustomersListRow,
   type CustomersTier,
   type CustomersSort,
@@ -94,6 +97,10 @@ const SORT_DIRECTION: Record<CustomersSort, 'asc' | 'desc'> = {
 
 const CUSTOMERS_PAGE_SIZE_DEFAULT = 50;
 
+// Le cran du Command Palette et des écritures comptables — le dépôt n'en a
+// qu'un.
+const SEARCH_DEBOUNCE_MS = 250;
+
 function formatLastVisit(iso: string | null): string {
   if (iso === null) return '—';
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -117,8 +124,9 @@ export default function CustomersListPage(): JSX.Element {
   const [sort,       setSort      ] = useState<CustomersSort>('last_visit');
   const [creating,   setCreating  ] = useState<boolean>(false);
   const [importing,  setImporting ] = useState<boolean>(false);
-  // Pagination CLIENT : le hook charge toute la base cliente d'un coup (jeu
-  // borné, cf. l'en-tête de ce fichier), le pied ne fait que découper.
+  // Pagination CLIENT : le hook charge d'un coup la tête du classement, dans la
+  // limite de `CUSTOMERS_FETCH_CAP` lignes ; le pied ne fait que découper — et
+  // dit quand la borne est touchée.
   const [page,       setPage      ] = useState<number>(1);
   const [pageSize,   setPageSize  ] = useState<number>(CUSTOMERS_PAGE_SIZE_DEFAULT);
   const exportMut = useCustomersExport();
@@ -131,14 +139,19 @@ export default function CustomersListPage(): JSX.Element {
   function applyTier(next: CustomersTier): void { setTier(next);       setPage(1); }
   function applySort(next: CustomersSort): void { setSort(next);       setPage(1); }
 
+  // La saisie vit en local ; seule la valeur POSÉE atteint les filtres. Poussée
+  // à la frappe, elle changeait la `queryKey` à chaque caractère et lançait donc
+  // une requête PostgREST par touche — « Bali Organic » en émettait treize.
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+
   const filters = useMemo(
     () => ({
-      ...(search !== '' ? { search } : {}),
+      ...(debouncedSearch !== '' ? { search: debouncedSearch } : {}),
       categoryId,
       tier,
       sort,
     }),
-    [search, categoryId, tier, sort],
+    [debouncedSearch, categoryId, tier, sort],
   );
 
   const list  = useCustomersList(filters);
@@ -326,13 +339,32 @@ export default function CustomersListPage(): JSX.Element {
     );
   }
 
-  const rows = list.data ?? [];
+  const rows = list.data?.rows ?? [];
   // `undefined` tant que le total n'est pas su : le pied dira ce qu'il a chargé
   // plutôt que de rapporter les lignes rendues à un total qu'il ignore. Replié
   // sur zéro, il annonçait « 50 of 0 » — plus de lignes à l'écran que le total
   // qu'il prétendait connaître.
   const total = statsDown ? undefined : stats.data?.totalCustomers;
   const { pageRows, current } = pageSlice(rows, page, pageSize);
+  // La requête est bornée (`CUSTOMERS_FETCH_CAP`). Quand la borne est touchée,
+  // le pied cesse de rapporter les lignes chargées à un total : « 500 of 1,832 »
+  // se lirait comme une pagination complète alors que les 1 332 autres ne sont
+  // NULLE PART dans la table. Il annonce alors la troncature et ce qui la lève.
+  //
+  // Le verdict vient du HOOK (qui demande CAP+1 lignes) et non d'un
+  // `rows.length >= CAP` : un jeu filtré de PILE 500 clients est complet, et la
+  // comparaison le déclarait tronqué — le pied refusait un total qu'il savait.
+  const capped = list.data?.capped ?? false;
+  let footerLabel: string;
+  if (capped) {
+    footerLabel = `First ${CUSTOMERS_FETCH_CAP.toLocaleString('id-ID')} loaded — refine the filters to see the rest`;
+  } else if (total === undefined) {
+    // Même geste que le pied des commandes : sans total connu, on compte ce qui
+    // est CHARGÉ, on ne le rapporte pas à un tout qu'on ignore.
+    footerLabel = `${rows.length} loaded`;
+  } else {
+    footerLabel = `${rows.length} of ${total.toLocaleString('id-ID')}`;
+  }
   // La colonne triée courante, dérivée du même état que le Select : les deux
   // contrôles ne peuvent pas diverger puisqu'il n'y a qu'une source.
   const sortedColumnId = Object.keys(COLUMN_SORT).find((id) => COLUMN_SORT[id] === sort) ?? null;
@@ -486,12 +518,7 @@ export default function CustomersListPage(): JSX.Element {
               onPageSize={(next) => { setPageSize(next); setPage(1); }}
               leading={
                 <span className="font-data text-xs tabular-nums text-text-muted">
-                  {/* Même geste que le pied des commandes : sans total connu,
-                      on compte ce qui est CHARGÉ, on ne le rapporte pas à un
-                      tout qu'on ignore. */}
-                  {total === undefined
-                    ? `${rows.length} loaded`
-                    : `${rows.length} of ${total.toLocaleString('id-ID')}`}
+                  {footerLabel}
                 </span>
               }
             />

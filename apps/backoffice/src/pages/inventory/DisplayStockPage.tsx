@@ -100,7 +100,10 @@ const MOVEMENT_COLUMNS: readonly DataTableColumn<DisplayMovementRow>[] = [
     id: 'reason',
     header: 'Reason',
     render: (r) => (
-      <span className="text-xs text-text-secondary line-clamp-1">{r.reason ?? ''}</span>
+      // Motif du dépôt (WalletLedgerTable) : une troncature porte son `title`.
+      // La raison est la seule justification d'un mouvement de vitrine —
+      // `line-clamp-1` la coupait sans recours.
+      <span className="text-xs text-text-secondary line-clamp-1" title={r.reason ?? ''}>{r.reason ?? ''}</span>
     ),
   },
 ];

@@ -137,7 +137,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
                 data-testid="void-submit"
               >
                 {mutation.isPending
-                  ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Voiding…</>
+                  ? <><Loader2 className="h-4 w-4 mr-1 animate-spin motion-reduce:animate-none" />Voiding…</>
                   : 'Void'}
               </Button>
             </DialogFooter>

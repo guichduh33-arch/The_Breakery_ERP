@@ -12,6 +12,7 @@
 import { Loader2, Star, Trash2, UploadCloud } from 'lucide-react';
 import { useRef, useState, type DragEvent, type JSX } from 'react';
 import { supabase } from '@/lib/supabase.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const BUCKET = 'product-images';
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -134,7 +135,9 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
           setDragOver(false);
         }}
         onDrop={onDrop}
-        className={`relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-lg border border-dashed bg-bg-overlay text-text-muted transition-colors ${
+        // La zone est focalisable mais n'avait AUCUN anneau : au clavier, rien
+        // ne disait qu'on était dessus (WCAG 2.4.7).
+        className={`${FOCUS_RING} relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-lg border border-dashed bg-bg-overlay text-text-muted transition-colors ${
           /* Survol de dépôt porté par le liseré seul (The Ink-Not-Gold Rule). */
           dragOver ? 'border-gold' : 'border-border-subtle'
         } ${readOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gold'}`}
@@ -151,7 +154,7 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
 
         {busy && (
           <div className="absolute inset-0 flex items-center justify-center bg-backdrop">
-            <Loader2 className="h-8 w-8 animate-spin text-gold" aria-label="Uploading" />
+            <Loader2 className="h-8 w-8 animate-spin text-gold motion-reduce:animate-none" aria-label="Uploading" />
           </div>
         )}
       </div>

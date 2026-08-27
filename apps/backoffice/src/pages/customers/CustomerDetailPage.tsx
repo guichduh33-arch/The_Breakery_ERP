@@ -237,9 +237,12 @@ export function CustomerDetailPage(): JSX.Element {
             {nextTier && <span className="font-data tabular-nums">{pointsToNext.toLocaleString('id-ID')} pts remaining</span>}
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-sm bg-surface-4">
+            {/* `transform: scaleX` et non une largeur animée : `transition-all`
+                sur `width` fait relayouter la barre à chaque frame. Le rendu à
+                l'œil est identique — la barre reste ancrée à gauche. */}
             <div
-              className="h-full bg-ink transition-all motion-reduce:transition-none"
-              style={{ width: `${tierProgress}%` }}
+              className="h-full w-full origin-left bg-ink transition-transform motion-reduce:transition-none"
+              style={{ transform: `scaleX(${tierProgress / 100})` }}
             />
           </div>
         </div>

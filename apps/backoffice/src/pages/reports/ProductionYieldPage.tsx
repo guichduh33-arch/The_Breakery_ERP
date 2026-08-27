@@ -58,6 +58,17 @@ function varianceTone(frac: number | null): string {
   return 'text-success';
 }
 
+/**
+ * Cellule « Reason » des deux tableaux — tronquée à 18 rem.
+ *
+ * Le motif du dépôt (WalletLedgerTable) veut qu'une troncature porte son
+ * `title` : le motif de l'écart est la SEULE explication de la ligne, et
+ * l'ellipsis le coupait sans aucun recours — ni survol, ni clic, ni export
+ * visible depuis l'écran. La colonne CSV le porte déjà en entier, mais un
+ * lecteur ne télécharge pas un fichier pour lire une phrase.
+ */
+const REASON_CELL = 'max-w-[18rem] truncate py-2 text-xs text-text-secondary';
+
 /** Fraction → pourcentage signé (`+12.50%` / `-16.67%`). */
 function formatVariancePct(frac: number | null): string {
   if (frac === null) return '—';
@@ -135,10 +146,15 @@ function OutliersTable({
             return (
               // Lot A2 — la ligne de drill-down interne n'était accessible
               // qu'à la souris : focusable + Entrée/Espace.
+              // `aria-selected` n'est admis que dans une grille, un listbox ou
+              // un onglet — sur la ligne d'un tableau simple, il est ignoré au
+              // mieux, trompeur au pire. Rien ne le remplace ici : la ligne
+              // n'est pas « sélectionnée », elle FILTRE le reste de la page, et
+              // c'est `aria-pressed` sur un contrôle qui le dirait — la ligne
+              // n'en est pas un. L'état reste porté par le fond et le libellé.
               <tr
                 key={r.id}
                 tabIndex={0}
-                aria-selected={isSelected}
                 className={cn(
                   'cursor-pointer border-b border-border-subtle hover:bg-surface-4',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold',
@@ -151,7 +167,11 @@ function OutliersTable({
                     onSelectProduct(isSelected ? null : r.product_id);
                   }
                 }}
-                aria-label={`Outlier ${r.production_number}, click to drill into product`}
+                aria-label={
+                  isSelected
+                    ? `Outlier ${r.production_number}, filtering by this product — activate to clear`
+                    : `Outlier ${r.production_number}, activate to filter by this product`
+                }
                 data-testid="yield-outlier-row"
               >
                 <td className="py-2 font-data text-xs">{r.production_number}</td>
@@ -164,7 +184,7 @@ function OutliersTable({
                 <td className={cn('py-2 text-right font-data tabular-nums', varianceTone(r.yield_variance_pct))}>
                   {formatVariancePct(r.yield_variance_pct)}
                 </td>
-                <td className="max-w-[18rem] truncate py-2 text-xs text-text-secondary">
+                <td className={REASON_CELL} title={r.yield_variance_reason ?? ''}>
                   {r.yield_variance_reason ?? '—'}
                 </td>
               </tr>
@@ -201,7 +221,7 @@ function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
               <td className={cn('py-2 text-right font-data tabular-nums', varianceTone(r.yield_variance_pct))}>
                 {formatVariancePct(r.yield_variance_pct)}
               </td>
-              <td className="max-w-[18rem] truncate py-2 text-xs text-text-secondary">
+              <td className={REASON_CELL} title={r.yield_variance_reason ?? ''}>
                 {r.yield_variance_reason ?? '—'}
               </td>
             </tr>

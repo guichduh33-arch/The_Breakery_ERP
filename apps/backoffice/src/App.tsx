@@ -30,7 +30,11 @@ function BootLoading() {
     <div className="min-h-screen grid place-items-center bg-bg-base" aria-busy="true" aria-live="polite">
       <div className="flex flex-col items-center gap-4 text-text-secondary">
         <BrandMark size="md" />
-        <div className="h-6 w-6 rounded-full border-2 border-border-subtle border-t-gold animate-spin" aria-hidden />
+        {/* `motion-reduce:animate-none` — convention du dépôt (Dashboard,
+            OrdersListPage, PanelCard) : une animation en boucle s'éteint sous
+            `prefers-reduced-motion`. L'état reste lisible, « Loading… » le dit
+            en toutes lettres juste dessous. */}
+        <div className="h-6 w-6 rounded-full border-2 border-border-subtle border-t-gold animate-spin motion-reduce:animate-none" aria-hidden />
         <span className="text-sm uppercase tracking-widest">Loading…</span>
       </div>
     </div>

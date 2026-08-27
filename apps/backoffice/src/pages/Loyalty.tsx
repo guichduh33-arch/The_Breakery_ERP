@@ -15,7 +15,7 @@
 // (CustomerFormModal / LoyaltyAdjustModal / CustomerDeleteConfirm /
 // LoyaltyHistoryDrawer) — only the page chrome changed.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useId, useMemo, useState, type JSX } from 'react';
 import {
   Award,
   ChevronDown,
@@ -32,6 +32,7 @@ import {
   DataTable,
   KpiTile,
   LoyaltyBadge,
+  useDebouncedValue,
   type DataTableColumn,
 } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
@@ -43,6 +44,7 @@ import { LoyaltyHistoryDrawer } from '@/features/loyalty/components/LoyaltyHisto
 import { LoyaltyAdjustModal } from '@/features/loyalty/components/LoyaltyAdjustModal.js';
 import {
   useLoyaltyCustomersList,
+  LOYALTY_FETCH_CAP,
   type CustomerListRow as Row,
   type LoyaltyCustomersFilters,
   type TierFilter,
@@ -51,6 +53,9 @@ import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+
+// Le cran du Command Palette et de la liste clients — le dépôt n'en a qu'un.
+const SEARCH_DEBOUNCE_MS = 250;
 
 const TIER_OPTIONS: readonly { value: TierFilter; label: string }[] = [
   { value: 'all',      label: 'Tier: All' },
@@ -80,13 +85,23 @@ export default function LoyaltyPage(): JSX.Element {
   const [search, setSearch] = useState<string>('');
   const [tier,   setTier  ] = useState<TierFilter>('all');
 
+  // La saisie vit en local ; seule la valeur POSÉE atteint les filtres. Poussée
+  // à la frappe, elle changeait la `queryKey` à chaque caractère et lançait donc
+  // une requête PostgREST par touche. Même cran que la liste clients.
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+
   const filters = useMemo<LoyaltyCustomersFilters>(
-    () => ({ ...(search !== '' ? { search } : {}), tier }),
-    [search, tier],
+    () => ({ ...(debouncedSearch !== '' ? { search: debouncedSearch } : {}), tier }),
+    [debouncedSearch, tier],
   );
 
   const list  = useLoyaltyCustomersList(filters);
   const stats = useLoyaltyStats();
+  const rows  = list.data?.rows ?? [];
+  // Le verdict de troncature vient du HOOK (qui demande CAP+1 lignes) et non
+  // d'un `rows.length >= CAP` : un jeu filtré de PILE 500 membres est complet,
+  // et la comparaison lui collait quand même la note « refine the search ».
+  const capped = list.data?.capped ?? false;
 
   const [creating,  setCreating ] = useState(false);
   const [editing,   setEditing  ] = useState<Row | undefined>(undefined);
@@ -240,16 +255,32 @@ export default function LoyaltyPage(): JSX.Element {
           Failed: {list.error.message}
         </div>
       ) : (
-        <DataTable
-          caption="Member, tier, point balance, lifetime points and last visit per loyalty member"
-          columns={columns}
-          rows={list.data ?? []}
-          getRowKey={(r) => r.id}
-          isLoading={list.isLoading}
-          emptyTitle="No members match"
-          emptyDescription="Adjust the filters or create a new member."
-          data-testid="loyalty-table"
-        />
+        // Le conteneur porte l'écart de la note à sa table : posé sur la note
+        // elle-même, `space-y-6` du conteneur de page l'emporterait.
+        <div className="space-y-2">
+          <DataTable
+            caption="Member, tier, point balance, lifetime points and last visit per loyalty member"
+            columns={columns}
+            rows={rows}
+            getRowKey={(r) => r.id}
+            isLoading={list.isLoading}
+            emptyTitle="No members match"
+            emptyDescription="Adjust the filters or create a new member."
+            data-testid="loyalty-table"
+          />
+          {/* La table n'a pas de pied : sans cette ligne, la borne haute de la
+              requête tronquerait la liste EN SILENCE et l'écran se lirait comme
+              exhaustif. */}
+          {capped && (
+            <p
+              role="status"
+              className="font-data text-xs tabular-nums text-text-muted"
+              data-testid="loyalty-truncated"
+            >
+              First {LOYALTY_FETCH_CAP.toLocaleString('id-ID')} loaded — refine the search or tier filter to see the rest.
+            </p>
+          )}
+        </div>
       )}
 
       <CustomerFormModal open={creating} mode="create" onClose={() => setCreating(false)} />
@@ -283,6 +314,7 @@ function RowActions({
   row, isOpen, onToggle, canAdjust, canEdit, canDelete,
   onView, onAdjust, onEdit, onDelete,
 }: RowActionsProps): JSX.Element {
+  const panelId = useId();
   return (
     <div className="relative inline-block">
       <Button
@@ -291,14 +323,22 @@ function RowActions({
         size="sm"
         onClick={onToggle}
         aria-label={`Actions for ${row.name}`}
-        aria-haspopup="menu"
+        // Pas d'`aria-haspopup="menu"` : cette valeur PROMET le patron menu de
+        // l'APG (tabindex tournant, ↑/↓, Début/Fin, saisie prédictive), et seul
+        // Tab a jamais fonctionné ici. Le panneau est un DISCLOSURE —
+        // `aria-expanded` + `aria-controls` décrivent exactement ce qu'il fait,
+        // et les entrées gardent leur rôle natif `button`. Même arbitrage, pour
+        // la même raison, que les onglets de la TopBar (voir son en-tête) et
+        // que le menu d'export des rapports.
         aria-expanded={isOpen}
+        {...(isOpen ? { 'aria-controls': panelId } : {})}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />
       </Button>
       {isOpen && (
         <div
-          role="menu"
+          id={panelId}
+          role="group"
           aria-label={`Actions for ${row.name}`}
           className="absolute right-0 mt-1 w-44 rounded-md border border-border-subtle bg-bg-elevated shadow-lg z-10"
         >
@@ -316,9 +356,11 @@ function MenuItem({
   children, onClick, tone,
 }: { children: React.ReactNode; onClick: () => void; tone?: 'danger' }): JSX.Element {
   return (
+    // Pas de `role="menuitem"` : hors d'un vrai patron menu il ne décrit rien
+    // et retire au bouton son rôle natif. Le panneau est un disclosure, ses
+    // entrées sont des boutons — voir l'en-tête de `RowActions`.
     <button
       type="button"
-      role="menuitem"
       onClick={onClick}
       className={[
         // `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair

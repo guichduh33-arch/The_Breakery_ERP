@@ -48,9 +48,17 @@ export function BoulangerModeToggle({
             value ? 'bg-green' : 'bg-surface-4 border border-border-subtle',
           )}
         >
+          {/* Curseur recopié à la main : `bg-white` est une couleur EN DUR et
+              `shadow` un cran hors de l'échelle du thème (DESIGN.md). Il
+              s'aligne sur les DEUX autres interrupteurs du back-office —
+              CategoryFormDialog (`bg-bg-elevated shadow-sm`) pour le curseur,
+              GeneralPanel (`border border-border-strong`) pour le liseré qui le
+              détache d'une piste claire, où un curseur blanc sur blanc ne se
+              lisait pas. */}
           <span
             className={cn(
-              'inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-fast',
+              'inline-block h-4 w-4 rounded-full border border-border-strong bg-bg-elevated shadow-sm',
+              'transition-transform duration-fast',
               value ? 'translate-x-6' : 'translate-x-1',
             )}
           />

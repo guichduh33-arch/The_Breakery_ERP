@@ -5,6 +5,7 @@
 import { useRef, useState, type JSX, type DragEvent, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   onFile: (buf: ArrayBuffer, filename: string) => void;
@@ -61,6 +62,9 @@ export function ImportDropzone({ onFile, disabled = false }: Props): JSX.Element
       aria-label="Upload .xlsx file"
       className={cn(
         'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors cursor-pointer',
+        // La zone est focalisable mais n'avait AUCUN anneau : au clavier, rien
+        // ne disait qu'on était dessus (WCAG 2.4.7).
+        FOCUS_RING,
         isDragOver
           // Le survol de dépôt se dit par le liseré seul (The Ink-Not-Gold Rule) :
           // `border-gold` remplace `border-border-subtle`, l'état reste visible.

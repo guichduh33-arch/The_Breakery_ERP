@@ -29,6 +29,27 @@ export interface LoyaltyCustomersFilters {
 
 export const LOYALTY_CUSTOMERS_QUERY_KEY = ['loyalty-customers'] as const;
 
+/**
+ * Borne HAUTE de la requête — même geste et même valeur que
+ * `CUSTOMERS_FETCH_CAP` (liste clients). Sans elle, l'écran descendait toute la
+ * base retail filtrée, un jeu sans plafond côté serveur. La page N'A PAS de
+ * pagination : elle annonce donc la troncature sous la table quand la borne est
+ * touchée, plutôt que de laisser croire à une liste complète.
+ */
+export const LOYALTY_FETCH_CAP = 500;
+
+/**
+ * `capped` est ce que la page doit annoncer, et il n'est PAS déductible du
+ * nombre de lignes rendues : un jeu filtré de PILE 500 membres est complet, et
+ * `rows.length >= CAP` le déclarait tronqué. La requête demande donc CAP+1
+ * lignes — le hook en rend au plus CAP et ne lève `capped` que si la ligne
+ * excédentaire est effectivement revenue.
+ */
+export interface LoyaltyCustomersResult {
+  rows:   CustomerListRow[];
+  capped: boolean;
+}
+
 const TIER_RANGES: Record<Exclude<TierFilter, 'all'>, { min: number; max: number | null }> = {
   bronze:   { min: 0,    max: 499  },
   silver:   { min: 500,  max: 1999 },
@@ -53,7 +74,7 @@ function sanitizeSearchTerm(term: string): string {
 }
 
 export function useLoyaltyCustomersList(filters: LoyaltyCustomersFilters = {}) {
-  return useQuery<CustomerListRow[]>({
+  return useQuery<LoyaltyCustomersResult>({
     queryKey: [...LOYALTY_CUSTOMERS_QUERY_KEY, filters] as const,
     staleTime: 60_000,
     queryFn: async () => {
@@ -77,9 +98,16 @@ export function useLoyaltyCustomersList(filters: LoyaltyCustomersFilters = {}) {
         if (range.max !== null) q = q.lte('lifetime_points', range.max);
       }
 
+      // Après le tri : la tranche rendue est la tête du classement (plus gros
+      // soldes de points), pas un échantillon arbitraire. CAP+1 et non CAP :
+      // la ligne excédentaire n'est jamais rendue, elle sert uniquement de
+      // TÉMOIN qu'il en reste au-delà de la borne.
+      q = q.limit(LOYALTY_FETCH_CAP + 1);
+
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as unknown as CustomerListRow[];
+      const all = (data ?? []) as unknown as CustomerListRow[];
+      return { rows: all.slice(0, LOYALTY_FETCH_CAP), capped: all.length > LOYALTY_FETCH_CAP };
     },
   });
 }

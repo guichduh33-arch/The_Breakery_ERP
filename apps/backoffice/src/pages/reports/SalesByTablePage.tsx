@@ -232,7 +232,21 @@ export default function SalesByTablePage(): JSX.Element {
                               className={cn(
                                 'block rounded-sm px-2 py-1.5 font-data text-xs tabular-nums',
                                 step === null && 'text-text-subtle',
-                                step !== null && step >= 2 && 'text-white',
+                                // Le premier plan d'un aplat est un TOKEN, jamais
+                                // `text-white` en dur (DESIGN.md, dernier Don't) —
+                                // même retrait que DeleteUserDialog et
+                                // EditOrderItemsModal. Et le blanc ne tenait pas :
+                                // sur `--chart-2` (#4f93bf) il rendait 3,3:1, sous
+                                // le 4,5:1 qu'exige du texte à 12 px.
+                                //
+                                // Le SEUIL suit donc la rampe, pas un cran unique :
+                                //   step 3 · --chart-1 #2b6c9c → --ink-fg  ≈ 5,5:1
+                                //   step 2 · --chart-2 #4f93bf → texte encre ≈ 5,2:1
+                                //   steps 0-1 · #c9dcea / #8cc3e0 → hérité ≥ 9:1
+                                // Les deux crans clairs gardent la couleur du corps :
+                                // rien à écrire, rien à surveiller.
+                                step === 3 && 'text-ink-fg',
+                                step === 2 && 'text-text-primary',
                               )}
                               style={step !== null ? { background: INTENSITY_VARS[step] } : undefined}
                               title={c.orders > 0

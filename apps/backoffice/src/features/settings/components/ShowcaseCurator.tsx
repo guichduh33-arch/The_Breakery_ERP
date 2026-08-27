@@ -90,7 +90,10 @@ export function ShowcaseCurator({ value, onChange, disabled = false }: Props): J
                       >
                         <span className="w-10 h-10 shrink-0 rounded border border-border-subtle bg-bg-base overflow-hidden flex items-center justify-center">
                           {product?.image_url ? (
-                            <img src={product.image_url} alt="" className="w-full h-full object-cover" />
+                            // `loading="lazy"` comme la grille produits : la
+                            // liste de curation peut aligner des dizaines de
+                            // vignettes hors écran.
+                            <img src={product.image_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                           ) : (
                             <span aria-hidden="true" className="text-xs text-text-muted">—</span>
                           )}

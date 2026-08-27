@@ -39,6 +39,29 @@ export interface CustomersListFilters {
 
 export const CUSTOMERS_LIST_QUERY_KEY = ['customers-list-bo'] as const;
 
+/**
+ * Borne HAUTE de la requête. Sans elle, la liste descendait la table clients
+ * filtrée en entier — un jeu qui n'a pas de plafond côté serveur et qui grossit
+ * avec l'activité de la boutique. La pagination de l'écran étant CLIENT, la
+ * borne est posée assez haut pour que le cas courant ne la touche jamais, et
+ * l'écran DIT quand il la touche : un pied qui rapporte des lignes tronquées à
+ * un total complet mentirait. Même geste sur la liste fidélité
+ * (`useLoyaltyCustomersList`).
+ */
+export const CUSTOMERS_FETCH_CAP = 500;
+
+/**
+ * `capped` est ce que le pied doit annoncer, et il n'est PAS déductible du
+ * nombre de lignes rendues : un jeu filtré de PILE 500 clients est complet, et
+ * `rows.length >= CAP` le déclarait tronqué — le pied refusait alors un total
+ * qu'il connaissait. La requête demande donc CAP+1 lignes ; le hook en rend au
+ * plus CAP et ne lève `capped` que si la ligne excédentaire est revenue.
+ */
+export interface CustomersListResult {
+  rows:   CustomersListRow[];
+  capped: boolean;
+}
+
 const TIER_RANGES: Record<Exclude<CustomersTier, 'all'>, { min: number; max: number | null }> = {
   bronze:   { min: 0,    max: 499  },
   silver:   { min: 500,  max: 1999 },
@@ -89,7 +112,7 @@ function pickCategory(raw: RawCustomerRow['customer_categories']): RawCategoryJo
 }
 
 export function useCustomersList(filters: CustomersListFilters = {}) {
-  return useQuery<CustomersListRow[]>({
+  return useQuery<CustomersListResult>({
     queryKey: [...CUSTOMERS_LIST_QUERY_KEY, filters] as const,
     staleTime: 60_000,
     queryFn: async () => {
@@ -124,10 +147,18 @@ export function useCustomersList(filters: CustomersListFilters = {}) {
         q = q.order('loyalty_points', { ascending: false }).order('name');
       }
 
+      // La borne vient APRÈS le tri : la tranche rendue est alors la tête du
+      // classement demandé (dernières visites, plus gros paniers…), pas un
+      // échantillon arbitraire. CAP+1 et non CAP : la ligne excédentaire n'est
+      // jamais rendue, elle sert uniquement de TÉMOIN qu'il en reste au-delà.
+      q = q.limit(CUSTOMERS_FETCH_CAP + 1);
+
       const { data, error } = await q;
       if (error) throw error;
 
-      return ((data ?? []) as unknown as RawCustomerRow[]).map((r) => {
+      const raw = (data ?? []) as unknown as RawCustomerRow[];
+      const capped = raw.length > CUSTOMERS_FETCH_CAP;
+      const rows = raw.slice(0, CUSTOMERS_FETCH_CAP).map((r) => {
         const cat = pickCategory(r.customer_categories);
         return {
           id:                  r.id,
@@ -147,6 +178,8 @@ export function useCustomersList(filters: CustomersListFilters = {}) {
           created_at:          r.created_at,
         };
       });
+
+      return { rows, capped };
     },
   });
 }

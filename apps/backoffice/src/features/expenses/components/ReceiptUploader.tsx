@@ -4,7 +4,7 @@
 // path convention `expenses/{expense_id}/receipt.<ext>`. Returns the storage
 // path on success — the caller persists it in `expenses.receipt_url`.
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { Button } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -27,6 +27,7 @@ export function ReceiptUploader({
 }: ReceiptUploaderProps): JSX.Element {
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const errorId = useId();
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
@@ -65,6 +66,8 @@ export function ReceiptUploader({
         // sur le contrôle lui-même — WCAG 1.3.1 / 4.1.2.
         aria-label="Receipt file"
         accept={ACCEPT}
+        aria-invalid={error !== null}
+        {...(error !== null ? { 'aria-describedby': errorId } : {})}
         disabled={disabled === true || busy}
         onChange={(e) => { void handleChange(e); }}
         /* Le bouton du champ est un CONTRÔLE, pas une pastille : il prend la
@@ -76,8 +79,14 @@ export function ReceiptUploader({
            une seule passe règle les deux défauts. */
         className={`block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border file:border-border-strong file:bg-bg-elevated file:px-3 file:py-1.5 file:text-sm file:text-text-primary hover:file:bg-surface-4 ${FOCUS_RING}`}
       />
-      {busy && <div className="text-xs text-text-secondary">Uploading…</div>}
-      {error !== null && <div className="text-xs text-red">{error}</div>}
+      {/* Les deux retours de l'envoi arrivaient en silence : « Uploading… »
+          apparaît hors du flux de lecture (role="status", poli), et le refus
+          interrompt le geste (role="alert", assertif) tout en étant rattaché au
+          champ par `aria-describedby`. */}
+      {busy && <div role="status" className="text-xs text-text-secondary">Uploading…</div>}
+      {error !== null && (
+        <div id={errorId} role="alert" className="text-xs text-red">{error}</div>
+      )}
       {value !== undefined && value !== '' && (
         <div className="text-xs text-text-secondary">
           <span className="font-mono">{value}</span>

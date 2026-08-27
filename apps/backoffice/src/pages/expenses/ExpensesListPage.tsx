@@ -186,10 +186,14 @@ export default function ExpensesListPage(): JSX.Element {
       id:    'description',
       header: 'Description',
       render: (r) => (
+        // Motif du dépôt (WalletLedgerTable) : une troncature porte son `title`.
+        // Le libellé d'une dépense et le nom de son fournisseur sont ce qui la
+        // distingue de ses voisines — l'ellipsis les coupait sans recours, et la
+        // fiche de détail était le seul moyen de les relire.
         <div className="min-w-0">
-          <div className="text-text-primary truncate">{r.description}</div>
+          <div className="text-text-primary truncate" title={r.description}>{r.description}</div>
           {r.vendor_name !== null && r.vendor_name !== '' && (
-            <div className="text-xs text-text-muted truncate">{r.vendor_name}</div>
+            <div className="text-xs text-text-muted truncate" title={r.vendor_name}>{r.vendor_name}</div>
           )}
         </div>
       ),
@@ -374,7 +378,7 @@ function CategoriesTab(): JSX.Element {
   const cats = useExpenseCategories();
   const rows = cats.data ?? [];
   if (cats.isLoading) {
-    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />;
+    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated motion-reduce:animate-none" />;
   }
   if (rows.length === 0) {
     return (

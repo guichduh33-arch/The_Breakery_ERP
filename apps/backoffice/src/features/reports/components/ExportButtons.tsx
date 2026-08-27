@@ -144,7 +144,7 @@ export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>):
           aria-label="Export PDF"
         >
           {generatePdf.isPending
-            ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ? <Loader2 className="h-4 w-4 mr-1 animate-spin motion-reduce:animate-none" />
             : <FileText className="h-4 w-4 mr-1" />} PDF
         </Button>
       )}

@@ -139,7 +139,7 @@ function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoadin
     return (
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={`po-skel-${i}`} className="h-10 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />
+          <div key={`po-skel-${i}`} className="h-10 animate-pulse rounded-md border border-border-subtle bg-bg-elevated motion-reduce:animate-none" />
         ))}
       </div>
     );
@@ -425,7 +425,7 @@ function PaymentsSection({
   }, [rows]);
 
   if (isLoading) {
-    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />;
+    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated motion-reduce:animate-none" />;
   }
 
   return (
