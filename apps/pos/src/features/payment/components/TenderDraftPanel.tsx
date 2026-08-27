@@ -45,9 +45,17 @@ export function TenderDraftPanel({
             {formatIdr(Number(cashReceivedStr || '0'))}
           </span>
         </div>
+        {/* Audit 2026-08-27 — la monnaie à rendre est le chiffre que le caissier
+            prépare en ouvrant le tiroir : gros corps mono or, lisible à bout de
+            bras (était text-xs). */}
         {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
-          <div className="mt-2 text-xs text-text-secondary text-right">
-            Change: <Currency amount={cashChange} className="text-gold" />
+          <div className="mt-2 flex items-baseline justify-between">
+            <SectionLabel as="div">Change</SectionLabel>
+            <Currency
+              amount={cashChange}
+              emphasis="gold"
+              className="text-2xl font-mono tabular-nums"
+            />
           </div>
         )}
       </div>
@@ -70,7 +78,7 @@ export function TenderDraftPanel({
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                 draftAmount === remaining
                   ? 'bg-gold text-gold-fg border-gold'
-                  : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
+                  : 'bg-bg-input border-border-subtle [@media(hover:hover)]:hover:bg-bg-overlay text-text-primary',
               )}
             >
               {/* Audit 2026-08-24 (theming P3) — Règle du Chiffre Immobile :
@@ -81,7 +89,7 @@ export function TenderDraftPanel({
               <button
                 key={q}
                 onClick={() => setCashReceivedStr(String(q))}
-                className="min-h-touch-comfy rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                className="min-h-touch-comfy rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle [@media(hover:hover)]:hover:bg-bg-overlay text-text-primary transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
                 {formatIdr(q)}
               </button>
