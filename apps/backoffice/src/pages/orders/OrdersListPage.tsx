@@ -8,7 +8,7 @@
 // l'URL avec `pick` mémoïsé (closure figée = filtres écrasés) ; dates
 // commises en débounce ; export CSV gaté `reports.export` via buildCsv.
 
-import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type JSX, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button, DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
@@ -131,6 +131,11 @@ export default function OrdersListPage(): JSX.Element {
     : '';
 
   const [quickFind, setQuickFind] = useState('');
+  // Le filtre est CLIENT et porte sur toutes les pages déjà chargées : chaque
+  // frappe re-filtrait puis re-rendait la table entière, et la saisie sautait
+  // sur les grosses fenêtres. L'input garde la valeur immédiate — c'est le
+  // FILTRAGE qui est différé, donc rendu à priorité basse et interruptible.
+  const deferredQuickFind = useDeferredValue(quickFind);
 
   // Tri serveur depuis l'URL (drill-down/partage), même défense que ?status :
   // une valeur inconnue retombe sur le défaut, jamais une liste cassée.
@@ -184,14 +189,14 @@ export default function OrdersListPage(): JSX.Element {
     [query.data],
   );
   const lines = useMemo(() => {
-    const q = quickFind.trim().toLowerCase();
+    const q = deferredQuickFind.trim().toLowerCase();
     if (!q) return loadedLines;
     return loadedLines.filter(
       (o) =>
         o.order_number.toLowerCase().includes(q) ||
         (o.customer_name ?? '').toLowerCase().includes(q),
     );
-  }, [loadedLines, quickFind]);
+  }, [loadedLines, deferredQuickFind]);
 
   /** Total du panier affiché — c'est lui que le pied compte (ADR-025 D1). */
   const activeTotal = status === '' ? (c?.total.count ?? 0) : statusCell(c, status);
@@ -597,8 +602,11 @@ export default function OrdersListPage(): JSX.Element {
                     compte les correspondances SUR le chargé, jamais sur la
                     fenêtre serveur — d'où « X of the Y loaded », sans compteur
                     de fenêtre qui laisserait croire à une recherche complète. */}
-                {quickFind.trim() !== ''
-                  ? `${lines.length} of the ${loadedLines.length} loaded match “${quickFind.trim()}”`
+                {/* Le terme cité est la valeur DIFFÉRÉE, celle sur laquelle
+                    `lines` a été filtré : citer la frappe immédiate ferait, le
+                    temps d'un rendu, compter un terme et en afficher un autre. */}
+                {deferredQuickFind.trim() !== ''
+                  ? `${lines.length} of the ${loadedLines.length} loaded match “${deferredQuickFind.trim()}”`
                   : countersDown
                     ? `${loadedLines.length} loaded`
                     : `${lines.length} of ${activeTotal.toLocaleString('id-ID')}`}

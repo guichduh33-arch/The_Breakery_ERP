@@ -22,6 +22,48 @@ export function isRestricted(e: unknown): boolean {
   return code === '42501' || /permission denied/i.test(msg);
 }
 
+const COALESCE_MS = 2_000;
+
+/**
+ * Coalescence bord d'attaque + traîne — l'idiome de
+ * `features/orders/hooks/useOrdersRealtime.ts`, ici partagé par les deux
+ * canaux de ce fichier.
+ *
+ * Chaque événement `postgres_changes` invalidait immédiatement, et une seule
+ * commande en émet plusieurs (INSERT puis une transition de statut par étape) ;
+ * une vente touche en plus `display_stock` ligne à ligne. En rush, la carte
+ * rejouait donc sa RPC des dizaines de fois par minute et par onglet ouvert. Le
+ * premier événement rafraîchit tout de suite — le panneau reste « live » ; les
+ * suivants dans la fenêtre sont fusionnés en une seule invalidation traînante.
+ */
+function createCoalescer(run: () => void): { onEvent: () => void; cancel: () => void } {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let pending = false;
+
+  const onEvent = (): void => {
+    if (timer === null) {
+      run();
+      timer = setTimeout(() => {
+        timer = null;
+        if (pending) {
+          pending = false;
+          onEvent();
+        }
+      }, COALESCE_MS);
+    } else {
+      pending = true;
+    }
+  };
+
+  const cancel = (): void => {
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+    pending = false;
+  };
+
+  return { onEvent, cancel };
+}
+
 // ── Open orders — état du plancher ─────────────────────────────────────────
 
 export interface OpenOrder {
@@ -69,13 +111,15 @@ export function useOpenOrders(enabled = true) {
 
   useEffect(() => {
     if (!enabled) return;
+    const { onEvent, cancel } = createCoalescer(() => {
+      void qc.invalidateQueries({ queryKey: OPEN_ORDERS_KEY });
+    });
+    // Le nom reste tiré par mount — la coalescence ne touche pas à l'unicité.
     const channel = supabase
       .channel(`dashboard-open-orders-${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        void qc.invalidateQueries({ queryKey: OPEN_ORDERS_KEY });
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onEvent)
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => { cancel(); void supabase.removeChannel(channel); };
   }, [enabled, qc]);
 
   return query;
@@ -120,13 +164,15 @@ export function useDisplayStockActivity(enabled = true) {
 
   useEffect(() => {
     if (!enabled) return;
+    const { onEvent, cancel } = createCoalescer(() => {
+      void qc.invalidateQueries({ queryKey: DISPLAY_STOCK_ACTIVITY_KEY });
+    });
+    // Le nom reste tiré par mount — la coalescence ne touche pas à l'unicité.
     const channel = supabase
       .channel(`dashboard-display-stock-${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'display_stock' }, () => {
-        void qc.invalidateQueries({ queryKey: DISPLAY_STOCK_ACTIVITY_KEY });
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'display_stock' }, onEvent)
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => { cancel(); void supabase.removeChannel(channel); };
   }, [enabled, qc]);
 
   return query;

@@ -32,6 +32,7 @@ import {
   DataTable,
   KpiTile,
   LoyaltyBadge,
+  useDebouncedValue,
   type DataTableColumn,
 } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
@@ -43,6 +44,7 @@ import { LoyaltyHistoryDrawer } from '@/features/loyalty/components/LoyaltyHisto
 import { LoyaltyAdjustModal } from '@/features/loyalty/components/LoyaltyAdjustModal.js';
 import {
   useLoyaltyCustomersList,
+  LOYALTY_FETCH_CAP,
   type CustomerListRow as Row,
   type LoyaltyCustomersFilters,
   type TierFilter,
@@ -51,6 +53,9 @@ import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+
+// Le cran du Command Palette et de la liste clients — le dépôt n'en a qu'un.
+const SEARCH_DEBOUNCE_MS = 250;
 
 const TIER_OPTIONS: readonly { value: TierFilter; label: string }[] = [
   { value: 'all',      label: 'Tier: All' },
@@ -80,13 +85,19 @@ export default function LoyaltyPage(): JSX.Element {
   const [search, setSearch] = useState<string>('');
   const [tier,   setTier  ] = useState<TierFilter>('all');
 
+  // La saisie vit en local ; seule la valeur POSÉE atteint les filtres. Poussée
+  // à la frappe, elle changeait la `queryKey` à chaque caractère et lançait donc
+  // une requête PostgREST par touche. Même cran que la liste clients.
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+
   const filters = useMemo<LoyaltyCustomersFilters>(
-    () => ({ ...(search !== '' ? { search } : {}), tier }),
-    [search, tier],
+    () => ({ ...(debouncedSearch !== '' ? { search: debouncedSearch } : {}), tier }),
+    [debouncedSearch, tier],
   );
 
   const list  = useLoyaltyCustomersList(filters);
   const stats = useLoyaltyStats();
+  const rows  = list.data ?? [];
 
   const [creating,  setCreating ] = useState(false);
   const [editing,   setEditing  ] = useState<Row | undefined>(undefined);
@@ -240,16 +251,32 @@ export default function LoyaltyPage(): JSX.Element {
           Failed: {list.error.message}
         </div>
       ) : (
-        <DataTable
-          caption="Member, tier, point balance, lifetime points and last visit per loyalty member"
-          columns={columns}
-          rows={list.data ?? []}
-          getRowKey={(r) => r.id}
-          isLoading={list.isLoading}
-          emptyTitle="No members match"
-          emptyDescription="Adjust the filters or create a new member."
-          data-testid="loyalty-table"
-        />
+        // Le conteneur porte l'écart de la note à sa table : posé sur la note
+        // elle-même, `space-y-6` du conteneur de page l'emporterait.
+        <div className="space-y-2">
+          <DataTable
+            caption="Member, tier, point balance, lifetime points and last visit per loyalty member"
+            columns={columns}
+            rows={rows}
+            getRowKey={(r) => r.id}
+            isLoading={list.isLoading}
+            emptyTitle="No members match"
+            emptyDescription="Adjust the filters or create a new member."
+            data-testid="loyalty-table"
+          />
+          {/* La table n'a pas de pied : sans cette ligne, la borne haute de la
+              requête tronquerait la liste EN SILENCE et l'écran se lirait comme
+              exhaustif. */}
+          {rows.length >= LOYALTY_FETCH_CAP && (
+            <p
+              role="status"
+              className="font-data text-xs tabular-nums text-text-muted"
+              data-testid="loyalty-truncated"
+            >
+              First {LOYALTY_FETCH_CAP.toLocaleString('id-ID')} loaded — refine the search or tier filter to see the rest.
+            </p>
+          )}
+        </div>
       )}
 
       <CustomerFormModal open={creating} mode="create" onClose={() => setCreating(false)} />

@@ -29,6 +29,15 @@ export interface LoyaltyCustomersFilters {
 
 export const LOYALTY_CUSTOMERS_QUERY_KEY = ['loyalty-customers'] as const;
 
+/**
+ * Borne HAUTE de la requête — même geste et même valeur que
+ * `CUSTOMERS_FETCH_CAP` (liste clients). Sans elle, l'écran descendait toute la
+ * base retail filtrée, un jeu sans plafond côté serveur. La page N'A PAS de
+ * pagination : elle annonce donc la troncature sous la table quand la borne est
+ * touchée, plutôt que de laisser croire à une liste complète.
+ */
+export const LOYALTY_FETCH_CAP = 500;
+
 const TIER_RANGES: Record<Exclude<TierFilter, 'all'>, { min: number; max: number | null }> = {
   bronze:   { min: 0,    max: 499  },
   silver:   { min: 500,  max: 1999 },
@@ -76,6 +85,10 @@ export function useLoyaltyCustomersList(filters: LoyaltyCustomersFilters = {}) {
         q = q.gte('lifetime_points', range.min);
         if (range.max !== null) q = q.lte('lifetime_points', range.max);
       }
+
+      // Après le tri : la tranche rendue est la tête du classement (plus gros
+      // soldes de points), pas un échantillon arbitraire.
+      q = q.limit(LOYALTY_FETCH_CAP);
 
       const { data, error } = await q;
       if (error) throw error;

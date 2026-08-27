@@ -39,6 +39,17 @@ export interface CustomersListFilters {
 
 export const CUSTOMERS_LIST_QUERY_KEY = ['customers-list-bo'] as const;
 
+/**
+ * Borne HAUTE de la requête. Sans elle, la liste descendait la table clients
+ * filtrée en entier — un jeu qui n'a pas de plafond côté serveur et qui grossit
+ * avec l'activité de la boutique. La pagination de l'écran étant CLIENT, la
+ * borne est posée assez haut pour que le cas courant ne la touche jamais, et
+ * l'écran DIT quand il la touche : un pied qui rapporte des lignes tronquées à
+ * un total complet mentirait. Même geste sur la liste fidélité
+ * (`useLoyaltyCustomersList`).
+ */
+export const CUSTOMERS_FETCH_CAP = 500;
+
 const TIER_RANGES: Record<Exclude<CustomersTier, 'all'>, { min: number; max: number | null }> = {
   bronze:   { min: 0,    max: 499  },
   silver:   { min: 500,  max: 1999 },
@@ -123,6 +134,11 @@ export function useCustomersList(filters: CustomersListFilters = {}) {
       } else {
         q = q.order('loyalty_points', { ascending: false }).order('name');
       }
+
+      // La borne vient APRÈS le tri : la tranche rendue est alors la tête du
+      // classement demandé (dernières visites, plus gros paniers…), pas un
+      // échantillon arbitraire.
+      q = q.limit(CUSTOMERS_FETCH_CAP);
 
       const { data, error } = await q;
       if (error) throw error;
