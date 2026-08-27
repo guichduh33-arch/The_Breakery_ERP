@@ -25,8 +25,10 @@ colors:
   border-row: "#f3f1ec"
   text-primary: "#1a1917"
   text-secondary: "#55524c"
-  text-muted: "#6b6861"
-  text-subtle: "#88847c"
+  # Remontés le 2026-08-26 pour le CINQUIÈME fond, oublié des mesures : le
+  # point de la grille (#dfddd6) — voir § Colors / Neutral.
+  text-muted: "#615e57"
+  text-subtle: "#7a766e"
   text-inert: "#c2beb5"
   text-disabled: "#b3afa7"
   # Assombris le 2026-08-21 — voir § Colors / Sémantique. `info` n'est plus égal
@@ -269,16 +271,26 @@ même accent, même vocabulaire d'état, même échelle.
   **pris le 2026-08-24** : le token du thème sombre est monté à `#746b5f` et
   tient désormais 3,1 à 3,6:1 sur ses quatre fonds. La réserve est close.
 - **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
-  (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
-  plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
-  blanche, sur le papier de page, sur l'en-tête de tableau et sur l'état pressé,
-  où il vaut encore 4,50:1. Un ratio annoncé contre le seul blanc surestime de
-  ~0,6 point et laisse passer un token sous AA.
-- **Discret** (`#88847c`, 3,72:1) : **non-texte uniquement** — icône, tiret de
-  cellule vide, glyphe d'un bouton d'action de ligne. Il tient le seuil des
-  objets graphiques (WCAG 1.4.11), pas celui du texte. Un libellé, un
+  (`#615e57`, 6,47:1 sur la feuille blanche). Les ratios se mesurent sur le fond
+  le plus clair **et** le plus sombre que le token peut avoir sous lui — et le
+  comptage des fonds a été faux DEUX fois de la même façon. Les quatre fonds
+  mesurés jusqu'au 2026-08-26 (feuille, en-tête inerte, papier, pressé)
+  oubliaient le **cinquième**, posé sous presque tout le texte hors carte : le
+  POINT de la grille de mesure (`#dfddd6`), monté par le conteneur scrollant de
+  toutes les pages. L'ancien muet (`#6b6861`) y valait 4,09:1 — sous AA sur le
+  fond le plus courant du produit. Le muet remonté vaut 5,63:1 sur le papier,
+  5,23:1 sur le pressé et 4,76:1 sur le point de grille. Un ratio annoncé
+  contre le seul blanc surestime, et un comptage de fonds se refait à chaque
+  fois qu'une surface s'ajoute sous un texte.
+- **Discret** (`#7a766e`, 4,52:1 feuille — 3,93:1 papier — 3,33:1 point de
+  grille) : **non-texte uniquement** — icône, tiret de cellule vide, glyphe d'un
+  bouton d'action de ligne. Il tient le seuil des objets graphiques
+  (WCAG 1.4.11), pas celui du texte. Remonté le 2026-08-26 pour la même raison
+  que le muet : l'ancien `#88847c` ne valait que 2,78:1 sur le point de grille,
+  sous le seuil que ce token n'existe que pour tenir. Un libellé, un
   placeholder, un pourcentage ou une note de bas de tuile prennent le muet : le
-  discret ne peut pas valoir 4,5:1 sans devenir indiscernable de lui.
+  discret reste sous AA sur les fonds sombres du thème, ce qui est ce qui
+  l'empêche d'usurper un rôle de texte.
 - **Inerte** (`#c2beb5`) : le gris des séparateurs de fil d'Ariane, des chevrons
   éteints et des icônes qui n'appellent aucune action. Il est délibérément plus
   clair que le texte discret et plus soutenu que le désactivé — un chevron de fil

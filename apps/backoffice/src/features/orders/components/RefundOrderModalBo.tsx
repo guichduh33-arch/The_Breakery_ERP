@@ -352,7 +352,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
               type="button"
               variant="ink"
               size="sm"
-              className="bg-danger text-red-on-fill hover:opacity-90"
+              className="bg-danger text-danger-fg hover:bg-danger-hover"
               onClick={() => { void handleSubmit(); }}
               disabled={!canSubmit}
               data-testid="refund-submit"

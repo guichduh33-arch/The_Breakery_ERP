@@ -83,6 +83,7 @@ const preset: Partial<Config> = {
         },
         red: {
           DEFAULT: 'var(--red-base)',
+          hover: 'var(--red-hover)',
           soft: 'var(--red-soft)',
           // `-fg` signifie « premier plan SUR un aplat » partout ailleurs
           // (--gold-fg, --green-fg). --red-fg était le seul à signifier
@@ -106,6 +107,8 @@ const preset: Partial<Config> = {
         },
         danger: {
           DEFAULT: 'var(--danger)',
+          // Survol d'un rempli danger — ferme `hover:opacity-90` (2026-08-27).
+          hover: 'var(--danger-hover)',
           soft: 'var(--danger-soft)',
           // Règle des Deux Rouges (re-audit 2026-08-24) : `text-danger` rendait
           // le rouge d'APLAT en texte sur le thème sombre. Le danger écrit

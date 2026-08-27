@@ -99,7 +99,7 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
             data-testid="delete-product-confirm"
             onClick={() => { void handleConfirm(); }}
             disabled={mutation.isPending}
-            className="bg-danger text-danger-fg hover:opacity-90"
+            className="bg-danger text-danger-fg hover:bg-danger-hover"
           >
             {mutation.isPending ? 'Deactivating…' : 'Deactivate product'}
           </Button>
