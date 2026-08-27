@@ -15,7 +15,7 @@
 // (CustomerFormModal / LoyaltyAdjustModal / CustomerDeleteConfirm /
 // LoyaltyHistoryDrawer) — only the page chrome changed.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useId, useMemo, useState, type JSX } from 'react';
 import {
   Award,
   ChevronDown,
@@ -97,7 +97,11 @@ export default function LoyaltyPage(): JSX.Element {
 
   const list  = useLoyaltyCustomersList(filters);
   const stats = useLoyaltyStats();
-  const rows  = list.data ?? [];
+  const rows  = list.data?.rows ?? [];
+  // Le verdict de troncature vient du HOOK (qui demande CAP+1 lignes) et non
+  // d'un `rows.length >= CAP` : un jeu filtré de PILE 500 membres est complet,
+  // et la comparaison lui collait quand même la note « refine the search ».
+  const capped = list.data?.capped ?? false;
 
   const [creating,  setCreating ] = useState(false);
   const [editing,   setEditing  ] = useState<Row | undefined>(undefined);
@@ -267,7 +271,7 @@ export default function LoyaltyPage(): JSX.Element {
           {/* La table n'a pas de pied : sans cette ligne, la borne haute de la
               requête tronquerait la liste EN SILENCE et l'écran se lirait comme
               exhaustif. */}
-          {rows.length >= LOYALTY_FETCH_CAP && (
+          {capped && (
             <p
               role="status"
               className="font-data text-xs tabular-nums text-text-muted"
@@ -310,6 +314,7 @@ function RowActions({
   row, isOpen, onToggle, canAdjust, canEdit, canDelete,
   onView, onAdjust, onEdit, onDelete,
 }: RowActionsProps): JSX.Element {
+  const panelId = useId();
   return (
     <div className="relative inline-block">
       <Button
@@ -318,14 +323,22 @@ function RowActions({
         size="sm"
         onClick={onToggle}
         aria-label={`Actions for ${row.name}`}
-        aria-haspopup="menu"
+        // Pas d'`aria-haspopup="menu"` : cette valeur PROMET le patron menu de
+        // l'APG (tabindex tournant, ↑/↓, Début/Fin, saisie prédictive), et seul
+        // Tab a jamais fonctionné ici. Le panneau est un DISCLOSURE —
+        // `aria-expanded` + `aria-controls` décrivent exactement ce qu'il fait,
+        // et les entrées gardent leur rôle natif `button`. Même arbitrage, pour
+        // la même raison, que les onglets de la TopBar (voir son en-tête) et
+        // que le menu d'export des rapports.
         aria-expanded={isOpen}
+        {...(isOpen ? { 'aria-controls': panelId } : {})}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />
       </Button>
       {isOpen && (
         <div
-          role="menu"
+          id={panelId}
+          role="group"
           aria-label={`Actions for ${row.name}`}
           className="absolute right-0 mt-1 w-44 rounded-md border border-border-subtle bg-bg-elevated shadow-lg z-10"
         >
@@ -343,9 +356,11 @@ function MenuItem({
   children, onClick, tone,
 }: { children: React.ReactNode; onClick: () => void; tone?: 'danger' }): JSX.Element {
   return (
+    // Pas de `role="menuitem"` : hors d'un vrai patron menu il ne décrit rien
+    // et retire au bouton son rôle natif. Le panneau est un disclosure, ses
+    // entrées sont des boutons — voir l'en-tête de `RowActions`.
     <button
       type="button"
-      role="menuitem"
       onClick={onClick}
       className={[
         // `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair

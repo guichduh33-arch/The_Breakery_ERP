@@ -339,7 +339,7 @@ export default function CustomersListPage(): JSX.Element {
     );
   }
 
-  const rows = list.data ?? [];
+  const rows = list.data?.rows ?? [];
   // `undefined` tant que le total n'est pas su : le pied dira ce qu'il a chargé
   // plutôt que de rapporter les lignes rendues à un total qu'il ignore. Replié
   // sur zéro, il annonçait « 50 of 0 » — plus de lignes à l'écran que le total
@@ -350,7 +350,11 @@ export default function CustomersListPage(): JSX.Element {
   // le pied cesse de rapporter les lignes chargées à un total : « 500 of 1,832 »
   // se lirait comme une pagination complète alors que les 1 332 autres ne sont
   // NULLE PART dans la table. Il annonce alors la troncature et ce qui la lève.
-  const capped = rows.length >= CUSTOMERS_FETCH_CAP;
+  //
+  // Le verdict vient du HOOK (qui demande CAP+1 lignes) et non d'un
+  // `rows.length >= CAP` : un jeu filtré de PILE 500 clients est complet, et la
+  // comparaison le déclarait tronqué — le pied refusait un total qu'il savait.
+  const capped = list.data?.capped ?? false;
   let footerLabel: string;
   if (capped) {
     footerLabel = `First ${CUSTOMERS_FETCH_CAP.toLocaleString('id-ID')} loaded — refine the filters to see the rest`;
