@@ -15,6 +15,8 @@ export interface OrderSummaryPanelProps {
   attachedCustomer: CustomerWithCategory | null;
   appliedPromotions: AppliedPromotion[];
   totals: Totals;
+  /** Mode taxe serveur (useTaxConfig) — même libellé conditionnel que le panier. */
+  taxInclusive: boolean;
 }
 
 export function OrderSummaryPanel({
@@ -22,6 +24,7 @@ export function OrderSummaryPanel({
   attachedCustomer,
   appliedPromotions,
   totals,
+  taxInclusive,
 }: OrderSummaryPanelProps) {
   return (
     <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible">
@@ -49,7 +52,21 @@ export function OrderSummaryPanel({
                   )}
                 </td>
                 <td className="text-right py-3">{it.quantity}</td>
-                <td className="text-right py-3"><Currency amount={lineTotal} /></td>
+                {/* Remise de ligne visible (audit 2026-08-27) — même présentation
+                    que CartLineRow : total de ligne brut + remise en dessous,
+                    pour que le récapitulatif se recoupe face au client. */}
+                <td className="text-right py-3">
+                  <Currency amount={lineTotal} />
+                  {it.discount && (
+                    <div className="text-xs text-red-as-text font-mono tabular-nums">
+                      {it.discount.type === 'percentage' ? (
+                        `-${it.discount.value}%`
+                      ) : (
+                        <span>-<Currency amount={it.discount.amount} /></span>
+                      )}
+                    </div>
+                  )}
+                </td>
               </tr>
             );
           })}
@@ -109,7 +126,7 @@ export function OrderSummaryPanel({
           </div>
         )}
         <div className="flex justify-between text-text-secondary">
-          <span>Tax (PB1 incl.)</span><Currency amount={totals.tax_amount} />
+          <span>{taxInclusive ? 'Tax (PB1 incl.)' : 'Tax (PB1)'}</span><Currency amount={totals.tax_amount} />
         </div>
         <div className="flex justify-between pt-3 border-t border-border-subtle">
           <span className="uppercase tracking-wide font-semibold">Total Amount</span>

@@ -39,7 +39,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
   useOrgDisplaySettings();
   const {
     isOpen, close,
-    user, cart, attachedCustomer, appliedPromotions, totals, tenderedSum,
+    user, cart, attachedCustomer, appliedPromotions, totals, tenderedSum, taxInclusive,
     selectedMethod, selectMethod, cashReceivedStr, setCashReceivedStr,
     quickAmounts, draftAmount, isCashDraft, draftTenderAmount, cashChange, draftValid,
     tenders, removeTender,
@@ -119,6 +119,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
           attachedCustomer={attachedCustomer}
           appliedPromotions={appliedPromotions}
           totals={totals}
+          taxInclusive={taxInclusive}
         />
 
         {/* RIGHT — payment controls */}

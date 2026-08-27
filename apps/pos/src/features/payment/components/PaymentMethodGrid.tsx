@@ -54,7 +54,10 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
                 active
                   ? 'border-gold bg-gold-soft text-gold'
-                  : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold',
+                  // Hover gaté (hover:hover) — doctrine 2026-08-23 (cf. ProductCard) :
+                  // au doigt, :hover COLLE après le tap et le border-gold survolé
+                  // imite l'état sélectionné. Souris inchangée.
+                  : 'border-border-subtle bg-bg-elevated text-text-secondary [@media(hover:hover)]:hover:text-text-primary [@media(hover:hover)]:hover:border-gold',
               )}
               data-testid={`pay-method-${m.value}`}
             >

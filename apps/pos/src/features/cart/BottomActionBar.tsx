@@ -62,9 +62,11 @@ import { HeldOrdersModal } from './HeldOrdersModal';
 import { VoidOrderModal } from './VoidOrderModal';
 
 /** Shared "ghost" management-button styling (left group). */
+// Hover gaté (hover:hover) — doctrine 2026-08-23 : au doigt, :hover colle après
+// le tap. Le retour tactile passe par `active:`.
 const GHOST_BTN =
   'flex items-center gap-2 h-11 px-3.5 rounded-md bg-bg-overlay border border-border-subtle ' +
-  'text-text-primary text-sm font-semibold hover:bg-bg-input ' +
+  'text-text-primary text-sm font-semibold [@media(hover:hover)]:hover:bg-bg-input ' +
   'transition-[color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:opacity-50 disabled:pointer-events-none';
@@ -72,7 +74,7 @@ const GHOST_BTN =
 // Critique run 4 lot 3 — h-10 (40 px) était sous le plancher tactile de 44,
 // et ce menu porte « Void order ».
 const MENU_ITEM =
-  'w-full flex items-center gap-3 px-3 h-11 text-sm text-text-primary hover:bg-bg-input ' +
+  'w-full flex items-center gap-3 px-3 h-11 text-sm text-text-primary [@media(hover:hover)]:hover:bg-bg-input ' +
   'disabled:opacity-50 disabled:pointer-events-none rounded-md transition-colors';
 
 interface BottomActionBarProps {
@@ -404,7 +406,7 @@ export function BottomActionBar({
               {/* Void order — destructive, under More, always PIN + reason. */}
               <button
                 type="button"
-                className={cn(MENU_ITEM, 'text-red-as-text hover:bg-red-soft')}
+                className={cn(MENU_ITEM, 'text-red-as-text [@media(hover:hover)]:hover:bg-red-soft')}
                 disabled={!hasItems}
                 onClick={() => {
                   setMoreOpen(false);

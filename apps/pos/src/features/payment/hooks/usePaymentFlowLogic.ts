@@ -425,6 +425,9 @@ export function usePaymentFlowLogic() {
     isOpen, close,
     // identity / data
     user, cart, attachedCustomer, appliedPromotions, totals, tenderedSum,
+    // config taxe — OrderSummaryPanel rend le même libellé conditionnel que le
+    // panier (ActiveOrderPanel) au lieu d'un « incl. » figé.
+    taxInclusive,
     // method + draft
     selectedMethod, selectMethod, cashReceivedStr, setCashReceivedStr,
     quickAmounts, draftAmount, isCashDraft, draftTenderAmount, cashChange, draftValid,
