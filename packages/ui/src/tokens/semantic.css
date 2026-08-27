@@ -17,6 +17,7 @@
   --warning-soft: rgba(245, 158, 11, 0.12);
 
   --danger:       var(--red-base);
+  --danger-hover: var(--red-hover);
   --danger-soft:  var(--red-soft);
   /* Re-audit 2026-08-24 — Règle des Deux Rouges : le danger ÉCRIT (texte,
    * icône) suit --red-as-text, jamais le rouge d'aplat. Résout par thème :

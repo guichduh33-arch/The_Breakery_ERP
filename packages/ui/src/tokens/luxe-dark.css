@@ -34,6 +34,9 @@
   --green-pressed:#329b6f;
 
   --red-base:     #e8695f;
+  /* Survol d'un aplat rouge — éclairci d'un cran comme --green-hover sur ce
+   * thème (ajouté le 2026-08-27, pendant du --red-hover du thème clair). */
+  --red-hover:    #ee7970;
   /* Notation unifiée en rgba() — le hex-alpha #ef444420 était le seul du
    * système et introuvable par recherche (audit cohérence 2026-08-01). */
   --red-soft:     rgba(232, 105, 95, 0.14);

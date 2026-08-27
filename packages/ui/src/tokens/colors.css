@@ -363,6 +363,13 @@
   --green-pressed: #105539;
   --green-fg:      #ffffff;
   --red-base:      #b03029;
+  /* Survol d'un aplat rouge — même géométrie que la famille verte (base →
+   * hover éclairci d'un cran, ~×1,12 par canal). Ferme la classe
+   * `hover:opacity-90` sur les boutons destructifs : un rempli à 90 %
+   * d'opacité laisse transparaître le fond au lieu de changer d'état
+   * (arbitrage 2026-08-27, suite de l'audit /impeccable). Le blanc
+   * `--red-on-fill` tient 5,33:1 dessus. */
+  --red-hover:     #c5362e;
   --red-soft:      rgba(176, 48, 41, 0.12);
   --red-as-text:   var(--red-base);          /* rouge EN premier plan — 6,36:1 sur la feuille blanche */
   --red-on-fill:   #ffffff;                  /* texte SUR remplissage rouge — 6,36:1 sur --red-base */
@@ -388,6 +395,7 @@
   --warning:      var(--amber-warn);
   --warning-soft: rgba(132, 86, 17, 0.12);
   --danger:       var(--red-base);
+  --danger-hover: var(--red-hover);
   --danger-soft:  var(--red-soft);
   /* Re-audit 2026-08-24 — Règle des Deux Rouges : le danger ÉCRIT suit
    * --red-as-text (ici le rouge de base, déjà 6,36:1 sur l'ivoire). */
