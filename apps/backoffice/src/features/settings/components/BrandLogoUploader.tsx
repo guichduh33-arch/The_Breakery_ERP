@@ -13,6 +13,7 @@
 import { Loader2, ImagePlus, Trash2, UploadCloud } from 'lucide-react';
 import { useRef, useState, type DragEvent, type JSX } from 'react';
 import { supabase } from '@/lib/supabase.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const BUCKET = 'branding';
 const MAX_BYTES = 1 * 1024 * 1024;
@@ -133,7 +134,9 @@ export function BrandLogoUploader({ logoUrl, readOnly = false, onChange }: Props
           setDragOver(false);
         }}
         onDrop={onDrop}
-        className={`relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-lg border border-dashed bg-bg-overlay text-text-muted transition-colors ${
+        // La zone est focalisable mais n'avait AUCUN anneau : au clavier, rien
+        // ne disait qu'on était dessus (WCAG 2.4.7).
+        className={`${FOCUS_RING} relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-lg border border-dashed bg-bg-overlay text-text-muted transition-colors ${
           /* Survol de dépôt porté par le liseré seul (The Ink-Not-Gold Rule). */
           dragOver ? 'border-gold' : 'border-border-subtle'
         } ${readOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gold'}`}

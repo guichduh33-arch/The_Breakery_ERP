@@ -3,7 +3,7 @@
 // One row in the BO loyalty list. Tier computed via shared
 // tierFromLifetime; LoyaltyBadge renders the pill.
 
-import { useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type JSX } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { LoyaltyBadge, Button } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
@@ -50,6 +50,7 @@ export function CustomerListRow({
   onDelete,
 }: CustomerListRowProps): JSX.Element {
   const tier = tierFromLifetime(row.lifetime_points);
+  const panelId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -79,27 +80,22 @@ export function CustomerListRow({
     };
   }, [menuOpen]);
 
-  function handleNameKey(e: KeyboardEvent<HTMLTableCellElement>): void {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onView(row);
-    }
-  }
-
   return (
     <tr className="border-b border-border-subtle hover:bg-surface-4">
-      <td
-        // `focus-visible:ring-accent-primary` ne résolvait à AUCUNE couleur —
-        // `accent-primary` n'existe dans aucune famille du preset — donc la
-        // cellule, atteignable au clavier, n'avait aucun indicateur (WCAG 2.4.7).
-        className={`px-3 py-2 cursor-pointer ${FOCUS_RING}`}
-        role="button"
-        tabIndex={0}
-        onClick={() => onView(row)}
-        onKeyDown={handleNameKey}
-        aria-label={`View loyalty history for ${row.name}`}
-      >
-        {row.name}
+      {/* La cellule redevient une CELLULE : `role="button"` posé sur le `<td>`
+          écrasait sa sémantique — chaque ligne annonçait une colonne de moins.
+          Le déclencheur vit DEDANS, comme sur la liste d'inventaire. Un bouton
+          et non un lien : « voir l'historique » ouvre un panneau, pas une URL,
+          donc il n'y a rien à ouvrir dans un nouvel onglet. */}
+      <td className="px-3 py-2">
+        <button
+          type="button"
+          className={`text-left text-gold hover:underline ${FOCUS_RING}`}
+          onClick={() => onView(row)}
+          aria-label={`View loyalty history for ${row.name}`}
+        >
+          {row.name}
+        </button>
       </td>
       <td className="px-3 py-2 text-text-secondary">{row.phone ?? '—'}</td>
       <td className="px-3 py-2">
@@ -117,21 +113,27 @@ export function CustomerListRow({
           size="sm"
           onClick={() => setMenuOpen((o) => !o)}
           aria-label={`Actions for ${row.name}`}
-          aria-haspopup="menu"
+          // Pas d'`aria-haspopup="menu"` : cette valeur PROMET le patron menu de
+          // l'APG (tabindex tournant, ↑/↓, Début/Fin, saisie prédictive), et
+          // seul Tab a jamais fonctionné ici. Le panneau est un DISCLOSURE —
+          // `aria-expanded` + `aria-controls` décrivent exactement ce qu'il
+          // fait, et les entrées gardent leur rôle `button`. Même arbitrage,
+          // pour la même raison, que les onglets de la TopBar (voir son en-tête).
           aria-expanded={menuOpen}
+          {...(menuOpen ? { 'aria-controls': panelId } : {})}
         >
           <MoreHorizontal className="h-4 w-4" />
         </Button>
         {menuOpen && (
           <div
             ref={menuRef}
-            role="menu"
+            id={panelId}
+            role="group"
             aria-label={`Actions for ${row.name}`}
             className="absolute right-0 mt-1 w-44 bg-bg-elevated border border-border-subtle rounded-md shadow-lg z-10"
           >
             <button
               type="button"
-              role="menuitem"
               className={MENU_ITEM}
               onClick={() => { setMenuOpen(false); onView(row); }}
             >
@@ -140,7 +142,6 @@ export function CustomerListRow({
             {canAdjust && (
               <button
                 type="button"
-                role="menuitem"
                 className={MENU_ITEM}
                 onClick={() => { setMenuOpen(false); onAdjust(row); }}
               >
@@ -150,7 +151,6 @@ export function CustomerListRow({
             {canEdit && (
               <button
                 type="button"
-                role="menuitem"
                 className={MENU_ITEM}
                 onClick={() => { setMenuOpen(false); onEdit(row); }}
               >
@@ -160,7 +160,6 @@ export function CustomerListRow({
             {canDelete && (
               <button
                 type="button"
-                role="menuitem"
                 className={`${MENU_ITEM} text-red`}
                 onClick={() => { setMenuOpen(false); onDelete(row); }}
               >

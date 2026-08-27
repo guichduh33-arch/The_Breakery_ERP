@@ -97,7 +97,14 @@ function UserChip() {
         type="button"
         onClick={() => { setOpen((o) => !o); }}
         aria-expanded={open}
-        aria-haspopup="menu"
+        // Ni `aria-haspopup="menu"` ni `role="menu"` : le panneau n'a jamais eu
+        // que Tab. La valeur promettait le patron menu de l'APG (tabindex
+        // tournant, ↑/↓, Début/Fin, saisie prédictive) ; c'est le MÊME
+        // arbitrage que celui déjà pris pour les onglets de domaine (voir
+        // l'en-tête de ce fichier) — on abaisse l'annonce au disclosure, qui
+        // est vrai, plutôt que de promettre un clavier qui n'existe pas. Les
+        // entrées gardent ainsi leurs rôles `link` et `button`.
+        {...(open ? { 'aria-controls': 'user-chip-panel' } : {})}
         className="flex items-center gap-2 rounded-sm p-1 transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
       >
         <span
@@ -111,7 +118,9 @@ function UserChip() {
 
       {open && (
         <div
-          role="menu"
+          id="user-chip-panel"
+          role="group"
+          aria-label={`Account: ${user.full_name}`}
           className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl border border-border-strong bg-surface-3 py-1.5 shadow-float"
         >
           <p className="px-3.5 pb-1.5 pt-1 font-data text-xs uppercase tracking-widest text-text-muted">
@@ -119,7 +128,6 @@ function UserChip() {
           </p>
           <Link
             to="/backoffice/settings"
-            role="menuitem"
             onClick={() => { setOpen(false); }}
             className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-text-primary transition-colors hover:bg-surface-4"
           >
@@ -127,7 +135,6 @@ function UserChip() {
           </Link>
           <button
             type="button"
-            role="menuitem"
             disabled={busy}
             onClick={() => { void logoutAndLeave(); }}
             className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm text-text-primary transition-colors hover:bg-surface-4 disabled:opacity-50"

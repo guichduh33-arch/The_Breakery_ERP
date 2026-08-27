@@ -187,16 +187,25 @@ describe('TopBar', () => {
     expect(screen.getByTestId('domain-panel-purchase')).toBeInTheDocument();
   });
 
-  it('expose le menu utilisateur avec le rôle et la déconnexion', () => {
+  // Le panneau du profil est un DISCLOSURE, pas un `role="menu"` : il n'a
+  // jamais offert que Tab. Ses entrées gardent donc leurs rôles natifs — un
+  // lien pour Settings, un bouton pour Logout.
+  it('expose le panneau utilisateur avec le rôle et la déconnexion', () => {
     setAuthState(ALL_PERMS);
     renderTopBar();
-    fireEvent.click(screen.getByRole('button', { name: /Mamat/ }));
-    const menu = screen.getByRole('menu');
+    const trigger = screen.getByRole('button', { name: /Mamat/ });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-haspopup');
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const panel = screen.getByRole('group', { name: /Account: Mamat/ });
+    expect(trigger).toHaveAttribute('aria-controls', panel.id);
     // Le rôle est rendu « Owner » (lot lisibilité) — la casse capitale vient
     // du CSS (uppercase), pas du texte.
-    expect(within(menu).getByText('Owner')).toBeInTheDocument();
-    expect(within(menu).getByRole('menuitem', { name: /Settings/ })).toBeInTheDocument();
-    expect(within(menu).getByRole('menuitem', { name: /Logout/ })).toBeInTheDocument();
+    expect(within(panel).getByText('Owner')).toBeInTheDocument();
+    expect(within(panel).getByRole('link', { name: /Settings/ })).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: /Logout/ })).toBeInTheDocument();
   });
 
   it('déclenche l’ouverture de la palette depuis le bouton de recherche', () => {

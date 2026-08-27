@@ -56,7 +56,10 @@ function renderPalette(onClose: () => void = vi.fn()) {
   );
 }
 
-const input = () => screen.getByRole('textbox', { name: /pages and actions/i });
+// `combobox` et non `textbox` : le champ pilote une liste d'options par
+// `aria-activedescendant`, et il le DIT désormais (role + aria-autocomplete +
+// aria-expanded). Le rôle rendu change avec l'annonce.
+const input = () => screen.getByRole('combobox', { name: /pages and actions/i });
 
 describe('fuzzyScore', () => {
   it('classe une sous-chaîne littérale devant une correspondance dispersée', () => {

@@ -234,7 +234,16 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             onChange={(e) => { setQuery(e.target.value); }}
             placeholder="Search orders, products, customers… or jump to a page"
             aria-label="Search orders, products, customers, suppliers, pages and actions"
-            aria-controls="command-palette-results"
+            // Le champ portait `aria-controls` + `aria-activedescendant` sans
+            // jamais dire ce qu'il EST : un lecteur d'écran annonçait une zone
+            // de saisie ordinaire pilotant un descendant actif venu de nulle
+            // part. Le trio du patron combobox complète l'annonce — et
+            // `aria-expanded` suit l'existence RÉELLE de la liste, qui n'est
+            // montée que lorsqu'elle a des options (modèle : ProductTypeahead).
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={results.length > 0}
+            aria-controls={results.length > 0 ? 'command-palette-results' : undefined}
             aria-activedescendant={activeOptionId}
             className={`min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted ${FOCUS_RING}`}
           />
@@ -243,14 +252,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           </kbd>
         </div>
 
-        <ul
-          ref={listRef}
-          id="command-palette-results"
-          className="max-h-[46vh] overflow-y-auto py-1.5"
-          role="listbox"
-        >
+        {/* Les messages d'état sortent du `listbox` : « Searching… » et
+            « No page matches » n'y étaient enfants d'aucun rôle admis, et la
+            liste restait montée vide — donc `aria-expanded` n'aurait jamais pu
+            dire faux. Ils vivent maintenant dans le conteneur de défilement,
+            à côté de la liste. */}
+        <div className="max-h-[46vh] overflow-y-auto py-1.5">
           {isSearching && (
-            <li
+            <p
               className="flex items-center gap-2 px-4 py-2 text-xs text-text-muted"
               role="status"
               aria-live="polite"
@@ -260,17 +269,24 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 aria-hidden
               />
               Searching…
-            </li>
+            </p>
           )}
           {results.length === 0 && !isSearching && (
-            <li className="px-4 py-6 text-center text-sm text-text-muted">
+            <p className="px-4 py-6 text-center text-sm text-text-muted">
               {entityQueryActive
                 ? <>No order, product, customer, supplier, page or action matches “{query}”.</>
                 : query.trim().length > 0 && query.trim().length < MIN_ENTITY_QUERY
                   ? <>Type at least {MIN_ENTITY_QUERY} characters to search orders, products and customers.</>
                   : <>No page or action matches “{query}”.</>}
-            </li>
+            </p>
           )}
+          {results.length > 0 && (
+        <ul
+          ref={listRef}
+          id="command-palette-results"
+          aria-label="Results"
+          role="listbox"
+        >
           {results.map((entry, i) => {
             const groupHeader = entry.group !== lastGroup ? entry.group : null;
             lastGroup = entry.group;
@@ -340,6 +356,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             );
           })}
         </ul>
+          )}
+        </div>
       </div>
     </CenterModal>
   );

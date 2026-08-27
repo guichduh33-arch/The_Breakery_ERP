@@ -13,7 +13,7 @@
 // ouverte). Ici on ne s'occupe que du rendu et de la navigation au clavier
 // interne (Tab parcourt les liens, Échap remonte à la TopBar).
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -38,8 +38,13 @@ function AlertsLinkCount() {
   const { total } = useAlertsCount();
   if (total === 0) return null;
   return (
-    <span className="font-data text-xs font-bold text-danger tabular-nums" aria-hidden>
-      {total > 99 ? '99+' : total}
+    // Le compteur entier était `aria-hidden` : la seule information de la
+    // colonne Watch — combien d'alertes attendent — n'existait que pour l'œil.
+    // Le GLYPHE reste masqué (« 99+ » ne se lit pas), le nombre est dit en
+    // clair et une seule fois, dans le nom accessible du lien.
+    <span className="font-data text-xs font-bold text-danger tabular-nums">
+      <span aria-hidden>{total > 99 ? '99+' : total}</span>
+      <span className="sr-only">{total > 99 ? 'over 99' : total} unread</span>
     </span>
   );
 }
@@ -94,7 +99,6 @@ export interface DomainPanelProps {
 }
 
 export function DomainPanel({ domain, anchorLeft, onClose, id }: DomainPanelProps) {
-  const ref = useRef<HTMLDivElement>(null);
   const columns = domain.columns ?? [];
   const [left, setLeft] = useState(anchorLeft);
 
@@ -116,23 +120,18 @@ export function DomainPanel({ domain, anchorLeft, onClose, id }: DomainPanelProp
   }, [anchorLeft, width]);
 
   // Le focus entre dans le panneau sur ↓ (géré par la TopBar, qui appelle
-  // focus() sur le premier lien). Échap ferme depuis l'intérieur.
-  useEffect(() => {
-    const node = ref.current;
-    if (node === null) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    node.addEventListener('keydown', onKeyDown);
-    return () => { node.removeEventListener('keydown', onKeyDown); };
-  }, [onClose]);
-
+  // focus() sur le premier lien). Échap REMONTE à la TopBar, comme l'annonce
+  // l'en-tête de ce fichier : elle en est propriétaire, et son gestionnaire de
+  // document ferme PUIS rend le focus à l'onglet déclencheur.
+  //
+  // Un écouteur local doublait cette fermeture et l'arrêtait net d'un
+  // `stopPropagation()` : posé sur le panneau, il s'exécutait avant celui du
+  // document et lui coupait la route. La TopBar ne refocalisait donc jamais, et
+  // le panneau se démontant sous le focus, celui-ci retombait sur `<body>` —
+  // Échap faisait perdre sa place au clavier. L'écouteur est retiré : il
+  // n'apportait rien que la TopBar ne fasse déjà, sauf le défaut.
   return (
     <div
-      ref={ref}
       id={id}
       data-testid={`domain-panel-${domain.id}`}
       className={cn(

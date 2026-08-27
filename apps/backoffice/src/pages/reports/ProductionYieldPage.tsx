@@ -135,10 +135,15 @@ function OutliersTable({
             return (
               // Lot A2 — la ligne de drill-down interne n'était accessible
               // qu'à la souris : focusable + Entrée/Espace.
+              // `aria-selected` n'est admis que dans une grille, un listbox ou
+              // un onglet — sur la ligne d'un tableau simple, il est ignoré au
+              // mieux, trompeur au pire. Rien ne le remplace ici : la ligne
+              // n'est pas « sélectionnée », elle FILTRE le reste de la page, et
+              // c'est `aria-pressed` sur un contrôle qui le dirait — la ligne
+              // n'en est pas un. L'état reste porté par le fond et le libellé.
               <tr
                 key={r.id}
                 tabIndex={0}
-                aria-selected={isSelected}
                 className={cn(
                   'cursor-pointer border-b border-border-subtle hover:bg-surface-4',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold',
@@ -151,7 +156,11 @@ function OutliersTable({
                     onSelectProduct(isSelected ? null : r.product_id);
                   }
                 }}
-                aria-label={`Outlier ${r.production_number}, click to drill into product`}
+                aria-label={
+                  isSelected
+                    ? `Outlier ${r.production_number}, filtering by this product — activate to clear`
+                    : `Outlier ${r.production_number}, activate to filter by this product`
+                }
                 data-testid="yield-outlier-row"
               >
                 <td className="py-2 font-data text-xs">{r.production_number}</td>

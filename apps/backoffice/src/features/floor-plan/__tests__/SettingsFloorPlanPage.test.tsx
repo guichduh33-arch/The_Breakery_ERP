@@ -79,6 +79,51 @@ describe('SettingsFloorPlanPage', () => {
     );
   });
 
+  // Lot A a11y — le placement était souris pure. Les trois gestes clavier
+  // passent par la MÊME mutation que le drop.
+  it('arrow keys move a placed table one cell, through the same RPC hook', () => {
+    moveMock.mockClear();
+    render(<SettingsFloorPlanPage />);
+    fireEvent.click(screen.getByTestId('fp-view-plan'));
+
+    // T-01 est en (2,1) — → la pousse en (3,1).
+    fireEvent.keyDown(screen.getByTestId('fp-chip-T-01'), { key: 'ArrowRight' });
+    expect(moveMock).toHaveBeenCalledWith({ id: 't1', grid_x: 3, grid_y: 1 }, expect.anything());
+  });
+
+  it('Delete sends a placed table back to the unplaced tray', () => {
+    moveMock.mockClear();
+    render(<SettingsFloorPlanPage />);
+    fireEvent.click(screen.getByTestId('fp-view-plan'));
+
+    fireEvent.keyDown(screen.getByTestId('fp-chip-T-01'), { key: 'Delete' });
+    expect(moveMock).toHaveBeenCalledWith({ id: 't1', grid_x: null, grid_y: null }, expect.anything());
+  });
+
+  it('Enter places an unplaced table on the first free cell', () => {
+    moveMock.mockClear();
+    render(<SettingsFloorPlanPage />);
+    fireEvent.click(screen.getByTestId('fp-view-plan'));
+
+    // Patio-1 est seule dans Terrace : la première cellule libre est (0,0).
+    fireEvent.keyDown(screen.getByTestId('fp-chip-Patio-1'), { key: 'Enter' });
+    expect(moveMock).toHaveBeenCalledWith({ id: 't2', grid_x: 0, grid_y: 0 }, expect.anything());
+  });
+
+  it('names each chip by its position, the only place that information exists', () => {
+    render(<SettingsFloorPlanPage />);
+    fireEvent.click(screen.getByTestId('fp-view-plan'));
+
+    expect(screen.getByTestId('fp-chip-T-01')).toHaveAttribute(
+      'aria-label',
+      'Table T-01, 4 seats, row 2 column 3',
+    );
+    expect(screen.getByTestId('fp-chip-Patio-1')).toHaveAttribute(
+      'aria-label',
+      'Table Patio-1, 6 seats, unplaced',
+    );
+  });
+
   it('dropping a placed table on the tray unplaces it (NULL/NULL)', () => {
     moveMock.mockClear();
     render(<SettingsFloorPlanPage />);

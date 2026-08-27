@@ -24,7 +24,7 @@
 // le désactiver nomme la règle. Le CSV est construit localement (ce gate client
 // est sa seule mesure) ; le PDF garde son verrou serveur dans l'EF generate-pdf.
 
-import type { JSX } from 'react';
+import { useId, type JSX } from 'react';
 import { ChevronDown, Download, FileDown, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@breakery/ui';
@@ -79,6 +79,7 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
   const generatePdf = useGeneratePdf();
   const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
   const { open, setOpen, rootRef, triggerRef } = useDismissablePanel<HTMLDivElement>();
+  const panelId = useId();
 
   if (csv === undefined && pdf === undefined) return null;
 
@@ -129,7 +130,12 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
         disabled={blocked}
         title={!canExport ? 'Requires the reports.export permission.' : undefined}
         aria-expanded={open}
-        aria-haspopup="menu"
+        // Pas d'`aria-haspopup="menu"` : le panneau n'offre que Tab, alors que
+        // cette valeur promet le patron menu de l'APG (tabindex tournant, ↑/↓,
+        // Début/Fin, saisie prédictive). C'est un DISCLOSURE — même arbitrage
+        // que pour les onglets de domaine de la TopBar (voir son en-tête) :
+        // deux formats, deux boutons, aucun clavier à inventer.
+        {...(open && !blocked ? { 'aria-controls': panelId } : {})}
         data-testid="export-menu"
         onClick={() => setOpen(!open)}
       >
@@ -140,13 +146,14 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
 
       {open && !blocked && (
         <div
-          role="menu"
+          id={panelId}
+          role="group"
           aria-label="Export formats"
           data-testid="export-panel"
           className="absolute right-0 z-40 mt-1.5 w-44 rounded-xl border border-border-subtle bg-surface-3 p-1.5 shadow-xl"
         >
           {csv !== undefined && (
-            <button type="button" role="menuitem" className={ITEM_CLS} data-testid="export-csv" onClick={handleCsv}>
+            <button type="button" className={ITEM_CLS} data-testid="export-csv" onClick={handleCsv}>
               <Download className="h-3.5 w-3.5 text-text-muted" aria-hidden />
               CSV
             </button>
@@ -154,7 +161,6 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
           {pdf !== undefined && (
             <button
               type="button"
-              role="menuitem"
               className={ITEM_CLS}
               data-testid="export-pdf"
               disabled={generatePdf.isPending}
