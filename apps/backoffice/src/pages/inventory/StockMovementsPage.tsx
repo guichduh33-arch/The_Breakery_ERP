@@ -9,10 +9,19 @@
 //   - StockLedgerTable (full filtered range, server-side running balance + cap)
 
 import { useMemo, useState, type JSX } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, ListTree, Receipt } from 'lucide-react';
-import { KpiTile } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
+// La tuile du BACK-OFFICE, pas celle de `@breakery/ui` : celle-ci rend la valeur
+// à 23 px avec `valueTitle`, l'autre à 34 px sans échappatoire. « Value moved »
+// posait `formatCurrency` PLEIN — « Rp 148.500.000 », treize caractères mono —
+// dans une tuile qui n'en tient pas huit à 1280 px : le montant passait à la
+// ligne. Le geste des 46 rapports est le compact + l'exact en infobulle
+// (B2BDashboardPage, DailySalesPage). La bande entière suit le même composant :
+// deux tuiles de `@breakery/ui` et deux du back-office côte à côte auraient
+// donné deux tailles de valeur dans une rangée qui se lit d'un trait. Les
+// pastilles d'icône disparaissent avec elles, et c'est un gain — elles étaient
+// des aplats que The Ink-Not-Gold Rule interdit ici.
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { formatCount, formatIdr, formatIdrShort, formatQty } from '@/features/dashboard/utils/format.js';
 import { useStockLedger } from '@/features/inventory-movements/hooks/useStockLedger.js';
 import type { MovementsFilters } from '@/features/inventory-movements/hooks/useStockMovementsFeed.js';
 import { useMovementAggregates } from '@/features/inventory-movements/hooks/useMovementAggregates.js';
@@ -89,15 +98,29 @@ export default function StockMovementsPage(): JSX.Element {
       />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Movement totals">
+        <KpiTile label="Movements" value={formatCount(buckets.totalCount)} testId="kpi-movements">
+          <span className={KPI_NOTE}>
+            {ledger.isLoading ? 'Loading…' : `${formatCount(result.row_count)} in range`}
+          </span>
+        </KpiTile>
+        {/* Le compte d'écritures était posé en `delta` : une VARIATION, alors
+            que c'est un dénombrement — la flèche ▲/▼ affirmait une hausse ou une
+            baisse qu'aucune période de comparaison ne soutenait. Il redevient la
+            note qu'il a toujours été. */}
+        <KpiTile label="Stock in" value={formatQty(buckets.inQty)} testId="kpi-stock-in">
+          <span className={KPI_NOTE}>{formatCount(buckets.inCount)} entries</span>
+        </KpiTile>
+        <KpiTile label="Stock out" value={formatQty(buckets.outQty)} testId="kpi-stock-out">
+          <span className={KPI_NOTE}>{formatCount(buckets.outCount)} entries</span>
+        </KpiTile>
         <KpiTile
-          label="Movements"
-          value={buckets.totalCount}
-          icon={ListTree}
-          footer={ledger.isLoading ? 'Loading…' : `${result.row_count.toLocaleString('id-ID')} in range`}
-        />
-        <KpiTile label="Stock in"  value={Number(buckets.inQty.toFixed(2))}  icon={ArrowDownToLine} delta={{ value: buckets.inCount, direction: 'up', hint: 'entries' }} />
-        <KpiTile label="Stock out" value={Number(buckets.outQty.toFixed(2))} icon={ArrowUpFromLine} delta={{ value: buckets.outCount, direction: 'down', hint: 'entries' }} />
-        <KpiTile label="Value moved" value={formatCurrency(Math.round(buckets.totalValue))} valueFormat="currency" icon={Receipt} />
+          label="Value moved"
+          value={formatIdrShort(Math.round(buckets.totalValue))}
+          valueTitle={formatIdr(Math.round(buckets.totalValue))}
+          testId="kpi-value-moved"
+        >
+          <span className={KPI_NOTE}>Signed movement value over the range</span>
+        </KpiTile>
       </section>
 
       <MovementsFiltersBar value={filters} onChange={setFilters} />

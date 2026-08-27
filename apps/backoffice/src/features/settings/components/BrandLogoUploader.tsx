@@ -152,7 +152,7 @@ export function BrandLogoUploader({ logoUrl, readOnly = false, onChange }: Props
 
         {busy && (
           <div className="absolute inset-0 flex items-center justify-center bg-backdrop">
-            <Loader2 className="h-6 w-6 animate-spin text-gold" aria-label="Uploading" />
+            <Loader2 className="h-6 w-6 animate-spin text-gold motion-reduce:animate-none" aria-label="Uploading" />
           </div>
         )}
       </div>

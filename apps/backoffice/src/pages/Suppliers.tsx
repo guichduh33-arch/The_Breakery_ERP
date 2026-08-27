@@ -206,7 +206,7 @@ export default function SuppliersPage(): JSX.Element {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={`sup-skeleton-${i}`}
-              className="h-28 animate-pulse rounded-lg border border-border-subtle bg-bg-elevated"
+              className="h-28 animate-pulse rounded-lg border border-border-subtle bg-bg-elevated motion-reduce:animate-none"
             />
           ))}
         </div>

@@ -148,7 +148,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
           // Le disque tournant était la SEULE trace du chargement, et il est
           // muet : sans texte d'état, la modale s'ouvrait vide et silencieuse.
           <div className="flex items-center justify-center py-8" data-testid="zreport-loading">
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             <span className="sr-only" role="status">Loading the Z-Report…</span>
           </div>
         ) : !report ? (
@@ -214,7 +214,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
                 data-testid="sign-submit"
               >
                 {signMutation.isPending || pdfMutation.isPending
-                  ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Signing…</>
+                  ? <><Loader2 className="h-4 w-4 mr-1 animate-spin motion-reduce:animate-none" />Signing…</>
                   : 'Sign'}
               </Button>
             </DialogFooter>

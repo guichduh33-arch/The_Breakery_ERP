@@ -265,7 +265,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
               aria-live="polite"
             >
               <span
-                className="h-3 w-3 animate-spin rounded-full border-2 border-border-subtle border-t-gold"
+                className="h-3 w-3 animate-spin rounded-full border-2 border-border-subtle border-t-gold motion-reduce:animate-none"
                 aria-hidden
               />
               Searching…

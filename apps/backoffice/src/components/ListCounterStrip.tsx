@@ -83,7 +83,14 @@ export function ListCounterStrip({
         // token de limite de contrôle sur le papier : 3,33:1. Le filet INTERNE
         // reste `border-muted` : il sépare deux cellules du même groupe, il ne
         // délimite pas le groupe.
-        'flex items-stretch overflow-hidden rounded-md border border-border-strong bg-bg-elevated',
+        // `overflow-x-auto` et non `overflow-hidden` : la bande est une rangée de
+        // FILTRES, et `hidden` en découpait silencieusement la queue dès qu'une
+        // fenêtre étroite la faisait déborder — les derniers compteurs
+        // devenaient inatteignables sans qu'aucun signe ne le dise. `auto` ne
+        // pose sa barre que lorsqu'il y a réellement à faire défiler ; à largeur
+        // suffisante le rendu ne bouge pas, et l'arrondi continue de découper les
+        // extrémités puisque la boîte reste un conteneur de défilement.
+        'flex items-stretch overflow-x-auto rounded-md border border-border-strong bg-bg-elevated',
         className,
       )}
     >

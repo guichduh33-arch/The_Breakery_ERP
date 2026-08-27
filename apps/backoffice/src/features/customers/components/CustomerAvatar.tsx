@@ -45,7 +45,11 @@ export function CustomerAvatar({ name, size = 'md', className }: CustomerAvatarP
     <span
       aria-hidden
       className={[
-        'inline-flex items-center justify-center rounded-full font-semibold text-white',
+        // `text-ink-fg`, pas `text-white` : le premier plan d'un aplat est un
+        // TOKEN (DESIGN.md, dernier Don't). C'est le cran de premier plan le plus
+        // clair du thème — le même que la valeur d'une tuile héro — et il suit le
+        // thème, là où `text-white` est une couleur écrite en dur.
+        'inline-flex items-center justify-center rounded-full font-semibold text-ink-fg',
         tone,
         dim,
         className ?? '',

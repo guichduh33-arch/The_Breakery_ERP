@@ -167,7 +167,7 @@ export function ExportMenu<T>({ csv, pdf, disabled = false }: ExportMenuProps<T>
               onClick={() => { void handlePdf(); }}
             >
               {generatePdf.isPending
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" aria-hidden />
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted motion-reduce:animate-none" aria-hidden />
                 : <FileText className="h-3.5 w-3.5 text-text-muted" aria-hidden />}
               PDF
             </button>

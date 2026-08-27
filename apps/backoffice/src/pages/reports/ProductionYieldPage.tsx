@@ -58,6 +58,17 @@ function varianceTone(frac: number | null): string {
   return 'text-success';
 }
 
+/**
+ * Cellule « Reason » des deux tableaux — tronquée à 18 rem.
+ *
+ * Le motif du dépôt (WalletLedgerTable) veut qu'une troncature porte son
+ * `title` : le motif de l'écart est la SEULE explication de la ligne, et
+ * l'ellipsis le coupait sans aucun recours — ni survol, ni clic, ni export
+ * visible depuis l'écran. La colonne CSV le porte déjà en entier, mais un
+ * lecteur ne télécharge pas un fichier pour lire une phrase.
+ */
+const REASON_CELL = 'max-w-[18rem] truncate py-2 text-xs text-text-secondary';
+
 /** Fraction → pourcentage signé (`+12.50%` / `-16.67%`). */
 function formatVariancePct(frac: number | null): string {
   if (frac === null) return '—';
@@ -173,7 +184,7 @@ function OutliersTable({
                 <td className={cn('py-2 text-right font-data tabular-nums', varianceTone(r.yield_variance_pct))}>
                   {formatVariancePct(r.yield_variance_pct)}
                 </td>
-                <td className="max-w-[18rem] truncate py-2 text-xs text-text-secondary">
+                <td className={REASON_CELL} title={r.yield_variance_reason ?? ''}>
                   {r.yield_variance_reason ?? '—'}
                 </td>
               </tr>
@@ -210,7 +221,7 @@ function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
               <td className={cn('py-2 text-right font-data tabular-nums', varianceTone(r.yield_variance_pct))}>
                 {formatVariancePct(r.yield_variance_pct)}
               </td>
-              <td className="max-w-[18rem] truncate py-2 text-xs text-text-secondary">
+              <td className={REASON_CELL} title={r.yield_variance_reason ?? ''}>
                 {r.yield_variance_reason ?? '—'}
               </td>
             </tr>

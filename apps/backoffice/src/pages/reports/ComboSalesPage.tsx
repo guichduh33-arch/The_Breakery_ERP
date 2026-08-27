@@ -286,7 +286,11 @@ export default function ComboSalesPage(): JSX.Element {
             <ul className="space-y-2">
               {picks.slice(0, PICKS_SHOWN).map((p) => (
                 <li key={p.product_id} className="grid grid-cols-[1fr_auto] items-center gap-2">
-                  <span className="truncate text-sm">{p.name}</span>
+                  {/* Motif du dépôt (WalletLedgerTable) : une troncature porte
+                      son `title`. Deux composants d'un même combo se
+                      distinguent souvent par la FIN de leur nom (parfum,
+                      format) — c'est exactement ce que l'ellipsis retirait. */}
+                  <span className="truncate text-sm" title={p.name}>{p.name}</span>
                   <span className="font-data text-sm tabular-nums text-text-secondary">
                     ×{formatCount(p.qty)}
                   </span>

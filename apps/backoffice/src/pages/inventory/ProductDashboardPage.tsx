@@ -9,16 +9,18 @@
 
 import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CalendarRange,
-  Coins,
-  Inbox,
-  Package,
-  TrendingUp,
-} from 'lucide-react';
-import { EmptyState, KpiTile } from '@breakery/ui';
+import { ArrowLeft, Inbox } from 'lucide-react';
+import { EmptyState } from '@breakery/ui';
 import { formatDateTimeShortWita, formatCurrency } from '@breakery/utils';
+// La tuile du BACK-OFFICE, pas celle de `@breakery/ui` : celle-ci rend la valeur
+// à 23 px avec `valueTitle`, l'autre à 34 px sans échappatoire. « Value at cost »
+// posait `formatCurrency` PLEIN dans une tuile qui ne tient pas huit caractères
+// mono à 1280 px : le montant passait à la ligne. Le geste des 46 rapports est
+// le compact + l'exact en infobulle (B2BDashboardPage, DailySalesPage). La bande
+// entière suit le même composant : deux tailles de valeur dans une rangée qui se
+// lit d'un trait auraient détruit la comparaison qu'elle installe.
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
+import { formatCount, formatIdr, formatIdrShort, formatQty } from '@/features/dashboard/utils/format.js';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -101,25 +103,28 @@ export default function ProductDashboardPage(): JSX.Element {
       >
         <KpiTile
           label="Current stock"
-          value={`${Number(d.product.current_stock)} ${d.product.unit}`}
-          icon={Package}
+          value={`${formatQty(Number(d.product.current_stock))} ${d.product.unit}`}
+          testId="kpi-current-stock"
         />
         <KpiTile
           label="Value at cost"
-          value={formatCurrency(valueAtCost)}
-          valueFormat="currency"
-          icon={Coins}
-        />
+          value={formatIdrShort(valueAtCost)}
+          valueTitle={formatIdr(valueAtCost)}
+          testId="kpi-value-at-cost"
+        >
+          <span className={KPI_NOTE}>At weighted average cost</span>
+        </KpiTile>
         <KpiTile
           label="Units sold"
-          value={Number(d.summary.units_sold)}
-          icon={TrendingUp}
-          footer={`${days}-day window`}
-        />
+          value={formatCount(Number(d.summary.units_sold))}
+          testId="kpi-units-sold"
+        >
+          <span className={KPI_NOTE}>{days}-day window</span>
+        </KpiTile>
         <KpiTile
           label="Avg per day"
-          value={Number(avgDaily.toFixed(2))}
-          icon={CalendarRange}
+          value={formatQty(avgDaily)}
+          testId="kpi-avg-per-day"
         />
       </section>
 

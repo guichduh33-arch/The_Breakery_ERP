@@ -198,7 +198,7 @@ export function ProductSalesLinesDrawer({
                     onClick={() => { void q.fetchNextPage(); }}
                     data-testid="lines-load-more"
                   >
-                    {q.isFetchingNextPage && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
+                    {q.isFetchingNextPage && <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden />}
                     Load more
                   </Button>
                 </div>

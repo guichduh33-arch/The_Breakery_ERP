@@ -102,7 +102,10 @@ const COLUMNS: readonly DataTableColumn<OpnameListRow>[] = [
     id: 'notes',
     header: 'Notes',
     render: (r) => (
-      <span className="text-xs text-text-secondary line-clamp-1">{r.notes ?? ''}</span>
+      // Motif du dépôt (WalletLedgerTable) : une troncature porte son `title`.
+      // La note d'un inventaire dit POURQUOI il a été lancé ou ce qui l'a
+      // bloqué ; `line-clamp-1` la coupait sans aucun recours depuis la liste.
+      <span className="text-xs text-text-secondary line-clamp-1" title={r.notes ?? ''}>{r.notes ?? ''}</span>
     ),
   },
 ];
