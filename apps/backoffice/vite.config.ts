@@ -36,6 +36,15 @@ export default defineConfig({
           // initial modulepreload.
           if (/[\\/]node_modules[\\/](clsx|tailwind-merge|class-variance-authority|tailwind-variants)[\\/]/.test(id))
             return 'react-vendor';
+          // Vendors éagers mais STABLES entre déploiements (mesure 2026-08-28) :
+          // ils vivaient dans le chunk d'entrée applicatif, dont le hash change à
+          // chaque édition de code — chaque déploiement refaisait télécharger
+          // ~147 Ko gzip au lieu des ~45 Ko de code applicatif réel. Groupe
+          // volontairement restreint aux paquets déjà ENTIÈREMENT éagers :
+          // y ajouter un paquet partiellement lazy (radix, lucide) grossirait le
+          // premier chargement au lieu d'améliorer le cache.
+          if (/[\\/]node_modules[\\/](@supabase|zod|sonner|zustand|@tanstack|iceberg-js|tslib)[\\/]/.test(id))
+            return 'data-vendor';
           // Only recharts itself — NOT its d3-* deps. A shared d3 utility used
           // by an eager formatter would otherwise drag the whole chart chunk
           // into the initial modulepreload. d3 utils chunk naturally instead.
