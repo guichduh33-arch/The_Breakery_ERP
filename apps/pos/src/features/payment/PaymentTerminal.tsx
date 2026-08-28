@@ -60,7 +60,10 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         pointsEarned={success.pointsEarned}
         cart={cart}
         paymentMethod={success.paymentMethod}
-        cashReceived={Number(cashReceivedStr || '0')}
+        // Critique 2026-08-29 (P3) — on a split whose first tender is cash the
+        // draft string is stale/empty : the success state now carries the cash
+        // actually received, summed from the shipped tenders.
+        cashReceived={success.cashReceived ?? Number(cashReceivedStr || '0')}
         cashierName={user?.full_name ?? 'Cashier'}
         onNewOrder={handleNewOrder}
         {...(success.subtotal !== undefined ? { subtotal: success.subtotal } : {})}
@@ -111,8 +114,11 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
           chaque colonne tombait à ~195 px et le pavé imbriqué à ~22 px par
           touche (spec 80 px, WCAG 1.4.10). Sous md : une colonne, le corps
           entier défile, les contrôles de paiement passent devant le
-          récapitulatif (le pouce atteint l'argent sans scroller le ticket). */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-px bg-border-subtle overflow-y-auto md:overflow-hidden">
+          récapitulatif (le pouce atteint l'argent sans scroller le ticket).
+          Arbitrage 2026-08-29 (propriétaire) — le récap se compacte à 2fr/3fr :
+          la moitié pleine répétait le panier et le /display, la place revient
+          aux contrôles d'argent. */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden">
         {/* LEFT — order summary */}
         <OrderSummaryPanel
           cart={cart}
@@ -135,9 +141,12 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
                   : 'border-red-as-text bg-danger-soft text-red-as-text',
               )}
             >
+              {/* Critique 2026-08-29 (P2) — the snake_case config key leaked
+                  into cashier copy for a Back-Office-only switch : name the
+                  human action instead. */}
               {offlineGate.paymentsAllowed
                 ? 'Offline mode — payments accepted (store credit excluded), will resync once the cloud is back'
-                : 'Offline payments disabled — enable offline_payments_enabled (Settings → Network)'}
+                : 'Offline payments are disabled — ask a manager to enable them in the Back Office (Network settings)'}
             </div>
           )}
           {/* Critique run 3 (polish) — le même état était narré trois fois

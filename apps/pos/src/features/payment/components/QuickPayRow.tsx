@@ -5,6 +5,7 @@
 import { Users } from 'lucide-react';
 import type { PaymentMethod } from '@breakery/domain';
 import { formatIdr } from '@breakery/utils';
+import { METHODS_BY_VALUE } from './paymentMethods';
 
 export interface QuickPayRowProps {
   fastPathReady: boolean;
@@ -36,9 +37,15 @@ export function QuickPayRow({
   // alors qu'il allait encaisser 100.000 et rendre 30.000. Le bouton dit
   // désormais ce qu'il va faire : montant reçu + monnaie à rendre.
   const cashOverpay = isCashDraft && draftAmount > total;
+  // Critique 2026-08-29 (P2) — the raw enum leaked onto the most visible
+  // button of the screen (« STORE_CREDIT Exact — Rp… ») : resolve the human
+  // label from the method catalog instead of uppercasing the value.
+  const methodLabel = selectedMethod
+    ? METHODS_BY_VALUE.get(selectedMethod)?.label ?? selectedMethod
+    : '';
   const fastPathLabel = cashOverpay
     ? `Cash ${formatIdr(draftAmount)} — Change ${formatIdr(draftAmount - total)}`
-    : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatIdr(total)}`;
+    : `${methodLabel} Exact — ${formatIdr(total)}`;
   // Critique run 4 lot 1 (adapt) — « Cash Exact — Rp 4.850.000 » +
   // « Split by Item » ne tiennent pas côte à côte à 390 px : empilés
   // pleine largeur sous md, chacun garde ses 56 px de haut.
@@ -56,7 +63,10 @@ export function QuickPayRow({
         </button>
       ) : (
         <div className="flex-1 h-14 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">
-          Select a method to proceed
+          {/* Critique 2026-08-29 (persona Alex) — cash is preselected on open,
+              so « Select a method » sent the cashier hunting a problem that
+              did not exist : name the actual blocker. */}
+          {selectedMethod ? 'Enter the amount to proceed' : 'Select a method to proceed'}
         </div>
       )}
       <button

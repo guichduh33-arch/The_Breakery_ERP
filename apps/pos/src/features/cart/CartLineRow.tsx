@@ -34,7 +34,7 @@
 import { Lock, Tag, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { toast } from 'sonner';
-import { calculatePriceAdjustment } from '@breakery/domain';
+import { lineUnitEach, lineTotalOf } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
 import { Currency, ComboLineRow, cn } from '@breakery/ui';
 import { useComboConfig } from '@/features/combos/hooks/useComboConfig';
@@ -83,17 +83,10 @@ function ComboCartLineRow({
     }
   }
   // Same formula as calculateTotals and as the server price resolver:
-  // base (unit_price) + option surcharges (line modifiers) + component-modifier
-  // adjustments (ADR-017). A line billed at base × qty understated what the
-  // cart charges (bug 2026-07-31).
-  const unitEach =
-    item.unit_price +
-    calculatePriceAdjustment(item.modifiers) +
-    (item.combo_components ?? []).reduce(
-      (sum, c) => sum + calculatePriceAdjustment(c.modifiers ?? []),
-      0,
-    );
-  const lineTotal = unitEach * item.quantity;
+  // base + option surcharges + component-modifier adjustments (ADR-017).
+  // Shared helper since 2026-08-29 — a line billed at base × qty understated
+  // what the cart charges (bug 2026-07-31, reborn once in OrderSummaryPanel).
+  const lineTotal = lineTotalOf(item);
 
   return (
     <ComboLineRow
@@ -133,9 +126,8 @@ export function CartLineRow({
     );
   }
 
-  const adj = item.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
-  const unitEach = item.unit_price + adj;
-  const lineTotal = unitEach * item.quantity;
+  const unitEach = lineUnitEach(item);
+  const lineTotal = lineTotalOf(item);
   const cancelled = item.is_cancelled === true;
   const hasMods = item.modifiers.length > 0;
   const isGift = item.is_promo_gift === true;
