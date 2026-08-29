@@ -69,12 +69,15 @@ export function QuickPayRow({
           {selectedMethod ? 'Enter the amount to proceed' : 'Select a method to proceed'}
         </div>
       )}
+      {/* Arbitrage 2026-08-29 (propriétaire) — c'était le seul bouton BLEU du
+          parcours d'argent ; DESIGN.md : le bleu est une note, jamais un
+          bouton. Secondaire bordé, comme toute action secondaire. */}
       <button
         type="button"
         onClick={onSplitOpen}
         disabled={cartEmpty || checkoutPending}
         data-testid="pay-split-entry"
-        className="h-14 px-4 rounded-md border border-info bg-info-soft text-info font-bold uppercase tracking-widest text-xs [@media(hover:hover)]:hover:border-blue-info transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-40 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="h-14 px-4 rounded-md border border-border-subtle bg-bg-overlay text-text-primary font-bold uppercase tracking-widest text-xs [@media(hover:hover)]:hover:bg-bg-input [@media(hover:hover)]:hover:border-border-strong transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-40 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <Users className="h-3.5 w-3.5" aria-hidden />
         Split by Item

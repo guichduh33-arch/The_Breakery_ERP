@@ -1,7 +1,7 @@
 // apps/pos/src/features/discounts/hooks/useApplyLineDiscount.ts
 import { useState } from 'react';
 import type { CartItem, Discount } from '@breakery/domain';
-import { calculatePriceAdjustment } from '@breakery/domain';
+import { lineTotalOf } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useVerifyManagerPin } from './useVerifyManagerPin';
 
@@ -65,7 +65,9 @@ export function useApplyLineDiscount(): ApplyLineDiscountState {
   };
 }
 
+// Critique 2026-08-29 P1 — même base que ce que calculateTotals facture
+// (lineTotalOf : combos ADR-017 + arrondi). La recomposition locale aurait
+// assis une remise % sur une base fausse si une ligne combo devenait éligible.
 export function lineDiscountBase(item: CartItem): number {
-  const adj = calculatePriceAdjustment(item.modifiers);
-  return (item.unit_price + adj) * item.quantity;
+  return lineTotalOf(item);
 }

@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { lineTotalOf } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
 
 import { readKioskPairing } from '@/lib/kioskAuth';
@@ -237,14 +238,17 @@ export default function CustomerDisplayPage() {
     // the line total includes the modifier adjustments (calculateTotals parity).
     const lines: CustomerDisplayLine[] = (cartMessage.cart.items as CartItem[]).map(
       (item) => {
-        const adjustment = item.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
         return {
           id: item.id,
           product_id: item.product_id,
           name: item.name,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          line_total: (item.unit_price + adjustment) * item.quantity,
+          // Critique 2026-08-29 P1 — lineTotalOf (combos ADR-017 compris) : la
+          // recomposition locale ignorait les ajustements de composants et les
+          // lignes ne s'additionnaient plus au Total, sur l'écran dont c'est
+          // la seule mission.
+          line_total: lineTotalOf(item),
           modifiers: item.modifiers.map((m) => ({
             label: m.option_label,
             price_adjustment: m.price_adjustment,

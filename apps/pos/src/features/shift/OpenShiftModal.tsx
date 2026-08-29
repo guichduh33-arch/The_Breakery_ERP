@@ -276,16 +276,12 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 {/* Critique run 3 (polish) — la saisie s'affichait brute
                     (« 35000 ») au-dessus du Currency formaté : une seule
                     graphie, formatée dès la frappe. */}
+                {/* Critique 2026-08-29 (P3) — le même montant rendait DEUX fois
+                    empilé (le champ + un Currency or dessous) : une seule
+                    graphie, dans le champ. */}
                 <span className="text-2xl font-mono tabular-nums text-text-primary text-right flex-1">
                   {formatIdr(amount)}
                 </span>
-              </div>
-              <div className="text-center pt-1">
-                <Currency
-                  amount={amount}
-                  emphasis="gold"
-                  className="text-2xl"
-                />
               </div>
             </section>
 
