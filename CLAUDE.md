@@ -136,13 +136,17 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
   DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
   (`scripts/ci/`) rendent leur verdict en secondes, avant le build. Elles sont
-  NEUF, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
+  DIX, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
   `relative-links`, `hardcoded-theme-colors`, les quatre gardes design du
   2026-08-18 (`focus-ring-controls`, `gold-fills`, `lying-font-classes`,
-  `toolbar-button-scope`) et `tight-corner` (2026-08-21, `rounded-full` — la
+  `toolbar-button-scope`), `tight-corner` (2026-08-21, `rounded-full` — la
   seule des quatre dettes de direction qu'aucune garde ne voyait, donc la seule
-  qui pouvait regrandir en silence). Toutes partagent `_guard-lib.mjs` :
-  baseline = plafond, jamais plancher. Une PR frontend BO les croise toutes.
+  qui pouvait regrandir en silence) et `line-total-formula` (2026-08-29 — le
+  prix d'une ligne se demande à `lineTotalOf`/`lineUnitEach` du domaine, jamais
+  recomposé `unit_price + price_adjustment` : le bug de sous-facturation des
+  combos est ressuscité trois fois en un mois avant la garde). Toutes partagent
+  `_guard-lib.mjs` : baseline = plafond, jamais plancher. Une PR frontend BO
+  les croise toutes.
   **Le lint-ratchet ne lint que les fichiers CHANGÉS par la PR** : toucher une
   seule ligne d'un vieux fichier l'y fait entrer et réveille ses erreurs
   préexistantes. Le rejouer en local se fait par lots — `xargs` sur ~170 fichiers
