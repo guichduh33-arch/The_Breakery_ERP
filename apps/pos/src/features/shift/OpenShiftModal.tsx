@@ -124,7 +124,9 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
             ? 'Wrong PIN. Try again.'
             : result.error === 'rate_limited'
               ? 'Too many attempts. Wait a moment.'
-              : 'Verification failed.',
+              : result.error === 'account_locked'
+                ? 'Account locked. Try again later.'
+                : 'Verification failed.',
         );
       }
     } catch {

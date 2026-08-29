@@ -54,6 +54,9 @@ export interface PaymentSuccessState {
   // Critique 2026-08-14 P1 — encaissement mis en file offline (outbox), pas
   // confirmé serveur : le SuccessModal rend la variante ambre « recorded ».
   offline?: boolean;
+  // Critique 2026-08-29 P3 — cash réellement reçu, sommé sur les règlements
+  // expédiés (le brouillon cashReceivedStr est périmé/vide sur un split).
+  cashReceived?: number;
 }
 
 export function usePaymentFlowLogic() {
@@ -208,7 +211,7 @@ export function usePaymentFlowLogic() {
   // au replay bloquerait tout le drain derrière lui.
   async function dispatchOfflinePayment(tendersToShip: Tender[]): Promise<void> {
     if (!offlineGate.paymentsAllowed) {
-      toast.error('Offline payments disabled (Settings → Network)');
+      toast.error('Offline payments are disabled — ask a manager to enable them in the Back Office');
       return;
     }
     if (tendersToShip.length < 1 || tendersToShip.length > 5) {
@@ -302,6 +305,7 @@ export function usePaymentFlowLogic() {
       changeGiven,
       pointsEarned: 0,
       offline: true,
+      cashReceived,
       customerName: attachedCustomer?.name ?? undefined,
       // Sur un split, la méthode « principale » affichée est celle du plus gros
       // règlement — le ticket, lui, porte le détail complet.
@@ -361,6 +365,11 @@ export function usePaymentFlowLogic() {
         ...(result.loyalty_balance_after != null ? { loyaltyBalanceAfter: result.loyalty_balance_after } : {}),
         customerName: attachedCustomer?.name ?? undefined,
         paymentMethod: tendersToShip[0]!.method,
+        // Critique 2026-08-29 P3 — même somme que le chemin offline : le reçu
+        // n'imprime jamais un cash_received périmé sur un split.
+        cashReceived: tendersToShip
+          .filter((t) => t.method === 'cash')
+          .reduce((sum, t) => sum + (t.cash_received ?? t.amount), 0),
         ...(appliedPromotions.length > 0 ? { appliedPromotions } : {}),
       });
       // S72 audit — the charge succeeded (order now exists server-side).

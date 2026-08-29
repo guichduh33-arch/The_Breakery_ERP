@@ -66,7 +66,7 @@ export function CategoryNav({
           <button
             type="button"
             onClick={onOpenSettings}
-            className="h-11 w-11 inline-flex items-center justify-center rounded-md text-text-muted hover:text-text-primary focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2 transition-colors motion-reduce:transition-none"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-md text-text-muted hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2 transition-colors motion-reduce:transition-none"
             aria-label="POS settings"
           >
             <Settings className="h-5 w-5" aria-hidden />
@@ -105,7 +105,9 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
         // `.cat-btn:hover:not([aria-current='page'])` rule).
         active ? tone.active : cn(tone.idle, tone.hover),
         'transition-all duration-fast ease-motion-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
-        'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-[-2px]',
+        // focus-visible, pas focus : après un tap tactile l'anneau or restait
+        // et imitait l'état actif (même piège que ProductCard, corrigé 2026-08-29).
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-[-2px]',
       )}
     >
       {active && (
