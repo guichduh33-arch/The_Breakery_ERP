@@ -137,6 +137,16 @@ jobs:
         # nommées et closes en tête du script.
         run: node scripts/ci/tight-corner.mjs
 
+      - name: Garde 10 — la formule de prix de ligne ne se réécrit pas hors domaine
+        if: always()
+        # Le même bug de facturation (combos ADR-017 ignorés) est ressuscité
+        # TROIS fois en un mois — CartLineRow 2026-07-31, OrderSummaryPanel
+        # 2026-08-28, split/écran client/reçu 2026-08-29 — parce que la formule
+        # se laisse réécrire à la main. lineTotalOf/lineUnitEach (packages/
+        # domain) sont la seule source ; la baseline gèle l'unique exception
+        # nommée (somme de modificateurs KDS offline, type bus).
+        run: node scripts/ci/line-total-formula.mjs
+
   lint-typecheck-test-build:
     runs-on: ubuntu-latest
     # 25 (was 15): the suite runs 11-13 min on a healthy runner, so a slow
