@@ -44,7 +44,10 @@ export function TenderDraftPanel({
         </SectionLabel>
         {/* Critique run 3 (résiduel du lot 4) — saisie formatée dès la frappe,
             comme OpenShiftModal / CashInOutModal / PerPayerCashStep. */}
-        <div className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
+        {/* Critique 2026-08-29 (a11y) — le montant saisi au pavé et la monnaie
+            à rendre sont des sorties calculées : sans zone live, un lecteur
+            d'écran n'entend rien changer. role="status" = aria-live polite. */}
+        <div role="status" className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
           <span className="font-mono tabular-nums text-3xl text-text-primary">
             {formatIdr(Number(cashReceivedStr || '0'))}
           </span>
@@ -53,7 +56,7 @@ export function TenderDraftPanel({
             prépare en ouvrant le tiroir : gros corps mono or, lisible à bout de
             bras (était text-xs). */}
         {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
-          <div className="mt-2 flex items-baseline justify-between">
+          <div role="status" className="mt-2 flex items-baseline justify-between">
             <SectionLabel as="div">Change</SectionLabel>
             <Currency
               amount={cashChange}

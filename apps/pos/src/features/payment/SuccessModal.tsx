@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, CloudOff, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, lineTotalOf } from '@breakery/domain';
 import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
@@ -118,8 +118,9 @@ function buildReceiptPayload(
     ...(props.customerName ? { customer: { name: props.customerName } } : {}),
     items: charged.map((item, idx) => {
       const sl = useServerLines ? serverLines[idx] : undefined;
-      const clientLineTotal =
-        (item.unit_price + item.modifiers.reduce((s, m) => s + m.price_adjustment, 0)) * item.quantity;
+      // Critique 2026-08-29 P1 — repli client aligné sur lineTotalOf (combos
+      // ADR-017 + arrondi roundIdr), la formule que calculateTotals facture.
+      const clientLineTotal = lineTotalOf(item);
       return {
         name: item.name,
         quantity: item.quantity,

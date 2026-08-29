@@ -68,28 +68,33 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
   const comboBadge = useMemo<ReactElement>(() => <ComboBadge />, []);
 
   const selectedCat = categories.find((c) => c.slug === selectedSlug);
-  const title = selectedSlug === 'favorites'
-    ? 'Favorites'
-    : selectedSlug === 'combos'
-      ? 'Combos'
-      : selectedCat?.name ?? 'All';
+  // Critique 2026-08-29 (P2) — la recherche était bornée à la catégorie active
+  // en silence : chercher « croissant » depuis Coffee rendait un faux négatif
+  // en plein rush. Une saisie non vide cherche TOUT le catalogue, et le titre
+  // le dit au lieu de laisser le nom de catégorie mentir sur le périmètre.
+  const searching = query.trim().length > 0;
+  const title = searching
+    ? 'Search'
+    : selectedSlug === 'favorites'
+      ? 'Favorites'
+      : selectedSlug === 'combos'
+        ? 'Combos'
+        : selectedCat?.name ?? 'All';
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
+      if (searching) {
+        const q = query.trim().toLowerCase();
+        return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+      }
       if (selectedSlug === 'favorites' && !p.is_favorite) return false;
       if (selectedSlug === 'combos' && p.product_type !== 'combo') return false;
       if (selectedSlug && selectedSlug !== 'favorites' && selectedSlug !== 'combos') {
         if (p.category_id !== selectedCat?.id) return false;
       }
-      if (query.trim().length > 0) {
-        const q = query.trim().toLowerCase();
-        if (!p.name.toLowerCase().includes(q) && !p.sku.toLowerCase().includes(q)) {
-          return false;
-        }
-      }
       return true;
     });
-  }, [products, selectedSlug, selectedCat, query]);
+  }, [products, selectedSlug, selectedCat, query, searching]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
