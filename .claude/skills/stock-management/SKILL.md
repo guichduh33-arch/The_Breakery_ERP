@@ -250,9 +250,19 @@ ADR-014 : pas de JE.
   il continue de se construire depuis les recettes, en descendant. L'écart entre les deux
   méthodes est **connu et non tranché** — le mesurer produit par produit relève d'un
   arbitrage propriétaire, pas d'un correctif à poser.
-- **Le coût par version vit dans `recipe_versions.snapshot`** (JSONB), pas dans une table
-  dédiée : `product_cost_at_version` **n'existe pas** en base (vérifié le 2026-08-31 — ne
-  pas l'interroger). Les colonnes réelles de `recipe_versions` sont `id`, `product_id`,
+- **Le coût par version vit dans `recipe_versions.snapshot`** (JSONB), pas dans une table.
+  `product_cost_at_version` est une **CLÉ du snapshot**, jamais une table, une vue ni une
+  colonne (vérifié le 2026-08-31 : aucune relation ni fonction de ce nom en base) — on l'y
+  lit par `snapshot->>'product_cost_at_version'`. ⚠️ **Deux formes de snapshot coexistent** :
+  le CHECK vivant `recipe_versions_snapshot_shape_chk` accepte soit un **objet**
+  (`items` array + `product_cost_at_version` number, tous deux exigés), soit un **array nu**
+  — la forme héritée, qui ne porte AUCUN coût. Un lecteur doit gérer les deux : supposer
+  l'objet fait planter sur l'historique. ⚠️ **Cette valeur est de profondeur 1 seulement**, ainsi documentée
+  dans `20260520000020_bump_recipe_version_snapshot_with_cost.sql` (le « D8 » qu'y cite le
+  commentaire est antérieur à l'ADR-008 et ne le désigne pas) : les coûts matières des
+  sous-recettes n'y sont pas cascadés. Ne pas la présenter comme un coût
+  de revient complet, et ne pas la confondre avec ce que rend la famille
+  `calculate_recipe_cost`. Les colonnes réelles de `recipe_versions` sont `id`, `product_id`,
   `version_number`, `snapshot`, `created_at`, `created_by`, `change_note`. L'historique de
   coût se lit par la famille `recipe_cost_history` ; le recalcul se fait par les familles
   `recompute_recipe_cost` / `recompute_all_recipe_costs` (crons quotidiens).
