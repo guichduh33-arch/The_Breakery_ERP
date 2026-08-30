@@ -1,22 +1,23 @@
 {
   "skill_name": "pos-flow-audit",
+  "_note": "Ancrages re-verifies le 2026-08-31. Aucune assertion ne porte sur un numero de version d'objet DB : une eval qui epingle un _vN repourrit au prochain bump. On assert sur la FAMILLE de RPC et sur le comportement observable.",
   "evals": [
     {
       "id": 1,
       "prompt": "Fais un audit du flux POS de prise de commande jusqu'au paiement et donne-moi les principaux trucs à améliorer, classés par impact. On est une boulangerie-café : comptoir takeaway + service à table.",
-      "expected_output": "A ranked (P0→P3) list of product/UX gaps grounded in real files/flows of apps/pos, covering both counter and table paths, with at least a couple of concrete feature proposals. Should distinguish daily-pain from nice-to-have and say how each gap was verified.",
+      "expected_output": "A ranked (P0→P3) list of product/UX gaps grounded in real files/flows of apps/pos, covering both counter and table paths, with at least a couple of concrete feature proposals. Should distinguish daily-pain from nice-to-have and say how each gap was verified. Must NOT re-report as open gaps the chantiers already delivered: server-side fire to kitchen (fire_counter_order family), server-side held orders (hold_fired_order / reopen_held_order / discard_held_order families), or the hardened shift close (mandatory variance note, manager PIN on large variance, blind count, denomination grid, three-way count). Should cite RPCs by family, never by version suffix.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "Mes serveurs se plaignent que parfois la cuisine ne voit pas une commande envoyée depuis la tablette. Qu'est-ce qui se passe et comment on devrait corriger ça ?",
-      "expected_output": "Traces the tablet→inbox→KDS / send-to-kitchen path in real code, identifies the likely cause (e.g. client-lock-only send v1 with no DB round-trip, or realtime channel uniqueness/mount issue), and proposes a fix that respects idempotency + realtime channel uniqueness + canonical RPC patterns. Recommends a two-device repro.",
+      "expected_output": "Traces the real tablet→inbox→KDS path in code (create_tablet_order family → pending-tablet-orders realtime channel → POS inbox pickup_tablet_order → KDS), and establishes that the send itself IS persisted server-side: the counter fire goes through useFireToStations → the fire_counter_order family, which writes the order and its lines to the DB BEFORE printing station tickets (ADR-022, covered by supabase/tests/adr022_paid_order_reaches_kds.test.sql). The old 'client-lock-only send with no DB round-trip' bug is FIXED — an answer that presents it as the current cause is WRONG. Correct candidate causes to investigate instead: realtime channel naming / mount lifecycle (channels are 'kds-{station}-{uuid}', 'pending-tablet-orders-{uuid}' — unique per mount, StrictMode-safe), a subscription that only invalidates on live events with no refetch-on-reconnect (a Wi-Fi blip drops the event forever), items whose dispatch_station is 'none'/NULL and therefore reach no KDS screen, or offline-mode queuing. Proposes a fix respecting idempotency + channel uniqueness + canonical RPC patterns, and recommends a two-device repro.",
       "files": []
     },
     {
       "id": 3,
       "prompt": "Est-ce qu'un client peut diviser l'addition d'une table entre plusieurs personnes ? Si non, propose-moi comment l'ajouter.",
-      "expected_output": "Determines whether split-bill (per-guest) exists vs split-tender (multi-payment on pay_existing_order_v6), then writes a feature proposal using the skill's proposal format: gap, who it helps, concrete change (UI+data+RPC), fits existing patterns (extends pay_existing_order_v6, idempotency flavor, perm gate), effort/risk, and how to validate.",
+      "expected_output": "Determines whether split-bill (per-guest) exists vs split-tender (multi-payment), by reading the live payment path rather than assuming: the pay_existing_order family is multi-tender and covers every already-persisted order (tablet pickup, fired counter order, reopened held order), while a new cart goes through the process-payment EF to the complete_order_with_payment family. Then writes a feature proposal in the skill's format: gap, who it helps, concrete change (UI+data+RPC), fits existing patterns (which family it extends, idempotency flavor, perm gate), effort/risk, and how to validate. Must cite RPCs by FAMILY — an answer pinning a version suffix is stale by construction, since these bump nearly every session.",
       "files": []
     }
   ]

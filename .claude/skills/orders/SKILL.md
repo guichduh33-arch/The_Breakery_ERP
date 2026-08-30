@@ -1,10 +1,10 @@
 ---
 name: orders
 description: >-
-  Orders domain expert — order lifecycle, list v2 server-filters, edit-items RPCs,
-  void/refund, realtime. Cross-app business logic (POS writes + BO management); distinct
-  from pos-specialist (POS UI surface) and backoffice-specialist (BO UI surface). Use this
-  skill whenever the task mentions order(s) / commande(s), statut de commande, void /
+  Orders domain expert — order lifecycle, liste serveur (filtres + tri + keyset), edit-items
+  RPCs, void/refund, held, realtime. Cross-app business logic (POS writes + BO management);
+  distinct from pos-specialist (POS UI surface) and backoffice-specialist (BO UI surface). Use
+  this skill whenever the task mentions order(s) / commande(s), statut de commande, void /
   annulation, refund / remboursement, pending_payment, held order / commande en attente,
   ardoise, complete_order_with_payment, pay_existing_order, fire_counter_order,
   create_tablet_order, order items / lignes de commande, totaux de commande, orders
@@ -17,7 +17,6 @@ pathPatterns:
   - 'apps/pos/src/features/order-history/**'
   - 'supabase/migrations/*order*.sql'
   - 'supabase/tests/*order*.test.sql'
-  - 'supabase/tests/complete_order_v10_display.test.sql'
 promptSignals:
   phrases:
     - 'order list'
@@ -42,11 +41,21 @@ promptSignals:
 > baisse de quantité, suppression : autorisation manager vérifiée serveur **et** perte
 > obligatoire) · **ADR-013** (void interdit après refund partiel · exactement une
 > contre-passation · nonce PIN manager sur toute remise · contrat d'idempotence
-> contraignant sur money-path et edit-items). Ils font loi : une proposition qui les
-> contredit se **signale**, elle ne s'implémente pas.
-> **Convention** : aucune version d'objet DB (`_vN`) dans ce fichier — on cite la **famille**
-> (`complete_order_with_payment`, `cancel_order_item`). La version vivante se vérifie dans
-> `supabase/migrations/` et au call-site, jamais ici.
+> contraignant sur money-path et edit-items) · **ADR-022** (une commande n'existe qu'envoyée
+> en cuisine ou payée — la voie brouillon serveur est supprimée) · **ADR-025** (compteurs de
+> la liste des commandes). Ils font loi : une proposition qui les contredit se **signale**,
+> elle ne s'implémente pas.
+>
+> **Convention (appliquée, pas seulement promise)** : le corps de ce fichier cite des
+> **familles** d'objets DB (`complete_order_with_payment`, `cancel_order_item_rpc`), jamais
+> une version comme pointeur du vivant. Les seules versions écrites ici sont **des faits
+> datés** — l'inventaire du 2026-08-31 ci-dessous — ou des **noms de fichiers**
+> (migrations, tests), qui sont des faits. La version vivante se re-vérifie toujours dans
+> `supabase/migrations/` (numéro le plus haut) **et** au call-site.
+>
+> **Re-vérification : 2026-08-31.** Enums, familles RPC, permissions et chemins ci-dessous
+> ont été relevés contre le code à cette date. Au moindre écart, **le code gagne** : signale
+> la ligne fausse, ne la contourne pas.
 
 Expert on order business logic across POS (writes) and Backoffice (management). Two use-cases:
 
@@ -62,38 +71,62 @@ Expert on order business logic across POS (writes) and Backoffice (management). 
 ## Mental model — Order lifecycle
 
 ```
-POS create                          BO management
+POS writes                          BO management
 ──────────                          ─────────────
-complete_order_with_payment         get_orders_list_v2
- ↓ status: paid                      ↓ cursor-paginé, 11 filtres JSONB
-pay_existing_order
- ↓ draft → pending_payment → paid   add/update/remove_order_item_v1
+fire_counter_order                  get_orders_list
+ ↓ status: pending_payment            ↓ filtres JSONB + tri blanc-listé
+ ↓ numéro de commande minté           ↓ keyset générique (valeur_de_tri, id)
+ ↓ append sur commande existante
+                                    get_orders_counters
+complete_order_with_payment          ↓ agrégats de la même grammaire de filtres
+ ↓ status: paid → completed (trigger)
+                                    search_orders
+pay_existing_order                   ↓ palette de commandes (numéro / client)
+ ↓ pending_payment → paid
+                                    add / update_order_item_qty / remove_order_item
 create_tablet_order                  ↓ draft | pending_payment uniquement
- ↓ status: draft                     ↓ _recalc_order_totals atomique
+ ↓ status: draft (created_via=tablet) ↓ _recalc_order_totals atomique
+                                     ↓ ligne verrouillée → nonce manager (ADR-010)
 create_b2b_order
- ↓ status: b2b_pending              void_order_rpc
-                                     ↓ status: voided (manager PIN)
-refund_order_rpc
- ↓ INSERT refunds row               useOrdersRealtime
- ↓ PIN header x-manager-pin          ↓ postgres_changes INSERT+UPDATE
- ↓ idempotency header                ↓ StrictMode-safe via useId
+ ↓ status: b2b_pending              void_order_rpc / refund_order_rpc
+                                     ↓ via EF void-order / refund-order
+hold_fired_order                     ↓ PIN en en-tête x-manager-pin (EF)
+ ↓ is_held sur une commande ENVOYÉE   ↓ idempotence en en-tête + en argument
+reopen_held_order / discard_held_order
+                                    useOrdersRealtime
+transfer_order_table                 ↓ postgres_changes INSERT+UPDATE
+cancel_order_item_rpc (ADR-010)      ↓ StrictMode-safe via useId
+close_cancelled_tablet_order
 ```
 
-> Les numéros de version RPC sont volontairement omis dans ce skill (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`) — ils bumpent presque chaque session ; les mentions d'historique (« Drop v9 », noms de migration) sont conservées.
+### order_status enum — valeurs réelles
 
-### order_status enum — valeurs réelles (vérifiées migrations S5/S24 + corrective S33 `_023`)
+Vérifié dans `packages/supabase/src/types.generated.ts` (2026-08-31), posé par
+`20260503000000_init_extensions_enums.sql` et corrigé côté guards par
+`20260618000023_fix_edit_items_rpc_status_enum.sql` :
 
 ```
 draft | paid | voided | pending_payment | completed | b2b_pending
 ```
 
-> **PAS de valeur `open`** — le corrective `20260618000023` a corrigé exactement ce bug dans les 3 RPCs edit-items (était `IN ('draft', 'open')`, doit être `IN ('draft', 'pending_payment')`). Ne jamais introduire `'open'`.
+> **PAS de valeur `open`** — le corrective `20260618000023` a corrigé exactement ce bug dans
+> les 3 RPCs edit-items (était `IN ('draft', 'open')`, doit être
+> `IN ('draft', 'pending_payment')`). Ne jamais introduire `'open'`.
 
-### order_type enum (vérifié migration S24)
+### order_type enum — valeurs réelles
+
+Vérifié dans `types.generated.ts` (2026-08-31) : posé par
+`20260503000000_init_extensions_enums.sql`, étendu par
+`20260601000005_extend_order_type_enum_b2b.sql` :
 
 ```
-dine_in | take_out | delivery | b2b | tablet
+dine_in | take_out | delivery | b2b
 ```
+
+> **`tablet` n'est PAS un `order_type`** — c'est une valeur de la colonne
+> `orders.created_via`, colonne TEXT contrainte `CHECK (created_via IN ('pos','tablet'))`
+> par `20260507000001_extend_orders_tablet.sql`. Confondre les deux fait écrire un filtre
+> qui ne matchera jamais, et un `ADD VALUE` d'enum qui n'a pas lieu d'être.
 
 ### Schema reality (noms de colonnes réels — diffèrent de l'intuition)
 
@@ -106,105 +139,228 @@ dine_in | take_out | delivery | b2b | tablet
 | `refunds` | `total` | `amount` |
 | `customers` | `name` | `full_name` |
 
-`orders.session_id` est NULL autorisé pour `order_type = 'b2b'` et `created_via = 'tablet'` (CHECK relaxed S24 `_007` + S25 `_014`).
+**`orders.session_id` nullable — UNE contrainte, TROIS exemptions.**
+`orders_session_id_required_for_pos` est reconstruite à chaque relaxation ; sa forme
+actuelle (`20260620000015_relax_orders_session_id_for_held.sql`) exempte :
+
+```
+session_id IS NOT NULL
+  OR order_type = 'b2b'          (20260601000007_relax_orders_session_id_nullable.sql)
+  OR created_via = 'tablet'      (20260602000014_relax_orders_session_id_for_tablet.sql)
+  OR is_held = true              (20260620000015_relax_orders_session_id_for_held.sql)
+```
+
+Toute reprise de cette contrainte doit reporter **les trois** exemptions : en oublier une
+casse silencieusement un parcours entier (B2B, tablette, ou mise en attente).
 
 ---
 
-## RPCs — noms vérifiés dans `supabase/migrations/`
+## Familles RPC — inventaire daté
+
+> **État relevé le 2026-08-31** contre `packages/supabase/src/types.generated.ts` (le
+> catalogue des fonctions live) **et** les call-sites. Les versions de cette colonne sont un
+> instantané historique, **pas** un pointeur : elles bumpent presque chaque session. On cite
+> la famille ailleurs, et on re-relève ici avant de s'y fier.
 
 ### Write RPCs (JAMAIS d'INSERT direct — passe toujours par RPC)
 
-| RPC | Fichier migration | Notes |
-|-----|------------------|-------|
-| `complete_order_with_payment` | `20260530190828` | Double déduction `display_stock` + `current_stock` pour `is_display_item`. Drop v9 in same migration. |
-| `pay_existing_order` | `20260507000005` + bumps | `draft → pending_payment → paid` |
-| `create_tablet_order(p_client_uuid UUID)` | `20260602000011` | `p_client_uuid` REQUIRED, idempotency via `tablet_order_idempotency_keys`. |
-| `refund_order_rpc` | `20260517000014` | PIN via header `x-manager-pin`. `p_idempotency_key` propagé par EF `refund-order` v7. |
-| `void_order_rpc` | `20260512000009` | Manager PIN gated (`pos.sale.void`). Émet JE-VOID + stock `sale_void` + reverse loyalty. |
-| `create_b2b_order` | `20260601000022` | Gate `validate_b2b_credit_limit_v1`. Status `b2b_pending`. |
-| `mark_item_served` | (S5) | KDS/tablet — marque l'item servi. |
+| Famille | État 2026-08-31 | Notes |
+|---------|-----------------|-------|
+| `complete_order_with_payment` | v27 | Money-path principal, appelé par l'EF `process-payment` (jamais par le POS en direct). Garde `table_required_for_dine_in` (P0011). Remise autorisée par nonce `p_discount_auth_id`, pas par PIN. |
+| `pay_existing_order` | v18 | `pending_payment → paid` d'une commande déjà envoyée. |
+| `fire_counter_order` | v7 | Envoi en cuisine côté comptoir : **crée ou complète** la commande (`p_order_id` optionnel = append), minte le numéro, exige `p_session_id`. Call-sites : `useFireToStations`, `useCheckout`, `offlineReplay`. |
+| `create_tablet_order` | v8 | Commande serveur/tablette. `p_client_uuid` + `p_waiter_id` + `p_table_number` requis ; idempotence métier via table dédiée. |
+| `create_b2b_order` | v6 | Gate `validate_b2b_credit_limit`. Status `b2b_pending`. |
+| `refund_order_rpc` | v10 | Appelée par l'EF `refund-order`. Reçoit `p_authorized_by` (profil manager) + `p_acting_auth_user_id` — **pas** le PIN. |
+| `void_order_rpc` | v10 | Appelée par l'EF `void-order`. Gate `pos.sale.void`. Émet JE-VOID + stock `sale_void` + reverse loyalty. |
+| `cancel_order_item_rpc` | v6 | ADR-010 — annulation d'une ligne, perte obligatoire si verrouillée (`p_waste_qty`). Passe par l'EF `cancel-item` (call-site `useCancelOrderItem`). |
+| `hold_fired_order` | v1 | **La seule** mise en attente : pose `is_held` sur une commande DÉJÀ envoyée en cuisine. |
+| `reopen_held_order` | v1 | Réouverture sur le terminal. |
+| `discard_held_order` | v1 | Rejet ; couvre aussi les commandes caisse non payées (`created_via = 'pos'`). |
+| `transfer_order_table` | v1 | Changement de table, audité `order.table_transfer`. Call-site `useTransferOrderTable`. |
+| `close_cancelled_tablet_order` | v1 | ADR-010 — **constate** une annulation tablette (refuse en P0014 hors du cas prévu). Sa migration `20260731000003` DROP `cancel_tablet_order`. |
+| `mark_item_served` | (sans version) | KDS/tablette — marque l'item servi. Call-site `useMarkItemServed`. |
 
-### List & edit RPCs (S32/S33)
+**Familles MORTES — ne jamais les ressusciter :**
 
-**`get_orders_list_v2(p_start TEXT, p_end TEXT, p_filters JSONB, p_limit INT, p_cursor TIMESTAMPTZ)`**
-(migration `20260618000011`, drops v1 in same file)
-- Gate: `orders.read`
-- 11 filtres JSONB : `status`, `order_type`, `customer_id`, `served_by`, `total_min`, `total_max`, `customer_type`, `payment_method`, `terminal_id`, `hour` (0-23 Asia/Makassar), `refund_status` (none|partial|full)
-- `terminal_id` via JOIN `pos_sessions` → requiert que l'ordre ait un `session_id`
-- Computed output : `refund_status`, `has_modifiers`, `payment_method_primary` (ou `'mixed'`), `items_count`, `customer_name`, `served_by_name`, `terminal_id`
+| Famille disparue | Acte de décès |
+|------------------|---------------|
+| `hold_order` · `restore_held_order` | ADR-022 décision 4 — `20260810000004_adr022_d4_drop_cart_hold_path.sql`. La voie brouillon serveur (`HELD-<uuid>`, `is_held` sur un `draft` jamais envoyé) est supprimée : un panier non confirmé n'a pas à exister côté serveur. Le geste « mettre en attente » passe désormais par l'envoi en cuisine puis `hold_fired_order`. |
+| `cancel_tablet_order` | ADR-010 — `20260731000003`, remplacée par `close_cancelled_tablet_order`. |
 
-**Edit-items (seulement sur `draft` | `pending_payment`) :**
+> `held_order_idempotency_keys` survit sans écrivain (résidu assumé par la migration de drop,
+> ADR-021 déc. 2). Sa présence n'est pas une preuve que la voie brouillon existe encore.
 
-| RPC | Signature | Action clé |
-|-----|-----------|-----------|
-| `add_order_item_v1` | `(p_order_id, p_product_id, p_qty, p_modifiers, p_idempotency_key)` | `name_snapshot` + `retail_price` (pas `.price`) |
-| `update_order_item_qty_v1` | `(p_order_item_id, p_qty, p_idempotency_key)` | qty > 0 (sinon utiliser remove) |
-| `remove_order_item_v1` | `(p_order_item_id, p_idempotency_key)` | DELETE + recalc |
+### Lecture — liste, compteurs, recherche
 
-Les 3 appellent `_recalc_order_totals(order_id)` (helper interne, non callable directement). Idempotency via table dédiée `order_edit_idempotency_keys` (colonnes: `key UUID PK`, `action TEXT`, `order_id UUID`, `result JSONB`). Chaque RPC a sa propre action string : `'add'`, `'update_qty'`, `'remove'`.
+**`get_orders_list`** — état 2026-08-31 : **v4**
+(`20260813000008_bump_get_orders_list_v4_sort.sql`, call-site `useOrdersList`).
 
-Orchestrateur BO `useEditOrderItems` : séquence `removes → updates → adds` pour éviter les conflits de totaux.
+- Gate `orders.read`.
+- Signature : `(p_start text, p_end text, p_filters jsonb, p_limit int, p_sort text, p_dir text, p_cursor_val text, p_cursor_id uuid)`.
+- **Le curseur `TIMESTAMPTZ` de la v3 est droppé** : le keyset est désormais générique
+  (valeur de tri transportée en TEXTE + `id` de départage). Un call-site qui passe encore un
+  `p_cursor` timestamptz appelle une signature qui n'existe plus.
+- `p_sort` / `p_dir` sont **blanc-listés** (mapping fermé injecté par `format()`, hors liste =
+  rejet `22023`). Aucune entrée utilisateur ne touche le SQL.
+- `p_limit` clampé (borne haute fixée dans le corps — la relever est un changement de contrat).
+- Grammaire de filtres JSONB (héritée de la v2, intacte en v4) : `status`, `order_type`,
+  `customer_id`, `served_by`, `total_min`, `total_max`, `customer_type`, `payment_method`,
+  `terminal_id`, `hour` (0-23 `Asia/Makassar`), `refund_status` (`none|partial|full`).
+  Une clé inconnue est **ignorée silencieusement** — un filtre mal orthographié ne lève rien.
+- `terminal_id` passe par un JOIN `pos_sessions` → n'atteint que les commandes avec `session_id`.
+- Sortie : `lines` + `next_cursor_val` + `next_cursor_id`. Champs calculés par ligne :
+  `refund_status`, `has_modifiers`, `payment_method_primary` (ou `'mixed'`), `items_count`,
+  `customer_name`, `customer_type`, `served_by_name`, `terminal_id`.
 
-### Permissions (vérifiées migration `20260618000021`)
+**`get_orders_counters`** — état 2026-08-31 : **v2** (ADR-025, call-site `useOrdersCounters`).
+Agrège sur **la même grammaire de filtres** que la liste : tout filtre ajouté d'un côté doit
+l'être de l'autre, sinon les compteurs mentent sur la liste affichée.
+
+**`search_orders`** — état 2026-08-31 : **v1**
+(`20260813000002_uxui_lot4_search_orders_v1.sql`, call-site `usePaletteSearch`).
+Recherche d'entité pour la palette de commandes ; `(p_query, p_limit)`.
+
+### Edit-items — seulement sur `draft` | `pending_payment`
+
+| Famille | État 2026-08-31 | Signature relevée | Notes |
+|---------|-----------------|-------------------|-------|
+| `add_order_item` | v5 | `(p_order_id, p_product_id, p_qty, p_modifiers, p_idempotency_key)` | ADR-022 déc. 1 : garde de vendabilité complète (`_assert_product_sellable`) ; refuse les combos. |
+| `update_order_item_qty` | v5 | `(p_order_item_id, p_qty, p_idempotency_key, p_auth_id?, p_waste_qty?, p_waste_reason?)` | ADR-010 : les 3 derniers arguments ne servent QUE la ligne verrouillée. `p_qty > 0` (sinon `remove`). |
+| `remove_order_item` | v3 | `(p_order_item_id, p_idempotency_key)` | DELETE + recalc ; refus sur ligne verrouillée. |
+
+- Gate commun : `orders.edit_open`. Statut hors `('draft','pending_payment')` → `P0002`.
+- **Le prix se résout SERVEUR** (ADR-013 D15/M2 + ADR-020) : `add_order_item` appelle
+  `_resolve_line_price` — le même résolveur que le money-path — pour `unit_price`,
+  `modifiers_total` et `line_subtotal`. Le `price_adjustment` client est **ignoré**. Ne pas
+  réintroduire une lecture directe de `products.retail_price` dans ces RPCs.
+- Ligne verrouillée (`order_items.is_locked`, ADR-010) : `update_order_item_qty` exige un
+  `p_auth_id` — un nonce `discount_authorizations` de scope `order_item_edit`, TTL court,
+  consommé atomiquement, **un nonce par appel de RPC**. Il est minté par l'EF
+  `verify-manager-pin` (call-site `mintEditAuthorization`), qui reçoit le PIN en en-tête.
+- Les 3 appellent `_recalc_order_totals(order_id)` (helper interne, non callable directement).
+- Idempotence via la table dédiée `order_edit_idempotency_keys` (`key UUID PK`, `action TEXT`,
+  `order_id UUID`, `result JSONB`). Actions : `'add'`, `'update_qty'`, `'remove'`. La lecture
+  de replay est faite **deux fois** dans `add` — avant et après le `SELECT … FOR UPDATE` sur
+  la commande : c'est la garde de course, ne pas la « simplifier ».
+- Orchestrateur BO `useEditOrderItems` : séquence `removes → updates → adds` pour éviter les
+  conflits de totaux ; un UUID d'idempotence **par appel**, jamais partagé.
+
+### Permissions
+
+Codes existants dans le catalogue `permissions` (vérifié 2026-08-31) :
 
 ```
-orders.read       — MANAGER / ADMIN / SUPER_ADMIN (S31 _010)
-orders.edit_open  — MANAGER / ADMIN / SUPER_ADMIN (S33 _021)
-orders.void       — MANAGER / ADMIN / SUPER_ADMIN (S33 _021)
+orders.read             — 20260616000010_seed_orders_read_perm.sql
+orders.edit_open        — 20260618000021_seed_orders_edit_open_perm.sql
+orders.void             — 20260618000021_seed_orders_edit_open_perm.sql
+orders.refund           — 20260813000004_seed_orders_refund_reprint_perms.sql
+orders.reprint_receipt  — 20260813000004_seed_orders_refund_reprint_perms.sql
 ```
+
+> **Ne PAS graver « MANAGER / ADMIN / SUPER_ADMIN » comme la vérité des droits.** Depuis
+> l'**ADR-031** (2026-08-25, `docs/adr/031-rbac-editable-super-admin.md`), la matrice
+> `role_permissions` est **de la donnée éditable** depuis le back-office par un SUPER_ADMIN :
+> les rôles cités dans les migrations de seed sont l'état **initial**, pas l'état courant.
+> Pour savoir qui détient une permission aujourd'hui, on lit `role_permissions` (plus les
+> `user_permission_overrides`), on ne cite pas un fichier de seed. Deux conséquences gravées
+> par l'ADR : la ligne SUPER_ADMIN est immuable, et les permissions d'un utilisateur sont
+> **figées au login** — un changement de matrice ne prend effet qu'à la session suivante.
 
 ---
 
 ## Critical patterns (ordres-spécifiques)
 
-1. **Jamais d'INSERT direct dans `orders`** — toujours via RPC. Les RPCs gèrent atomiquement : JE triggers, loyalty, promotions, `display_stock` double-déduction, `table_state`.
-2. **Status guard sur edit-items** — `('draft', 'pending_payment')` uniquement. Lever P0002 sinon. Ne pas ajouter `'open'` (valeur inexistante dans l'enum).
-3. **`products.retail_price`** (pas `.price`) — vérifié dans le corrective `_023`. Utiliser `retail_price` pour `unit_price` dans les edit-items RPCs.
-4. **Idempotency keys propres par RPC** — ne pas partager une même `p_idempotency_key` entre deux appels RPC distincts dans `useEditOrderItems`. Générer un UUID par call.
-5. **PIN en header** — `refund_order_rpc` et `void_order_rpc` lisent le PIN via header `x-manager-pin`, jamais dans le body JSON (loggé par PostgREST/pgaudit).
-6. **Realtime StrictMode-safe** — `useOrdersRealtime` utilise `useId()` pour nommer le channel ; pas de channel name statique (collisions StrictMode double-mount).
-7. **`orders.session_id` nullable** — NULL autorisé pour `b2b` ET `tablet` via 2 CHECK distincts. Ne jamais resserrer à NOT NULL global.
-8. **display_stock double-déduction** — `complete_order_with_payment` (comportement introduit en v10) décrémente à la fois `display_stock.quantity` ET `products.current_stock` pour les `is_display_item=true`. Non-display : `current_stock` seulement (comportement v9 inchangé).
+1. **Jamais d'INSERT direct dans `orders`** — toujours via RPC. Les RPCs gèrent atomiquement :
+   JE triggers, loyalty, promotions, déduction de stock, `table_state`.
+2. **Le POS n'appelle pas le money-path en direct** — il poste l'EF `process-payment`, qui
+   appelle `complete_order_with_payment` côté serveur. Idem `refund-order`, `void-order`,
+   `cancel-item`.
+3. **Status guard sur edit-items** — `('draft', 'pending_payment')` uniquement, `P0002` sinon.
+   Ne pas ajouter `'open'` (valeur inexistante dans l'enum).
+4. **Prix de ligne = domaine/serveur, jamais recomposé** — côté SQL, `_resolve_line_price` ;
+   côté TS, `lineTotalOf`/`lineUnitEach` de `packages/domain`. Recomposer
+   `unit_price + price_adjustment` est le bug de sous-facturation des combos, ressuscité trois
+   fois avant que la garde CI `line-total-formula` ne l'interdise.
+5. **Idempotency keys propres par RPC** — ne pas partager une même `p_idempotency_key` entre
+   deux appels distincts dans `useEditOrderItems`. Générer un UUID par call.
+6. **Transport du PIN — deux véhicules, aucun n'est un défaut.** Vers une **Edge Function**,
+   le PIN voyage en en-tête `x-manager-pin`, jamais dans le body JSON (les bodies sont loggés).
+   Vers une **RPC Postgres**, un PIN se transporte en **argument** `p_manager_pin` : c'est le
+   seul véhicule qu'une RPC peut valider, une fonction SQL ne lit pas d'en-tête HTTP. Dans le
+   domaine ordres, aucune RPC live ne reçoit le PIN : les EF `refund-order`, `void-order`,
+   `cancel-item` et `verify-manager-pin` le vérifient en amont et passent une **identité
+   d'autorisation** (`p_authorized_by` / `p_acting_auth_user_id`) ou un **nonce**
+   (`discount_authorizations`).
+7. **Realtime StrictMode-safe** — `useOrdersRealtime` nomme son channel avec `useId()` ; jamais
+   de nom statique (collisions silencieuses au double-mount).
+8. **Déduction de stock de vente = `_record_sale_stock`, helper unique.** Pour un produit
+   `is_display_item`, il décrémente `display_stock.quantity` **et** `products.current_stock`,
+   et écrit dans `display_movements`. Pour un non-display suivi, `current_stock` seulement.
+   La rupture de vitrine lève `P0002` (mappé `insufficient_stock` 409 par `process-payment`).
+   Ne pas réécrire cette logique dans une RPC appelante.
+9. **`orders.session_id` nullable — trois exemptions**, cf. la section schéma. Ne jamais
+   resserrer à NOT NULL global.
 
 ---
 
 ## Audit checklist
 
 - [ ] **Status transition valide** — seuls les états de l'enum réel sont utilisés. Grep `'open'` dans les nouvelles migrations ordres.
-- [ ] **Edit-items guard** — les 3 RPCs vérifient `status IN ('draft', 'pending_payment')` (pas `'open'`).
-- [ ] **Totals cohérents** — après chaque edit-item, `orders.total = SUM(order_items.line_total) + tax_amount - discount_amount`. Vérifiable via `_recalc_order_totals`.
-- [ ] **Idempotency replay** — même `p_idempotency_key` + même `action` retourne le `result` JSONB stocké sans mutation.
-- [ ] **`order_edit_idempotency_keys` isolé** — pas de GRANT EXECUTE exposant cette table à `anon` ou `authenticated` hors des RPCs SECURITY DEFINER.
-- [ ] **Refund integrity** — `SUM(refunds.total) <= orders.total` pour un même order_id. `refund_status` computed par `get_orders_list_v2` en découle.
-- [ ] **REVOKE pair complet** — chaque nouveau RPC ordres a les 3 lignes (PUBLIC + anon + ALTER DEFAULT PRIVILEGES). Vérifier `20260618000012/016/018/020`.
-- [ ] **Types regen** — toute migration ordres touchant la signature d'un RPC doit déclencher `generate_typescript_types` → `packages/supabase/src/types.generated.ts`.
+- [ ] **`order_type` vs `created_via`** — un filtre ou un guard « tablette » interroge `created_via`, jamais `order_type`.
+- [ ] **Edit-items guard** — les 3 RPCs vérifient `status IN ('draft', 'pending_payment')`.
+- [ ] **Prix serveur** — aucun nouveau chemin d'écriture d'`order_items` ne calcule un prix hors `_resolve_line_price` (SQL) / `lineTotalOf` (TS).
+- [ ] **Totals cohérents** — après chaque edit-item, les totaux viennent de `_recalc_order_totals`, jamais d'un calcul dupliqué au call-site.
+- [ ] **Idempotency replay** — même `p_idempotency_key` + même `action` retourne le `result` JSONB stocké sans mutation ; la double lecture autour du `FOR UPDATE` est préservée.
+- [ ] **`order_edit_idempotency_keys` isolé** — aucune écriture hors des RPCs SECURITY DEFINER.
+- [ ] **Refund integrity** — `SUM(refunds.total) <= orders.total` pour un même `order_id` ; le `refund_status` calculé par `get_orders_list` en découle.
+- [ ] **Liste et compteurs d'accord** — un filtre ajouté à `get_orders_list` l'est aussi à `get_orders_counters`, sinon l'en-tête ment sur le tableau.
+- [ ] **REVOKE pair complet** — chaque nouvelle RPC ordres a les 3 lignes (PUBLIC + anon + `ALTER DEFAULT PRIVILEGES`). Modèle : le bloc ACL de `20260810000002_adr022_d1_add_order_item_v5.sql`.
+- [ ] **Types regen** — toute migration ordres touchant une signature déclenche `generate_typescript_types` → `packages/supabase/src/types.generated.ts`.
 
 ---
 
 ## Sources de vérité (pointeurs)
 
 ```
-Migrations (historique chronologique)
-  supabase/migrations/20260503000008_init_complete_order_rpc.sql        — v1 initial
-  supabase/migrations/20260530190828_bump_complete_order_v10.sql        — v10 display-stock
-  supabase/migrations/20260617000013_create_get_orders_list_v1_rpc.sql  — list v1 (dropped by v2)
-  supabase/migrations/20260618000011_bump_get_orders_list_v2_server_filters.sql
-  supabase/migrations/20260618000013..020_*.sql                         — edit-items RPCs + REVOKE
-  supabase/migrations/20260618000021_seed_orders_edit_open_perm.sql
-  supabase/migrations/20260618000023_fix_edit_items_rpc_status_enum.sql — corrective 'open'→'pending_payment'
+Migrations (jalons historiques — le vivant se relève par le numéro le plus haut)
+  supabase/migrations/20260503000000_init_extensions_enums.sql          — enums order_status / order_type
+  supabase/migrations/20260507000001_extend_orders_tablet.sql           — created_via ('pos'|'tablet')
+  supabase/migrations/20260601000005_extend_order_type_enum_b2b.sql     — 'b2b' ajouté à order_type
+  supabase/migrations/20260618000023_fix_edit_items_rpc_status_enum.sql — corrective 'open' → 'pending_payment'
+  supabase/migrations/20260620000015_relax_orders_session_id_for_held.sql — 3ᵉ exemption session_id
+  supabase/migrations/20260731000003_adr010_drop_cancel_tablet_order_add_close_cancelled_tablet_order_v1.sql
+  supabase/migrations/20260810000004_adr022_d4_drop_cart_hold_path.sql  — drop de la voie brouillon
+  supabase/migrations/20260813000002_uxui_lot4_search_orders_v1.sql     — recherche de commandes
+  supabase/migrations/20260813000004_seed_orders_refund_reprint_perms.sql
+  supabase/migrations/20260813000008_bump_get_orders_list_v4_sort.sql   — tri serveur + keyset générique
 
-Tests (vérité comportementale)
-  supabase/tests/orders_read_perm.test.sql           — perm gate
-  supabase/tests/orders_list_v1.test.sql             — remplacé par orders_list_v2
-  supabase/tests/orders_list_v2.test.sql             — liste serveur
-  supabase/tests/order_edit_items.test.sql           — édition d'items
-  supabase/tests/complete_order_v10_display.test.sql — display-stock double-déduction
+Tests pgTAP (vérité comportementale)
+  supabase/tests/orders_read_perm.test.sql            — gate orders.read
+  supabase/tests/orders_list_v4.test.sql              — filtres serveur
+  supabase/tests/orders_list_v4_sort.test.sql         — tri blanc-listé
+  supabase/tests/orders_list_v4_envelope.test.sql     — enveloppe + pagination keyset
+  supabase/tests/orders_counters_v2.test.sql          — parité compteurs / liste
+  supabase/tests/order_edit_items.test.sql            — édition d'items
+  supabase/tests/order_item_lock_adr010.test.sql      — verrou cuisine + perte
+  supabase/tests/held_orders.test.sql                 — famille held
+  supabase/tests/hold_fired_order_v1.test.sql
+  supabase/tests/reopen_held_order_v1.test.sql · reopen_held_order_v1_behavior.test.sql
+  supabase/tests/adr010_close_cancelled_tablet_order.test.sql
+  supabase/tests/complete_order_v27_table_guard.test.sql   — table obligatoire en dine-in
+  supabase/tests/create_tablet_order_v8_waiter_identity.test.sql
+  supabase/tests/search_orders_v1.test.sql
+  supabase/tests/recalc_order_totals_mode_aware.test.sql · recalc_order_totals_pb1_inclusive.test.sql
+  supabase/tests/realtime_publication_orders.test.sql
 
 Intention & décisions
   docs/objectifs/ORDERS.md   — l'intention métier du module (ce qui est VOULU)
   docs/adr/009-cycle-de-vie-ordres.md
   docs/adr/010-verrou-items-envoyes-cuisine.md
   docs/adr/013-comptabilite-integrite-void-refund-remise.md
+  docs/adr/022-portes-de-vente-pos-vendabilite-hold-envoi-cuisine.md
+  docs/adr/025-liste-commandes-compteurs-et-bande-annonce.md
+  docs/adr/031-rbac-editable-super-admin.md
 ```
 
 ---
@@ -215,24 +371,29 @@ Intention & décisions
 # Type & lint (cheap, run first)
 pnpm typecheck
 
-# pgTAP via MCP execute_sql (BEGIN/ROLLBACK envelope)
-# Fichiers : orders_list_v2.test.sql, order_edit_items.test.sql, complete_order_v10_display.test.sql
+# pgTAP : via MCP execute_sql, enveloppe BEGIN … ROLLBACK (pas de runner local).
+# Fichiers pertinents : cf. la liste « Tests pgTAP » ci-dessus.
 
-# BO smoke
+# BO smoke — attention, les filtres vitest matchent le NOM DE FICHIER,
+# pas le describe : localiser les fichiers par glob avant de filtrer.
 pnpm --filter @breakery/app-backoffice test orders
 
 # POS smoke
 pnpm --filter @breakery/app-pos test order
 ```
 
-Baseline : ~24 BO échecs env-gated (`VITE_SUPABASE_URL Required`) ≠ régression (DEV-S25-2.A-02).
+Une part des échecs BO en local est **env-gated** (`VITE_SUPABASE_URL Required`) et n'est pas
+une régression (`DEV-S25-2.A-02`). Le compte exact se relève en lançant la suite ; il ne se
+grave pas ici, il changerait à chaque fichier de test ajouté.
 
 ---
 
 ## When to escalate
 
-- Ajouter une valeur à `order_status` ou `order_type` → confirm business intent, enum ADD VALUE doit vivre dans sa propre TX, puis vérifier tous les guards existants (status IN (…)).
-- Modifier la signature de `complete_order_with_payment` → bump obligatoire (RPC versioning monotone), `DROP` de l'ancienne version dans la même migration. Vérifier tous les callers POS/BO.
-- Relax ou tighten la contrainte `orders.session_id` → peut casser les flows tablet ou B2B (cf. S25 corrective `_014`).
-- Nouveau filtre `get_orders_list_v2` impliquant un JOIN sur une table sans index → profiler d'abord.
-- Changement du mécanisme PIN (ex. `void-order` EF sweep POST-S30 déféré) → coordonner avec `security-auth` skill.
+- Ajouter une valeur à `order_status` ou `order_type` → confirmer l'intention métier, `ADD VALUE` dans sa propre TX, puis re-vérifier **tous** les guards `status IN (…)` existants. Rappel : « tablette » n'est pas un `order_type`.
+- Modifier la signature de `complete_order_with_payment` (ou de toute RPC money-path) → bump obligatoire depuis le **corps live** (`pg_get_functiondef`, jamais le fichier d'origine), `DROP` de l'ancienne version dans la même migration, **redéploiement de l'EF** qui l'appelle, puis vérification de tous les callers POS/BO.
+- Relaxer ou resserrer `orders_session_id_required_for_pos` → les trois exemptions doivent être reportées ; en oublier une casse B2B, tablette ou held.
+- Nouveau filtre de liste → l'ajouter **aussi** à `get_orders_counters`, et profiler si le filtre implique un JOIN sur une table sans index.
+- Nouvelle valeur de `p_sort` → elle doit entrer dans la liste blanche **et** recevoir un cast de curseur cohérent, sinon la pagination keyset dérive.
+- Changement du mécanisme PIN ou d'un scope de nonce → coordonner avec le skill `security-auth` (mécanique) ou `security-fraud-guard` (traçabilité / abus).
+- Réintroduire une mise en attente de panier non envoyé → **contredit l'ADR-022 décision 4** : on le signale à Mamat, on ne l'implémente pas.

@@ -231,6 +231,13 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `packageManager`.
 - **PIN / secrets en header HTTP, jamais en body JSON** (les bodies sont loggés).
   Header dédié type `x-manager-pin`, hard cutover dans le même commit.
+  **Portée : les Edge Functions** (arbitrage 2026-08-31). Vers une **RPC Postgres**
+  appelée par PostgREST, le PIN est au contraire un **argument** (`p_manager_pin`) :
+  c'est le seul véhicule que la fonction peut réellement valider, et une RPC ne lit
+  pas les en-têtes. `approve_expense` a justement été déplacée du header vers l'argument
+  le 2026-06-01 parce que la RPC ne lisait jamais l'en-tête — le PIN était affiché,
+  jamais vérifié. Ne pas « re-corriger » ces RPC vers le header. Le critère d'audit
+  n'est pas le véhicule mais : **la cible vérifie-t-elle le PIN, avec verrouillage ?**
 - **Enums : source unique = Postgres.** Aucun string littéral dérivé côté TS
   (`take_away` vs `take_out` = la classe de bug à tuer).
 - **L'interface parle ANGLAIS, les commentaires et la doc parlent français.**

@@ -1,6 +1,11 @@
 # Digest trends UI — filtré pour The Breakery ERP
 
 > **Daté : 2026-07-06** (sources web du jour — cf. bas de page). Protocole refresh dans `SKILL.md` : si ce fichier a > ~6 mois lors d'une décision esthétique structurante, re-vérifier par WebSearch et mettre à jour la date.
+>
+> **Colonne « application Breakery » re-vérifiée le 2026-08-31** contre le code et
+> `docs/objectifs/` : les verdicts de trend n'ont pas bougé, les surfaces qu'ils citent si.
+> Un verdict est une **intention** de direction artistique et ne se réaligne pas sur le
+> code ; la surface, la route ou le module qu'il nomme est un **fait** et se corrige.
 
 Chaque trend reçoit un verdict : ✅ **applicable** · ⚖️ **à doser** · ❌ **gadget à éviter ici**.
 
@@ -8,22 +13,22 @@ Chaque trend reçoit un verdict : ✅ **applicable** · ⚖️ **à doser** · �
 
 | Trend | Application Breakery |
 |-------|---------------------|
-| **Clarity-first dashboards** (réduire le bruit, surfacer l'essentiel, guider l'action) | Direction déjà prise avec le Dashboard S63 : 5 KPIs + drill-down. Toute nouvelle page report suit ce modèle — un message principal par écran. |
-| **Progressive disclosure** (complexité révélée au besoin) | Tablet self-service (modifiers au tap), formulaires BO multi-step (Dialog stepper existant), filtres avancés repliés par défaut. |
+| **Clarity-first dashboards** (réduire le bruit, surfacer l'essentiel, guider l'action) | Direction déjà prise par le dashboard du back-office : une bande de KPIs qui ouvrent chacun un drill-down. Toute nouvelle page report suit ce modèle — un message principal par écran. Le nombre de tuiles se lit dans le composant qui les rend, pas ici. |
+| **Progressive disclosure** (complexité révélée au besoin) | Tablette serveur (plan de salle puis grille produits, panier repliable en portrait), formulaires BO multi-step (Dialog stepper existant), filtres avancés repliés par défaut. Attention : sur la tablette, ce qui est absent est **volontairement** absent (pas de modifier complexe, pas de combo) — ce n'est pas de la complexité à révéler plus tard. |
 | **Bento grids** (blocs modulaires de tailles variées) | Dashboards BO et hubs (Settings, Reports index) : hiérarchiser par la taille du bloc, pas seulement l'ordre. Compatible `KpiTile`/`Card` existants. |
 | **Dark mode comme standard soigné** (pas une inversion cheap) | Déjà l'ADN du POS (luxe-dark). Le trend confirme : surfaces étagées (`--surface-0..4`), pas de noir pur, contrastes vérifiés — continuer, ne pas dégrader. |
-| **Micro-interactions fonctionnelles** (feedback d'état, pas de la déco) | Confirmation de paiement (broadcast `payment_complete` 8 s), bump KDS, save réussi en BO. Durées/easing via `motion.css` + `prefers-reduced-motion`. |
-| **Variable fonts / hiérarchie typographique forte** | La hiérarchie BO ivoire se joue en poids/taille plutôt qu'en couleur. Rester dans l'échelle `typography.css` ; si un axe variable est ajouté un jour, c'est une décision cascade-tokens (escalate). |
+| **Micro-interactions fonctionnelles** (feedback d'état, pas de la déco) | Confirmation de paiement (broadcast `payment_complete`, maintenu le temps de `PAYMENT_COMPLETE_DISPLAY_MS` — constante dans `useCartBroadcast.ts`), bump KDS, save réussi en BO. Durées/easing via `motion.css` + `prefers-reduced-motion`. |
+| **Variable fonts / hiérarchie typographique forte** | La hiérarchie du back-office se joue en poids/taille plutôt qu'en couleur. Rester dans l'échelle `typography.css` ; si un axe variable est ajouté un jour, c'est une décision cascade-tokens (escalate). |
 | **États vides expressifs** | `EmptyState` avec action partout — un écran vide doit dire quoi faire ensuite. |
 
 ## ⚖️ À doser
 
 | Trend | Verdict Breakery |
 |-------|-----------------|
-| **Liquid glass / glassmorphism** (translucidité, profondeur, reflets) | Autorisé uniquement en surfaces d'overlay (modal backdrop, sheet) côté POS/Customer Display, et subtil. Jamais sur du texte dense, jamais en BO ivoire (illisible sur crème), jamais sur KDS. |
+| **Liquid glass / glassmorphism** (translucidité, profondeur, reflets) | Autorisé uniquement en surfaces d'overlay (modal backdrop, sheet) côté POS/Customer Display, et subtil. Jamais sur du texte dense, jamais dans le thème clair du back-office, jamais sur KDS. |
 | **Profondeur / élévation** | Utiliser `elevation.css` existant ; l'ombre code la hiérarchie (overlay > carte > fond), pas l'ambiance. |
 | **Role-based / adaptive UI** (l'UI s'adapte au rôle) | Déjà présent sous forme de gates de permissions (sidebar, routes). Aller plus loin (réordonner l'UI par usage) = complexité de test ; seulement sur demande explicite. |
-| **Imagerie produit généreuse** | Oui sur Tablet self-service et Customer Display ; non sur POS caissier (la vitesse prime sur la photo). |
+| **Imagerie produit généreuse** | Oui sur Customer Display, qui est le brand moment. Non sur POS caissier (la vitesse prime sur la photo) — et non par défaut sur la tablette serveur, où la vitesse prime aussi : les photos de plats y sont un item de backlog du module, pas un acquis à mettre en scène. |
 
 ## ❌ Gadgets à éviter ici
 
@@ -32,7 +37,7 @@ Chaque trend reçoit un verdict : ✅ **applicable** · ⚖️ **à doser** · �
 | **AI-chat plaqué dans le produit** (« ask your dashboard ») | Hors scope ERP interne ; le personnel veut des chiffres fiables, pas une conversation. |
 | **3D / spatial / parallax** | Coût perf sur tablettes modestes, zéro valeur pour encaisser ou lire un report. |
 | **Scroll-telling / animations d'entrée séquencées** | Outil marketing, pas outil métier. Un report doit être lisible instantanément. |
-| **Néo-brutalisme / maximalisme typographique** | Contredit l'identité luxe-dark/ivoire éditoriale de la marque. |
+| **Néo-brutalisme / maximalisme typographique** | Contredit l'identité éditoriale de la marque — luxe-dark côté POS, « Instrument » sobre côté back-office. |
 | **Carrousels autoplay** | Sur Customer Display pendant l'encaissement = anxiogène ; ailleurs = contenu caché. |
 
 ## Rappels POS/KDS issus des pratiques métier (2026)

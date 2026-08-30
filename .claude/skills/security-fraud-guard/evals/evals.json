@@ -1,18 +1,21 @@
 {
   "skill_name": "security-fraud-guard",
+  "_note": "Assertions révisées le 2026-08-31. RÈGLE : une assertion porte sur une FAMILLE de RPC (refund_order_rpc, close_shift, approve_expense…), jamais sur un numéro de version — les familles money-path bumpent plusieurs fois par mois et une assertion versionnée finit par NOTER JUSTE une réponse fausse. Même règle pour les compteurs (permissions, rôles) et pour tout comportement modifiable à chaud (matrice RBAC depuis l'ADR-031/032).",
   "evals": [
     {
       "id": 1,
       "prompt": "Audite la sécurité des refunds et voids au POS. Est-ce qu'un caissier pourrait rembourser une commande payée et empocher le cash sans laisser de trace ? Identifie les failles concrètes et dis-moi quels contrôles manquent.",
-      "expected_output": "An audit of the money/anti-fraud dimension naming real RPC/EF names, the body-PIN debt, manager-PIN second factor, audit actor_id, idempotency replay, and cash reconciliation.",
+      "expected_output": "An audit of the money/anti-fraud dimension naming the real RPC FAMILIES and edge functions, the manager-PIN second factor and its header location, the audit actor_id question, idempotency replay, and cash reconciliation. Version numbers, if any, are presented as dated facts resolved from the migrations or the call-site — never as living pointers.",
       "files": [],
       "assertions": [
-        "Names the real refund RPC refund_order_rpc_v2 (not a guessed name)",
-        "Identifies the PIN-in-body debt on void-order and/or cancel-item edge functions",
+        "Names the real refund RPC family refund_order_rpc (not a guessed name), and does NOT pin a version number as the living pointer",
+        "Resolves the live version from the highest-numbered migration and/or the refund-order edge function call-site rather than asserting one from memory",
+        "Identifies the PIN-location control: the manager PIN must travel in the x-manager-pin HTTP header, never in the JSON body, and flags create_manual_je which still takes it as a SQL argument",
         "States that reversals require a manager-PIN second factor beyond the cashier permission",
+        "Notes that the EF is not the security boundary: the underlying reversal RPC must be REVOKEd from authenticated, and that this REVOKE has regressed on past version bumps",
         "Checks whether the audit actor_id records the approving manager vs the cashier",
-        "Mentions cash reconciliation / Z-report (close_shift / z_reports) as the cash-fraud control",
-        "Cites at least one concrete real file path (e.g. supabase/functions/refund-order or void-order)"
+        "Mentions cash reconciliation / Z-report (close_shift family → z_reports) as the cash-fraud control",
+        "Cites at least one concrete real file path (e.g. supabase/functions/refund-order or supabase/functions/void-order)"
       ]
     },
     {
@@ -26,35 +29,54 @@
         "Requires a manager PIN sourced from the x-manager-pin HTTP header (not the JSON body)",
         "Includes the full REVOKE pair: REVOKE FROM PUBLIC + REVOKE FROM anon + ALTER DEFAULT PRIVILEGES",
         "Writes an audit_logs row with canonical cols (actor_id/action/entity_type/entity_id/metadata)",
+        "Resolves actor_id to a user_profiles.id rather than passing auth.uid() straight in",
         "Accepts a p_idempotency_key UUID for retry safety",
         "Seeds a new permission code and adds it to the PermissionCode union in packages/supabase/src/rls/permissions.ts",
-        "Provides a pgTAP test covering happy path + permission-denied + REVOKE-from-anon"
+        "Provides a pgTAP test covering happy path + permission-denied + REVOKE-from-anon, without assuming a seeded role_permissions matrix (pins SUPER_ADMIN, sets in-transaction overrides, or seeds its own grant)"
       ]
     },
     {
       "id": 3,
       "prompt": "Vérifie qu'aucune donnée client (téléphone, email) ne peut fuiter — via les vues, les materialized views, ou vers le rôle anon. Liste les surfaces à risque et comment les fermer.",
-      "expected_output": "An audit of the data-exposure dimension with anon privilege probes, security_invoker checks, MV caveat, S20 sweep reference, and PII column-grant hardening.",
+      "expected_output": "An audit of the data-exposure dimension with anon privilege probes, security_invoker checks, MV caveat, the anon/PUBLIC hardening sweep reference, and PII column-grant hardening.",
       "files": [],
       "assertions": [
         "Uses a has_table_privilege('anon', ...) probe to verify anon cannot SELECT customers",
         "Checks that views exposing PII use security_invoker=on (e.g. view_b2b_invoices / view_ar_aging)",
         "Flags that materialized views (mv_*) do NOT enforce RLS and must be access-controlled separately",
-        "References the S20 anon/PUBLIC hardening sweep (migrations 20260524000020..031)",
+        "Explains that REVOKE FROM anon alone is insufficient because anon inherits EXECUTE/SELECT through PUBLIC",
+        "References the anon/PUBLIC hardening sweep (migrations 20260524000020..031) as the historical baseline to check for regression",
         "Mentions the customer PII column-grant hardening (write-protected loyalty/spend columns)"
       ]
     },
     {
       "id": 4,
       "prompt": "Vérifie l'intégrité du RBAC : est-ce qu'un rôle bas comme CASHIER détient une permission sensible qu'il ne devrait pas (refund, accounting, gestion utilisateurs, RBAC) ? Y a-t-il des overrides de permission GRANT non justifiés qui contourneraient la séparation des tâches ?",
-      "expected_output": "An audit of the identity/access dimension with role_permissions and user_permission_overrides queries, 4-tier precedence, SOD reference, and least-privilege recommendation.",
+      "expected_output": "An audit of the identity/access dimension that reads the LIVE matrix (not the seed migrations), queries role_permissions and user_permission_overrides, applies 4-tier precedence, references SOD with its SUPER_ADMIN exception, and recommends least privilege.",
       "files": [],
       "assertions": [
         "Queries role_permissions (joined to roles/permissions) to find low-role sensitive grants",
         "Queries user_permission_overrides for standing GRANT overrides that bypass SOD",
-        "References has_permission 4-tier precedence (override DENY > override GRANT > role > false)",
-        "Mentions separation of duties, citing the expense_approvals SOD constraint as the pattern",
+        "States has_permission 4-tier precedence in the correct order: override DENY > role_permissions > override GRANT > false (the role grant comes BEFORE the user GRANT override, not after)",
+        "Treats role_permissions as live editable DATA (ADR-031) rather than a frozen seed: does not infer the matrix from seed migrations, and looks for the corresponding audit row before calling a deviation a regression",
+        "Does not assert a fixed number of roles, and accounts for roles created from the screen (ADR-032, is_system = false)",
+        "Mentions separation of duties, citing the expense_approvals UNIQUE(expense_id, approver_user_id) constraint as the pattern",
+        "States the SOD self-approval rule correctly, including that SUPER_ADMIN is allowed to self-approve an expense and that the bypass is traced by the expense.self_approved audit action",
         "Recommends least-privilege (grant to the highest role that needs it, re-justify CASHIER grants)"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "La page Audit Log du back-office : est-ce que je peux lui faire confiance pour une enquête interne ? Qui peut la lire, et est-ce qu'elle montre tout ce que audit_logs contient ?",
+      "expected_output": "An audit-completeness answer that separates 'the row is written' from 'the row is returned', names the read path and its actual gate, and treats the known read-completeness gap as a dated, unexplained symptom to re-prove rather than a documented behaviour.",
+      "files": [],
+      "assertions": [
+        "Names the read path: the get_audit_logs RPC family consumed by apps/backoffice/src/pages/reports/AuditPage.tsx (family, not a pinned version number)",
+        "States that the read is governed by the audit_logs RLS policy admin_read (ADMIN / SUPER_ADMIN), and that the RPC itself carries no has_permission gate",
+        "Distinguishes audit-log WRITE completeness from READ completeness, and proposes comparing a direct count on audit_logs against what the RPC returns for the same filter",
+        "Notes that audit_logs.payload (the diff column) is not served by the read RPC — only metadata is displayed",
+        "Flags the actor_id integrity check (actor_id must be a user_profiles.id, not auth.uid()) as affecting who appears in the trail",
+        "Does not assert an unverified filtering mechanism as fact: any claim that actor-less rows are hidden is presented as a dated observation to re-prove against the live function body"
       ]
     }
   ]

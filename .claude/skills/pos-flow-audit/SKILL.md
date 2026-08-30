@@ -64,6 +64,13 @@ promptSignals:
 > elle ne s'implémente pas.
 > **Convention** : aucune version d'objet DB (`_vN`) dans ce fichier — on cite la **famille**.
 > La version vivante se vérifie dans `supabase/migrations/` et au call-site, jamais ici.
+> **Convention d'ancrage** : aucun `fichier:ligne` ici — un numéro de ligne pourrit au premier
+> commit. On ancre par nom stable : nom de hook, nom de fichier, famille de RPC, titre de section.
+>
+> **Ancrages factuels re-vérifiés le 2026-08-31** (hooks, familles de RPC, noms de canaux
+> realtime, état des chantiers cités). Tout ce qui suit a été confronté au code ce jour-là ;
+> au-delà, **le code gagne** : si ce que tu lis dans `apps/pos` contredit cette fiche, la fiche
+> est périmée, pas le codebase — note la dérive et signale-la.
 
 Expert on the complete **order-to-payment journey** across every device and actor of a counter+table-service bakery-café. Two jobs, in priority order:
 
@@ -81,22 +88,26 @@ Expert on the complete **order-to-payment journey** across every device and acto
 RPC versions bump every session, so the moment you're about to *cite* a version or quote a behaviour, confirm it in the code — a one-line grep, inline, as you go:
 
 ```
-Grep  \.rpc\(['"](complete_order|pay_existing_order|create_tablet_order|evaluate_promotions|close_shift)
+Grep  \.rpc\(['"](complete_order|pay_existing_order|fire_counter_order|create_tablet_order|pickup_tablet_order|evaluate_promotions|hold_fired_order|reopen_held_order|discard_held_order|close_shift)
 ```
 
 That's the whole rule: verify the specific thing you're about to assert, the instant you assert it. Do **not** open with a "verify every RPC version" pass or rebuild the table below before looking at feature code — that burns budget and narrows your search before you've seen anything. Likewise, a "what's already correct (verified)" section is optional polish, not a required deliverable; one or two lines at most. The reference below is a convenience map to know where to look — confirm a row only when a finding depends on it.
 
-Reference map (V3 dev `ikcyvlovptebroadgtvd`, 2026-05-31) — convenience only, re-confirm per finding (versions omises volontairement — vérifier `CLAUDE.md` / `supabase/migrations/`, bump quasi chaque session) :
+Reference map (V3 dev `ikcyvlovptebroadgtvd`, ancrages re-vérifiés le 2026-08-31) — convenience only, re-confirm per finding. **Familles seulement** : aucune version ici, elles bumpent quasi chaque session — la vivante se lit dans `supabase/migrations/` (numéro NAME-block le plus haut) **et** au call-site.
 
-| RPC / EF | Caller (file:line) | Role |
+| Famille RPC / EF | Caller (hook / module — ancre stable) | Role |
 |---|---|---|
-| `complete_order_with_payment` | EF `supabase/functions/process-payment/index.ts:149` (called by `useCheckout.ts:124`) | New cart → order + items + payments + sale JE, atomic. Decrements `display_stock` AND `products.current_stock` (documented double-deduction). |
-| `pay_existing_order` | `apps/pos/src/features/payment/hooks/useCheckout.ts:93` | Pay off an already-created (tablet) order. Multi-tender (S11). |
-| `create_tablet_order` | `apps/pos/src/features/tablet/hooks/useCreateTabletOrder.ts:19` | Waiter submits a table order. Idempotent via `p_client_uuid` (S25). |
-| `pickup_tablet_order` | `apps/pos/src/features/inbox/hooks/usePickupTabletOrder.ts:43` | POS claims a tablet order from the inbox. |
-| `evaluate_promotions` | `apps/pos/src/features/promotions/hooks/useEvaluatePromotions.ts:166` | Returns applied promos + free items. Pure-TS fallback in `packages/domain/src/promotions`. |
-| `mark_item_served` | `apps/pos/src/features/kds/hooks/useMarkItemServed.ts:14` | KDS bumps an item ready/served (no version suffix). |
-| `close_shift` | `apps/pos/src/features/shift/hooks/useCloseShift.ts:51` | Closes the session, inserts a `z_reports` draft, fires non-blocking PDF EF (S29). |
+| `complete_order_with_payment` | EF `supabase/functions/process-payment`, elle-même appelée par `useCheckout` (branche panier neuf). **Le POS n'appelle jamais cette RPC directement.** | New cart → order + items + payments + sale JE, atomic. Sale stock via l'unique helper de stock de vente (famille `_record_sale_stock`) : un produit `is_display_item` décrémente `products.current_stock` **et** `display_stock`. |
+| `pay_existing_order` | `useCheckout`, branche `pickedUpOrderId` | Pays an order **already persisted** — trois provenances : ramassage tablette (`usePickupTabletOrder`), commande comptoir *fired*, commande *held* réouverte (`useReopenHeldOrder`). Multi-tender. |
+| `fire_counter_order` | `useFireToStations` ; aussi la branche « append » de `useCheckout` (lignes ajoutées après le dernier fire) | Envoi comptoir : **persiste la commande et ses lignes côté serveur AVANT d'imprimer** les tickets de station (ADR-022). C'est le vrai aller-retour DB de l'envoi en cuisine. |
+| `create_tablet_order` | `useCreateTabletOrder` | Waiter submits a table order. Idempotent via `p_client_uuid`, clés dans `tablet_order_idempotency_keys`. |
+| `pickup_tablet_order` | `usePickupTabletOrder` | POS claims a tablet order from the inbox (pas de suffixe de version). |
+| `evaluate_promotions` | `useEvaluatePromotions` | Returns applied promos + free items. Pure-TS fallback in `packages/domain/src/promotions`. |
+| `mark_item_served` | `useMarkItemServed` | KDS bumps an item ready/served (pas de suffixe de version). |
+| `hold_fired_order` · `reopen_held_order` · `discard_held_order` | `useHoldFiredOrder` (dans `features/cart/hooks`), `useReopenHeldOrder` et `useDiscardHeldOrder` (dans `features/heldOrders/hooks`) | Parking **serveur** d'une commande déjà envoyée en cuisine. La liste se lit sur la table `orders` via `useHeldOrdersQuery`. |
+| `close_shift` | `useCloseShift` (UI : `CloseShiftModal`) | Closes the session, inserts a `z_reports` draft, fires non-blocking PDF EF. |
+
+**Famille morte à ne pas ressusciter** : `hold_order` / `restore_held_order` (la voie « brouillon `HELD-<uuid>` sur panier neuf ») est supprimée par **ADR-022 déc. 4** — un objet portant un numéro de commande sans en être une polluait rapports, journal et rapprochement de caisse. Il n'en subsiste que des mentions en commentaire et dans d'anciennes migrations. Une commande n'existe qu'à partir de son envoi en cuisine ou de son paiement.
 
 If the version you find ≠ the table above, **trust the code** and note the drift — the skill is out of date, not the codebase.
 
@@ -108,18 +119,22 @@ COUNTER PATH (takeaway, speed-first)            TABLE PATH (café, coordination-
 POS terminal: build cart                         Waiter tablet: build cart at table
  │  add items + modifiers (cartStore)             │  create_tablet_order (idempotent)
  │  evaluate_promotions                             │        │
- │  [optional] hold/recall (useHoldOrder)          ▼        ▼
- │        │                              tablet:new_orders ──► POS inbox (usePickupTabletOrder)
+ │        │                                        ▼        ▼
+ │        │                    pending-tablet-orders-… ──► POS inbox (usePickupTabletOrder)
  │        ▼                                                         │
- │   send to kitchen ──► kds:{station} ──► KDS screen               │
- │   (useSendToKitchen, client-lock v1)        │ mark_item_served   │
- │                                             ▼                    │
- │                                    order ready ──► display       │
- ▼                                                                  ▼
+ │   fire to stations ──► kds-{station}-… ──► KDS screen            │
+ │   (useFireToStations → fire_counter_order :        │ mark_item_served
+ │    persiste EN DB puis imprime les tickets)        ▼             │
+ │        │                           order ready ──► display       │
+ │        ▼                                                         │
+ │   [optional] hold serveur (hold_fired_order)                     │
+ │        │  reopen_held_order / discard_held_order                 │
+ ▼        ▼                                                         ▼
 PAYMENT (useCheckout)                                    PAYMENT (pickup → pay_existing_order)
- │  process-payment EF → complete_order_with_payment
+ │  panier neuf : process-payment EF → complete_order_with_payment
+ │  commande déjà persistée (fired / held rouverte / tablette) : pay_existing_order
  │  split tender / loyalty redeem / discount (manager PIN)
- │  display:{station} ◄── running total + "paid" broadcast (LAN realtime)
+ │  display-{screenId}-… ◄── running total + "paid" broadcast (LAN realtime)
  ▼
 receipt print + cash drawer + customer display confirm
  │
@@ -140,7 +155,18 @@ SHIFT CLOSE (close_shift) → z_report draft → signed in BackOffice
 
 ### Coordination backbone (realtime)
 
-Realtime is where multi-device flows quietly break. Channels: `orders:*`, `display:{station}`, `kds:{station}`, `tablet:new_orders`. **Channel names must be unique per mount** — StrictMode double-mounts collide silently (see `features/kds/hooks/useKdsRealtime.ts`). Counter↔display uses LAN realtime (`features/lan`). A gap here shows up as "the kitchen didn't see the order" or "the display froze on the last customer" — always reproduce across two real devices, not one tab.
+Realtime is where multi-device flows quietly break. **Channel names must be unique per mount** — StrictMode double-mounts collide silently (canon : `features/kds/hooks/useKdsRealtime.ts`, plus le test `apps/pos/src/__tests__/realtime-channel-uniqueness.test.tsx`). Le motif vivant est donc *préfixe métier + discriminant unique*, jamais un nom nu :
+
+| Surface | Hook | Forme du nom |
+|---|---|---|
+| KDS | `useKdsRealtime` | `kds-{station}-{uuid}` |
+| Customer display | `useDisplayRealtime` | `display-{screenId}-{uuid}` |
+| Inbox tablette | `usePendingTabletOrders` | `pending-tablet-orders-{uuid}` |
+| Held orders | `useHeldOrdersRealtime` | `held-orders-{uuid}` |
+| Occupation des tables | `useTableOccupancy` | `table_occupancy_realtime-{uuid}` |
+| Statut commande tablette | `useTabletOrderStatusListener` | `tablet-order-status-{uuid}` |
+
+Ne cite pas un nom de canal de mémoire : lis la constante `channelName` du hook. Counter↔display uses LAN realtime (`features/lan`). A gap here shows up as "the kitchen didn't see the order" or "the display froze on the last customer" — always reproduce across two real devices, not one tab.
 
 ## Discovery method — scan the flow, rank by impact
 
@@ -169,7 +195,7 @@ A careful reader catches the *visible* gaps. The findings that justify an audit 
 
 The recurring archetypes on a POS flow (each one was a real, missed bug in this codebase at least once — they generalize, so look for new instances, not just these):
 
-- **The action that lies.** A handler shows a success toast / advances the UI but never persists (`useSendToKitchen` markLocked-only — "sent to kitchen" but the KDS never sees it). Trace every "done!" signal back to a DB write or RPC call. If the success message isn't downstream of a real mutation, it lies.
+- **The action that lies.** A handler shows a success toast / advances the UI but never persists. Trace every "done!" signal back to a DB write or RPC call. If the success message isn't downstream of a real mutation, it lies. *(Cas historique, **corrigé** : l'envoi en cuisine était un verrouillage client sans écriture — « sent to kitchen » que le KDS ne voyait jamais. Le chemin vivant est `useFireToStations` → famille `fire_counter_order`, qui persiste avant d'imprimer. Ne re-signale pas ce bug-là : cherche de **nouvelles** instances de l'archétype.)*
 - **The forced/hardcoded value that should be dynamic.** A field slammed to a constant regardless of input (receipt `method: 'cash'` for every tender; tax `0.10` hardcoded in 3 files while the server rate is dynamic). Grep for literal payment methods, tax rates, currency/locale, station names, role names, limits (`MAX_*`) — each is a candidate divergence from the source of truth.
 - **The client recompute that diverges from the server.** UI recalculates a total/tax/discount instead of trusting the server result, and drifts (receipt total recomputed ignoring promotions/discounts). Anywhere the client does math the server already did, the two can disagree — flag it and prefer the server value as source of truth.
 - **The unconditional side-effect.** A drawer opens / a print fires / a sync runs on *every* path when it should be conditional (cash drawer opens for QRIS/card payments). Look at effects that run on mount or on success with no guard.
@@ -181,8 +207,8 @@ The recurring archetypes on a POS flow (each one was a real, missed bug in this 
 Run this sweep stage by stage alongside the four discovery questions. It is the single highest-value thing this skill does — a plain read will not surface these, and they outrank most UX polish. When you find one, it's almost always P0/P1.
 
 **Where to spend the deep-read budget (so the sweep stays thorough without reading the whole app).** These bugs cluster in a handful of file types — open *these* function bodies first, and you'll find most silent failures fast:
-- **Success/`onSuccess` handlers and effects** (`SuccessModal`, payment/checkout hooks, `useSendToKitchen`) — where toasts/prints/drawers fire and values get built for the receipt. Home of "the action that lies", "forced value", "unconditional side-effect".
-- **The mutating RPC/EF bodies** the flow calls (`complete_order_*`, `pay_existing_order_*`, `create_tablet_order_*`, `close_shift_*`, `process-payment`) — read the SQL/loop, not just the signature. Home of "silent skip" and tax/total logic.
+- **Success/`onSuccess` handlers and effects** (`SuccessModal`, `useCheckout`, `useFireToStations`) — where toasts/prints/drawers fire and values get built for the receipt. Home of "the action that lies", "forced value", "unconditional side-effect".
+- **The mutating RPC/EF bodies** the flow calls (familles `complete_order_with_payment`, `pay_existing_order`, `fire_counter_order`, `create_tablet_order`, `close_shift`, et l'EF `process-payment`) — read the SQL/loop of the **live** version, not just the signature, and not the original migration file (`pg_get_functiondef` fait foi). Home of "silent skip" and tax/total logic.
 - **Realtime hooks** (`use*Realtime`) — check reconnect handling. Home of "lost realtime event".
 - **Store initial state + `partialize`/persistence** (`cartStore`, `paymentStore`) — defaults and what survives a reload. Home of "wrong default" and dropped-on-reload state.
 - **Client total/tax/discount math** (`packages/domain/src/payment`, `calculateTotals`, any hardcoded rate/method/`MAX_*`) — home of "client recompute diverges" and "hardcoded-should-be-dynamic".
@@ -197,7 +223,7 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 ### A. Cart & order entry (both paths)
 - [ ] **Tap count to a typical order** — from product grid to "send"/"pay", count interactions for the 3 most common bakery items. Modifiers, quantity, notes — each extra screen on the counter path is a P0 candidate.
 - [ ] **Item search/findability** — grid vs search vs categories vs `combos`. Can a cashier find a rarely-sold item fast? Are favorites/most-sold surfaced?
-- [ ] **Hold / recall (`useHoldOrder`, `useRestoreHeldOrder`)** — counter parking for "I'll pay after I grab a coffee". Is it discoverable? Does it survive a refresh? Does it block the terminal? Is it shared across terminals?
+- [ ] **Hold / recall — serveur, LIVRÉ (ADR-022 déc. 4) : vérifier la non-régression, pas le manque.** Le parking passe par l'envoi en cuisine puis `hold_fired_order` ; la reprise par `reopen_held_order`, l'abandon par `discard_held_order`, la liste par `useHeldOrdersQuery` sur `orders`. « Survit à un refresh ? » et « partagé entre terminaux ? » sont **résolus par construction** — l'état vit en DB, pas dans le store. Ce qui reste auditable : la découvrabilité du geste, le comportement quand la commande n'a encore rien envoyé en cuisine, et **ce que `reopenOrder` remet à zéro** dans le `cartStore` (`appliedPromotions`, `dismissedPromotionIds`, `attachedCustomer`) : le badge client est re-fetché en best-effort par `useReopenHeldOrder`, mais **vérifie toi-même si les promotions sont ré-évaluées** après réouverture ou si le client paie sans elles — c'est un candidat de finding, pas un fait établi ici.
 - [ ] **Order type switch** — dine-in ↔ takeaway mid-order: does it recompute tax/price correctly without restarting the cart? Is the default right for a takeaway-dominant counter?
 - [ ] **Tablet table binding (`features/tables`, `floor-plan`)** — is the table picked before items? Can a waiter move an order to another table? Merge/split tables?
 
@@ -207,7 +233,7 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 - [ ] **Manager-PIN discounts (`features/discounts`)** — friction vs control: how many manager interruptions per shift? Is there a per-cashier discount ceiling instead of a PIN every time?
 
 ### C. Kitchen ↔ floor coordination (table path)
-- [ ] **Send latency & confirmation** — when an item is sent, does the sender get a confirmation the KDS received it? `useSendToKitchen` is client-lock v1 — is there a real DB round-trip yet, or can a sent item silently never reach the kitchen?
+- [ ] **Send latency & confirmation — l'aller-retour DB EXISTE (ADR-022), auditer la non-régression.** `useFireToStations` appelle la famille `fire_counter_order`, qui **persiste la commande et ses lignes avant** de lancer l'impression : un échec d'impression ne laisse plus des lignes « non envoyées ». Preuve : `supabase/tests/adr022_paid_order_reaches_kds.test.sql` (+ `counter_fire.test.sql`). Ne re-signale pas « envoi client-only » comme un gap ouvert. Ce qui reste à vérifier : le retour d'échec au caissier quand la persistance passe mais que le ticket de station ne sort pas, et le comportement en mode hors-ligne (`isOfflineMode` → `offlineOutbox`).
 - [ ] **Routing correctness** — items inherit `dispatch_station` from category; a `'none'`/NULL station reaches no KDS screen. Are all sellable products routed to a real station?
 - [ ] **Course/timing** — pastries out now, hot drinks with dessert: can items be timed/coursed, or do they all fire at once?
 - [ ] **Re-fire / recall** — wrong or forgotten item: can the kitchen recall a bumped item (`useKdsBumpItem`) and the floor see it?
@@ -227,7 +253,7 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 
 ### F. Post-payment & shift
 - [ ] **Refund / void path (`order-history`)** — how many steps, manager-gated, and does it reach the kitchen/inventory correctly?
-- [ ] **Shift close clarity (`close_shift`)** — does the cashier see expected vs counted cash and the variance reason before committing? Is a reason *required* above a variance threshold? Blind count (expected hidden) to deter fraud? Is the modal actually wired in prod?
+- [ ] **Shift close clarity (`close_shift`) — LIVRÉ et durci : vérifier la non-régression, pas le manque.** Sont en place et se testent comme des acquis : note de variance **exigée par le serveur** au-delà du seuil (erreur `variance_note_required`), **PIN manager** requis sur gros écart (seuils dans `business_config`, badge `VarianceWarningBadge`), **comptage à l'aveugle** (le caissier saisit le compté sans voir l'attendu ; attendu et écart n'apparaissent qu'ensuite), grille de **dénominations** et comptage **three-way** cash / QRIS / carte (`DenominationGrid`), bucket **ewallet/QRIS** distinct, `closed_by` écrit avec un **id de profil** (jamais `auth.uid()`), et la modale `CloseShiftModal` est bien câblée (menu latéral + page POS). Ne re-signale aucun de ces points comme un gap ouvert. Reste auditable : la lisibilité de l'écart une fois révélé. En revanche le PIN manager passé en **argument de RPC** n'est PAS un défaut (arbitrage du 2026-08-31) — voir la règle de transport ci-dessous.
 - [ ] **Z-report handoff** — draft → manager-signed in BackOffice. Is the manager-PIN on signing actually validated, and is author attribution (`closed_by`/`signed_by`) the real profile id?
 - [ ] **Mid-shift visibility** — `useLiveSessions`: can a manager see live sales/cash without closing?
 
@@ -235,14 +261,14 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 
 A feature proposal that touches a write path MUST respect these or it's not shippable. Cross-reference CLAUDE.md "Critical patterns".
 
-- [ ] **Order writes go through RPCs, never raw inserts.** `complete_order_with_payment`, `pay_existing_order`, `create_tablet_order`, `pickup_tablet_order` handle JE triggers, loyalty, promotions, table state, and the `display_stock`/`products.current_stock` double-deduction atomically. A new write path must reuse or extend these, not bypass them.
+- [ ] **Order writes go through RPCs, never raw inserts.** Les familles `complete_order_with_payment` (via l'EF `process-payment` — le POS ne l'appelle jamais en direct), `pay_existing_order`, `fire_counter_order`, `create_tablet_order`, `pickup_tablet_order`, `hold_fired_order` / `reopen_held_order` / `discard_held_order` gèrent atomiquement les triggers JE, la fidélité, les promotions, l'état des tables et la déduction de stock (via l'unique helper de stock de vente (famille `_record_sale_stock`)). A new write path must reuse or extend these, not bypass them.
 - [ ] **Idempotency, 2 flavors (S25).** Retry-safe HTTP via `x-idempotency-key` header (client `useRef(crypto.randomUUID())`), propagated to the RPC; OR business-semantic via a required RPC arg (`p_client_uuid`) keyed in a dedicated idempotency table (`tablet_order_idempotency_keys`). Any new "tap = money/order" action needs one. A double-tap that creates two orders is a P0 bug, not a polish item.
-- [ ] **PIN / secrets in HTTP header, never body JSON (S25).** Manager PIN → `x-manager-pin` header. Bodies get logged by PostgREST/pgaudit/proxies. Refund/void/discount overrides all follow this. (`auth-verify-pin` still takes the PIN in the body — candidate finding.)
+- [ ] **PIN / secrets — le véhicule dépend de la cible (arbitrage 2026-08-31).** Vers une **Edge Function**, le PIN voyage en **en-tête** (`x-manager-pin`) et jamais dans le body : les bodies d'EF sont loggés. Refund, void et les overrides de remise suivent cette voie. Vers une **RPC Postgres** appelée par PostgREST, le PIN est un **argument** (`p_manager_pin`) : c'est le seul véhicule que la fonction peut réellement valider côté serveur, et c'est ce que font `close_shift` et `approve_expense`. La question à poser en audit n'est donc pas « header ou argument ? » mais **« la cible vérifie-t-elle vraiment le PIN, et avec verrouillage ? »** — un PIN transporté proprement mais jamais vérifié est le vrai défaut. Précédent : le PIN d'approbation de dépense a été déplacé du header vers l'argument le 2026-06-01 précisément parce que la RPC ne lisait jamais l'en-tête. (`auth-verify-pin` prend le PIN dans le body d'une EF — candidate finding, celui-là reste valable.)
 - [ ] **RPC versioning monotonic.** Never edit a published `_vN`. Create `_vN+1` + `DROP FUNCTION ... vN(<old args>)` in the same migration, then bump every caller (Grep the name across `apps/pos`). Regen types.
 - [ ] **REVOKE pair S25 on every new RPC** (FROM PUBLIC + FROM anon + ALTER DEFAULT PRIVILEGES). `REVOKE FROM anon` alone is insufficient — anon inherits via PUBLIC.
 - [ ] **Realtime channel uniqueness per mount.** New realtime feature → unique channel name per mount or StrictMode double-mount collides silently. Reproduce across two devices.
 - [ ] **PIN-auth fetch wrapper.** POS uses a custom fetch wrapper injecting the PIN JWT (`setSupabaseAccessToken`). Never bypass with raw `Authorization` headers or `auth.setSession`.
-- [ ] **Tax/price snapshot at order time.** `complete_order_*` snapshots tax rate (NON-PKP: PB1 10% output). Don't recompute historical orders at current rate.
+- [ ] **Tax/price snapshot at order time.** La famille `complete_order_with_payment` fige le taux de taxe à la commande (NON-PKP : PB1 10 % en sortie). Don't recompute historical orders at current rate.
 - [ ] **audit_logs row per mutation** (canonical cols `actor_id / action / entity_type / entity_id / metadata`). Silent writes = no traceability.
 
 ## How to write a feature proposal
@@ -287,8 +313,15 @@ Domain (pure TS — business logic, IO-free, unit-testable)
   packages/domain/src/{kitchen,tables,loyalty}/
 
 Write paths
-  supabase/functions/process-payment/index.ts           # → complete_order_with_payment
+  supabase/functions/process-payment/index.ts           # → famille complete_order_with_payment
   supabase/migrations/*order*.sql / *payment*.sql / *shift*.sql / *tablet*.sql
+  # le glob *order* attrape aussi fire_counter_order, hold_fired_order,
+  # reopen_held_order, discard_held_order — prendre le numéro le PLUS HAUT.
+
+Preuves pgTAP existantes (à lire avant de déclarer un gap ouvert sur ces chemins)
+  supabase/tests/adr022_paid_order_reaches_kds.test.sql   # l'envoi comptoir atteint bien le KDS
+  supabase/tests/counter_fire.test.sql
+  supabase/tests/*held*.test.sql + supabase/tests/*hold*.test.sql   # parking serveur
 
 Patterns canon
   CLAUDE.md "Critical patterns" (the live truth)
