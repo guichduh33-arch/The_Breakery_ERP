@@ -52,6 +52,13 @@ promptSignals:
 > `cron.job`, `information_schema`) et sur la migration au numéro le plus haut. Après cette
 > date, la base fait foi, pas ce fichier.
 >
+> **Ce fichier dépasse volontairement le plafond de 500 lignes** (arbitrage Mamat du
+> 2026-08-31). Ce qui déborde est le bandeau ADR ci-dessous, et il doit rester **inline** :
+> c'est lui qui empêche de re-proposer la péremption FIFO (close par ADR-004) ou de
+> reconstruire le stock par section (supprimé par ADR-027). Derrière un lien de
+> `references/`, il ne remplirait plus ce rôle. Ne pas découper ce fichier pour
+> « rentrer dans les clous ».
+>
 > **ADR applicables — corps lus, pas leurs titres** (ADR-004/008/014 lus le 2026-07-28 ;
 > ADR-016 et ADR-027 lus le 2026-08-31). Les ADR priment sur tout le reste de ce fichier.
 > Un ADR ne se modifie jamais : un changement d'avis = nouvel ADR qui supersede.

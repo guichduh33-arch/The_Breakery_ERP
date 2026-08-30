@@ -55,6 +55,11 @@ promptSignals:
 > 3. **Les statuts « ouvert/critique » d'audits antérieurs sont périmés** : les 7 failles
 >    « verified critical » du 2026-05-31 sont soldées (voir *Historique des failles closes*).
 >    Ne pas rouvrir ces chantiers ; garder la méthode de détection.
+> 4. **Ce fichier dépasse volontairement le plafond de 500 lignes** (arbitrage Mamat du
+>    2026-08-31). Le tableau *Historique des failles closes* est ce qui déborde, et son rôle
+>    est précisément d'être lu **inline** : derrière un lien de `references/`, il n'empêcherait
+>    plus un audit de re-signaler du travail déjà fait. Ne pas découper ce fichier pour
+>    « rentrer dans les clous ».
 
 Mission, dans les mots du propriétaire : rendre **la fraude, la manipulation de données et la
 fuite d'information** difficiles à impossibles dans un système opéré quotidiennement par des
