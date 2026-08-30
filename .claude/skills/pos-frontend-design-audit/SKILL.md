@@ -3,8 +3,9 @@ name: pos-frontend-design-audit
 description: >-
   Auditeur du DESIGN FRONTEND (visuel, ergonomie tactile, hiérarchie, cohérence design-system,
   couverture d'états, densité, lisibilité à distance) du module POS de The Breakery (apps/pos/),
-  utilisé en production par deux profils — la CAISSE (desktop/Tauri, encaissement rapide, rush) et
-  les WAITER (tablette/mobile Capacitor, prise de commande en salle). Le skill AUDITE l'état actuel
+  utilisé en production par deux profils — la CAISSE (poste comptoir, web app Vite dans un
+  navigateur, encaissement rapide, rush) et les WAITER (tablette de salle, la même web app
+  empaquetée Capacitor Android, ADR-029). Le skill AUDITE l'état actuel
   du code (source de vérité — il est plus avancé que les maquettes), COMPARE chaque écran à l'état de
   l'art des leaders POS restaurant (Square for Restaurants, Toast, Lightspeed, TouchBistro, Clover,
   Revel, SumUp, Storyous), et PROPOSE des améliorations critiques, créatives et pragmatiques classées
@@ -54,7 +55,9 @@ promptSignals:
 
 # POS Frontend Design Audit — The Breakery (caisse + tablette serveur)
 
-Auditeur du **design frontend** du module POS : l'aspect visuel, l'ergonomie tactile, la hiérarchie de l'information, la cohérence du design-system, la couverture des états, et la vitesse de manipulation au doigt — pour deux profils aux contraintes opposées : la **CAISSE** (desktop, rush, encaissement < 1 min) et les **WAITER** (tablette/mobile, prise de commande debout en salle).
+Auditeur du **design frontend** du module POS : l'aspect visuel, l'ergonomie tactile, la hiérarchie de l'information, la cohérence du design-system, la couverture des états, et la vitesse de manipulation au doigt — pour deux profils aux contraintes opposées : la **CAISSE** (poste comptoir, rush, encaissement < 1 min) et les **WAITER** (tablette de salle, prise de commande debout).
+
+**Une seule base de code, deux empaquetages** : `apps/pos` est une **web app Vite**. La caisse la sert dans un navigateur — **il n'y a ni Tauri ni Electron dans le dépôt**. La tablette de salle sert la même app empaquetée **Capacitor Android** (ADR-029). Ne raisonne donc jamais en « app desktop native » : pas de fenêtre système, pas de menu OS. Le seul delta natif est côté WAITER (safe-areas, barre gestuelle Android, clavier tactile système).
 
 Trois missions, dans cet ordre :
 
@@ -68,12 +71,13 @@ Trois missions, dans cet ordre :
 
 ## Source de vérité & ce qu'on NE fait PAS
 
-- **Le code actuel est l'étalon.** L'intention du module se lit dans `docs/objectifs/POS.md` et dans les ADR applicables : elle éclaire le *pourquoi* d'un écran, elle ne le juge pas. **Ne jamais signaler « le code diverge de l'intention écrite » comme un défaut de design** — un écart d'intention est du **backlog**, pas une faute d'ergonomie, et il se remonte en Étape 6. Une fiche ne « gagne » jamais contre le code sur un **fait** ; le code ne gagne jamais contre une fiche sur une **intention**.
+- **Le code actuel est l'étalon — au sens fort.** Tout ce que ce skill transporte (la carte des écrans, les lignes « Comparaison Breakery » du benchmark, tes souvenirs d'une session précédente) est une **photo datée**. Une photo vieillit ; le code, lui, est vrai maintenant. **Un constat de design n'existe que si tu viens d'ouvrir le fichier qui le porte.** Les chemins bougent, les composants sont refactorés, supprimés, déplacés d'un dossier à l'autre — le relevé du 2026-08-31 a trouvé une quinzaine d'entrées fausses dans la carte précédente, dont des composants disparus et une grille dont le nombre de colonnes n'était plus figé. Un constat bâti sur une entrée de carte périmée est **faux**, et il entraîne un correctif sur un fichier mort. Quand la carte et le code divergent : **le code gagne**, tu audites ce que tu as lu, et tu **signales la dérive de la carte** en fin de rapport (elle sera recorrigée hors session, jamais par toi en cours d'audit).
+- **Le code ne gagne QUE sur les faits.** L'intention du module se lit dans `docs/objectifs/POS.md` et dans les ADR applicables : elle éclaire le *pourquoi* d'un écran, elle ne le juge pas. **Ne jamais signaler « le code diverge de l'intention écrite » comme un défaut de design** — un écart d'intention est du **backlog**, pas une faute d'ergonomie, et il se remonte en Étape 6. Une fiche ne « gagne » jamais contre le code sur un **fait** ; le code ne gagne jamais contre une fiche sur une **intention**.
 - **`CLAUDE.md` est la source de vérité** des patterns globaux ; **`docs/adr/`** porte les décisions qui font loi. **`breakery-ui-kit`** est la source de vérité des primitifs/tokens disponibles — consulte-le, ne ré-invente pas la liste.
 - **On n'audite pas la plomberie.** Si la commande n'atteint pas la cuisine, si une RPC est mal versionnée, si un double-tap crée deux commandes, si un canal realtime collisionne → **c'est `pos-flow-audit`**, pas ici. Ce skill juge **l'aspect et la manipulation**, pas la correction fonctionnelle. Frontière nette : *« la capacité n'existe pas / la donnée n'arrive pas »* = pos-flow-audit ; *« la capacité existe mais est visuellement/ergonomiquement mauvaise »* = ici.
 - **Cas hybride (rendu d'un mécanisme technique).** Beaucoup d'éléments mêlent les deux : une bannière de retry, un état « déjà payé », un indicateur offline. Règle : **juge le RENDU** (bannière persistante vs toast fugace, lisibilité, hiérarchie, taille) — c'est ton domaine — et **renvoie le COMPORTEMENT** (quand/pourquoi le retry se déclenche, l'idempotence) à `pos-flow-audit`. Dans le ticket, dis explicitement ce que tu juges (l'apparence) et ce que tu délègues (la logique).
 
-## Méthode — 5 étapes
+## Méthode — 6 étapes
 
 Adapte la profondeur à la demande : **audit complet multi-écrans** (tous les écrans clés) vs **audit d'un seul écran** (juste celui nommé). Dans les deux cas, suis ces étapes.
 
@@ -81,10 +85,24 @@ Adapte la profondeur à la demande : **audit complet multi-écrans** (tous les �
 Détermine quels écrans sont concernés et pour quel profil (CAISSE, WAITER, ou les deux). Si la demande est vague (« le design de la caisse »), couvre les écrans CAISSE clés. Si elle nomme un écran (« l'écran waiter », « la grille produits »), reste dessus.
 
 ### Étape 2 — Localiser et lire le code
-Utilise **`references/screen-map.md`** (carte vérifiée écran → fichier) pour aller droit aux composants, au lieu de tout re-explorer. Pour chaque écran du périmètre, **lis le composant en entier** (pas juste son nom) : le JSX, les classes Tailwind, les tailles de cibles, la grille, les états gérés, l'usage des tokens. Les fichiers les plus rentables à lire en premier sont listés dans la carte.
+Utilise **`references/screen-map.md`** — une **photo datée** écran → fichier — pour aller droit aux composants au lieu de tout re-explorer. Elle t'ouvre la bonne porte ; elle ne te dit pas ce qu'il y a derrière.
+
+Pour chaque écran du périmètre : **lis le composant en entier** (pas juste son nom) — le JSX, les classes Tailwind, les tailles de cibles, la grille, les états gérés, l'usage des tokens. Trois réflexes qui sauvent un audit d'une carte périmée :
+
+- **Un chemin qui n'existe pas n'est pas une erreur d'audit, c'est une dérive de carte** : retrouve le composant vivant (par son nom, par son import depuis le shell ou la route) et note la dérive pour le rapport.
+- **Suis les imports depuis la route.** Un conteneur (`PaymentTerminal`, `ProductGrid`, `TabletOrderPage`) délègue son rendu réel à des sous-composants ; juger le conteneur seul, c'est juger un fichier de câblage.
+- **Vérifie qu'un composant a un importeur avant de le juger.** Le dépôt contient des fichiers sans site d'appel (la carte en nomme deux, relevés le 2026-08-31) : un constat posé dessus produit un correctif mort-né, invisible à l'écran.
+
+Toute dimension, tout nombre de colonnes, toute hauteur cités dans la carte se **relisent dans le fichier** avant d'entrer dans un constat.
 
 ### Étape 3 — Évaluer avec la grille de critères
-Applique **`references/design-rubric.md`** : cibles tactiles, hiérarchie, contraste/lisibilité, densité, vitesse (nombre de taps), couverture d'états, cohérence design-system, responsive caisse vs waiter, ergonomie de rush. Attribue un **score de maturité (1-5)** par écran clé. **Ancre chaque constat dans un `fichier:ligne` que tu as réellement lu** — pas d'affirmation non vérifiée.
+Applique **`references/design-rubric.md`** : cibles tactiles, hiérarchie, contraste/lisibilité, densité, vitesse (nombre de taps), couverture d'états, cohérence design-system, responsive caisse vs waiter, ergonomie de rush. Attribue un **score de maturité (1-5)** par écran clé.
+
+**Ancre chaque constat sur ce que tu viens de lire** : `fichier:ligne` **plus** la chose exacte qui le porte (la classe Tailwind citée, le libellé, le nom du bloc). Ton rapport est un livrable de session, pas un document évergreen : CLAUDE.md exige que les rapports de sous-agents citent `fichier:ligne`, et Mamat doit pouvoir sauter au bon endroit d'un clic. La ligne seule ne suffit pas — elle bouge à la première édition, alors que la classe citée reste vérifiable ; les deux ensemble sont précis ET recoupables.
+
+(La règle inverse vaut pour les **fiches** de `references/` : une carte d'écrans est évergreen, elle s'ancre par chemin + classe, jamais par numéro de ligne.)
+
+Puis applique le filtre anti-faux-positif ci-dessous (« Arbitrages gravés ») avant d'écrire le constat.
 
 ### Étape 4 — Benchmarker vs les leaders
 Pour chaque écran majeur, compare aux patterns de l'état de l'art via **`references/market-leaders.md`** (Square, Toast, Lightspeed, TouchBistro, Clover, Revel, SumUp, Storyous). Le but n'est pas de copier mais de **situer la maturité** et de **repérer le pattern manquant** qui débloquerait le profil concerné. Reste honnête : ce sont des patterns de référence, pas des specs pixel.
@@ -101,12 +119,25 @@ Le rapport est un **artefact intermédiaire** : c'est l'échafaudage du raisonne
 
 Tu **proposes** la rédaction en conversation. **Mamat écrit et commite** : tu ne crées ni ne modifies aucun fichier de `docs/` (règle 1 de `CLAUDE.md`).
 
+## Arbitrages gravés — ce qui n'est JAMAIS un défaut
+
+Ces points ont été tranchés par Mamat. Les re-signaler fait perdre la confiance dans tout le reste du rapport. **Ne les liste pas comme constats**, même « pour mémoire ».
+
+- **L'or MÈNE, le vert ENGAGE.** L'or guide l'œil (accent, total, actif) ; le vert porte l'action qui engage. Un CTA qui n'est pas or n'est pas une incohérence.
+- **Le serif est légitime pour les titres de modales.**
+- **Le numéro de commande est en mono, partout.** C'est voulu.
+- **Playfair sur `/display`** — exception gravée.
+- **Le croissant de l'écran de login** — exception gravée.
+- **Le cyan vient de la famille `cat-*`** (teintes de catégorie), ce n'est pas une couleur hors système.
+- **Un contraste de 4,4:1 sur un élément désactivé** n'est pas un défaut : un élément désactivé doit se lire comme désactivé.
+- **Le plein-bord est un choix de design**, pas un oubli de marge.
+
 ## Esprit des propositions — critique, créatif, pragmatique
 
 - **Critique** : nomme le vrai problème ergonomique, pas un détail cosmétique. « 5 taps pour encaisser un café » bat « la couleur du bouton pourrait être plus chaude ».
 - **Créatif** : ose un pattern que le code n'a pas encore (geste rapide, quantité par appui long, favoris contextuels, mode rush) — inspiré des leaders, adapté à une boulangerie-café.
 - **Pragmatique** : chaque proposition doit être **faisable dans la stack actuelle** (React + Tailwind + shadcn + primitifs `@breakery/ui`) avec un **rapport effort/impact** explicite. **Pas de redesign gratuit** : si ça oblige à reconstruire le design-system, c'est probablement trop cher — propose l'incrément qui capture 80 % de la valeur.
-- **Réutilise l'existant** : préfère étendre un primitif `@breakery/ui` ou un token existant plutôt qu'introduire un composant parallèle. Vérifie la disponibilité via `breakery-ui-kit` avant de proposer un import.
+- **Réutilise l'existant** : préfère étendre un primitif `@breakery/ui` ou un token existant plutôt qu'introduire un composant parallèle. Vérifie la disponibilité via `breakery-ui-kit` avant de proposer un import. Deux faits qui reviennent : **`Select` existe** (un `<select>` natif stylé, exporté par `@breakery/ui`) ; **`RadioGroup`, `Checkbox`, `Popover` et `Tooltip` n'existent pas** — une proposition qui en dépend doit nommer son fallback natif, sinon elle n'est pas faisable.
 
 ## Format du rapport (EN FRANÇAIS)
 
@@ -127,9 +158,9 @@ Le rapport rendu en conversation suit **exactement** cette structure :
 
 ## 2. Constats détaillés (par sévérité)
 
-| # | Sévérité | Écran | Profil | Constat (avec fichier:ligne) | Critère |
+| # | Sévérité | Écran | Profil | Constat (fichier + ancre lue) | Critère |
 |---|---|---|---|---|---|
-| 1 | P0 | Payment | Caisse | Bouton "Cash" h-10 (40px) < cible tactile 44px (`PaymentTerminal.tsx:L..`) | Cible tactile |
+| 1 | P0 | Payment | Caisse | Bouton « Cash » en `h-10` (40 px) < plancher tactile 44 px (`features/payment/components/PaymentMethodGrid.tsx`) | Cible tactile |
 
 Sévérité : **P0** douleur quotidienne sur le chemin le plus fréquent · **P1** friction fréquente · **P2** polish · **P3** stratégique.
 
@@ -149,7 +180,7 @@ Liste courte des changements à fort levier réalisables vite.
 ```
 ### [P0/P1/P2/P3] <titre court>
 **Profil** — caisse / waiter / les deux.
-**Écran** — composant + fichier:ligne.
+**Écran** — composant + chemin du fichier (+ la classe ou le libellé exact qui porte le problème).
 **Problème** — la lacune ergonomique/visuelle constatée (ancrée dans le code).
 **Proposition** — le changement concret (layout, taille, token, composant, micro-interaction). 1 paragraphe.
 **Référence marché** — quel leader fait ça bien et pourquoi ça aide ici.
@@ -160,7 +191,9 @@ Liste courte des changements à fort levier réalisables vite.
 
 ## Garde-fous
 
-- **Ne propose rien que tu n'aies ancré dans un fichier lu.** Si tu n'as pas ouvert le composant, ne juge pas son design.
+- **Ne propose rien que tu n'aies ancré dans un fichier lu.** Si tu n'as pas ouvert le composant, ne juge pas son design. Si tu ne l'as pas trouvé, dis-le : « le composant que la carte annonce n'existe plus » est un constat honnête ; le juger de mémoire ne l'est pas.
+- **Ne juge pas un fichier sans importeur.** Vérifie que le composant est atteint depuis une route ou un shell avant d'écrire un ticket dessus.
+- **Ancre double dans le rapport** : `fichier:ligne` + l'ancre stable qui le porte (classe, libellé, nom de bloc). Le numéro rend le constat cliquable, l'ancre le rend vérifiable après une édition.
 - **N'invente pas de tokens/primitifs.** Tout import doit exister dans `@breakery/ui` (cf. `breakery-ui-kit`) ou être une classe Tailwind du preset.
 - **Sépare toujours CAISSE et WAITER** : une amélioration desktop dense peut casser l'ergonomie tablette debout, et vice-versa. Un bon ticket dit pour qui il vaut.
 - **Reste dans l'aspect.** Dès qu'un constat devient « ça ne marche pas / ça double-charge / la cuisine ne reçoit rien », bascule-le explicitement vers `pos-flow-audit` au lieu de le traiter ici.
@@ -168,13 +201,16 @@ Liste courte des changements à fort levier réalisables vite.
 
 ## Fichiers de référence (à lire selon le besoin)
 
-- `references/screen-map.md` — **carte vérifiée écran → fichier:composant** (routes, shells, layouts, états). À lire en Étape 2 pour aller droit au code.
+- `references/screen-map.md` — **photo datée écran → fichier/composant** (routes, shells, layouts, états). À lire en Étape 2 pour aller droit au code. **Elle vieillit ; le code non** — toute dimension ou grille qu'elle cite se relit dans le fichier.
 - `references/design-rubric.md` — **grille de critères + seuils concrets** (cibles tactiles px, budget de taps, contraste, échelle de maturité 1-5). À lire en Étape 3.
 - `references/market-leaders.md` — **cheat-sheet des patterns** des leaders POS restaurant par écran. À lire en Étape 4.
 
 ## Vérification avant de conclure
 
-- Chaque constat cite un `fichier:ligne` réel.
+- Chaque constat cite un **fichier réellement ouvert**, en `fichier:ligne` + l'ancre stable qui le porte (classe, libellé, bloc).
+- Aucun constat ne porte sur un composant sans importeur, ni sur un chemin que tu n'as pas confirmé.
+- Aucun constat ne rejoue un **arbitrage gravé**.
+- Les **dérives de la carte des écrans** rencontrées pendant l'audit sont signalées en fin de rapport (chemin annoncé → chemin réel), pour recorrection hors session.
 - Chaque écran du périmètre a un score de maturité et au moins un constat ou un « RAS ».
 - Le rapport est rendu **en conversation**, en entier — aucun fichier créé, aucun chemin annoncé.
 - Le **résidu durable est proposé** (Étape 6) : lignes de backlog + fiche `docs/objectifs/` cible, et le cas échéant la décision qui mérite un ADR.
