@@ -5,7 +5,7 @@ description: >-
   Reçoit un rapport d'audit rendu en conversation par pos-frontend-design-audit, sélectionne
   un (ou plusieurs) ticket(s) de proposition, et l'IMPLÉMENTE dans apps/pos/ — composants React/TypeScript + Tailwind + primitifs
   @breakery/ui — en respectant le design-system (tokens, typo canonique, fallbacks natifs), les deux
-  profils CAISSE (desktop/Tauri) et WAITER (tablette/mobile Capacitor), et les patterns critiques du
+  profils CAISSE (desktop, web app Vite) et WAITER (tablette Android empaquetée Capacitor), et les patterns critiques du
   projet (CLAUDE.md). Vérifie le rendu, les cibles tactiles, les états (loading/empty/erreur/offline)
   et lance les tests avant de conclure. À utiliser DÈS QUE l'utilisateur veut PASSER À L'ACTION sur le
   design POS : "implémente la proposition", "développe le ticket d'audit", "code le redesign POS",
@@ -42,6 +42,8 @@ Bras armé de **`pos-frontend-design-audit`** : prend une proposition de design 
 
 **`CLAUDE.md` est la source de vérité** des patterns du projet. **`breakery-ui-kit`** est la source de vérité des primitifs/tokens. Ce skill ajoute la méthode d'implémentation design et les garde-fous d'exécution.
 
+> **Re-vérifié contre le code le 2026-08-31** : inventaire des primitifs (`packages/ui/src/index.ts`), `Select` et `selectClassName` (`packages/ui/src/primitives/Select.tsx`), tokens et familles de classes (`packages/ui/tailwind-preset.ts`), noms de packages et scripts (`package.json` racine, `apps/pos`, `packages/ui`), coques natives (aucun Tauri au dépôt ; Capacitor Android côté WAITER, ADR-029). Les faits ci-dessous se re-vérifient à la source avant d'être cités — un « ça n'existe pas » se re-vérifie comme un « ça existe ».
+
 ## Quand c'est ce skill (vs l'audit)
 
 - « Trouve les problèmes / audite / compare au marché » → **pas ici**, c'est `pos-frontend-design-audit`.
@@ -59,8 +61,11 @@ Va au composant via le `fichier:ligne` du ticket (ou via `pos-frontend-design-au
 
 ### Étape 3 — Vérifier les moyens dans le design-system
 Avant d'écrire un import ou une couleur :
-- Le primitif existe-t-il dans `@breakery/ui` ? (cf. `breakery-ui-kit` — **`Select`/`RadioGroup`/`Checkbox` n'existent PAS** → fallback natif.)
-- Le token couleur/espacement existe-t-il ? **Jamais de `#hex` ni `bg-white` en dur** — utilise `text-text-*`, `bg-bg-*`, `text-gold`, `var(--success/warning/danger)`.
+- Le primitif existe-t-il dans `@breakery/ui` ? L'inventaire fait foi (cf. `breakery-ui-kit`), pas la mémoire de session :
+  - **`Select` EXISTE** — un `<select>` **natif stylé** (même surface, hauteur et anneau de focus qu'`Input`) ; ses enfants sont des `<option>`, pas des `SelectItem`. `selectClassName` s'exporte seul pour un call-site qui garde son propre `<select>`. **Ne re-style jamais un `<select>` à la main** : c'est la dette de call-sites divergents que ce primitif a précisément résorbée.
+  - **`RadioGroup` / `Checkbox` / `Popover` / `Tooltip` n'existent PAS** → fallback natif (`<input type="radio">`, `<input type="checkbox">`, Radix direct, attribut `title`). Les importer casse le build.
+- Le token couleur/espacement existe-t-il ? **Jamais de `#hex` ni `bg-white` en dur** — utilise `text-text-*`, `bg-bg-*` (`base`/`elevated`/`overlay`/`input`), `text-gold`, `var(--success/warning/danger)`.
+- **Pas d'alpha sur un token de couleur `var()` nu** (`bg-danger/15`, `bg-gold/5`, `border-border-strong/40`) : Tailwind supprime la déclaration **EN SILENCE** — la couleur n'apparaît jamais, et rien ne le signale. Seule la famille `cat-*` est déclarée `rgb(var(--x) / <alpha-value>)` et accepte l'alpha. Même mort silencieux pour un nom hors famille (`bg-bg-card` n'existe pas). Le preset tranche, pas le sondage navigateur ; la garde CI `tailwind-dead-classes.mjs` attrape le reste.
 - Le besoin est-il **partagé POS+BO** ? Si oui et qu'il faut un nouveau primitif, **ne le crée pas ici** — `packages/ui` + PR dédiée (escalade, cf. `breakery-ui-kit`). Reste co-localisé dans `apps/pos/` tant que c'est POS-only.
 
 ### Étape 4 — Implémenter
@@ -84,7 +89,7 @@ Avant d'écrire un import ou une couleur :
 
 - **N'invente pas de design.** Tu exécutes une proposition validée. Si elle est ambiguë, demande/relis l'audit ; ne « complète » pas avec un parti pris non discuté.
 - **Tokens et primitifs only.** Toute couleur en dur ou tout primitif inexistant = build cassé ou dette — vérifie avant d'écrire.
-- **Deux profils, toujours.** Un changement sur un composant partagé doit être jugé pour CAISSE *et* WAITER. Un gain desktop ne doit pas dégrader la tablette debout.
+- **Deux profils, toujours.** Un changement sur un composant partagé doit être jugé pour CAISSE *et* WAITER. Un gain desktop ne doit pas dégrader la tablette debout. Les deux tournent le **même code web Vite** : la CAISSE dans un navigateur plein écran (aucune coque native), le WAITER dans une coque **Capacitor Android** (ADR-029). Aucune API native ne se suppose disponible sans l'avoir vérifiée.
 - **Aspect, pas plomberie.** Tu changes l'apparence/manipulation. Tu ne réécris pas la logique commande→paiement pour faire joli — ça appartient à `pos-flow-audit`.
 - **Pas de fichier hors structure** (règle CLAUDE.md) : code dans `apps/pos/src/...`, tests co-localisés en `__tests__/`.
 
@@ -109,7 +114,7 @@ pnpm build
 
 - Le typecheck passe, les tests de la feature touchée passent (distinguer une vraie régression du baseline env-gated connu — cf. CLAUDE.md / `test-engineer`).
 - Le rendu a été vérifié pour le(s) profil(s) ciblé(s) ; idéalement un viewport caisse large ET une tablette portrait pour tout composant WAITER.
-- Aucune couleur en dur introduite, aucun import de primitif inexistant.
+- Aucune couleur en dur introduite, aucun import de primitif inexistant, **aucune classe morte** (alpha sur token `var()` nu hors famille `cat-*`, nom de classe absent du preset) — la garde CI `scripts/ci/tailwind-dead-classes.mjs` refuse toute référence neuve.
 
 ## Quand escalader / flaguer
 
