@@ -21,18 +21,38 @@ interface AuthUser {
 
 /**
  * Boot-time rehydration lifecycle. `isAuthenticated` + `sessionToken` survive a
- * reload via the persisted store, but `permissions` and the Supabase bearer do
- * NOT — they must be re-fetched from `auth-get-session` before the router/sidebar
- * render. Deriving navigation from a not-yet-loaded (empty) permission list is
- * exactly the bug this state machine prevents.
+ * reload via the persisted store; deriving navigation from an EMPTY permission
+ * list is exactly the bug this state machine prevents.
+ *
+ * Fast path (2026-08-28, arbitré par Mamat) : `permissions`, le timeout et le
+ * snapshot JWT (`authSnapshot`) sont EUX AUSSI persistés. Au reload, si le
+ * snapshot est encore valide et la liste non vide, le boot restaure le bearer
+ * depuis le cache et passe `ready` IMMÉDIATEMENT — l'aller-retour
+ * `auth-get-session` (~0,8-1 s mesuré, EF + 4 requêtes DB) part en arrière-plan
+ * et rafraîchit permissions/JWT quand il atterrit ; un 401 (session révoquée)
+ * déclenche le logout. Cohérent avec l'ADR-031 : les permissions sont figées au
+ * login, servir celles du login pendant ~1 s de revalidation ne change pas la
+ * promesse. Les gates serveur (RLS + has_permission) restent l'autorité.
+ * Snapshot expiré ou permissions absentes → chemin bloquant historique.
  *
  * - `pending` : initial; bootstrap() has not run yet.
- * - `loading` : auth-get-session round-trip in flight.
+ * - `loading` : auth-get-session round-trip in flight (blocking path only).
  * - `ready`   : permissions + bearer restored (or no persisted session to restore).
  * - `error`   : backend unreachable / 5xx — keep the session, show a retry screen
  *               instead of silently degrading the nav.
  */
 export type BootstrapStatus = 'pending' | 'loading' | 'ready' | 'error';
+
+/** JWT bundle persisted for the fast boot path — shape of `LoginResponse['auth']`. */
+interface AuthSnapshot {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number; // epoch seconds (EF mints now + 3600)
+}
+
+/** Marge sous laquelle un snapshot est traité comme expiré : un bearer à
+ *  quelques secondes de sa fin 401-erait les premières requêtes du shell. */
+const SNAPSHOT_EXPIRY_MARGIN_SEC = 60;
 
 interface AuthState {
   user: AuthUser | null;
@@ -46,6 +66,7 @@ interface AuthState {
   // null until the first auth-get-session round-trip lands. Treat null/0 as
   // "no idle logout".
   sessionTimeoutMinutes: number | null;
+  authSnapshot: AuthSnapshot | null;
   login: (userId: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
   bootstrap: () => Promise<void>;
@@ -73,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       bootstrapStatus: 'pending',
       sessionTimeoutMinutes: null,
+      authSnapshot: null,
 
       async login(userId, pin) {
         set({ isLoading: true, error: null });
@@ -93,6 +115,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
             bootstrapStatus: 'ready',
+            authSnapshot: res.auth,
           });
           logger.info('login.success', { user_id: res.user.id, app: 'backoffice' });
         } catch (err: unknown) {
@@ -119,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
           // would hang on a spinner/error screen after sign-out.
           bootstrapStatus: 'ready',
           sessionTimeoutMinutes: null,
+          authSnapshot: null,
         });
       },
 
@@ -131,12 +155,37 @@ export const useAuthStore = create<AuthState>()(
        * empty permission list (the reload bug).
        */
       async bootstrap() {
-        const { sessionToken, isAuthenticated } = get();
+        const { sessionToken, isAuthenticated, authSnapshot, permissions } = get();
         if (!sessionToken || !isAuthenticated) {
           // Nothing to restore — the router will bounce to /login on its own.
           set({ bootstrapStatus: 'ready' });
           return;
         }
+
+        // Fast path — voir le commentaire de BootstrapStatus. Le snapshot doit
+        // être loin de son expiration ET accompagné d'une liste de permissions
+        // non vide (une liste vide est précisément le bug que le gate bloque).
+        const nowSec = Math.floor(Date.now() / 1000);
+        const snapshotUsable =
+          authSnapshot !== null &&
+          authSnapshot.expires_at > nowSec + SNAPSHOT_EXPIRY_MARGIN_SEC &&
+          permissions.length > 0;
+        if (snapshotUsable) {
+          try {
+            await supabase.auth.setSession({
+              access_token: authSnapshot.access_token,
+              refresh_token: authSnapshot.refresh_token,
+            });
+            set({ bootstrapStatus: 'ready', error: null });
+            // Revalidation en arrière-plan : rafraîchit permissions + JWT,
+            // et un 401 (session révoquée côté serveur) déclenche le logout.
+            void get().validateSession();
+            return;
+          } catch {
+            // setSession a échoué sur le cache — retomber sur le chemin bloquant.
+          }
+        }
+
         set({ bootstrapStatus: 'loading', error: null });
         try {
           const session = await getSession(supabaseUrl, sessionToken);
@@ -154,6 +203,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             sessionTimeoutMinutes: session.session_timeout_minutes,
             bootstrapStatus: 'ready',
+            authSnapshot: session.auth,
           });
           logger.info('bootstrap.rehydrated', { user_id: session.id, perms: session.permissions.length });
         } catch (err: unknown) {
@@ -188,6 +238,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             // Session 19 / Phase 3.A — refreshed per `auth-get-session` round-trip.
             sessionTimeoutMinutes: session.session_timeout_minutes,
+            authSnapshot: session.auth,
           });
         } catch (err: unknown) {
           const e = err as { status?: number };
@@ -210,7 +261,19 @@ export const useAuthStore = create<AuthState>()(
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => asyncStorage),
-      partialize: (s) => ({ user: s.user, sessionToken: s.sessionToken, isAuthenticated: s.isAuthenticated }),
+      // Fast path 2026-08-28 : permissions + timeout + snapshot JWT persistés
+      // pour ouvrir sans attendre auth-get-session. Le support est le
+      // sessionStorage (`safeStorage`), tab-scoped et vidé à la fermeture : le
+      // JWT n'y élargit pas la surface, le sessionToken opaque déjà persisté
+      // permet d'en obtenir un frais via la même EF.
+      partialize: (s) => ({
+        user: s.user,
+        sessionToken: s.sessionToken,
+        isAuthenticated: s.isAuthenticated,
+        permissions: s.permissions,
+        sessionTimeoutMinutes: s.sessionTimeoutMinutes,
+        authSnapshot: s.authSnapshot,
+      }),
     },
   ),
 );
