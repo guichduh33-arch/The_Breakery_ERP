@@ -1,9 +1,10 @@
 // apps/pos/src/pages/Login.tsx
 //
 // Session 14 / Phase 2.C — POS Login page rebuilt per ref `215219.jpg`
-// ("STAFF PIN ACCESS"). Centered dark card with the illustrated BrandLogo
-// (croissant + wordmark + tagline), user picker, PIN dot indicators,
-// virtual numpad and a gold "SIGN IN" CTA.
+// ("STAFF PIN ACCESS"), puis relookée en écran scindé (session live
+// 2026-08-29) : panneau de marque (surface-0, filet or) à gauche — 45 % de
+// la largeur —, colonne PIN à droite ; sous 860 px le panneau devient un
+// bandeau au-dessus de la colonne.
 //
 // Wiring is preserved : we still call `useAuthStore.login(userId, pin)`
 // and route to /pos (waiter → /tablet/order) on success.
@@ -132,91 +133,69 @@ export default function LoginPage(): JSX.Element {
   const dots = useMemo(() => Array.from({ length: PIN_MAX }), []);
 
   return (
-    <div className="theme-pos min-h-dvh grid place-items-center bg-bg-base p-6">
-      <main
-        aria-labelledby="login-heading"
-        // Règle du Filet (critique run 3) : bordure 1 px + ombre de 72 px de
-        // flou était l'anti-pattern « thin border, wide shadow » — la carte se
-        // détache par sa surface et son filet, pas par une ombre.
-        className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-elevated p-8 flex flex-col items-center gap-6"
-      >
-        {/* Brand */}
-        <BrandLogo size="lg" showTagline />
-
-        {/* Heading */}
-        <div className="text-center space-y-1.5">
-          <h1
-            id="login-heading"
-            className="font-semibold text-2xl tracking-[0.18em] text-text-primary"
-          >
-            STAFF PIN ACCESS
-          </h1>
-          <p className="text-text-secondary text-sm">Enter your 6-digit PIN</p>
-        </div>
-
-        {/* User picker chip */}
-        {usersLoading ? (
-          <p className="text-text-secondary text-sm" data-testid="login-users-loading">Loading staff…</p>
-        ) : usersError ? (
-          <div className="flex flex-col items-center gap-2" data-testid="login-users-error">
-            <p className="text-danger-as-text text-sm text-center">Could not load staff list. Check your connection.</p>
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => { void refetchUsers(); }}
-              disabled={usersFetching}
-            >
-              {usersFetching ? 'Retrying…' : 'Retry'}
-            </Button>
+    <div className="theme-pos min-h-dvh bg-bg-base grid min-[860px]:grid-cols-[45%_1fr]">
+      {/* Panneau de marque — surface-0 (le cran le plus profond), filet or
+          décoratif ; l'or MÈNE l'œil, il ne remplit pas (arbitrage 2026-08-24). */}
+      <aside className="flex flex-col items-center justify-center gap-6 bg-surface-0 border-b border-border-subtle p-6 min-[860px]:border-b-0 min-[860px]:border-r min-[860px]:p-10">
+        <BrandLogo size="xl" showTagline />
+        <div className="w-[72px] border-t border-border-gold opacity-60" aria-hidden />
+        <p className="text-text-muted text-xs uppercase tracking-[0.2em]">Point of sale</p>
+      </aside>
+      <main aria-labelledby="login-heading" className="flex items-center justify-center p-6">
+        <div className="w-full max-w-sm flex flex-col items-center gap-6">
+          <div className="text-center space-y-1.5">
+            <h1 id="login-heading" className="font-semibold text-2xl tracking-[0.18em] text-text-primary">
+              STAFF PIN ACCESS
+            </h1>
+            <p className="text-text-secondary text-sm">Enter your 6-digit PIN</p>
           </div>
-        ) : !users || users.length === 0 ? (
-          <p className="text-text-secondary text-sm" data-testid="login-users-empty">No active staff found.</p>
-        ) : pickerOpen || !selectedUser ? (
-          /* Liste nue, pas une carte-dans-carte : la carte de login est déjà le
-             conteneur (détecteur run 2 : nested-cards) — les lignes portent
-             leur propre affordance de survol. */
-          <div className="w-full space-y-1">
-            <SectionLabel as="div">{selectedUser ? 'Switch user' : 'Who is signing in?'}</SectionLabel>
-            {users.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => switchUser(u)}
-                className={cn(
-                  'w-full flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
-                  'hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
-                  u.id === selectedUser?.id ? 'bg-bg-overlay' : '',
-                )}
-              >
-                <span
-                  aria-hidden
-                  className="h-8 w-8 grid place-items-center rounded-full bg-gold-soft text-gold font-display text-sm"
-                >
-                  {initialOf(u.display_name)}
-                </span>
-                <span className="flex-1 text-sm text-text-primary truncate">{u.display_name}</span>
-                <span className="text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
-              </button>
-            ))}
-            {selectedUser && (
-              <button
-                type="button"
-                onClick={() => setPickerOpen(false)}
-                className="w-full text-xs uppercase tracking-widest text-text-muted py-1 hover:text-text-primary"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div
-              aria-hidden
-              className="h-14 w-14 grid place-items-center rounded-full border-2 border-gold-soft bg-bg-elevated"
-            >
-              <span className="font-display text-xl text-gold">{initialOf(selectedUser.display_name)}</span>
+          {usersLoading ? (
+            <p className="text-text-secondary text-sm" data-testid="login-users-loading">Loading staff…</p>
+          ) : usersError ? (
+            <div className="flex flex-col items-center gap-2" data-testid="login-users-error">
+              <p className="text-danger-as-text text-sm text-center">Could not load staff list. Check your connection.</p>
+              <Button variant="secondary" size="md" onClick={() => { void refetchUsers(); }} disabled={usersFetching}>
+                {usersFetching ? 'Retrying…' : 'Retry'}
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
+          ) : !users || users.length === 0 ? (
+            <p className="text-text-secondary text-sm" data-testid="login-users-empty">No active staff found.</p>
+          ) : pickerOpen || !selectedUser ? (
+            <div className="w-full space-y-1">
+              <SectionLabel as="div">{selectedUser ? 'Switch user' : 'Who is signing in?'}</SectionLabel>
+              {users.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => switchUser(u)}
+                  className={cn(
+                    'w-full flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
+                    'hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
+                    u.id === selectedUser?.id ? 'bg-bg-overlay' : '',
+                  )}
+                >
+                  <span aria-hidden className="h-8 w-8 grid place-items-center rounded-full bg-gold-soft text-gold font-display text-sm">
+                    {initialOf(u.display_name)}
+                  </span>
+                  <span className="flex-1 text-sm text-text-primary truncate">{u.display_name}</span>
+                  <span className="text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
+                </button>
+              ))}
+              {selectedUser && (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(false)}
+                  className="w-full text-xs uppercase tracking-widest text-text-muted py-1 hover:text-text-primary"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div aria-hidden className="h-11 w-11 grid place-items-center rounded-full border-2 border-gold-soft bg-bg-elevated">
+                <span className="font-display text-lg text-gold">{initialOf(selectedUser.display_name)}</span>
+              </div>
               <span className="text-sm text-text-primary">
                 Welcome, <span className="font-semibold">{selectedUser.display_name}</span>
               </span>
@@ -228,92 +207,61 @@ export default function LoginPage(): JSX.Element {
                 Switch
               </button>
             </div>
+          )}
+          <div className="flex justify-center gap-3" aria-label="PIN progress" role="status">
+            <span className="sr-only">{pin.length} of {PIN_MAX} digits entered</span>
+            {dots.map((_, i) => (
+              <span
+                key={i}
+                aria-hidden
+                data-testid={`login-pin-dot-${i}`}
+                className={cn(
+                  'h-3 w-3 rounded-full border transition-colors',
+                  i < pin.length ? 'bg-gold border-gold' : 'bg-transparent border-border-strong',
+                )}
+              />
+            ))}
           </div>
-        )}
-
-        {/* PIN dots — the dots are visual only; the sr-only counter inside the
-            role="status" live region announces progress to screen readers
-            (critique 2026-08-14, a11y: the region used to be silent). */}
-        <div className="flex justify-center gap-3" aria-label="PIN progress" role="status">
-          <span className="sr-only">
-            {pin.length} of {PIN_MAX} digits entered
-          </span>
-          {dots.map((_, i) => (
-            <span
-              key={i}
-              aria-hidden
-              data-testid={`login-pin-dot-${i}`}
-              className={cn(
-                'h-3 w-3 rounded-full border transition-colors',
-                i < pin.length
-                  ? 'bg-gold border-gold'
-                  : 'bg-transparent border-border-strong',
-              )}
-            />
-          ))}
-        </div>
-
-        {/* Error */}
-        {errorCopy && (
-          <p role="alert" className="text-danger-as-text text-sm text-center -mt-2">
-            {errorCopy}
-          </p>
-        )}
-
-        {/* Numpad — auto-submit at 6 digits is the only submit path. Digits are
-            inert until a user is chosen : typing into nobody's account is the
-            reflex-lockout trap this screen used to invite.
-            Touches à 80 px (h-20) : la spec pavé du DESIGN.md — 56 px était
-            sous le cran « pavé » (critique run 3). */}
-        <div className="grid grid-cols-3 gap-3 w-full" role="group" aria-label="PIN numpad">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
+          {errorCopy && (
+            <p role="alert" className="text-danger-as-text text-sm text-center -mt-2">{errorCopy}</p>
+          )}
+          <div className="grid grid-cols-3 gap-3 w-full" role="group" aria-label="PIN numpad">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => handleDigit(d)}
+                disabled={isLoading || !selectedUser}
+                className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
+                aria-label={d}
+              >
+                {d}
+              </button>
+            ))}
+            <span aria-hidden />
             <button
-              key={d}
               type="button"
-              onClick={() => handleDigit(d)}
+              onClick={() => handleDigit('0')}
               disabled={isLoading || !selectedUser}
               className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
-              aria-label={d}
+              aria-label="0"
             >
-              {d}
+              0
             </button>
-          ))}
-          <span aria-hidden />
-          <button
-            type="button"
-            onClick={() => handleDigit('0')}
-            disabled={isLoading || !selectedUser}
-            className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
-            aria-label="0"
-          >
-            0
-          </button>
-          <button
-            type="button"
-            onClick={handleBackspace}
-            disabled={isLoading || pin.length === 0}
-            className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50 grid place-items-center"
-            aria-label="Backspace"
-          >
-            <Delete className="h-5 w-5" aria-hidden />
-          </button>
+            <button
+              type="button"
+              onClick={handleBackspace}
+              disabled={isLoading || pin.length === 0}
+              className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50 grid place-items-center"
+              aria-label="Backspace"
+            >
+              <Delete className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
+          <p aria-live="polite" data-testid="login-signing-in-status" className="h-5 text-sm text-text-secondary">{isLoading ? 'Signing in…' : ' '}</p>
         </div>
-
-        {/* Signing-in status — replaces the former gold SIGN IN button, which
-            could never be pressed : auto-submit at 6 digits always fired first,
-            leaving a permanently disabled CTA (critique 2026-08-14 P2). */}
-        <p
-          aria-live="polite"
-          data-testid="login-signing-in-status"
-          className="h-5 text-sm text-text-secondary"
-        >
-          {isLoading ? 'Signing in…' : ' '}
-        </p>
-
-        {/* Email-login entry point removed (lot 4, audit P3): /login/email has no
-            route in routes/index.tsx, so the link was a dead end. Re-add once that
-            route ships. */}
       </main>
     </div>
+
   );
 }

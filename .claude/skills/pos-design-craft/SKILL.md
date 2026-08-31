@@ -29,6 +29,12 @@ promptSignals:
 
 # POS Design Craft — conception visuelle + ergonomique du POS
 
+> **Faits re-vérifiés contre le code le 2026-08-31.** Les énoncés factuels de cette fiche
+> (dépendances, noms de packages, primitifs, tokens, commandes) ont été recoupés un par un
+> avec `apps/pos/package.json`, `packages/ui/src/index.ts` et la cascade
+> `packages/ui/src/tokens/`. Les énoncés d'intention (direction artistique, règles
+> d'ergonomie) sont inchangés. Un fait qui vieillit se re-vérifie, il ne se suppose pas.
+
 **Posture : génératif, pas auditeur.** Ce skill conçoit et produit du neuf (écran, composant, flux, tokens, spec chiffrée) pour `apps/pos/`. Il descend au niveau code là où `breakery-design` fixe la direction artistique transversale — les deux sont compatibles : l'identité luxe-dark POS définie là-bas est le cadre, ce skill l'exécute au pixel et au tap près.
 
 **Contexte terrain (à garder en tête à chaque décision)** : boulangerie-café artisanale à Kuta Lombok. Terrasse **plein soleil**, mains **farinées/grasses**, **rush** de service, équipe multilingue **FR/ID/EN**, deux profils : **CAISSE** (station fixe, densité max, vitesse) et **WAITER** (mobile en salle, une main, pouce).
@@ -41,9 +47,15 @@ Les libs bougent ; ne rien supposer. Avant tout livrable :
 node -e "const p=require('./apps/pos/package.json');console.log(p.dependencies,p.devDependencies)"
 ```
 
-État vérifié 2026-07-06 : **React 18.2** · **Tailwind 3.4** · `sonner` ✅ · fonts variables Fraunces/Inter/JetBrains Mono ✅ · **pas** de framer-motion, **pas** de Capacitor/Tauri (POS = web app Vite). Le pilier 3 ci-dessous donne le chemin *actuel* ET le chemin *cible* — choisir selon package.json du jour, jamais selon ce tableau.
+État vérifié 2026-08-31 sur `apps/pos/package.json` : **React 18.2** · **Tailwind 3.4** · `sonner` ✅ · **pas** de framer-motion.
 
-Même réflexe pour les **composants** : avant de spécifier un composant neuf, vérifier l'existant (`grep "export" packages/ui/src/index.ts` — ex. `QuantityStepper`, `Numpad`, `OrderTypeTabs` existent déjà) et le skill `breakery-ui-kit`. On améliore/étend l'existant avant de doublonner.
+- **Fonts — la pile réelle est à trois familles** : **Playfair Display** (`@fontsource/playfair-display`, **non variable**) pour le display/marque, **Inter Variable** pour le corps, **JetBrains Mono Variable** pour les chiffres. **Fraunces est RETIRÉ du système depuis le 2026-08-01** (l'en-tête de `packages/ui/src/tokens/typography.css` porte la décision, et aucun `package.json` du dépôt ne le contient) : ne plus le citer ni le proposer.
+- **Capacitor est PRÉSENT** : `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`, un `apps/pos/capacitor.config.ts` et un dossier `apps/pos/android/` (APK Android v1, ADR-029, acté le 2026-08-22). C'est la **coque des tablettes de salle (profil WAITER)** ; le bundle web reste la source unique et **la CAISSE reste une web app Vite**. Aucune branche de code spécifique au natif dans les composants (ADR-029, arbitrage 2) — les capacités natives passent par des adaptateurs isolés.
+- **Pas de Tauri** : aucune dépendance `@tauri-apps/*`, aucun `src-tauri/` dans le dépôt.
+
+Le pilier 3 ci-dessous donne le chemin *actuel* ET le chemin *cible* — choisir selon package.json du jour, jamais selon ce tableau.
+
+Même réflexe pour les **composants** : avant de spécifier un composant neuf, vérifier l'existant (`grep "export" packages/ui/src/index.ts` — ex. `QuantityStepper`, `Numpad`, `OrderTypeTabs`, `Currency`, et le primitif **`Select`** existent déjà) et le skill `breakery-ui-kit`. On améliore/étend l'existant avant de doublonner.
 
 Croiser aussi l'**intention métier** — `docs/objectifs/POS.md` et les ADR applicables — et l'état de l'art des POS de référence (Square, Toast, Storyous, Lightspeed) via WebSearch si la décision est structurante.
 
@@ -57,7 +69,7 @@ Chaque règle est chiffrée ; toute déviation se justifie par écrit.
 - **Cibles tactiles** : plancher absolu 44 px (WCAG), confort Android 48 px ; **actions de rush (ajout produit, Encaisser, ± quantité) : 56–72 px** — arbitrage dans la fourchette : 56 px en densité CAISSE, **64 px par défaut en WAITER** (pouce), 72 px pour l'action Encaisser. **Espacement : plancher 8 px, 12 px en rush/WAITER.** Raison : mains grasses/farinées = précision dégradée, le coût d'un mis-tap en rush est disproportionné.
 - **Thumb zones (profil WAITER, une main)** : actions primaires dans le tiers bas / bord dominant ; actions destructrices (void, suppression ligne) **hors zone de réflexe** — jamais adjacentes à une action fréquente.
 - **Compter les taps** : mesurer le chemin produit→encaissement en taps ; chaque écran conçu doit annoncer son compte. Défauts intelligents (variante la plus vendue pré-sélectionnée, quantité 1) + modificateurs rapides > arborescences profondes.
-- **Feedback < 100 ms perçu** sur chaque tap : visuel (état pressed net) toujours ; haptique si la plateforme le permet (`navigator.vibrate(10)` guardé — Capacitor Haptics seulement si la coque native existe dans le repo) ; sonore optionnel et coupable. Jamais de latence perçue : optimistic UI (pilier 3).
+- **Feedback < 100 ms perçu** sur chaque tap : visuel (état pressed net) toujours ; haptique si la plateforme le permet (`navigator.vibrate(10)` guardé — la coque Capacitor existe depuis l'ADR-029, mais **`@capacitor/haptics` n'est PAS installé** : vérifié le 2026-08-31, l'ajouter est une décision à faire trancher, pas un acquis) ; sonore optionnel et coupable. Jamais de latence perçue : optimistic UI (pilier 3).
 - **Tolérance à l'erreur** : undo non-bloquant (toast sonner avec action Annuler, 5 s) > confirmation préalable. Modale de confirmation **uniquement** pour l'irréversible (void, abandon de commande) — jamais de modale qui casse le flux d'ajout en rush.
 - **Plein soleil** : sur les chiffres (prix, totaux, quantités) viser **AAA (7:1)** ; minimum AA partout. Interdits : gris pâle sur fond clair, texte < 16 px pour l'opérationnel, information portée par la couleur seule.
 
@@ -68,7 +80,7 @@ Chaque règle est chiffrée ; toute déviation se justifie par écrit.
 - **Chiffres tabulaires obligatoires** : `font-variant-numeric: tabular-nums` (ou classe utilitaire dédiée) sur **tous** les prix, totaux, quantités, timers — un total qui « danse » quand les chiffres changent est disqualifiant sur un POS. Config dans le snippet référence.
 - **Échelle typo lisible à distance de bras** (~50-70 cm) : total encaissement = le plus gros élément de l'écran ; corps opérationnel ≥ 16 px ; s'appuyer sur `typography.css` de `@breakery/ui`, ne pas inventer de tailles.
 - **Micro-interactions utiles, jamais ralentissantes** : ajout panier (l'item « part » vers le ticket ou badge compteur pulse, ≤ 200 ms), encaissement réussi (confirmation franche), transitions d'état via tokens `motion.css`. framer-motion/Motion **seulement si présent dans package.json** ; sinon transitions CSS. Respecter `prefers-reduced-motion`. Aucune animation décorative sur la money-path (règle CLAUDE.md).
-- **Marque The Breakery** : chaleur artisanale — Fraunces/Playfair pour les moments de marque (accueil, customer display). Pas un POS générique froid ; pas un jouet non plus.
+- **Marque The Breakery** : chaleur artisanale — **Playfair Display** (`--font-display`) pour les moments de marque (accueil, customer display), et lui seul : c'est le seul serif de la pile canonique depuis le retrait de Fraunces le 2026-08-01. Pas un POS générique froid ; pas un jouet non plus.
 - **Palette : héritage ≠ carcan.** Le gold/charcoal luxe-dark est l'identité *actuelle*, pas une limite : ce skill **propose activement** des directions de palette neuves en OKLCH (terracotta/crème boulangerie, sauge/miel, contraste solaire haute-luminance pour la terrasse, accents saisonniers…) — toujours en **2-3 variantes nommées** avec aperçu rendu (voir protocole Playwright ci-dessous), jamais imposées : l'utilisateur tranche, puis la gagnante entre dans la cascade tokens proprement. Une proposition de palette n'est recevable qu'avec ses ratios de contraste calculés.
 
 ## Pilier 3 — Techniques 2025-2026 (chemin actuel → chemin cible)
@@ -102,7 +114,7 @@ Règle : proposer le pattern cible en commentaire/note quand pertinent, impléme
 Ce skill ne livre pas à l'aveugle : il **se vérifie dans un vrai navigateur** via les outils MCP Playwright (`mcp__plugin_playwright_playwright__browser_*` — charger via ToolSearch en un seul appel).
 
 **Protocole d'auto-vérification d'un design :**
-1. **Rendre** : soit le dev server du POS (`pnpm --filter @breakery/pos dev` puis `browser_navigate`), soit un mockup HTML self-contained écrit dans un fichier temporaire (`browser_navigate` vers `file:///...`) pour les variantes de palette/layout.
+1. **Rendre** : soit le dev server du POS (`pnpm --filter @breakery/app-pos dev` — le package s'appelle `@breakery/app-pos`, **pas** `@breakery/pos` : un filtre erroné ne matche RIEN et sort en silence — puis `browser_navigate`), soit un mockup HTML self-contained écrit dans un fichier temporaire (`browser_navigate` vers `file:///...`) pour les variantes de palette/layout.
 2. **Mesurer, pas estimer** : `browser_evaluate` avec `getBoundingClientRect()` sur les cibles tactiles (vérifier ≥ 56/64 px réels, espacements), `getComputedStyle` pour les tailles de police et couleurs résolues ; calcul du ratio de contraste WCAG directement en JS dans la page (luminance relative depuis les rgb computed) — c'est la méthode de référence, plus fiable que la conversion manuelle OKLCH. ⚠️ **Piège vérifié sur le vrai POS (2026-07-06)** : un fond `rgba(...,0.1)` translucide donne un ratio faux si on prend le premier `backgroundColor` — **composer les alphas** en remontant le DOM jusqu'au fond opaque avant de calculer (le label catégorie mesurait 1.5:1 naïvement, 7.9:1 composité). Toujours re-tester `scrollWidth > innerWidth` à chaque viewport (le scroll horizontal en 390 px est un échec disqualifiant).
 3. **Capturer** : `browser_take_screenshot` de chaque variante — aux dimensions réelles des devices cibles (`browser_resize` : tablette caisse ~1280×800, mobile waiter ~390×844). Si le fichier screenshot n'est pas récupérable (le serveur MCP écrit dans son propre répertoire), la preuve de référence est le tableau de mesures + `browser_snapshot` avec `boxes: true` — ne pas bloquer le livrable sur l'image.
 4. **Itérer** : un critère chiffré non atteint (cible trop petite, contraste < 7:1) se corrige et se re-mesure avant livraison — jamais « ça devrait aller ».
@@ -137,9 +149,9 @@ Ce skill ne livre pas à l'aveugle : il **se vérifie dans un vrai navigateur** 
 
 | Demande | → Aller vers |
 |---------|--------------|
-| Audit rétrospectif d'un écran POS existant (détection d'écarts, findings) | `breakery-design` (checklist audit 11 points) — ou un skill `pos-*-audit` dédié si `ls .claude/skills` en montre un |
+| Audit rétrospectif d'un écran POS existant (détection d'écarts, findings) | `pos-frontend-design-audit` — il existe (vérifié 2026-08-31) et rend un rapport en conversation ; pour CODER une reco de ce rapport → `pos-frontend-design-implement`. La checklist d'audit transverse reste chez `breakery-design` |
 | UI/UX **hors POS** (Backoffice, composant partagé générique) | `breakery-design` (direction par surface) + `breakery-ui-kit` (primitives/tokens) |
-| Quel primitif/export existe dans `@breakery/ui`, fallbacks Select/RadioGroup | `breakery-ui-kit` |
+| Quel primitif/export existe dans `@breakery/ui` — `Select` **existe** (un `<select>` natif stylé) ; `RadioGroup`, `Checkbox`, `Popover`, `Tooltip` n'existent toujours pas et demandent un fallback natif (vérifié 2026-08-31) | `breakery-ui-kit` |
 | Bug isolé (comportement cassé, pas de conception) | fix direct, pas ce skill |
 | Migration DB, RPC, comptabilité | `db-engineer` / skill `accounting` |
 

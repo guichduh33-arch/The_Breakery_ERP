@@ -1,8 +1,12 @@
 # Snippet référence — tokens OKLCH + typo tabulaire POS
 
+> **Faits re-vérifiés contre le code le 2026-08-31** — cascade `packages/ui/src/tokens/`,
+> `packages/ui/src/primitives/Button.tsx`, `apps/pos/package.json`. Les valeurs L/C/H et les
+> directions de palette ci-dessous restent des propositions, pas des faits.
+
 > **Les valeurs ci-dessous illustrent la palette actuelle (charcoal/gold) — ce n'est PAS la seule direction permise.** Le skill propose des palettes alternatives (terracotta/crème, sauge/miel, solaire haute-luminance…) construites avec la même mécanique OKLCH : mêmes rapports de L entre surfaces, même dérivation d'états, contrastes mesurés au navigateur (protocole Playwright du SKILL.md).
 
-> Prêt à adapter, pas à coller aveuglément : les valeurs L/C/H ci-dessous sont des points de départ calés sur l'identité luxe-dark (charcoal + gold). Toujours vérifier le contraste réel (AAA 7:1 sur chiffres) après ajustement. Les tokens neufs s'insèrent dans la cascade `packages/ui/src/tokens/` (couche `colors.css` — c'est l'arbre importé via `@breakery/ui/tokens.css`), pas dans un composant.
+> Prêt à adapter, pas à coller aveuglément : les valeurs L/C/H ci-dessous sont des points de départ calés sur l'identité luxe-dark (charcoal + gold). Toujours vérifier le contraste réel (AAA 7:1 sur chiffres) après ajustement. Les tokens neufs s'insèrent dans la cascade `packages/ui/src/tokens/` (couche `colors.css` — c'est l'arbre importé via `@breakery/ui/tokens.css`), pas dans un composant. `colors.css` est chargé **en dernier** et porte **deux couches de thème** : `:root, .dark, .theme-pos` (sombre — POS, KDS, Customer Display, tablette) et `.theme-backoffice` (clair). Un token POS se pose sous la couche POS, jamais dans un `:root` isolé qui déborderait sur le back-office.
 
 ## Vérifier un ratio WCAG depuis des valeurs OKLCH
 
@@ -28,15 +32,22 @@ En pratique : convertir les deux OKLCH en hex (outil `oklch.com` ou lib `culori`
 ## Forme 1 — Tailwind v3 (état actuel du repo) : custom props CSS
 
 ```css
-/* packages/ui/src/tokens/colors.css — extension POS, couche :root (luxe-dark) */
-:root {
+/* packages/ui/src/tokens/colors.css — extension POS, couche sombre du fichier */
+:root,
+.dark,
+.theme-pos {
   /* Surfaces charcoal — L croît avec l'élévation */
   --pos-surface-0: oklch(0.18 0.01 60);   /* fond app */
   --pos-surface-1: oklch(0.22 0.012 60);  /* grille */
   --pos-surface-2: oklch(0.26 0.014 60);  /* carte produit */
   --pos-surface-3: oklch(0.30 0.016 60);  /* overlay/modale */
 
-  /* Gold marque — parcimonieux : action primaire + accents */
+  /* Gold marque — arbitrage GRAVÉ (Mamat, 2026-08-24) : l'OR MÈNE, le VERT
+   * ENGAGE. L'or porte la marque, l'attention et l'anneau de focus ; il ne
+   * porte PAS l'action d'engagement. Le variant par défaut de `Button` est
+   * `primary`, et `primary` est VERT (`bg-green`) — vérifié le 2026-08-31 dans
+   * `packages/ui/src/primitives/Button.tsx` ; `gold` est un variant DISTINCT
+   * qu'on demande explicitement. Ne jamais recâbler l'or en action primaire. */
   --pos-gold: oklch(0.75 0.12 85);
   --pos-gold-pressed: oklch(0.68 0.12 85);   /* L −0.07 = pressed net */
   --pos-gold-fg: oklch(0.20 0.02 85);        /* texte sur gold, AAA */
@@ -92,7 +103,7 @@ colors: {
 <span className="numeric text-4xl font-semibold">{formatIDR(total)}</span>
 ```
 
-Note fonts du repo (vérifié 2026-07-06) : Inter Variable et JetBrains Mono supportent `tnum` ; **JetBrains Mono est déjà mono** (tabulaire par nature) — bon choix pour les colonnes de ticket. Fraunces/Playfair = marque uniquement, jamais pour des chiffres opérationnels.
+Note fonts du repo (vérifié 2026-08-31) : la pile canonique compte **trois** familles — `--font-display` **Playfair Display** (non variable), `--font-body` **Inter Variable**, `--font-mono` **JetBrains Mono Variable** (qui sert aussi `--font-data`). Inter Variable et JetBrains Mono supportent `tnum` ; **JetBrains Mono est déjà mono** (tabulaire par nature) — bon choix pour les colonnes de ticket. **Playfair Display = marque uniquement**, jamais pour des chiffres opérationnels. **Fraunces a été RETIRÉ du système le 2026-08-01** (il doublonnait avec Playfair et faisait changer la même tuile KPI d'une police à l'autre selon le thème) : ne plus le citer.
 
 ## Rappel dérivation d'états (règle mécanique)
 

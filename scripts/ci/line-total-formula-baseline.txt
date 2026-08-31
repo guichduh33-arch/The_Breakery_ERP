@@ -1,0 +1,2 @@
+# Plafond compté de la garde 10.
+1	apps/pos/src/features/kds/kdsOfflineStore.ts

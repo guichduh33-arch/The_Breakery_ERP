@@ -2,8 +2,8 @@
 // Iso-behaviour extraction of PaymentTerminal's LEFT order-summary column.
 // Pure render. Loyalty multiplier math stays inline (was already inline in PT).
 
-import { Currency, LoyaltyBadge, PromotionLineRow } from '@breakery/ui';
-import { tierFromLifetime, resolveLoyaltyMultiplier, earnPointsFor } from '@breakery/domain';
+import { Currency, LoyaltyBadge, PromotionLineRow, cn } from '@breakery/ui';
+import { tierFromLifetime, resolveLoyaltyMultiplier, earnPointsFor, lineTotalOf } from '@breakery/domain';
 import type { Cart, AppliedPromotion, CartTotals } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
 
@@ -39,25 +39,41 @@ export function OrderSummaryPanel({
         </thead>
         <tbody>
           {cart.items.map((it) => {
-            const adj = it.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
-            const lineTotal = (it.unit_price + adj) * it.quantity;
+            // Critique 2026-08-29 P1 — the line total is lineTotalOf (base +
+            // surcharges + combo component adjustments, ADR-017), the same
+            // formula calculateTotals bills; recomputing it here understated
+            // combos and the lines no longer summed to the Subtotal below.
+            const lineTotal = lineTotalOf(it);
+            const cancelled = it.is_cancelled === true;
             return (
               <tr key={it.id} className="border-b border-border-subtle align-top">
                 <td className="py-3">
-                  <div>{it.name}</div>
+                  {/* Critique 2026-08-29 P1 — a cancelled line rendered at full
+                      price with no distinction while calculateTotals excludes
+                      it: struck through + badged, like CartLineRow and the
+                      receipt, so the client sees it is not billed. */}
+                  <div className={cn(cancelled && 'line-through text-text-muted')}>
+                    {it.name}
+                    {cancelled && (
+                      <span className="ml-1.5 inline-flex items-center rounded-full border border-red bg-red-soft px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red-as-text no-underline">
+                        Cancelled
+                      </span>
+                    )}
+                  </div>
                   {it.modifiers.length > 0 && (
-                    <div className="text-xs text-text-secondary mt-0.5">
+                    <div className={cn('text-xs mt-0.5', cancelled ? 'line-through text-text-muted' : 'text-text-secondary')}>
                       {it.modifiers.map((m) => m.option_label).join(' · ')}
                     </div>
                   )}
                 </td>
-                <td className="text-right py-3">{it.quantity}</td>
+                {/* Règle du Chiffre Immobile — quantities are numbers too. */}
+                <td className={cn('text-right py-3 font-mono tabular-nums', cancelled && 'text-text-muted')}>{it.quantity}</td>
                 {/* Remise de ligne visible (audit 2026-08-27) — même présentation
                     que CartLineRow : total de ligne brut + remise en dessous,
                     pour que le récapitulatif se recoupe face au client. */}
                 <td className="text-right py-3">
-                  <Currency amount={lineTotal} />
-                  {it.discount && (
+                  <Currency amount={lineTotal} className={cn(cancelled && 'line-through text-text-muted')} />
+                  {it.discount && !cancelled && (
                     <div className="text-xs text-red-as-text font-mono tabular-nums">
                       {it.discount.type === 'percentage' ? (
                         `-${it.discount.value}%`

@@ -50,7 +50,8 @@ import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
 import { useOfflinePendingCount } from '@/features/lan/hooks/useOfflinePendingCount';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUrl } from '@/lib/supabase';
+import { loginWithPin } from '@breakery/supabase';
 import type { Customer } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
 
@@ -297,6 +298,26 @@ export default function PosPage() {
       <OpenShiftModal
         open={needsShift && openShiftOpen}
         onClose={() => setOpenShiftOpen(false)}
+        // Arbitrage 2026-08-29 (propriétaire) — le gate PIN acceptait
+        // n'importe quels 6 chiffres (aucun verifyPin injecté) : on vérifie le
+        // PIN du caissier CONNECTÉ via auth-verify-pin, le même arbitre que le
+        // login (lockout + rate-limit compris). Le jeton rendu est jeté : l'EF
+        // insère une session sans jamais révoquer l'existante, la session en
+        // cours reste intacte.
+        verifyPin={async (pin) => {
+          if (!user) return { ok: false, error: 'not_signed_in' };
+          try {
+            await loginWithPin(supabaseUrl, { user_id: user.id, pin, device_type: 'pos' });
+            return { ok: true };
+          } catch (err) {
+            const e = err as { status?: number; details?: { error?: string }; message?: string };
+            const raw = e.details?.error ?? e.message ?? '';
+            if (e.status === 429 || raw === 'rate_limited') return { ok: false, error: 'rate_limited' };
+            if (raw === 'account_locked') return { ok: false, error: 'account_locked' };
+            if (raw === 'invalid_pin') return { ok: false, error: 'wrong_pin' };
+            return { ok: false, error: 'unknown' };
+          }
+        }}
       />
       {currentShift && closeShiftOpen && closeSummary && (
         <CloseShiftModal

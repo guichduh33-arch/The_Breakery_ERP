@@ -10,7 +10,7 @@
 //    A ≠ L + E + CYE ;
 //  · les trois sections restent séparées et intactes.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -91,11 +91,26 @@ function asOfQueried(): string[] {
     .map(([, args]) => String((args as { p_as_of_date: string }).p_as_of_date));
 }
 
+// La page interroge DEUX dates : `asOf` et la même un mois plus tôt (la
+// comparaison). Sur une horloge réelle, ce second appel finit tôt ou tard par
+// tomber pile sur une date que le test interdit par ailleurs — le 2026-08-31,
+// `oneMonthEarlier(aujourd'hui)` valait `2026-07-31`, la fin de période que le
+// cas « jamais la session » utilise comme leurre, et le test a crié à la fuite
+// alors que la page était juste. On fige donc l'horloge : la date du jour est
+// une ENTRÉE de ces cas, pas un aléa d'exécution.
+const FROZEN_NOW = new Date('2026-05-14T12:00:00Z');
+
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(FROZEN_NOW);
   useAuthStore.setState({ permissions: ['reports.export'] });
   mockRpc.mockReset();
   sessionStorage.clear();
   balanced = true;
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('BalanceSheetPage (smoke)', () => {

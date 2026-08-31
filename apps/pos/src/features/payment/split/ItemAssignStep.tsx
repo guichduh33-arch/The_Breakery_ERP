@@ -18,6 +18,7 @@
 import type { JSX } from 'react';
 import { Plus, Minus, Users } from 'lucide-react';
 import { Button, Currency, cn } from '@breakery/ui';
+import { lineUnitEach } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
 import { COLOR_CLASSES, type SplitPayer } from './types';
 
@@ -57,8 +58,11 @@ export function payerSubtotal(payer: SplitPayer, cartItems: readonly CartItem[])
   for (const a of payer.items) {
     const line = cartItems.find((c) => c.id === a.cartItemId);
     if (!line) continue;
-    const adj = line.modifiers.reduce((acc, m) => acc + m.price_adjustment, 0);
-    s += (line.unit_price + adj) * a.quantity;
+    // Critique 2026-08-29 P1 — lineUnitEach (base + surcharges + combo
+    // component adjustments, ADR-017), la formule que calculateTotals facture :
+    // recomposée localement, elle ignorait les composants et la somme des
+    // payeurs ne retombait plus sur grandTotal (split rejeté par validateTenders).
+    s += lineUnitEach(line) * a.quantity;
   }
   return s;
 }
@@ -91,8 +95,7 @@ export function ItemAssignStep({
 
         <ul className="space-y-3">
           {cartItems.map((line) => {
-            const adj = line.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
-            const unitLine = line.unit_price + adj;
+            const unitLine = lineUnitEach(line);
             const assignedAcrossAll = totalAssigned(payers, line.id);
             const remaining = Math.max(0, line.quantity - assignedAcrossAll);
             const exhausted = remaining === 0;
@@ -239,8 +242,7 @@ export function ItemAssignStep({
             {activePayer.items.map((a) => {
               const line = cartItems.find((c) => c.id === a.cartItemId);
               if (!line) return null;
-              const adj = line.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
-              const rowTotal = (line.unit_price + adj) * a.quantity;
+              const rowTotal = lineUnitEach(line) * a.quantity;
               return (
                 <li
                   key={a.cartItemId}

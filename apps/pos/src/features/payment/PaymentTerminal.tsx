@@ -60,7 +60,10 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         pointsEarned={success.pointsEarned}
         cart={cart}
         paymentMethod={success.paymentMethod}
-        cashReceived={Number(cashReceivedStr || '0')}
+        // Critique 2026-08-29 (P3) — on a split whose first tender is cash the
+        // draft string is stale/empty : the success state now carries the cash
+        // actually received, summed from the shipped tenders.
+        cashReceived={success.cashReceived ?? Number(cashReceivedStr || '0')}
         cashierName={user?.full_name ?? 'Cashier'}
         onNewOrder={handleNewOrder}
         {...(success.subtotal !== undefined ? { subtotal: success.subtotal } : {})}
@@ -111,8 +114,11 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
           chaque colonne tombait à ~195 px et le pavé imbriqué à ~22 px par
           touche (spec 80 px, WCAG 1.4.10). Sous md : une colonne, le corps
           entier défile, les contrôles de paiement passent devant le
-          récapitulatif (le pouce atteint l'argent sans scroller le ticket). */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-px bg-border-subtle overflow-y-auto md:overflow-hidden">
+          récapitulatif (le pouce atteint l'argent sans scroller le ticket).
+          Arbitrage 2026-08-29 (propriétaire) — le récap se compacte à 2fr/3fr :
+          la moitié pleine répétait le panier et le /display, la place revient
+          aux contrôles d'argent. */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden">
         {/* LEFT — order summary */}
         <OrderSummaryPanel
           cart={cart}
@@ -135,9 +141,12 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
                   : 'border-red-as-text bg-danger-soft text-red-as-text',
               )}
             >
+              {/* Critique 2026-08-29 (P2) — the snake_case config key leaked
+                  into cashier copy for a Back-Office-only switch : name the
+                  human action instead. */}
               {offlineGate.paymentsAllowed
                 ? 'Offline mode — payments accepted (store credit excluded), will resync once the cloud is back'
-                : 'Offline payments disabled — enable offline_payments_enabled (Settings → Network)'}
+                : 'Offline payments are disabled — ask a manager to enable them in the Back Office (Network settings)'}
             </div>
           )}
           {/* Critique run 3 (polish) — le même état était narré trois fois
@@ -146,9 +155,18 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
               du total récapitulatif de gauche) ; la progression et le restant
               n'apparaissent qu'une fois un tender posé, quand ils divergent
               réellement du total. */}
+          {/* Critique 2026-08-29 (P2) — dès qu'un tender est posé, le nombre
+              que le caissier lit à voix haute est le RESTANT, pas le total :
+              c'est lui qui prend le text-4xl or, le total se rétrograde en
+              ligne secondaire (Règle « Data = la valeur qu'on lit à voix
+              haute »). */}
           <div className="space-y-1 mb-4">
-            <SectionLabel as="div">Amount Due</SectionLabel>
-            <Currency amount={totals.total} emphasis="gold" className="text-4xl block" />
+            <SectionLabel as="div">{tenders.length > 0 ? 'Remaining Due' : 'Amount Due'}</SectionLabel>
+            <Currency
+              amount={tenders.length > 0 ? remaining : totals.total}
+              emphasis="gold"
+              className="text-4xl block"
+            />
             {tenders.length > 0 && (
               <>
                 <div
@@ -161,7 +179,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
                   />
                 </div>
                 <div className="text-xs text-text-secondary text-right pt-1">
-                  Remaining: <span className="text-text-primary font-mono"><Currency amount={remaining} /></span>
+                  Total: <span className="text-text-primary font-mono"><Currency amount={totals.total} /></span>
                 </div>
               </>
             )}

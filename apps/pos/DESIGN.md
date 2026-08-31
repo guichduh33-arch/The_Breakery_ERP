@@ -367,6 +367,11 @@ qu'UNE graphie à l'écran — mono, la forme du KDS** (`font-mono tabular-nums`
 or sur la pièce maîtresse). Il rendait en serif sur l'écran client et en mono en
 cuisine : le seul datum que le client doit apparier au retrait changeait de
 forme entre les surfaces.
+Exception gravée le 2026-08-29 (arbitrage du propriétaire) : **le nom de
+produit sur l'écran client (`/display`) reste en Playfair**. Le récapitulatif
+face client est un moment de vitrine assumé — le nom y est de la marque, pas de
+la donnée ; le numéro de commande et les montants, eux, restent soumis à la
+règle. Ne plus signaler cette serif comme défaut.
 
 ## Layout
 

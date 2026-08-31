@@ -33,14 +33,21 @@ export function TenderDraftPanel({
 }: TenderDraftPanelProps) {
   return (
     <div className="space-y-4 mb-4">
-      {/* ENTER AMOUNT — big centered display */}
+      {/* Big centered amount display. Critique 2026-08-29 (P2) — the same
+          number wore THREE labels (« Enter Amount » here, « Amount Received »
+          on the presets, « Cash Received » on the numpad, even for a card
+          tender) : one method-aware label now names the value once, and the
+          two sub-columns below stand untitled. */}
       <div>
         <SectionLabel as="div" className="mb-2 text-center">
-          Enter Amount
+          {isCashDraft ? 'Cash Received' : 'Amount'}
         </SectionLabel>
         {/* Critique run 3 (résiduel du lot 4) — saisie formatée dès la frappe,
             comme OpenShiftModal / CashInOutModal / PerPayerCashStep. */}
-        <div className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
+        {/* Critique 2026-08-29 (a11y) — le montant saisi au pavé et la monnaie
+            à rendre sont des sorties calculées : sans zone live, un lecteur
+            d'écran n'entend rien changer. role="status" = aria-live polite. */}
+        <div role="status" className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
           <span className="font-mono tabular-nums text-3xl text-text-primary">
             {formatIdr(Number(cashReceivedStr || '0'))}
           </span>
@@ -49,7 +56,7 @@ export function TenderDraftPanel({
             prépare en ouvrant le tiroir : gros corps mono or, lisible à bout de
             bras (était text-xs). */}
         {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
-          <div className="mt-2 flex items-baseline justify-between">
+          <div role="status" className="mt-2 flex items-baseline justify-between">
             <SectionLabel as="div">Change</SectionLabel>
             <Currency
               amount={cashChange}
@@ -64,9 +71,8 @@ export function TenderDraftPanel({
           la colonne droite du terminal tombait à ~90 px par sous-colonne à
           390 px ; sous md elle s'empile, le pavé reprend la pleine largeur. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* AMOUNT RECEIVED preset grid */}
+        {/* Preset grid */}
         <div>
-          <SectionLabel as="div" className="mb-2">Amount Received</SectionLabel>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setCashReceivedStr(String(remaining))}
@@ -99,7 +105,6 @@ export function TenderDraftPanel({
 
         {/* Numpad */}
         <div>
-          <SectionLabel as="div" className="mb-2">Cash Received</SectionLabel>
           <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
         </div>
       </div>

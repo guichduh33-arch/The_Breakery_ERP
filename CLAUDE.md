@@ -136,13 +136,17 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
   DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
   (`scripts/ci/`) rendent leur verdict en secondes, avant le build. Elles sont
-  NEUF, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
+  DIX, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
   `relative-links`, `hardcoded-theme-colors`, les quatre gardes design du
   2026-08-18 (`focus-ring-controls`, `gold-fills`, `lying-font-classes`,
-  `toolbar-button-scope`) et `tight-corner` (2026-08-21, `rounded-full` — la
+  `toolbar-button-scope`), `tight-corner` (2026-08-21, `rounded-full` — la
   seule des quatre dettes de direction qu'aucune garde ne voyait, donc la seule
-  qui pouvait regrandir en silence). Toutes partagent `_guard-lib.mjs` :
-  baseline = plafond, jamais plancher. Une PR frontend BO les croise toutes.
+  qui pouvait regrandir en silence) et `line-total-formula` (2026-08-29 — le
+  prix d'une ligne se demande à `lineTotalOf`/`lineUnitEach` du domaine, jamais
+  recomposé `unit_price + price_adjustment` : le bug de sous-facturation des
+  combos est ressuscité trois fois en un mois avant la garde). Toutes partagent
+  `_guard-lib.mjs` : baseline = plafond, jamais plancher. Une PR frontend BO
+  les croise toutes.
   **Le lint-ratchet ne lint que les fichiers CHANGÉS par la PR** : toucher une
   seule ligne d'un vieux fichier l'y fait entrer et réveille ses erreurs
   préexistantes. Le rejouer en local se fait par lots — `xargs` sur ~170 fichiers
@@ -227,6 +231,13 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `packageManager`.
 - **PIN / secrets en header HTTP, jamais en body JSON** (les bodies sont loggés).
   Header dédié type `x-manager-pin`, hard cutover dans le même commit.
+  **Portée : les Edge Functions** (arbitrage 2026-08-31). Vers une **RPC Postgres**
+  appelée par PostgREST, le PIN est au contraire un **argument** (`p_manager_pin`) :
+  c'est le seul véhicule que la fonction peut réellement valider, et une RPC ne lit
+  pas les en-têtes. `approve_expense` a justement été déplacée du header vers l'argument
+  le 2026-06-01 parce que la RPC ne lisait jamais l'en-tête — le PIN était affiché,
+  jamais vérifié. Ne pas « re-corriger » ces RPC vers le header. Le critère d'audit
+  n'est pas le véhicule mais : **la cible vérifie-t-elle le PIN, avec verrouillage ?**
 - **Enums : source unique = Postgres.** Aucun string littéral dérivé côté TS
   (`take_away` vs `take_out` = la classe de bug à tuer).
 - **L'interface parle ANGLAIS, les commentaires et la doc parlent français.**
