@@ -2,8 +2,10 @@
 //
 // Session 14 / Phase 5.A — Supplier Management.
 // Composition mirrors `15-suppliers-list.jpg`:
-//   - Fraunces title + subtitle on the left, secondary actions
-//     (Categories / Template / Import / Export) and primary CTA on the right.
+//   - Title + subtitle on the left (via PageHeader, which carries no font-*
+//     class : the title inherits --font-body, so Instrument Sans under
+//     .theme-backoffice), secondary actions (Categories / Template / Import /
+//     Export) and primary CTA on the right.
 //   - Three KPI tiles: TOTAL / ACTIVE / INACTIVE.
 //   - Free-text search bar.
 //   - Card grid (responsive 1/2/3/4 columns) of SupplierCard.
