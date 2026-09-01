@@ -21,9 +21,9 @@
 // n'ouvre sur rien promet une capacité que l'écran n'a pas. Les cases
 // reviendront avec les RPC, pas avant.
 
-import { DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { RowActionsMenu } from '@/components/RowActionsMenu.js';
 import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
@@ -297,33 +297,28 @@ export function ProductsTable({
       id: 'actions',
       header: 'Actions',
       align: 'right',
-      // 8.5rem = 136 px, la largeur RÉELLEMENT rendue : trois boutons de 32 px,
-      // deux écarts de 6 px, plus les 28 px de padding. Les 72 px déclarés
-      // jusqu'ici étaient une fiction que `table-layout: auto` corrigeait en
-      // silence — et 40 px de fiction dans un budget qui débordait de 20.
-      // Passée de 7rem à 8.5rem avec les boutons de 24 → 32 px (critique du
-      // 2026-08-21, P1-2) : la largeur suit la cible, sinon la table déborde.
-      width: '8.5rem',
+      // 8.5rem couvrait TROIS boutons de 32 px et leurs écarts. Depuis la
+      // convergence sur le menu `…` (critique du 2026-08-31, P1), la colonne ne
+      // porte plus qu'une cible de 32 px : 4rem = 64 px, soit le bouton plus les
+      // 28 px de padding de cellule. Les 4,5rem rendus à la colonne « margin »
+      // et suivantes ne sont pas repris ici — `table-layout: auto` les
+      // redistribue, et le budget de largeur retrouve de l'air.
+      width: '4rem',
       render: (r) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <RowAction label={`View ${r.name}`} onClick={(e) => { e.stopPropagation(); onView?.(r); }}>
-            <Eye className="h-4 w-4" aria-hidden />
-          </RowAction>
-          {onPricing !== undefined && (
-            <RowAction
-              label={`Edit pricing for ${r.name}`}
-              onClick={(e) => { e.stopPropagation(); onPricing(r); }}
-              data-testid={`pricing-btn-${r.id}`}
-            ><DollarSign className="h-4 w-4" aria-hidden /></RowAction>
-          )}
-          {onDelete !== undefined && (
-            <RowAction
-              label={`Delete ${r.name}`}
-              onClick={(e) => { e.stopPropagation(); onDelete(r); }}
-              destructive
-              data-testid={`delete-btn-${r.id}`}
-            ><Trash2 className="h-4 w-4" aria-hidden /></RowAction>
-          )}
+        <div className="flex items-center justify-end">
+          <RowActionsMenu
+            subject={r.name}
+            testId={`row-actions-${r.id}`}
+            entries={[
+              { key: 'view', label: 'View product', activate: () => onView?.(r) },
+              ...(onPricing !== undefined
+                ? [{ key: 'pricing', label: 'Edit pricing', testId: `pricing-btn-${r.id}`, activate: () => { onPricing(r); } }]
+                : []),
+              ...(onDelete !== undefined
+                ? [{ key: 'delete', label: 'Delete product', danger: true, testId: `delete-btn-${r.id}`, activate: () => { onDelete(r); } }]
+                : []),
+            ]}
+          />
         </div>
       ),
     },
@@ -367,30 +362,6 @@ export function ProductsTable({
   return <DataTable {...tableProps} />;
 }
 
-interface RowActionProps {
-  label: string;
-  onClick: (e: React.MouseEvent) => void;
-  destructive?: boolean;
-  'data-testid'?: string;
-  children: React.ReactNode;
-}
-
-function RowAction({
-  label, onClick, destructive = false, 'data-testid': testId, children,
-}: RowActionProps): JSX.Element {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      data-testid={testId}
-      className={cn(
-        'inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-subtle transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-        destructive ? 'hover:bg-red-soft hover:text-danger' : 'hover:bg-surface-4 hover:text-text-primary',
-      )}
-    >
-      {children}
-    </button>
-  );
-}
+// `RowAction` — l'icône nue locale — est retirée avec la convergence sur
+// `RowActionsMenu` (critique du 2026-08-31, P1). Elle n'avait aucun autre
+// appelant que la colonne ci-dessus.

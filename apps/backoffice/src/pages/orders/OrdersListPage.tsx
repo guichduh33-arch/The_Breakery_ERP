@@ -9,7 +9,7 @@
 // commises en débounce ; export CSV gaté `reports.export` via buildCsv.
 
 import { type JSX, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, Download, Edit3, Eye, RefreshCw, XCircle } from 'lucide-react';
+import { ChevronRight, Download, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button, DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
 import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
@@ -61,7 +61,7 @@ import {
 } from '@/features/orders/statusMeta.js';
 import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js';
 import { exportOrdersCsv } from '@/features/orders/exportOrdersCsv.js';
-import { RowActionButton } from '@/features/orders/components/RowActionButton.js';
+import { RowActionsMenu } from '@/components/RowActionsMenu.js';
 import { VoidOrderModal } from '@/features/orders/components/VoidOrderModal.js';
 import { EditOrderItemsModal } from '@/features/orders/components/EditOrderItemsModal.js';
 import { OrderDetailDrawer } from '@/features/orders/components/OrderDetailDrawer.js';
@@ -381,35 +381,30 @@ export default function OrdersListPage(): JSX.Element {
       ),
     },
     {
-      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '7.5rem',
+      // 7,5rem logeait TROIS icônes de 32 px. Depuis la convergence sur le menu
+      // `…` (critique du 2026-08-31, P1), une seule cible reste : 4rem.
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '4rem',
       render: (o) => (
-        <span className="inline-flex items-center gap-1.5">
-          {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
-            <RowActionButton
-              label={`Edit items of ${o.order_number}`}
-              testId={`row-edit-${o.id}`}
-              onClick={() => { void loadItemsAndOpenEdit(o.id, o.order_number); }}
-            >
-              <Edit3 className="h-4 w-4" aria-hidden />
-            </RowActionButton>
-          )}
-          {hasVoid && (o.status === 'paid' || o.status === 'completed') && (
-            <RowActionButton
-              label={`Void ${o.order_number}`}
-              testId={`row-void-${o.id}`}
-              destructive
-              onClick={() => { setVoidTarget({ id: o.id, number: o.order_number }); }}
-            >
-              <XCircle className="h-4 w-4" aria-hidden />
-            </RowActionButton>
-          )}
-          <RowActionButton
-            label={`Details of ${o.order_number}`}
-            testId={`row-details-${o.id}`}
-            onClick={() => { setDetailId(o.id); }}
-          >
-            <Eye className="h-4 w-4" aria-hidden />
-          </RowActionButton>
+        <span className="inline-flex items-center justify-end">
+          <RowActionsMenu
+            subject={o.order_number}
+            testId={`row-actions-${o.id}`}
+            entries={[
+              // Le détail d'abord : c'est la lecture, et la seule entrée
+              // toujours présente. `Void` descend en dernier ET porte `danger` —
+              // il était PREMIER et muet, à 2 px d'une cible bénigne.
+              { key: 'details', label: 'View details', testId: `row-details-${o.id}`,
+                activate: () => { setDetailId(o.id); } },
+              ...(hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment')
+                ? [{ key: 'edit', label: 'Edit items', testId: `row-edit-${o.id}`,
+                     activate: () => { void loadItemsAndOpenEdit(o.id, o.order_number); } }]
+                : []),
+              ...(hasVoid && (o.status === 'paid' || o.status === 'completed')
+                ? [{ key: 'void', label: 'Void order', danger: true, testId: `row-void-${o.id}`,
+                     activate: () => { setVoidTarget({ id: o.id, number: o.order_number }); } }]
+                : []),
+            ]}
+          />
         </span>
       ),
     },

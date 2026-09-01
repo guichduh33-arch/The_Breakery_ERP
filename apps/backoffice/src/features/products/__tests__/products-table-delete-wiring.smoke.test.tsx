@@ -62,22 +62,33 @@ function renderTable(onDelete?: (row: ProductRow) => void) {
   );
 }
 
-describe('ProductsTable — delete button wiring [S45 W-B]', () => {
-  it('renders the Trash2 delete button when onDelete is provided', () => {
+// Depuis la convergence sur `RowActionsMenu` (critique du 2026-08-31, P1),
+// l'action de suppression n'est plus une icône nue rendue avec la ligne : elle
+// est une entrée NOMMÉE d'un menu `…` qu'il faut ouvrir. Les tests ouvrent donc
+// le menu avant d'assener — ce qui teste aussi que la ligne porte bien un
+// déclencheur.
+function openRowMenu(): void {
+  fireEvent.click(screen.getByTestId('row-actions-prod-xyz'));
+}
+
+describe('ProductsTable — delete action wiring [S45 W-B]', () => {
+  it('renders the Delete entry when onDelete is provided', () => {
     renderTable(vi.fn());
+    openRowMenu();
     expect(screen.getByTestId('delete-btn-prod-xyz')).toBeInTheDocument();
   });
 
-  it('does not render the Trash2 delete button when onDelete is undefined', () => {
+  it('does not render the Delete entry when onDelete is undefined', () => {
     renderTable(undefined);
+    openRowMenu();
     expect(screen.queryByTestId('delete-btn-prod-xyz')).not.toBeInTheDocument();
   });
 
-  it('calls onDelete with the correct row when Trash2 is clicked', () => {
+  it('calls onDelete with the correct row when Delete is clicked', () => {
     const onDelete = vi.fn();
     renderTable(onDelete);
-    const btn = screen.getByTestId('delete-btn-prod-xyz');
-    fireEvent.click(btn);
+    openRowMenu();
+    fireEvent.click(screen.getByTestId('delete-btn-prod-xyz'));
     expect(onDelete).toHaveBeenCalledWith(MOCK_ROW);
   });
 });

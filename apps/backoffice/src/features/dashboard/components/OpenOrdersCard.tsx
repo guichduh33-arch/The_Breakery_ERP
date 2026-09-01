@@ -80,10 +80,10 @@ export function OpenOrdersCard({
         <ul className="space-y-2">
           {rows.map((o) => (
             <li key={o.id} className="flex items-baseline gap-2 text-xs">
-              <span className="w-11 shrink-0 font-data text-text-muted">{o.order_number}</span>
+              <span className="w-24 shrink-0 truncate font-data text-text-muted">{o.order_number}</span>
               <span className="min-w-0 flex-1 truncate text-text-primary">{o.destination}</span>
               <span className="shrink-0 font-data tabular-nums text-text-primary">{formatIdr(o.total)}</span>
-              <span className={cn('w-12 shrink-0 whitespace-nowrap text-right font-data tabular-nums', ageTone(o.minutes_open))}>
+              <span className={cn('w-16 shrink-0 whitespace-nowrap text-right font-data tabular-nums', ageTone(o.minutes_open))}>
                 {formatMinutes(o.minutes_open)}
               </span>
             </li>
