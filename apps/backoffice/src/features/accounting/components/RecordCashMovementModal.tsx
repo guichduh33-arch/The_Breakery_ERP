@@ -18,6 +18,7 @@ import {
   DialogTitle,
   Button,
 } from '@breakery/ui';
+import { todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useRecordCashMovement, type CashMovementType } from '../hooks/useRecordCashMovement.js';
@@ -36,7 +37,6 @@ const TYPES: { value: CashMovementType; label: string; needsWallet?: boolean; re
 const ADJUST_TYPES = new Set<CashMovementType>(['adjustment_gain', 'adjustment_loss', 'boss_withdrawal']);
 const DEFAULT_TYPE: CashMovementType = 'undepo_to_petty';
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
 // `border-border-strong` : la bordure d'un CHAMP est un objet graphique, elle
 // doit tenir le 3:1 de WCAG 1.4.11 — `border-border-subtle` sépare des blocs,
 // il ne dessine pas une zone de saisie.
@@ -54,7 +54,11 @@ export function RecordCashMovementModal({
 
   const [type, setType]     = useState<CashMovementType>(DEFAULT_TYPE);
   const [amount, setAmount] = useState('');
-  const [date, setDate]     = useState(todayISO());
+  // `todayIsoDate()` rend le jour MÉTIER en Asia/Makassar (ADR-019). Le
+  // `new Date().toISOString().slice(0,10)` local qu'il remplace rendait la date
+  // UTC : avant 08h WITA, un mouvement de caisse se pré-datait à la veille —
+  // période potentiellement close.
+  const [date, setDate]     = useState(todayIsoDate());
   const [remark, setRemark] = useState('');
   const [wallet, setWallet] = useState<'1110' | '1111' | '1117'>('1110');
   const mut                 = useRecordCashMovement();

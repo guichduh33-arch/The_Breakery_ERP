@@ -221,15 +221,43 @@ export default function OpnameDetailPage(): JSX.Element {
           bouton : un bouton désactivé n'est pas focalisable, donc ni le clavier
           ni le lecteur d'écran n'atteindraient un `title`. Le texte est visible
           ET référencé par `aria-describedby`. */}
-      <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+      {/* Critique 2026-08-31 (P1) — l'irréversibilité se dit AVANT le bouton,
+          pas une fois le dialogue ouvert. L'archétype de saisie en masse
+          l'exige. Formulation VOLONTAIREMENT distincte de celle de
+          `ValidateOpnameDialog` : recopier sa phrase mot pour mot la rendait
+          présente deux fois à l'écran une fois le dialogue ouvert — le test
+          `blind-count` l'a attrapé au premier essai. */}
+      {counting && canCreate && (
+        <p className="text-sm text-text-secondary">
+          Revealing the variances ends the blind count and locks every counted
+          quantity. The count cannot be reopened.
+        </p>
+      )}
+
+      {/* Critique 2026-08-31 (P1) — `Validate` et `Cancel` étaient DEUX fantômes
+          de couleur identique à 12 px l'un de l'autre, et le chef de rayon
+          compte debout, les mains prises. Le destructeur part maintenant à
+          l'autre bout du pied de page, en `ghostDestructive`, et nomme ce qu'il
+          annule (« Cancel count », pas « Cancel »). L'action terminale prend
+          l'encre — jamais deux aplats à la fois : `AddItemForm` et `Validate`
+          ne vivent qu'en comptage, `Finalize` qu'en revue. */}
+      <footer className="flex flex-col gap-3 md:flex-row md:items-center">
+        {/* Annuler reste offert en revue : c'est le SEUL recours si la
+            révélation découvre une faute de frappe. */}
+        {!terminal && canCreate && (
+          <Button variant="ghostDestructive" onClick={() => { setShowCancel(true); }}>
+            <X className="h-4 w-4" aria-hidden /> Cancel count
+          </Button>
+        )}
         {blockReason !== null && (
-          <p id="opname-block-reason" className="text-sm text-text-secondary md:mr-auto">
+          <p id="opname-block-reason" className="text-sm text-text-secondary">
             {blockReason}
           </p>
         )}
         {counting && canCreate && (
           <Button
-            variant="ghost"
+            variant="ink"
+            className="md:ml-auto"
             onClick={() => { setShowValidate(true); }}
             disabled={blockReason !== null}
             {...(blockReason !== null ? { 'aria-describedby': 'opname-block-reason' } : {})}
@@ -244,18 +272,12 @@ export default function OpnameDetailPage(): JSX.Element {
         {d.status === 'review' && canFinalize && (
           <Button
             variant="ink"
+            className="md:ml-auto"
             onClick={() => { setShowFinalize(true); }}
             disabled={blockReason !== null}
             {...(blockReason !== null ? { 'aria-describedby': 'opname-block-reason' } : {})}
           >
             Finalize and post JE
-          </Button>
-        )}
-        {/* Annuler reste offert en revue : c'est le SEUL recours si la
-            révélation découvre une faute de frappe. */}
-        {!terminal && canCreate && (
-          <Button variant="ghost" onClick={() => { setShowCancel(true); }}>
-            <X className="h-4 w-4" aria-hidden /> Cancel
           </Button>
         )}
       </footer>
