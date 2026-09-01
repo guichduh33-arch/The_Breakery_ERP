@@ -135,7 +135,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('refund_order_rpc_v10', {
+  const { data, error } = await admin.rpc('refund_order_rpc_v11', {
     p_order_id:            body.order_id,
     p_lines:               body.lines,
     p_tenders:             body.tenders,

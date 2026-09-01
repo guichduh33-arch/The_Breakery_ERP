@@ -1,9 +1,9 @@
--- supabase/tests/refund_void_cross_shift_v10.test.sql
+-- supabase/tests/refund_void_cross_shift_v11.test.sql
 -- Lot 6b money-path — refund/void cross-shift controles depuis le back-office.
 -- Run via MCP execute_sql, BEGIN ... ROLLBACK (Docker retired).
 --
 -- Couvre :
---   T1-T4   v9 droppees, v10 presentes ;
+--   T1-T4   v10 droppees, v11 presentes ;
 --   T5-T6   EXECUTE reserve service_role (ni anon, ni authenticated) ;
 --   T7-T9   cross-shift refund store_credit : acteur MANAGER sans session
 --           ouverte, commande d'une session close, client rattache → succes,
@@ -23,26 +23,26 @@ BEGIN;
 SELECT plan(14);
 
 -- ===== T1-T4 : versions =====
-SELECT ok(to_regprocedure('public.refund_order_rpc_v9(uuid,jsonb,jsonb,text,uuid,uuid,uuid)') IS NULL,
-  'T1: refund_order_rpc_v9 is dropped');
-SELECT ok(to_regprocedure('public.void_order_rpc_v9(uuid,text,uuid,uuid,uuid)') IS NULL,
-  'T2: void_order_rpc_v9 is dropped');
-SELECT ok(to_regprocedure('public.refund_order_rpc_v10(uuid,jsonb,jsonb,text,uuid,uuid,uuid)') IS NOT NULL,
-  'T3: refund_order_rpc_v10 exists');
-SELECT ok(to_regprocedure('public.void_order_rpc_v10(uuid,text,uuid,uuid,uuid)') IS NOT NULL,
-  'T4: void_order_rpc_v10 exists');
+SELECT ok(to_regprocedure('public.refund_order_rpc_v10(uuid,jsonb,jsonb,text,uuid,uuid,uuid)') IS NULL,
+  'T1: refund_order_rpc_v10 is dropped');
+SELECT ok(to_regprocedure('public.void_order_rpc_v10(uuid,text,uuid,uuid,uuid)') IS NULL,
+  'T2: void_order_rpc_v10 is dropped');
+SELECT ok(to_regprocedure('public.refund_order_rpc_v11(uuid,jsonb,jsonb,text,uuid,uuid,uuid)') IS NOT NULL,
+  'T3: refund_order_rpc_v11 exists');
+SELECT ok(to_regprocedure('public.void_order_rpc_v11(uuid,text,uuid,uuid,uuid)') IS NOT NULL,
+  'T4: void_order_rpc_v11 exists');
 
 -- ===== T5-T6 : EXECUTE reserve service_role =====
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.refund_order_rpc_v10(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('authenticated', 'public.refund_order_rpc_v10(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE')
-  AND has_function_privilege('service_role', 'public.refund_order_rpc_v10(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
-  'T5: refund v10 EXECUTE service_role only (not anon, not authenticated)');
+  NOT has_function_privilege('anon', 'public.refund_order_rpc_v11(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'public.refund_order_rpc_v11(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE')
+  AND has_function_privilege('service_role', 'public.refund_order_rpc_v11(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
+  'T5: refund v11 EXECUTE service_role only (not anon, not authenticated)');
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.void_order_rpc_v10(uuid,text,uuid,uuid,uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('authenticated', 'public.void_order_rpc_v10(uuid,text,uuid,uuid,uuid)', 'EXECUTE')
-  AND has_function_privilege('service_role', 'public.void_order_rpc_v10(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-  'T6: void v10 EXECUTE service_role only (not anon, not authenticated)');
+  NOT has_function_privilege('anon', 'public.void_order_rpc_v11(uuid,text,uuid,uuid,uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'public.void_order_rpc_v11(uuid,text,uuid,uuid,uuid)', 'EXECUTE')
+  AND has_function_privilege('service_role', 'public.void_order_rpc_v11(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+  'T6: void v11 EXECUTE service_role only (not anon, not authenticated)');
 
 -- ===== Fixtures =====
 -- Cashier ...0002 (CASHIER, sans orders.refund) cree les commandes dans une
@@ -120,7 +120,7 @@ DECLARE
   v_mgr UUID := '00000000-0000-0000-0000-000000000004';
   v_res JSONB;
 BEGIN
-  v_res := refund_order_rpc_v10(
+  v_res := refund_order_rpc_v11(
     v_order,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method', 'store_credit', 'amount', 25000)),
@@ -157,7 +157,7 @@ DECLARE
   v_mgr UUID := '00000000-0000-0000-0000-000000000004';
   v_res JSONB;
 BEGIN
-  v_res := refund_order_rpc_v10(
+  v_res := refund_order_rpc_v11(
     v_order,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 25000)),
@@ -180,7 +180,7 @@ DECLARE
   v_cashier_auth UUID := '00000000-0000-0000-0000-000000000002';
   v_res JSONB;
 BEGIN
-  v_res := refund_order_rpc_v10(
+  v_res := refund_order_rpc_v11(
     v_order,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method', 'store_credit', 'amount', 25000)),
@@ -201,7 +201,7 @@ DECLARE
   v_mgr UUID := '00000000-0000-0000-0000-000000000004';
   v_res JSONB;
 BEGIN
-  v_res := void_order_rpc_v10(v_order, 'lot6b cross-shift cash void must fail', v_mgr, v_mgr, gen_random_uuid());
+  v_res := void_order_rpc_v11(v_order, 'lot6b cross-shift cash void must fail', v_mgr, v_mgr, gen_random_uuid());
   PERFORM set_config('lot6b.t12_pass', 'fail_no_raise', false);
 EXCEPTION
   WHEN SQLSTATE 'P0016' THEN PERFORM set_config('lot6b.t12_pass', 'pass', false);
@@ -217,7 +217,7 @@ DECLARE
   v_mgr UUID := '00000000-0000-0000-0000-000000000004';
   v_res JSONB;
 BEGIN
-  v_res := void_order_rpc_v10(v_order, 'lot6b cross-shift qris void', v_mgr, v_mgr, gen_random_uuid());
+  v_res := void_order_rpc_v11(v_order, 'lot6b cross-shift qris void', v_mgr, v_mgr, gen_random_uuid());
   PERFORM set_config('lot6b.t13_pass',
     CASE WHEN (SELECT status FROM orders WHERE id = v_order) = 'voided'
           AND (SELECT session_id::text FROM refunds WHERE id = (v_res->>'refund_id')::uuid)
@@ -247,7 +247,7 @@ BEGIN
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_p1, 'quantity', 1, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0));
   SELECT id INTO oi FROM order_items WHERE order_id = (r->>'order_id')::uuid LIMIT 1;
-  v_res := refund_order_rpc_v10(
+  v_res := refund_order_rpc_v11(
     (r->>'order_id')::uuid,
     jsonb_build_array(jsonb_build_object('order_item_id', oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 25000)),

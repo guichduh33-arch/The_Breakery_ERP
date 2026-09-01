@@ -49,7 +49,7 @@ BEGIN
 
   -- Refund 1 (v9) : numéro attendu daté du jour.
   SELECT id, quantity INTO v_oi, v_qty FROM order_items WHERE order_id = v_order1 LIMIT 1;
-  v_res := refund_order_rpc_v10(
+  v_res := refund_order_rpc_v11(
     v_order1,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', v_qty)),
     jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 20000)),
@@ -83,7 +83,7 @@ SELECT ok(
 -- (avant v9 : enveloppe replay vide, no-op silencieux).
 SELECT throws_ok(
   format($sql$
-    SELECT refund_order_rpc_v10(
+    SELECT refund_order_rpc_v11(
       %L::uuid,
       jsonb_build_array(jsonb_build_object('order_item_id', %L::uuid, 'qty', 1)),
       jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 20000)),
@@ -96,7 +96,7 @@ SELECT throws_ok(
 -- T3 : le replay idempotent D12 marche toujours — même clé => enveloppe de la
 -- 1ʳᵉ exécution avec idempotent_replay: true (pré-check, aucune nouvelle ligne).
 SELECT is(
-  (SELECT r->>'idempotent_replay' FROM refund_order_rpc_v10(
+  (SELECT r->>'idempotent_replay' FROM refund_order_rpc_v11(
      current_setting('rnr.order1')::uuid,
      jsonb_build_array(jsonb_build_object('order_item_id', current_setting('rnr.oi1')::uuid, 'qty', 1)),
      jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 20000)),
@@ -105,15 +105,20 @@ SELECT is(
      current_setting('rnr.auth')::uuid) AS r),
   'true', 'T3: idempotent replay (same key) still returns the first envelope');
 
--- T4 : v8 droppées, v9 seules, authenticated révoqué.
+-- T4 : anciennes versions droppées, v11 seules, authenticated révoqué.
+-- L'énumération DOIT s'étendre à chaque bump — une liste figée cesse de garder
+-- en silence, sans jamais rougir (leçon du bump v7→v8 du 2026-08-22).
 SELECT ok(
-  NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname IN ('refund_order_rpc_v8','void_order_rpc_v8')
+  NOT EXISTS (SELECT 1 FROM pg_proc
+                WHERE proname IN ('refund_order_rpc_v8','void_order_rpc_v8',
+                                  'refund_order_rpc_v9','void_order_rpc_v9',
+                                  'refund_order_rpc_v10','void_order_rpc_v10')
                 AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v10' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'void_order_rpc_v10' AND pronamespace = 'public'::regnamespace)
-  AND NOT has_function_privilege('authenticated', 'public.refund_order_rpc_v10(uuid, jsonb, jsonb, text, uuid, uuid, uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('authenticated', 'public.void_order_rpc_v10(uuid, text, uuid, uuid, uuid)', 'EXECUTE'),
-  'T4: v8 dropped, v9 live, authenticated revoked (monotone versioning)');
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v11' AND pronamespace = 'public'::regnamespace)
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'void_order_rpc_v11' AND pronamespace = 'public'::regnamespace)
+  AND NOT has_function_privilege('authenticated', 'public.refund_order_rpc_v11(uuid, jsonb, jsonb, text, uuid, uuid, uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'public.void_order_rpc_v11(uuid, text, uuid, uuid, uuid)', 'EXECUTE'),
+  'T4: v8/v9/v10 dropped, v11 live, authenticated revoked (monotone versioning)');
 
 SELECT * FROM finish();
 ROLLBACK;

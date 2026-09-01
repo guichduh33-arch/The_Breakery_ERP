@@ -6178,6 +6178,20 @@ export type Database = {
           unit: string
         }[]
       }
+      _restore_sale_stock_v1: {
+        Args: {
+          p_created_by: string
+          p_display_reference_id?: string
+          p_movement_type?: Database["public"]["Enums"]["movement_type"]
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+          p_reference_id: string
+          p_reference_type?: string
+          p_unit?: string
+        }
+        Returns: undefined
+      }
       _retval: { Args: { "": string }; Returns: string }
       _revoke_user_sessions_v1: {
         Args: { p_profile_id: string }
@@ -8027,7 +8041,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v10: {
+      refund_order_rpc_v11: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -8553,7 +8567,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v10: {
+      void_order_rpc_v11: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
