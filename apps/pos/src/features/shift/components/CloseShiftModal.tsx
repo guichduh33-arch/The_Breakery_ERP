@@ -10,7 +10,7 @@
 // note requirement still applies, on the review step.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
+import { Button, Currency, FullScreenModal } from '@breakery/ui';
 // Critique run 2 (2026-08-14 P2) — une seule notation des milliers sur le
 // parcours d'argent : formatIdr, le formatteur unique (id-ID depuis
 // l'arbitrage du 2026-08-13, voir packages/utils/src/idr.ts), jamais un
@@ -275,10 +275,34 @@ export function CloseShiftModal({
           </p>
         )}
 
+        {/* 2026-09-01 — le cash avait son PROPRE pavé numérique en ligne, alors
+            que QRIS et Card ouvrent le clavier virtuel du bas : deux pavés
+            identiques s'affichaient en même temps dès qu'on touchait un volet
+            non-cash. Le cash devient un champ comme les deux autres, servi par
+            l'unique clavier du bas. La saisie par dénominations garde sa
+            grille dédiée — ce n'est pas un pavé, il n'y a pas de doublon. */}
         {step === 'count' && (
           denomEnabled
             ? <DenominationGrid value={denoms} onChange={setDenoms} />
-            : <Numpad value={amountStr} onChange={setAmountStr} />
+            : (
+              <section className="space-y-1">
+                <label htmlFor="counted_cash" className="text-xs uppercase tracking-wide text-text-secondary">
+                  Cash total (drawer count)
+                </label>
+                <input
+                  id="counted_cash"
+                  data-testid="counted-cash-input"
+                  data-vkp="numeric"
+                  type="text"
+                  inputMode="numeric"
+                  aria-required="true"
+                  placeholder="0"
+                  className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+                  value={amountStr}
+                  onChange={(e) => setAmountStr(e.target.value.replace(/\D/g, ''))}
+                />
+              </section>
+            )
         )}
 
         {/* S67 — blind entry for the non-cash volets: no expected shown here
