@@ -41,6 +41,15 @@ export default function SettingsAccountingPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Admin</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Fiscal periods</span>
+      </nav>
+
       <PageHeader
         title="Accounting settings"
         // `italic` retiré : l'italique n'est pas un rôle typographique de ce

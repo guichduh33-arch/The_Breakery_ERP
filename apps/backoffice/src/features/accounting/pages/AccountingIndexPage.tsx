@@ -30,7 +30,7 @@
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ClipboardList, LineChart, Scale } from 'lucide-react';
+import { BookOpen, ClipboardList, LineChart, Scale, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@breakery/ui';
 import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -154,6 +154,15 @@ export default function AccountingIndexPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Accounting hub</span>
+      </nav>
+
       <PageHeader
         title="Accounting"
         subtitle="Chart of accounts, journal entries, general ledger and trial balance."

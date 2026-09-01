@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Button, Input, Select, SectionLabel, useDebouncedValue } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronRight } from 'lucide-react';
 import {
   useJournalEntries,
   type JournalEntryRow,
@@ -162,6 +162,15 @@ export default function JournalEntriesPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Journal entries</span>
+      </nav>
+
       <PageHeader
         title="Journal entries"
         subtitle="Open an entry number for line detail"

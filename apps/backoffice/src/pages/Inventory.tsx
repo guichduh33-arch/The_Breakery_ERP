@@ -20,7 +20,7 @@
 //     (32 px). Elles mélangeaient auparavant deux familles de hauteurs
 //     différentes dans la même rangée.
 
-import { Plus, Truck, Trash2 } from 'lucide-react';
+import { Plus, Truck, Trash2, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Input, Select } from '@breakery/ui';
@@ -406,6 +406,15 @@ export default function InventoryPage() {
   if (!canRead) {
     return (
       <div className="flex flex-col gap-[13px]">
+        {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+            domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+            en extraire un composant partagé serait une décision d'architecture. */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+          <span>Stock</span>
+          <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+          <span className="text-text-secondary">Stock & inventory</span>
+        </nav>
+
         <PageHeader title="Stock &amp; Inventory" />
         <p role="status" className="rounded-md border border-border-subtle bg-bg-elevated p-4 text-sm text-text-secondary">
           You do not have permission to view inventory. Ask an administrator for the
@@ -419,6 +428,15 @@ export default function InventoryPage() {
 
   return (
     <div className="flex flex-col gap-[13px]">
+      {/* Même fil d'Ariane que la branche « accès refusé » plus haut : la page
+          principale est celle qu'on ouvre vraiment, elle ne pouvait pas être la
+          seule des deux sans repère. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Stock &amp; inventory</span>
+      </nav>
+
       <PageHeader
         title="Stock &amp; Inventory"
         subtitle="Every product that carries a stock level, worst first. Corrections are recorded as new movements — nothing here is edited in place."

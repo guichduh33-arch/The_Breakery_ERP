@@ -4,7 +4,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Button, EmptyState, Input, SectionLabel } from '@breakery/ui';
-import { FileText } from 'lucide-react';
+import { FileText, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader.js';
 import {
   useChartOfAccounts,
@@ -63,6 +63,15 @@ export default function ChartOfAccountsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Chart of accounts</span>
+      </nav>
+
       <PageHeader
         // Casse de phrase — DESIGN.md § Boutons (« c'est ce que le back-office
         // emploie ») et `layouts/nav.ts`, qui écrit déjà « Chart of accounts ».

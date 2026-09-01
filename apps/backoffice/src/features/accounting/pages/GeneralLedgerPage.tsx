@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { ChevronRight } from 'lucide-react';
 
 const fmt = formatCurrency;
 // Défaut MUTUALISÉ (`@breakery/utils`) — même helper que le journal, la balance,
@@ -98,6 +99,15 @@ export default function GeneralLedgerPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">General ledger</span>
+      </nav>
+
       <PageHeader
         title="General ledger"
         subtitle="Drilldown by account with running balance"

@@ -96,7 +96,14 @@ describe('SectionsPage — stations de production (ADR-027)', () => {
     currentPerms = new Set(['inventory.read', 'inventory.sections.update']);
     renderPage();
     expect(screen.getByRole('heading', { name: /Production stations/i })).toBeInTheDocument();
-    expect(screen.getByText('Stations')).toBeInTheDocument();
+    // « Stations » est rendu DEUX fois depuis le fil d'Ariane du 2026-09-01 :
+    // le repère de navigation, et le libellé de la tuile de compteur. On vise
+    // chacun par sa région plutôt que par son texte nu — un `getByText` global
+    // ne dit plus lequel des deux il a trouvé.
+    const crumb = screen.getByRole('navigation', { name: /breadcrumb/i });
+    expect(crumb).toHaveTextContent('Stock');
+    expect(crumb).toHaveTextContent('Stations');
+    expect(screen.getAllByText('Stations').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Kitchen')).toBeInTheDocument();
     expect(screen.getByText('Bar')).toBeInTheDocument();
   });
