@@ -4,7 +4,7 @@
 // apps/pos/src/features/order-history/hooks/useRefundOrder + le patron d'erreurs
 // de features/orders/hooks/useVoidOrder.
 //
-// L'EF `refund-order` appelle refund_order_rpc_v10 (socle lot 6b) : depuis le BO,
+// L'EF `refund-order` appelle refund_order_rpc_v11 (socle lot 6b) : depuis le BO,
 // l'opérateur n'a PAS de session ouverte → seuls les tenders non-cash et
 // store_credit sont acceptés. Le cash cross-shift répond 422
 // `cash_refund_requires_open_session` (P0016) ; store_credit sans client répond

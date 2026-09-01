@@ -107,9 +107,9 @@ serve(async (req) => {
     return jsonResponse({ error: 'internal_error' }, 500);
   }
 
-  // service_role admin client — the only role allowed to EXECUTE the v7 RPC.
+  // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('void_order_rpc_v10', {
+  const { data, error } = await admin.rpc('void_order_rpc_v11', {
     p_order_id:            body.order_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
