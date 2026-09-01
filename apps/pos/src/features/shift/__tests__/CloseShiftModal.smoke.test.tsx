@@ -70,15 +70,16 @@ function renderModal(overrides: Partial<CloseShiftModalProps> = {}) {
 }
 
 /**
- * Type the digits on the numpad then commit the blind count → review step.
+ * Fill the cash total then commit the blind count → review step.
  * S67: when the QRIS/card volets are visible (default mock enables all 4
  * methods) they are required-when-visible before Confirm count unlocks — fill
  * them with 0 so pre-S67 cash-only assertions in this file stay unaffected.
+ * 2026-09-01 : le cash se saisissait sur un pavé numérique EN LIGNE, doublon
+ * visuel du clavier virtuel qu'ouvrent QRIS et Card. C'est désormais un champ
+ * comme les deux autres — on le remplit donc de la même façon.
  */
 function countAndConfirm(amount: string): void {
-  for (const ch of amount) {
-    fireEvent.click(screen.getByRole('button', { name: ch }));
-  }
+  fireEvent.change(screen.getByTestId('counted-cash-input'), { target: { value: amount } });
   const qris = screen.queryByTestId('counted-qris-input');
   if (qris) fireEvent.change(qris, { target: { value: '0' } });
   const card = screen.queryByTestId('counted-card-input');
@@ -419,15 +420,16 @@ describe('CloseShiftModal', () => {
     expect(screen.getByTestId('counted-qris-input')).toBeInTheDocument();
   });
 
-  it('replaces the numpad with the denomination grid when the flag is on', () => {
+  it('replaces the cash field with the denomination grid when the flag is on', () => {
     mockDenomEnabled.mockReturnValueOnce(true);
     renderModal();
     expect(screen.getByTestId('denomination-grid')).toBeInTheDocument();
+    expect(screen.queryByTestId('counted-cash-input')).not.toBeInTheDocument();
   });
 
   it('blocks Confirm count until visible non-cash volets are filled', () => {
     renderModal();
-    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.change(screen.getByTestId('counted-cash-input'), { target: { value: '1' } });
     expect(screen.getByRole('button', { name: /confirm count/i })).toBeDisabled();
     fireEvent.change(screen.getByTestId('counted-qris-input'), { target: { value: '0' } });
     fireEvent.change(screen.getByTestId('counted-card-input'), { target: { value: '0' } });
