@@ -139,8 +139,10 @@ describe('OrdersListPage smoke', () => {
 
   it('T3 clicking Details opens the order drawer', async () => {
     renderRoute('/backoffice/orders');
-    const detailsBtn = await screen.findByTestId('row-details-o-1');
-    fireEvent.click(detailsBtn);
+    // Les actions de ligne vivent dans le menu `…` depuis la convergence du
+    // 2026-08-31 : on ouvre, puis on clique l'entrée nommée.
+    fireEvent.click(await screen.findByTestId('row-actions-o-1'));
+    fireEvent.click(screen.getByTestId('row-details-o-1'));
     await waitFor(() => expect(screen.getByTestId('order-detail-drawer')).toBeInTheDocument());
   });
 
@@ -150,9 +152,9 @@ describe('OrdersListPage smoke', () => {
 
     renderRoute('/backoffice/orders');
     // Wait for the list row to appear
-    const editBtn = await screen.findByTestId('row-edit-o-1');
-    // Click Edit to trigger loadItemsAndOpenEdit
-    fireEvent.click(editBtn);
+    fireEvent.click(await screen.findByTestId('row-actions-o-1'));
+    // Click Edit items to trigger loadItemsAndOpenEdit
+    fireEvent.click(screen.getByTestId('row-edit-o-1'));
     // toast.error should fire with the error message
     await waitFor(() => expect(toastErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('db_error_42501'),

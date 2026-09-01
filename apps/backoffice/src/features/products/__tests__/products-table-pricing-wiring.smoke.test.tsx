@@ -62,22 +62,30 @@ function renderTable(onPricing?: (row: ProductRow) => void) {
   );
 }
 
-describe('ProductsTable — pricing button wiring [S45 W-C]', () => {
-  it('renders the $ pricing button when onPricing is provided', () => {
+// Même bascule que le test de suppression : l'action vit dans le menu `…`
+// depuis la convergence du 2026-08-31.
+function openRowMenu(): void {
+  fireEvent.click(screen.getByTestId('row-actions-prod-pricing-1'));
+}
+
+describe('ProductsTable — pricing action wiring [S45 W-C]', () => {
+  it('renders the Edit pricing entry when onPricing is provided', () => {
     renderTable(vi.fn());
+    openRowMenu();
     expect(screen.getByTestId('pricing-btn-prod-pricing-1')).toBeInTheDocument();
   });
 
-  it('does not render the $ pricing button when onPricing is undefined', () => {
+  it('does not render the Edit pricing entry when onPricing is undefined', () => {
     renderTable(undefined);
+    openRowMenu();
     expect(screen.queryByTestId('pricing-btn-prod-pricing-1')).not.toBeInTheDocument();
   });
 
-  it('calls onPricing with the correct row when $ button is clicked', () => {
+  it('calls onPricing with the correct row when Edit pricing is clicked', () => {
     const onPricing = vi.fn();
     renderTable(onPricing);
-    const btn = screen.getByTestId('pricing-btn-prod-pricing-1');
-    fireEvent.click(btn);
+    openRowMenu();
+    fireEvent.click(screen.getByTestId('pricing-btn-prod-pricing-1'));
     expect(onPricing).toHaveBeenCalledWith(MOCK_ROW);
   });
 });

@@ -247,21 +247,33 @@ test('T4: orders list — ProductPicker filters and stages a pending add', async
   // compteurs `orders-counters` est le nouvel ancrage de la page chargée.
   await expect(page.getByTestId('orders-counters')).toBeVisible({ timeout: 20_000 });
 
-  // Surface editable orders (edit action exists only on draft/pending_payment).
-  // Try the unfiltered list first; the row-edit testid is status-gated.
-  const editButtons = page.locator('[data-testid^="row-edit-"]');
-  const hasEditable = await editButtons
-    .first()
-    .waitFor({ state: 'visible', timeout: 15_000 })
-    .then(() => true)
-    .catch(() => false);
+  // Convergence sur le menu `…` (critique du 2026-08-31) : les actions de ligne
+  // ne sont plus rendues avec la ligne, il faut ouvrir son menu. On ouvre chaque
+  // menu jusqu'à en trouver un qui porte `Edit items` — l'entrée reste gatée par
+  // le statut (draft / pending_payment).
+  const rowMenus = page.locator('[data-testid^="row-actions-"]');
+  await expect(rowMenus.first()).toBeVisible({ timeout: 15_000 });
 
-  if (!hasEditable) {
+  let editButton: ReturnType<typeof page.locator> | null = null;
+  const menuCount = await rowMenus.count();
+  for (let i = 0; i < menuCount; i += 1) {
+    await rowMenus.nth(i).click();
+    const candidate = page.locator('[data-testid^="row-edit-"]');
+    const found = await candidate
+      .first()
+      .waitFor({ state: 'visible', timeout: 2_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (found) { editButton = candidate.first(); break; }
+    await page.keyboard.press('Escape');
+  }
+
+  if (editButton === null) {
     await page.screenshot({ path: 'test-results/s39-t4.png', fullPage: true });
     test.skip(true, 'No draft/pending_payment order exists on the dev DB — task brief forbids creating orders (DEV-S39-D3-02).');
   }
 
-  await editButtons.first().click();
+  await editButton.click();
 
   // EditOrderItemsModal with the real S39 ProductPicker.
   const dialog = page.getByRole('dialog', { name: /Edit order/ });
