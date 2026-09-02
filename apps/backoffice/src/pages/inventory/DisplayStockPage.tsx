@@ -22,6 +22,7 @@ import {
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { ChevronRight } from 'lucide-react';
 
 const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
   {
@@ -114,6 +115,15 @@ export default function DisplayStockPage(): JSX.Element {
 
   return (
     <div className="space-y-8">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Display stock</span>
+      </nav>
+
       <PageHeader
         title="Display stock"
         subtitle="Read-only view of the POS display-case counter. These quantities live on a separate ledger (display_stock); selling a display item draws from the display case, not the global BO inventory. Mutations happen from the POS side."

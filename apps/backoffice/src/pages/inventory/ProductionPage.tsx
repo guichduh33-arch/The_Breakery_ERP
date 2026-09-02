@@ -130,6 +130,15 @@ export default function ProductionPage(): JSX.Element {
   if (!canRead) {
     return (
       <div className="space-y-6">
+        {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+            domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+            en extraire un composant partagé serait une décision d'architecture. */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+          <span>Stock</span>
+          <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+          <span className="text-text-secondary">Production</span>
+        </nav>
+
         <PageHeader title="Production" subtitle={PAGE_SUBTITLE} />
         <RestrictedState what="production" permission="inventory.read" />
       </div>
@@ -157,6 +166,15 @@ export default function ProductionPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Même fil d'Ariane que la branche « accès refusé » plus haut : la page
+          principale est celle qu'on ouvre vraiment, elle ne pouvait pas être la
+          seule des deux sans repère. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Production</span>
+      </nav>
+
       <PageHeader title="Production" subtitle={PAGE_SUBTITLE} />
 
       {/* Station tabs + day navigator */}

@@ -81,7 +81,11 @@ export function AddItemForm({ countId }: AddItemFormProps) {
             placeholder="auto"
           />
         </div>
-        <Button variant="ink" onClick={handleAdd} disabled={addItem.isPending}>
+        {/* Critique 2026-08-31 (P1) — `secondary`, plus `ink`. L'encre de la
+            page va à l'action qui TERMINE le travail (« Validate & reveal
+            variances »), pas à celle qui le rallonge d'une ligne. La One Ink
+            Fill Rule n'en autorise qu'un aplat par écran, et il était ici. */}
+        <Button variant="secondary" onClick={handleAdd} disabled={addItem.isPending}>
           {addItem.isPending ? 'Adding…' : 'Add'}
         </Button>
       </div>

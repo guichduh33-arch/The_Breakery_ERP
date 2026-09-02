@@ -78,6 +78,31 @@ describe('TrialBalancePage (S26b Wave 4)', () => {
     expect(badge.textContent).toMatch(/Balanced/i);
   });
 
+  // Critique 2026-08-31 — la balance rendait des `<tr>` nus : on ne pouvait pas
+  // aller d'un compte aux écritures qui le composent. Ce test fige les trois
+  // choses qui rendent le geste utile : la route, le compte visé, ET la période
+  // affichée — un lien qui perd la période renvoie l'expert-comptable sur une
+  // fenêtre par défaut, donc sur d'autres chiffres que ceux qu'il vient de lire.
+  it('T3 — each account code links to its general ledger, period included', async () => {
+    mockRpc.mockReturnValueOnce({ data: TB_PAYLOAD, error: null });
+    render(
+      <QueryClientProvider client={newClient()}>
+        <MemoryRouter>
+          <TrialBalancePage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const link = await screen.findByTestId('tb-drilldown-1110');
+    const href = link.getAttribute('href') ?? '';
+    expect(href).toContain('/backoffice/accounting/general-ledger');
+    expect(href).toContain('account_id=a1');
+    expect(href).toMatch(/start=\d{4}-\d{2}-\d{2}/);
+    expect(href).toMatch(/end=\d{4}-\d{2}-\d{2}/);
+    // Le pied de tableau porte le TOTAL : ce n'est pas un compte, il ne mène
+    // nulle part et ne doit pas devenir cliquable.
+    expect(screen.queryByTestId('tb-drilldown-Total')).toBeNull();
+  });
+
   it('T2 — buildTrialBalanceCsv emits BOM + header + locale numbers', () => {
     const csv = buildTrialBalanceCsv(TB_PAYLOAD);
     // BOM

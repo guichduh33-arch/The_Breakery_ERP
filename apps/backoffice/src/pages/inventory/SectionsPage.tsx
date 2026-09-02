@@ -9,7 +9,7 @@
 // faire ici, et il n'est plus possible d'en créer.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Edit2, Factory, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Factory, Plus, Trash2, ChevronRight } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -117,6 +117,15 @@ export default function SectionsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Stations</span>
+      </nav>
+
       <PageHeader
         className="items-start gap-4"
         title="Production stations"

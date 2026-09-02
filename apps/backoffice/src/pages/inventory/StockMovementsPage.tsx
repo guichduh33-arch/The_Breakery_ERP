@@ -32,6 +32,7 @@ import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { ChevronRight } from 'lucide-react';
 
 const IN_TYPES = new Set([
   'purchase', 'incoming', 'transfer_in', 'production_in',
@@ -86,6 +87,15 @@ export default function StockMovementsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Live movements</span>
+      </nav>
+
       <PageHeader
         className="items-start"
         title="Stock movements"

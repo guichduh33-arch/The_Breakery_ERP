@@ -41,7 +41,7 @@ import { ImportEntityModal } from '@/features/data-import/components/ImportEntit
 // deux handlers, pas à l'ouverture de la liste.
 import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
 import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
-import { formatCurrency, formatDate } from '@breakery/utils';
+import { formatCurrency, formatDateShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   usePurchaseOrdersList,
@@ -210,14 +210,22 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       // The Mono-Carries-Data Rule nomme l'horodatage : la colonne de montant
       // juste en dessous porte déjà `font-data`, les deux colonnes de DATE
       // avaient été oubliées par le même lot.
-      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.order_date !== null ? formatDate(r.order_date) : '—'}</span>,
+      //
+      // Critique 2026-08-31 (P1) — `formatDate` rendait `31/08/2026` : c'est le
+      // rôle SAISIE ET FILTRE de packages/utils/src/dates.ts, pas le rôle
+      // colonne de tableau. Le fichier dit dans son propre commentaire que le
+      // mois en LETTRES existe pour tuer l'ambiguïté jour/mois — et l'écran
+      // voisin rendait `08/31/2026`. Deux formats numériques contradictoires
+      // dans une même session, sur un produit dont le jour métier est un
+      // invariant (ADR-019).
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.order_date !== null ? formatDateShortWita(r.order_date) : '—'}</span>,
     },
     {
       id:    'expected_date',
       header: 'Expected',
       width: '120px',
       align: 'left',
-      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.expected_date !== null ? formatDate(r.expected_date) : '—'}</span>,
+      render: (r) => <span className="font-data tabular-nums text-text-secondary">{r.expected_date !== null ? formatDateShortWita(r.expected_date) : '—'}</span>,
     },
     {
       id:    'total',

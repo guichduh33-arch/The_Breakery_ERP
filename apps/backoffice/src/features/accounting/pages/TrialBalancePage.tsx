@@ -2,17 +2,20 @@
 // Session 26b / Wave 4 — Trial Balance page.
 
 import { useState, type JSX } from 'react';
+import { Link } from 'react-router-dom';
 import { Input, SectionLabel } from '@breakery/ui';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
-import { Download } from 'lucide-react';
+import { Download, ChevronRight } from 'lucide-react';
 import {
   useTrialBalance,
 } from '@/features/accounting/hooks/useTrialBalance.js';
 import { downloadTrialBalanceCsv } from '@/features/accounting/components/exportTrialBalanceCsv.js';
+import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 const CLASS_LABELS: Record<number, string> = {
   1: 'Asset', 2: 'Liability', 3: 'Equity', 4: 'Revenue', 5: 'COGS', 6: 'Expense',
@@ -46,6 +49,15 @@ export default function TrialBalancePage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Trial balance</span>
+      </nav>
+
       <PageHeader
         title="Trial balance"
         subtitle="Asserts Σ debit = Σ credit across active accounts"
@@ -142,7 +154,37 @@ export default function TrialBalancePage(): JSX.Element {
                     data-testid={`tb-row-${line.code}`}
                     className="border-t border-border-subtle"
                   >
-                    <td className="px-3 py-2 font-mono text-xs">{line.code}</td>
+                    {/* Critique 2026-08-31 — la balance rendait des `<tr>` nus :
+                        aucun lien, aucun handler. On ne pouvait pas aller de
+                        « 1141 Inventory · Rp 18.813.000 » aux écritures qui le
+                        composent, sur l'écran comptable phare d'un produit dont
+                        trois principes sur cinq portent sur la traçabilité.
+                        Le lien est porté par le CODE (l'identifiant), comme le
+                        numéro de bon l'est dans la liste des achats — une ligne
+                        entière cliquable n'est ni focalisable ni annonçable.
+                        `buildDrilldownUrl('account', …)` existait déjà et visait
+                        exactement cette route ; il n'avait simplement aucun
+                        appelant ici. La période affichée voyage avec le lien. */}
+                    <td className="px-3 py-2 font-mono text-xs">
+                      {(() => {
+                        const href = buildDrilldownUrl(
+                          'account', line.account_id, { start: startDate, end: endDate },
+                        );
+                        // `href` ne peut être null que sur un `account_id` vide.
+                        // On rend alors le code EN CLAIR : un lien mort (`#`)
+                        // ment davantage qu'un texte qui n'en est pas un.
+                        return href === null ? line.code : (
+                          <Link
+                            to={href}
+                            className={`text-gold hover:underline ${FOCUS_RING}`}
+                            aria-label={`Open the general ledger for ${line.code} ${line.name}`}
+                            data-testid={`tb-drilldown-${line.code}`}
+                          >
+                            {line.code}
+                          </Link>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 py-2">{line.name}</td>
                     <td className="px-3 py-2 text-xs text-text-secondary">
                       {CLASS_LABELS[line.account_class] ?? line.account_class}

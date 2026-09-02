@@ -78,8 +78,11 @@ export function usePickedUpOrderSync(): void {
       store.setPickedUpOrderId(pickedUpOrderId);
       knownIdsRef.current = new Set(rows.map((r) => r.id));
 
+      // L'interface parle ANGLAIS (CLAUDE.md) — ce toast était le seul écart de
+      // langue rendu à l'écran dans tout `apps/pos/src`. « in the room » est la
+      // formule déjà posée par le back-office pour la salle (OpenOrdersCard).
       const names = fresh.map((r) => r.name_snapshot).join(', ');
-      toast.info(`Nouvel article en salle : ${names}`);
+      toast.info(`New item in the room: ${names}`);
     }
 
     // Nom de canal unique par montage — StrictMode double-monte et deux canaux

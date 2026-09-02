@@ -7,7 +7,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, CheckCircle2, Loader2, Plus } from 'lucide-react';
+import { ClipboardList, CheckCircle2, Loader2, Plus, ChevronRight } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -127,6 +127,15 @@ export default function OpnameListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Opname</span>
+      </nav>
+
       <PageHeader
         className="items-start gap-4"
         title="Stock counts"

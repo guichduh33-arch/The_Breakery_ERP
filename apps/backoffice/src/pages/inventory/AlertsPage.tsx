@@ -20,7 +20,7 @@
 // par clé, l'onglet monté ne refait donc aucune requête.
 
 import { useMemo, useState, type JSX } from 'react';
-import { AlertTriangle, ShoppingCart, SlidersHorizontal, Wheat } from 'lucide-react';
+import { AlertTriangle, ShoppingCart, SlidersHorizontal, Wheat, ChevronRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, cn } from '@breakery/ui';
 import { formatQuantity } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -97,6 +97,15 @@ export default function AlertsPage(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-[13px]">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Alerts</span>
+      </nav>
+
       <PageHeader title="Stock alerts" subtitle={subtitle} />
 
       <Tabs value={tab} onValueChange={setTab}>

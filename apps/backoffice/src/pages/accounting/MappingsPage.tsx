@@ -11,6 +11,7 @@ import { useMappings, type MappingRow } from '@/features/accounting-mappings/hoo
 import { MappingEditDialog } from '@/features/accounting-mappings/components/MappingEditDialog.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { Button } from '@breakery/ui';
+import { ChevronRight } from 'lucide-react';
 
 export default function MappingsPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -27,6 +28,15 @@ export default function MappingsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Account mappings</span>
+      </nav>
+
       <PageHeader
         title="Accounting Mappings"
         subtitle={

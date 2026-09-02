@@ -2,7 +2,7 @@
 // Cash Wallets module — main treasury page.
 // Shows wallet cards, ledger table, reconciliation panel, analysis panel, and CSV export.
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronRight } from 'lucide-react';
 import { Button, Card } from '@breakery/ui';
 import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
@@ -64,6 +64,15 @@ export default function CashTreasuryPage() {
     // ajoutait, et cette page rendait donc une gouttière de ~46 px là où ses
     // quatre sœurs du module accounting en rendent 22.
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Finance</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Cash treasury</span>
+      </nav>
+
       <PageHeader
         className="items-center"
         title="Cash Treasury"

@@ -29,6 +29,7 @@ import {
 } from '@/features/inventory-production/hooks/useMarginAlerts.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { ChevronRight } from 'lucide-react';
 
 const marginCsvColumns: CsvColumn<MarginAlertRow>[] = [
   { header: 'Product',          accessor: (r) => r.productName ?? r.productId, format: 'text' },
@@ -121,6 +122,15 @@ export default function MarginWatchPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      {/* Critique 2026-08-31 — comptabilité et inventaire étaient les seuls
+          domaines sans fil d'Ariane. Motif recopié d'OrdersListPage, en ligne :
+          en extraire un composant partagé serait une décision d'architecture. */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+        <span className="text-text-secondary">Margin watch</span>
+      </nav>
+
       <PageHeader
         title="Margin Watch"
         subtitle="Recipe-built products whose expected gross margin has slipped below the per-product target. Recomputed daily at 02:00 UTC."
