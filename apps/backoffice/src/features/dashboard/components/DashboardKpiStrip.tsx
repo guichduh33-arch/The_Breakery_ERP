@@ -39,7 +39,9 @@ import {
   formatCount, formatIdr, formatIdrShort, formatPct,
 } from '../utils/format.js';
 import { buildKpiTargets, type KpiTarget, type KpiTargetKey } from '../utils/kpiTargets.js';
-import { hasNoSalesYetToday, NO_SALES_YET_NOTE } from '../utils/dayState.js';
+import {
+  hasNoComparisonBase, hasNoSalesYetToday, noBaselineNote, NO_SALES_YET_NOTE,
+} from '../utils/dayState.js';
 import type { DashboardKpis } from '../hooks/useDashboardOverview.js';
 
 const CARD = KPI_CARD;
@@ -196,6 +198,13 @@ export function DashboardKpiStrip({
   // l'ouverture. On retire les comparaisons et on DIT pourquoi, une fois.
   const noSalesYet = hasNoSalesYetToday(kpis);
 
+  // Même raisonnement, une colonne à la fois : la journée a vendu, mais la
+  // veille (ou le même jour la semaine passée) était vide. Six tirets alignés
+  // ne disent pas « période sans base » — ils se lisent comme une panne.
+  const noYesterday = !noSalesYet && hasNoComparisonBase(kpis, 'yesterday');
+  const noD7        = !noSalesYet && hasNoComparisonBase(kpis, 'd7');
+  const baselineNote = noBaselineNote(noYesterday, noD7);
+
   return (
     <div className={grid} data-testid="dashboard-kpi-row">
       <Tile
@@ -209,8 +218,8 @@ export function DashboardKpiStrip({
       >
         {!noSalesYet && (
           <>
-            <Delta value={kpis.net_revenue.vs_yesterday} period="yest" onInk />
-            <Delta value={kpis.net_revenue.vs_d7} period="D-7" onInk />
+            {!noYesterday && <Delta value={kpis.net_revenue.vs_yesterday} period="yest" onInk />}
+            {!noD7 && <Delta value={kpis.net_revenue.vs_d7} period="D-7" onInk />}
           </>
         )}
       </Tile>
@@ -224,8 +233,8 @@ export function DashboardKpiStrip({
       >
         {!noSalesYet && (
           <>
-            <Delta value={kpis.orders.vs_yesterday} period="yest" />
-            <Delta value={kpis.orders.vs_d7} period="D-7" />
+            {!noYesterday && <Delta value={kpis.orders.vs_yesterday} period="yest" />}
+            {!noD7 && <Delta value={kpis.orders.vs_d7} period="D-7" />}
           </>
         )}
       </Tile>
@@ -244,8 +253,8 @@ export function DashboardKpiStrip({
       >
         {!noSalesYet && (
           <>
-            <Delta value={kpis.customers.vs_yesterday} period="yest" />
-            <Delta value={kpis.customers.vs_d7} period="D-7" />
+            {!noYesterday && <Delta value={kpis.customers.vs_yesterday} period="yest" />}
+            {!noD7 && <Delta value={kpis.customers.vs_d7} period="D-7" />}
           </>
         )}
       </Tile>
@@ -259,8 +268,8 @@ export function DashboardKpiStrip({
       >
         {!noSalesYet && (
           <>
-            <Delta value={kpis.items_sold.vs_yesterday} period="yest" />
-            <Delta value={kpis.items_sold.vs_d7} period="D-7" />
+            {!noYesterday && <Delta value={kpis.items_sold.vs_yesterday} period="yest" />}
+            {!noD7 && <Delta value={kpis.items_sold.vs_d7} period="D-7" />}
           </>
         )}
       </Tile>
@@ -278,8 +287,8 @@ export function DashboardKpiStrip({
       >
         {!noSalesYet && (
           <>
-            <Delta value={kpis.avg_basket.vs_yesterday} period="yest" />
-            <Delta value={kpis.avg_basket.vs_d7} period="D-7" />
+            {!noYesterday && <Delta value={kpis.avg_basket.vs_yesterday} period="yest" />}
+            {!noD7 && <Delta value={kpis.avg_basket.vs_d7} period="D-7" />}
           </>
         )}
       </Tile>
@@ -293,8 +302,8 @@ export function DashboardKpiStrip({
       >
         {!noSalesYet && (
           <>
-            <Delta value={margin.vs_yesterday_pt} unit="pt" period="yest" />
-            <Delta value={margin.vs_d7_pt} unit="pt" period="D-7" />
+            {!noYesterday && <Delta value={margin.vs_yesterday_pt} unit="pt" period="yest" />}
+            {!noD7 && <Delta value={margin.vs_d7_pt} unit="pt" period="D-7" />}
           </>
         )}
       </Tile>
@@ -339,6 +348,14 @@ export function DashboardKpiStrip({
       {noSalesYet && (
         <p className={cn(NOTE, 'col-span-full -mt-0.5')} data-testid="no-sales-yet">
           {NO_SALES_YET_NOTE}
+        </p>
+      )}
+
+      {/* La colonne repliée se nomme, une fois, au même endroit et dans le même
+          registre que la mention d'ouverture. */}
+      {baselineNote !== null && (
+        <p className={cn(NOTE, 'col-span-full -mt-0.5')} data-testid="no-baseline">
+          {baselineNote}
         </p>
       )}
 
