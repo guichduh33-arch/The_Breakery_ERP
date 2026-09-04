@@ -83,7 +83,7 @@ export default function TrialBalancePage(): JSX.Element {
           <Input
             type="date" lang="id-ID" value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="tb-filter-start"
           />
         </label>
@@ -92,7 +92,7 @@ export default function TrialBalancePage(): JSX.Element {
           <Input
             type="date" lang="id-ID" value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="tb-filter-end"
           />
         </label>

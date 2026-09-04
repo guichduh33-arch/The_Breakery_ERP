@@ -41,3 +41,31 @@ describe('cn — outline style vs width', () => {
     expect(classes(cn('text-sm', 'text-lg'))).toEqual(['text-lg']);
   });
 });
+
+// Deuxième instance de la même panne : les crans TACTILES du preset sont des
+// clés custom que tailwind-merge ne classe dans aucun groupe de taille. Sans
+// l'override, `h-9` et `h-touch-min` partaient ENSEMBLE et l'ordre du CSS
+// généré tranchait — `.h-touch-min` est émis après `.h-9`, donc une barre de
+// filtres « corrigée » en 36 px restait à 44 px, sans erreur nulle part.
+describe('cn — crans tactiles du preset', () => {
+  it('lets an inline height replace the touch height of a primitive', () => {
+    expect(classes(cn('flex h-touch-min w-full px-3', 'h-9'))).not.toContain('h-touch-min');
+    expect(classes(cn('flex h-touch-min w-full px-3', 'h-9'))).toContain('h-9');
+  });
+
+  it('merges two touch heights, last one winning', () => {
+    expect(classes(cn('h-touch-comfy', 'h-touch-large'))).toEqual(['h-touch-large']);
+  });
+
+  it('applies to width, min-height and min-width too', () => {
+    expect(classes(cn('w-touch-comfy', 'w-40'))).toEqual(['w-40']);
+    expect(classes(cn('min-h-touch-min', 'min-h-0'))).toEqual(['min-h-0']);
+    expect(classes(cn('min-w-touch-min', 'min-w-0'))).toEqual(['min-w-0']);
+  });
+
+  it('does not confuse a touch height with a touch width', () => {
+    // Deux AXES distincts : l'un ne doit jamais chasser l'autre.
+    expect(classes(cn('h-touch-comfy', 'w-touch-comfy')))
+      .toEqual(['h-touch-comfy', 'w-touch-comfy']);
+  });
+});

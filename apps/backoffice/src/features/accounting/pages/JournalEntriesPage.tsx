@@ -211,7 +211,7 @@ export default function JournalEntriesPage(): JSX.Element {
             type="date" lang="id-ID"
             value={startDate}
             onChange={(e) => { patchParams({ start: e.target.value, end: endDate }); }}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="je-filter-start"
           />
         </label>
@@ -221,7 +221,7 @@ export default function JournalEntriesPage(): JSX.Element {
             type="date" lang="id-ID"
             value={endDate}
             onChange={(e) => { patchParams({ start: startDate, end: e.target.value }); }}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="je-filter-end"
           />
         </label>
@@ -232,7 +232,7 @@ export default function JournalEntriesPage(): JSX.Element {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Description or entry #"
-            className="mt-1 w-56"
+            className="mt-1 h-9 w-56"
             data-testid="je-filter-search"
           />
         </label>
@@ -241,7 +241,7 @@ export default function JournalEntriesPage(): JSX.Element {
           <Select
             value={sourceFilter}
             onChange={(e) => { patchParams({ source: e.target.value }); }}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="je-filter-source"
           >
             <option value="">All sources</option>
@@ -256,7 +256,7 @@ export default function JournalEntriesPage(): JSX.Element {
           <Select
             value={accountFilter}
             onChange={(e) => { patchParams({ account: e.target.value }); }}
-            className="mt-1 max-w-64"
+            className="mt-1 h-9 max-w-64"
             data-testid="je-filter-account"
           >
             <option value="">All accounts</option>

@@ -18,10 +18,11 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 // Les deux champs de période rendaient ~29 px (`px-2 py-1`) sans aucun anneau de
-// focus, là où DESIGN.md § Champs impose 44 px et l'anneau or. `h-touch-min`
-// vaut 44 px dans les deux thèmes (luxe-dark.css) ; c'est la hauteur que porte
-// aussi le primitif `Input`, dont ces `<input type="date">` reprennent le reste
-// de la spécification (rayon 4 px, `border-border-subtle`, feuille blanche).
+// focus. Ils ont d'abord été portés à 44 px ; c'était le mauvais cran. DESIGN.md
+// § Champs n'en déclare que DEUX et les assigne par RÔLE : 44 px au champ de
+// formulaire, 36 px (`h-9`) au champ EN LIGNE — barre de filtres, sélecteur de
+// période, ce qu'est exactement cette paire. Le reste de la spécification vient
+// du primitif `Input` (rayon 4 px, feuille blanche, anneau or).
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 const SMALL_MONEY_FLOAT = 4_000_000;
@@ -131,7 +132,7 @@ export default function CashTreasuryPage() {
             type="date" lang="id-ID"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className={`h-touch-min rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+            className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
           <span aria-hidden="true">→</span>
           <label htmlFor="treasury-range-to" className="text-xs uppercase tracking-widest text-text-secondary">
@@ -142,7 +143,7 @@ export default function CashTreasuryPage() {
             type="date" lang="id-ID"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className={`h-touch-min rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+            className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
           <Button
             variant="secondary"

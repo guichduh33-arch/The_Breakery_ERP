@@ -506,7 +506,7 @@ export default function OrdersListPage(): JSX.Element {
           onChange={(e) => { setQuickFind(e.target.value); }}
           placeholder="Find order # or customer in results"
           maxLength={64}
-          className="w-full max-w-xs"
+          className="h-9 w-full max-w-xs"
         />
         <label htmlFor="orders-start" className="sr-only">Start date</label>
         <Input
@@ -515,7 +515,7 @@ export default function OrdersListPage(): JSX.Element {
           value={startDraft}
           onChange={(e) => { setStartDraft(e.target.value); commitDates(e.target.value, endDraft); }}
           onBlur={() => { commitDates(startDraft, endDraft, true); }}
-          className="w-40"
+          className="h-9 w-40"
         />
         <label htmlFor="orders-end" className="sr-only">End date</label>
         <Input
@@ -524,14 +524,14 @@ export default function OrdersListPage(): JSX.Element {
           value={endDraft}
           onChange={(e) => { setEndDraft(e.target.value); commitDates(startDraft, e.target.value); }}
           onBlur={() => { commitDates(startDraft, endDraft, true); }}
-          className="w-40"
+          className="h-9 w-40"
         />
         <label htmlFor="orders-type" className="sr-only">Order type</label>
         <Select
           id="orders-type"
           value={params.get('order_type') ?? ''}
           onChange={(e) => { patchParams({ order_type: e.target.value || null }); }}
-          className="w-40"
+          className="h-9 w-40"
         >
           <option value="">All types</option>
           {ORDER_TYPES.map((t) => (
@@ -543,7 +543,7 @@ export default function OrdersListPage(): JSX.Element {
           id="orders-payment"
           value={params.get('payment_method') ?? ''}
           onChange={(e) => { patchParams({ payment_method: e.target.value || null }); }}
-          className="w-44"
+          className="h-9 w-44"
         >
           <option value="">All payments</option>
           {PAYMENT_METHODS.map((m) => (
