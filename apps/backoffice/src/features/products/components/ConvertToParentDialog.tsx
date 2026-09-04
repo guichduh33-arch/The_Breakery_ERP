@@ -93,7 +93,7 @@ export function ConvertToParentDialog({
                 d'axes est un jeu de boutons, déjà nommé par son
                 `role="group" aria-label`). Un `<label>` sans `for` ni contrôle
                 imbriqué est du HTML invalide — c'est un titre, pas un libellé. */}
-            <span className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <span className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Axis
             </span>
             <div role="group" aria-label="Variant axis" className="inline-flex gap-1 rounded-sm border border-border-subtle bg-bg-elevated p-1">
@@ -117,7 +117,7 @@ export function ConvertToParentDialog({
           </div>
 
           <div>
-            <label htmlFor="convert-first-label" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="convert-first-label" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               First variant label
             </label>
             {/* Primitif partagé (2026-08-18). Ces deux champs portaient un
@@ -154,7 +154,7 @@ export function ConvertToParentDialog({
               <>
                 <label
                   htmlFor="convert-custom-name"
-                  className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+                  className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1"
                 >
                   Variant name
                 </label>

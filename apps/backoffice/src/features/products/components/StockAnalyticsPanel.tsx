@@ -27,8 +27,9 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { Badge, Card, EmptyState, SectionLabel, cn } from '@breakery/ui';
-import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
+import { Badge, Card, EmptyState, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
+import { formatCurrency, formatDateShortWita, formatNumber, formatQuantity } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
@@ -58,9 +59,8 @@ function fmtDate(s: string | null): string {
 // métier id-ID, l'arrondi entier des unités de comptage et l'unité en suffixe.
 // Un taux, lui, n'est pas une quantité : il garde son rendu d'origine — le lot
 // porte sur les montants et les quantités, pas sur les pourcentages.
-function fmtPct(n: number | null | undefined, digits = 1): string {
-  if (n === null || n === undefined) return '—';
-  return Number(n).toLocaleString(undefined, { maximumFractionDigits: digits });
+function fmtPct(n: number | null | undefined, digits: 0 | 1 | 2 = 1): string {
+  return formatNumber(n, { digits });
 }
 
 interface Props {
@@ -232,7 +232,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
         <Panel
           title="Purchase Price Trend"
           right={
-            <div className="flex items-center gap-3 text-xs uppercase tracking-widest">
+            <div className="font-data font-semibold flex items-center gap-3 text-xs uppercase tracking-widest">
               <span className="flex items-center gap-1 text-success"><span className="h-2 w-2 rounded-full bg-success" />Lower</span>
               <span className="flex items-center gap-1 text-red"><span className="h-2 w-2 rounded-full bg-red" />Higher</span>
             </div>

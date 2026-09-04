@@ -30,7 +30,7 @@ export function BoulangerModeToggle({
   return (
     <div className="flex flex-col gap-1" data-testid="baker-mode-toggle">
       <div className="flex items-center gap-2">
-        <span className="text-xs uppercase tracking-widest text-text-secondary">
+        <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Baker&rsquo;s mode
         </span>
         <button
@@ -65,7 +65,7 @@ export function BoulangerModeToggle({
         </button>
         <span
           className={cn(
-            'text-xs font-semibold uppercase tracking-widest',
+            'font-data text-xs font-semibold uppercase tracking-widest',
             value ? 'text-green' : 'text-text-muted',
           )}
           data-testid="baker-mode-state"

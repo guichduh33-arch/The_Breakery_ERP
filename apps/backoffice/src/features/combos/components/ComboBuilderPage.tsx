@@ -259,7 +259,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
           {/* Choice groups */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-text-secondary">
+              <h2 className="font-data text-sm font-semibold uppercase tracking-widest text-text-secondary">
                 Choice Groups
               </h2>
               <button

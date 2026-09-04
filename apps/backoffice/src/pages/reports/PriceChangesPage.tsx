@@ -25,7 +25,7 @@ import { useMemo, type JSX } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { CsvColumn } from '@breakery/domain';
-import { formatPercent } from '@breakery/utils';
+import { formatDateTimeShortWita, formatPercent } from '@breakery/utils';
 import { supabase } from '@/lib/supabase.js';
 import { PanelCard } from '@/components/PanelCard.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -190,7 +190,7 @@ export default function PriceChangesPage(): JSX.Element {
             <tbody>
               {sorted.rows.map((r, idx) => (
                 <tr key={`${r.product_id}-${r.changed_at}-${idx}`} className="border-b border-border-subtle">
-                  <td className="py-2 font-data text-xs text-text-secondary">{r.changed_at.slice(0, 10)}</td>
+                  <td className="py-2 font-data text-xs text-text-secondary">{formatDateTimeShortWita(r.changed_at)}</td>
                   <td className="py-2 font-medium">
                     <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
                   </td>

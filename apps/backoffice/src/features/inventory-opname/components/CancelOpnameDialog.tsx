@@ -46,7 +46,7 @@ export function CancelOpnameDialog({ countId, onClose }: CancelOpnameDialogProps
         </DialogHeader>
 
         <div className="space-y-2">
-          <label htmlFor="opname-cancel-reason" className="block text-xs uppercase tracking-wider text-text-secondary">
+          <label htmlFor="opname-cancel-reason" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary">
             Reason
           </label>
           <textarea

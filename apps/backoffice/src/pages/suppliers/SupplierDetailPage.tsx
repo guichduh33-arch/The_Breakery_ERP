@@ -37,19 +37,9 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  KpiTile,
-  SectionLabel,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { Badge, Button, Card, EmptyState, KpiTile, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
+import { formatCurrency, formatNumber } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useSupplierDetail } from '@/features/suppliers/hooks/useSupplierDetail.js';
@@ -131,7 +121,7 @@ function fmtIdrPrefixed(amount: number): string {
 
 function fmtDays(days: number): string {
   if (!Number.isFinite(days)) return '—';
-  return `${days.toFixed(1)} days`;
+  return `${formatNumber(days, { digits: 1 })} days`;
 }
 
 function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoading: boolean }): JSX.Element {

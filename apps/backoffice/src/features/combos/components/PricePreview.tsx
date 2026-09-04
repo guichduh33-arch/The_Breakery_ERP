@@ -29,7 +29,7 @@ export function PricePreview({ definition }: Props): JSX.Element {
       data-testid="price-preview"
     >
       <div>
-        <div className="text-xs uppercase tracking-widest text-text-secondary font-semibold">
+        <div className="font-data text-xs uppercase tracking-widest text-text-secondary font-semibold">
           Price Range
         </div>
         {/* La fourchette est calculée ici, dans le navigateur, alors que le prix

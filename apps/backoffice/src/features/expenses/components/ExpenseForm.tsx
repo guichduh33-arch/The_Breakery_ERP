@@ -11,7 +11,8 @@
 // focus au premier champ fautif.
 
 import { useState } from 'react';
-import { Button, FormField, Input, Select } from '@breakery/ui';
+import { Button, Input, Select } from '@breakery/ui';
+import { FormField } from '@/components/FormField.js';
 import { CategoryPicker } from './CategoryPicker.js';
 import { ReceiptUploader } from './ReceiptUploader.js';
 
@@ -189,7 +190,7 @@ export function ExpenseForm({
       </FormField>
 
       <div className="space-y-1">
-        <span className="block text-xs uppercase tracking-widest text-text-secondary">
+        <span className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">
           Receipt (optional)
         </span>
         <ReceiptUploader

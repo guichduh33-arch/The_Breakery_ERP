@@ -29,7 +29,7 @@
 
 import { useMemo, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
-import { formatPercent } from '@breakery/utils';
+import { formatNumber, formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { Delta } from '@/components/kpi/Delta.js';
@@ -155,7 +155,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
       // Un délai se compare en JOURS, pas en pour-cent de jours : `unit: 'pt'`
       // rend l'écart tel quel.
       key: 'lead', label: 'Avg lead time',
-      value: leadDays === null ? '—' : `${leadDays.toFixed(1)} d`,
+      value: leadDays === null ? '—' : `${formatNumber(leadDays, { digits: 1 })} d`,
       delta: leadDays !== null && prevLeadDays !== null ? leadDays - prevLeadDays : null,
       unit:  'pt', invert: true,
       note:  'days, weighted by orders',
@@ -270,7 +270,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
                   <td className={NUM_CELL}>{formatCount(received)}</td>
                   <td className={NUM_CELL}>{formatCount(cancelled)}</td>
                   <td className={`${NUM_CELL} text-text-secondary`}>
-                    {leadDays === null ? '—' : leadDays.toFixed(1)}
+                    {leadDays === null ? '—' : formatNumber(leadDays, { digits: 1 })}
                   </td>
                   <td className={NUM_CELL}>—</td>
                 </tr>

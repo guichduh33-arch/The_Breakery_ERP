@@ -22,7 +22,7 @@ export function SalesVelocityChart({ data, unit }: SalesVelocityChartProps) {
 
   return (
     <div className="h-64 border border-border-subtle rounded-md p-3 bg-bg-elevated">
-      <div className="text-xs uppercase tracking-wider text-text-secondary mb-2">
+      <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary mb-2">
         Daily sales / production-out ({unit})
       </div>
       {/* Le nom accessible porte sur le graphe SEUL : posé sur la carte, il

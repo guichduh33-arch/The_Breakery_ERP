@@ -99,7 +99,7 @@ export function ModifiersPanel({ product }: ModifiersPanelProps): JSX.Element {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-text-muted">
+          <h3 className="font-data text-sm font-semibold uppercase tracking-widest text-text-muted">
             Modifiers / Variant types
           </h3>
           <p className="text-xs text-text-muted">

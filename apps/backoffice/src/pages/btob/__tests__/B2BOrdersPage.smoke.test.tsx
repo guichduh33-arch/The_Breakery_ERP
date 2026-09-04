@@ -275,7 +275,7 @@ describe('B2BOrdersPage', () => {
     // l'etat NORMAL aujourd'hui, pas une erreur. Il doit se lire comme tel.
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
-    expect(screen.getByText('2026-08-09')).toBeInTheDocument();
+    expect(screen.getByText('09 Aug')).toBeInTheDocument();
     expect(screen.getByText('not set')).toBeInTheDocument();
   });
 

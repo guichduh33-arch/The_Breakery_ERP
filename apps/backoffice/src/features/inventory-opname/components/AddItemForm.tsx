@@ -45,7 +45,7 @@ export function AddItemForm({ countId }: AddItemFormProps) {
 
   return (
     <div className="border border-border-subtle rounded-md p-3 bg-bg-elevated">
-      <div className="text-xs uppercase tracking-wider text-text-secondary mb-2">Add product</div>
+      <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary mb-2">Add product</div>
       <div className="flex gap-2 items-end">
         {/* Seul call-site de ProductTypeahead qui n'ouvrait pas d'`id` : le
             champ n'était donc nommé que par son `placeholder`, effacé à la

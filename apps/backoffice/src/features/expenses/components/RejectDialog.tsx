@@ -37,7 +37,7 @@ export function RejectDialog({ open, expenseId, onClose, onSuccess }: RejectDial
           <DialogDescription>Provide a reason — it will be visible to the creator.</DialogDescription>
         </DialogHeader>
         <div className="space-y-1">
-          <label htmlFor="reject-reason" className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="reject-reason" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Reason <span className="text-red">*</span>
           </label>
           <textarea

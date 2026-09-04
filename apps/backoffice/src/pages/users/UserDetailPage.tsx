@@ -100,7 +100,7 @@ export default function UserDetailPage() {
         subtitle={
           <>
             <span className="font-mono mr-3">{u.employee_code}</span>
-            <span className="uppercase tracking-wider text-xs">{u.role_code}</span>
+            <span className="font-data font-semibold uppercase tracking-wider text-xs">{u.role_code}</span>
             {isDeleted && (
               <span className="ml-3 text-xs text-danger">(deleted)</span>
             )}
@@ -124,7 +124,7 @@ export default function UserDetailPage() {
 
       <div className="grid grid-cols-2 gap-4 text-sm bg-bg-elevated rounded p-4">
         <div>
-          <div className="text-xs uppercase tracking-wider text-text-secondary">Status</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">Status</div>
           <div>
             {isDeleted
               ? <span className="text-danger">Deleted</span>
@@ -133,23 +133,23 @@ export default function UserDetailPage() {
           </div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wider text-text-secondary">Last login</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">Last login</div>
           <div>{u.last_login_at !== null ? formatDateTime(u.last_login_at) : '—'}</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wider text-text-secondary">Failed attempts</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">Failed attempts</div>
           <div>{u.failed_login_attempts}</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wider text-text-secondary">Locked until</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">Locked until</div>
           <div>{u.locked_until !== null ? formatDateTime(u.locked_until) : '—'}</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wider text-text-secondary">Created</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">Created</div>
           <div>{formatDate(u.created_at)}</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wider text-text-secondary">Updated</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">Updated</div>
           <div>{formatDate(u.updated_at)}</div>
         </div>
       </div>

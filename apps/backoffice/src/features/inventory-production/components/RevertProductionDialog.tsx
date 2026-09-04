@@ -77,7 +77,7 @@ export function RevertProductionDialog({
 
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-3">
           <div className="space-y-1">
-            <label htmlFor="revert-reason" className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor="revert-reason" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason
             </label>
             <Input

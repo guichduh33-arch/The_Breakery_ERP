@@ -124,7 +124,7 @@ export default function CashTreasuryPage() {
               que pour l'œil, et disparaît de la lecture vocale. Les libellés
               sont donc VISIBLES (WCAG 1.3.1 / 4.1.2, niveau A) : ils servent
               aussi le lecteur voyant qui revient sur l'écran. */}
-          <label htmlFor="treasury-range-from" className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="treasury-range-from" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             From
           </label>
           <input
@@ -135,7 +135,7 @@ export default function CashTreasuryPage() {
             className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
           />
           <span aria-hidden="true">→</span>
-          <label htmlFor="treasury-range-to" className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="treasury-range-to" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             To
           </label>
           <input

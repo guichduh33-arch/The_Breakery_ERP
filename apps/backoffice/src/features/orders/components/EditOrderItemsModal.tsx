@@ -269,7 +269,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                 2 px décalé de 2 px avec son halo. */}
             <div className="flex gap-2">
               <div className="space-y-1">
-                <label htmlFor="locked-manager-pin" className="block text-xs uppercase tracking-widest text-text-secondary">
+                <label htmlFor="locked-manager-pin" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">
                   Manager PIN
                 </label>
                 <Input
@@ -285,7 +285,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                 />
               </div>
               <div className="flex-1 space-y-1">
-                <label htmlFor="locked-waste-reason" className="block text-xs uppercase tracking-widest text-text-secondary">
+                <label htmlFor="locked-waste-reason" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">
                   Waste reason
                 </label>
                 <Input

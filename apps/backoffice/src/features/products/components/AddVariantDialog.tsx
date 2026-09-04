@@ -97,7 +97,7 @@ export function AddVariantDialog({
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="add-var-label" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="add-var-label" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Label
             </label>
             <input
@@ -111,7 +111,7 @@ export function AddVariantDialog({
           </div>
 
           <div>
-            <label htmlFor="add-var-sku" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="add-var-sku" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               SKU
             </label>
             <input
@@ -126,7 +126,7 @@ export function AddVariantDialog({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="add-var-retail" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="add-var-retail" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 Retail price (IDR)
               </label>
               <input
@@ -141,7 +141,7 @@ export function AddVariantDialog({
               />
             </div>
             <div>
-              <label htmlFor="add-var-cost" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="add-var-cost" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 Cost price (optional)
               </label>
               <input

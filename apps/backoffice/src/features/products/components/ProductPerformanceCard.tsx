@@ -19,9 +19,9 @@ import { Lock } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
 import { Card, Currency } from '@breakery/ui';
 import { useProductPerformance } from '../hooks/useProductPerformance.js';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 
-const TITLE_CLASS = 'mb-4 text-sm font-bold uppercase tracking-widest text-text-muted';
+const TITLE_CLASS = 'font-data mb-4 text-sm font-bold uppercase tracking-widest text-text-muted';
 
 // Un seul séparateur de milliers dans la carte, et c'est celui du back-office :
 // le point (`Rp 4.850.000`), qu'impose `formatCurrency` — passé en prop à
@@ -108,7 +108,7 @@ export function ProductPerformanceCard({
         />
         <Metric
           label="Conversion"
-          value={`${total.conversion_pct}%`}
+          value={formatPercent(total.conversion_pct, { digits: 2 })}
           // Un taux sans son dénominateur ne se lit pas : 12 % sur 8 commandes
           // et 12 % sur 1 200 ne disent pas la même chose.
           note={`${formatCount(total.orders_with_product)} of ${formatCount(total.orders_total)} orders`}
@@ -161,7 +161,7 @@ function Metric({
 }): JSX.Element {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <span className="text-xs uppercase tracking-widest text-text-secondary">{label}</span>
+      <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">{label}</span>
       <div className="text-right">
         <div className="font-mono text-xl tabular-nums text-text-primary">{value}</div>
         {note !== null && <div className="mt-0.5 text-xs text-text-muted">{note}</div>}

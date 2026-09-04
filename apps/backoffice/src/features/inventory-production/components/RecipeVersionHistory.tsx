@@ -192,7 +192,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
                 <span className="truncate">
                   {d.material_name}
                   {kindLabel(d.kind) !== '' && (
-                    <span className="ml-2 text-xs uppercase tracking-widest opacity-70">
+                    <span className="font-data font-semibold ml-2 text-xs uppercase tracking-widest opacity-70">
                       {kindLabel(d.kind)}
                     </span>
                   )}

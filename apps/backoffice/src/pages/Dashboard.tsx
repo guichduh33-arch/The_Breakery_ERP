@@ -29,7 +29,8 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, BellRing, Building2, CalendarHeart, FileDown, RefreshCw,
 } from 'lucide-react';
-import { Card, SectionLabel, cn } from '@breakery/ui';
+import { Card, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { toLocalDateStr } from '@breakery/domain';
 import { formatDateLong } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';

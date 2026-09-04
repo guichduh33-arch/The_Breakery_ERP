@@ -146,7 +146,7 @@ export function BrandLogoUploader({ logoUrl, readOnly = false, onChange }: Props
         ) : (
           <div className="flex flex-col items-center gap-1.5 text-center">
             <ImagePlus className="h-8 w-8 text-gold" aria-hidden />
-            <div className="text-xs uppercase tracking-widest">Drag and drop or click to upload</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest">Drag and drop or click to upload</div>
           </div>
         )}
 

@@ -148,7 +148,7 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
           <div className="flex flex-col items-center gap-2 text-center">
             <Star className="h-10 w-10 text-gold" aria-hidden />
             <div className="text-base font-semibold text-text-primary">Digital Canvas</div>
-            <div className="text-xs uppercase tracking-widest">Drag and drop or click to upload</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest">Drag and drop or click to upload</div>
           </div>
         )}
 

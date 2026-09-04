@@ -73,7 +73,7 @@ export function ShowcaseCurator({ value, onChange, disabled = false }: Props): J
             const slice = value.slice(start, start + SHOWCASE_PAGE_SIZE);
             return (
               <li key={`showcase-page-${page}`} data-testid="showcase-page">
-                <p className="text-xs uppercase tracking-wider text-text-muted mb-1">
+                <p className="font-data font-semibold text-xs uppercase tracking-wider text-text-muted mb-1">
                   Page {page + 1}
                   {pageCount > 1 && <span className="text-text-secondary"> of {pageCount}</span>}
                 </p>

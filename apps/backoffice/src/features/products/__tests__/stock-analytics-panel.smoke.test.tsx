@@ -110,7 +110,7 @@ describe('StockAnalyticsPanel', () => {
     renderPanel();
     expect(screen.getByText('Recipe Usage')).toBeInTheDocument();
     expect(screen.getByText('Meringue')).toBeInTheDocument();
-    expect(screen.getByText('16.9%')).toBeInTheDocument();
+    expect(screen.getByText('16,9%')).toBeInTheDocument();
     // Incoming PO with real number rendered
     expect(screen.getByText('PO-20260617-0117')).toBeInTheDocument();
   });

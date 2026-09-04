@@ -145,7 +145,7 @@ export default function PromotionsPage(): JSX.Element {
       header: 'Scope',
       align:  'center',
       render: (row) => (
-        <span className="text-xs uppercase tracking-wide text-text-secondary">
+        <span className="font-data font-semibold text-xs uppercase tracking-wide text-text-secondary">
           {row.scope ?? '—'}
         </span>
       ),
@@ -172,7 +172,7 @@ export default function PromotionsPage(): JSX.Element {
           />
           <span
             className={[
-              'text-xs font-semibold uppercase tracking-widest',
+              'font-data text-xs font-semibold uppercase tracking-widest',
               row.is_active ? 'text-success' : 'text-text-secondary',
             ].join(' ')}
           >
@@ -335,7 +335,7 @@ interface DateFieldProps {
 function DateField({ id, label, value, onChange }: DateFieldProps): JSX.Element {
   return (
     <label htmlFor={id} className="flex flex-col">
-      <span className="px-1 text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</span>
+      <span className="font-data px-1 text-xs font-semibold uppercase tracking-widest text-text-muted">{label}</span>
       <input
         id={id}
         type="date" lang="id-ID"

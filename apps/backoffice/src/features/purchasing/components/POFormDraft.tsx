@@ -11,6 +11,7 @@
 
 import { useId, useMemo, type JSX } from 'react';
 import { Button } from '@breakery/ui';
+import { formatCurrency } from '@breakery/utils';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
 import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -174,7 +175,7 @@ export function POFormDraft({
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1 md:col-span-2">
-          <label htmlFor={`${reactId}-supplier`} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={`${reactId}-supplier`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Supplier
           </label>
           <select
@@ -192,7 +193,7 @@ export function POFormDraft({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor={`${reactId}-payment`} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={`${reactId}-payment`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Payment terms
           </label>
           <select
@@ -208,7 +209,7 @@ export function POFormDraft({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor={`${reactId}-order`} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={`${reactId}-order`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Order date
           </label>
           <input
@@ -222,7 +223,7 @@ export function POFormDraft({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor={`${reactId}-expected`} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={`${reactId}-expected`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Expected
           </label>
           <input
@@ -236,7 +237,7 @@ export function POFormDraft({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor={`${reactId}-vat`} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={`${reactId}-vat`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             VAT rate
           </label>
           <input
@@ -343,8 +344,8 @@ export function POFormDraft({
                       className={`h-9 w-full text-right rounded-md border border-border-strong bg-bg-input px-2 text-sm ${FOCUS_RING}`}
                     />
                   </td>
-                  <td className="px-3 py-1.5 text-right text-text-primary tabular-nums">
-                    {(it.quantity * it.unitCost).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
+                  <td className="px-3 py-1.5 text-right font-data tabular-nums text-text-primary">
+                    {formatCurrency(it.quantity * it.unitCost)}
                   </td>
                   <td className="px-3 py-1.5 text-center">
                     <button
@@ -363,17 +364,17 @@ export function POFormDraft({
             <tfoot className="bg-bg-overlay text-sm">
               <tr className="border-t border-border-subtle">
                 <td colSpan={4} className="px-3 py-1.5 text-right text-text-secondary">Subtotal</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">{subtotal.toLocaleString('id-ID', { maximumFractionDigits: 2 })}</td>
+                <td className="px-3 py-1.5 text-right font-data tabular-nums">{formatCurrency(subtotal)}</td>
                 <td />
               </tr>
               <tr>
                 <td colSpan={4} className="px-3 py-1.5 text-right text-text-secondary">VAT</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">{vatAmount.toLocaleString('id-ID', { maximumFractionDigits: 2 })}</td>
+                <td className="px-3 py-1.5 text-right font-data tabular-nums">{formatCurrency(vatAmount)}</td>
                 <td />
               </tr>
               <tr>
                 <td colSpan={4} className="px-3 py-1.5 text-right font-semibold">Total</td>
-                <td className="px-3 py-1.5 text-right font-semibold tabular-nums">{total.toLocaleString('id-ID', { maximumFractionDigits: 2 })}</td>
+                <td className="px-3 py-1.5 text-right font-data font-semibold tabular-nums">{formatCurrency(total)}</td>
                 <td />
               </tr>
             </tfoot>
@@ -382,7 +383,7 @@ export function POFormDraft({
       </div>
 
       <div className="space-y-1">
-        <label htmlFor={`${reactId}-notes`} className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor={`${reactId}-notes`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Notes
         </label>
         <textarea

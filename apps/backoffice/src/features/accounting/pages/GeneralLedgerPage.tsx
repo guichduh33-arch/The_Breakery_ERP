@@ -5,7 +5,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Input, SectionLabel } from '@breakery/ui';
+import { Button, Input } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
@@ -114,7 +115,7 @@ export default function GeneralLedgerPage(): JSX.Element {
       />
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           Account
           <select
             value={accountId}
@@ -132,7 +133,7 @@ export default function GeneralLedgerPage(): JSX.Element {
               ))}
           </select>
         </label>
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
             type="date" lang="id-ID"
@@ -142,7 +143,7 @@ export default function GeneralLedgerPage(): JSX.Element {
             data-testid="gl-filter-start"
           />
         </label>
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
             type="date" lang="id-ID"

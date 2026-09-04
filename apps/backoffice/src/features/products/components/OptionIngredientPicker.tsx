@@ -77,7 +77,7 @@ export function OptionIngredientPicker({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs uppercase tracking-widest text-text-muted">
+      <p className="font-data font-semibold text-xs uppercase tracking-widest text-text-muted">
         Ingredients to deduct (applied once stock-by-option ships)
       </p>
       {value.map((row, idx) => {

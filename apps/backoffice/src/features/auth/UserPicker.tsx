@@ -15,7 +15,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
   if (isLoading) {
     return (
       <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-loading">
-        <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
+        <h2 className="font-data font-semibold text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
         <p className="text-text-secondary text-sm">Loading staff…</p>
       </div>
     );
@@ -24,7 +24,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
   if (isError) {
     return (
       <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-error">
-        <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
+        <h2 className="font-data font-semibold text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
         <p className="text-danger text-sm">Could not load staff list. Check your connection.</p>
         <Button
           variant="secondary"
@@ -43,7 +43,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
   if (users.length === 0) {
     return (
       <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-empty">
-        <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
+        <h2 className="font-data font-semibold text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
         <p className="text-text-secondary text-sm">No active staff found.</p>
       </div>
     );
@@ -51,7 +51,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
 
   return (
     <div className="space-y-3 w-full max-w-xs">
-      <h2 className="text-text-secondary text-sm uppercase tracking-wide text-center">Select user</h2>
+      <h2 className="font-data font-semibold text-text-secondary text-sm uppercase tracking-wide text-center">Select user</h2>
       {users.map((u) => (
         <Button
           key={u.id}
@@ -62,7 +62,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
           data-testid={`user-picker-${u.id}`}
         >
           {u.display_name}
-          <span className="ml-2 text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
+          <span className="font-data font-semibold ml-2 text-xs uppercase tracking-widest text-text-muted">{u.role}</span>
         </Button>
       ))}
     </div>

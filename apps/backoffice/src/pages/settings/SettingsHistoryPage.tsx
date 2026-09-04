@@ -12,7 +12,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { History } from 'lucide-react';
-import { Badge, Button, Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { Badge, Button, Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatDateTimeWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
@@ -82,7 +83,7 @@ export default function SettingsHistoryPage(): JSX.Element {
       />
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           Category
           <select
             value={category}
@@ -95,7 +96,7 @@ export default function SettingsHistoryPage(): JSX.Element {
           </select>
         </label>
 
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           Setting key
           <input
             type="text"

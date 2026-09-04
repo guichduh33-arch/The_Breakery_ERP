@@ -46,7 +46,7 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="opname-notes" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Notes</label>
+            <label htmlFor="opname-notes" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">Notes</label>
             <textarea
               id="opname-notes"
               value={notes}

@@ -62,12 +62,12 @@ export function RoleChangeDialog(
 
         <div className="space-y-3">
           <div className="text-xs text-text-secondary">
-            <span className="uppercase tracking-wider">Current role: </span>
+            <span className="font-data font-semibold uppercase tracking-wider">Current role: </span>
             <span className="font-mono">{currentRole}</span>
           </div>
 
           <div>
-            <label htmlFor="rch-new" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="rch-new" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               New role
             </label>
             <Select
@@ -83,7 +83,7 @@ export function RoleChangeDialog(
           </div>
 
           <div>
-            <label htmlFor="rch-reason" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="rch-reason" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Reason
             </label>
             <input

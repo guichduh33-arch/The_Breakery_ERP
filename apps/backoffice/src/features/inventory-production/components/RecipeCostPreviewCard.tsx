@@ -135,7 +135,7 @@ export function RecipeCostPreviewCard({
               <h3 className="text-lg font-semibold text-text-primary truncate">
                 {p.name}
               </h3>
-              <p className="text-xs uppercase tracking-widest text-text-secondary">
+              <p className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 {p.sku} · per {p.unit}
               </p>
             </div>
@@ -153,7 +153,7 @@ export function RecipeCostPreviewCard({
           {/* Numbers row */}
           <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">
+              <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Selling price
               </div>
               <div className="font-mono font-semibold text-text-primary" data-testid="selling-price">
@@ -161,7 +161,7 @@ export function RecipeCostPreviewCard({
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">
+              <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Material cost / unit
               </div>
               <div className="font-mono font-semibold text-text-primary" data-testid="material-cost">
@@ -169,7 +169,7 @@ export function RecipeCostPreviewCard({
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-widest text-text-secondary">
+              <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Margin
               </div>
               <div className="flex items-center" data-testid="margin-pct" data-tone={tone}>

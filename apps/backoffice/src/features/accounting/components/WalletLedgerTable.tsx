@@ -12,7 +12,7 @@
 // chiffres — dates, montants In/Out, saldo — rendues en Instrument Sans.
 // `tabular-nums` seul ne suffit pas : il aligne les chiffres d'une police
 // proportionnelle, il ne la remplace pas.
-import { SectionLabel } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import type { WalletLedgerRow } from '../hooks/useCashWalletLedger.js';
 

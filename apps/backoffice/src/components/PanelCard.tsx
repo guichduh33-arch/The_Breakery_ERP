@@ -13,7 +13,8 @@
 
 import type { JSX, ReactNode } from 'react';
 import { Lock } from 'lucide-react';
-import { Card, SectionLabel, cn } from '@breakery/ui';
+import { Card, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 
 export interface PanelCardProps {
   title: string;

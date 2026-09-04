@@ -70,7 +70,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             <div className="flex h-8 w-8 items-center justify-center rounded-md text-gold">
               <DollarSign className="h-4 w-4" aria-hidden />
             </div>
-            <span className="text-xs uppercase tracking-wider text-text-secondary">
+            <span className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">
               Cost (WAC)
             </span>
           </div>
@@ -85,7 +85,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-bg-elevated text-text-secondary">
               <Tag className="h-4 w-4" aria-hidden />
             </div>
-            <span className="text-xs uppercase tracking-wider text-text-secondary">
+            <span className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">
               Retail price
             </span>
           </div>
@@ -100,7 +100,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-bg-elevated text-text-secondary">
               <Percent className="h-4 w-4" aria-hidden />
             </div>
-            <span className="text-xs uppercase tracking-wider text-text-secondary">
+            <span className="font-data font-semibold text-xs uppercase tracking-wider text-text-secondary">
               Gross margin
             </span>
           </div>
@@ -114,7 +114,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
       <Card padding="md">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Recipe BOM breakdown</h2>
+            <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Recipe BOM breakdown</h2>
             <p className="text-xs italic text-text-secondary">
               Cost per unit based on current ingredient prices
             </p>

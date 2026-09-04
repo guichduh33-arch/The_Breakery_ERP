@@ -164,7 +164,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
 
           {!isLockedProduct && (
             <div className="space-y-1">
-              <label htmlFor={productInputId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={productInputId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Product
               </label>
               <ProductTypeahead
@@ -187,7 +187,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
           )}
 
           <div className="space-y-1">
-            <label htmlFor={newQtyId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={newQtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               New on-hand quantity
             </label>
             <Input
@@ -222,7 +222,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
           )}
 
           <div className="space-y-1">
-            <label htmlFor={reasonId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason
             </label>
             <textarea

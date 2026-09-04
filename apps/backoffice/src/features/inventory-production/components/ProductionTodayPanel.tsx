@@ -33,7 +33,8 @@
 
 import { Clock, Lock } from 'lucide-react';
 import { useMemo, type JSX } from 'react';
-import { Card, EmptyState, SectionLabel, cn } from '@breakery/ui';
+import { Card, EmptyState, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 // `production_records` ne porte pas l'unité du produit fabriqué : les quatre
 // quantités de ce panneau se formatent sans suffixe (audit UX/UI 2026-08-13).
 import { formatQuantity, formatDateTimeShortWita } from '@breakery/utils';

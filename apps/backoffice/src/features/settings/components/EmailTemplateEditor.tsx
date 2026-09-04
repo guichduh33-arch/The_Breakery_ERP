@@ -98,19 +98,19 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
     <div className="grid lg:grid-cols-2 gap-4">
       <div className="space-y-3">
         <div>
-          <label htmlFor={`tpl-subj-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Subject</label>
+          <label htmlFor={`tpl-subj-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Subject</label>
           <input id={`tpl-subj-${row.id}`} value={draft.subject} disabled={!canEdit} maxLength={200}
             onChange={(e) => setDraft((d) => ({ ...d, subject: e.target.value }))}
             className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div>
-          <label htmlFor={`tpl-text-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Plain text body</label>
+          <label htmlFor={`tpl-text-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Plain text body</label>
           <textarea id={`tpl-text-${row.id}`} rows={6} value={draft.body_text} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, body_text: e.target.value }))}
             className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div>
-          <label htmlFor={`tpl-html-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">HTML body</label>
+          <label htmlFor={`tpl-html-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">HTML body</label>
           <textarea id={`tpl-html-${row.id}`} rows={6} value={draft.body_html} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, body_html: e.target.value }))}
             className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
@@ -136,15 +136,15 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
 
       <div className="space-y-3" aria-label="Preview">
         <div>
-          <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — Subject</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — Subject</div>
           <div className="border border-border-subtle bg-bg-overlay rounded-md px-3 py-2 text-sm">{previewSubject}</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — Plain text</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — Plain text</div>
           <pre className="border border-border-subtle bg-bg-overlay rounded-md px-3 py-2 text-xs whitespace-pre-wrap font-mono">{previewText}</pre>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — HTML (raw markup)</div>
+          <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary mb-1">Preview — HTML (raw markup)</div>
           {/*
             For safety we do NOT inject HTML into the DOM here; we render the
             escaped markup so admins can audit the template body. A future

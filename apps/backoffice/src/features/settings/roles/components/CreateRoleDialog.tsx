@@ -20,7 +20,7 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 import { useRbacMatrix, rbacErrorMessage } from '../hooks/useRbacMatrix.js';
 import { useCreateRole } from '../hooks/useCreateRole.js';
 
-const LABEL_CLS = 'text-xs uppercase tracking-widest text-text-secondary';
+const LABEL_CLS = 'font-data font-semibold text-xs uppercase tracking-widest text-text-secondary';
 // `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
 // (WCAG 1.4.11). `border-border-subtle` sépare des blocs, il ne borde pas une
 // zone de saisie.

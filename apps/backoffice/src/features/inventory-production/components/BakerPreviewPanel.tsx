@@ -9,7 +9,7 @@
 // line cap.
 
 import type { JSX } from 'react';
-import { formatPercent } from '@breakery/utils';
+import { formatNumber, formatPercent } from '@breakery/utils';
 import type { BakerConvertResult } from '../hooks/useBakerRecipeMode.js';
 
 export interface BakerPreviewPanelProps {
@@ -41,7 +41,7 @@ export function BakerPreviewPanel({
       className="rounded-md border border-border-subtle bg-bg-elevated px-3 py-2"
       data-testid="baker-preview-panel"
     >
-      <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">
+      <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary mb-1">
         Absolute qtys for {targetFlourQty} g flour
       </div>
       <div className="overflow-x-auto">
@@ -60,7 +60,7 @@ export function BakerPreviewPanel({
               <tr key={r.recipe_id} data-testid="baker-preview-row">
                 <td className="py-1">{r.material_name}</td>
                 <td className="text-right py-1">{formatPercent(r.baker_percentage, { digits: 2 })}</td>
-                <td className="text-right py-1 font-mono">{Number(r.absolute_qty).toFixed(2)}</td>
+                <td className="text-right py-1 font-mono">{formatNumber(r.absolute_qty, { digits: 2 })}</td>
                 <td className="pl-2 py-1">{r.unit}</td>
               </tr>
             ))}

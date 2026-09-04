@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { toLocalDateStr } from '@breakery/domain';
+import { formatNumber } from '@breakery/utils';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useProductsForInventory } from '@/features/inventory/hooks/useProductsForInventory.js';
 import type { MovementsFilters as Filters } from '../hooks/useStockMovementsFeed.js';
@@ -228,7 +229,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
       </button>
 
       <div className="ml-auto text-xs text-text-secondary self-center inline-flex items-center gap-1">
-        <Search className="h-3 w-3" aria-hidden /> Full range, running balance per product (cap 5,000 rows).
+        <Search className="h-3 w-3" aria-hidden /> Full range, running balance per product (cap {formatNumber(5000)} rows).
       </div>
     </div>
   );

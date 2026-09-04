@@ -12,7 +12,8 @@
 
 import type { JSX, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { SectionLabel, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { PanelCard } from '@/components/PanelCard.js';
 import { formatIdrCompact, formatIdrFull } from '../utils/chartColors.js';
 

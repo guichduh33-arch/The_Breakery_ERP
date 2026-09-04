@@ -86,7 +86,7 @@ export function ApproveDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1">
-          <label htmlFor="approve-pin" className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="approve-pin" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Manager PIN
           </label>
           <input

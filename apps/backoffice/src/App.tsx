@@ -35,7 +35,7 @@ function BootLoading() {
             `prefers-reduced-motion`. L'état reste lisible, « Loading… » le dit
             en toutes lettres juste dessous. */}
         <div className="h-6 w-6 rounded-full border-2 border-border-subtle border-t-gold animate-spin motion-reduce:animate-none" aria-hidden />
-        <span className="text-sm uppercase tracking-widest">Loading…</span>
+        <span className="font-data font-semibold text-sm uppercase tracking-widest">Loading…</span>
       </div>
     </div>
   );

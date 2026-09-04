@@ -243,7 +243,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
           )}
 
           <div className="space-y-1">
-            <label htmlFor={customerSelId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={customerSelId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Customer
             </label>
             <Select
@@ -271,7 +271,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-widest text-text-secondary">Items</span>
+              <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Items</span>
               <Button type="button" variant="ghost" size="sm" onClick={addRow}>
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add line
               </Button>
@@ -350,7 +350,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               {/* « Pickup » et non « Delivery » : la marchandise est retirée au
                   magasin, il n'existe aucune tournée (décision produit actée —
                   docs/product/DESCRIPTION.md). Le payload RPC ne bouge pas. */}
-              <label htmlFor={deliveryId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={deliveryId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Pickup date
               </label>
               <Input
@@ -361,7 +361,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               />
             </div>
             <div className="space-y-1 col-span-1">
-              <label className="text-xs uppercase tracking-widest text-text-secondary">Total</label>
+              <label className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Total</label>
               <div className="h-9 flex items-center justify-end pr-2 font-mono text-base text-text-primary">
                 {formatCurrency(itemsTotal)}
               </div>
@@ -369,7 +369,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={notesId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={notesId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Notes
             </label>
             <textarea

@@ -4,7 +4,8 @@
 import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { SectionLabel, Skeleton } from '@breakery/ui';
+import { Skeleton } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatDateTime } from '@breakery/utils';
 import { roleLabel } from '@/lib/roleLabels.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';

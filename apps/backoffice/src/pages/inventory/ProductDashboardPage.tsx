@@ -79,7 +79,7 @@ export default function ProductDashboardPage(): JSX.Element {
           subtitle={<span className="font-mono text-xs text-text-muted">{d.product.sku}</span>}
           actions={
             <>
-              <label htmlFor="dash-days" className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor="dash-days" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Window
               </label>
               <select

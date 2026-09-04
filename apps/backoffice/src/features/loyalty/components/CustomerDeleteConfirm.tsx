@@ -57,7 +57,7 @@ export function CustomerDeleteConfirm({ customer, onClose }: CustomerDeleteConfi
         <div className="space-y-1">
           <label
             htmlFor="customer-delete-confirm"
-            className="block text-xs uppercase tracking-widest text-text-secondary"
+            className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary"
           >
             Type the customer name to confirm
           </label>

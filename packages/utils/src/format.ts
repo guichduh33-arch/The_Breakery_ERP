@@ -144,3 +144,40 @@ export function formatPercent(
   const sign = options?.signed === true && n > 0 ? '+' : '';
   return `${sign}${fmt.format(n)}%`;
 }
+
+// ─── NOMBRES NUS ─────────────────────────────────────────────────────────────
+//
+// Le remplaçant de `toFixed()` pour un nombre sans unité ni symbole : jours de
+// stock (`2,5 d`), articles par commande, compteur d'un plafond (`5.000 rows`).
+// Même argument que le pourcentage ci-dessus — critique du BO du 2026-09-04 :
+// huit `toFixed()` rendaient encore un point décimal à l'écran, et un
+// « cap 5,000 rows » groupait à l'américaine à côté de `Rp 5.000`. `digits`
+// est un nombre de décimales FIXE (comme `toFixed`), pas un plafond : `2` avec
+// `{ digits: 1 }` rend `2,0`, pour que la colonne s'aligne.
+const _numFmts = new Map<number, Intl.NumberFormat>();
+function _numFmt(digits: number): Intl.NumberFormat {
+  let fmt = _numFmts.get(digits);
+  if (fmt === undefined) {
+    fmt = new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+    _numFmts.set(digits, fmt);
+  }
+  return fmt;
+}
+
+export interface FormatNumberOptions {
+  /** Décimales rendues, fixes : 0 (défaut), 1, 2 ou 3. */
+  digits?: 0 | 1 | 2 | 3;
+}
+
+/** Un nombre nu en locale métier (`2.5` → `2,5`, `5000` → `5.000`). */
+export function formatNumber(
+  value: number | string | null | undefined,
+  options?: FormatNumberOptions,
+): string {
+  const n = toFiniteNumber(value);
+  if (n === null) return '—';
+  return _numFmt(options?.digits ?? 0).format(n);
+}

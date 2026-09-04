@@ -59,15 +59,15 @@ export function YieldVarianceModal({
           aria-label="Yield variance summary"
         >
           <div className="space-y-0.5">
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Expected</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Expected</div>
             <div className="font-mono">{formatQuantity(expectedQty, null)}</div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Actual</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Actual</div>
             <div className="font-mono">{formatQuantity(actualQty, null)}</div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Variance</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Variance</div>
             <div
               data-testid="variance-pct"
               className={`font-mono font-semibold ${absVariance > thresholdPct ? 'text-danger' : 'text-warning'}`}
@@ -76,14 +76,14 @@ export function YieldVarianceModal({
             </div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Threshold</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Threshold</div>
             <div className="font-mono">±{formatPercent(thresholdPct)}</div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 pt-2">
           <div className="space-y-1">
-            <label htmlFor="yield-variance-reason" className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor="yield-variance-reason" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason (min {MIN_REASON_LEN} chars)
             </label>
             <textarea

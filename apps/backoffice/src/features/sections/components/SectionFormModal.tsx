@@ -72,7 +72,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="sec-code" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Code</label>
+            <label htmlFor="sec-code" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">Code</label>
             <input
               id="sec-code"
               value={code}
@@ -84,7 +84,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
           </div>
 
           <div>
-            <label htmlFor="sec-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Name</label>
+            <label htmlFor="sec-name" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">Name</label>
             <input
               id="sec-name"
               value={name}
@@ -95,7 +95,7 @@ export function SectionFormModal({ initial, onClose }: SectionFormModalProps): J
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="sec-order" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Display order</label>
+              <label htmlFor="sec-order" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">Display order</label>
               <input
                 id="sec-order"
                 type="number"

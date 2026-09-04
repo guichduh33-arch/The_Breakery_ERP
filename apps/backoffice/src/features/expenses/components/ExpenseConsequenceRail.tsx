@@ -17,7 +17,8 @@
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, SectionLabel } from '@breakery/ui';
+import { Card } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useRolesList } from '@/features/users/hooks/useRolesList.js';

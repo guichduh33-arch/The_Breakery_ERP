@@ -396,10 +396,10 @@ function CategoriesTab(): JSX.Element {
         <caption className="sr-only">Code, name, mapped account and status per expense category</caption>
         <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Code</th>
-            <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Name</th>
-            <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Account</th>
-            <th scope="col" className="px-4 py-3 text-center text-xs uppercase tracking-widest text-text-muted">Status</th>
+            <th scope="col" className="font-data font-semibold px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Code</th>
+            <th scope="col" className="font-data font-semibold px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Name</th>
+            <th scope="col" className="font-data font-semibold px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Account</th>
+            <th scope="col" className="font-data font-semibold px-4 py-3 text-center text-xs uppercase tracking-widest text-text-muted">Status</th>
           </tr>
         </thead>
         <tbody>

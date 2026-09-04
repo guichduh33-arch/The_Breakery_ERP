@@ -91,7 +91,7 @@ export function ThresholdForm({
 
       <div className="grid grid-cols-2 gap-4">
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Name</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Name</span>
           <Input
             value={values.name}
             onChange={(e) => update('name', e.target.value)}
@@ -99,7 +99,7 @@ export function ThresholdForm({
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Slug</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Slug</span>
           <Input
             value={values.slug}
             onChange={(e) => update('slug', e.target.value)}
@@ -109,7 +109,7 @@ export function ThresholdForm({
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs uppercase tracking-widest text-text-secondary">Threshold type</legend>
+        <legend className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Threshold type</legend>
         <div className="flex gap-3 text-sm">
           {(['subtotal', 'quantity'] as const).map((t) => (
             <label key={t} className="inline-flex items-center gap-2">
@@ -128,7 +128,7 @@ export function ThresholdForm({
 
       <div className="grid grid-cols-2 gap-4">
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Threshold {values.threshold_type === 'quantity' ? '(units)' : '(IDR)'}
           </span>
           <Input
@@ -141,7 +141,7 @@ export function ThresholdForm({
           />
         </label>
         <fieldset className="space-y-2">
-          <legend className="text-xs uppercase tracking-widest text-text-secondary">Discount kind</legend>
+          <legend className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Discount kind</legend>
           <div className="flex gap-3 text-sm">
             {(['percent', 'fixed'] as const).map((k) => (
               <label key={k} className="inline-flex items-center gap-2">
@@ -160,7 +160,7 @@ export function ThresholdForm({
 
       <div className="grid grid-cols-2 gap-4">
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             {discountKind === 'percent' ? 'Discount (%)' : 'Discount (IDR)'}
           </span>
           <Input
@@ -175,7 +175,7 @@ export function ThresholdForm({
         </label>
         {discountKind === 'percent' && (
           <label className="space-y-1 text-sm">
-            <span className="text-xs uppercase tracking-widest text-text-secondary">Max cap (IDR)</span>
+            <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Max cap (IDR)</span>
             <Input
               aria-label="max-discount-amount"
               type="number"

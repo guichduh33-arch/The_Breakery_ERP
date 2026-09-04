@@ -68,7 +68,7 @@ export function RecordPaymentDialog({
 
         <div className="space-y-3">
           <div className="space-y-1">
-            <label htmlFor={`${reactId}-amount`} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={`${reactId}-amount`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Amount (Rp)
             </label>
             <input
@@ -86,7 +86,7 @@ export function RecordPaymentDialog({
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={`${reactId}-method`} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={`${reactId}-method`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Method
             </label>
             <select
@@ -103,7 +103,7 @@ export function RecordPaymentDialog({
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={`${reactId}-ref`} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={`${reactId}-ref`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reference (optional)
             </label>
             <input

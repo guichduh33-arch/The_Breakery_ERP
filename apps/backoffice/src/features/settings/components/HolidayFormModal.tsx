@@ -129,21 +129,21 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
 
         <div className="grid grid-cols-2 gap-4 py-4">
           <div className="col-span-2">
-            <label htmlFor="hol-name" className="text-xs uppercase tracking-widest text-text-secondary">Name *</label>
+            <label htmlFor="hol-name" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Name *</label>
             <input id="hol-name" value={draft.name} maxLength={120}
               onChange={(e) => setField('name', e.target.value)}
               className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.name && <p className="text-red text-xs mt-1">{errors.name}</p>}
           </div>
           <div>
-            <label htmlFor="hol-date" className="text-xs uppercase tracking-widest text-text-secondary">Date *</label>
+            <label htmlFor="hol-date" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Date *</label>
             <input id="hol-date" type="date" lang="id-ID" value={draft.date}
               onChange={(e) => setField('date', e.target.value)}
               className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`} />
             {errors.date && <p className="text-red text-xs mt-1">{errors.date}</p>}
           </div>
           <div>
-            <label htmlFor="hol-type" className="text-xs uppercase tracking-widest text-text-secondary">Type *</label>
+            <label htmlFor="hol-type" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Type *</label>
             <select id="hol-type" value={draft.type}
               onChange={(e) => setField('type', e.target.value as HolidayType)}
               className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}>
@@ -160,7 +160,7 @@ export function HolidayFormModal({ open, mode, initial, onClose }: HolidayFormMo
             </label>
           </div>
           <div className="col-span-2">
-            <label htmlFor="hol-notes" className="text-xs uppercase tracking-widest text-text-secondary">Notes</label>
+            <label htmlFor="hol-notes" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Notes</label>
             <textarea id="hol-notes" rows={2} value={draft.notes} maxLength={500}
               onChange={(e) => setField('notes', e.target.value)}
               className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`} />

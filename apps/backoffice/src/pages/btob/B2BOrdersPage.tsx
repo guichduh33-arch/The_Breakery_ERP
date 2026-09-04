@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Button, cn, DataTable, Input, type DataTableColumn, type DataTableSort } from '@breakery/ui';
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatDateShortWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
@@ -277,7 +277,7 @@ export default function B2BOrdersPage(): JSX.Element {
             not set
           </span>
         ) : (
-          <span className="font-data text-xs tabular-nums">{r.pickup_date.slice(0, 10)}</span>
+          <span className="font-data text-xs tabular-nums">{formatDateShortWita(r.pickup_date)}</span>
         ),
     },
     {

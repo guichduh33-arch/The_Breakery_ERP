@@ -77,5 +77,24 @@ export default tseslint.config(
         ]
       }]
     }
+  },
+  {
+    // Critique BO 2026-09-04 — `SectionLabel` et `FormField` du paquet ne
+    // posent aucune famille de police sur leur libellé ; le back-office les
+    // rend en JetBrains Mono via ses wrappers `apps/backoffice/src/components/
+    // {SectionLabel,FormField}.tsx`, seuls points d'import autorisés. Un import
+    // direct du paquet réintroduit le libellé en sans à côté d'un en-tête de
+    // colonne en mono.
+    files: ['apps/backoffice/src/**/*.{ts,tsx}'],
+    ignores: ['apps/backoffice/src/components/SectionLabel.tsx', 'apps/backoffice/src/components/FormField.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: '@breakery/ui',
+          importNames: ['SectionLabel', 'FormField'],
+          message: 'Back-office labels render in mono: import SectionLabel / FormField from @/components/<name>.js.'
+        }]
+      }]
+    }
   }
 );

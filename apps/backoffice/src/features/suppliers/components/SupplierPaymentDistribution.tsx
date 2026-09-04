@@ -5,7 +5,7 @@
 import type { JSX } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@breakery/utils';
-import { SectionLabel } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 import { CHART_TITLE } from './chartTitle.js';
 

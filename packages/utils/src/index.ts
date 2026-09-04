@@ -1,5 +1,5 @@
 export { roundIdr, formatIdr } from './idr.js';
-export { formatCurrency, formatQuantity, formatPercent, type FormatCurrencyOptions, type FormatPercentOptions } from './format.js';
+export { formatCurrency, formatQuantity, formatPercent, formatNumber, type FormatCurrencyOptions, type FormatPercentOptions, type FormatNumberOptions } from './format.js';
 export { safeStorage, type SafeStorage } from './safeStorage.js';
 export { parseAppEnv, type AppEnv } from './env.js';
 export * from './dates.js';

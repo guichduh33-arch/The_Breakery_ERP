@@ -43,9 +43,9 @@ export function RetailCreditLimitSection({
 
   return (
     <Card variant="default" padding="md" className="space-y-2">
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-text-secondary">Tab</h2>
+      <h2 className="font-data text-sm font-semibold uppercase tracking-widest text-text-secondary">Tab</h2>
       <div className="space-y-1">
-        <label htmlFor="retail_credit_limit" className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor="retail_credit_limit" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Tab limit (empty = unlimited)
         </label>
         <div className="flex items-center gap-2">

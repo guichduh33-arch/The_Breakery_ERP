@@ -15,7 +15,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { CHART_TITLE } from './chartTitle.js';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateShortWita } from '@breakery/utils';
@@ -179,8 +180,8 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
                 <td className="px-4 py-3 tabular-nums text-text-secondary">{fmtDate(it.order_date)}</td>
                 <td className="px-4 py-3 font-mono text-text-primary">{it.po_number}</td>
                 <td className="px-4 py-3">{it.product_name}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{it.quantity} {it.unit}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(it.unit_cost)}</td>
+                <td className="px-4 py-3 text-right font-data tabular-nums">{it.quantity} {it.unit}</td>
+                <td className="px-4 py-3 text-right font-data tabular-nums">{formatCurrency(it.unit_cost)}</td>
                 <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCurrency(it.subtotal)}</td>
               </tr>
             ))}

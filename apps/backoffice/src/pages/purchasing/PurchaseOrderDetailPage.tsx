@@ -29,14 +29,9 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react';
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  SectionLabel,
-} from '@breakery/ui';
-import { formatCurrency, formatQuantity } from '@breakery/utils';
+import { Badge, Button, Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
+import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePurchaseOrderDetail } from '@/features/purchasing/hooks/usePurchaseOrderDetail.js';
 import { useReceivePurchaseOrder } from '@/features/purchasing/hooks/useReceivePurchaseOrder.js';
@@ -80,6 +75,13 @@ const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
 
 function fmtIdr(amount: number | string | null): string {
   return formatCurrency(Number(amount ?? 0));
+}
+
+// Un jour du bon de commande (commande, livraison prévue, réception, jalon) —
+// la colonne ISO brute (`2026-09-05`) était la huitième forme de date que
+// `dates.ts` déclare de trop. Absent = tiret, comme les montants.
+function fmtDay(d: string | null | undefined): string {
+  return d === null || d === undefined || d === '' ? '—' : formatDateShortWita(d);
 }
 
 // Quantités commandées / reçues. L'unité occupe sa PROPRE colonne dans la
@@ -423,9 +425,9 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <SectionLabel as="h2" size="sm" className="text-gold">Order Information</SectionLabel>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Supplier"          value={po.suppliers?.name ?? '—'} mono />
-              <Field label="Order date"        value={po.order_date ?? '—'} />
-              <Field label="Expected delivery" value={po.expected_date ?? '—'} />
-              <Field label="Actual delivery"   value={po.received_date ?? '—'} />
+              <Field label="Order date"        value={fmtDay(po.order_date)} />
+              <Field label="Expected delivery" value={fmtDay(po.expected_date)} />
+              <Field label="Actual delivery"   value={fmtDay(po.received_date)} />
               <Field label="Payment terms"     value={po.payment_terms === 'cash' ? 'Cash on delivery' : 'Credit'} />
               {po.cancel_reason !== null && po.cancel_reason !== '' && (
                 <Field label="Cancel reason"   value={po.cancel_reason} />
@@ -512,10 +514,10 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
                     {po.goods_receipt_notes.map((g) => (
                       <tr key={g.id} className="border-t border-border-subtle">
                         <td className="px-3 py-2 font-mono text-xs">{g.grn_number}</td>
-                        <td className="px-3 py-2 text-text-secondary tabular-nums">{g.received_date}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(g.subtotal)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(g.vat_amount)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtIdr(g.total)}</td>
+                        <td className="px-3 py-2 font-data tabular-nums text-text-secondary">{formatDateShortWita(g.received_date)}</td>
+                        <td className={NUM_CELL}>{fmtIdr(g.subtotal)}</td>
+                        <td className={NUM_CELL}>{fmtIdr(g.vat_amount)}</td>
+                        <td className={`${NUM_CELL} font-medium`}>{fmtIdr(g.total)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -562,13 +564,13 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
                 <ul className="space-y-1.5">
                   {payments.data.payments.map((p) => (
                     <li key={p.id} className="flex items-center justify-between text-xs">
-                      <span className="text-text-secondary tabular-nums">
-                        {p.paid_at.slice(0, 10)} · <span className="uppercase">{p.method}</span>
+                      <span className="font-data tabular-nums text-text-secondary">
+                        {formatDateShortWita(p.paid_at)} · <span className="uppercase">{p.method}</span>
                         {p.reference !== null && p.reference !== '' && (
                           <span className="text-text-muted"> · {p.reference}</span>
                         )}
                       </span>
-                      <span className="tabular-nums text-text-primary">{fmtIdr(p.amount)}</span>
+                      <span className="font-data tabular-nums text-text-primary">{fmtIdr(p.amount)}</span>
                     </li>
                   ))}
                 </ul>
@@ -597,12 +599,12 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           <Card variant="default" padding="md" className="space-y-2">
             <SectionLabel as="h2" size="sm" className="text-gold">Status Timeline</SectionLabel>
             <ul className="space-y-1.5 text-xs">
-              <TimelineItem reached={true} label="Drafted" date={po.created_at?.slice(0, 10) ?? '—'} />
-              <TimelineItem reached={status !== 'draft'} label="Confirmed / Sent" date={po.order_date ?? '—'} />
-              <TimelineItem reached={status === 'partial' || status === 'received'} label="Receiving" date={po.received_date ?? po.expected_date ?? '—'} />
-              <TimelineItem reached={status === 'received'} label="Received" date={po.received_date ?? '—'} />
+              <TimelineItem reached={true} label="Drafted" date={fmtDay(po.created_at)} />
+              <TimelineItem reached={status !== 'draft'} label="Confirmed / Sent" date={fmtDay(po.order_date)} />
+              <TimelineItem reached={status === 'partial' || status === 'received'} label="Receiving" date={fmtDay(po.received_date ?? po.expected_date)} />
+              <TimelineItem reached={status === 'received'} label="Received" date={fmtDay(po.received_date)} />
               {status === 'cancelled' && (
-                <TimelineItem reached={true} cancelled label="Cancelled" date={po.cancelled_at?.slice(0, 10) ?? '—'} />
+                <TimelineItem reached={true} cancelled label="Cancelled" date={fmtDay(po.cancelled_at)} />
               )}
             </ul>
           </Card>

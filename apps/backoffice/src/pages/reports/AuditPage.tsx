@@ -221,7 +221,7 @@ export default function AuditPage(): JSX.Element {
                       <tr className="border-b border-border-subtle bg-surface-inert" data-testid={`audit-detail-${r.id}`}>
                         <td />
                         <td colSpan={4} className="py-2">
-                          <div className="text-xs uppercase tracking-widest text-text-secondary">
+                          <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                             Metadata (context)
                           </div>
                           <pre className="mt-1 whitespace-pre-wrap break-words text-xs text-text-secondary">

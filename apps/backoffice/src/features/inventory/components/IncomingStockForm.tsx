@@ -172,7 +172,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
       )}
 
       <div className="space-y-1">
-        <label htmlFor={productId} className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor={productId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Product
         </label>
         <ProductTypeahead
@@ -189,7 +189,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
       </div>
 
       <div className="space-y-1">
-        <label htmlFor={supplierId} className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor={supplierId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Supplier <span className="normal-case text-text-muted">(optional)</span>
         </label>
         <Select
@@ -208,7 +208,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label htmlFor={qtyId} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={qtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Quantity received
           </label>
           <Input
@@ -228,7 +228,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
           )}
         </div>
         <div className="space-y-1">
-          <label htmlFor={unitCostId} className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor={unitCostId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Unit cost
           </label>
           <Input
@@ -247,7 +247,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
       </div>
 
       <div className="space-y-1">
-        <label htmlFor={reasonId} className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Reason / reference
         </label>
         <Input

@@ -10,7 +10,7 @@
 
 import type { JSX } from 'react';
 import { formatCurrency } from '@breakery/utils';
-import { SectionLabel } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { useExpensesList, useExpenseCategories } from '../hooks/useExpensesList.js';
 
 /** Nombre de lignes montrées — assez pour situer un montant, pas un journal. */

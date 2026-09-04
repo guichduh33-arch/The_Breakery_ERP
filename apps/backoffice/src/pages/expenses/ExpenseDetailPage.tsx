@@ -22,7 +22,8 @@ import {
   Tag,
   XCircle,
 } from 'lucide-react';
-import { Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useExpenseDetail } from '@/features/expenses/hooks/useExpenseDetail.js';

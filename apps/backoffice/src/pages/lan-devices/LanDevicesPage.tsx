@@ -9,7 +9,8 @@
 // une donnée cloud et se gère aussi bien à distance.
 import { useMemo, useState } from 'react';
 import { Wifi, CheckCircle2, AlertTriangle, Printer, Plus } from 'lucide-react';
-import { Button, Card, KpiTile, SectionLabel } from '@breakery/ui';
+import { Button, Card, KpiTile } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { LanDevicesTable } from '@/features/lan-devices/components/LanDevicesTable.js';
 import { OfflineSettingsPanel } from '@/features/lan-devices/components/OfflineSettingsPanel.js';

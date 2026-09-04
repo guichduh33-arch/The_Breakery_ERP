@@ -32,7 +32,7 @@ export interface CategoryFormModalProps {
   errorText:  string | null;
 }
 
-const labelCls = 'block text-xs uppercase tracking-wider text-text-secondary mb-1';
+const labelCls = 'font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1';
 
 export function CategoryFormModal({
   open, onClose, initial, onSubmit, pending, errorText,

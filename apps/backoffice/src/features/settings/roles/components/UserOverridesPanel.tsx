@@ -24,7 +24,7 @@ import { useRbacMatrix, SUPER_ADMIN_ROLE, type RbacOverride } from '../hooks/use
 import { useSetUserOverride } from '../hooks/useSetUserOverride.js';
 import { useDeleteUserOverride } from '../hooks/useDeleteUserOverride.js';
 
-const LABEL_CLS  = 'text-xs uppercase tracking-widest text-text-secondary';
+const LABEL_CLS  = 'font-data font-semibold text-xs uppercase tracking-widest text-text-secondary';
 // `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
 // (WCAG 1.4.11) — les bordures de BLOC plus bas restent en `subtle`.
 const FIELD_CLS  = `h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`;

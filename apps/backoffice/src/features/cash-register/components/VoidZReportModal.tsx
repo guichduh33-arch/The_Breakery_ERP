@@ -77,7 +77,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
         {step === 1 ? (
           <div className="space-y-3">
             <div>
-              <label htmlFor="void-reason" className="text-xs uppercase tracking-widest text-text-secondary block mb-1">
+              <label htmlFor="void-reason" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary block mb-1">
                 Reason (min 10 characters)
               </label>
               <textarea
@@ -109,7 +109,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
         ) : (
           <div className="space-y-3">
             <div>
-              <label htmlFor="void-pin" className="text-xs uppercase tracking-widest text-text-secondary block mb-1">
+              <label htmlFor="void-pin" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary block mb-1">
                 Manager PIN
               </label>
               <input

@@ -3,7 +3,8 @@
 
 import { useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { Input, SectionLabel } from '@breakery/ui';
+import { Input } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Download, ChevronRight } from 'lucide-react';
 import {
@@ -78,7 +79,7 @@ export default function TrialBalancePage(): JSX.Element {
       />
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
             type="date" lang="id-ID" value={startDate}
@@ -87,7 +88,7 @@ export default function TrialBalancePage(): JSX.Element {
             data-testid="tb-filter-start"
           />
         </label>
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
             type="date" lang="id-ID" value={endDate}

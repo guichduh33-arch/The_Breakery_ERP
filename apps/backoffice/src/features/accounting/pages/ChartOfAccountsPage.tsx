@@ -3,7 +3,8 @@
 // Gate route : accounting.coa.read ; toggle gated par accounting.coa.write.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, EmptyState, Input, SectionLabel } from '@breakery/ui';
+import { Button, EmptyState, Input } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { FileText, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader.js';
 import {

@@ -5,7 +5,8 @@
 // status). Read-only over useProductPurchaseItems; no new RPC.
 
 import { useMemo, type JSX } from 'react';
-import { Badge, Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { Badge, Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 // La tuile du back-office (23 px, `valueTitle`) et non celle de `@breakery/ui`
 // (34 px) : « Total Spent » cumule des achats fournisseur et déborde dès huit
 // chiffres. Le prix unitaire, sa voisine, suit pour que la rangée reste une.
@@ -121,10 +122,10 @@ export function PurchasePanel({ productId }: Props): JSX.Element {
                   <td className="px-4 py-3 tabular-nums text-text-secondary">{fmtDate(it.order_date)}</td>
                   <td className="px-4 py-3 font-mono text-text-primary">{it.po_number}</td>
                   <td className="px-4 py-3">{it.supplier_name}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{it.quantity} {it.unit}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{it.received_quantity} {it.unit}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(it.unit_cost)}</td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCurrency(it.subtotal)}</td>
+                  <td className="px-4 py-3 text-right font-data tabular-nums">{it.quantity} {it.unit}</td>
+                  <td className="px-4 py-3 text-right font-data tabular-nums text-text-secondary">{it.received_quantity} {it.unit}</td>
+                  <td className="px-4 py-3 text-right font-data tabular-nums">{formatCurrency(it.unit_cost)}</td>
+                  <td className="px-4 py-3 text-right font-data font-medium tabular-nums">{formatCurrency(it.subtotal)}</td>
                   <td className="px-4 py-3">
                     <Badge variant={statusVariant(it.status)}>{it.status}</Badge>
                   </td>

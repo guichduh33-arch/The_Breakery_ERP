@@ -23,7 +23,7 @@ export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; ca
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card variant="default" padding="md" className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-text-secondary">Contact</h2>
+        <h2 className="font-data text-sm font-semibold uppercase tracking-widest text-text-secondary">Contact</h2>
         {customer.email && (
           <div className="flex items-center gap-2 text-sm text-text-primary">
             <Mail className="h-4 w-4 text-text-muted" aria-hidden /> {customer.email}
@@ -45,7 +45,7 @@ export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; ca
 
       {customer.customer_type === 'b2b' && (
         <Card variant="default" padding="md" className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-text-secondary">B2B account</h2>
+          <h2 className="font-data text-sm font-semibold uppercase tracking-widest text-text-secondary">B2B account</h2>
           {customer.b2b_company_name && (
             <div className="text-sm text-text-primary">Company: <strong>{customer.b2b_company_name}</strong></div>
           )}

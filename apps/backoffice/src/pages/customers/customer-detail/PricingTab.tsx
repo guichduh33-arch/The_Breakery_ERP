@@ -81,7 +81,7 @@ export function PricingTab({ customer }: { customer: CustomerDetailRow }): JSX.E
   return (
     <div className="space-y-4">
       <Card variant="default" padding="md" className="space-y-2">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-text-secondary">Pricing rule</h2>
+        <h2 className="font-data text-sm font-semibold uppercase tracking-widest text-text-secondary">Pricing rule</h2>
         <div className="flex items-center gap-2 text-sm text-text-primary">
           <CustomerCategoryChip name={category.name} slug={category.slug} />
           <span>→ {MODIFIER_LABEL[modifier]}</span>

@@ -23,7 +23,7 @@
 
 import { type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
-import { formatPercent } from '@breakery/utils';
+import { formatDateShortWita, formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
@@ -228,7 +228,7 @@ export default function Pb1ReportPage(): JSX.Element {
               {byDay.map((d) => (
                 <tr key={d.day} className="border-b border-border-subtle">
                   <td className="py-2 font-data tabular-nums text-text-secondary">
-                    {String(d.day).slice(0, 10)}
+                    {formatDateShortWita(String(d.day))}
                   </td>
                   <td className={NUM_CELL}>{formatIdrFull(d.taxable_base)}</td>
                   <td className={NUM_CELL}>{formatIdrFull(d.pb1_collected)}</td>

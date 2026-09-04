@@ -7,7 +7,8 @@
 // est inconnue — un zéro affirmerait une journée sans vente.
 
 import type { JSX, ReactNode } from 'react';
-import { Card, SectionLabel, cn } from '@breakery/ui';
+import { Card, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import {
   KPI_CARD, KPI_CARD_HERO, KPI_LABEL, KPI_LABEL_HERO,
   KPI_NOTE, KPI_NOTE_HERO, KPI_VALUE, KPI_VALUE_HERO,

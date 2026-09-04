@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { ChevronRight, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@breakery/ui';
-import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
+import { formatCurrency, formatDateShortWita, formatDateTimeShortWita } from '@breakery/utils';
 import type { StockLedgerRow } from '../stockLedgerColumns.js';
 
 type SortKey = 'date' | 'type' | 'product';
@@ -92,7 +92,7 @@ function compareRows(a: StockLedgerRow, b: StockLedgerRow, key: SortKey): number
 function DetailField({ label, value }: { label: string; value: string }): JSX.Element {
   return (
     <div className="flex flex-col">
-      <span className="text-xs uppercase tracking-wide text-text-muted">{label}</span>
+      <span className="font-data font-semibold text-xs uppercase tracking-wide text-text-muted">{label}</span>
       <span className="text-xs text-text-primary">{value || '—'}</span>
     </div>
   );
@@ -209,7 +209,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
                       <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden />
                     </button>
                   </td>
-                  <td className="whitespace-nowrap px-2 py-1.5 text-text-secondary">{r.movement_date}</td>
+                  <td className="whitespace-nowrap px-2 py-1.5 font-data tabular-nums text-text-secondary">{formatDateShortWita(r.movement_date)}</td>
                   <td className="whitespace-nowrap px-2 py-1.5">
                     <span className="rounded border border-border-subtle bg-bg-base px-1.5 py-0.5 font-mono text-xs text-text-secondary">
                       {r.type_label}

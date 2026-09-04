@@ -105,14 +105,14 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
     <div className="grid lg:grid-cols-2 gap-4">
       <div className="space-y-3">
         <div>
-          <label htmlFor={`rec-name-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Name</label>
+          <label htmlFor={`rec-name-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Name</label>
           <input id={`rec-name-${row.id}`} value={draft.name} disabled={!canEdit} maxLength={120}
             onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
             className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor={`rec-paper-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Paper size</label>
+            <label htmlFor={`rec-paper-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Paper size</label>
             <select id={`rec-paper-${row.id}`} value={draft.paper_size} disabled={!canEdit}
               onChange={(e) => setDraft((d) => ({ ...d, paper_size: e.target.value as PaperSize }))}
               className={`h-9 w-full rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50 ${FOCUS_RING}`}>
@@ -135,13 +135,13 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
           </div>
         </div>
         <div>
-          <label htmlFor={`rec-header-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Header</label>
+          <label htmlFor={`rec-header-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Header</label>
           <textarea id={`rec-header-${row.id}`} rows={3} value={draft.header} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, header: e.target.value }))}
             className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
         </div>
         <div>
-          <label htmlFor={`rec-footer-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Footer</label>
+          <label htmlFor={`rec-footer-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Footer</label>
           <textarea id={`rec-footer-${row.id}`} rows={3} value={draft.footer} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, footer: e.target.value }))}
             className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50 ${FOCUS_RING}`} />
@@ -165,7 +165,7 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
       </div>
 
       <div aria-label="Preview" className="font-mono text-xs">
-        <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Preview ({draft.paper_size})</div>
+        <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary mb-2">Preview ({draft.paper_size})</div>
         <pre className="border border-border-subtle bg-bg-overlay rounded-md px-4 py-3 whitespace-pre-wrap leading-snug">
 {draft.show_logo ? '[ LOGO ]' : ''}
 {draft.show_logo ? '\n' : ''}{draft.header}

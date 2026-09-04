@@ -55,7 +55,7 @@ describe('ProductPerformanceCard', () => {
 
     const card = await screen.findByTestId('product-performance');
     expect(card).toHaveTextContent('142');
-    expect(card).toHaveTextContent('10.31%');
+    expect(card).toHaveTextContent('10,31%');
     // Le dénominateur accompagne le taux : 10 % sur 8 commandes et 10 % sur
     // 1 145 ne disent pas la même chose.
     expect(card).toHaveTextContent(/118 of 1\.145 orders/);
