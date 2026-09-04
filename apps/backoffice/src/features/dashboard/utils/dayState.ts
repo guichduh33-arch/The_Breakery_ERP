@@ -35,3 +35,56 @@ export const NO_SALES_YET_NOTE =
 export function hasNoSalesYetToday(kpis: DashboardKpis | null): boolean {
   return kpis !== null && kpis.orders.value === 0;
 }
+
+/**
+ * Le symétrique de `hasNoSalesYetToday` : la journée EN COURS a vendu, mais la
+ * période COMPARÉE, elle, était vide. Le RPC répond alors `null` sur les six
+ * comparaisons de ce créneau (`_pct_change` refuse de diviser par zéro), et la
+ * bande rendait six tirets côte à côte — le même mur qu'à l'ouverture, décalé
+ * d'une colonne.
+ *
+ * Le test est STRICT : on ne replie la colonne que si TOUTES les comparaisons
+ * du créneau sont absentes. Une seule mesure sans base (la marge, quand le net
+ * est négatif) reste un tiret dans sa tuile : c'est un fait sur cette mesure-là,
+ * pas sur la période.
+ */
+export function hasNoComparisonBase(
+  kpis: DashboardKpis | null,
+  slot: 'yesterday' | 'd7',
+): boolean {
+  if (kpis === null) return false;
+  const deltas =
+    slot === 'yesterday'
+      ? [
+          kpis.net_revenue.vs_yesterday,
+          kpis.orders.vs_yesterday,
+          kpis.customers.vs_yesterday,
+          kpis.items_sold.vs_yesterday,
+          kpis.avg_basket.vs_yesterday,
+          kpis.gross_margin.vs_yesterday_pt,
+        ]
+      : [
+          kpis.net_revenue.vs_d7,
+          kpis.orders.vs_d7,
+          kpis.customers.vs_d7,
+          kpis.items_sold.vs_d7,
+          kpis.avg_basket.vs_d7,
+          kpis.gross_margin.vs_d7_pt,
+        ];
+  return deltas.every((d) => d === null);
+}
+
+/**
+ * Mention unique qui remplace la (ou les) colonne(s) de comparaison repliée(s).
+ * `null` quand il n'y a rien à dire — les deux bases existent.
+ */
+export function noBaselineNote(noYesterday: boolean, noD7: boolean): string | null {
+  if (noYesterday && noD7) {
+    return 'No sales yesterday or on the same weekday last week — no comparison available.';
+  }
+  if (noYesterday) return 'No sales yesterday — the day-on-day comparison is unavailable.';
+  if (noD7) {
+    return 'No sales on the same weekday last week — the week-on-week comparison is unavailable.';
+  }
+  return null;
+}

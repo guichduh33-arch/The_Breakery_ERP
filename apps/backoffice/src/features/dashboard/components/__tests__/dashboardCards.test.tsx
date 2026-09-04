@@ -97,4 +97,35 @@ describe('CostMtdCard', () => {
     expect(rising?.className).toMatch(/text-danger/);
     expect(falling?.className).toMatch(/text-success/);
   });
+
+  it('names the denominator window next to each ratio', () => {
+    // Le P&L voisin mesure 28 jours. Deux ratios sans fenêtre se lisent comme
+    // une contradiction alors qu'ils portent sur deux périodes différentes.
+    wrap(<CostMtdCard cost={cost} isLoading={false} error={null} />);
+    const card = screen.getByTestId('card-cost-mtd');
+    expect(card).toHaveTextContent(/COGS · 34,1% of MTD sales/);
+    expect(card).toHaveTextContent(/OpEx · 22,4% of MTD sales/);
+  });
+
+  it('stays silent while cost is below sales', () => {
+    wrap(<CostMtdCard cost={cost} isLoading={false} error={null} />);
+    expect(screen.queryByTestId('cost-mtd-reserve')).not.toBeInTheDocument();
+  });
+
+  it('keeps a ratio above 100% and states the reserve beside it', () => {
+    // « OpEx · 1036,2% of MTD sales » est exact et se lit comme une panne. On
+    // garde le chiffre — un mois déficitaire doit rester visible — et on dit
+    // pourquoi il dépasse 100 %.
+    const overrun: CostMtd = {
+      ...cost,
+      sales_mtd: 200_000, cogs_total: 223_700, opex_total: 2_072_400,
+      total: 2_296_100, cogs_pct_of_sales: 111.9, opex_pct_of_sales: 1036.2,
+    };
+    wrap(<CostMtdCard cost={overrun} isLoading={false} error={null} />);
+    const card = screen.getByTestId('card-cost-mtd');
+    expect(card).toHaveTextContent(/OpEx · 1.036,2% of MTD sales/);
+    expect(screen.getByTestId('cost-mtd-reserve')).toHaveTextContent(
+      /exceeds month-to-date sales/i,
+    );
+  });
 });
