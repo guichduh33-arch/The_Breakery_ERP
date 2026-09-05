@@ -220,13 +220,13 @@ SELECT ok(current_setting('a22g.t5')::boolean,
   'T5 fire: la variante SAINE passe (pas de sur-blocage) - recu: ' || current_setting('a22g.t5msg'));
 
 -- ===========================================================================
--- PORTE SALLE — create_tablet_order_v8 (sales.create)
+-- PORTE SALLE — create_tablet_order_v9 (sales.create)
 -- ===========================================================================
 DO $t6$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.tab_auth'), true);
   BEGIN
-    PERFORM create_tablet_order_v8(
+    PERFORM create_tablet_order_v9(
       gen_random_uuid(), current_setting('a22g.tab_prof')::uuid, '', 'take_out'::order_type,
       pg_temp.a22g_item(current_setting('a22g.parent')::uuid));
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
@@ -240,7 +240,7 @@ DO $t7$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.tab_auth'), true);
   BEGIN
-    PERFORM create_tablet_order_v8(
+    PERFORM create_tablet_order_v9(
       gen_random_uuid(), current_setting('a22g.tab_prof')::uuid, '', 'take_out'::order_type,
       pg_temp.a22g_item(current_setting('a22g.combo')::uuid,
         jsonb_build_array(jsonb_build_object('product_id', current_setting('a22g.parent')::uuid, 'quantity', 1))));
@@ -255,7 +255,7 @@ DO $t8$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.tab_auth'), true);
   BEGIN
-    PERFORM create_tablet_order_v8(
+    PERFORM create_tablet_order_v9(
       gen_random_uuid(), current_setting('a22g.tab_prof')::uuid, '', 'take_out'::order_type,
       pg_temp.a22g_item(current_setting('a22g.del')::uuid));
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
@@ -269,7 +269,7 @@ DO $t9$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.tab_auth'), true);
   BEGIN
-    PERFORM create_tablet_order_v8(
+    PERFORM create_tablet_order_v9(
       gen_random_uuid(), current_setting('a22g.tab_prof')::uuid, '', 'take_out'::order_type,
       pg_temp.a22g_item(current_setting('a22g.inact')::uuid));
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
@@ -283,7 +283,7 @@ DO $t10$ DECLARE v_oid UUID; v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.tab_auth'), true);
   BEGIN
-    v_oid := create_tablet_order_v8(
+    v_oid := create_tablet_order_v9(
       gen_random_uuid(), current_setting('a22g.tab_prof')::uuid, '', 'take_out'::order_type,
       pg_temp.a22g_item(current_setting('a22g.var')::uuid));
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;

@@ -6668,7 +6668,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v8: {
+      create_tablet_order_v9: {
         Args: {
           p_client_uuid: string
           p_items: Json

@@ -92,7 +92,7 @@ describe('tablet-send smoke', () => {
     expect(screen.getByRole('button', { name: /select a table first/i })).toBeDisabled();
   });
 
-  it('calls create_tablet_order_v8 RPC with correct payload and navigates to /tablet/orders on success', async () => {
+  it('calls create_tablet_order_v9 RPC with correct payload and navigates to /tablet/orders on success', async () => {
     const { toast } = await import('sonner');
     useTabletCartStore.setState({
       items: [
@@ -110,7 +110,7 @@ describe('tablet-send smoke', () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mocks.rpc).toHaveBeenCalledWith('create_tablet_order_v8', expect.objectContaining({
+      expect(mocks.rpc).toHaveBeenCalledWith('create_tablet_order_v9', expect.objectContaining({
         p_client_uuid: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) as unknown,
         p_waiter_id: 'waiter-001',
         p_table_number: 'T-03',

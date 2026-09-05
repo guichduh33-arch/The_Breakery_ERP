@@ -7,14 +7,23 @@
 // dedicated grid: 2 columns in portrait / 3 in landscape (lg), a tall h-12
 // search field, and the shared ProductCard tiles. The ModifierModal flow is
 // unchanged.
+//
+// Lot D (2026-09-05) — la grille trie désormais le tap comme le comptoir
+// (`ProductTapHandler`) : un produit désactivé ou un groupe de variantes est
+// refusé avec un toast, un combo ouvre `ComboConfigModal` (et n'entre jamais
+// dans le pipeline modificateurs ni dans l'auto-ajout), le reste garde le
+// chemin existant. Jusqu'ici un combo tapé tombait dans l'auto-ajout nu et
+// partait au serveur sans sa composition.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Search } from 'lucide-react';
+import { toast } from 'sonner';
 import { EmptyState, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
 import type { Product, SelectedModifiers } from '@breakery/domain';
 import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
+import { ComboConfigModal } from '@/features/combos/components/ComboConfigModal';
 import { ProductCard } from '@/features/products/ProductCard';
 import { useProducts } from '@/features/products/hooks/useProducts';
 import { useCategories } from '@/features/products/hooks/useCategories';
@@ -28,12 +37,16 @@ export interface TabletProductGridProps {
 
 export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX.Element {
   const addItem = useTabletCartStore((s) => s.addItem);
+  const addCombo = useTabletCartStore((s) => s.addCombo);
   const cartItems = useTabletCartStore((s) => s.items);
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState<Product | null>(null);
+  // Lot D — combo en cours de configuration. Un combo ne passe jamais par
+  // `pending` : il n'a pas de groupe de modificateurs propre à résoudre.
+  const [comboPending, setComboPending] = useState<Product | null>(null);
 
   // Critique 2026-08-24 (P1) — la tuile perdait son signal « déjà au panier »
   // sur la seule surface où la saisie est interrompue par le client qui parle.
@@ -88,6 +101,23 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   // useCallback : identité stable pour préserver le React.memo de ProductCard —
   // sans quoi chaque frappe de recherche repasse toutes les tuiles visibles.
   const handleSelect = useCallback((product: Product) => {
+    // ADR-022 déc. 3.2 — dernier filet avant l'entrée au panier, mêmes critères
+    // que le comptoir (`ProductTapHandler.assertSellable`).
+    if (!product.is_active) {
+      toast.error(`${product.name} is disabled — it cannot be sold`);
+      return;
+    }
+    // La tablette n'a pas de sélecteur de variante (suivi séparé) : un groupe
+    // de variantes se traite au comptoir plutôt que d'entrer au panier tel quel.
+    if (product.has_variants) {
+      toast.error(`${product.name} is a variant group — pick a variant at the counter`);
+      return;
+    }
+    // Lot D — un combo ouvre son configurateur, jamais le pipeline modificateurs.
+    if (product.product_type === 'combo') {
+      setComboPending(product);
+      return;
+    }
     setPending(product);
   }, []);
 
@@ -230,6 +260,26 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
           onConfirm={handleConfirm}
         />
       )}
+
+      {/* Lot D — configurateur combo, miroir du comptoir (ProductTapHandler).
+          La vendabilité est tranchée par handleSelect au tap et re-vérifiée à
+          la confirmation, comme au comptoir ; les composants non vendables
+          sont écartés en amont par useComboConfig. */}
+      <ComboConfigModal
+        open={comboPending !== null}
+        product={comboPending ? { id: comboPending.id, name: comboPending.name } : null}
+        onConfirm={({ components, modifiers, unitPrice }) => {
+          if (comboPending) {
+            if (comboPending.is_active) {
+              addCombo(comboPending, modifiers, components, unitPrice);
+            } else {
+              toast.error(`${comboPending.name} is disabled — it cannot be sold`);
+            }
+          }
+          setComboPending(null);
+        }}
+        onClose={() => setComboPending(null)}
+      />
     </div>
   );
 }

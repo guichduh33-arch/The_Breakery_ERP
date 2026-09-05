@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import {
+  addComboItem as domainAddComboItem,
   addItem as domainAddItem,
   removeItem as domainRemoveItem,
   updateQuantity as domainUpdateQuantity,
 } from '@breakery/domain';
-import type { CartItem, Product, SelectedModifiers } from '@breakery/domain';
+import type { CartItem, ComboComponent, Product, SelectedModifiers } from '@breakery/domain';
 
 export interface TabletCartState {
   items: CartItem[];
@@ -22,6 +23,20 @@ export interface TabletCartState {
   /** Numéro affichable de cette commande (#0042) — bandeau de mode ajout. */
   appendToOrderNumber: string | null;
   addItem: (product: Product, modifiers?: SelectedModifiers) => void;
+  /**
+   * Lot D (2026-09-05) — ajoute une ligne combo CONFIGURÉE, miroir de
+   * `cartStore.addCombo` côté comptoir. La ligne porte toujours
+   * `product_type: 'combo'` et la composition choisie (`components`), que le
+   * serveur relit pour résoudre le prix et déduire le stock des composants.
+   * `unitPrice` est le prix émis par `ComboConfigModal` (base_price ; les
+   * surcharges voyagent dans `modifiers`).
+   */
+  addCombo: (
+    product: Product,
+    modifiers: SelectedModifiers,
+    components: ComboComponent[],
+    unitPrice: number,
+  ) => void;
   updateQuantity: (itemId: string, qty: number) => void;
   removeItem: (itemId: string) => void;
   setTableNumber: (name: string | null) => void;
@@ -50,6 +65,14 @@ export const useTabletCartStore = create<TabletCartState>()(
       addItem: (product, modifiers = []) => {
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainAddItem(fakeCart, product, modifiers);
+        set({ items: updated.items });
+      },
+
+      // Lot D (2026-09-05) — même « fakeCart » que `addItem`. Ce store n'émet
+      // aucun événement POS (contrairement au panier caisse) : rien à ajouter ici.
+      addCombo: (product, modifiers, components, unitPrice) => {
+        const fakeCart = { items: get().items, order_type: get().orderType };
+        const updated = domainAddComboItem(fakeCart, product, modifiers, components, 1, unitPrice);
         set({ items: updated.items });
       },
 

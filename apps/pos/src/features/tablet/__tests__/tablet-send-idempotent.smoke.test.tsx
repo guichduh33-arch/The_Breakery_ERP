@@ -7,7 +7,7 @@
 //     pure spy. No live DB, no UI rendering — we exercise the
 //     `useCreateTabletOrder` hook in isolation with React Query.
 //   - Verifies that the post-S25 hook signature `{ cart, waiterId, clientUuid }`
-//     forwards `clientUuid` as `p_client_uuid` to the `create_tablet_order_v8`
+//     forwards `clientUuid` as `p_client_uuid` to the `create_tablet_order_v9`
 //     RPC, and that a retry with the SAME `clientUuid` re-sends the SAME
 //     `p_client_uuid` value (sticky UUID lifecycle).
 
@@ -56,7 +56,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     supaMocks.rpc.mockReset();
   });
 
-  it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v8', async () => {
+  it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v9', async () => {
     supaMocks.rpc.mockReturnValue(rpcResult('order-id-1'));
 
     const wrapper = makeWrapper();
@@ -73,7 +73,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
 
     expect(supaMocks.rpc).toHaveBeenCalledTimes(1);
     expect(supaMocks.rpc).toHaveBeenCalledWith(
-      'create_tablet_order_v8',
+      'create_tablet_order_v9',
       expect.objectContaining({
         p_client_uuid: myUuid,
         p_waiter_id: 'w-1',
@@ -115,8 +115,8 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     const firstCallArgs = supaMocks.rpc.mock.calls[0]!;
     const secondCallArgs = supaMocks.rpc.mock.calls[1]!;
 
-    expect(firstCallArgs[0]).toBe('create_tablet_order_v8');
-    expect(secondCallArgs[0]).toBe('create_tablet_order_v8');
+    expect(firstCallArgs[0]).toBe('create_tablet_order_v9');
+    expect(secondCallArgs[0]).toBe('create_tablet_order_v9');
 
     const firstClientUuid = (firstCallArgs[1] as { p_client_uuid: string }).p_client_uuid;
     const secondClientUuid = (secondCallArgs[1] as { p_client_uuid: string }).p_client_uuid;
@@ -124,5 +124,53 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     expect(firstClientUuid).toBe(stickyUuid);
     expect(secondClientUuid).toBe(stickyUuid);
     expect(firstClientUuid).toBe(secondClientUuid);
+  });
+
+  // Audit lot 1 P0 n°6 (docs/audits/2026-08-31-audit-pos-flow.md) — lot D du
+  // plan validé par Mamat le 2026-09-05. `create_tablet_order_v8` valide les
+  // composants d'un combo mais ne les persiste jamais : `combo_components`
+  // n'atteignait même pas le wire : `buildSubmitPayload` ne forwardait pas la
+  // clé dans `p_items`. Enregistré rouge le 2026-09-05 avant la passe client,
+  // vert depuis que `p_items[]` porte `combo_components` et que le hook cible
+  // la v9.
+  it('C4: a combo cart line forwards combo_components to create_tablet_order_v9', async () => {
+    supaMocks.rpc.mockReturnValue(rpcResult('order-id-4'));
+
+    const wrapper = makeWrapper();
+    const { result } = renderHook(() => useCreateTabletOrder(), { wrapper });
+
+    const comboCart: TabletCart = {
+      items: [
+        {
+          id: 'l1',
+          product_id: 'combo-1',
+          name: 'Breakfast Set',
+          unit_price: 40000,
+          quantity: 1,
+          modifiers: [{ group_name: 'Size', option_label: 'Large', price_adjustment: 8000 }],
+          product_type: 'combo',
+          combo_components: [{ product_id: 'comp-1', quantity: 1 }],
+        },
+      ],
+      tableNumber: 'T4',
+      orderType: 'dine_in',
+    };
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        cart: comboCart,
+        waiterId: 'w-4',
+        clientUuid: '44444444-4444-4444-4444-444444444444',
+      });
+    });
+
+    // Même lecture que C1/C2 : les arguments du mock sont relus tels quels
+    // (un matcher `expect.arrayContaining` dans `toHaveBeenCalledWith` est
+    // typé `any` et réveille no-unsafe-assignment sur le ratchet).
+    expect(supaMocks.rpc).toHaveBeenCalledTimes(1);
+    const callArgs = supaMocks.rpc.mock.calls[0]!;
+    expect(callArgs[0]).toBe('create_tablet_order_v9');
+    const items = (callArgs[1] as { p_items: { combo_components?: unknown }[] }).p_items;
+    expect(items[0]?.combo_components).toEqual([{ product_id: 'comp-1', quantity: 1 }]);
   });
 });

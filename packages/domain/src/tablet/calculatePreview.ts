@@ -1,5 +1,5 @@
 import { roundIdr } from '@breakery/utils';
-import { calculatePriceAdjustment } from '../modifiers/calculatePriceAdjustment.js';
+import { lineTotalOf } from '../cart/lineTotal.js';
 import { DEFAULT_TAX_RATE } from '../orders/taxRate.js';
 import type { TabletCart } from './types.js';
 
@@ -19,6 +19,13 @@ export interface TabletPreview {
  * a usable estimate. `taxInclusive` mirrors `_pb1_split_v1` (Lot 6b) —
  * inclusive extracts the PB1 from the total, exclusive adds it on top.
  * The server RPC remains the sole pricing authority — this is display-only.
+ *
+ * Lot D (2026-09-05) — le total de ligne se demande à `lineTotalOf`, jamais
+ * recomposé ici : la recomposition `(unit_price + adjustment) × qty` ignorait
+ * les ajustements portés par les modificateurs des composants d'un combo
+ * (ADR-017, `_resolve_combo_price_v1` côté serveur), et l'aperçu affiché à la
+ * serveuse ne collait donc pas au montant réellement facturé. Hors combo, la
+ * formule est identique à la précédente.
  */
 export function calculatePreview(
   cart: TabletCart,
@@ -27,8 +34,7 @@ export function calculatePreview(
 ): TabletPreview {
   let items_total = 0;
   for (const item of cart.items) {
-    const adjustment = calculatePriceAdjustment(item.modifiers);
-    items_total += roundIdr((item.unit_price + adjustment) * item.quantity);
+    items_total += lineTotalOf(item);
   }
   if (taxInclusive) {
     const tax_amount = Math.round((items_total * taxRate) / (1 + taxRate));
