@@ -36,7 +36,14 @@ export function trackedFiles(prefixes, extRe) {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   });
-  return out.split('\0').filter((p) => p !== '' && extRe.test(p));
+  // `git ls-files` liste l'INDEX, pas le disque : un fichier supprimé sans
+  // `git rm` y figure encore, et la lecture qui suit plantait toute la garde
+  // en local (critique BO du 2026-09-04 — `pages/ComingSoon.tsx`). Un fichier
+  // absent n'a rien à juger ; la CI part d'un checkout neuf et ne voit jamais
+  // ce cas.
+  return out
+    .split('\0')
+    .filter((p) => p !== '' && extRe.test(p) && existsSync(join(ROOT, p)));
 }
 
 /**

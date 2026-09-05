@@ -56,7 +56,7 @@ export default function PromoRoiPage() {
   return (
     <ReportPage
       title="Promotion ROI"
-      subtitle="Discount cost, revenue on flagged orders, and an ROI proxy per promotion. See D-W6-6B-05 for incrementality caveats."
+      subtitle="Discount cost, revenue on flagged orders, and an ROI proxy per promotion. The ROI is a proxy, not measured incrementality."
       filters={
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs text-text-secondary">

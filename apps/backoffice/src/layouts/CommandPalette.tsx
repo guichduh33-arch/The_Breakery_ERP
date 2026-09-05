@@ -128,30 +128,48 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     return [...pages, ...actions];
   }, [hasPermission]);
 
-  const results = useMemo(() => {
+  // `results` est la liste plate rendue ; `truncated` dit, par section coupée
+  // au plafond, combien de correspondances existaient AVANT la coupe. Sans ce
+  // compte, « sales » rendait cinq pages et rien d'autre — l'utilisateur ne
+  // pouvait pas savoir que six autres existaient, ni qu'il suffisait de taper
+  // un mot de plus (critique BO du 2026-09-04, P2). Les sections d'entités
+  // sont classées et plafonnées côté serveur : leur total n'est pas connu ici,
+  // et on ne l'invente pas.
+  const { results, truncated } = useMemo(() => {
     const scored = entries
       .map((e) => ({ entry: e, score: fuzzyScore(query, `${e.label} ${e.crumbs.join(' ')}`) }))
       .filter((r): r is { entry: PaletteEntry; score: number } => r.score !== null)
       .sort((a, b) => a.score - b.score)
       .map((r) => r.entry);
+    const pages = scored.filter((e) => e.group === 'Pages');
+    const actions = scored.filter((e) => e.group === 'Actions');
+    const truncatedByGroup = new Map<string, number>();
+    if (pages.length > SECTION_LIMIT) truncatedByGroup.set('Pages', pages.length);
+    if (actions.length > SECTION_LIMIT) truncatedByGroup.set('Actions', actions.length);
     // Actions d'abord quand la requête est vide : à froid, la palette propose
     // de FAIRE, pas de relire la liste des pages dans l'ordre du menu.
     if (query.trim() === '') {
-      return [
-        ...scored.filter((e) => e.group === 'Actions').slice(0, SECTION_LIMIT),
-        ...scored.filter((e) => e.group === 'Pages').slice(0, SECTION_LIMIT),
-      ];
+      return {
+        results: [
+          ...actions.slice(0, SECTION_LIMIT),
+          ...pages.slice(0, SECTION_LIMIT),
+        ],
+        truncated: truncatedByGroup,
+      };
     }
     // Requête active : entités d'abord (Orders/Products/Customers/Suppliers,
     // classement serveur), puis Pages, puis Actions — 5 par section.
     const entityEntries: PaletteEntry[] = entitySections.flatMap((s) =>
       s.hits.map((h) => ({ ...h, crumbs: [], group: s.group })),
     );
-    return [
-      ...entityEntries,
-      ...scored.filter((e) => e.group === 'Pages').slice(0, SECTION_LIMIT),
-      ...scored.filter((e) => e.group === 'Actions').slice(0, SECTION_LIMIT),
-    ];
+    return {
+      results: [
+        ...entityEntries,
+        ...pages.slice(0, SECTION_LIMIT),
+        ...actions.slice(0, SECTION_LIMIT),
+      ],
+      truncated: truncatedByGroup,
+    };
   }, [entries, query, entitySections]);
 
   useEffect(() => { setHighlight(0); }, [query]);
@@ -291,6 +309,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             const groupHeader = entry.group !== lastGroup ? entry.group : null;
             lastGroup = entry.group;
             const highlighted = i === highlight;
+            // La dernière ligne d'une section coupée porte le compte restant.
+            const lastOfGroup = results[i + 1]?.group !== entry.group;
+            const groupTotal = lastOfGroup ? truncated.get(entry.group) : undefined;
             return (
               // Le `<li>` n'est qu'un support de mise en page : il porte le
               // titre de section et le bouton. C'est le bouton qui est
@@ -352,6 +373,17 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                     <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />
                   )}
                 </button>
+                {/* Hors du `listbox` au sens ARIA : le `<li>` est présentation,
+                    et cette ligne n'est pas une option — elle dit combien la
+                    coupe en a laissé, et comment les atteindre. */}
+                {groupTotal !== undefined && (
+                  <p
+                    className="px-4 pb-1.5 pt-1 font-data text-xs tabular-nums text-text-muted"
+                    data-testid={`palette-truncated-${entry.group.toLowerCase()}`}
+                  >
+                    Showing {SECTION_LIMIT} of {groupTotal} {entry.group.toLowerCase()} — keep typing to narrow.
+                  </p>
+                )}
               </li>
             );
           })}

@@ -74,8 +74,8 @@ export function PromoRoiSummary({ data }: PromoRoiSummaryProps) {
           emphasis
         />
         <p className="pt-3 text-xs text-text-secondary italic">
-          ROI is a proxy. True incrementality would require a control-group experiment.
-          See deviation D-W6-6B-05.
+          ROI is a proxy. True incrementality would require a control-group experiment;
+          there is no control group to compare flagged orders against.
         </p>
       </CardContent>
     </Card>

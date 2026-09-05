@@ -24,7 +24,7 @@
 // La prop `data` (tests) désactive le hook agrégat ET les trois panneaux :
 // aucun réseau en test.
 
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3, BellRing, Building2, CalendarHeart, FileDown, RefreshCw,
@@ -149,7 +149,12 @@ export default function DashboardPage({ data }: DashboardPageProps) {
   const holidays = useHolidaysList();
   const todayHoliday = holidayNameFor(holidays.data, toLocalDateStr(new Date()));
 
-  const title = useMemo(todayTitle, []);
+  // Le titre suit le RENDU, pas le montage : mémorisé une fois, un onglet
+  // laissé ouvert après minuit titrait encore la veille au-dessus des chiffres
+  // du jour (critique BO du 2026-09-04). Le rafraîchissement de 60 s de la
+  // vue d'ensemble rend l'écran de toute façon ; le format d'une date ne
+  // vaut pas une mémo.
+  const title = todayTitle();
   const canExport = hasPermission('reports.export');
   const shortcuts = SHORTCUTS.filter((s) => hasPermission(s.permission));
 

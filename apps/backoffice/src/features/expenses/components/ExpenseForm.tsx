@@ -200,14 +200,18 @@ export function ExpenseForm({
         />
       </div>
 
+      {/* `size="sm"` explicite : le défaut du primitif rend 56 px, et cette
+          paire d'action sortait à près du double des 36 px de la paire du
+          brouillon de bon de commande et des boutons de toutes les listes
+          (DESIGN.md § Quatre crans de hauteur ; critique BO du 2026-09-04). */}
       <div className="flex justify-end gap-2 pt-2 border-t border-border-subtle">
         {onCancel !== undefined && (
-          <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
         )}
         {/* Le bouton reste actif quand la saisie est incomplète : c'est le
             submit qui révèle ce qui manque (DESIGN.md § Do's). Seul l'envoi
             en cours le neutralise. */}
-        <Button type="submit" variant="ink" disabled={submitting === true}>
+        <Button type="submit" variant="ink" size="sm" disabled={submitting === true}>
           {submitLabel ?? 'Save as draft'}
         </Button>
       </div>
