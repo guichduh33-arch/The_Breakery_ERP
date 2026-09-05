@@ -14,8 +14,8 @@
 // « ← Back to expenses » : deux vocabulaires pour le même geste sur le même
 // écran, alors que l'ossature commune ne déclare qu'un fil d'Ariane.
 //
-// Le comportement du formulaire est inchangé — `ExpenseForm` +
-// `create_expense_v1` gardent la validation et la soumission idempotente.
+// Le comportement du formulaire est inchangé — `ExpenseForm` + la famille
+// `create_expense` gardent la validation et la soumission idempotente.
 
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';

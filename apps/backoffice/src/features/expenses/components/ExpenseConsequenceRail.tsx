@@ -6,7 +6,7 @@
 // et l'historique de la même catégorie.
 //
 // Ce rail PRÉVOIT, il ne DÉCIDE pas — la résolution du palier appartient à
-// `submit_expense_v2` (PRODUCT.md : « Le serveur est l'autorité, jamais le
+// `submit_expense` (PRODUCT.md : « Le serveur est l'autorité, jamais le
 // client. Un écran qui laisse croire qu'il décide ment sur l'architecture »).
 // La réserve est écrite à côté de la prévision, pas en note de bas de page
 // (DESIGN.md § Do's).

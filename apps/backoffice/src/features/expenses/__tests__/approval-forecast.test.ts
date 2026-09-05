@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/expenses/__tests__/approval-forecast.test.ts
 //
 // Lot 8 — la résolution du palier d'approbation est un miroir de celle de
-// `submit_expense_v2`. Ces tests figent les quatre points où un miroir approximatif
+// `submit_expense`. Ces tests figent les quatre points où un miroir approximatif
 // mentirait à l'opérateur :
 //   · l'intervalle est demi-ouvert, `[min, max)` ;
 //   · une règle de catégorie bat la règle générale ;

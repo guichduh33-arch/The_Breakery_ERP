@@ -2,7 +2,7 @@
 //
 // Prévision de la chaîne d'approbation pour un brouillon de dépense.
 //
-// Cette résolution est un MIROIR de celle que `submit_expense_v2` exécute côté
+// Cette résolution est un MIROIR de celle que `submit_expense` exécute côté
 // serveur, recopiée depuis le corps de la RPC
 // (`supabase/migrations/20260524115443_fix_submit_expense_v2_security_hardening.sql`) :
 //
@@ -17,7 +17,7 @@
 //  1. l'intervalle est DEMI-OUVERT — `[amount_min, amount_max)`. Un montant
 //     égal à `amount_max` tombe dans le palier suivant, pas dans celui-ci ;
 //  2. `ORDER BY category_id NULLS LAST` fait gagner la règle de catégorie sur
-//     la règle générale, et `set_expense_threshold_v1` interdit deux règles qui
+//     la règle générale, et `set_expense_threshold` interdit deux règles qui
 //     se chevauchent POUR UNE MÊME catégorie — donc au plus deux lignes
 //     matchent, et laquelle gagne est déterministe ;
 //  3. quand AUCUNE ligne ne matche, le serveur ne laisse pas passer : il lève
