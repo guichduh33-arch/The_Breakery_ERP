@@ -1,4 +1,5 @@
 import type { SelectedModifiers } from '../modifiers/types.js';
+import type { ComboComponent } from '../types/index.js';
 import type { TabletCart } from './types.js';
 
 export interface TabletSubmitPayload {
@@ -10,6 +11,16 @@ export interface TabletSubmitPayload {
     quantity: number;
     unit_price: number;
     modifiers: SelectedModifiers;
+    /**
+     * Lot D (2026-09-05) — composition choisie d'une ligne combo. Sans cette
+     * clé, un combo tapé sur la tablette arrivait au serveur comme un produit
+     * nu : `create_tablet_order` ne pouvait ni résoudre le prix serveur
+     * (`_resolve_combo_price_v1` : base + surcharges + ajustements des
+     * modificateurs de composants) ni déduire le stock des composants. Même
+     * forme de wire que le comptoir (`useFireToStations`), et absente des
+     * lignes hors combo.
+     */
+    combo_components?: ComboComponent[];
   }[];
   /** Session 59 (17 D1.1) — order-level free-text note, forwarded as p_notes. */
   p_notes: string | null;
@@ -28,6 +39,7 @@ export function buildSubmitPayload(
       quantity: i.quantity,
       unit_price: i.unit_price,
       modifiers: i.modifiers,
+      ...(i.combo_components ? { combo_components: i.combo_components } : {}),
     })),
     p_notes: cart.notes ?? null,
   };

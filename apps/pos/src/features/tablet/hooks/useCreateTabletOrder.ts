@@ -120,7 +120,7 @@ export function useCreateTabletOrder() {
       // TypeError synchrone casserait l'envoi à 100 % sur cet appareil.
       const timeoutController = new AbortController();
       const timeoutHandle = setTimeout(() => timeoutController.abort(), 15_000);
-      const { data, error } = await supabase.rpc('create_tablet_order_v8', {
+      const { data, error } = await supabase.rpc('create_tablet_order_v9', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',
