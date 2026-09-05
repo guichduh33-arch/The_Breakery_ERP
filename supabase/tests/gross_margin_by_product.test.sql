@@ -19,7 +19,7 @@
 --        RPC already filters on status IN ('paid','completed')).
 --   T4 : caller without reports.financial.read -> 42501.
 --   T5 : settled B2B order (status='paid', paid_at set — mirrors
---        record_b2b_payment_v2's full-settlement semantics, 20260710000067)
+--        record_b2b_payment_v3's full-settlement semantics, 20260710000067)
 --        is included alongside POS sales.
 --
 -- Fixtures use far-future dates (2031) to avoid collision with real seed/demo
@@ -235,7 +235,8 @@ BEGIN
   VALUES ('GM Test Product B2B', 'GM-TEST-B2B', v_cat, 5000, 'pcs', 2000)
   RETURNING id INTO v_prod;
 
-  -- Mirrors record_b2b_payment_v2 full-settlement semantics (20260710000067):
+  -- Mirrors record_b2b_payment_v3 full-settlement semantics (introduced by v2,
+  -- 20260710000067; carried forward by v3):
   -- status flips to 'paid' + paid_at is set only once the invoice is fully
   -- settled (unsettled B2B orders sit in 'b2b_pending' with paid_at NULL and
   -- are correctly excluded by this RPC's status filter).

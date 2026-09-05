@@ -2,7 +2,7 @@
 // Session 24 / Phase 1.A.4 — Vitest live RPC tests for B2B Foundation.
 //
 // Couvre les RPCs S24 :
-//   - record_b2b_payment_v1 (happy path, idempotency, overpayment)
+//   - record_b2b_payment (v3) (happy path, idempotency, overpayment)
 //   - create_b2b_order_v1   (happy path + then payment chain)
 //   - adjust_b2b_balance_v2 (±delta chain, JE + manager PIN — S50 V2a-i)
 //
@@ -31,7 +31,7 @@ function rpc(sb: SupabaseClient) {
   return sb.rpc.bind(sb) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string; code?: string } | null }>;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — record_b2b_payment_v1 + create_b2b_order_v1 + adjust', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — record_b2b_payment (v3) + create_b2b_order_v1 + adjust', () => {
   let managerToken: string;
   let customerId: string;
   let productId: string;
@@ -123,7 +123,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
     expect(Number(orderResult.total)).toBe(50000);
     expect(Number(orderResult.credit_after)).toBe(50000);
 
-    const { data: payResult, error: payErr } = await rpc(sb)('record_b2b_payment_v2', {
+    const { data: payResult, error: payErr } = await rpc(sb)('record_b2b_payment_v3', {
       p_customer_id: customerId,
       p_amount: 50000,
       p_method: 'cash',
@@ -145,11 +145,19 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
     const sb = jwtClient(managerToken);
     const admin = createClient(SUPABASE_URL, SERVICE);
 
-    // Bring balance to 30000 via adjust_b2b_balance (we have permission)
+    // Depuis record_b2b_payment_v3 (audit lot 1 P0 n°4), un paiement qu'aucune
+    // facture ne peut absorber est refusé (P0011) : le solde doit être porté par
+    // une vraie facture, plus par un UPDATE du cache seul.
     await admin.from('customers')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ b2b_current_balance: 30000 } as any)
+      .update({ b2b_current_balance: 0 } as any)
       .eq('id', customerId);
+    const { data: orderResult, error: orderErr } = await rpc(sb)('create_b2b_order_v6', {
+      p_customer_id: customerId,
+      p_items: [{ product_id: productId, quantity: 2, unit_price: 25000 }],
+    });
+    expect(orderErr).toBeNull();
+    createdOrderIds.push(orderResult.order_id as string);
 
     const idempotencyKey = crypto.randomUUID();
     const args = {
@@ -159,12 +167,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       p_idempotency_key: idempotencyKey,
     };
 
-    const first = await rpc(sb)('record_b2b_payment_v2', args);
+    const first = await rpc(sb)('record_b2b_payment_v3', args);
     expect(first.error).toBeNull();
     createdPaymentIds.push(first.data.payment_id as string);
     expect(first.data.idempotent_replay).toBe(false);
 
-    const second = await rpc(sb)('record_b2b_payment_v2', args);
+    const second = await rpc(sb)('record_b2b_payment_v3', args);
     expect(second.error).toBeNull();
     expect(second.data.payment_id).toBe(first.data.payment_id);
     expect(second.data.idempotent_replay).toBe(true);
@@ -194,7 +202,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
     expect(Number(orderRes.credit_after)).toBe(100000);
 
     // 2) Partial payment 40K
-    const { data: pay1, error: pay1Err } = await rpc(sb)('record_b2b_payment_v2', {
+    const { data: pay1, error: pay1Err } = await rpc(sb)('record_b2b_payment_v3', {
       p_customer_id: customerId,
       p_amount: 40000,
       p_method: 'cash',
@@ -204,7 +212,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
     expect(Number(pay1.customer_balance_after)).toBe(60000);
 
     // 3) Partial payment 35K
-    const { data: pay2, error: pay2Err } = await rpc(sb)('record_b2b_payment_v2', {
+    const { data: pay2, error: pay2Err } = await rpc(sb)('record_b2b_payment_v3', {
       p_customer_id: customerId,
       p_amount: 35000,
       p_method: 'transfer',
@@ -223,7 +231,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       .update({ b2b_current_balance: 10000 } as any)
       .eq('id', customerId);
 
-    const { data, error } = await rpc(sb)('record_b2b_payment_v2', {
+    const { data, error } = await rpc(sb)('record_b2b_payment_v3', {
       p_customer_id: customerId,
       p_amount: 20000,
       p_method: 'cash',

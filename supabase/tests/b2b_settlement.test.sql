@@ -12,9 +12,41 @@
 --   T9  : cancel blocked when an allocation exists → order_has_payments (P0011)
 --   T10 : create_b2b_order_v6 over credit limit → P0011 (TOCTOU gate fires)
 --   T11 : reconcile_b2b_balance_v1 — consistent cache ⇒ has_drift FALSE (before & after settle)
---   T12 : gate — CASHIER calling record_b2b_payment_v2 → permission_denied (P0003)
---   T13 : idempotency replay record_b2b_payment_v2 — 1 payment, 1 alloc, replay flag
---   T14 : anon cannot EXECUTE record_b2b_payment_v2 (function ACL / REVOKE pair)
+--   T12 : gate — CASHIER calling record_b2b_payment_v3 → permission_denied (P0003)
+--   T13 : idempotency replay record_b2b_payment_v3 — 1 payment, 1 alloc, replay flag
+--   T14 : anon cannot EXECUTE record_b2b_payment_v3 (function ACL / REVOKE pair)
+--
+--   T15 : reliquat refusé (audit lot 1 P0 n°4, docs/audits/2026-08-31-audit-b2b-
+--         credit.md, finding 1) — record_b2b_payment_v3 doit RAISE P0011
+--         payment_not_fully_allocated si v_remaining > 0 après les deux boucles
+--         d'allocation (ciblée puis FIFO), et ce refus doit annuler EN BLOC la
+--         JE, la ligne b2b_payments, les allocations et le décrément du cache
+--         b2b_current_balance. Reproduction : cache gonflé à 150K (le chemin
+--         nommé par l'audit, atteignable via adjust_b2b_balance_v2) sur un
+--         client qui n'a qu'une seule facture ouverte de 100K — le guard
+--         anti-overpayment lit le CACHE (150K), pas Σ outstanding (100K), donc
+--         un paiement de 150K le franchit ; les boucles n'allouent que 100K et
+--         laissent 50K de reliquat. RED aujourd'hui : record_b2b_payment_v3
+--         n'existe pas encore → 42883 (fonction absente). Le RED SIGNIFICATIF
+--         documenté par l'audit est celui de v2 (droppée par la même
+--         migration) : elle enregistrait les 150K en entier, allouait 100K à
+--         l'unique facture, et perdait silencieusement les 50K de reliquat
+--         sans jamais lever d'erreur — c'est ce silence que T15 rend
+--         impossible. Le "raise P0011" ET les 4 preuves de rollback (aucune
+--         ligne b2b_payments, aucune JE reference_type='b2b_payment' pour ce
+--         client, balance cache inchangée à 150K) sont PLIÉS dans UN SEUL
+--         ok() — pas de throws_ok() séparé — pour tenir le budget de plan
+--         exact (14→17, +1 par test T15/T16/T17).
+--   T16 : contrat de payload — sur un règlement complet propre (facture 100K,
+--         balance 100K, paiement 100K), le jsonb retourné expose les DEUX
+--         nouvelles clés v3 : allocated_total = 100000 et unallocated = 0.
+--   T17 : FIFO sert toujours une facture b2b_pending PARTIELLEMENT réglée —
+--         un 1er paiement (40K, v3) laisse la facture b2b_pending avec un
+--         reliquat ; un 2e paiement (60K, v3, SANS p_invoice_ids) doit encore
+--         la trouver par la boucle FIFO et la solder (status='paid',
+--         outstanding=0) — non-régression du prédicat FIFO élargi de
+--         `status = 'b2b_pending'` à `status <> 'voided'` (décision Mamat
+--         2026-09-05, point 3).
 --
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). pgtap pre-installed on V3 dev.
 
@@ -22,7 +54,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(14);
+SELECT plan(17);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures : 10 unlimited b2b customers + 1 capped + 1 tracked product
@@ -102,7 +134,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000001',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000001',2,50000,'2026-06-10'::timestamptz);
-  v_res := record_b2b_payment_v2(
+  v_res := record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000001', p_amount=>100000, p_method=>'cash'::payment_method);
   SELECT outstanding, paid_at, order_status INTO v_inv1_out, v_inv1_paid, v_inv1_status
     FROM view_b2b_invoices WHERE invoice_id = v_inv1;
@@ -129,7 +161,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000002',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000002',1,50000,'2026-06-10'::timestamptz);
-  PERFORM record_b2b_payment_v2(
+  PERFORM record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000002', p_amount=>150000, p_method=>'cash'::payment_method);
   PERFORM set_config('breakery.t3', CASE WHEN
     (SELECT status FROM orders WHERE id=v_inv1)='paid'
@@ -150,7 +182,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000003',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000003',2,50000,'2026-06-10'::timestamptz);
-  PERFORM record_b2b_payment_v2(
+  PERFORM record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000003', p_amount=>100000, p_method=>'cash'::payment_method,
     p_invoice_ids=>ARRAY[v_inv2]);
   PERFORM set_config('breakery.t4', CASE WHEN
@@ -172,7 +204,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000004',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000004',2,50000,'2026-06-10'::timestamptz);
-  PERFORM record_b2b_payment_v2(
+  PERFORM record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000004', p_amount=>150000, p_method=>'cash'::payment_method,
     p_invoice_ids=>ARRAY[v_inv2]);
   PERFORM set_config('breakery.t5', CASE WHEN
@@ -192,7 +224,7 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid; v_inv UUID;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000005',2,50000,'2026-06-05'::timestamptz);
-  PERFORM record_b2b_payment_v2(
+  PERFORM record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000005', p_amount=>40000, p_method=>'cash'::payment_method);
   PERFORM set_config('breakery.t6', CASE WHEN
     (SELECT outstanding FROM view_b2b_invoices WHERE invoice_id=v_inv)=60000
@@ -256,7 +288,7 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid; v_inv UUID;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000007',2,50000,'2026-06-08'::timestamptz);
-  PERFORM record_b2b_payment_v2(
+  PERFORM record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000007', p_amount=>50000, p_method=>'cash'::payment_method);
   PERFORM set_config('breakery.t9_inv', v_inv::text, false);
 END $t9_setup$;
@@ -293,7 +325,7 @@ BEGIN
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000009',2,50000,'2026-06-09'::timestamptz);
   SELECT has_drift, derived_balance INTO v_drift1, v_derived1
     FROM reconcile_b2b_balance_v1('b2b52001-0000-0000-0000-000000000009');
-  PERFORM record_b2b_payment_v2(
+  PERFORM record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000009', p_amount=>100000, p_method=>'cash'::payment_method);
   SELECT has_drift, derived_balance INTO v_drift2, v_derived2
     FROM reconcile_b2b_balance_v1('b2b52001-0000-0000-0000-000000000009');
@@ -305,7 +337,7 @@ SELECT ok(current_setting('breakery.t11')::boolean,
   'T11: reconcile — derived 100K then 0, has_drift FALSE both times');
 
 -- ===========================================================================
--- T12 — gate : CASHIER record_b2b_payment_v2 → permission_denied
+-- T12 — gate : CASHIER record_b2b_payment_v3 → permission_denied
 -- ===========================================================================
 DO $t12_setup$
 DECLARE v_cashier UUID := current_setting('breakery.cashier_uid')::uuid;
@@ -313,13 +345,13 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_cashier);
 END $t12_setup$;
 SELECT throws_ok(
-  $$ SELECT record_b2b_payment_v2(
+  $$ SELECT record_b2b_payment_v3(
        p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>1000, p_method=>'cash'::payment_method) $$,
   'P0003', NULL,
   'T12: CASHIER lacking b2b.payment.record raises P0003 permission_denied');
 
 -- ===========================================================================
--- T13 — idempotency replay (record_b2b_payment_v2)
+-- T13 — idempotency replay (record_b2b_payment_v3)
 -- ===========================================================================
 DO $t13$
 DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
@@ -328,10 +360,10 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   PERFORM pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000010',2,50000,'2026-06-11'::timestamptz);
-  v_r1 := record_b2b_payment_v2(
+  v_r1 := record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>30000, p_method=>'cash'::payment_method,
     p_idempotency_key=>v_key);
-  v_r2 := record_b2b_payment_v2(
+  v_r2 := record_b2b_payment_v3(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>30000, p_method=>'cash'::payment_method,
     p_idempotency_key=>v_key);
   SELECT COUNT(*) INTO v_pay_count FROM b2b_payments WHERE idempotency_key=v_key;
@@ -347,14 +379,14 @@ SELECT ok(current_setting('breakery.t13')::boolean,
   'T13: idempotency — 2 calls same key → 1 payment, 1 allocation, replay flag');
 
 -- ===========================================================================
--- T14 — anon cannot EXECUTE record_b2b_payment_v2 (function ACL)
+-- T14 — anon cannot EXECUTE record_b2b_payment_v3 (function ACL)
 -- ===========================================================================
 DO $t14$
 DECLARE v_caught BOOLEAN := FALSE;
 BEGIN
   BEGIN
     SET LOCAL ROLE anon;
-    PERFORM record_b2b_payment_v2(
+    PERFORM record_b2b_payment_v3(
       p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>1, p_method=>'cash'::payment_method);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := TRUE;
   END;
@@ -362,7 +394,126 @@ BEGIN
   PERFORM set_config('breakery.t14', CASE WHEN v_caught THEN 'true' ELSE 'false' END, false);
 END $t14$;
 SELECT ok(current_setting('breakery.t14')::boolean,
-  'T14: anon EXECUTE record_b2b_payment_v2 → insufficient_privilege');
+  'T14: anon EXECUTE record_b2b_payment_v3 → insufficient_privilege');
+
+-- ===========================================================================
+-- T15 — reliquat refusé (audit lot 1 P0 n°4, finding 1) : record_b2b_payment_v3
+--   RAISE P0011 payment_not_fully_allocated si v_remaining > 0 après les deux
+--   boucles ; JE + b2b_payments + allocations + décrément de balance annulés
+--   EN BLOC. Voir le commentaire d'en-tête pour la reproduction et le choix de
+--   plier "raise + 3 preuves de rollback" dans un seul ok() (budget plan(17)).
+-- ===========================================================================
+DO $t15$
+DECLARE
+  v_cust UUID := 'b2b52001-0000-0000-0000-000000000015';
+  v_pay_count_before INT; v_pay_count_after INT;
+  v_je_count_before  INT; v_je_count_after  INT;
+  v_balance_after NUMERIC;
+  v_caught_p0011  BOOLEAN := FALSE;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+
+  INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
+  VALUES (v_cust, 'PGTAP S52 C15 Remainder', 'b2b', 'PT C15', NULL, 0)
+  ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
+
+  PERFORM pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-12'::timestamptz);
+
+  -- Cache inflation : le chemin d'atteignabilité nommé par l'audit (le guard
+  -- anti-overpayment lit customers.b2b_current_balance, pas Σ outstanding).
+  UPDATE customers SET b2b_current_balance = 150000 WHERE id = v_cust;
+
+  SELECT COUNT(*) INTO v_pay_count_before FROM b2b_payments WHERE customer_id = v_cust;
+  SELECT COUNT(*) INTO v_je_count_before FROM journal_entries
+    WHERE reference_type = 'b2b_payment'
+      AND description = 'B2B payment received from customer ' || v_cust::text;
+
+  BEGIN
+    PERFORM record_b2b_payment_v3(
+      p_customer_id => v_cust, p_amount => 150000, p_method => 'cash'::payment_method);
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLSTATE = 'P0011' THEN
+      v_caught_p0011 := TRUE;
+    ELSE
+      RAISE WARNING 'T15 unexpected error % : %', SQLSTATE, SQLERRM;
+    END IF;
+  END;
+
+  SELECT COUNT(*) INTO v_pay_count_after FROM b2b_payments WHERE customer_id = v_cust;
+  SELECT COUNT(*) INTO v_je_count_after FROM journal_entries
+    WHERE reference_type = 'b2b_payment'
+      AND description = 'B2B payment received from customer ' || v_cust::text;
+  SELECT b2b_current_balance INTO v_balance_after FROM customers WHERE id = v_cust;
+
+  PERFORM set_config('breakery.t15', CASE WHEN
+    v_caught_p0011
+    AND v_pay_count_before = 0 AND v_pay_count_after = 0
+    AND v_je_count_before  = 0 AND v_je_count_after  = 0
+    AND v_balance_after = 150000
+  THEN 'true' ELSE 'false' END, false);
+END $t15$;
+SELECT ok(current_setting('breakery.t15')::boolean,
+  'T15: remainder refused — record_b2b_payment_v3 raises P0011 payment_not_fully_allocated; JE/payment/balance cache all rolled back (audit lot1 P0#4)');
+
+-- ===========================================================================
+-- T16 — contrat de payload : allocated_total / unallocated (nouvelles clés v3)
+-- ===========================================================================
+DO $t16$
+DECLARE
+  v_cust UUID := 'b2b52001-0000-0000-0000-000000000016';
+  v_res JSONB;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+
+  INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
+  VALUES (v_cust, 'PGTAP S52 C16 Payload', 'b2b', 'PT C16', NULL, 0)
+  ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
+
+  PERFORM pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-13'::timestamptz);
+  UPDATE customers SET b2b_current_balance = 100000 WHERE id = v_cust;
+
+  v_res := record_b2b_payment_v3(
+    p_customer_id => v_cust, p_amount => 100000, p_method => 'cash'::payment_method);
+
+  PERFORM set_config('breakery.t16', CASE WHEN
+    (v_res->>'allocated_total')::numeric = 100000
+    AND (v_res->>'unallocated')::numeric = 0
+  THEN 'true' ELSE 'false' END, false);
+END $t16$;
+SELECT ok(current_setting('breakery.t16')::boolean,
+  'T16: payload contract — record_b2b_payment_v3 returns allocated_total=100000, unallocated=0 on a clean full settlement');
+
+-- ===========================================================================
+-- T17 — FIFO sert toujours une facture b2b_pending PARTIELLEMENT réglée
+--   (non-régression du prédicat FIFO élargi à status <> 'voided')
+-- ===========================================================================
+DO $t17$
+DECLARE
+  v_cust UUID := 'b2b52001-0000-0000-0000-000000000017';
+  v_inv UUID;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+
+  INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
+  VALUES (v_cust, 'PGTAP S52 C17 FIFO', 'b2b', 'PT C17', NULL, 0)
+  ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
+
+  v_inv := pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-14'::timestamptz);
+  UPDATE customers SET b2b_current_balance = 100000 WHERE id = v_cust;
+
+  PERFORM record_b2b_payment_v3(
+    p_customer_id => v_cust, p_amount => 40000, p_method => 'cash'::payment_method);
+  PERFORM record_b2b_payment_v3(
+    p_customer_id => v_cust, p_amount => 60000, p_method => 'cash'::payment_method);
+
+  PERFORM set_config('breakery.t17', CASE WHEN
+    (SELECT status FROM orders WHERE id = v_inv) = 'paid'
+    AND (SELECT outstanding FROM view_b2b_invoices WHERE invoice_id = v_inv) = 0
+    AND (SELECT SUM(amount_applied) FROM b2b_payment_allocations WHERE invoice_id = v_inv) = 100000
+  THEN 'true' ELSE 'false' END, false);
+END $t17$;
+SELECT ok(current_setting('breakery.t17')::boolean,
+  'T17: FIFO still serves a partially-settled b2b_pending invoice — 2nd payment (60K, no p_invoice_ids) completes it (status=paid, outstanding=0)');
 
 SELECT * FROM finish();
 ROLLBACK;
