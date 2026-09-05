@@ -38,7 +38,12 @@ jobs:
     # Lot 1.B — 25 min : le run complet mesuré ~15 min, la marge absorbe la
     # contention sur la base dev partagée (le nightly sérialise pgtap et
     # live-rpc-vitest pour la même raison).
-    timeout-minutes: 25
+    # 2026-09-05 — 35 min : le run complet mesuré 21:22 sur #493 et annulé à
+    # 25:06 sur #494 sans une seule assertion rouge (dernier fichier atteint :
+    # `user_permission_override_rpcs`, en fin d'alphabet). La suite grossit à
+    # chaque lot et la latence de la base dev varie : le gate vivait sur son
+    # plafond. Arbitrage de Mamat, inclus dans #494.
+    timeout-minutes: 35
     # S50: flipped to false — V3_DEV_PG_POOLER_URL confirmed present (same as
     # nightly). Failures now block the PR. Revert to true only if the secret
     # becomes unavailable for fork PRs (rare on this private repo).
