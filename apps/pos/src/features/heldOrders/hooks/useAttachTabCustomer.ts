@@ -105,7 +105,7 @@ export function useAttachTabCustomer() {
 
   return useMutation<AttachTabCustomerResult, Error, AttachTabCustomerInput>({
     mutationFn: async ({ orderId, customerId }) => {
-      const { data, error } = await sb.rpc('attach_tab_customer_v3', {
+      const { data, error } = await sb.rpc('attach_tab_customer_v4', {
         p_order_id: orderId,
         p_customer_id: customerId,
       });

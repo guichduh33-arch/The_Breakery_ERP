@@ -67,9 +67,62 @@ describe('useReopenHeldOrder', () => {
     });
   });
 
+  it('rehydrates a combo line with its product_type and components', async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        order_id: 'order-8',
+        order_number: '#0008',
+        order_type: 'take_out',
+        customerId: null,
+        tableNumber: null,
+        notes: null,
+        items: [
+          {
+            id: 'oi-1',
+            product_id: 'p1',
+            name: 'Croissant',
+            unit_price: 20000,
+            quantity: 1,
+            modifiers: [],
+            is_locked: false,
+            kitchen_status: null,
+            product_type: 'finished',
+            combo_components: null,
+          },
+          {
+            id: 'oi-2',
+            product_id: 'p2',
+            name: 'Breakfast Combo',
+            unit_price: 55000,
+            quantity: 1,
+            modifiers: [],
+            is_locked: false,
+            kitchen_status: null,
+            product_type: 'combo',
+            combo_components: [{ product_id: 'p-comp', quantity: 1 }],
+          },
+        ],
+      },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
+    await result.current.mutateAsync('order-8');
+
+    await waitFor(() => {
+      const s = useCartStore.getState();
+      expect(s.cart.items).toHaveLength(2);
+      expect(s.cart.items[1]!.product_type).toBe('combo');
+      expect(s.cart.items[1]!.combo_components).toEqual([{ product_id: 'p-comp', quantity: 1 }]);
+      // A non-combo line stays structurally identical to a line rung up in the
+      // cart: no `combo_components` key at all, not an explicit null.
+      expect(s.cart.items[0]).not.toHaveProperty('combo_components');
+    });
+  });
+
   it('restores customer badge via get_customer_v3 when customerId present', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v1') {
+      if (name === 'reopen_held_order_v2') {
         return Promise.resolve({
           data: {
             order_id: 'order-6',
@@ -104,7 +157,7 @@ describe('useReopenHeldOrder', () => {
 
   it('keeps customerId even if customer lookup fails (best-effort badge)', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v1') {
+      if (name === 'reopen_held_order_v2') {
         return Promise.resolve({
           data: {
             order_id: 'order-7',
