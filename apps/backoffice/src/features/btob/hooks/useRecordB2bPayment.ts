@@ -1,13 +1,21 @@
 // apps/backoffice/src/features/btob/hooks/useRecordB2bPayment.ts
 //
-// Session 24 / Phase 2.A.4 — call record_b2b_payment_v2 (S52 migration _067).
+// Session 24 / Phase 2.A.4 — call la famille record_b2b_payment (version live : v3).
 //
 // Records a payment received from a B2B customer. The RPC emits the JE
 // (DR Cash/Bank / CR B2B_AR), inserts a b2b_payments row + real per-invoice
 // allocation rows (b2b_payment_allocations), sets orders.paid_at on full
 // settlement, decrements the customer's cached balance, and records an
 // audit_logs. Idempotent. Optional invoiceIds → targeted allocation (array
-// order), else FIFO over the oldest unpaid invoices.
+// order), puis FIFO du reliquat sur toute facture non-voidée encore ouverte.
+//
+// Règle de refus (migration 20260901000006) : un reliquat qu'aucune facture ne
+// peut absorber fait ÉCHOUER l'appel entier (SQLSTATE P0011,
+// `payment_not_fully_allocated (unallocated: X, amount: Y)`) — rien n'est
+// enregistré, ni paiement ni JE. La version précédente laissait tomber ce
+// reliquat en silence. Le payload porte désormais `allocated_total` et
+// `unallocated` (0 en succès ; sur replay idempotent, recalculé depuis le
+// ledger d'allocation et donc possiblement > 0 pour un paiement historique).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -22,6 +30,7 @@ export type RecordB2bPaymentErrorCode =
   | 'customer_not_b2b'
   | 'invalid_amount'
   | 'overpayment_not_allowed'
+  | 'payment_not_fully_allocated'
   | 'fiscal_period_closed'
   | 'unknown';
 
@@ -48,15 +57,18 @@ export interface RecordB2bPaymentArgs {
 export interface RecordB2bPaymentResult {
   payment_id:             string;
   payment_number:         string;
-  allocations:            Array<{ invoice_id: string; amount_applied: number; fully_settled: boolean }>;
-  allocation:             Array<{ invoice_id: string; amount_applied: number; fully_settled?: boolean }>;
+  allocations:            { invoice_id: string; amount_applied: number; fully_settled: boolean }[];
+  allocation:             { invoice_id: string; amount_applied: number; fully_settled?: boolean }[];
   je_id:                  string;
   customer_balance_after: number;
+  allocated_total:        number;
+  unallocated:            number;
   idempotent_replay:      boolean;
 }
 
 export function classify(message: string): RecordB2bPaymentErrorCode {
   if (message.includes('overpayment_not_allowed')) return 'overpayment_not_allowed';
+  if (message.includes('payment_not_fully_allocated')) return 'payment_not_fully_allocated';
   if (message.includes('customer_not_b2b'))        return 'customer_not_b2b';
   if (message.includes('customer_not_found'))      return 'customer_not_found';
   if (message.includes('invalid_amount'))          return 'invalid_amount';
@@ -94,7 +106,7 @@ export function useRecordB2bPayment() {
       if (args.notes     !== undefined && args.notes.trim() !== '')     rpcArgs.p_notes     = args.notes.trim();
       if (args.invoiceIds !== undefined && args.invoiceIds.length > 0)  rpcArgs.p_invoice_ids = args.invoiceIds;
 
-      const { data, error } = await supabase.rpc('record_b2b_payment_v2', rpcArgs);
+      const { data, error } = await supabase.rpc('record_b2b_payment_v3', rpcArgs);
       if (error) throw new RecordB2bPaymentError(classify(error.message), error.message);
       if (data === null) throw new RecordB2bPaymentError('unknown', 'Empty RPC response');
       return data as unknown as RecordB2bPaymentResult;

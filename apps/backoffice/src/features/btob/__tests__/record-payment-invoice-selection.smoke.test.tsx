@@ -5,11 +5,13 @@
 //       order), and the amount auto-fills with Σ outstanding of the selection.
 //   (b) no invoice checked → no invoiceIds key sent (server FIFO).
 //   (c) success → rp-success recap lists the returned allocations.
+//   (d) classify() mappe le refus P0011 sur 'payment_not_fully_allocated'.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
+import { classify } from '@/features/btob/hooks/useRecordB2bPayment.js';
 
 const mockRpc = vi.fn();
 
@@ -40,6 +42,8 @@ const SUCCESS_RESULT = {
   allocation: [],
   je_id: 'je-9',
   customer_balance_after: 0,
+  allocated_total: 800000,
+  unallocated: 0,
   idempotent_replay: false,
 };
 
@@ -115,7 +119,7 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(checkboxB);
     fireEvent.click(checkboxA);
 
-    const amountInput = screen.getByLabelText(/^amount$/i) as HTMLInputElement;
+    const amountInput = screen.getByLabelText<HTMLInputElement>(/^amount$/i);
     await waitFor(() => expect(amountInput.value).toBe('800000'));
 
     const submit = screen.getByRole('button', { name: /record payment/i });
@@ -123,7 +127,7 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v2', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
         p_customer_id:  'b1',
         p_invoice_ids:  ['inv-b', 'inv-a'],
       }));
@@ -148,12 +152,20 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v2', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));
     });
     const [, callArgs] = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
     expect(callArgs).not.toHaveProperty('p_invoice_ids');
+  });
+});
+
+describe('useRecordB2bPayment.classify', () => {
+  it('reconnaît le refus de reliquat non alloué (P0011)', () => {
+    expect(
+      classify('payment_not_fully_allocated (unallocated: 50000, amount: 150000)'),
+    ).toBe('payment_not_fully_allocated');
   });
 });

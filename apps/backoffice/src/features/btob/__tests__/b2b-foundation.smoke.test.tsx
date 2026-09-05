@@ -3,7 +3,7 @@
 // Session 24 / Phase 2.A.5 — smoke for the B2B foundation surfaces.
 //   T1 — useB2bDashboard.aging is built from view_ar_aging (not last_visit_at).
 //   T2 — "+ New B2B Order" is enabled, click opens CreateB2bOrderModal.
-//   T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v1 mutation.
+//   T3 — RecordB2bPaymentModal submit calls the record_b2b_payment_v3 mutation.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -243,7 +243,7 @@ describe('B2B foundation (S24)', () => {
     expect(screen.queryByText(/delivery date/i)).not.toBeInTheDocument();
   });
 
-  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v2', async () => {
+  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v3', async () => {
     renderPaymentModal();
     // Wait for B2B customer option to appear.
     await waitFor(() => {
@@ -258,7 +258,7 @@ describe('B2B foundation (S24)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v2', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));
