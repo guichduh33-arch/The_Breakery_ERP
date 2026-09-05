@@ -167,7 +167,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
 
           {!isLockedProduct && (
             <div className="space-y-1">
-              <label htmlFor={productInputId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={productInputId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Product
               </label>
               <ProductTypeahead
@@ -189,7 +189,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           )}
 
           <div className="space-y-1">
-            <label htmlFor={qtyId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={qtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Quantity wasted
             </label>
             <Input
@@ -229,7 +229,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           )}
 
           <div className="space-y-1">
-            <label htmlFor={presetId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={presetId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason
             </label>
             <Select
@@ -246,7 +246,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
 
           {preset === 'Other' && (
             <div className="space-y-1">
-              <label htmlFor={reasonId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Describe
               </label>
               <textarea

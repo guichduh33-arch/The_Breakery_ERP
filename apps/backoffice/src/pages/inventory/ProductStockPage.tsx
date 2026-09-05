@@ -111,7 +111,7 @@ export default function ProductStockPage(): JSX.Element {
                 <Settings2 className="h-3.5 w-3.5" aria-hidden /> Product settings
               </Link>
               <div className="flex items-center gap-2">
-                <label htmlFor="stock-days" className="text-xs uppercase tracking-widest text-text-secondary">
+                <label htmlFor="stock-days" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                   Window
                 </label>
                 <select

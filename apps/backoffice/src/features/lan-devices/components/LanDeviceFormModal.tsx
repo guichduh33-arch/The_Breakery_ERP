@@ -87,7 +87,7 @@ export function LanDeviceFormModal({ open, onClose, device, allDevices }: LanDev
     );
   }
 
-  const labelCls = 'block font-bold uppercase tracking-widest text-text-muted text-xs mb-1';
+  const labelCls = 'font-data block font-bold uppercase tracking-widest text-text-muted text-xs mb-1';
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>

@@ -182,7 +182,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
 
       {/* Product (searchable, raw materials only) */}
       <div className="relative space-y-1">
-        <label htmlFor={`${rid}-product`} className="text-xs uppercase tracking-widest text-text-secondary">Product</label>
+        <label htmlFor={`${rid}-product`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Product</label>
         <input
           id={`${rid}-product`}
           type="text"
@@ -229,12 +229,12 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       {/* Quantity · unit · price/unit */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="space-y-1">
-          <label htmlFor={`${rid}-qty`} className="text-xs uppercase tracking-widest text-text-secondary">Quantity</label>
+          <label htmlFor={`${rid}-qty`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Quantity</label>
           <Input id={`${rid}-qty`} type="number" inputMode="decimal" min={0.001} step="0.001"
             value={qty} onChange={(e) => setQty(e.target.value)} disabled={purchase.isPending} />
         </div>
         <div className="space-y-1">
-          <label htmlFor={`${rid}-unit`} className="text-xs uppercase tracking-widest text-text-secondary">Purchase unit</label>
+          <label htmlFor={`${rid}-unit`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Purchase unit</label>
           <Select id={`${rid}-unit`} value={unit} onChange={(e) => setUnit(e.target.value)}
             className="w-full" disabled={purchase.isPending || product === null}>
             {product === null ? <option value="">—</option> : product.unitOptions.map((u) => (
@@ -243,7 +243,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
           </Select>
         </div>
         <div className="space-y-1">
-          <label htmlFor={`${rid}-price`} className="text-xs uppercase tracking-widest text-text-secondary">Price / unit</label>
+          <label htmlFor={`${rid}-price`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Price / unit</label>
           <Input id={`${rid}-price`} type="number" inputMode="decimal" min={0} step="0.01"
             value={price} onChange={(e) => setPrice(e.target.value)} disabled={purchase.isPending} />
         </div>
@@ -259,7 +259,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
 
       {/* Supplier (required) */}
       <div className="space-y-1 sm:max-w-sm">
-        <label htmlFor={`${rid}-supplier`} className="text-xs uppercase tracking-widest text-text-secondary">Supplier</label>
+        <label htmlFor={`${rid}-supplier`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Supplier</label>
         <Select id={`${rid}-supplier`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
           className="w-full" disabled={refData.isLoading || purchase.isPending}>
           <option value="">Select a supplier…</option>
@@ -269,13 +269,13 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
 
       {/* Purchase date */}
       <div className="space-y-1 sm:max-w-[12rem]">
-        <label htmlFor={`${rid}-date`} className="text-xs uppercase tracking-widest text-text-secondary">Purchase date</label>
+        <label htmlFor={`${rid}-date`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Purchase date</label>
         <Input id={`${rid}-date`} type="date" lang="id-ID" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={purchase.isPending} />
       </div>
 
       {/* Payment block */}
       <fieldset className="space-y-3 rounded-md border border-border-subtle p-3">
-        <legend className="px-1 text-xs uppercase tracking-widest text-text-secondary">Payment</legend>
+        <legend className="font-data font-semibold px-1 text-xs uppercase tracking-widest text-text-secondary">Payment</legend>
         <div className="flex flex-wrap gap-4 text-sm">
           {(['cash', 'transfer', 'unpaid'] as PayChoice[]).map((m) => (
             <label key={m} className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         {pay !== 'unpaid' && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <label htmlFor={`${rid}-pay-amount`} className="text-xs uppercase tracking-widest text-text-secondary">Amount paid</label>
+              <label htmlFor={`${rid}-pay-amount`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Amount paid</label>
               <Input id={`${rid}-pay-amount`} type="number" inputMode="decimal" min={0} step="0.01"
                 value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={String(total || '')}
                 disabled={purchase.isPending} aria-invalid={payAmount !== '' && !isPayValid} />
@@ -298,7 +298,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
               )}
             </div>
             <div className="space-y-1">
-              <label htmlFor={`${rid}-pay-date`} className="text-xs uppercase tracking-widest text-text-secondary">Payment date</label>
+              <label htmlFor={`${rid}-pay-date`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Payment date</label>
               <Input id={`${rid}-pay-date`} type="date" lang="id-ID" value={payDate} onChange={(e) => setPayDate(e.target.value)} disabled={purchase.isPending} />
             </div>
           </div>

@@ -64,7 +64,7 @@ export default function PromoRoiPage() {
             <select
               value={promoId}
               onChange={(e) => setPromoId(e.target.value)}
-              className={cn(selectClassName, 'w-56')}
+              className={cn(selectClassName, 'h-9 w-56')}
               aria-label="Promotion"
             >
               <option value="">— select promotion —</option>

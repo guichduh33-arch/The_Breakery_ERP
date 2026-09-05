@@ -30,6 +30,30 @@ const twMerge = extendTailwindMerge((config) => {
     if (!styleEntry.outline.includes('')) styleEntry.outline.unshift('');
   }
 
+  // Même classe de panne, deuxième instance : les crans TACTILES du preset
+  // (`--touch-min` 44 px, `--touch-comfy` 56 px, `--touch-large` 80 px) sont des
+  // clés CUSTOM. tailwind-merge ne les reconnaît dans aucun groupe de taille, si
+  // bien qu'un `h-9` passé à un `Input` ne REMPLACE pas le `h-touch-min` du
+  // primitif : les deux classes partent ensemble, et l'ordre du CSS généré
+  // tranche — `.h-touch-min` est émis APRÈS `.h-9`, donc il gagne toujours.
+  // Une barre de filtres « corrigée » en 36 px restait à 44 px, sans erreur, ni
+  // au lint ni au test. Déclarer les trois crans dans les groupes de taille rend
+  // l'override possible partout, une fois pour toutes.
+  //
+  // Portée mesurée avant l'ajout : DEUX appels seulement passent une hauteur à
+  // un primitif (`QtyEditModal`, `h-touch-comfy` sur un `Button` dont la taille
+  // `md` vaut déjà `h-touch-comfy`). Aucun rendu ne change aujourd'hui.
+  const TOUCH = ['touch-min', 'touch-comfy', 'touch-large'];
+  for (const group of ['h', 'w', 'min-h', 'min-w', 'size'] as const) {
+    // Dans tailwind-merge, la clé interne du groupe porte le nom du groupe
+    // (`min-h` → `{ 'min-h': [...] }`), préfixe compris.
+    const entry = config.classGroups[group]?.[0] as Record<string, unknown[]> | undefined;
+    const scale = entry?.[group];
+    if (Array.isArray(scale)) {
+      for (const token of TOUCH) if (!scale.includes(token)) scale.push(token);
+    }
+  }
+
   return config;
 });
 

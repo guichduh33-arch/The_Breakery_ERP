@@ -23,7 +23,8 @@
 //     comparaisons cèdent la place à une mention unique (`dayState`).
 
 import { useMemo, type JSX, type ReactNode } from 'react';
-import { Card, SectionLabel, cn } from '@breakery/ui';
+import { Card, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { toLocalDateStr } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 // Lot B (campagne Reports 2026-08-15) — la tuile vit désormais en partagé

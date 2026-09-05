@@ -15,11 +15,8 @@ import {
   Plus,
   Users as UsersIcon,
 } from 'lucide-react';
-import {
-  Card,
-  EmptyState,
-  SectionLabel,
-} from '@breakery/ui';
+import { Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 // La tuile du back-office, pas celle de `@breakery/ui` : celle-ci rend la
@@ -296,7 +293,7 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
             <Calendar className="h-3.5 w-3.5" aria-hidden /> Aging summary (AR)
           </span>
         </SectionLabel>
-        <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest">
+        <div className="font-data font-semibold flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest">
           <Legend tone="text-success"  label="0-30 Days" />
           <Legend tone="text-warning" label="31-60 Days" />
           <Legend tone="text-danger"    label="61-90+ Days" />

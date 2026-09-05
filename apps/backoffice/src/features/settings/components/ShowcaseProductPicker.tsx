@@ -59,7 +59,7 @@ export function ShowcaseProductPicker({
       }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+        <span className="font-data text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Add to showcase
         </span>
         <button

@@ -6,7 +6,8 @@
 // MANAGER (or any non-admin) sees an empty trail by design.
 
 import { type JSX } from 'react';
-import { Badge, Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { Badge, Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatDateTimeWita } from '@breakery/utils';
 import { History } from 'lucide-react';
 import {

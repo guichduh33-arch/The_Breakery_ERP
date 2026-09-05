@@ -170,7 +170,7 @@ export default function OpnameListPage(): JSX.Element {
       </section>
 
       <div className="flex items-center gap-3">
-        <label htmlFor="opname-status-filter" className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor="opname-status-filter" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Status
         </label>
         <select

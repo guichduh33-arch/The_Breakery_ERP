@@ -257,7 +257,7 @@ export function SectionGridEditor({ tables, canUpdate, pending, onMove }: Sectio
         onDrop={(e) => { handleDrop(e, null, null); }}
         className="rounded-md border border-border-subtle bg-bg-input px-3 py-2"
       >
-        <div className="mb-1 text-xs uppercase tracking-widest text-text-secondary">
+        <div className="font-data font-semibold mb-1 text-xs uppercase tracking-widest text-text-secondary">
           Unplaced — drag onto the grid, or press Enter on a table (drop here to remove)
         </div>
         {unplaced.length === 0 ? (

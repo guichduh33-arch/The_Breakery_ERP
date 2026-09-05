@@ -150,7 +150,7 @@ export function RecipeDetailPage(): JSX.Element {
                     <td className={NUM_CELL}>{formatQuantity(r.qty_in_base, null)}</td>
                     <td className="px-3 py-2">{r.material_unit}</td>
                     <td className={NUM_CELL}>{fmtIdr(r.cost_price)}</td>
-                    <td className={NUM_CELL}>{r.current_stock}</td>
+                    <td className={NUM_CELL}>{formatQuantity(r.current_stock, r.material_unit)}</td>
                     <td className={NUM_CELL}>{fmtIdr(r.line_cost)}</td>
                     <td className={NUM_CELL}>{fmtShare(Number(r.line_cost ?? 0), costBase)}</td>
                   </tr>

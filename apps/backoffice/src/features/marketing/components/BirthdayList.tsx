@@ -21,7 +21,7 @@ export function BirthdayList({ upcoming, log }: BirthdayListProps) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Upcoming */}
       <section aria-labelledby="upcoming-birthdays-heading">
-        <h2 id="upcoming-birthdays-heading" className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-3">
+        <h2 id="upcoming-birthdays-heading" className="font-data text-sm font-medium uppercase tracking-widest text-text-secondary mb-3">
           Upcoming birthdays (next 30 days)
         </h2>
         {upcoming.length === 0 ? (
@@ -58,7 +58,7 @@ export function BirthdayList({ upcoming, log }: BirthdayListProps) {
 
       {/* Recent log */}
       <section aria-labelledby="birthday-log-heading">
-        <h2 id="birthday-log-heading" className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-3">
+        <h2 id="birthday-log-heading" className="font-data text-sm font-medium uppercase tracking-widest text-text-secondary mb-3">
           Recent notifications
         </h2>
         {log.length === 0 ? (

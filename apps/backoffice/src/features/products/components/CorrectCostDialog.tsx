@@ -96,7 +96,7 @@ export function CorrectCostDialog({
           <div>
             <label
               htmlFor="correct-cost-new"
-              className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+              className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1"
             >
               New cost (IDR)
             </label>
@@ -116,7 +116,7 @@ export function CorrectCostDialog({
           <div>
             <label
               htmlFor="correct-cost-reason"
-              className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+              className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1"
             >
               Reason (min 5 chars)
             </label>

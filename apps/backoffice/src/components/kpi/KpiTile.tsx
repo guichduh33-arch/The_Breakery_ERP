@@ -17,7 +17,8 @@
 
 import type { JSX, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, SectionLabel, cardVariants, cn } from '@breakery/ui';
+import { Card, cardVariants, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 // LE barème de coloration signée du dépôt — on n'écrit pas `text-danger` ici.
 // Il vit sous features/reports/utils parce que le module reports l'a fait

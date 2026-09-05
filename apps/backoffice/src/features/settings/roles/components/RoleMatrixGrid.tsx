@@ -145,7 +145,7 @@ export function RoleMatrixGrid(): JSX.Element {
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <label htmlFor="rbac-search" className="block text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="rbac-search" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">
             Filter
           </label>
           <input
@@ -157,7 +157,7 @@ export function RoleMatrixGrid(): JSX.Element {
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="rbac-module" className="block text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="rbac-module" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">
             Module
           </label>
           <select

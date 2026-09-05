@@ -184,7 +184,7 @@ export default function SettingsBusinessHoursPage() {
                         )}
                       </div>
                     ) : (
-                      <span className="text-sm uppercase tracking-widest text-text-muted">Closed</span>
+                      <span className="font-data font-semibold text-sm uppercase tracking-widest text-text-muted">Closed</span>
                     )}
                   </div>
                 );

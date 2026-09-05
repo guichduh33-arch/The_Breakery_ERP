@@ -94,7 +94,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="np-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="np-name" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Name
             </label>
             <input
@@ -109,7 +109,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="np-sku" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="np-sku" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 SKU
               </label>
               <input
@@ -122,7 +122,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               />
             </div>
             <div>
-              <label htmlFor="np-unit" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="np-unit" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 Unit
               </label>
               <select
@@ -137,7 +137,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
           </div>
 
           <div>
-            <label htmlFor="np-cat" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="np-cat" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Category
             </label>
             <select
@@ -157,7 +157,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
           </div>
 
           <div>
-            <label htmlFor="np-retail" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="np-retail" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Retail price (IDR)
             </label>
             <input
@@ -172,7 +172,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
           </div>
 
           <div>
-            <label htmlFor="np-desc" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="np-desc" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Description (optional)
             </label>
             <textarea

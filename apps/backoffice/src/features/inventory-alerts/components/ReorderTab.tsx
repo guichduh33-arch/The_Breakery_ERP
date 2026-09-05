@@ -8,7 +8,7 @@
 
 import { useState, type JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatQuantity } from '@breakery/utils';
+import { formatDateShortWita, formatNumber, formatQuantity } from '@breakery/utils';
 import { useReorderSuggestions, type ReorderSuggestion } from '../hooks/useReorderSuggestions.js';
 import { ProductCell } from './ProductCell.js';
 
@@ -54,7 +54,7 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
     align: 'right',
     render: (r) => (
       <span className={`font-data text-xs ${coverageTone(r.days_of_stock)}`}>
-        {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
+        {r.days_of_stock === null ? '—' : `${formatNumber(r.days_of_stock, { digits: 1 })} d`}
       </span>
     ),
   },
@@ -76,7 +76,7 @@ const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
         <span className="text-xs text-text-secondary">{r.supplier_name ?? '—'}</span>
         {r.last_purchase_at !== null && (
           <div className="font-data text-xs text-text-muted tabular-nums">
-            {r.last_purchase_at.slice(0, 10)}
+            {formatDateShortWita(r.last_purchase_at)}
           </div>
         )}
       </div>

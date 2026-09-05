@@ -22,7 +22,8 @@ import {
   Monitor, Briefcase, Printer, Bell, ShieldCheck, FileText, Mail, Wifi,
   History, Map, Calculator, CalendarClock, type LucideIcon,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, SectionLabel, Skeleton } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import type { PermissionCode } from '@breakery/supabase';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';

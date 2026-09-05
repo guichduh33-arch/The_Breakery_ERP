@@ -99,7 +99,7 @@ export default function SettingsHolidaysPage() {
       {!list.isLoading && !list.error && (
         <>
           <section className="space-y-2">
-            <h2 className="text-sm uppercase tracking-widest text-text-secondary">
+            <h2 className="font-data font-semibold text-sm uppercase tracking-widest text-text-secondary">
               Recurring ({groups.recurring.length})
             </h2>
             <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
@@ -125,7 +125,7 @@ export default function SettingsHolidaysPage() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm uppercase tracking-widest text-text-secondary">
+            <h2 className="font-data font-semibold text-sm uppercase tracking-widest text-text-secondary">
               Fixed-date ({groups.fixed.length})
             </h2>
             <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">

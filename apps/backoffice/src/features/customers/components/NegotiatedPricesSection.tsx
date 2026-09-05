@@ -51,7 +51,7 @@ export function NegotiatedPricesSection({ customerId }: NegotiatedPricesSectionP
   return (
     <Card variant="default" padding="none" className="overflow-hidden">
       <div className="px-4 py-3">
-        <h2 id="negotiated-prices-heading" className="text-sm font-semibold uppercase tracking-widest text-text-secondary">
+        <h2 id="negotiated-prices-heading" className="font-data text-sm font-semibold uppercase tracking-widest text-text-secondary">
           Negotiated prices (this customer)
         </h2>
         <p className="mt-1 text-xs text-text-muted">

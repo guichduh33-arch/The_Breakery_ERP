@@ -15,7 +15,8 @@
 // the Save action is disabled at the page level.
 
 import { useEffect, useState, type JSX } from 'react';
-import { Card, Currency, Input, SectionLabel, Select } from '@breakery/ui';
+import { Card, Currency, Input, Select } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { CategoryOption, ProductRow } from '../types.js';
 import { ProductImageUploader } from './ProductImageUploader.js';
@@ -81,7 +82,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
       {/* ───────────── Left column (2/3) ───────────── */}
       <div className="space-y-6 lg:col-span-2">
         <Card padding="md">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Product Identity</h2>
+          <h2 className="font-data mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Product Identity</h2>
 
           <div className="space-y-4">
             {/* Les libellés de ce panneau sont rendus par `SectionLabel`, dont
@@ -158,7 +159,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
         <Card padding="md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Visual Asset</h2>
+            <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Visual Asset</h2>
             <span className="rounded-sm border border-gold px-3 py-0.5 text-xs font-semibold uppercase tracking-widest text-gold">
               High Resolution
             </span>
@@ -190,7 +191,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           : <ProductPerformanceRestricted />}
 
         <Card padding="md">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
+          <h2 className="font-data mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
           <div className="space-y-4">
             <div>
               <label htmlFor="product-retail-price" className="block">
@@ -283,7 +284,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
         {/* Spec B-1 Ph2 — override multi-station de dispatch par produit. */}
         <Card padding="md">
-          <h2 className="mb-1 text-sm font-bold uppercase tracking-widest text-text-muted">Dispatch Routing</h2>
+          <h2 className="font-data mb-1 text-sm font-bold uppercase tracking-widest text-text-muted">Dispatch Routing</h2>
           <p className="mb-3 text-xs italic text-text-secondary">
             Stations that receive the KOT for this product. Empty = inherit from the category.
           </p>
@@ -303,7 +304,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                     onChange={() => toggleStation(station)}
                     className={`h-4 w-4 accent-gold disabled:cursor-not-allowed ${FOCUS_RING}`}
                   />
-                  <span className="text-xs font-semibold uppercase tracking-widest text-text-primary">
+                  <span className="font-data text-xs font-semibold uppercase tracking-widest text-text-primary">
                     {station}
                   </span>
                 </label>
@@ -324,7 +325,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           <SectionLabel as="h3" size="xs">Inventory levels</SectionLabel>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="product-current-stock" className="block text-xs uppercase tracking-widest text-text-secondary">Current stock</label>
+              <label htmlFor="product-current-stock" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">Current stock</label>
               <Input
                 id="product-current-stock"
                 value={draft.current_stock}
@@ -333,7 +334,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               />
             </div>
             <div>
-              <label htmlFor="product-min-stock-threshold" className="block text-xs uppercase tracking-widest text-text-secondary">Alert threshold</label>
+              <label htmlFor="product-min-stock-threshold" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">Alert threshold</label>
               <Input
                 id="product-min-stock-threshold"
                 type="number"
@@ -400,7 +401,7 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
       className="flex w-full items-center justify-between rounded-md border border-border-subtle bg-bg-overlay px-3 py-2.5 text-left transition-colors hover:enabled:bg-surface-4 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <div>
-        <div className="text-xs font-semibold uppercase tracking-widest text-text-primary">{label}</div>
+        <div className="font-data text-xs font-semibold uppercase tracking-widest text-text-primary">{label}</div>
         <div className="text-xs italic text-text-secondary">{sub}</div>
       </div>
       {/* Harden — l'état ÉTEINT était `bg-bg-input`, c'est-à-dire #ffffff, avec un

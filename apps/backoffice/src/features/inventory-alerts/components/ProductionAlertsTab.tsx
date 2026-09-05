@@ -11,7 +11,7 @@
 
 import type { JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
-import { formatQuantity } from '@breakery/utils';
+import { formatNumber, formatQuantity } from '@breakery/utils';
 import {
   useProductionSuggestions,
   type ProductionSuggestion,
@@ -56,7 +56,7 @@ const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
     align: 'right',
     render: (r) => (
       <span className="font-data text-xs">
-        {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
+        {r.days_of_stock === null ? '—' : `${formatNumber(r.days_of_stock, { digits: 1 })} d`}
       </span>
     ),
   },

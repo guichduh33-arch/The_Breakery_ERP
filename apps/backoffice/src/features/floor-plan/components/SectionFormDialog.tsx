@@ -59,7 +59,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="section-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="section-name" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Name
             </label>
             <input
@@ -72,7 +72,7 @@ export function SectionFormDialog({ mode, section, onClose }: SectionFormDialogP
           </div>
 
           <div>
-            <label htmlFor="section-sort" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="section-sort" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Sort order
             </label>
             <input

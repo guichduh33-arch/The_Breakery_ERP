@@ -186,7 +186,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
         ) : (
           <div className="space-y-3">
             <div>
-              <label htmlFor="sign-pin" className="text-xs uppercase tracking-widest text-text-secondary block mb-1">
+              <label htmlFor="sign-pin" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary block mb-1">
                 Manager PIN
               </label>
               <input

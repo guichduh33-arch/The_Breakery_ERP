@@ -219,7 +219,7 @@ export default function ProductionPage(): JSX.Element {
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </button>
           <div className="min-w-[8rem] text-center">
-            <div className="text-xs font-semibold uppercase tracking-widest text-gold">
+            <div className="font-data text-xs font-semibold uppercase tracking-widest text-gold">
               {isToday ? 'Today' : WEEKDAY_SHORT[selectedDate.getDay()]}
             </div>
             <div className="text-xs text-text-muted" data-testid="production-selected-date">

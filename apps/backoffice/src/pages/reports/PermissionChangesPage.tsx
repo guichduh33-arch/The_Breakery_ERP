@@ -27,6 +27,7 @@
 import { useMemo, type JSX } from 'react';
 import { cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';
 import { PeriodControl } from '@/features/reports/components/PeriodControl.js';
@@ -141,7 +142,7 @@ export default function PermissionChangesPage(): JSX.Element {
               {sorted.rows.map((r, idx) => (
                 <tr key={`${r.changed_at}-${idx}`} className="border-b border-border-subtle">
                   <td className="whitespace-nowrap py-2 font-data text-xs text-text-secondary">
-                    {r.changed_at.slice(0, 10)}
+                    {formatDateTimeShortWita(r.changed_at)}
                   </td>
                   <td className="py-2">{r.actor_name}</td>
                   <td className="py-2"><ActionBadge action={r.action} /></td>

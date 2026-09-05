@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCurrency, formatPercent, formatQuantity } from '../format.js';
+import { formatCurrency, formatNumber, formatPercent, formatQuantity } from '../format.js';
 
 // Les littéraux attendus utilisent U+00A0 ? Non : Intl id-ID en style
 // 'decimal' sépare les milliers par « . » (U+002E) et n'insère pas d'espace
@@ -111,5 +111,30 @@ describe('formatPercent', () => {
 
   it('tolère les strings numériques de PostgREST', () => {
     expect(formatPercent('12.5')).toBe('12,5%');
+  });
+});
+
+describe('formatNumber', () => {
+  it('rend la virgule décimale et le point de milliers de la locale métier', () => {
+    expect(formatNumber(2.5, { digits: 1 })).toBe('2,5');
+    expect(formatNumber(5000)).toBe('5.000');
+    expect(formatNumber(1234.567, { digits: 2 })).toBe('1.234,57');
+  });
+
+  it('fixe le nombre de décimales comme toFixed, pour aligner une colonne', () => {
+    expect(formatNumber(2, { digits: 1 })).toBe('2,0');
+    expect(formatNumber(2.456, { digits: 1 })).toBe('2,5');
+    expect(formatNumber(2.456)).toBe('2');
+  });
+
+  it('rend un tiret sur null, undefined ou non-numérique', () => {
+    expect(formatNumber(null)).toBe('—');
+    expect(formatNumber(undefined)).toBe('—');
+    expect(formatNumber('abc')).toBe('—');
+    expect(formatNumber(Number.NaN)).toBe('—');
+  });
+
+  it('tolère les strings numériques de PostgREST', () => {
+    expect(formatNumber('12.5', { digits: 1 })).toBe('12,5');
   });
 });

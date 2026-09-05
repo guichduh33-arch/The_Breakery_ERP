@@ -62,7 +62,7 @@ export function DeleteUserDialog(
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="del-reason" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="del-reason" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Reason
             </label>
             <input

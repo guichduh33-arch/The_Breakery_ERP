@@ -84,7 +84,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
         </div>
 
         <div className="rounded-lg border border-border-subtle bg-bg-overlay p-3">
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gold">
+          <div className="font-data mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gold">
             <Box className="h-3 w-3" aria-hidden />
             Selections
           </div>
@@ -94,7 +94,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
           ) : (
             combo.groups.map((g) => (
               <div key={g.id} className="mt-2">
-                <div className="text-xs uppercase tracking-widest text-text-secondary">
+                <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                   {g.name}
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -124,7 +124,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
 
         <div className="flex items-end justify-between gap-2 pt-1">
           <div>
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Value Price</div>
+            <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Value Price</div>
             {combo.value_price !== null && combo.value_price > 0 ? (
               <Currency format={formatCurrency}
                 amount={Math.round(combo.value_price)}
@@ -133,7 +133,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
             ) : (
               <div className="text-xs text-text-muted">—</div>
             )}
-            <div className="mt-1 text-xs uppercase tracking-widest text-text-secondary">
+            <div className="font-data font-semibold mt-1 text-xs uppercase tracking-widest text-text-secondary">
               Bundle Set Price
             </div>
             {/* Les deux branches passent par <Currency> : une carte a deja
@@ -166,7 +166,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
             // The Ink-Not-Gold Rule : une pastille porte son état par le liseré
             // et par le texte, jamais par un aplat d'or.
             <span className="inline-flex flex-col items-center justify-center rounded-sm border border-gold px-3 py-2 font-data text-gold">
-              <span className="text-xs font-semibold uppercase tracking-widest">Save</span>
+              <span className="font-data text-xs font-semibold uppercase tracking-widest">Save</span>
               <span className="text-sm font-bold tabular-nums">{savings}%</span>
             </span>
           )}

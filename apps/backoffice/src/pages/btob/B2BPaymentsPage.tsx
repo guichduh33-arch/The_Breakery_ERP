@@ -370,7 +370,7 @@ function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow;
         <div className={['font-data text-base tabular-nums', overLimit ? 'text-danger' : 'text-warning'].join(' ')}>
           {formatCurrency(Number(client.b2b_current_balance))}
         </div>
-        {overLimit && <div className="text-xs uppercase tracking-widest text-danger">Over limit</div>}
+        {overLimit && <div className="font-data font-semibold text-xs uppercase tracking-widest text-danger">Over limit</div>}
         {canRecord && (
           <Button variant="ghost" size="sm" onClick={() => onRecord(client.id)} data-testid={`out-record-${client.id}`}>
             Record payment

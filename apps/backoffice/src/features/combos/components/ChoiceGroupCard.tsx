@@ -116,7 +116,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-name-${group.id}`}
-              className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+              className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1"
             >
               Group Name
             </label>
@@ -133,7 +133,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           <div>
             <label
               htmlFor={`group-type-${group.id}`}
-              className="block text-xs uppercase tracking-wider text-text-secondary mb-1"
+              className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1"
             >
               Type
             </label>

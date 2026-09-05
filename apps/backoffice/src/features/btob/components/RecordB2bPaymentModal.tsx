@@ -205,7 +205,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
           )}
 
           <div className="space-y-1">
-            <label htmlFor={customerId_} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={customerId_} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Customer
             </label>
             <Select
@@ -230,7 +230,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
 
           {customerId !== '' && (
             <div className="space-y-1">
-              <span className="text-xs uppercase tracking-widest text-text-secondary">
+              <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Open invoices {selectedIds.length > 0 ? `(${selectedIds.length} selected — allocation order)` : '(none selected → FIFO)'}
               </span>
               {invoices.isLoading ? (
@@ -273,7 +273,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label htmlFor={amountId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={amountId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Amount
               </label>
               <Input
@@ -291,7 +291,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               )}
             </div>
             <div className="space-y-1">
-              <label htmlFor={methodId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={methodId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Method
               </label>
               <Select
@@ -308,7 +308,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label htmlFor={refId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={refId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Reference
               </label>
               <Input
@@ -320,7 +320,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor={dateId} className="text-xs uppercase tracking-widest text-text-secondary">
+              <label htmlFor={dateId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                 Paid at
               </label>
               <Input
@@ -333,7 +333,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={notesId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={notesId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Notes
             </label>
             <textarea

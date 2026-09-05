@@ -32,17 +32,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  Button,
-  Card,
-  EmptyState,
-  IngredientPicker,
-  Input,
-  SectionLabel,
-  Select,
-  Tabs, TabsContent, TabsList, TabsTrigger,
-  type IngredientSearchResult,
-} from '@breakery/ui';
+import { Button, Card, EmptyState, IngredientPicker, Input, Select, Tabs, TabsContent, TabsList, TabsTrigger, type IngredientSearchResult } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import type { RecipeGraph, RecipeGraphProduct, RecipeRow } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { useRecipes } from '@/features/inventory-production/hooks/useRecipes.js';
@@ -299,7 +290,7 @@ export function RecipeBuilder({
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="baker-target-flour"
-                  className="text-xs uppercase tracking-widest text-text-secondary"
+                  className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary"
                 >
                   Target flour qty (g)
                 </label>

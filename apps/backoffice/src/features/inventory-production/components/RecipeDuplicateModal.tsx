@@ -108,7 +108,7 @@ export function RecipeDuplicateModal({
           <div className="space-y-1">
             <label
               htmlFor="duplicate-recipe-target"
-              className="text-xs uppercase tracking-widest text-text-secondary"
+              className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary"
             >
               Target product
             </label>

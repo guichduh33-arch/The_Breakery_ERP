@@ -118,7 +118,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
       </header>
 
       <div>
-        <label htmlFor={`notif-subj-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor={`notif-subj-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Subject template
         </label>
         <textarea
@@ -132,7 +132,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
       </div>
 
       <div>
-        <label htmlFor={`notif-body-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">
+        <label htmlFor={`notif-body-${row.id}`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Body template
         </label>
         <textarea
@@ -146,7 +146,7 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs uppercase tracking-widest text-text-secondary mr-1">Variables</span>
+        <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary mr-1">Variables</span>
         {variables.length === 0 ? (
           <span className="text-xs italic text-text-secondary">none</span>
         ) : (

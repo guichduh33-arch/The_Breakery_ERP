@@ -95,7 +95,7 @@ export function AdjustB2bBalanceModal({
           )}
 
           <div className="space-y-1">
-            <label htmlFor={deltaId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={deltaId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Delta (IDR, negative = write-down)
             </label>
             <Input
@@ -110,7 +110,7 @@ export function AdjustB2bBalanceModal({
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={reasonId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason
             </label>
             <Input
@@ -123,7 +123,7 @@ export function AdjustB2bBalanceModal({
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={pinId} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={pinId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Manager PIN
             </label>
             <Input

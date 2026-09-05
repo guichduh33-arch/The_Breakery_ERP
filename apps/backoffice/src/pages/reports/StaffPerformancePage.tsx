@@ -22,6 +22,7 @@
 import { useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import type { CsvColumn } from '@breakery/domain';
+import { formatNumber } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { Delta } from '@/components/kpi/Delta.js';
@@ -320,7 +321,7 @@ export default function StaffPerformancePage(): JSX.Element {
                     <td className={NUM_CELL}>{formatCount(r.orders_served)}</td>
                     <td className={NUM_CELL}>{formatIdrFull(r.revenue)}</td>
                     <td className={NUM_CELL}>{formatIdrFull(r.aov)}</td>
-                    <td className={NUM_CELL}>{r.items_per_order.toFixed(1)}</td>
+                    <td className={NUM_CELL}>{formatNumber(r.items_per_order, { digits: 1 })}</td>
                     <td className={NUM_CELL}>{formatCount(r.voids_count)}</td>
                     <td className={NUM_CELL}>{formatIdrFull(r.voids_value)}</td>
                     <td className={NUM_CELL}>{formatCount(r.refunds_count)}</td>

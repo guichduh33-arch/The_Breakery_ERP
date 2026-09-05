@@ -10,7 +10,8 @@
 import { AlertTriangle, BookOpen, Box, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Button, Card, SectionLabel } from '@breakery/ui';
+import { Button, Card } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductUnits, type ProductUnitAlt, type ProductUnitContexts } from '../hooks/useProductUnits.js';
 import { useSetProductUnits } from '../hooks/useSetProductUnits.js';
@@ -200,7 +201,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
               <Box className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Base Unit (Stock)</h2>
+              <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Base Unit (Stock)</h2>
               <p className="text-xs italic text-text-secondary">All conversions are done relative to this unit</p>
             </div>
           </div>
@@ -270,7 +271,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
       <Card padding="md">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Alternative Units</h2>
+            <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Alternative Units</h2>
             <p className="text-xs italic text-text-secondary">Define purchase or consumption units</p>
           </div>
           {/* « New Unit » ajoute une LIGNE, « Save Units » enregistre le panneau.
@@ -346,7 +347,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
       {/* ── Units by context ── */}
       <Card padding="md">
         <div className="mb-4">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Units by Context</h2>
+          <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Units by Context</h2>
           <p className="text-xs italic text-text-secondary">Choose the unit to use in each application context</p>
         </div>
 

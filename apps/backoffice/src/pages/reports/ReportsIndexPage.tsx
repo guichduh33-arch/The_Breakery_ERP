@@ -36,7 +36,8 @@ import {
   GitCommitHorizontal, Undo2, BadgePercent,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
-import { cardVariants, cn, EmptyState, Input, SectionLabel } from '@breakery/ui';
+import { cardVariants, cn, EmptyState, Input } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useRecentReports } from './recentReports.js';

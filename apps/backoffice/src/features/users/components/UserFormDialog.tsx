@@ -71,7 +71,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="usr-emp" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="usr-emp" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Employee code
             </label>
             <input
@@ -85,7 +85,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
           </div>
 
           <div>
-            <label htmlFor="usr-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="usr-name" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Full name
             </label>
             <input
@@ -99,7 +99,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
           </div>
 
           <div>
-            <label htmlFor="usr-role" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="usr-role" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Role
             </label>
             <Select
@@ -115,7 +115,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
           </div>
 
           <div>
-            <label htmlFor="usr-pin" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="usr-pin" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               PIN (exactly 6 digits)
             </label>
             <input

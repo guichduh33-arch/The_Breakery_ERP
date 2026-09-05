@@ -61,7 +61,7 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
           grand livre. Promu en `<label>` persistant (WCAG 1.3.1 / 4.1.2). */}
       <label
         htmlFor={`cash-counted-${wallet.account_code}`}
-        className="block text-xs uppercase tracking-widest text-text-secondary"
+        className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary"
       >
         Counted (physical)
       </label>

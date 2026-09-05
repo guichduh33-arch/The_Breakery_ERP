@@ -80,7 +80,7 @@ export function BogoForm({
 
       <div className="grid grid-cols-2 gap-4">
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Name</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Name</span>
           <Input
             value={values.name}
             onChange={(e) => update('name', e.target.value)}
@@ -88,7 +88,7 @@ export function BogoForm({
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Slug</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Slug</span>
           <Input
             value={values.slug}
             onChange={(e) => update('slug', e.target.value)}
@@ -99,7 +99,7 @@ export function BogoForm({
 
       <div className="grid grid-cols-3 gap-4">
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Buy qty</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Buy qty</span>
           <Input
             type="number"
             min={1}
@@ -109,7 +109,7 @@ export function BogoForm({
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Get qty</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Get qty</span>
           <Input
             type="number"
             min={1}
@@ -119,7 +119,7 @@ export function BogoForm({
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-xs uppercase tracking-widest text-text-secondary">Free product</span>
+          <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Free product</span>
           <select
             value={values.bogo_get_product_id ?? ''}
             onChange={(e) => update('bogo_get_product_id', e.target.value === '' ? null : e.target.value)}

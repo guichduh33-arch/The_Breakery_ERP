@@ -97,7 +97,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="table-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="table-name" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Name
             </label>
             {/* Le champ fautif se DIT : `aria-invalid` le marque, et
@@ -118,7 +118,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="table-seats" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="table-seats" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 Seats
               </label>
               <input
@@ -134,7 +134,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
               />
             </div>
             <div>
-              <label htmlFor="table-sort" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="table-sort" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 Sort order
               </label>
               <input
@@ -148,7 +148,7 @@ export function TableFormDialog({ mode, table, sections, onClose }: TableFormDia
           </div>
 
           <div>
-            <label htmlFor="table-section" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="table-section" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Section
             </label>
             <select

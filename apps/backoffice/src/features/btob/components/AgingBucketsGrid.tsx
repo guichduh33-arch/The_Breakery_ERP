@@ -23,7 +23,7 @@ export function AgingBucketsGrid({ buckets, tones }: AgingBucketsGridProps): JSX
         <div key={b.label} className="rounded-md border border-border-subtle bg-bg-base p-3">
           <div
             className={cn(
-              'text-xs font-semibold uppercase tracking-widest',
+              'font-data text-xs font-semibold uppercase tracking-widest',
               tones?.[b.label] ?? 'text-text-secondary',
             )}
           >

@@ -130,7 +130,7 @@ describe('PurchaseBySupplierPage (smoke)', () => {
     injectRpcError = false;
     renderPage();
     const tile = await screen.findByTestId('kpi-lead');
-    expect(tile.textContent).toMatch(/3\.5 d/);
+    expect(tile.textContent).toMatch(/3,5 d/);
   });
 
   it('offers a CSV export, and no PDF — no template is registered for this report', async () => {

@@ -5,7 +5,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Input, SectionLabel } from '@breakery/ui';
+import { Button, Input } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
@@ -114,12 +115,12 @@ export default function GeneralLedgerPage(): JSX.Element {
       />
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           Account
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            className={`mt-1 rounded-md border border-border-strong bg-bg-elevated px-3 py-2 text-sm min-w-72 ${FOCUS_RING}`}
+            className={`mt-1 h-9 rounded-md border border-border-strong bg-bg-elevated px-3 py-2 text-sm min-w-72 ${FOCUS_RING}`}
             data-testid="gl-account-select"
           >
             <option value="">— select an account —</option>
@@ -132,23 +133,23 @@ export default function GeneralLedgerPage(): JSX.Element {
               ))}
           </select>
         </label>
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           From
           <Input
             type="date" lang="id-ID"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="gl-filter-start"
           />
         </label>
-        <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        <label className="font-data font-semibold flex flex-col text-xs uppercase tracking-widest text-text-secondary">
           To
           <Input
             type="date" lang="id-ID"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1"
+            className="mt-1 h-9"
             data-testid="gl-filter-end"
           />
         </label>

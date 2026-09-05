@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { toLocalDateStr } from '@breakery/domain';
+import { formatNumber } from '@breakery/utils';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useProductsForInventory } from '@/features/inventory/hooks/useProductsForInventory.js';
 import type { MovementsFilters as Filters } from '../hooks/useStockMovementsFeed.js';
@@ -169,7 +170,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           id="mvt-type"
           value={value.movementType ?? ''}
           onChange={(e) => { onChange({ ...value, movementType: e.target.value }); }}
-          className={`px-2 py-1 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
+          className={`h-9 px-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
         >
           <option value="">All types</option>
           {MOVEMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -183,7 +184,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           type="date" lang="id-ID"
           value={value.dateStart ?? ''}
           onChange={(e) => { onChange({ ...value, dateStart: e.target.value }); }}
-          className={`px-2 py-1 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
+          className={`h-9 px-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
         />
       </div>
 
@@ -194,7 +195,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
           type="date" lang="id-ID"
           value={value.dateEnd ?? ''}
           onChange={(e) => { onChange({ ...value, dateEnd: e.target.value }); }}
-          className={`px-2 py-1 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
+          className={`h-9 px-2 text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
         />
       </div>
 
@@ -228,7 +229,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
       </button>
 
       <div className="ml-auto text-xs text-text-secondary self-center inline-flex items-center gap-1">
-        <Search className="h-3 w-3" aria-hidden /> Full range, running balance per product (cap 5,000 rows).
+        <Search className="h-3 w-3" aria-hidden /> Full range, running balance per product (cap {formatNumber(5000)} rows).
       </div>
     </div>
   );

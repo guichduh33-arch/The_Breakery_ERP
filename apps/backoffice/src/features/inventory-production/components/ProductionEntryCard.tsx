@@ -47,7 +47,8 @@
 import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Card, SectionLabel, cn } from '@breakery/ui';
+import { Card, cn } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {

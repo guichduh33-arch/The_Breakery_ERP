@@ -77,7 +77,14 @@ export function ReceiptUploader({
            bordure, ce que The Ink-Not-Gold Rule interdit et que DESIGN.md
            relève par ailleurs comme le contrôle « Receipt file » à 1,08:1 —
            une seule passe règle les deux défauts. */
-        className={`block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border file:border-border-strong file:bg-bg-elevated file:px-3 file:py-1.5 file:text-sm file:text-text-primary hover:file:bg-surface-4 ${FOCUS_RING}`}
+        /* La hauteur du contrôle était OBTENUE, pas décidée : `file:py-1.5` plus
+           la ligne du texte donnaient ≈ 32 px, un TROISIÈME cran sur un
+           formulaire où les sept autres champs font 44 px. DESIGN.md § Champs
+           n'en déclare que deux, et celui-ci est un champ de formulaire — donc
+           44 px. La hauteur est portée par le BOUTON du champ (`file:`), qui est
+           la seule boîte visible : la poser sur l'input laisserait le bouton
+           collé en haut d'une zone de 44 px. */
+        className={`block w-full text-sm text-text-secondary file:mr-3 file:h-touch-min file:rounded-md file:border file:border-border-strong file:bg-bg-elevated file:px-3 file:text-sm file:text-text-primary hover:file:bg-surface-4 ${FOCUS_RING}`}
       />
       {/* Les deux retours de l'envoi arrivaient en silence : « Uploading… »
           apparaît hors du flux de lecture (role="status", poli), et le refus

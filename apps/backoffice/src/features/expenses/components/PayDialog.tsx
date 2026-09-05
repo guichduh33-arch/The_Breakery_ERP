@@ -38,7 +38,7 @@ export function PayDialog({ open, expenseId, onClose, onSuccess }: PayDialogProp
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1">
-          <label htmlFor="pay-method" className="text-xs uppercase tracking-widest text-text-secondary">
+          <label htmlFor="pay-method" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Payment method
           </label>
           <Select

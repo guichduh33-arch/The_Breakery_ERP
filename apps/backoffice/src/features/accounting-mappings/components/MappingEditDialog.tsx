@@ -107,7 +107,7 @@ export function MappingEditDialog({ open, initial, onClose }: MappingEditDialogP
           )}
 
           <div className="space-y-1">
-            <label htmlFor="account_code" className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor="account_code" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Account
             </label>
             <Select
@@ -143,7 +143,7 @@ export function MappingEditDialog({ open, initial, onClose }: MappingEditDialogP
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="reason" className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor="reason" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason for change (3..200 chars)
             </label>
             <Input

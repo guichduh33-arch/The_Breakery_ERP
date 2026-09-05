@@ -103,7 +103,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
             <Factory className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Production Stations</h2>
+            <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Production Stations</h2>
             <p className="text-xs italic text-text-secondary">
               The stations that produce this product. The Production page only lists a product
               under the stations selected here.

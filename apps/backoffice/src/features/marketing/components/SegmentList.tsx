@@ -5,7 +5,7 @@
 //
 // Session 13 / Phase 6.B.
 
-import { formatCurrency } from '@breakery/utils';
+import { formatCurrency, formatNumber } from '@breakery/utils';
 import type { SegmentBucket } from '../hooks/useCustomerSegments.js';
 
 export interface SegmentListProps {
@@ -109,7 +109,7 @@ export function SegmentList({ segments }: SegmentListProps) {
                 {formatCurrency(s.total_spent)}
               </td>
               <td className="px-3 py-3 text-right font-mono tabular-nums">
-                {s.avg_orders.toFixed(2)}
+                {formatNumber(s.avg_orders, { digits: 2 })}
               </td>
             </tr>
           ))}

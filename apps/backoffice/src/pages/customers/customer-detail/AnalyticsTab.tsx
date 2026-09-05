@@ -33,7 +33,7 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
   return (
     <div className="space-y-4">
       <Card variant="default" padding="md">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-text-secondary">Spend — last 12 months</h2>
+        <h2 className="font-data mb-4 text-sm font-semibold uppercase tracking-widest text-text-secondary">Spend — last 12 months</h2>
         <div
           className="h-64 w-full"
           role="img"
@@ -56,7 +56,7 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card variant="default" padding="md">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-text-secondary">Order type</h2>
+          <h2 className="font-data mb-3 text-sm font-semibold uppercase tracking-widest text-text-secondary">Order type</h2>
           <div className="space-y-3">
             {data.byType.map((t) => (
               <div key={t.type}>
@@ -75,7 +75,7 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
         </Card>
 
         <Card variant="default" padding="md">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-text-secondary">Top products</h2>
+          <h2 className="font-data mb-3 text-sm font-semibold uppercase tracking-widest text-text-secondary">Top products</h2>
           {data.topProducts.length === 0 ? (
             <p className="text-sm text-text-muted">No items.</p>
           ) : (

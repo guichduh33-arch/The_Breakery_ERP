@@ -117,7 +117,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           data-testid="category-form"
         >
           <div>
-            <label htmlFor="cat-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="cat-name" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Name <span className="text-red" aria-hidden>*</span>
             </label>
             <input
@@ -130,7 +130,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           </div>
 
           <div>
-            <label htmlFor="cat-slug" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <label htmlFor="cat-slug" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Slug (optional — auto-derived from name)
             </label>
             <input
@@ -145,7 +145,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="cat-disp" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="cat-disp" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 Dispatch station
               </label>
               <select
@@ -158,7 +158,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
               </select>
             </div>
             <div>
-              <label htmlFor="cat-kds" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              <label htmlFor="cat-kds" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
                 KDS station
               </label>
               <select
@@ -176,7 +176,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
             {/* Choix mutuellement exclusif : `aria-pressed` annonce une
                 bascule, pas « un parmi trois » — ni le nombre d'options ni la
                 position n'étaient lisibles au lecteur d'écran. */}
-            <span id="cat-type-label" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            <span id="cat-type-label" className="font-data font-semibold block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Type
             </span>
             <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="cat-type-label">

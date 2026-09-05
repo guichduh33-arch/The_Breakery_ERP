@@ -43,7 +43,7 @@ export function CancelDialog({
 
         <div className="space-y-3">
           <div className="space-y-1">
-            <label htmlFor={`${reactId}-reason`} className="text-xs uppercase tracking-widest text-text-secondary">
+            <label htmlFor={`${reactId}-reason`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
               Reason
             </label>
             <textarea

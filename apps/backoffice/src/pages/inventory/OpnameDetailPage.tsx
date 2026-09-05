@@ -162,7 +162,7 @@ export default function OpnameDetailPage(): JSX.Element {
             className="rounded-lg border border-border-subtle bg-bg-elevated p-4"
             data-testid="blind-count-notice"
           >
-            <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-text-muted">
+            <div className="font-data font-semibold flex items-center gap-2 text-xs uppercase tracking-widest text-text-muted">
               <EyeOff className="h-3.5 w-3.5" aria-hidden /> Blind count
             </div>
             <p className="mt-2 text-sm text-text-secondary">
@@ -196,15 +196,15 @@ export default function OpnameDetailPage(): JSX.Element {
             <caption className="sr-only">Expected quantity, counted quantity, variance and notes per counted product</caption>
             <thead className="bg-surface-inert border-b border-border-subtle">
               <tr>
-                <th scope="col" className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
+                <th scope="col" className="font-data font-semibold text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
                 {revealed && (
-                  <th scope="col" className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
+                  <th scope="col" className="font-data font-semibold text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
                 )}
-                <th scope="col" className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
+                <th scope="col" className="font-data font-semibold text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
                 {revealed && (
-                  <th scope="col" className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
+                  <th scope="col" className="font-data font-semibold text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
                 )}
-                <th scope="col" className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
+                <th scope="col" className="font-data font-semibold text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
                 {!locked && <th scope="col"><span className="sr-only">Actions</span></th>}
               </tr>
             </thead>

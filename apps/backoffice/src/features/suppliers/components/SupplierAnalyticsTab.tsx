@@ -17,7 +17,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card, EmptyState, SectionLabel } from '@breakery/ui';
+import { Card, EmptyState } from '@breakery/ui';
+import { SectionLabel } from '@/components/SectionLabel.js';
 import { CHART_TITLE } from './chartTitle.js';
 import { Clock } from 'lucide-react';
 import { formatCurrency } from '@breakery/utils';
@@ -171,9 +172,9 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
                   {topProducts.map((p) => (
                     <tr key={p.name} className="border-t border-border-subtle">
                       <td className="py-2.5 text-text-primary">{p.name}</td>
-                      <td className="py-2.5 text-right tabular-nums">{p.qty}</td>
-                      <td className="py-2.5 text-right font-medium tabular-nums">{formatCurrency(p.total)}</td>
-                      <td className="py-2.5 text-right tabular-nums text-text-secondary">{formatCurrency(p.avg)}</td>
+                      <td className="py-2.5 text-right font-data tabular-nums">{p.qty}</td>
+                      <td className="py-2.5 text-right font-data font-medium tabular-nums">{formatCurrency(p.total)}</td>
+                      <td className="py-2.5 text-right font-data tabular-nums text-text-secondary">{formatCurrency(p.avg)}</td>
                     </tr>
                   ))}
                 </tbody>
