@@ -548,10 +548,13 @@ export const useCartStore = create<CartState>()(
             unit_price: it.unit_price,
             quantity: it.quantity,
             modifiers: (it.modifiers ?? []) as SelectedModifiers,
-            // Miroir de `addComboItem` : on ne pose les deux clés que
-            // lorsqu'elles portent une valeur, pour qu'une ligne simple
-            // réouverte reste structurellement identique à une ligne saisie.
-            ...(it.product_type ? { product_type: it.product_type as ProductType } : {}),
+            // Miroir d'`addItem` / `addComboItem` : `product_type` n'est posé
+            // que hors `finished`, `combo_components` que s'il porte des
+            // composants, pour qu'une ligne simple réouverte reste
+            // structurellement identique à une ligne saisie.
+            ...(it.product_type && it.product_type !== 'finished'
+              ? { product_type: it.product_type as ProductType }
+              : {}),
             ...(it.combo_components && it.combo_components.length > 0
               ? { combo_components: it.combo_components }
               : {}),

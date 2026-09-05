@@ -115,8 +115,10 @@ describe('useReopenHeldOrder', () => {
       expect(s.cart.items[1]!.product_type).toBe('combo');
       expect(s.cart.items[1]!.combo_components).toEqual([{ product_id: 'p-comp', quantity: 1 }]);
       // A non-combo line stays structurally identical to a line rung up in the
-      // cart: no `combo_components` key at all, not an explicit null.
+      // cart: no `combo_components` key at all, not an explicit null — and no
+      // `product_type` key either for a `finished` product (mirror of addItem).
       expect(s.cart.items[0]).not.toHaveProperty('combo_components');
+      expect(s.cart.items[0]).not.toHaveProperty('product_type');
     });
   });
 
