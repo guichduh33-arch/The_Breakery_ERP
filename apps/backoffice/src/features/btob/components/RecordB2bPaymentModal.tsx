@@ -148,11 +148,14 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
           case 'overpayment_not_allowed':
             setFormError('Amount exceeds the customer outstanding balance. Adjust and retry.');
             break;
+          case 'payment_not_fully_allocated':
+            setFormError("The amount exceeds what the customer's open invoices can absorb. Reduce it or select more invoices — unallocated payments are refused.");
+            break;
           case 'customer_not_b2b':
             setFormError('Selected customer is not a B2B account.');
             break;
           case 'permission_denied':
-            setFormError('You do not have permission to record B2B payments (needs customers.update).');
+            setFormError('You do not have permission to record B2B payments (needs b2b.payment.record).');
             break;
           case 'fiscal_period_closed':
             setFormError('The current fiscal period is closed.');
@@ -264,7 +267,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   .reduce((acc, r) => acc + Number(r.outstanding), 0);
                 return numericAmount > sum ? (
                   <p className="text-xs text-warning">
-                    Amount exceeds the selected invoices — the excess will be allocated FIFO across the remaining ones.
+                    Amount exceeds the selected invoices — the excess goes to the customer's other open invoices, oldest first; anything left over is refused.
                   </p>
                 ) : null;
               })()}

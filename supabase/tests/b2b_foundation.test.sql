@@ -121,11 +121,23 @@ DECLARE
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
-  -- Reset balance to 100K
-  UPDATE customers SET b2b_current_balance = 100000
+  -- Le solde de 100K est porté par une VRAIE facture (2 × 50K), plus par un
+  -- UPDATE du cache : depuis record_b2b_payment_v3 (audit lot 1 P0 n°4), un
+  -- paiement qu'aucune facture ne peut absorber est refusé (P0011) — la
+  -- fixture d'origine encodait précisément le bug (encaissement contre le
+  -- cache seul, reliquat jeté).
+  UPDATE customers SET b2b_current_balance = 0
    WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
+  PERFORM create_b2b_order_v6(
+    p_customer_id => 'b2bf0001-0000-0000-0000-000000000003',
+    p_items       => jsonb_build_array(jsonb_build_object(
+      'product_id', 'b2bf0002-0000-0000-0000-000000000001',
+      'quantity',   2,
+      'unit_price', 50000
+    ))
+  );
 
-  v_result := record_b2b_payment_v2(
+  v_result := record_b2b_payment_v3(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount      => 50000,
     p_method      => 'cash'::payment_method
@@ -167,14 +179,14 @@ BEGIN
   SELECT COUNT(*) INTO v_count_before FROM b2b_payments
     WHERE idempotency_key = v_key;
 
-  v_r1 := record_b2b_payment_v2(
+  v_r1 := record_b2b_payment_v3(
     p_customer_id    => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount         => 10000,
     p_method         => 'cash'::payment_method,
     p_idempotency_key => v_key
   );
 
-  v_r2 := record_b2b_payment_v2(
+  v_r2 := record_b2b_payment_v3(
     p_customer_id    => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount         => 10000,
     p_method         => 'cash'::payment_method,
@@ -208,7 +220,7 @@ BEGIN
 END $t6_setup$;
 
 SELECT throws_ok(
-  $$ SELECT record_b2b_payment_v2(
+  $$ SELECT record_b2b_payment_v3(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
        p_amount      => 200000,
        p_method      => 'cash'::payment_method
@@ -228,7 +240,7 @@ BEGIN
 END $t7_setup$;
 
 SELECT throws_ok(
-  $$ SELECT record_b2b_payment_v2(
+  $$ SELECT record_b2b_payment_v3(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000001',
        p_amount      => 1000,
        p_method      => 'cash'::payment_method
