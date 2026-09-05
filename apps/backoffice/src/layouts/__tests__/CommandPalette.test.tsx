@@ -212,4 +212,30 @@ describe('CommandPalette', () => {
     fireEvent.keyDown(screen.getByTestId('command-palette'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  // Critique BO du 2026-09-04 (P2) : « sales » rendait cinq pages et rien
+  // d'autre — l'utilisateur ne pouvait pas savoir que d'autres existaient.
+  // La section coupée au plafond dit désormais combien elle en a laissé.
+  it('dit « 5 of N » sous une section coupée au plafond', () => {
+    setAuthState(ALL_PERMS);
+    renderPalette();
+    fireEvent.change(input(), { target: { value: 'sales' } });
+    const pages = screen.getAllByRole('option');
+    expect(pages).toHaveLength(5);
+    const hint = screen.getByTestId('palette-truncated-pages');
+    expect(hint).toHaveTextContent(/^Showing 5 of \d+ pages — keep typing to narrow\.$/);
+    // Le compte annoncé est bien supérieur à ce qui est rendu.
+    const total = Number(/of (\d+) pages/.exec(hint.textContent ?? '')?.[1]);
+    expect(total).toBeGreaterThan(5);
+    // L'indice n'est pas une option : il ne bouge pas le listbox.
+    expect(hint).not.toHaveAttribute('role');
+  });
+
+  it('ne dit rien quand la section tient sous le plafond', () => {
+    setAuthState(ALL_PERMS);
+    renderPalette();
+    fireEvent.change(input(), { target: { value: 'cash flow' } });
+    expect(screen.getByRole('option', { name: /Cash flow/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('palette-truncated-pages')).not.toBeInTheDocument();
+  });
 });

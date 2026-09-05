@@ -23,7 +23,7 @@
 // `useListboxKeyboard` ne convient pas : il implémente `aria-activedescendant`,
 // où le focus RESTE sur le champ. Un menu fait l'inverse.
 
-import { useCallback, useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@breakery/ui';
 
@@ -155,25 +155,37 @@ export function RowActionsMenu({ subject, entries, testId }: RowActionsMenuProps
           onKeyDown={onMenuKeyDown}
           className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-border-subtle bg-bg-elevated shadow-lg"
         >
-          {entries.map((entry, i) => (
-            <button
-              key={entry.key}
-              ref={(el) => { itemRefs.current[i] = el; }}
-              type="button"
-              role="menuitem"
-              // Focus roulant : un seul point d'entrée au clavier, le reste se
-              // parcourt aux flèches.
-              tabIndex={-1}
-              // `red-as-text` et non `red` : `--red-base` est la teinte de
-              // REMPLISSAGE, `--red-as-text` celle du premier plan. Égales en
-              // thème clair, elles divergent en sombre.
-              className={entry.danger === true ? `${MENU_ITEM} text-red-as-text` : MENU_ITEM}
-              {...(entry.testId === undefined ? {} : { 'data-testid': entry.testId })}
-              onClick={(e) => { e.stopPropagation(); close(true); entry.activate(); }}
-            >
-              {entry.label}
-            </button>
-          ))}
+          {entries.map((entry, i) => {
+            // Le menu supprime l'ADJACENCE entre destructeur et bénin — c'est
+            // sa raison d'être — mais `View details` et `Void order` se
+            // touchaient encore à 34 px l'un de l'autre, sans filet (critique
+            // BO du 2026-09-04). Un séparateur précède la première entrée
+            // `danger` qui suit une entrée bénigne ; il n'est pas une option
+            // et ne compte pas au clavier.
+            const previous = entries[i - 1];
+            const separated = entry.danger === true && previous !== undefined && previous.danger !== true;
+            return (
+              <Fragment key={entry.key}>
+                {separated && <div role="separator" className="my-1 border-t border-border-muted" />}
+                <button
+                  ref={(el) => { itemRefs.current[i] = el; }}
+                  type="button"
+                  role="menuitem"
+                  // Focus roulant : un seul point d'entrée au clavier, le reste se
+                  // parcourt aux flèches.
+                  tabIndex={-1}
+                  // `red-as-text` et non `red` : `--red-base` est la teinte de
+                  // REMPLISSAGE, `--red-as-text` celle du premier plan. Égales en
+                  // thème clair, elles divergent en sombre.
+                  className={entry.danger === true ? `${MENU_ITEM} text-red-as-text` : MENU_ITEM}
+                  {...(entry.testId === undefined ? {} : { 'data-testid': entry.testId })}
+                  onClick={(e) => { e.stopPropagation(); close(true); entry.activate(); }}
+                >
+                  {entry.label}
+                </button>
+              </Fragment>
+            );
+          })}
         </div>
       )}
     </div>

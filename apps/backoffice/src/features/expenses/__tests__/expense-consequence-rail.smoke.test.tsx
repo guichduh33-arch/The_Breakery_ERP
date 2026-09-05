@@ -123,7 +123,7 @@ describe('ExpenseConsequenceRail — chaîne d’approbation', () => {
     renderRail({ amount: '4850000' });
 
     expect(screen.getByTestId('forecast-reserve')).toHaveTextContent(
-      'Forecast only — the server resolves the final chain when you submit.',
+      'Forecast only — the server resolves the final chain when the draft is submitted.',
     );
   });
 });

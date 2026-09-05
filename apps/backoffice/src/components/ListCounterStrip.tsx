@@ -70,13 +70,23 @@ export function ListCounterStrip({
   ariaLabel = 'Filters',
   'data-testid': testId,
 }: ListCounterStripProps): JSX.Element {
+  // Une bande dont AUCUN compteur ne filtre n'est pas un groupe de contrôles :
+  // c'est une ligne de totaux. Sur Orders, la bande des statuts (boutons) et
+  // la bande d'argent (informative) rendaient le même chrome — même hauteur,
+  // même trait `border-strong`, même fond — et seul le curseur les distinguait
+  // (critique BO du 2026-09-04, P2). La bande informative prend le papier
+  // inerte et le trait discret : le sol des choses qui se lisent et ne se
+  // cliquent pas (DESIGN.md § Papier inerte — en-tête et pied de tableau).
+  const informative = counters.every((c) => c.onSelect === undefined);
   return (
     <div
       role="group"
       aria-label={ariaLabel}
       data-testid={testId}
+      data-informative={informative ? 'true' : undefined}
       className={cn(
-        // `border-strong` et non `border-subtle` : la bande est un GROUPE DE
+        // `border-strong` et non `border-subtle` — quand la bande FILTRE (voir
+        // `informative` plus haut pour l'autre cas) : c'est un GROUPE DE
         // CONTRÔLES, pas une carte. Sa limite extérieure valait 1,20:1 contre le
         // papier (critique du 2026-08-21), sous les 3:1 de WCAG 1.4.11 — le
         // groupe cliquable n'avait pas de bord visible. `border-strong` est le
@@ -90,7 +100,10 @@ export function ListCounterStrip({
         // pose sa barre que lorsqu'il y a réellement à faire défiler ; à largeur
         // suffisante le rendu ne bouge pas, et l'arrondi continue de découper les
         // extrémités puisque la boîte reste un conteneur de défilement.
-        'flex items-stretch overflow-x-auto rounded-md border border-border-strong bg-bg-elevated',
+        'flex items-stretch overflow-x-auto rounded-md border',
+        informative
+          ? 'border-border-subtle bg-surface-inert'
+          : 'border-border-strong bg-bg-elevated',
         className,
       )}
     >

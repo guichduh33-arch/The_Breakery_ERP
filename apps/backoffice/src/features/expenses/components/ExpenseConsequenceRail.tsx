@@ -26,9 +26,14 @@ import { useApprovalForecast, type ApprovalForecast } from '../hooks/useApproval
 import { ExpenseCategoryHistory } from './ExpenseCategoryHistory.js';
 import type { ExpenseThresholdRow } from '../../settings/expense-thresholds/hooks/useExpenseThresholds.js';
 
-/** La formule qui dit que ce rail prévoit et ne décide pas. Une seule source. */
+/**
+ * La formule qui dit que ce rail prévoit et ne décide pas. Une seule source.
+ * « when the draft is submitted », pas « when you submit » : le bouton sous
+ * ce rail dit « Save as draft », et la chaîne n'est résolue qu'à la soumission
+ * du brouillon — un geste ultérieur, pas celui-ci (critique BO du 2026-09-04).
+ */
 const FORECAST_RESERVE =
-  'Forecast only — the server resolves the final chain when you submit.';
+  'Forecast only — the server resolves the final chain when the draft is submitted.';
 
 const DASH = '—';
 
