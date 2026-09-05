@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/expenses/components/ApproveDialog.tsx
-// S28 + H1 audit fix (2026-06-01): approve_expense_v3 — PIN collected in dialog,
+// S28 + H1 audit fix (2026-06-01): approve_expense — PIN collected in dialog,
 // passed as the p_manager_pin RPC arg and verified server-side via verify_user_pin.
 // S28 Task 5.H: SOD-aware button state (creator cannot approve their own expense; double-approve blocked).
 import { useState } from 'react';
@@ -41,7 +41,7 @@ export function ApproveDialog({
 
   // Separation-of-duties checks.
   // SUPER_ADMIN may self-approve (single-operator policy) — SOD block 1 is relaxed
-  // for that role server-side (approve_expense_v3) and mirrored here.
+  // for that role server-side (approve_expense) and mirrored here.
   const isSuperAdmin = currentUserRole === 'SUPER_ADMIN';
   const isCreator = !isSuperAdmin
     && currentUserId !== null && currentUserId !== undefined

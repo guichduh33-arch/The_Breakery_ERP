@@ -13,12 +13,12 @@
 --   T_EXP_02 : 12 standard categories seeded with active account
 --   T_EXP_03 : next_expense_number() formats and monotonic
 --   T_EXP_04 : RLS enabled on expenses + expense_categories
---   T_EXP_05 : create_expense_v1 happy path
+--   T_EXP_05 : create_expense_v2 happy path
 --   T_EXP_06 : submit_expense_v1 draft -> submitted
 --   T_EXP_07 : approve_expense_v1 (cash) emits balanced 2-line JE
 --   T_EXP_08 : approve_expense_v1 (credit + VAT) emits 2-line JE (VAT folded, S59 F-4)
---   T_EXP_09 : pay_expense_v1 on credit-approved emits payment JE
---   T_EXP_10 : create_expense_v1 idempotency_key replay returns same id
+--   T_EXP_09 : pay_expense_v2 on credit-approved emits payment JE
+--   T_EXP_10 : create_expense_v2 idempotency_key replay returns same id
 --   T_EXP_11 : real _emit_expense_je(uuid) call, vat_amount>0 — balanced JE, 2 lines,
 --              no line on account 1151 (S59 F-4 fix, real RPC not a simulation)
 --
@@ -275,7 +275,7 @@ END $$;
 SELECT is(
   (SELECT total_debit FROM journal_entries WHERE id = current_setting('test.je_pay_id')::UUID),
   (SELECT total_credit FROM journal_entries WHERE id = current_setting('test.je_pay_id')::UUID),
-  'T_EXP_09 pay_expense_v1 credit : payment JE balanced'
+  'T_EXP_09 pay_expense_v2 credit : payment JE balanced'
 );
 
 -- T_EXP_10 : idempotency_key constraint blocks duplicates (UNIQUE).

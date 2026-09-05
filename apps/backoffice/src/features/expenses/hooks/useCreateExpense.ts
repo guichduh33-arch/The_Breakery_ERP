@@ -31,9 +31,9 @@ export function useCreateExpense() {
       if (input.receipt_url !== undefined)     args.p_receipt_url = input.receipt_url;
       if (input.idempotency_key !== undefined) args.p_idempotency_key = input.idempotency_key;
 
-      const { data, error } = await supabase.rpc('create_expense_v1', args as never);
+      const { data, error } = await supabase.rpc('create_expense_v2', args as never);
       if (error) throw error;
-      return data as string;
+      return data;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: EXPENSES_QUERY_KEY });

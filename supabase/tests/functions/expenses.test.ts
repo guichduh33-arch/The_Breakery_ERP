@@ -36,7 +36,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
 
   it('cashier cannot create an expense (permission gate)', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('create_expense_v1', {
+    const { error } = await sb.rpc('create_expense_v2', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         100000,
       p_payment_method: 'cash',
@@ -51,14 +51,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Create (admin EMP000). approve_expense_v3 verifies the CALLER's own PIN and
+    // 1. Create (admin EMP000). approve_expense_v4 verifies the CALLER's own PIN and
     //    blocks the creator from approving, so the creator must differ from the
     //    approver (EMP003, the only account whose PIN is known live). EMP000 is
     //    SUPER_ADMIN and has expenses.create.
     const sbAdm = jwtClient(adminToken);
     const sbMgr = jwtClient(managerToken);
     const idemKey = crypto.randomUUID();
-    const { data: createId, error: cErr } = await sbAdm.rpc('create_expense_v1', {
+    const { data: createId, error: cErr } = await sbAdm.rpc('create_expense_v2', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         850000,
       p_payment_method: 'cash',
@@ -72,7 +72,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const expenseId = createId as unknown as string;
 
     // 2. Idempotency : same key returns same id.
-    const { data: replayId } = await sbAdm.rpc('create_expense_v1', {
+    const { data: replayId } = await sbAdm.rpc('create_expense_v2', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         999,
       p_payment_method: 'cash',
@@ -82,12 +82,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     });
     expect(replayId).toBe(expenseId);
 
-    // 3. Submit (admin). submit_expense_v2 — p_idempotency_key is optional.
-    const { error: sErr } = await sbAdm.rpc('submit_expense_v2', { p_expense_id: expenseId });
+    // 3. Submit (admin). submit_expense_v3 — p_idempotency_key is optional.
+    const { error: sErr } = await sbAdm.rpc('submit_expense_v3', { p_expense_id: expenseId });
     expect(sErr).toBeNull();
 
-    // 4. Approve (manager EMP003 — approve_expense_v3 verifies the caller's own PIN).
-    const { data: approveData, error: aErr } = await sbMgr.rpc('approve_expense_v3', {
+    // 4. Approve (manager EMP003 — approve_expense_v4 verifies the caller's own PIN).
+    const { data: approveData, error: aErr } = await sbMgr.rpc('approve_expense_v4', {
       p_expense_id:  expenseId,
       p_manager_pin: '111111',
     });
@@ -97,7 +97,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const result = approveData as unknown as { status: string };
     expect(result.status).toBe('approved');
 
-    // 5. Assert JE balanced. approve_expense_v3 no longer returns je_id, so look the
+    // 5. Assert JE balanced. approve_expense_v4 no longer returns je_id, so look the
     //    entry up by its reference (reference_type='expense', reference_id=expense id).
     const { data: jeRow } = await admin.from('journal_entries').select('id, total_debit, total_credit')
       .eq('reference_type', 'expense').eq('reference_id', expenseId).single();
@@ -109,7 +109,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(lines?.length).toBe(2);  // cash path : 2 lines.
 
     // 6. Pay (no extra JE since not credit).
-    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v1', {
+    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v2', {
       p_expense_id: expenseId,
       p_payment_method: 'cash',
     });
@@ -132,7 +132,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     // inexistant. Le sujet ici est le JE 3-lignes credit+VAT : on reste dans
     // la bande 100k..1M (1 étape Manager). Le multi-étapes appartient à la
     // couverture expense-governance.
-    const { data: createId } = await sbAdm.rpc('create_expense_v1', {
+    const { data: createId } = await sbAdm.rpc('create_expense_v2', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         550000,
       p_vat_amount:     50000,
@@ -142,9 +142,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     });
     const expenseId = createId as unknown as string;
 
-    await sbAdm.rpc('submit_expense_v2', { p_expense_id: expenseId });
+    await sbAdm.rpc('submit_expense_v3', { p_expense_id: expenseId });
 
-    const { data: approveData } = await sbMgr.rpc('approve_expense_v3', {
+    const { data: approveData } = await sbMgr.rpc('approve_expense_v4', {
       p_expense_id:  expenseId,
       p_manager_pin: '111111',
     });
@@ -153,7 +153,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     // rendait l'échec illisible (null.id au lookup JE).
     expect((approveData as unknown as { status: string }).status).toBe('approved');
 
-    // approve_expense_v3 no longer returns je_id — look it up by reference.
+    // approve_expense_v4 no longer returns je_id — look it up by reference.
     const { data: jeRow } = await admin.from('journal_entries').select('id')
       .eq('reference_type', 'expense').eq('reference_id', expenseId).single();
     const jeId = (jeRow as { id: string }).id;
@@ -170,7 +170,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(totalDebit).toBe(totalCredit);
 
     // Pay → expects 2nd JE.
-    const { data: payData } = await sbAdm.rpc('pay_expense_v1', {
+    const { data: payData } = await sbAdm.rpc('pay_expense_v2', {
       p_expense_id: expenseId,
       p_payment_method: 'transfer',
     });

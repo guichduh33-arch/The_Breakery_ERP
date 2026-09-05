@@ -1,8 +1,11 @@
 // apps/backoffice/src/features/expenses/hooks/useExpenseActions.ts
 //
-// Workflow mutations: submit, approve, reject, pay.
-// S28: submit → v2 (idempotency_key). approve → v3 (server-side manager-PIN
-// re-auth via verify_user_pin; PIN passed as RPC arg — H1 audit fix 2026-06-01).
+// Mutations du workflow de dépense : submit, approve, reject, pay.
+// `submit_expense` porte une clé d'idempotence métier ; `approve_expense`
+// re-authentifie le manager côté serveur — le PIN voyage en ARGUMENT de RPC
+// (la règle « PIN en en-tête » vise les Edge Functions, dont les bodies sont
+// loggés ; une RPC PostgREST ne lit pas les en-têtes) et il est vérifié dans
+// la fonction par `_verify_pin_with_lockout`.
 
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,7 +27,7 @@ export function useSubmitExpense() {
 
   const mutation = useMutation<SubmitResult, Error, { id: string }>({
     mutationFn: async ({ id }) => {
-      const { data, error } = await supabase.rpc('submit_expense_v2', {
+      const { data, error } = await supabase.rpc('submit_expense_v3', {
         p_expense_id: id,
         p_idempotency_key: idempotencyKey.current,
       });
@@ -57,12 +60,11 @@ export function useApproveExpense() {
   const qc = useQueryClient();
   return useMutation<ApproveResult, Error, { id: string; manager_pin: string }>({
     mutationFn: async ({ id, manager_pin }) => {
-      // H1 audit fix (2026-06-01): approve_expense_v3 verifies the manager PIN
-      // server-side via verify_user_pin. For a Postgres RPC the PIN travels as an
-      // arg (NOT a header — the PIN-in-header rule targets Edge Functions whose
-      // bodies get logged; RPC args do not). v2 (which ignored the PIN) is dropped.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('approve_expense_v3', {
+      // `approve_expense` vérifie le PIN manager côté serveur via
+      // `_verify_pin_with_lockout` (verrouillage après échecs répétés). Le PIN
+      // voyage en argument de RPC, jamais en en-tête : PostgREST ne transmet pas
+      // les en-têtes à la fonction, c'est le seul véhicule qu'elle peut valider.
+      const { data, error } = await supabase.rpc('approve_expense_v4', {
         p_expense_id:  id,
         p_manager_pin: manager_pin,
       });
@@ -80,7 +82,7 @@ export function useRejectExpense() {
   const qc = useQueryClient();
   return useMutation<void, Error, { id: string; reason: string }>({
     mutationFn: async ({ id, reason }) => {
-      const { error } = await supabase.rpc('reject_expense_v1', {
+      const { error } = await supabase.rpc('reject_expense_v2', {
         p_expense_id: id,
         p_reason: reason,
       });
@@ -106,7 +108,7 @@ export function usePayExpense() {
     mutationFn: async ({ id, paymentMethod }) => {
       const args: Record<string, unknown> = { p_expense_id: id };
       if (paymentMethod !== undefined) args.p_payment_method = paymentMethod;
-      const { data, error } = await supabase.rpc('pay_expense_v1', args as never);
+      const { data, error } = await supabase.rpc('pay_expense_v2', args as never);
       if (error) throw error;
       return data as unknown as PayResult;
     },

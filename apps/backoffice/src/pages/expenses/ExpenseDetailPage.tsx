@@ -4,9 +4,9 @@
 // surrounding purchasing chrome (breadcrumbs, Fraunces heading, Card-based
 // two-column layout, gold primary CTAs).
 //
-// Behaviour preserved — submit_expense_v1 / approve_expense_v1 /
-// reject_expense_v1 / pay_expense_v1 are still the only write paths and
-// the existing dialogs drive each transition.
+// Comportement inchangé — les familles `submit_expense` / `approve_expense` /
+// `reject_expense` / `pay_expense` restent les seuls chemins d'écriture, et ce
+// sont les dialogues existants qui pilotent chaque transition.
 
 import { useState, type JSX, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
