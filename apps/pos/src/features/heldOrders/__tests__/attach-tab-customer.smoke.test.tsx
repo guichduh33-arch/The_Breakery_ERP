@@ -4,7 +4,7 @@
 // Session 62 — Task 5 — "Tab" action on a fired counter order in
 // HeldOrdersModal. Verifies: the button renders on every held row (ADR-022
 // déc. 4 : la voie brouillon a disparu, toute ligne listée est une commande
-// envoyée), selecting a customer calls attach_tab_customer_v3 with the right
+// envoyée), selecting a customer calls attach_tab_customer_v4 with the right
 // args, success shows the named-total toast, and a P0011
 // credit_limit_exceeded reply surfaces the tab-limit breakdown
 // (mock rpc — no live DB).
@@ -114,7 +114,7 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     expect(screen.getAllByLabelText(/attach a named customer to this tab/i)).toHaveLength(2);
   });
 
-  it('calls attach_tab_customer_v3 with the selected customer and shows the named-total toast', async () => {
+  it('calls attach_tab_customer_v4 with the selected customer and shows the named-total toast', async () => {
     rpc.mockResolvedValue({
       data: {
         order_id: 'order-5',
@@ -133,7 +133,7 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     fireEvent.click(screen.getByText('pick-jean-test'));
 
     await waitFor(() =>
-      expect(rpc).toHaveBeenCalledWith('attach_tab_customer_v3', {
+      expect(rpc).toHaveBeenCalledWith('attach_tab_customer_v4', {
         p_order_id: 'order-5',
         p_customer_id: 'cust-1',
       }),

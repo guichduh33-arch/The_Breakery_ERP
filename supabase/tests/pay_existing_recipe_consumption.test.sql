@@ -38,7 +38,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v18(
+  r := pay_existing_order_v19(
     p_order_id := current_setting('v18.order_id')::uuid,
     p_payment := '{"method":"cash","amount":8000,"cash_received":8000,"change_given":0}'::jsonb);
 END $$;

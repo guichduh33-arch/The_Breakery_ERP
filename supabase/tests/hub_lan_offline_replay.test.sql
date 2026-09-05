@@ -1,6 +1,6 @@
 -- supabase/tests/hub_lan_offline_replay.test.sql
 -- Spec 006x lot 5 — chaos « double replay » côté serveur (§7.5) : rejouer
--- fire_counter_order_v7 / pay_existing_order_v18 avec les clés d'idempotence
+-- fire_counter_order_v7 / pay_existing_order_v19 avec les clés d'idempotence
 -- D'ORIGINE est un no-op strict (une seule commande, un seul encaissement),
 -- l'encaissement différé est accepté même rejoué (A4) et tracé
 -- offline_replay:true dans audit_logs. Fixture jwt-claims pattern
@@ -73,7 +73,7 @@ UPDATE _fx SET order_id = (SELECT k.order_id FROM counter_fire_idempotency_keys 
 -- T2 : cash différé rejoué (A4) — v16 accepte avec p_offline_replay. Montant =
 -- SUM(line_total) : orders.total vaut encore 0 au fire (recalcul au paiement).
 SELECT lives_ok($$
-  SELECT pay_existing_order_v18(
+  SELECT pay_existing_order_v19(
     p_order_id := (SELECT order_id FROM _fx),
     p_payment := (SELECT jsonb_build_object(
         'method', 'cash', 'amount', s.amt, 'cash_received', s.amt, 'change_given', 0)
@@ -98,7 +98,7 @@ SELECT is(
 
 -- T5 : DOUBLE REPLAY paiement — même clé ⇒ enveloppe idempotent_replay, pas de 2e écriture.
 SELECT is(
-  ((SELECT pay_existing_order_v18(
+  ((SELECT pay_existing_order_v19(
     p_order_id := (SELECT order_id FROM _fx),
     p_payment := (SELECT jsonb_build_object(
         'method', 'cash', 'amount', s.amt, 'cash_received', s.amt, 'change_given', 0)
@@ -132,9 +132,9 @@ SELECT is(
 -- (D9 : + p_discount_auth_id) — était périmée (13 args).
 SELECT is(
   has_function_privilege('anon',
-    'public.pay_existing_order_v18(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
+    'public.pay_existing_order_v19(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
     'EXECUTE'),
-  false, 'T9: anon revoked on pay_existing_order_v18');
+  false, 'T9: anon revoked on pay_existing_order_v19');
 
 -- T10 (ADR-013 Lot 4, D8) : le replay offline ne bypasse PAS le gate avoir —
 -- un tender store_credit sans client rattaché est refusé même avec
@@ -150,7 +150,7 @@ BEGIN
   PERFORM set_config('hlr.order_sc', v_ord::text, true);
 END $$;
 SELECT throws_ok($$
-  SELECT pay_existing_order_v18(
+  SELECT pay_existing_order_v19(
     p_order_id := current_setting('hlr.order_sc')::uuid,
     p_payment := (SELECT jsonb_build_object('method', 'store_credit', 'amount', s.amt)
       FROM (SELECT SUM(oi.line_total) AS amt FROM order_items oi
@@ -177,7 +177,7 @@ BEGIN
 END $$;
 
 SELECT lives_ok($$
-  SELECT pay_existing_order_v18(
+  SELECT pay_existing_order_v19(
     p_order_id := current_setting('hlr.order_split')::uuid,
     p_payments := (SELECT jsonb_build_array(
         jsonb_build_object('method', 'card', 'amount', s.amt / 2),

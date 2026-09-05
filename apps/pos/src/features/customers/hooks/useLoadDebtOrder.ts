@@ -11,7 +11,7 @@
 // append guard (`isCounterFired && unsynced.length > 0`) sees zero unsynced
 // items and skips straight to payment instead of re-firing the whole order.
 //
-// Does NOT call `reopen_held_order_v1` or `pickup_tablet_order` — those gates
+// Does NOT call `reopen_held_order_v2` or `pickup_tablet_order` — those gates
 // don't apply to a plain counter ardoise (no held/tablet claim to make).
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -97,7 +97,7 @@ export function useLoadDebtOrder() {
       }
 
       toast.success(`Order ${order.order_number} loaded — take payment to settle`);
-      navigate('/pos');
+      void navigate('/pos');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not load order');
     } finally {

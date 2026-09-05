@@ -37,6 +37,7 @@ import type {
   Discount,
   OrderType,
   Product,
+  ProductType,
   SelectedModifiers,
 } from '@breakery/domain';
 import { usePosSettingsStore } from './posSettingsStore';
@@ -53,6 +54,16 @@ export interface ReopenOrderItem {
   modifiers: unknown;
   is_locked: boolean;
   kitchen_status: string | null;
+  /**
+   * Type du produit tel que renvoyé par `reopen_held_order_v2` (enum Postgres
+   * `product_type`). Absent des payloads antérieurs, d'où l'optionnalité.
+   */
+  product_type?: string | null;
+  /**
+   * Composants résolus d'une ligne combo (`null` hors combo). Sans eux, une
+   * ligne combo réouverte s'afficherait comme un produit simple.
+   */
+  combo_components?: ComboComponent[] | null;
 }
 export interface ReopenOrderPayload {
   order_id: string;
@@ -537,6 +548,16 @@ export const useCartStore = create<CartState>()(
             unit_price: it.unit_price,
             quantity: it.quantity,
             modifiers: (it.modifiers ?? []) as SelectedModifiers,
+            // Miroir d'`addItem` / `addComboItem` : `product_type` n'est posé
+            // que hors `finished`, `combo_components` que s'il porte des
+            // composants, pour qu'une ligne simple réouverte reste
+            // structurellement identique à une ligne saisie.
+            ...(it.product_type && it.product_type !== 'finished'
+              ? { product_type: it.product_type as ProductType }
+              : {}),
+            ...(it.combo_components && it.combo_components.length > 0
+              ? { combo_components: it.combo_components }
+              : {}),
           }));
           const lockedIds = payload.items.filter((it) => it.is_locked).map((it) => it.id);
 

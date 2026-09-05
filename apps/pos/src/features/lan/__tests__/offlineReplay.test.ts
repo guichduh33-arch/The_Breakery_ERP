@@ -60,7 +60,7 @@ describe('replayOfflineOutbox', () => {
     const [fireCall, payCall] = rpcMock.mock.calls;
     expect(fireCall![0]).toBe('fire_counter_order_v7');
     expect(fireCall![1]).toMatchObject({ p_client_uuid: 'root-1', p_session_id: 'sess-1', p_order_type: 'take_out' });
-    expect(payCall![0]).toBe('pay_existing_order_v18');
+    expect(payCall![0]).toBe('pay_existing_order_v19');
     expect(payCall![1]).toMatchObject({
       p_order_id: 'db-1',
       p_idempotency_key: 'idem-1',
@@ -174,7 +174,7 @@ describe('replayOfflineOutbox', () => {
     expect(res).toEqual({ replayed: 2, failed: 0 });
     // Chaque intent n'a été rejoué qu'UNE fois malgré les deux appels.
     expect(rpcMock.mock.calls.filter(([fn]) => fn === 'fire_counter_order_v7')).toHaveLength(1);
-    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'pay_existing_order_v18')).toHaveLength(1);
+    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'pay_existing_order_v19')).toHaveLength(1);
     expect(await getPendingIntents()).toEqual([]);
   });
 

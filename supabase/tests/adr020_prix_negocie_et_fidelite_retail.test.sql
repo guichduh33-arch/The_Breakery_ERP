@@ -182,7 +182,7 @@ BEGIN
   SELECT COALESCE(SUM(line_total), 0) INTO v_items FROM order_items WHERE order_id = v_order;
   SELECT s.total INTO v_total FROM _pb1_split_v1(v_items) s;
 
-  PERFORM pay_existing_order_v18(
+  PERFORM pay_existing_order_v19(
     p_order_id   := v_order,
     p_payment    := jsonb_build_object('method', 'cash', 'amount', v_total,
                                        'cash_received', v_total, 'change_given', 0),

@@ -11,7 +11,7 @@
 // restauré par restore_held_order) est supprimée : ce qui est saisi sans avoir
 // franchi l'envoi en cuisine ni le paiement est un brouillon, pas une commande,
 // et n'a pas à exister côté serveur. Reste la réouverture d'une commande
-// envoyée (reopen_held_order_v1) et le rejet (discard_held_order_v1), qui sert
+// envoyée (reopen_held_order_v2) et le rejet (discard_held_order_v1), qui sert
 // aussi les commandes caisse non payées.
 //
 // Ref: docs/Design/caissapp/51-held-orders-takeaway-list.jpg

@@ -167,7 +167,7 @@ export function BottomActionBar({
   const hasSentItems = lockedItemIds.length > 0;
 
   // Spec A fix — re-hold a reopened FIRED order ("addition ouverte") even when
-  // nothing changed. After reopen_held_order_v1 the order sits on the terminal
+  // nothing changed. After reopen_held_order_v2 the order sits on the terminal
   // (pickedUpOrderId set, all lines locked); Send-to-Kitchen is disabled with no
   // new items to fire, and the draft Hold path would orphan the live DB row. So
   // when a fired order is open with no unfired lines, "Hold" re-parks it via

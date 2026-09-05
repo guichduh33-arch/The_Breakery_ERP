@@ -13,15 +13,15 @@
 //   1. As CASHIER (EMP000), fire a counter order via fire_counter_order
 //      → order_id, items with is_locked=true.
 //   2. hold_fired_order_v1(order_id) → row now is_held=true (appears in held list).
-//   3. reopen_held_order_v1(order_id) → returns items[] with is_locked=true +
+//   3. reopen_held_order_v2(order_id) → returns items[] with is_locked=true +
 //      order_items.id; DB row is_held=false; order NOT deleted (status='pending_payment').
-//   4. A 2nd reopen_held_order_v1(order_id) throws P0002 (already open / not held).
+//   4. A 2nd reopen_held_order_v2(order_id) throws P0002 (already open / not held).
 //   5. Append a NEW item via fire_counter_order(p_order_id=order_id) → exactly ONE
 //      new order_items row (locked lines were excluded client-side); total item count = N+1.
 
 import { describe, it, expect } from 'vitest';
 
-describe.skipIf(!process.env.SUPABASE_TEST_LIVE)('reopen_held_order_v1 (live)', () => {
+describe.skipIf(!process.env.SUPABASE_TEST_LIVE)('reopen_held_order_v2 (live)', () => {
   it('hold → reopen preserves locks, flips is_held false→…→reopened, no item dup', async () => {
     // replace with the real assertions per the suite's helpers when SUPABASE_TEST_LIVE is set
     expect(true).toBe(true);
