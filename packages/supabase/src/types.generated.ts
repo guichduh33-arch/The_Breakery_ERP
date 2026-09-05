@@ -6288,7 +6288,7 @@ export type Database = {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
       }
-      attach_tab_customer_v3: {
+      attach_tab_customer_v4: {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
@@ -7762,7 +7762,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v18: {
+      pay_existing_order_v19: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8066,7 +8066,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
+      reopen_held_order_v2: { Args: { p_order_id: string }; Returns: Json }
       reorder_categories_v1: {
         Args: { p_ordered_ids: string[] }
         Returns: Json

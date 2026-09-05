@@ -4,7 +4,7 @@
 -- `restore_held_order_v1`, qui fabriquaient une commande `draft` à partir du
 -- panier local, n'existent plus. Ce fichier couvre désormais le SEUL hold
 -- restant, celui de la commande déjà tirée en cuisine —
--- `hold_fired_order_v1` → `reopen_held_order_v1` → `discard_held_order_v1`.
+-- `hold_fired_order_v1` → `reopen_held_order_v2` → `discard_held_order_v1`.
 --
 -- Le fixture monte la commande par la vraie porte (`fire_counter_order_v7`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
@@ -100,7 +100,7 @@ SELECT ok(
 DO $reopen$
 DECLARE v_res JSONB;
 BEGIN
-  v_res := reopen_held_order_v1(current_setting('ho.order')::uuid);
+  v_res := reopen_held_order_v2(current_setting('ho.order')::uuid);
   PERFORM set_config('ho.reopen', v_res::text, false);
 END $reopen$;
 
@@ -117,7 +117,7 @@ SELECT ok(
   'T5: la reouverture reclame la commande (is_held=false) sans la supprimer');
 
 SELECT throws_ok(
-  $q$ SELECT reopen_held_order_v1(current_setting('ho.order')::uuid) $q$,
+  $q$ SELECT reopen_held_order_v2(current_setting('ho.order')::uuid) $q$,
   'P0002', NULL,
   'T6: une 2e reouverture leve P0002 (deja ouverte sur un autre poste)');
 
@@ -159,9 +159,9 @@ SELECT ok(
   'T11: anon n''a pas EXECUTE sur hold_fired_order_v1');
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.reopen_held_order_v1(uuid)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.reopen_held_order_v2(uuid)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.discard_held_order_v1(uuid, text)', 'EXECUTE'),
-  'T12: anon n''a pas EXECUTE sur reopen_held_order_v1 ni discard_held_order_v1');
+  'T12: anon n''a pas EXECUTE sur reopen_held_order_v2 ni discard_held_order_v1');
 
 SELECT * FROM finish();
 ROLLBACK;
