@@ -120,7 +120,7 @@ export function useCheckout() {
           // on an authorizing manager (sales.discount). Hoist the first
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v7', {
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v8', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({

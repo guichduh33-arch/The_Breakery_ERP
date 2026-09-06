@@ -1,7 +1,7 @@
 -- supabase/tests/source_coded_order_numbers.test.sql
 -- Numérotation par origine (2026-08-16) — <code><DDMMYYYY><NNN> sur la
 -- séquence quotidienne PARTAGÉE (order_sequences). Vérifie :
---   T1. fire_counter_order_v7 numérote P<DDMMYYYY><NNN> (défaut 'P').
+--   T1. fire_counter_order_v8 numérote P<DDMMYYYY><NNN> (défaut 'P').
 --   T2. create_tablet_order_v9 numérote T2… quand la tablette envoie T2.
 --   T3. Séquence partagée : le numéro tablette suit le fire (+1).
 --   T4. Un code invalide est refusé (check_violation).
@@ -60,7 +60,7 @@ DO $$
 DECLARE
   v_fire JSONB; v_tablet UUID;
 BEGIN
-  v_fire := fire_counter_order_v7(
+  v_fire := fire_counter_order_v8(
     gen_random_uuid(),
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -105,7 +105,7 @@ SELECT is(
 
 -- T4 : code hors ^(P|T[0-9]+|BO)$ refusé.
 SELECT throws_ok(
-  $$SELECT fire_counter_order_v7(
+  $$SELECT fire_counter_order_v8(
       gen_random_uuid(),
       (SELECT session_id FROM _fx),
       jsonb_build_array(jsonb_build_object(
@@ -122,13 +122,13 @@ DECLARE
   v_uuid UUID := gen_random_uuid();
   v_first JSONB; v_second JSONB;
 BEGIN
-  v_first := fire_counter_order_v7(
+  v_first := fire_counter_order_v8(
     v_uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
       'product_id', (SELECT product_id FROM _fx), 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb))
   );
-  v_second := fire_counter_order_v7(v_uuid, (SELECT session_id FROM _fx), '[]'::jsonb);
+  v_second := fire_counter_order_v8(v_uuid, (SELECT session_id FROM _fx), '[]'::jsonb);
   PERFORM set_config('test.src_replay_first', v_first->>'order_number', true);
   PERFORM set_config('test.src_replay_second', v_second->>'order_number', true);
   PERFORM set_config('test.src_replay_flag', v_second->>'idempotent_replay', true);

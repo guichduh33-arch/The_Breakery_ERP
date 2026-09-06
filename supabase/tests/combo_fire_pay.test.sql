@@ -1,8 +1,15 @@
 -- supabase/tests/combo_fire_pay.test.sql
--- Session 47 / fire-path extension — fire_counter_order_v7 + pay_existing_order_v19
+-- Session 47 / fire-path extension — fire_counter_order_v8 + pay_existing_order_v19
 -- combo-aware. Cashier ...0002 has pos.sale.create + payments.process.
 -- Fire a combo (persists combo_components), then pay → component stock deducted,
 -- combo product stock untouched.
+--
+-- 2026-09-06 (fire_counter_order_v8, décision 6 du 2026-09-05) : le fire price
+-- les combos serveur via _resolve_combo_price_v1, qui exige que chaque
+-- composant soit une option d'un groupe du combo. La fixture déclare donc les
+-- deux groupes (Main / Drinks, surcharge 0) — sous v7 le combo « sans groupes »
+-- passait parce que le prix client n'était jamais confronté au catalogue.
+-- Prix résolu = base 50000 + 0 + 0 : le montant encaissé ne change pas.
 BEGIN;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 
@@ -14,11 +21,18 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
   ('00000000-0000-0000-0000-0000000fc001','S47-FP-F1','S47 FP Comp1','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',100,true,NULL),
   ('00000000-0000-0000-0000-0000000fc002','S47-FP-F2','S47 FP Comp2','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',100,true,NULL);
 
+INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
+  ('00000000-0000-0000-0000-0000000cc101','00000000-0000-0000-0000-0000000cc001','Main',  'single',true,1,1,0),
+  ('00000000-0000-0000-0000-0000000cc102','00000000-0000-0000-0000-0000000cc001','Drinks','single',true,1,1,1);
+INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order) VALUES
+  ('00000000-0000-0000-0000-0000000cc101','00000000-0000-0000-0000-0000000fc001',0,true,0),
+  ('00000000-0000-0000-0000-0000000cc102','00000000-0000-0000-0000-0000000fc002',0,true,0);
+
 -- 1) Fire the combo to the counter (persists order_items + combo_components).
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v7(
+  r := fire_counter_order_v8(
     p_client_uuid := '00000000-0000-0000-0000-0000000cfaaa'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf001',
     p_items := $items$[

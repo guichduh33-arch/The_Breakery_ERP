@@ -246,9 +246,16 @@ export function useFireToStations(): UseFireToStationsResult {
             // ADR-022 déc. 3 — PAS de p_tolerate_unsellable ici : c'est un envoi
             // en cuisine nominal, le refus y arrive à temps. Le drapeau n'est
             // posé qu'au rejeu hors-ligne et à l'appoint du checkout.
+            //
+            // v8 (2026-09-06) — une ligne combo est pricée SERVEUR
+            // (_resolve_combo_price_v1) : `unit_price` (base) + `modifiers`
+            // (surcharges) + `combo_components[].modifiers` (ADR-017) ne sont
+            // plus qu'un affichage, le serveur est l'autorité. Un combo dont
+            // la configuration ne correspond plus au catalogue est refusé ici
+            // (check_violation), à l'envoi — pas au paiement.
             const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
             const sourceCode = getOrderSourceCode();
-            const { data, error } = await supabase.rpc('fire_counter_order_v7', {
+            const { data, error } = await supabase.rpc('fire_counter_order_v8', {
               p_client_uuid: fireClientUuidRef.current,
               p_session_id: sessionId,
               p_items: toPersist.map((i) => ({
