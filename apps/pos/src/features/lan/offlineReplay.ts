@@ -8,6 +8,14 @@
 // préservé, on retentera au prochain déclencheur). A4 : pay_existing_order
 // est appelée avec p_offline_replay=true — le serveur ACCEPTE (stock forcé
 // négatif au besoin) et trace offline_replay dans audit_logs.
+//
+// 2026-09-06 — fire_counter_order v7 → v8 (décision 6 du 2026-09-05) : les
+// lignes combo sont pricées serveur (_resolve_combo_price_v1). Sous
+// p_tolerate_unsellable, déjà posé ici, un échec de résolution est rattrapé :
+// la ligne est facturée ce que la caisse a facturé (prix client + surcharges +
+// ajustements de composants) et tracée (order.combo_price_tolerated), pour que
+// l'encaissement en file — qui porte exactement ce montant — reste acceptable.
+// Signature inchangée, aucun format d'intent ne change (ADR-015).
 
 import { logger } from '@breakery/utils';
 import type { Database, Json } from '@breakery/supabase';
@@ -73,7 +81,7 @@ function emitPaymentFailure(intent: OfflineIntent, message: string): void {
   });
 }
 
-type FireArgs = Database['public']['Functions']['fire_counter_order_v7']['Args'];
+type FireArgs = Database['public']['Functions']['fire_counter_order_v8']['Args'];
 type TabletArgs = Database['public']['Functions']['create_tablet_order_v9']['Args'];
 
 interface FireEnvelope {
@@ -102,7 +110,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
       // La racine a été rejouée dans un run précédent (record déjà supprimé) :
       // son replay idempotent renvoie la commande sans revalider les items —
       // le lookup client_uuid court-circuite AVANT toute validation.
-      const { data, error } = await supabase.rpc('fire_counter_order_v7', {
+      const { data, error } = await supabase.rpc('fire_counter_order_v8', {
         p_client_uuid: intent.root_client_uuid,
         p_session_id: intent.session_id,
         p_items: [],
@@ -133,7 +141,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     // d'intent est INCHANGÉ (append-only, ADR-015) — enrichissement au rejeu.
     if (!isAppend && getOrderSourceCode() !== null) args.p_source_code = getOrderSourceCode();
 
-    const { data, error } = await supabase.rpc('fire_counter_order_v7', args as FireArgs);
+    const { data, error } = await supabase.rpc('fire_counter_order_v8', args as FireArgs);
     if (error) throw Object.assign(new Error(error.message), { details: error });
     const env = data as unknown as FireEnvelope;
     orderIdByRoot.set(intent.root_client_uuid, env.order_id);
@@ -154,7 +162,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     if (orderId === undefined) {
       // Fire rejoué dans un run précédent — replay idempotent pour retrouver
       // l'order_id (voir note ci-dessus : court-circuit avant validation).
-      const { data, error } = await supabase.rpc('fire_counter_order_v7', {
+      const { data, error } = await supabase.rpc('fire_counter_order_v8', {
         p_client_uuid: intent.root_client_uuid,
         // La branche idempotente n'atteint jamais ces args ; s'ils sont
         // atteints, la racine n'a JAMAIS été rejouée (anomalie) → l'échec de

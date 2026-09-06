@@ -139,13 +139,13 @@ RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$
 $$;
 
 -- ===========================================================================
--- PORTE COMPTOIR — fire_counter_order_v7 (pos.sale.create)
+-- PORTE COMPTOIR — fire_counter_order_v8 (pos.sale.create)
 -- ===========================================================================
 DO $t1$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.fire_auth'), true);
   BEGIN
-    PERFORM fire_counter_order_v7(
+    PERFORM fire_counter_order_v8(
       p_client_uuid := gen_random_uuid(), p_session_id := current_setting('a22g.sess')::uuid,
       p_items := pg_temp.a22g_item(current_setting('a22g.parent')::uuid),
       p_order_type := 'take_out'::order_type);
@@ -160,7 +160,7 @@ DO $t2$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.fire_auth'), true);
   BEGIN
-    PERFORM fire_counter_order_v7(
+    PERFORM fire_counter_order_v8(
       p_client_uuid := gen_random_uuid(), p_session_id := current_setting('a22g.sess')::uuid,
       p_items := pg_temp.a22g_item(current_setting('a22g.combo')::uuid,
         jsonb_build_array(jsonb_build_object('product_id', current_setting('a22g.parent')::uuid, 'quantity', 1))),
@@ -176,7 +176,7 @@ DO $t3$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.fire_auth'), true);
   BEGIN
-    PERFORM fire_counter_order_v7(
+    PERFORM fire_counter_order_v8(
       p_client_uuid := gen_random_uuid(), p_session_id := current_setting('a22g.sess')::uuid,
       p_items := pg_temp.a22g_item(current_setting('a22g.del')::uuid),
       p_order_type := 'take_out'::order_type);
@@ -191,7 +191,7 @@ DO $t4$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.fire_auth'), true);
   BEGIN
-    PERFORM fire_counter_order_v7(
+    PERFORM fire_counter_order_v8(
       p_client_uuid := gen_random_uuid(), p_session_id := current_setting('a22g.sess')::uuid,
       p_items := pg_temp.a22g_item(current_setting('a22g.inact')::uuid),
       p_order_type := 'take_out'::order_type);
@@ -206,7 +206,7 @@ DO $t5$ DECLARE v_env JSONB; v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.fire_auth'), true);
   BEGIN
-    v_env := fire_counter_order_v7(
+    v_env := fire_counter_order_v8(
       p_client_uuid := gen_random_uuid(), p_session_id := current_setting('a22g.sess')::uuid,
       p_items := pg_temp.a22g_item(current_setting('a22g.var')::uuid),
       p_order_type := 'take_out'::order_type);

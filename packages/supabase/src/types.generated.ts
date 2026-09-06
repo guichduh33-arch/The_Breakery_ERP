@@ -6820,7 +6820,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v7: {
+      fire_counter_order_v8: {
         Args: {
           p_client_uuid: string
           p_discount_authorized_by?: string
