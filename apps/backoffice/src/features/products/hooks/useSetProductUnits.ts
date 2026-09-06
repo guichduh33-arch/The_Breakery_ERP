@@ -1,9 +1,10 @@
 // apps/backoffice/src/features/products/hooks/useSetProductUnits.ts
 //
-// Session 39 — Wave B1 — Wraps set_product_units_v1 (S27, REPLACE semantics).
+// Session 39 — Wave B1 — Wraps set_product_units_v2 (S27, REPLACE semantics).
 // Gate: products.units.update (MANAGER+).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 import type { ProductUnitAlt, ProductUnitContexts } from './useProductUnits.js';
 
@@ -16,12 +17,10 @@ export function useSetProductUnits(productId: string) {
   const qc = useQueryClient();
   return useMutation<unknown, Error, SetProductUnitsPayload>({
     mutationFn: async (payload) => {
-      const { data, error } = await supabase.rpc('set_product_units_v1', {
+      const { data, error } = await supabase.rpc('set_product_units_v2', {
         p_product_id: productId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_alts:       payload.alts as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_contexts:   payload.contexts as any,
+        p_alts:       payload.alts as unknown as Json,
+        p_contexts:   payload.contexts as unknown as Json,
       });
       if (error !== null) throw new Error(error.message);
       return data;

@@ -5,7 +5,7 @@ import React from 'react';
 
 const rpc = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => rpc(...args) },
+  supabase: { rpc: (...args: unknown[]): unknown => rpc(...args) },
 }));
 
 import { useUpsertProductModifiers } from '../useUpsertProductModifiers.js';
@@ -35,17 +35,17 @@ describe('useUpsertProductModifiers', () => {
     rpc.mockResolvedValue({ data: { modifiers: [] }, error: null });
   });
 
-  it('calls upsert_product_modifiers_v1 with the serialized payload', async () => {
+  it('calls upsert_product_modifiers_v2 with the serialized payload', async () => {
     const { result } = renderHook(() => useUpsertProductModifiers('prod-1'), { wrapper });
     result.current.mutate(GROUPS);
     await waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
-    expect(rpc).toHaveBeenCalledWith('upsert_product_modifiers_v1', expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith('upsert_product_modifiers_v2', expect.objectContaining({
       p_product_id: 'prod-1',
     }));
-    const arg = rpc.mock.calls[0]![1] as { p_groups: Array<Record<string, unknown>> };
+    const arg = rpc.mock.calls[0]![1] as { p_groups: Record<string, unknown>[] };
     expect(arg.p_groups[0]!.group_name).toBe('Milk');
     expect(arg.p_groups[0]!.group_sort_order).toBe(0);
-    const opts = arg.p_groups[0]!.options as Array<Record<string, unknown>>;
+    const opts = arg.p_groups[0]!.options as Record<string, unknown>[];
     expect(opts[1]!.ingredients_to_deduct).toEqual([{ product_id: 'oat', qty: 30, unit: 'ml' }]);
   });
 

@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/components/DissolveParentDialog.tsx
 //
 // Session 27c — Confirm dialog for dissolving a parent product. Triggers
-// `convert_parent_to_standalone_v1`, which collapses the parent grouping back
+// `convert_parent_to_standalone_v2`, which collapses the parent grouping back
 // into a single standalone product (using the last active variant when one
 // remains, or the parent SKU otherwise).
 

@@ -3,7 +3,7 @@
 // Pure (IO-free) helpers for the Backoffice modifiers editor:
 //   - foldModifierRowsForEdit: flat product_modifiers rows -> editable groups
 //   - validateModifierDraft:   client-side validation rules
-//   - serializeModifierGroups: editable groups -> upsert_product_modifiers_v1 p_groups JSONB
+//   - serializeModifierGroups: editable groups -> upsert_product_modifiers_v2 p_groups JSONB
 
 import type {
   AdminProductModifierRow,

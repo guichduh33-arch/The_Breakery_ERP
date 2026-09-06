@@ -10,7 +10,7 @@
 // contenter de mesurer un stock de lignes.
 //
 // Écritures inchangées : S27 update, S27b create + catégories, S27c variantes,
-// S45 soft-delete (delete_product_v1, gate products.delete). La sélection
+// S45 soft-delete (delete_product_v2, gate products.delete). La sélection
 // multiple et les actions GROUPÉES du pied de table sont retirées (audit UX/UI
 // 2026-08-13) : elles réclament des RPC de masse gatées et auditées qui
 // n'existent pas, et une case à cocher sans action est une promesse fausse.

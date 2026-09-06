@@ -13,7 +13,7 @@
 --   3. la tolérance laisse une trace : `audit_logs` / `order.sellability_tolerated`.
 --
 -- Les deux portes qui portent le drapeau sont couvertes (`fire_counter_order_v8`,
--- `create_tablet_order_v9`). `add_order_item_v5` n'en a pas : elle n'est ni
+-- `create_tablet_order_v9`). `add_order_item_v6` n'en a pas : elle n'est ni
 -- rejouée hors-ligne ni appelée en finalisation.
 --
 -- Run via MCP execute_sql (enveloppe BEGIN..ROLLBACK portée par ce fichier).

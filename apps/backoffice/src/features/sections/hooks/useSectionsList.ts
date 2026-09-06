@@ -2,7 +2,7 @@
 // Session 13 / Phase 2.D — full sections list (active + inactive) for CRUD page.
 //
 // ADR-007 déc. 5 (migration _206) — les mutations passent par les RPCs
-// upsert_section_v1 / delete_section_v1 (SECURITY DEFINER, gate
+// upsert_section_v2 / delete_section_v2 (SECURITY DEFINER, gate
 // inventory.sections.update, audit_logs). Les policies RLS d'écriture
 // directe sur la table sont droppées : plus aucun .update()/.insert() brut.
 
@@ -53,7 +53,7 @@ export function useUpsertSection() {
   return useMutation<unknown, Error, UpsertSectionArgs>({
     mutationFn: async (args) => {
       // id présent = update (code immuable, ignoré par la RPC), absent = create.
-      const { data, error } = await supabase.rpc('upsert_section_v1', {
+      const { data, error } = await supabase.rpc('upsert_section_v2', {
         p_payload: {
           ...(args.id !== undefined && args.id !== '' ? { id: args.id } : {}),
           code: args.code, name: args.name, kind: args.kind,
@@ -74,7 +74,7 @@ export function useSoftDeleteSection() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, { id: string }>({
     mutationFn: async ({ id }) => {
-      const { data, error } = await supabase.rpc('delete_section_v1', {
+      const { data, error } = await supabase.rpc('delete_section_v2', {
         p_section_id: id,
       });
       if (error !== null) throw new Error(error.message);

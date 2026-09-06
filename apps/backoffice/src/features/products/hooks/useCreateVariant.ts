@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useCreateVariant.ts
 //
-// Session 27c — Wraps `create_variant_v1`. Creates a new variant under an
+// Session 27c — Wraps `create_variant_v2`. Creates a new variant under an
 // existing parent. Returns the new variant id.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -41,9 +41,9 @@ export function useCreateVariant() {
       if (input.sortOrder !== null && input.sortOrder !== undefined) args.p_sort_order = input.sortOrder;
       if (input.name !== null && input.name !== undefined && input.name !== '') args.p_name = input.name;
 
-      const { data, error } = await supabase.rpc('create_variant_v1', args);
+      const { data, error } = await supabase.rpc('create_variant_v2', args);
       if (error !== null) throw new Error(error.message);
-      return data as string;
+      return data;
     },
     onSuccess: async (_id, input) => {
       await Promise.all([

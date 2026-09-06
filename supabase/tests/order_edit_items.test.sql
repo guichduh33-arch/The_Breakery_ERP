@@ -38,7 +38,7 @@ DECLARE
   v_session  UUID;
   v_order    UUID;
   v_item     UUID;
-  -- ADR-013 M2 : jamais un combo (add_order_item_v5 les refuse) ni un parent.
+  -- ADR-013 M2 : jamais un combo (add_order_item_v6 les refuse) ni un parent.
   -- ADR-022 dec. 1 : la garde de vendabilite est active sur cette RPC, le fixture doit choisir un produit vendable de facon deterministe.
   v_product  UUID := (SELECT p.id FROM products p
                        WHERE p.deleted_at IS NULL AND p.parent_product_id IS NULL AND p.is_active = true
@@ -83,7 +83,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM add_order_item_v5(
+    PERFORM add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       2, '[]'::jsonb, gen_random_uuid());
@@ -100,7 +100,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_cashier'), true);
   BEGIN
-    PERFORM add_order_item_v5(
+    PERFORM add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -118,7 +118,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM add_order_item_v5(
+    PERFORM add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -141,11 +141,11 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    SELECT add_order_item_v5(
+    SELECT add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, v_key) INTO v_first;
-    SELECT add_order_item_v5(
+    SELECT add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, v_key) INTO v_second;
@@ -169,7 +169,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v5(
+    PERFORM update_order_item_qty_v6(
       current_setting('breakery.test_item')::uuid,
       5, gen_random_uuid());
     v_status := 'pass';
@@ -185,7 +185,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v5(
+    PERFORM update_order_item_qty_v6(
       current_setting('breakery.test_item')::uuid,
       0, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE '22023' THEN v_status := 'pass';
@@ -202,7 +202,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM update_order_item_qty_v5(
+    PERFORM update_order_item_qty_v6(
       current_setting('breakery.test_item')::uuid,
       3, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_status := 'pass';
@@ -217,7 +217,7 @@ SELECT ok(current_setting('breakery.t8_pass') = 'pass', 'T8: update_qty on compl
 DO $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
-  PERFORM update_order_item_qty_v5(
+  PERFORM update_order_item_qty_v6(
     current_setting('breakery.test_item')::uuid, 7, gen_random_uuid());
 END $$;
 SELECT cmp_ok(
@@ -232,7 +232,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM remove_order_item_v3(
+    PERFORM remove_order_item_v4(
       current_setting('breakery.test_item')::uuid,
       gen_random_uuid());
     v_status := 'pass';
@@ -248,7 +248,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM remove_order_item_v3(gen_random_uuid(), gen_random_uuid());
+    PERFORM remove_order_item_v4(gen_random_uuid(), gen_random_uuid());
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_status := 'pass';
                 WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
   END;
@@ -277,7 +277,7 @@ BEGIN
   INSERT INTO product_modifiers (product_id, group_name, option_label, price_adjustment, is_active)
   VALUES (v_product, 'T13Grp', 'T13Opt', 2000, true);
   BEGIN
-    SELECT add_order_item_v5(
+    SELECT add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       v_product, 2,
       -- price_adjustment client MENTI (999999) : le resolveur doit imposer 2000.
@@ -310,7 +310,7 @@ BEGIN
   SELECT product_type INTO v_orig FROM products WHERE id = current_setting('breakery.test_product')::uuid;
   UPDATE products SET product_type='combo' WHERE id = current_setting('breakery.test_product')::uuid;
   BEGIN
-    PERFORM add_order_item_v5(
+    PERFORM add_order_item_v6(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -337,7 +337,7 @@ BEGIN
   UPDATE products SET retail_price = retail_price + 7777
    WHERE id = current_setting('breakery.test_product')::uuid;
   BEGIN
-    PERFORM update_order_item_qty_v5(v_item, 3, gen_random_uuid());
+    PERFORM update_order_item_qty_v6(v_item, 3, gen_random_uuid());
     SELECT unit_price, line_total, modifiers_total INTO v_line
       FROM order_items WHERE id = v_item;
     IF v_line.unit_price = v_before

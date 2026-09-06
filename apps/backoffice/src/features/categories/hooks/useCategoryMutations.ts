@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/categories/hooks/useCategoryMutations.ts
-// Session 27b — Wraps create_category_v1, update_category_v1, reorder_categories_v1.
+// Session 27b — Wraps create_category_v2, update_category_v2, reorder_categories_v2.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -44,7 +44,7 @@ export function useCreateCategory() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, CreateCategoryPayload>({
     mutationFn: async (payload) => {
-      const { data, error } = await supabase.rpc('create_category_v1', {
+      const { data, error } = await supabase.rpc('create_category_v2', {
         p_payload: payload as unknown as never,
       });
       if (error !== null) throw new Error(error.message);
@@ -60,7 +60,7 @@ export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, { categoryId: string; patch: UpdateCategoryPatch }>({
     mutationFn: async ({ categoryId, patch }) => {
-      const { data, error } = await supabase.rpc('update_category_v1', {
+      const { data, error } = await supabase.rpc('update_category_v2', {
         p_category_id: categoryId,
         p_patch:       patch as unknown as never,
       });
@@ -77,7 +77,7 @@ export function useReorderCategories() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, string[]>({
     mutationFn: async (orderedIds) => {
-      const { data, error } = await supabase.rpc('reorder_categories_v1', {
+      const { data, error } = await supabase.rpc('reorder_categories_v2', {
         p_ordered_ids: orderedIds,
       });
       if (error !== null) throw new Error(error.message);

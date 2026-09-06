@@ -2,7 +2,7 @@
 -- Regression guards for the 2026-06-01 back-office integrity audit DB Medium fixes:
 --   M1 : update_account_active_v1 blocks re-activating account 1151 (ADR-003 NON-PKP)
 --   M2 : calculate_pb1_payable_v2 sums status IN ('posted','locked') (Lot D1 : _v1 → _v2)
---   M8 : create_variant_v1 raises a clean sku_taken on duplicate SKU
+--   M8 : create_variant_v2 raises a clean sku_taken on duplicate SKU
 --
 -- Run via MCP execute_sql wrapped in BEGIN/ROLLBACK.
 
@@ -33,10 +33,10 @@ SELECT ok(
   'M2 : calculate_pb1_payable_v2 sums status IN (posted, locked)'
 );
 
--- M8: duplicate SKU on create_variant_v1 raises sku_taken (P0004)
+-- M8: duplicate SKU on create_variant_v2 raises sku_taken (P0004)
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
 SELECT throws_ok(
-  $$ SELECT create_variant_v1(
+  $$ SELECT create_variant_v2(
        (SELECT parent_product_id FROM products WHERE parent_product_id IS NOT NULL AND deleted_at IS NULL LIMIT 1),
        'Dup', 'PAS-CROI', 1000) $$,
   'P0004', NULL,

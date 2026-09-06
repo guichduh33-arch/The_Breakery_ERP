@@ -4,7 +4,7 @@
 //
 // Reads the child rows where `parent_product_id = parentId`, skipping soft-deleted
 // products. Sorted ascending by `variant_sort_order` so DnD reorder via
-// `reorder_variants_v1` is consistent with what the UI displays.
+// `reorder_variants_v2` is consistent with what the UI displays.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -63,7 +63,7 @@ export function useProductVariants(parentId: string | null | undefined) {
         retail_price:       Number(r.retail_price),
         cost_price:         Number(r.cost_price),
         variant_label:      r.variant_label ?? '',
-        variant_axis:       (r.variant_axis === 'size' || r.variant_axis === 'format' ? r.variant_axis : 'flavor') as VariantRow['variant_axis'],
+        variant_axis:       r.variant_axis === 'size' || r.variant_axis === 'format' ? r.variant_axis : 'flavor',
         variant_sort_order: Number(r.variant_sort_order),
         is_active:          r.is_active,
         current_stock:      r.current_stock === null ? null : Number(r.current_stock),

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useConvertProductToParent.ts
 //
-// Session 27c — Wraps `convert_product_to_parent_v1`.
+// Session 27c — Wraps `convert_product_to_parent_v2`.
 // Converts a standalone product into a parent + creates the first variant
 // (the original product is RE-PARENTED to a new parent row). Returns the new
 // parent_id.
@@ -32,9 +32,9 @@ export function useConvertProductToParent() {
       if (typeof input.firstVariantName === 'string' && input.firstVariantName.length > 0) {
         args.p_first_variant_name = input.firstVariantName;
       }
-      const { data, error } = await supabase.rpc('convert_product_to_parent_v1', args);
+      const { data, error } = await supabase.rpc('convert_product_to_parent_v2', args);
       if (error !== null) throw new Error(error.message);
-      return data as string;
+      return data;
     },
     onSuccess: async (_parentId, input) => {
       await Promise.all([

@@ -1,5 +1,5 @@
--- supabase/tests/delete_product_v1.test.sql
--- Session 45 / Wave A (updated by corrective _012) — pgTAP suite for delete_product_v1.
+-- supabase/tests/delete_product_v2.test.sql
+-- Session 45 / Wave A (updated by corrective _012) — pgTAP suite for delete_product_v2.
 --
 -- Coverage (8 asserts across 7 test cases):
 --   T1  happy path         : SUPER_ADMIN deletes active product → is_active=false,
@@ -10,7 +10,7 @@
 --   T4  idempotent replay  : second call on already-deleted product → idempotent_replay=true,
 --                            no 2nd audit row.
 --   T5  audit              : exactly 1 audit_logs row with action='product.deleted'
---   T6  REVOKE             : anon has no EXECUTE on delete_product_v1(uuid, uuid)
+--   T6  REVOKE             : anon has no EXECUTE on delete_product_v2(uuid, uuid)
 --   T7  deactivated-not-deleted: is_active=false but deleted_at NULL → delete still
 --                            sets deleted_at + returns idempotent_replay=false.
 --                            Proves replay guard keys on deleted_at, NOT is_active.
@@ -46,24 +46,24 @@ BEGIN
      AND auth_user_id IS NOT NULL AND is_active
    ORDER BY employee_code LIMIT 1;
   IF v_admin_uid IS NULL THEN
-    RAISE EXCEPTION 'No SUPER_ADMIN user available for delete_product_v1 tests';
+    RAISE EXCEPTION 'No SUPER_ADMIN user available for delete_product_v2 tests';
   END IF;
 
   SELECT auth_user_id INTO v_cashier_uid FROM user_profiles
    WHERE role_code = 'CASHIER' AND deleted_at IS NULL LIMIT 1;
   IF v_cashier_uid IS NULL THEN
-    RAISE EXCEPTION 'No CASHIER user available for delete_product_v1 tests';
+    RAISE EXCEPTION 'No CASHIER user available for delete_product_v2 tests';
   END IF;
 
   SELECT auth_user_id INTO v_manager_uid FROM user_profiles
    WHERE role_code = 'MANAGER' AND deleted_at IS NULL LIMIT 1;
   IF v_manager_uid IS NULL THEN
-    RAISE EXCEPTION 'No MANAGER user available for delete_product_v1 tests';
+    RAISE EXCEPTION 'No MANAGER user available for delete_product_v2 tests';
   END IF;
 
   SELECT id INTO v_cat_id FROM categories WHERE deleted_at IS NULL LIMIT 1;
   IF v_cat_id IS NULL THEN
-    RAISE EXCEPTION 'No category available for delete_product_v1 tests';
+    RAISE EXCEPTION 'No category available for delete_product_v2 tests';
   END IF;
 
   -- Fresh standalone product for T1 / T4 / T5 — active
@@ -108,7 +108,7 @@ BEGIN
   );
 
   -- Product that is is_active=false but deleted_at IS NULL — simulates a deactivated
-  -- (not deleted) product. T7 asserts delete_product_v1 still sets deleted_at.
+  -- (not deleted) product. T7 asserts delete_product_v2 still sets deleted_at.
   INSERT INTO products (
     id, name, sku, category_id, unit,
     retail_price, cost_price,
@@ -147,7 +147,7 @@ DO $t1$
 DECLARE
   v_result JSONB;
 BEGIN
-  v_result := delete_product_v1(current_setting('breakery.s45_prod_id')::UUID, gen_random_uuid());
+  v_result := delete_product_v2(current_setting('breakery.s45_prod_id')::UUID, gen_random_uuid());
   PERFORM set_config('breakery.s45_t1_result', v_result::TEXT, false);
 END $t1$;
 
@@ -177,12 +177,12 @@ END $t2_setup$;
 
 SELECT throws_ok(
   format(
-    $q$SELECT delete_product_v1(%L::UUID, gen_random_uuid())$q$,
+    $q$SELECT delete_product_v2(%L::UUID, gen_random_uuid())$q$,
     current_setting('breakery.s45_prod_id')
   ),
   '42501',
   NULL,
-  'T2  CASHIER cannot call delete_product_v1 (42501 permission_denied)'
+  'T2  CASHIER cannot call delete_product_v2 (42501 permission_denied)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -200,12 +200,12 @@ END $t2b_setup$;
 
 SELECT throws_ok(
   format(
-    $q$SELECT delete_product_v1(%L::UUID, gen_random_uuid())$q$,
+    $q$SELECT delete_product_v2(%L::UUID, gen_random_uuid())$q$,
     current_setting('breakery.s45_prod_id')
   ),
   '42501',
   NULL,
-  'T2b MANAGER cannot call delete_product_v1 (42501 permission_denied)'
+  'T2b MANAGER cannot call delete_product_v2 (42501 permission_denied)'
 );
 
 -- Reset to SUPER_ADMIN for subsequent tests
@@ -224,7 +224,7 @@ END $reset_admin$;
 
 SELECT throws_ok(
   format(
-    $q$SELECT delete_product_v1(%L::UUID, gen_random_uuid())$q$,
+    $q$SELECT delete_product_v2(%L::UUID, gen_random_uuid())$q$,
     current_setting('breakery.s45_parent_id')
   ),
   'P0001',
@@ -241,7 +241,7 @@ DO $t4$
 DECLARE
   v_result JSONB;
 BEGIN
-  v_result := delete_product_v1(current_setting('breakery.s45_prod_id')::UUID, gen_random_uuid());
+  v_result := delete_product_v2(current_setting('breakery.s45_prod_id')::UUID, gen_random_uuid());
   PERFORM set_config('breakery.s45_t4_result', v_result::TEXT, false);
 END $t4$;
 
@@ -270,13 +270,13 @@ SELECT is(
 -- ────────────────────────────────────────────────────────────────────────────
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.delete_product_v1(uuid, uuid)', 'EXECUTE'),
-  'T6  anon has no EXECUTE on delete_product_v1(uuid, uuid)'
+  NOT has_function_privilege('anon', 'public.delete_product_v2(uuid, uuid)', 'EXECUTE'),
+  'T6  anon has no EXECUTE on delete_product_v2(uuid, uuid)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- T7 : Deactivated-not-deleted — is_active=false but deleted_at IS NULL.
---      Calling delete_product_v1 must:
+--      Calling delete_product_v2 must:
 --      - NOT treat this as a replay (replay guard keys on deleted_at, not is_active)
 --      - set deleted_at IS NOT NULL
 --      - return idempotent_replay=false
@@ -287,7 +287,7 @@ DO $t7$
 DECLARE
   v_result JSONB;
 BEGIN
-  v_result := delete_product_v1(current_setting('breakery.s45_deact_id')::UUID, gen_random_uuid());
+  v_result := delete_product_v2(current_setting('breakery.s45_deact_id')::UUID, gen_random_uuid());
   PERFORM set_config('breakery.s45_t7_result', v_result::TEXT, false);
 END $t7$;
 

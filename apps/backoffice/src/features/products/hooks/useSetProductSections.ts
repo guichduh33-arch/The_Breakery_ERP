@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useSetProductSections.ts
 //
-// Wraps set_product_sections_v1 (REPLACE semantics — the passed list becomes the
+// Wraps set_product_sections_v2 (REPLACE semantics — the passed list becomes the
 // product's full section membership). Gate: products.sections.update (MANAGER+).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export function useSetProductSections(productId: string) {
   const qc = useQueryClient();
   return useMutation<unknown, Error, SetProductSectionsPayload>({
     mutationFn: async (payload) => {
-      const { data, error } = await supabase.rpc('set_product_sections_v1', {
+      const { data, error } = await supabase.rpc('set_product_sections_v2', {
         p_product_id:         productId,
         p_section_ids:        payload.sectionIds,
         // The RPC accepts a NULL primary (uuid), but the generated type marks the

@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/catalog-import/components/ImportSummaryCards.tsx
-// S41 — displays a summary grid from import_catalog_v1 report.
+// S41 — displays a summary grid from import_catalog_v2 report.
 // Shape: {categories:{create,update}, ingredients:{…}, products:{…},
 //         units:{replace_products}, variants:{create,update},
 //         recipes:{products_replaced}}

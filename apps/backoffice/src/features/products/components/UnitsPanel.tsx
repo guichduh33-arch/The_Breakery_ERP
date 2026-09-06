@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/components/UnitsPanel.tsx
 //
-// Session 39 — Wave B1 — UnitsPanel write-mode via set_product_units_v1 (BO-09).
+// Session 39 — Wave B1 — UnitsPanel write-mode via set_product_units_v2 (BO-09).
 // Replaces the S14 read-only stub that used SAMPLE_ALT_UNITS.
 //
 // Reads real data from product_unit_alternatives + product_unit_contexts (S27).
@@ -193,7 +193,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
 
   return (
     <div className="space-y-6">
-      {/* ── Base unit (editable via set_product_base_unit_v1, guarded) ── */}
+      {/* ── Base unit (editable via set_product_base_unit_v2, guarded) ── */}
       <Card padding="md">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

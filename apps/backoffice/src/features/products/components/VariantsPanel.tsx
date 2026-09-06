@@ -87,7 +87,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
     try {
       await reorderMut.mutateAsync({
         parentId:   product.id,
-        // reorder_variants_v1's complete-coverage gate counts only is_active=true
+        // reorder_variants_v2's complete-coverage gate counts only is_active=true
         // variants; soft-deleted (is_active=false) rows must be excluded from the
         // payload or every reorder fails with `incomplete_coverage` once a parent
         // has ever had a variant soft-deleted. Their relative order is preserved.

@@ -4,7 +4,7 @@
 // kind='production'). This is the mapping the redesigned Production page filters
 // on: each station tab shows only the products assigned to it (strict filter).
 //
-// Writes go through set_product_sections_v1 (REPLACE semantics). Gate:
+// Writes go through set_product_sections_v2 (REPLACE semantics). Gate:
 // products.sections.update — without it the controls are disabled and no Save.
 
 import { Factory, Star } from 'lucide-react';

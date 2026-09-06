@@ -23,7 +23,7 @@ export interface HeldOrderRow {
  * then left. Without this they had no POS surface at all: not payable from the
  * cart, not voidable (void needs 'paid'), not discardable (discard needed
  * is_held). Now they appear here as "Sent" tabs and can be reopened→paid or
- * discarded via discard_held_order_v1 (widened to cover them in migration
+ * discarded via discard_held_order_v2 (widened to cover them in migration
  * 20260710000097).
  */
 export function useHeldOrdersQuery() {

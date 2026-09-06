@@ -1,7 +1,8 @@
 // apps/backoffice/src/features/catalog-import/hooks/useImportCatalog.ts
-// S41 — wraps import_catalog_v1. dryRun=true → validation report only.
+// S41 — wraps import_catalog_v2. dryRun=true → validation report only.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 import type { CatalogPayload } from '../parseCatalogWorkbook.js';
 
@@ -30,9 +31,8 @@ export function useImportCatalog() {
   const qc = useQueryClient();
   return useMutation<ImportReport, Error, ImportVars>({
     mutationFn: async ({ payload, dryRun, idempotencyKey }) => {
-      const { data, error } = await supabase.rpc('import_catalog_v1', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_payload: payload as any,
+      const { data, error } = await supabase.rpc('import_catalog_v2', {
+        p_payload: payload as unknown as Json,
         p_dry_run: dryRun,
         p_idempotency_key: idempotencyKey ?? null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

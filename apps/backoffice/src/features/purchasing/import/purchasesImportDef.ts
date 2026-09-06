@@ -6,7 +6,7 @@ import { PURCHASE_ORDERS_QUERY_KEY } from '@/features/purchasing/hooks/usePurcha
 export const purchasesImportDef: EntityImportDef = {
   entity: 'purchases',
   sheetName: 'Purchases',
-  rpcName: 'import_purchases_v1',
+  rpcName: 'import_purchases_v2',
   columns: [
     { key: 'po_reference',  required: true,  type: 'text' },
     { key: 'supplier_code', required: true,  type: 'text' },

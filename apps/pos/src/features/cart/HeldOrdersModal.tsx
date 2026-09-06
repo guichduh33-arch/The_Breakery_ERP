@@ -3,7 +3,7 @@
 // Session 14 / Phase 2.B — POS-specific held-orders chooser (visual).
 // Session 35 (F-003) — rewired DB-backed: the list is now multi-terminal,
 // served by `useHeldOrdersQuery` (orders flagged `is_held`) and discarded via
-// `discard_held_order_v1`. The old localStorage `heldOrdersStore` is retired.
+// `discard_held_order_v2`. The old localStorage `heldOrdersStore` is retired.
 // `useHeldOrdersRealtime` keeps the list live across terminals.
 //
 // ADR-022 déc. 4 — la liste ne présente plus QUE des commandes envoyées en
@@ -11,7 +11,7 @@
 // restauré par restore_held_order) est supprimée : ce qui est saisi sans avoir
 // franchi l'envoi en cuisine ni le paiement est un brouillon, pas une commande,
 // et n'a pas à exister côté serveur. Reste la réouverture d'une commande
-// envoyée (reopen_held_order_v2) et le rejet (discard_held_order_v1), qui sert
+// envoyée (reopen_held_order_v2) et le rejet (discard_held_order_v2), qui sert
 // aussi les commandes caisse non payées.
 //
 // Ref: docs/Design/caissapp/51-held-orders-takeaway-list.jpg

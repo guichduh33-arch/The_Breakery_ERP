@@ -55,7 +55,7 @@ BEGIN
      AND has_permission(up.auth_user_id, 'sales.create') LIMIT 1;
   IF v_tab_auth IS NULL THEN RAISE EXCEPTION 'fixture: aucun profil sales.create'; END IF;
 
-  -- add_order_item_v5 écrit `audit_logs.actor_id = auth.uid()` sur une colonne
+  -- add_order_item_v6 écrit `audit_logs.actor_id = auth.uid()` sur une colonne
   -- qui référence user_profiles(id) : l'acteur doit avoir id = auth_user_id.
   SELECT up.auth_user_id, up.id INTO v_edit_auth, v_edit_prof
     FROM user_profiles up
@@ -296,7 +296,7 @@ SELECT ok(current_setting('a22g.t10')::boolean,
   'T10 tablet: la variante SAINE passe (pas de sur-blocage) - recu: ' || current_setting('a22g.t10msg'));
 
 -- ===========================================================================
--- PORTE EDITION BACK-OFFICE — add_order_item_v5 (orders.edit_open)
+-- PORTE EDITION BACK-OFFICE — add_order_item_v6 (orders.edit_open)
 -- Pas de volet « composant de combo » : cette porte refuse les combos en bloc
 -- (23514, couvert par order_edit_items.test.sql).
 -- ===========================================================================
@@ -304,7 +304,7 @@ DO $t11$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.edit_auth'), true);
   BEGIN
-    PERFORM add_order_item_v5(current_setting('a22g.order')::uuid,
+    PERFORM add_order_item_v6(current_setting('a22g.order')::uuid,
       current_setting('a22g.parent')::uuid, 1, '[]'::jsonb, gen_random_uuid());
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
   PERFORM set_config('a22g.t11', (v_msg ILIKE '%product_is_parent%')::text, true);
@@ -317,7 +317,7 @@ DO $t12$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.edit_auth'), true);
   BEGIN
-    PERFORM add_order_item_v5(current_setting('a22g.order')::uuid,
+    PERFORM add_order_item_v6(current_setting('a22g.order')::uuid,
       current_setting('a22g.del')::uuid, 1, '[]'::jsonb, gen_random_uuid());
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
   PERFORM set_config('a22g.t12', (v_msg ILIKE '%Product not found%')::text, true);
@@ -330,7 +330,7 @@ DO $t13$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.edit_auth'), true);
   BEGIN
-    PERFORM add_order_item_v5(current_setting('a22g.order')::uuid,
+    PERFORM add_order_item_v6(current_setting('a22g.order')::uuid,
       current_setting('a22g.inact')::uuid, 1, '[]'::jsonb, gen_random_uuid());
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
   PERFORM set_config('a22g.t13', (v_msg ILIKE '%product_inactive%')::text, true);
@@ -343,7 +343,7 @@ DO $t14$ DECLARE v_res JSONB; v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22g.edit_auth'), true);
   BEGIN
-    v_res := add_order_item_v5(current_setting('a22g.order')::uuid,
+    v_res := add_order_item_v6(current_setting('a22g.order')::uuid,
       current_setting('a22g.var')::uuid, 1, '[]'::jsonb, gen_random_uuid());
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
   PERFORM set_config('a22g.t14',
