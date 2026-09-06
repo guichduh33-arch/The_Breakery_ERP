@@ -41,9 +41,9 @@
 --   T21 les 32 anciennes versions n'existent plus (versioning monotone)
 --   T22 les 32 nouvelles versions existent
 --   T23 anon n'a EXECUTE sur aucune des 32 nouvelles versions
---   T24 cron recompute-recipe-costs-daily appelle recompute_all_recipe_costs_v2
+--   T24 cron recompute-recipe-costs-daily appelle recompute_all_recipe_costs_v3
 --   T25 sans contexte auth (cron), _current_profile_id() rend NULL et ne lève pas
---   T26 sans contexte auth, recompute_recipe_cost_v2 vit (chemin cron inchangé)
+--   T26 sans contexte auth, recompute_recipe_cost_v3 vit (chemin cron inchangé)
 --   T27 import_purchases_v2     → purchase_orders.created_by / received_by = profil
 --
 -- Run via MCP execute_sql, wrappé BEGIN ... ROLLBACK (aucune trace ne persiste).
@@ -288,7 +288,7 @@ SELECT is(
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
       'create_product_v3','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
       'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v2','import_purchases_v2',
-      'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v2','recompute_recipe_cost_v2',
+      'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
       'update_category_v2','update_order_item_qty_v6','update_product_v3','update_variant_v2',
@@ -302,7 +302,7 @@ SELECT is(
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
       'create_product_v3','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
       'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v2','import_purchases_v2',
-      'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v2','recompute_recipe_cost_v2',
+      'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
       'update_category_v2','update_order_item_qty_v6','update_product_v3','update_variant_v2',
@@ -314,8 +314,8 @@ SELECT is(
 -- T24 : cron.
 SELECT is(
   (SELECT command FROM cron.job WHERE jobname = 'recompute-recipe-costs-daily'),
-  'SELECT public.recompute_all_recipe_costs_v2();',
-  'T24: le cron recompute-recipe-costs-daily appelle recompute_all_recipe_costs_v2');
+  'SELECT public.recompute_all_recipe_costs_v3();',
+  'T24: le cron recompute-recipe-costs-daily appelle recompute_all_recipe_costs_v3');
 
 -- T25-T26 : chemin sans contexte auth (cron, service_role).
 SELECT set_config('request.jwt.claim.sub', '', TRUE);
@@ -324,8 +324,8 @@ SELECT is(_current_profile_id(), NULL::uuid,
   'T25: sans contexte auth, _current_profile_id() rend NULL et ne lève pas');
 
 SELECT lives_ok(
-  $$ SELECT recompute_recipe_cost_v2(current_setting('apt.prod')::uuid) $$,
-  'T26: sans contexte auth, recompute_recipe_cost_v2 vit (chemin cron inchangé)');
+  $$ SELECT recompute_recipe_cost_v3(current_setting('apt.prod')::uuid) $$,
+  'T26: sans contexte auth, recompute_recipe_cost_v3 vit (chemin cron inchangé)');
 
 -- T27 : achats importés (colonnes FK métier, revue du 2026-09-06).
 SELECT ok(

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/combos/hooks/useUpsertCombo.ts
 //
-// Session 47 — mutation hook wrapping upsert_combo_v2 RPC.
+// Session 47 — mutation hook wrapping upsert_combo_v3 RPC.
 // Idempotency key (S25 flavor 1) is a useRef UUID reset on success so that
 // retries within the same dialog open are safe, but re-opening generates a
 // fresh key.
@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase.js';
 import type { Json } from '@breakery/supabase';
 
 /**
- * Payload for upsert_combo_v2. Matches the RPC's p_combo JSON argument.
+ * Payload for upsert_combo_v3. Matches the RPC's p_combo JSON argument.
  * combo_product_id === null means create; non-null means update.
  *
  * ADR-012 déc. 1 — le RPC refuse un produit-parent en option de combo
@@ -56,7 +56,7 @@ export function useUpsertCombo() {
 
   const mutation = useMutation<UpsertComboResult, Error, UpsertComboPayload>({
     mutationFn: async (payload) => {
-      const { data, error } = await supabase.rpc('upsert_combo_v2', {
+      const { data, error } = await supabase.rpc('upsert_combo_v3', {
         // p_combo is typed as Json; UpsertComboPayload is structurally compatible
         p_combo: payload as unknown as Json,
         p_idempotency_key: idempotencyKey.current,

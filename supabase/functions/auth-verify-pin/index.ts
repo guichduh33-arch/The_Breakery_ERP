@@ -129,6 +129,18 @@ serve(async (req) => {
     );
   }
 
+  // 2bis. Audit lot 1, P1 sécurité n°6 — refuser d'émettre un jeton sans sujet.
+  // Le JWT signé plus bas porte `role: 'authenticated'` et `sub: profile.auth_user_id`.
+  // Un profil dont `auth_user_id` est NULL recevrait donc un jeton authentifié SANS
+  // sujet : `auth.uid()` rendrait NULL côté Postgres, ce qui ouvre d'un coup toutes
+  // les gardes écrites `IF acteur IS NOT NULL AND NOT has_permission(...)`. Le cas
+  // n'est pas théorique — 1 profil sur 8 était dans cet état sur dev le 2026-09-06.
+  // C'est la CAUSE ; les gates fail-closed du même lot en sont la conséquence.
+  if (!profile.auth_user_id) {
+    console.error('verify-pin: profile has no auth_user_id', { profile_id: profile.id });
+    return jsonResponse(redactError('server_misconfigured_no_auth_user'), 500);
+  }
+
   // 3. PIN OK : reset compteur, set last_login
   await admin
     .from('user_profiles')
