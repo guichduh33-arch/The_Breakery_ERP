@@ -5,7 +5,7 @@ import { SUPPLIERS_QUERY_KEY } from '@/features/suppliers/hooks/useSuppliersList
 export const suppliersImportDef: EntityImportDef = {
   entity: 'suppliers',
   sheetName: 'Suppliers',
-  rpcName: 'import_suppliers_v1',
+  rpcName: 'import_suppliers_v2',
   columns: [
     { key: 'code',               required: true,  type: 'text' },
     { key: 'name',               required: true,  type: 'text' },

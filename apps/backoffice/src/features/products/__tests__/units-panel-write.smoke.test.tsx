@@ -4,7 +4,7 @@
 //
 // Asserts:
 //   T1: renders with mocked query data (2 real alts) — no SAMPLE data.
-//   T2: editing a factor enables Save, click fires set_product_units_v1 with
+//   T2: editing a factor enables Save, click fires set_product_units_v2 with
 //       ALL draft alts (REPLACE semantics) + contexts.
 //   T3: without products.units.update perm → inputs disabled / no active Save.
 
@@ -145,7 +145,7 @@ describe('UnitsPanel — write-mode [S39 WB1]', () => {
     expect(codes.filter((c) => c !== '')).toHaveLength(2);
   });
 
-  it('T2: editing a factor enables Save and fires set_product_units_v1 with all alts + contexts', async () => {
+  it('T2: editing a factor enables Save and fires set_product_units_v2 with all alts + contexts', async () => {
     renderPanel();
 
     // Save button is initially disabled (not dirty)

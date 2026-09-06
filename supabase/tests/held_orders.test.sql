@@ -4,7 +4,7 @@
 -- `restore_held_order_v1`, qui fabriquaient une commande `draft` à partir du
 -- panier local, n'existent plus. Ce fichier couvre désormais le SEUL hold
 -- restant, celui de la commande déjà tirée en cuisine —
--- `hold_fired_order_v1` → `reopen_held_order_v2` → `discard_held_order_v1`.
+-- `hold_fired_order_v1` → `reopen_held_order_v2` → `discard_held_order_v2`.
 --
 -- Le fixture monte la commande par la vraie porte (`fire_counter_order_v8`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
@@ -26,9 +26,11 @@ DO $fixture$
 DECLARE
   v_auth UUID; v_prof UUID; v_sess UUID; v_prod UUID; v_env JSONB;
 BEGIN
-  -- `discard_held_order_v1` écrit `audit_logs.actor_id = auth.uid()` alors que
-  -- la colonne référence `user_profiles(id)` : il faut un profil dont les deux
-  -- identifiants coïncident (c'est le cas des comptes seed).
+  -- `discard_held_order_v2` résout le profil acteur via `_current_profile_id()`
+  -- (lot actor_id transverse du 2026-09-06 ; la v1 écrivait `auth.uid()` dans
+  -- `audit_logs.actor_id` et exigeait un compte seed). Le fixture garde un compte
+  -- seed (id = auth_user_id) par simplicité, la contrainte n'existe plus ; la preuve
+  -- sur un profil id <> auth_user_id vit dans actor_profile_transverse.test.sql.
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof
     FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
@@ -125,7 +127,7 @@ SELECT throws_ok(
 -- DISCARD — rejeter l'addition, sous condition de motif
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT discard_held_order_v1(current_setting('ho.order')::uuid, 'court') $q$,
+  $q$ SELECT discard_held_order_v2(current_setting('ho.order')::uuid, 'court') $q$,
   'P0001', NULL,
   'T7: un motif de moins de 10 caracteres est refuse (reason_too_short)');
 
@@ -135,7 +137,7 @@ SELECT ok(
 
 DO $discard$
 BEGIN
-  PERFORM discard_held_order_v1(current_setting('ho.order')::uuid,
+  PERFORM discard_held_order_v2(current_setting('ho.order')::uuid,
                                 'client parti sans commander');
 END $discard$;
 
@@ -160,8 +162,8 @@ SELECT ok(
 
 SELECT ok(
   NOT has_function_privilege('anon', 'public.reopen_held_order_v2(uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.discard_held_order_v1(uuid, text)', 'EXECUTE'),
-  'T12: anon n''a pas EXECUTE sur reopen_held_order_v2 ni discard_held_order_v1');
+  AND NOT has_function_privilege('anon', 'public.discard_held_order_v2(uuid, text)', 'EXECUTE'),
+  'T12: anon n''a pas EXECUTE sur reopen_held_order_v2 ni discard_held_order_v2');
 
 SELECT * FROM finish();
 ROLLBACK;

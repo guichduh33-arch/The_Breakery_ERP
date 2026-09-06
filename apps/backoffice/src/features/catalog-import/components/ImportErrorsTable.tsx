@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/catalog-import/components/ImportErrorsTable.tsx
 // S41 — unified errors table for both structure errors (from the parser) and
-// semantic errors (from the import_catalog_v1 report).
+// semantic errors (from the import_catalog_v2 report).
 // Both props are optional; the component normalises them to a common row shape.
 
 import type { JSX } from 'react';

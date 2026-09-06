@@ -1,5 +1,5 @@
 -- supabase/tests/set_product_is_test.test.sql
--- ADR-007 déc. 6 — pgTAP suite for set_product_is_test_v1 (migration _205).
+-- ADR-007 déc. 6 — pgTAP suite for set_product_is_test_v2 (migration _205).
 --
 -- Coverage (5 asserts) :
 --   T1  ADMIN happy path : is_test flips to true, RPC echoes the new value
@@ -46,7 +46,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     jsonb_build_object('sub', current_setting('breakery.t205_admin_uid'),
                        'role', 'authenticated')::TEXT, true);
-  v_result := set_product_is_test_v1(
+  v_result := set_product_is_test_v2(
     current_setting('breakery.t205_product_id')::UUID, true);
   PERFORM set_config('breakery.t205_t1_echo', (v_result->>'is_test'), false);
   PERFORM set_config('breakery.t205_t1_db',
@@ -65,7 +65,7 @@ DO $t2$
 DECLARE
   v_result JSONB;
 BEGIN
-  v_result := set_product_is_test_v1(
+  v_result := set_product_is_test_v2(
     current_setting('breakery.t205_product_id')::UUID, false);
   PERFORM set_config('breakery.t205_t2_db',
     (SELECT is_test::TEXT FROM products
@@ -86,7 +86,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  format($q$SELECT set_product_is_test_v1(%L::UUID, true)$q$,
+  format($q$SELECT set_product_is_test_v2(%L::UUID, true)$q$,
          current_setting('breakery.t205_product_id')),
   '42501',
   'permission_denied',
@@ -102,7 +102,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $q$SELECT set_product_is_test_v1('00000000-0000-0000-0000-deadbeefdead'::UUID, true)$q$,
+  $q$SELECT set_product_is_test_v2('00000000-0000-0000-0000-deadbeefdead'::UUID, true)$q$,
   'P0002',
   'product_not_found',
   'T4 unknown product raises P0002'

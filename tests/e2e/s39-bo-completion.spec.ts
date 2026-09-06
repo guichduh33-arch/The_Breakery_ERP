@@ -4,7 +4,7 @@
 // against the cloud V3 dev DB (real BO app, real RPCs):
 //
 //   T1 — B2B Settings persistence  (/backoffice/b2b/settings, update_b2b_settings_v1)
-//   T2 — UnitsPanel write-mode     (ProductDetail → Units, set_product_units_v1)
+//   T2 — UnitsPanel write-mode     (ProductDetail → Units, set_product_units_v2)
 //   T3 — CostingPanel + cost fix   (ProductDetail → Costing, update_cost_price_v1)
 //   T4 — Order edit ProductPicker  (/backoffice/orders → EditOrderItemsModal)
 //

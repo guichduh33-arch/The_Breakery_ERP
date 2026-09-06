@@ -2,7 +2,7 @@
 //
 // Backoffice editor for a product's modifier groups (variant types). Loads the
 // product-scoped modifiers, holds an editable draft, validates, and persists
-// via upsert_product_modifiers_v1. Price-per-option is applied by the POS
+// via upsert_product_modifiers_v2. Price-per-option is applied by the POS
 // immediately; ingredients_to_deduct is captured for Phase 2.
 
 import { useEffect, useState, type JSX } from 'react';

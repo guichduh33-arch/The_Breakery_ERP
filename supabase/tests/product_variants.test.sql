@@ -2,21 +2,21 @@
 -- Session 27c / Wave 4 — pgTAP suite for product variants (Approach A "Linked Products").
 --
 -- Coverage (20 asserts) :
---   T1   convert_product_to_parent_v1 happy path returns UUID                 (SUPER_ADMIN)
+--   T1   convert_product_to_parent_v2 happy path returns UUID                 (SUPER_ADMIN)
 --   T1b  audit_logs row 'products.variant.parent_created' exists
---   T2   convert_product_to_parent_v1 refuses already-variant                 (P0004)
---   T3   convert_product_to_parent_v1 as CASHIER raises forbidden             (P0003)
---   T4   create_variant_v1 happy path returns UUID + inherits unit from parent
---   T5   create_variant_v1 rejects duplicate SKU                              (23505)
---   T6   update_variant_v1 patches retail_price + variant_label
+--   T2   convert_product_to_parent_v2 refuses already-variant                 (P0004)
+--   T3   convert_product_to_parent_v2 as CASHIER raises forbidden             (P0003)
+--   T4   create_variant_v2 happy path returns UUID + inherits unit from parent
+--   T5   create_variant_v2 rejects duplicate SKU                              (23505)
+--   T6   update_variant_v2 patches retail_price + variant_label
 --   T6b  retail_price actually mutated to 1500
---   T7   delete_variant_v1 returns the variant id (soft delete)
+--   T7   delete_variant_v2 returns the variant id (soft delete)
 --   T7b  is_active flipped to false
---   T8   delete_variant_v1 refuses last remaining active variant              (P0004)
---   T9   reorder_variants_v1 happy with 2 variants returns 2
---   T10  reorder_variants_v1 rejects incomplete coverage                      (P0004)
---   T11  convert_parent_to_standalone_v1 refuses with >1 active variant       (P0004)
---   T12  convert_parent_to_standalone_v1 happy with exactly 1 active variant
+--   T8   delete_variant_v2 refuses last remaining active variant              (P0004)
+--   T9   reorder_variants_v2 happy with 2 variants returns 2
+--   T10  reorder_variants_v2 rejects incomplete coverage                      (P0004)
+--   T11  convert_parent_to_standalone_v2 refuses with >1 active variant       (P0004)
+--   T12  convert_parent_to_standalone_v2 happy with exactly 1 active variant
 --   T12b dissolved variant flipped to standalone (parent_product_id IS NULL)
 --   T13  Anti-nesting trigger rejects "parent already a variant"              (P0004)
 --   T14  CHECK products_variant_xor rejects partial NULL                      (23514)
@@ -35,7 +35,7 @@
 -- session-end report) :
 --   1. T12 uses a fresh single-variant parent (instead of soft-deleting var3
 --      then dissolving) — the plan's flow would have hit a real RPC bug where
---      convert_parent_to_standalone_v1 NULLed only parent_product_id on
+--      convert_parent_to_standalone_v2 NULLed only parent_product_id on
 --      soft-deleted siblings, leaving variant_label/axis partial-NULL and
 --      violating the XOR CHECK. That bug is now fixed by migration
 --      20260524012658_bump_convert_parent_to_standalone_v1_xor_fix and
@@ -71,7 +71,7 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_admin_uid FROM user_profiles
    WHERE role_code = 'SUPER_ADMIN' AND deleted_at IS NULL
-     -- cf. delete_product_v1 : SYS-CRON n'a pas d'auth_user_id.
+     -- cf. delete_product_v2 : SYS-CRON n'a pas d'auth_user_id.
      AND auth_user_id IS NOT NULL AND is_active
    ORDER BY employee_code LIMIT 1;
   IF v_admin_uid IS NULL THEN
@@ -115,14 +115,14 @@ BEGIN
 END $fixtures$;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- T1 : convert_product_to_parent_v1 happy path as SUPER_ADMIN.
+-- T1 : convert_product_to_parent_v2 happy path as SUPER_ADMIN.
 -- ────────────────────────────────────────────────────────────────────────────
 
 DO $t1$
 DECLARE
   v_parent_id UUID;
 BEGIN
-  v_parent_id := convert_product_to_parent_v1(
+  v_parent_id := convert_product_to_parent_v2(
     current_setting('breakery.s27c_prod_id')::UUID,
     'Nature',
     'flavor'::variant_axis_type
@@ -132,7 +132,7 @@ END $t1$;
 
 SELECT ok(
   current_setting('breakery.s27c_parent_id')::UUID IS NOT NULL,
-  'T1  convert_product_to_parent_v1 returns a UUID (parent id)'
+  'T1  convert_product_to_parent_v2 returns a UUID (parent id)'
 );
 
 -- T1b : audit_logs.parent_created row exists
@@ -153,12 +153,12 @@ SELECT ok(
 
 SELECT throws_ok(
   format(
-    $q$SELECT convert_product_to_parent_v1(%L::UUID, 'NatureAgain', 'flavor'::variant_axis_type)$q$,
+    $q$SELECT convert_product_to_parent_v2(%L::UUID, 'NatureAgain', 'flavor'::variant_axis_type)$q$,
     current_setting('breakery.s27c_prod_id')
   ),
   'P0004',
   NULL,
-  'T2  convert_product_to_parent_v1 rejects already-variant product (P0004)'
+  'T2  convert_product_to_parent_v2 rejects already-variant product (P0004)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -176,12 +176,12 @@ END $t3_setup$;
 
 SELECT throws_ok(
   format(
-    $q$SELECT convert_product_to_parent_v1(%L::UUID, 'Lait', 'flavor'::variant_axis_type)$q$,
+    $q$SELECT convert_product_to_parent_v2(%L::UUID, 'Lait', 'flavor'::variant_axis_type)$q$,
     gen_random_uuid()
   ),
   'P0003',
   NULL,
-  'T3  CASHIER cannot call convert_product_to_parent_v1 (P0003 forbidden)'
+  'T3  CASHIER cannot call convert_product_to_parent_v2 (P0003 forbidden)'
 );
 
 -- Reset to admin for subsequent tests.
@@ -195,14 +195,14 @@ BEGIN
 END $t3_reset$;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- T4 : create_variant_v1 happy path. Verify unit inherits from parent.
+-- T4 : create_variant_v2 happy path. Verify unit inherits from parent.
 -- ────────────────────────────────────────────────────────────────────────────
 
 DO $t4$
 DECLARE
   v_new_var UUID;
 BEGIN
-  v_new_var := create_variant_v1(
+  v_new_var := create_variant_v2(
     current_setting('breakery.s27c_parent_id')::UUID,
     'Amande',
     'PGTAPAMD',
@@ -214,35 +214,35 @@ END $t4$;
 SELECT ok(
   (SELECT unit FROM products WHERE id = current_setting('breakery.s27c_var2_id')::UUID) = 'pcs'
   AND current_setting('breakery.s27c_var2_id')::UUID IS NOT NULL,
-  'T4  create_variant_v1 returns UUID + unit inherited from parent'
+  'T4  create_variant_v2 returns UUID + unit inherited from parent'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- T5 : SKU duplicate raises sku_taken (P0004).
--- S77 : le fix audit M8 a ajouté un pré-check SKU dans create_variant_v1 —
+-- S77 : le fix audit M8 a ajouté un pré-check SKU dans create_variant_v2 —
 -- 'sku_taken' P0004 propre remplace le 23505 brut de la contrainte.
 -- ────────────────────────────────────────────────────────────────────────────
 
 SELECT throws_ok(
   format(
-    $q$SELECT create_variant_v1(%L::UUID, 'Choco', 'PGTAPAMD', 1300)$q$,
+    $q$SELECT create_variant_v2(%L::UUID, 'Choco', 'PGTAPAMD', 1300)$q$,
     current_setting('breakery.s27c_parent_id')
   ),
   'P0004',
   NULL,
-  'T5  create_variant_v1 rejects duplicate SKU (sku_taken, P0004 — pre-check M8)'
+  'T5  create_variant_v2 rejects duplicate SKU (sku_taken, P0004 — pre-check M8)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
--- T6 : update_variant_v1 patch.
+-- T6 : update_variant_v2 patch.
 -- ────────────────────────────────────────────────────────────────────────────
 
 SELECT ok(
-  (SELECT update_variant_v1(
+  (SELECT update_variant_v2(
     current_setting('breakery.s27c_var2_id')::UUID,
     '{"retail_price": 1500, "variant_label": "Amande Premium"}'::JSONB
   )) IS NOT NULL,
-  'T6  update_variant_v1 returns the variant id (patch applied)'
+  'T6  update_variant_v2 returns the variant id (patch applied)'
 );
 
 SELECT is(
@@ -252,12 +252,12 @@ SELECT is(
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
--- T7 : delete_variant_v1 soft delete (is_active=false).
+-- T7 : delete_variant_v2 soft delete (is_active=false).
 -- ────────────────────────────────────────────────────────────────────────────
 
 SELECT ok(
-  (SELECT delete_variant_v1(current_setting('breakery.s27c_var2_id')::UUID)) IS NOT NULL,
-  'T7  delete_variant_v1 returns the variant id'
+  (SELECT delete_variant_v2(current_setting('breakery.s27c_var2_id')::UUID)) IS NOT NULL,
+  'T7  delete_variant_v2 returns the variant id'
 );
 
 SELECT is(
@@ -273,23 +273,23 @@ SELECT is(
 
 SELECT throws_ok(
   format(
-    $q$SELECT delete_variant_v1(%L::UUID)$q$,
+    $q$SELECT delete_variant_v2(%L::UUID)$q$,
     current_setting('breakery.s27c_prod_id')
   ),
   'P0004',
   NULL,
-  'T8  delete_variant_v1 refuses last remaining active variant (P0004)'
+  'T8  delete_variant_v2 refuses last remaining active variant (P0004)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
--- T9 : reorder_variants_v1 happy with 2 variants. Add a 2nd active first.
+-- T9 : reorder_variants_v2 happy with 2 variants. Add a 2nd active first.
 -- ────────────────────────────────────────────────────────────────────────────
 
 DO $t9_setup$
 DECLARE
   v_var3 UUID;
 BEGIN
-  v_var3 := create_variant_v1(
+  v_var3 := create_variant_v2(
     current_setting('breakery.s27c_parent_id')::UUID,
     'Choco',
     'PGTAPCHO',
@@ -299,7 +299,7 @@ BEGIN
 END $t9_setup$;
 
 SELECT is(
-  (SELECT reorder_variants_v1(
+  (SELECT reorder_variants_v2(
     current_setting('breakery.s27c_parent_id')::UUID,
     ARRAY[
       current_setting('breakery.s27c_var3_id')::UUID,
@@ -307,7 +307,7 @@ SELECT is(
     ]
   )),
   2,
-  'T9  reorder_variants_v1 assigns 2 sort orders'
+  'T9  reorder_variants_v2 assigns 2 sort orders'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -316,13 +316,13 @@ SELECT is(
 
 SELECT throws_ok(
   format(
-    $q$SELECT reorder_variants_v1(%L::UUID, ARRAY[%L::UUID]::UUID[])$q$,
+    $q$SELECT reorder_variants_v2(%L::UUID, ARRAY[%L::UUID]::UUID[])$q$,
     current_setting('breakery.s27c_parent_id'),
     current_setting('breakery.s27c_prod_id')
   ),
   'P0004',
   NULL,
-  'T10 reorder_variants_v1 rejects incomplete coverage (P0004)'
+  'T10 reorder_variants_v2 rejects incomplete coverage (P0004)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -332,18 +332,18 @@ SELECT throws_ok(
 
 SELECT throws_ok(
   format(
-    $q$SELECT convert_parent_to_standalone_v1(%L::UUID)$q$,
+    $q$SELECT convert_parent_to_standalone_v2(%L::UUID)$q$,
     current_setting('breakery.s27c_parent_id')
   ),
   'P0004',
   NULL,
-  'T11 convert_parent_to_standalone_v1 refuses with >1 active variant (P0004)'
+  'T11 convert_parent_to_standalone_v2 refuses with >1 active variant (P0004)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- T12 : dissolve happy with exactly 1 active. Use a FRESH parent (just-converted)
 --       to avoid hitting the soft-deleted-sibling bug uncovered in DEV-S27C-4.A-01
---       (see report — the active_count=1 branch of convert_parent_to_standalone_v1
+--       (see report — the active_count=1 branch of convert_parent_to_standalone_v2
 --       NULLs only parent_product_id on soft-deleted siblings, leaving
 --       variant_label/axis partial-NULL and violating the XOR check).
 --       A fresh parent has 0 soft-deleted siblings, so the bug does not fire.
@@ -367,16 +367,16 @@ BEGIN
   -- Convert to parent — solo_id becomes the only active variant.
   PERFORM set_config(
     'breakery.s27c_solo_parent_id',
-    convert_product_to_parent_v1(v_solo_id, 'Default', 'size'::variant_axis_type)::TEXT,
+    convert_product_to_parent_v2(v_solo_id, 'Default', 'size'::variant_axis_type)::TEXT,
     false
   );
 END $t12_setup$;
 
 SELECT ok(
-  (SELECT convert_parent_to_standalone_v1(
+  (SELECT convert_parent_to_standalone_v2(
     current_setting('breakery.s27c_solo_parent_id')::UUID
   )) IS NOT NULL,
-  'T12 convert_parent_to_standalone_v1 happy with 1 active variant'
+  'T12 convert_parent_to_standalone_v2 happy with 1 active variant'
 );
 
 SELECT is(
@@ -410,7 +410,7 @@ BEGIN
   PERFORM set_config('breakery.s27c_nest_b', v_p2::TEXT, false);
 
   -- Make P1 a parent — P1's UUID is now a variant of a fresh parent.
-  PERFORM convert_product_to_parent_v1(v_p1, 'Nest1', 'flavor'::variant_axis_type);
+  PERFORM convert_product_to_parent_v2(v_p1, 'Nest1', 'flavor'::variant_axis_type);
 END $t13_setup$;
 
 SELECT throws_ok(
@@ -464,7 +464,7 @@ SELECT throws_ok(
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- T15 : XOR fix corrective regression — dissolve with soft-deleted siblings
---       must succeed. The previous version of convert_parent_to_standalone_v1
+--       must succeed. The previous version of convert_parent_to_standalone_v2
 --       NULLed only parent_product_id on soft-deleted siblings, leaving
 --       variant_label + variant_axis populated → 23514 violation of the
 --       products_variant_xor CHECK aborted the dissolve transaction.
@@ -494,12 +494,12 @@ BEGIN
     100, 50, true, true, true, true, true, now(), now()
   );
 
-  v_parent := convert_product_to_parent_v1(v_p_id, 'V1', 'flavor'::variant_axis_type);
-  v_var2   := create_variant_v1(v_parent, 'V2', 'PGTAPXORFIX-V2', 120);
-  PERFORM delete_variant_v1(v_var2);  -- soft-delete V2 → is_active=false
+  v_parent := convert_product_to_parent_v2(v_p_id, 'V1', 'flavor'::variant_axis_type);
+  v_var2   := create_variant_v2(v_parent, 'V2', 'PGTAPXORFIX-V2', 120);
+  PERFORM delete_variant_v2(v_var2);  -- soft-delete V2 → is_active=false
 
   -- The dissolve : pre-fix this would raise 23514 on the orphan-sibling UPDATE.
-  v_returned := convert_parent_to_standalone_v1(v_parent);
+  v_returned := convert_parent_to_standalone_v2(v_parent);
 
   PERFORM set_config('breakery.s27c_xorfix_parent', v_parent::TEXT, false);
   PERFORM set_config('breakery.s27c_xorfix_var2',   v_var2::TEXT,   false);

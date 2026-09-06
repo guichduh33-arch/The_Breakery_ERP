@@ -21,11 +21,11 @@ SELECT is( (SELECT code FROM accounts WHERE id = resolve_mapping_account('OWNER_
 SELECT ok( EXISTS(SELECT 1 FROM permissions WHERE code='accounting.cash.write'), 'cash.write permission exists');
 SELECT ok( EXISTS(SELECT 1 FROM role_permissions WHERE role_code='MANAGER' AND permission_code='accounting.cash.write'), 'MANAGER has cash.write');
 
--- ── Task 2: record_cash_wallet_movement_v1 ───────────────────────────────────────────
+-- ── Task 2: record_cash_wallet_movement_v2 ───────────────────────────────────────────
 DO $$
 DECLARE v_je uuid;
 BEGIN
-  v_je := record_cash_wallet_movement_v1('undepo_to_petty', 100000, CURRENT_DATE, 'test transfer',
+  v_je := record_cash_wallet_movement_v2('undepo_to_petty', 100000, CURRENT_DATE, 'test transfer',
                                   '11111111-1111-1111-1111-111111111111', NULL);
   PERFORM set_config('cash.test_je', v_je::text, true);
 END $$;
@@ -43,31 +43,31 @@ SELECT is(
   (SELECT total_credit FROM journal_entries WHERE id=current_setting('cash.test_je')::uuid),
   'JE is balanced');
 SELECT is(
-  record_cash_wallet_movement_v1('undepo_to_petty',100000,CURRENT_DATE,'test transfer',
+  record_cash_wallet_movement_v2('undepo_to_petty',100000,CURRENT_DATE,'test transfer',
                           '11111111-1111-1111-1111-111111111111',NULL),
   current_setting('cash.test_je')::uuid, 'replay returns the first JE id');
 SELECT throws_ok(
-  $q$ SELECT record_cash_wallet_movement_v1('bank_deposit',-5,CURRENT_DATE,'x',
+  $q$ SELECT record_cash_wallet_movement_v2('bank_deposit',-5,CURRENT_DATE,'x',
         '22222222-2222-2222-2222-222222222222',NULL) $q$,
   'P0001', NULL, 'non-positive amount rejected');
 SELECT throws_ok(
-  $q$ SELECT record_cash_wallet_movement_v1('teleport',5,CURRENT_DATE,'x',
+  $q$ SELECT record_cash_wallet_movement_v2('teleport',5,CURRENT_DATE,'x',
         '33333333-3333-3333-3333-333333333333',NULL) $q$,
   'P0001', NULL, 'unknown movement type rejected');
 SELECT throws_ok(
-  $q$ SELECT record_cash_wallet_movement_v1('adjustment_gain',5,CURRENT_DATE,'count over',
+  $q$ SELECT record_cash_wallet_movement_v2('adjustment_gain',5,CURRENT_DATE,'count over',
         '44444444-4444-4444-4444-444444444444',NULL) $q$,
   'P0001', NULL, 'adjustment requires p_wallet_code');
 SELECT is(
-  has_function_privilege('anon','record_cash_wallet_movement_v1(text,numeric,date,text,uuid,text)','EXECUTE'),
-  false, 'anon has no EXECUTE on record_cash_wallet_movement_v1');
+  has_function_privilege('anon','record_cash_wallet_movement_v2(text,numeric,date,text,uuid,text)','EXECUTE'),
+  false, 'anon has no EXECUTE on record_cash_wallet_movement_v2');
 
 -- ── Task 4: read RPCs (balances + ledger) ─────────────────────────────────────
 DO $$
 BEGIN
-  PERFORM record_cash_wallet_movement_v1('undepo_to_petty',100000,CURRENT_DATE,'replenish',
+  PERFORM record_cash_wallet_movement_v2('undepo_to_petty',100000,CURRENT_DATE,'replenish',
                                          'aaaa1111-1111-1111-1111-111111111111',NULL);
-  PERFORM record_cash_wallet_movement_v1('bank_deposit',50000,CURRENT_DATE,'deposit',
+  PERFORM record_cash_wallet_movement_v2('bank_deposit',50000,CURRENT_DATE,'deposit',
                                          'aaaa2222-2222-2222-2222-222222222222',NULL);
 END $$;
 
@@ -96,15 +96,15 @@ CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
 RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.adjust' $$;
 
 SELECT throws_ok(
-  $q$ SELECT record_cash_wallet_movement_v1('adjustment_gain',5000,CURRENT_DATE,'over',
+  $q$ SELECT record_cash_wallet_movement_v2('adjustment_gain',5000,CURRENT_DATE,'over',
         'b0000001-0000-0000-0000-000000000001','1111') $q$,
   'P0001', NULL, 'adjustment_gain denied without cash.adjust');
 SELECT throws_ok(
-  $q$ SELECT record_cash_wallet_movement_v1('boss_withdrawal',5000,CURRENT_DATE,'boss',
+  $q$ SELECT record_cash_wallet_movement_v2('boss_withdrawal',5000,CURRENT_DATE,'boss',
         'b0000002-0000-0000-0000-000000000002',NULL) $q$,
   'P0001', NULL, 'boss_withdrawal denied without cash.adjust');
 SELECT isnt(
-  record_cash_wallet_movement_v1('undepo_to_petty',5000,CURRENT_DATE,'ok',
+  record_cash_wallet_movement_v2('undepo_to_petty',5000,CURRENT_DATE,'ok',
         'b0000003-0000-0000-0000-000000000003',NULL),
   NULL, 'undepo_to_petty still allowed with only cash.write');
 

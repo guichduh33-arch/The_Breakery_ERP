@@ -25,7 +25,7 @@ export interface ProductRow extends Product {
    * the old SKU-prefix heuristic was unreliable (only RAW/CON/HAS/SFG matched).
    */
   category_type: string | null;
-  // Session 27 — editable fields surfaced by update_product_v2
+  // Session 27 — editable fields surfaced by update_product_v3
   description: string | null;
   visible_on_pos: boolean;
   available_for_sale: boolean;
@@ -38,7 +38,7 @@ export interface ProductRow extends Product {
   // a separate "vitrine" counter (display_stock), not the BO global inventory.
   is_display_item: boolean;
   // ADR-007 déc. 6 — test-data flag (excluded from reports). NOT in the
-  // update_product allowlist : written only via set_product_is_test_v1
+  // update_product allowlist : written only via set_product_is_test_v2
   // (gate products.test_flag.update, ADMIN+). Optional : seul le hook
   // détail (useProductDetail) le sélectionne, pas les hooks de liste.
   is_test?: boolean;

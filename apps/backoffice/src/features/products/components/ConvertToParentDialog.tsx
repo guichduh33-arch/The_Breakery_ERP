@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/components/ConvertToParentDialog.tsx
 //
 // Session 27c — Modal to convert a standalone product into a parent with the
-// first variant. Calls `convert_product_to_parent_v1` via the
+// first variant. Calls `convert_product_to_parent_v2` via the
 // `useConvertProductToParent` hook. The original product becomes the first
 // variant under the newly-created parent grouping.
 

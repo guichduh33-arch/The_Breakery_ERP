@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/accounting/hooks/useRecordCashMovement.ts
-// Cash Wallets module — wraps record_cash_wallet_movement_v1 RPC.
+// Cash Wallets module — wraps record_cash_wallet_movement_v2 RPC.
 // Idempotency key is a useRef UUID, reset on successful mutation so each
 // new form submit gets a fresh key while retries within the same attempt reuse it.
 import { useRef } from 'react';
@@ -32,7 +32,7 @@ export function useRecordCashMovement() {
 
   return useMutation({
     mutationFn: async (input: RecordCashMovementInput) => {
-      const { data, error } = await supabase.rpc('record_cash_wallet_movement_v1', {
+      const { data, error } = await supabase.rpc('record_cash_wallet_movement_v2', {
         p_movement_type:   input.movementType,
         p_amount:          input.amount,
         p_movement_date:   input.movementDate,
@@ -41,12 +41,12 @@ export function useRecordCashMovement() {
         ...(input.walletCode != null ? { p_wallet_code: input.walletCode } : {}),
       });
       if (error !== null) throw new Error(error.message);
-      return data as string; // journal_entry_id (UUID)
+      return data; // journal_entry_id (UUID)
     },
     onSuccess: () => {
       idemKey.current = crypto.randomUUID(); // fresh key for the next distinct movement
-      qc.invalidateQueries({ queryKey: CASH_WALLETS_KEY });
-      qc.invalidateQueries({ queryKey: CASH_WALLET_LEDGER_KEY });
+      void qc.invalidateQueries({ queryKey: CASH_WALLETS_KEY });
+      void qc.invalidateQueries({ queryKey: CASH_WALLET_LEDGER_KEY });
     },
   });
 }

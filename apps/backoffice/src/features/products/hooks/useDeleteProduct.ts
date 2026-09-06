@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useDeleteProduct.ts
 //
-// Session 45 — Wave B — Wraps `delete_product_v1` (soft-delete).
+// Session 45 — Wave B — Wraps `delete_product_v2` (soft-delete).
 //
 // RPC success shape: { product_id, deleted: true, idempotent_replay: false|true }
 // RPC errors:
@@ -47,7 +47,7 @@ export function useDeleteProduct() {
     mutationFn: async ({ productId }) => {
       // Bind supabase.rpc to supabase — critical: unbound call throws at runtime.
       const rpc = supabase.rpc.bind(supabase);
-      const { data, error } = await rpc('delete_product_v1', {
+      const { data, error } = await rpc('delete_product_v2', {
         p_product_id:       productId,
         p_idempotency_key: idempotencyKeyRef.current,
       });

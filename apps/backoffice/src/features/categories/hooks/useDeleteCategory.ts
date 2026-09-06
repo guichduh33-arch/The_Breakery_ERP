@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/categories/hooks/useDeleteCategory.ts
 //
-// Wraps delete_category_v1 (soft-delete). Pattern mirrors useDeleteProduct (S45):
+// Wraps delete_category_v2 (soft-delete). Pattern mirrors useDeleteProduct (S45):
 // bound supabase.rpc, idempotency key held in a ref (rotates on success), and a
 // defensive guard on deleted === true.
 
@@ -39,7 +39,7 @@ export function useDeleteCategory() {
   return useMutation<DeleteCategoryResult, Error, DeleteCategoryArgs>({
     mutationFn: async ({ categoryId }) => {
       const rpc = supabase.rpc.bind(supabase);
-      const { data, error } = await rpc('delete_category_v1', {
+      const { data, error } = await rpc('delete_category_v2', {
         p_category_id:     categoryId,
         p_idempotency_key: idempotencyKeyRef.current,
       });

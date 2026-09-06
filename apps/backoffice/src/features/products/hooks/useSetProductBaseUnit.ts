@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useSetProductBaseUnit.ts
 //
-// 2026-06-17 — Wraps set_product_base_unit_v1: changes products.unit (base/stock
+// 2026-06-17 — Wraps set_product_base_unit_v2: changes products.unit (base/stock
 // unit). Gate: products.units.update. The RPC refuses when stock/movements exist
 // (base_unit_change_requires_zero_stock) and resets alternative units + contexts.
 
@@ -18,7 +18,7 @@ export function useSetProductBaseUnit(productId: string) {
   const qc = useQueryClient();
   return useMutation<SetBaseUnitResult, Error, string>({
     mutationFn: async (newUnit) => {
-      const { data, error } = await supabase.rpc('set_product_base_unit_v1', {
+      const { data, error } = await supabase.rpc('set_product_base_unit_v2', {
         p_product_id: productId,
         p_new_unit: newUnit,
       });

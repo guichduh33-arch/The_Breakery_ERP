@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useReorderVariants.ts
 //
-// Session 27c — Wraps `reorder_variants_v1`. Sets `variant_sort_order = 10,
+// Session 27c — Wraps `reorder_variants_v2`. Sets `variant_sort_order = 10,
 // 20, 30, ...` for each variant in the supplied id-array (complete-coverage
 // gate: the RPC raises if the array doesn't match all active variants of the
 // parent). Returns the number of rows updated.
@@ -10,14 +10,14 @@ import { supabase } from '@/lib/supabase.js';
 
 export interface ReorderVariantsInput {
   parentId:   string;
-  orderedIds: ReadonlyArray<string>;
+  orderedIds: readonly string[];
 }
 
 export function useReorderVariants() {
   const qc = useQueryClient();
   return useMutation<number, Error, ReorderVariantsInput>({
     mutationFn: async ({ parentId, orderedIds }) => {
-      const { data, error } = await supabase.rpc('reorder_variants_v1', {
+      const { data, error } = await supabase.rpc('reorder_variants_v2', {
         p_parent_id:           parentId,
         p_ordered_variant_ids: [...orderedIds],
       });

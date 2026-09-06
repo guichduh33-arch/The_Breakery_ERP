@@ -27,7 +27,7 @@ interface Response { order_totals: { subtotal: number; tax_amount: number; total
 export function useUpdateOrderItemQty() {
   return useMutation<Response, Error, Args>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('update_order_item_qty_v5', {
+      const { data, error } = await supabase.rpc('update_order_item_qty_v6', {
         p_order_item_id:   args.orderItemId,
         p_qty:             args.qty,
         p_idempotency_key: args.idempotencyKey,

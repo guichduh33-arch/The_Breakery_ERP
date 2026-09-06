@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/components/AddVariantDialog.tsx
 //
 // Session 27c — Modal to add a new variant under an existing parent.
-// Calls `create_variant_v1` via `useCreateVariant`.
+// Calls `create_variant_v2` via `useCreateVariant`.
 
 import { useState, type JSX } from 'react';
 import {

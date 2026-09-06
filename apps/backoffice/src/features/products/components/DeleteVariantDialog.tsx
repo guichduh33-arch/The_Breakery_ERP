@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/components/DeleteVariantDialog.tsx
 //
 // ADR-011 §3 — confirm dialog for soft-deleting a variant. The Delete button
-// in the variants table used to fire `delete_variant_v1` on a single click
+// in the variants table used to fire `delete_variant_v2` on a single click
 // with no confirmation and no error surface. Mirrors DissolveParentDialog:
 // the mutation lives here, errors render inline, the dialog closes only on
 // success.

@@ -7,7 +7,7 @@
 //   2. Clicking "+ Add variant" opens AddVariantDialog.
 //   3. Dissolve CTA is hidden when 2+ active variants exist.
 //   4. Delete goes through DeleteVariantDialog (ADR-011 §3): the row button
-//      opens the confirm dialog, only Confirm fires delete_variant_v1.
+//      opens the confirm dialog, only Confirm fires delete_variant_v2.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';

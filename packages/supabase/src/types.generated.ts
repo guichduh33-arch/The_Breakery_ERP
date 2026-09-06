@@ -6022,6 +6022,7 @@ export type Database = {
       }
       _cleanup: { Args: never; Returns: boolean }
       _contract_on: { Args: { "": string }; Returns: unknown }
+      _current_profile_id: { Args: never; Returns: string }
       _currtest: { Args: never; Returns: number }
       _dashboard_cash_on_hand_v1: { Args: never; Returns: Json }
       _dashboard_cost_mtd_v1: {
@@ -6238,7 +6239,7 @@ export type Database = {
         }
         Returns: Json
       }
-      add_order_item_v5: {
+      add_order_item_v6: {
         Args: {
           p_idempotency_key: string
           p_modifiers: Json
@@ -6467,11 +6468,11 @@ export type Database = {
         }
         Returns: Json
       }
-      convert_parent_to_standalone_v1: {
+      convert_parent_to_standalone_v2: {
         Args: { p_parent_id: string }
         Returns: string
       }
-      convert_product_to_parent_v1: {
+      convert_product_to_parent_v2: {
         Args: {
           p_first_variant_label: string
           p_first_variant_name?: string
@@ -6494,7 +6495,7 @@ export type Database = {
         }
         Returns: Json
       }
-      create_category_v1: { Args: { p_payload: Json }; Returns: Json }
+      create_category_v2: { Args: { p_payload: Json }; Returns: Json }
       create_customer_category_v1: {
         Args: {
           p_color: string
@@ -6586,7 +6587,7 @@ export type Database = {
         Args: { p_month: string }
         Returns: string
       }
-      create_product_v2: { Args: { p_payload: Json }; Returns: Json }
+      create_product_v3: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v2: {
         Args: {
           p_expected_date?: string
@@ -6691,7 +6692,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_variant_v1: {
+      create_variant_v2: {
         Args: {
           p_cost_price?: number
           p_name?: string
@@ -6706,7 +6707,7 @@ export type Database = {
       }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
-      delete_category_v1: {
+      delete_category_v2: {
         Args: { p_category_id: string; p_idempotency_key?: string }
         Returns: Json
       }
@@ -6727,14 +6728,14 @@ export type Database = {
         Args: { p_category_id: string; p_product_id: string }
         Returns: undefined
       }
-      delete_product_v1: {
+      delete_product_v2: {
         Args: { p_idempotency_key?: string; p_product_id: string }
         Returns: Json
       }
       delete_promotion_v1: { Args: { p_promotion_id: string }; Returns: Json }
       delete_restaurant_table_v1: { Args: { p_id: string }; Returns: undefined }
       delete_role_v1: { Args: { p_code: string }; Returns: boolean }
-      delete_section_v1: { Args: { p_section_id: string }; Returns: Json }
+      delete_section_v2: { Args: { p_section_id: string }; Returns: Json }
       delete_table_section_v1: { Args: { p_id: string }; Returns: undefined }
       delete_user_permission_override_v1: {
         Args: { p_permission_code: string; p_user_profile_id: string }
@@ -6744,7 +6745,7 @@ export type Database = {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
-      delete_variant_v1: { Args: { p_variant_id: string }; Returns: string }
+      delete_variant_v2: { Args: { p_variant_id: string }; Returns: string }
       diag:
         | {
             Args: { msg: unknown }
@@ -6759,7 +6760,7 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
       diag_test_name: { Args: { "": string }; Returns: string }
-      discard_held_order_v1: {
+      discard_held_order_v2: {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined
       }
@@ -7505,7 +7506,7 @@ export type Database = {
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
       hold_fired_order_v1: { Args: { p_order_id: string }; Returns: undefined }
-      import_catalog_v1: {
+      import_catalog_v2: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -7521,7 +7522,7 @@ export type Database = {
         }
         Returns: Json
       }
-      import_expenses_v1: {
+      import_expenses_v2: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -7529,7 +7530,7 @@ export type Database = {
         }
         Returns: Json
       }
-      import_purchases_v1: {
+      import_purchases_v2: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -7537,7 +7538,7 @@ export type Database = {
         }
         Returns: Json
       }
-      import_sales_v1: {
+      import_sales_v2: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -7545,7 +7546,7 @@ export type Database = {
         }
         Returns: Json
       }
-      import_suppliers_v1: {
+      import_suppliers_v2: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -7900,11 +7901,11 @@ export type Database = {
           recipe_unit: string
         }[]
       }
-      recompute_all_recipe_costs_v1: {
+      recompute_all_recipe_costs_v2: {
         Args: { p_max_plausible?: number }
         Returns: Json
       }
-      recompute_recipe_cost_v1: {
+      recompute_recipe_cost_v2: {
         Args: { p_max_plausible?: number; p_product_id: string }
         Returns: Json
       }
@@ -7948,7 +7949,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_cash_wallet_movement_v1: {
+      record_cash_wallet_movement_v2: {
         Args: {
           p_amount: number
           p_idempotency_key: string
@@ -8062,12 +8063,12 @@ export type Database = {
         Returns: undefined
       }
       release_expired_reservations: { Args: never; Returns: number }
-      remove_order_item_v3: {
+      remove_order_item_v4: {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
       reopen_held_order_v2: { Args: { p_order_id: string }; Returns: Json }
-      reorder_categories_v1: {
+      reorder_categories_v2: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
       }
@@ -8075,7 +8076,7 @@ export type Database = {
         Args: { p_product_id: string; p_recipe_ids: string[] }
         Returns: number
       }
-      reorder_variants_v1: {
+      reorder_variants_v2: {
         Args: { p_ordered_variant_ids: string[]; p_parent_id: string }
         Returns: number
       }
@@ -8237,15 +8238,15 @@ export type Database = {
         }
         Returns: Json
       }
-      set_product_base_unit_v1: {
+      set_product_base_unit_v2: {
         Args: { p_new_unit: string; p_product_id: string }
         Returns: Json
       }
-      set_product_is_test_v1: {
+      set_product_is_test_v2: {
         Args: { p_is_test: boolean; p_product_id: string }
         Returns: Json
       }
-      set_product_sections_v1: {
+      set_product_sections_v2: {
         Args: {
           p_primary_section_id: string
           p_product_id: string
@@ -8253,7 +8254,7 @@ export type Database = {
         }
         Returns: Json
       }
-      set_product_units_v1: {
+      set_product_units_v2: {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
@@ -8351,7 +8352,7 @@ export type Database = {
         Returns: undefined
       }
       update_b2b_settings_v1: { Args: { p_patch: Json }; Returns: Json }
-      update_category_v1: {
+      update_category_v2: {
         Args: { p_category_id: string; p_patch: Json }
         Returns: Json
       }
@@ -8414,7 +8415,7 @@ export type Database = {
           code: string
         }[]
       }
-      update_order_item_qty_v5: {
+      update_order_item_qty_v6: {
         Args: {
           p_auth_id?: string
           p_idempotency_key: string
@@ -8425,7 +8426,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_product_v2: {
+      update_product_v3: {
         Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }
@@ -8501,7 +8502,7 @@ export type Database = {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
         Returns: Json
       }
-      update_variant_v1: {
+      update_variant_v2: {
         Args: { p_patch: Json; p_variant_id: string }
         Returns: string
       }
@@ -8541,7 +8542,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      upsert_product_modifiers_v1: {
+      upsert_product_modifiers_v2: {
         Args: { p_groups: Json; p_product_id: string }
         Returns: Json
       }
@@ -8557,7 +8558,7 @@ export type Database = {
         }
         Returns: string
       }
-      upsert_section_v1: { Args: { p_payload: Json }; Returns: Json }
+      upsert_section_v2: { Args: { p_payload: Json }; Returns: Json }
       validate_b2b_credit_limit_v1: {
         Args: { p_customer_id: string; p_order_amount: number }
         Returns: Json

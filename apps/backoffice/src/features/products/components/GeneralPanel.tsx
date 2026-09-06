@@ -47,7 +47,7 @@ interface Props {
 export function GeneralPanel({ product, categories, readOnly = true, onChange, displayStockQty }: Props): JSX.Element {
   const [draft, setDraft] = useState<ProductRow>(product);
   // ADR-007 déc. 6 — le flag is_test s'écrit IMMÉDIATEMENT via sa RPC dédiée
-  // (hors draft/Save : hors allowlist update_product_v2). ADMIN+ uniquement.
+  // (hors draft/Save : hors allowlist update_product_v3). ADMIN+ uniquement.
   // Le hook de mutation vit dans TestFlagToggle, monté seulement avec la
   // permission (les smokes rendent GeneralPanel sans QueryClientProvider).
   const canSetTestFlag = useAuthStore((s) => s.hasPermission('products.test_flag.update'));
@@ -174,7 +174,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
         {/* ADR-011 §3 — la carte "Usage Sections" affichait un mock
             (SAMPLE_SECTIONS) comme des données réelles. Retirée en attendant
-            le vrai câblage sections (set_product_sections_v1, ADR-007 déc. 5). */}
+            le vrai câblage sections (set_product_sections_v2, ADR-007 déc. 5). */}
       </div>
 
       {/* ───────────── Right column ───────────── */}
@@ -357,7 +357,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
   );
 }
 
-// ADR-007 déc. 6 — écriture immédiate du flag test via set_product_is_test_v1.
+// ADR-007 déc. 6 — écriture immédiate du flag test via set_product_is_test_v2.
 // Composant séparé pour que le hook de mutation ne s'exécute qu'avec la
 // permission products.test_flag.update (ADMIN+).
 function TestFlagToggle({ productId, isTest }: { productId: string; isTest: boolean }): JSX.Element {
