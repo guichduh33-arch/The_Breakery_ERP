@@ -60,7 +60,7 @@ const PAYLOAD: UpsertComboPayload = {
 };
 
 describe('useUpsertCombo', () => {
-  it('calls upsert_combo_v2 with p_combo and p_idempotency_key', async () => {
+  it('calls upsert_combo_v3 with p_combo and p_idempotency_key', async () => {
     rpcMock.mockResolvedValueOnce({
       data: { combo_product_id: 'cb-new', sku: 'CMB-NEW', idempotent_replay: false },
       error: null,
@@ -73,12 +73,14 @@ describe('useUpsertCombo', () => {
     });
 
     expect(rpcMock).toHaveBeenCalledWith(
-      'upsert_combo_v2',
+      'upsert_combo_v3',
       expect.objectContaining({
         p_combo: PAYLOAD,
+        // `expect.stringMatching` est typé `any` : le cast garde la règle
+        // no-unsafe-assignment silencieuse sans affaiblir l'assertion.
         p_idempotency_key: expect.stringMatching(
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-        ),
+        ) as unknown as string,
       }),
     );
   });
@@ -124,7 +126,7 @@ describe('useUpsertCombo', () => {
 });
 
 describe('useDeleteCombo', () => {
-  it('calls delete_combo_v1 with p_combo_product_id', async () => {
+  it('calls delete_combo_v2 with p_combo_product_id', async () => {
     rpcMock.mockResolvedValueOnce({
       data: { combo_product_id: 'cb-1', deleted: true },
       error: null,
@@ -136,7 +138,7 @@ describe('useDeleteCombo', () => {
       await result.current.mutateAsync('cb-1');
     });
 
-    expect(rpcMock).toHaveBeenCalledWith('delete_combo_v1', { p_combo_product_id: 'cb-1' });
+    expect(rpcMock).toHaveBeenCalledWith('delete_combo_v2', { p_combo_product_id: 'cb-1' });
   });
 
   it('throws when rpc returns an error', async () => {

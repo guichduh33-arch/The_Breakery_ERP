@@ -9,7 +9,7 @@
 --        est sauté pour une ligne cadeau. T2 est ce qui prouve ce choix.
 --   T3 : le même combo avec la VARIANTE au lieu du parent → vente OK (pas de
 --        sur-blocage).
--- Catalogue (upsert_combo_v2) :
+-- Catalogue (upsert_combo_v3) :
 --   T4 : enregistrer un parent comme option de combo → refus 'combo_option_is_parent'
 --   T5 : les mêmes groupes avec la variante → combo créé
 -- Schéma :
@@ -73,7 +73,7 @@ BEGIN
     RETURNING id INTO v_combo;
 
   -- Configuration fautive posée DIRECTEMENT en table : c'est exactement ce que
-  -- la base contient si le combo a été enregistré avant upsert_combo_v2, et ce
+  -- la base contient si le combo a été enregistré avant upsert_combo_v3, et ce
   -- que la garde money-path doit rattraper. Le parent ET la variante sont
   -- options du même groupe, pour que T1 et T3 ne diffèrent que d'un id.
   INSERT INTO combo_groups (combo_product_id, name, group_type, is_required,
@@ -148,11 +148,11 @@ BEGIN
 END $$;
 SELECT ok(current_setting('a12d1.t3')::boolean, 'T3 combo a composant variante se vend');
 
--- T4 : upsert_combo_v2 refuse un parent comme option.
+-- T4 : upsert_combo_v3 refuse un parent comme option.
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM upsert_combo_v2(jsonb_build_object(
+    PERFORM upsert_combo_v3(jsonb_build_object(
       'combo_product_id', NULL,
       'name', 'adr012 d1 upsert refuse',
       'category_id', current_setting('a12d1.cat'),
@@ -171,12 +171,12 @@ BEGIN
   PERFORM set_config('a12d1.t4msg', v_msg, true);
 END $$;
 SELECT ok(current_setting('a12d1.t4')::boolean,
-  'T4 upsert_combo_v2 refuse un parent en option (combo_option_is_parent) — recu: ' || current_setting('a12d1.t4msg'));
+  'T4 upsert_combo_v3 refuse un parent en option (combo_option_is_parent) — recu: ' || current_setting('a12d1.t4msg'));
 
 -- T5 : les mêmes groupes avec la variante → combo créé (le refus ne sur-bloque pas).
 DO $$ DECLARE v_res JSONB;
 BEGIN
-  v_res := upsert_combo_v2(jsonb_build_object(
+  v_res := upsert_combo_v3(jsonb_build_object(
     'combo_product_id', NULL,
     'name', 'adr012 d1 upsert sain',
     'category_id', current_setting('a12d1.cat'),
@@ -194,7 +194,7 @@ BEGIN
     (EXISTS (SELECT 1 FROM combo_groups
               WHERE combo_product_id = (v_res->>'combo_product_id')::uuid))::text, true);
 END $$;
-SELECT ok(current_setting('a12d1.t5')::boolean, 'T5 upsert_combo_v2 enregistre un combo a options saines');
+SELECT ok(current_setting('a12d1.t5')::boolean, 'T5 upsert_combo_v3 enregistre un combo a options saines');
 
 -- T6 : la fenêtre horaire dépréciée (ADR-007 déc. 3) n'existe plus en colonne.
 SELECT ok(

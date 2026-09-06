@@ -6711,7 +6711,7 @@ export type Database = {
         Args: { p_category_id: string; p_idempotency_key?: string }
         Returns: Json
       }
-      delete_combo_v1: { Args: { p_combo_product_id: string }; Returns: Json }
+      delete_combo_v2: { Args: { p_combo_product_id: string }; Returns: Json }
       delete_customer_category_v1: {
         Args: { p_id: string }
         Returns: undefined
@@ -7901,11 +7901,11 @@ export type Database = {
           recipe_unit: string
         }[]
       }
-      recompute_all_recipe_costs_v2: {
+      recompute_all_recipe_costs_v3: {
         Args: { p_max_plausible?: number }
         Returns: Json
       }
-      recompute_recipe_cost_v2: {
+      recompute_recipe_cost_v3: {
         Args: { p_max_plausible?: number; p_product_id: string }
         Returns: Json
       }
@@ -8109,7 +8109,7 @@ export type Database = {
         Args: { p_mapping_key: string }
         Returns: string
       }
-      retry_sale_journal_entry_v4: {
+      retry_sale_journal_entry_v5: {
         Args: { p_order_id: string }
         Returns: Json
       }
@@ -8506,7 +8506,7 @@ export type Database = {
         Args: { p_patch: Json; p_variant_id: string }
         Returns: string
       }
-      upsert_combo_v2: {
+      upsert_combo_v3: {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
       }

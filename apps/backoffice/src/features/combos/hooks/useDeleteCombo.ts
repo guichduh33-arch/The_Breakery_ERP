@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/combos/hooks/useDeleteCombo.ts
 //
-// Session 47 — mutation hook wrapping delete_combo_v1 RPC.
+// Session 47 — mutation hook wrapping delete_combo_v2 RPC.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -15,7 +15,7 @@ export function useDeleteCombo() {
 
   return useMutation<DeleteComboResult, Error, string>({
     mutationFn: async (comboProductId) => {
-      const { data, error } = await supabase.rpc('delete_combo_v1', {
+      const { data, error } = await supabase.rpc('delete_combo_v2', {
         p_combo_product_id: comboProductId,
       });
       if (error) throw error;
