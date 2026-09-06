@@ -121,6 +121,41 @@ describe('calculatePreview', () => {
     expect(result.total).toBe(38500);
   });
 
+  // Audit lot 1 P0 n°6 (lot D, 2026-09-05) — calculatePreview recompose
+  // (unit_price + adjustment) × qty pour une ligne combo sans jamais lire les
+  // ajustements de `combo_components[].modifiers`. Le composant Large d'un
+  // combo peut porter son propre modificateur facturé (ADR-017,
+  // _resolve_combo_price_v1 côté serveur) : l'aperçu tablette doit le
+  // compter, sinon le total affiché à la serveuse ne colle pas au montant que
+  // le serveur va réellement facturer.
+  it('includes combo_components[].modifiers adjustments in items_total (ADR-017)', () => {
+    const cart: TabletCart = {
+      ...emptyCart,
+      items: [
+        {
+          id: 'l1',
+          product_id: 'combo-1',
+          name: 'Breakfast Set',
+          unit_price: 40000,
+          quantity: 2,
+          modifiers: [{ group_name: 'Size', option_label: 'Large', price_adjustment: 8000 }],
+          product_type: 'combo',
+          combo_components: [
+            {
+              product_id: 'c1',
+              quantity: 1,
+              modifiers: [{ group_name: 'Temp', option_label: 'Iced', price_adjustment: 2000 }],
+            },
+          ],
+        },
+      ],
+    };
+    const result = calculatePreview(cart);
+    // (40000 + 8000 + 2000) × 2 = 100000 — ROUGE avant correction : 96000
+    // (l'ajustement du composant, 2000, est ignoré).
+    expect(result.items_total).toBe(100000);
+  });
+
   it('modifier with zero price_adjustment does not change total', () => {
     const cart: TabletCart = {
       ...emptyCart,

@@ -4,6 +4,7 @@ import { cn, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
+import { TabletComboLine } from './TabletComboLine';
 
 export interface TabletCartPanelProps {
   /**
@@ -153,10 +154,20 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="text-text-primary truncate">{item.name}</div>
-                      {item.modifiers.length > 0 && (
+                      {/* Les modificateurs d'une ligne combo sont ses choix
+                          d'options : la composition ci-dessous les dit déjà,
+                          composant par composant (même partage qu'au comptoir). */}
+                      {item.modifiers.length > 0 && item.combo_components === undefined && (
                         <div className="text-xs text-text-muted">
                           {item.modifiers.map((m) => m.option_label).join(' · ')}
                         </div>
+                      )}
+                      {/* Lot D — composition d'une ligne combo, sous son nom. */}
+                      {item.combo_components !== undefined && (
+                        <TabletComboLine
+                          productId={item.product_id}
+                          components={item.combo_components}
+                        />
                       )}
                     </div>
                     {/* h-12/w-12 remove target — tablet-comfortable (LOT 6). */}

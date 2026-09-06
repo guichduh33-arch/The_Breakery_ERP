@@ -61,7 +61,7 @@ beforeEach(() => {
 describe('ADR-018 — quarantaine des intents définitivement rejetés', () => {
   it("la commande de salle refusée part en quarantaine et les encaissements derrière remontent", async () => {
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'create_tablet_order_v8') {
+      if (fn === 'create_tablet_order_v9') {
         return Promise.resolve(rpcError('P0011', 'table_required_for_dine_in'));
       }
       if (fn === 'fire_counter_order_v7') {

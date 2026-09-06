@@ -95,4 +95,53 @@ describe('buildSubmitPayload', () => {
     const payload = buildSubmitPayload({ ...baseCart, notes: null }, 'w1');
     expect(payload.p_notes).toBeNull();
   });
+
+  // Audit lot 1 P0 n°6 (lot D, 2026-09-05) — un combo tapé sur la tablette
+  // perdait ses `combo_components` en route vers `create_tablet_order_v9` :
+  // `TabletSubmitPayload.p_items[]` ne porte pas encore la clé. Sans elle, le
+  // serveur ne peut ni résoudre le prix serveur ni déduire le stock des
+  // composants (P0 réel : create_tablet_order_v8 les valide mais ne les
+  // écrit pas).
+  it('forwards combo_components for a combo line', () => {
+    const cart: TabletCart = {
+      ...baseCart,
+      items: [
+        {
+          id: 'l1',
+          product_id: 'combo-1',
+          name: 'Breakfast Set',
+          unit_price: 40000,
+          quantity: 1,
+          modifiers: [{ group_name: 'Size', option_label: 'Large', price_adjustment: 8000 }],
+          product_type: 'combo',
+          combo_components: [
+            {
+              product_id: 'c1',
+              quantity: 1,
+              modifiers: [{ group_name: 'Temp', option_label: 'Iced', price_adjustment: 0 }],
+            },
+          ],
+        },
+      ],
+    };
+    const payload = buildSubmitPayload(cart, 'waiter-uuid');
+    const item = payload.p_items[0] as Record<string, unknown>;
+    expect(item.combo_components).toEqual([
+      {
+        product_id: 'c1',
+        quantity: 1,
+        modifiers: [{ group_name: 'Temp', option_label: 'Iced', price_adjustment: 0 }],
+      },
+    ]);
+  });
+
+  it('does not include combo_components for a non-combo line', () => {
+    const cart: TabletCart = {
+      ...baseCart,
+      items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
+    };
+    const payload = buildSubmitPayload(cart, 'w1');
+    const item = payload.p_items[0] as Record<string, unknown>;
+    expect('combo_components' in item).toBe(false);
+  });
 });

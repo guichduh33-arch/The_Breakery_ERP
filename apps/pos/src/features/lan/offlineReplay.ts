@@ -74,7 +74,7 @@ function emitPaymentFailure(intent: OfflineIntent, message: string): void {
 }
 
 type FireArgs = Database['public']['Functions']['fire_counter_order_v7']['Args'];
-type TabletArgs = Database['public']['Functions']['create_tablet_order_v8']['Args'];
+type TabletArgs = Database['public']['Functions']['create_tablet_order_v9']['Args'];
 
 interface FireEnvelope {
   order_id: string;
@@ -205,10 +205,13 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
   };
   if (intent.notes !== null) args.p_notes = intent.notes;
   // ADR-022 déc. 3 — rejeu hors-ligne, même raison que pour le fire comptoir.
+  // v8 → v9 (2026-09-05) : les lignes combo sont pricées serveur et persistent
+  // leurs composants ; sous ce drapeau un échec de résolution est rattrapé
+  // (prix client, audit). Aucun format d'intent ne change.
   args.p_tolerate_unsellable = true;
   // Numérotation par origine — code T1/T2 de cette tablette (voir fire ci-dessus).
   if (getTabletSourceCode() !== null) args.p_source_code = getTabletSourceCode();
-  const { error } = await supabase.rpc('create_tablet_order_v8', args as TabletArgs);
+  const { error } = await supabase.rpc('create_tablet_order_v9', args as TabletArgs);
   if (error) throw Object.assign(new Error(error.message), { details: error });
 }
 
