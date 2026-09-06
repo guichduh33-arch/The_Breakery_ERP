@@ -17,7 +17,7 @@
 -- create_category_v1, record_cash_wallet_movement_v1, import_suppliers_v1).
 -- APRÈS : chaque appel vit, et l'acteur écrit est user_profiles.id, jamais auth_user_id.
 --
--- Couverture (T1-T26) :
+-- Couverture (T1-T27) :
 --   T1  _current_profile_id() = profil sous le JWT du compte id <> auth_user_id
 --   T2  helper : anon et authenticated n'ont pas EXECUTE (helper interne)
 --   T3  create_category_v2      → audit category.create, actor = profil (RED : 23503)
@@ -44,6 +44,7 @@
 --   T24 cron recompute-recipe-costs-daily appelle recompute_all_recipe_costs_v2
 --   T25 sans contexte auth (cron), _current_profile_id() rend NULL et ne lève pas
 --   T26 sans contexte auth, recompute_recipe_cost_v2 vit (chemin cron inchangé)
+--   T27 import_purchases_v2     → purchase_orders.created_by / received_by = profil
 --
 -- Run via MCP execute_sql, wrappé BEGIN ... ROLLBACK (aucune trace ne persiste).
 
@@ -51,7 +52,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(26);
+SELECT plan(27);
 
 -- ============================================================================
 -- Fixture : un profil create_user_v1-style (id <> auth_user_id), SUPER_ADMIN, puis un
@@ -116,6 +117,11 @@ BEGIN
       'description', 'Actor expense 0906', 'amount', 5000)),
     FALSE, gen_random_uuid());
   IF NOT (v_rep->>'valid')::boolean THEN RAISE EXCEPTION 'fixture: import_expenses_v2 invalid %', v_rep; END IF;
+
+  v_rep := import_purchases_v2(
+    '[{"po_reference":"ACT0906-PO1","supplier_code":"SUPACT0906","order_date":"2026-01-15","product_sku":"ACTOR0906-P1","quantity":2,"unit_cost":4000,"unit":"pcs"}]'::jsonb,
+    FALSE, gen_random_uuid());
+  IF NOT (v_rep->>'valid')::boolean THEN RAISE EXCEPTION 'fixture: import_purchases_v2 invalid %', v_rep; END IF;
 
   -- Coffre (chemin d'argent).
   v_je := record_cash_wallet_movement_v2('undepo_to_petty', 1000, CURRENT_DATE, 'actor transverse', gen_random_uuid(), NULL);
@@ -320,6 +326,13 @@ SELECT is(_current_profile_id(), NULL::uuid,
 SELECT lives_ok(
   $$ SELECT recompute_recipe_cost_v2(current_setting('apt.prod')::uuid) $$,
   'T26: sans contexte auth, recompute_recipe_cost_v2 vit (chemin cron inchangé)');
+
+-- T27 : achats importés (colonnes FK métier, revue du 2026-09-06).
+SELECT ok(
+  (SELECT created_by = current_setting('apt.prof')::uuid
+      AND received_by = current_setting('apt.prof')::uuid
+     FROM purchase_orders WHERE import_reference = 'ACT0906-PO1' AND is_historical_import),
+  'T27: import_purchases_v2 — purchase_orders.created_by / received_by = profil');
 
 SELECT * FROM finish();
 
