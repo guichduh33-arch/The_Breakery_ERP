@@ -6221,7 +6221,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      add_display_stock_v1: {
+      add_display_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -6259,7 +6259,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_display_stock_v1: {
+      adjust_display_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -8113,7 +8113,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
-      return_display_to_kitchen_v1: {
+      return_display_to_kitchen_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -8582,7 +8582,7 @@ export type Database = {
         Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }
-      waste_display_stock_v1: {
+      waste_display_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string

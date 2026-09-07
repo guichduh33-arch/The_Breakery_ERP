@@ -1,7 +1,7 @@
 // apps/pos/src/features/stock/hooks/useAdjustDisplay.ts
 //
 // POS display-stock isolation — closure gesture "Ajuster".
-// Wraps `adjust_display_stock_v1` (gate display.manage): sets the vitrine
+// Wraps `adjust_display_stock_v2` (gate display.manage): sets the vitrine
 // counter to an absolute new quantity after a physical recount. Reason
 // is REQUIRED (>= 3 chars, enforced by the RPC).
 
@@ -29,7 +29,7 @@ export function useAdjustDisplay() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: AdjustDisplayArgs) => {
-      const { data, error } = await supabase.rpc('adjust_display_stock_v1', {
+      const { data, error } = await supabase.rpc('adjust_display_stock_v2', {
         p_product_id: args.productId,
         p_new_qty: args.newQty,
         p_reason: args.reason,

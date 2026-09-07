@@ -2,7 +2,7 @@
 //
 // POS display-stock isolation — modal de CORRECTION du comptage vitrine.
 // Remplace le window.prompt historique. Saisit la nouvelle quantité absolue
-// + une raison (requise ≥ 3 chars, comme adjust_display_stock_v1), puis délègue
+// + une raison (requise ≥ 3 chars, comme adjust_display_stock_v2), puis délègue
 // au callback onConfirm(newQty, reason).
 
 import { useEffect, useState, type JSX } from 'react';
