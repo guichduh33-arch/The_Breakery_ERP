@@ -4,7 +4,7 @@
 // POS display-stock isolation: this is now the "mise en vitrine" gesture —
 // it moves finished kitchen stock onto the display counter.
 //
-// Wraps `add_display_stock_v1` (gate display.manage). Used by POSStockView
+// Wraps `add_display_stock_v2` (gate display.manage). Used by POSStockView
 // to bump the vitrine counter on a display product.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ export function usePOSReceiveStock() {
       if (args.reason !== undefined && args.reason.trim() !== '') {
         rpcArgs.p_reason = args.reason.trim();
       }
-      const { data, error } = await supabase.rpc('add_display_stock_v1', rpcArgs);
+      const { data, error } = await supabase.rpc('add_display_stock_v2', rpcArgs);
       if (error) throw new POSReceiveStockError(classify(error.message), error.message);
       return data;
     },

@@ -2,7 +2,7 @@
 //
 // POS display-stock isolation — modal de saisie d'une PERTE vitrine.
 // Remplace le window.prompt historique. Collecte quantité + raison, puis
-// délègue au callback onConfirm(qty, reason) (le parent câble waste_display_stock_v1).
+// délègue au callback onConfirm(qty, reason) (le parent câble waste_display_stock_v2).
 
 import { useEffect, useState, type JSX } from 'react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
