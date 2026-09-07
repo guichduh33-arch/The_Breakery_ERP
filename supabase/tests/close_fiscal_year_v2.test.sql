@@ -62,7 +62,12 @@ INSERT INTO journal_entries (id, entry_number, entry_date, status, total_debit, 
  ('cf960001-0000-0000-0000-000000000001','CFY96-JE1','2096-02-10','posted',500,500,'manual',NULL,(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
  ('cf960002-0000-0000-0000-000000000002','CFY96-JE2','2096-03-10','posted',200,200,'sale','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
  ('cf960003-0000-0000-0000-000000000003','CFY96-JE3','2096-03-11','posted',200,200,'sale_void','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
- ('cf960004-0000-0000-0000-000000000004','CFY96-JE4','2096-03-12','posted',200,200,'sale_refund','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000'));
+ -- Audit lot 2 P0-4 : le `reference_id` d'une JE `sale_refund` est un `refunds.id`,
+ -- JAMAIS un `orders.id` — c'est ce qu'ecrit `fn_create_je_for_refund`. Le fixture
+ -- pointait ici sur la COMMANDE : la dedup ne pouvait donc pas le reconnaitre une
+ -- fois visee sur les ECRITURES. Meme fabrication que celle corrigee dans
+ -- pb1_dedup_void_refund.test.sql.
+ ('cf960004-0000-0000-0000-000000000004','CFY96-JE4','2096-03-12','posted',200,200,'sale_refund','cf960009-0000-0000-0000-00000000000f',(SELECT id FROM user_profiles WHERE employee_code='EMP000'));
 INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, description) VALUES
  ('cf960001-0000-0000-0000-000000000001',(SELECT id FROM accounts WHERE code='6991'),500,0,'x'),
  ('cf960001-0000-0000-0000-000000000001',(SELECT id FROM accounts WHERE code='1992'),0,500,'x'),
@@ -72,9 +77,13 @@ INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, de
  ('cf960003-0000-0000-0000-000000000003',(SELECT id FROM accounts WHERE code='1992'),0,200,'x'),
  ('cf960004-0000-0000-0000-000000000004',(SELECT id FROM accounts WHERE code='4991'),200,0,'x'),
  ('cf960004-0000-0000-0000-000000000004',(SELECT id FROM accounts WHERE code='1992'),0,200,'x');
+-- `is_full_void = false` : un void integral n'emet AUCUNE JE `sale_refund`
+-- (fn_create_je_for_refund sort sur is_full_void, ADR-013 dec. 2). Pour que le
+-- scenario « une vente contre-passee DEUX fois » existe reellement, il faut un
+-- refund PARTIEL — le seul qui produise une JE. Id fixe pour que JE4 le vise.
 INSERT INTO refunds (id, refund_number, order_id, session_id, total, tax_refunded, reason, refunded_by, authorized_by, is_full_void) VALUES
- (gen_random_uuid(),'CFY96-RF1','cf960001-0000-0000-0000-00000000000a','40991f2d-38cd-4886-9ac0-56b0cbbaede7',200,0,'test',
-  (SELECT id FROM user_profiles WHERE employee_code='EMP000'),(SELECT id FROM user_profiles WHERE employee_code='EMP000'),true);
+ ('cf960009-0000-0000-0000-00000000000f','CFY96-RF1','cf960001-0000-0000-0000-00000000000a','40991f2d-38cd-4886-9ac0-56b0cbbaede7',200,0,'test',
+  (SELECT id FROM user_profiles WHERE employee_code='EMP000'),(SELECT id FROM user_profiles WHERE employee_code='EMP000'),false);
 
 -- ==== T1 : profil sans permission → P0003 (jwt bascule le temps de l'appel) ====
 SELECT set_config('request.jwt.claim.sub',
