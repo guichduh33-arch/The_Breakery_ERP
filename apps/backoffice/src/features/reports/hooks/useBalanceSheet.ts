@@ -61,6 +61,18 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Pendant de `toNum` pour les chaînes. Une réponse `supabase.rpc` est typée
+ * `Json` : passer un objet à `String()` rendrait « [object Object] » dans
+ * l'écran, en silence. On ne convertit donc que les primitives, et on retombe
+ * sur `fallback` pour tout le reste.
+ */
+function toStr(v: unknown, fallback = ''): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return fallback;
+}
+
 export function useBalanceSheet(asOfDate: string) {
   return useQuery<BalanceSheet>({
     queryKey: [...BALANCE_SHEET_QK, asOfDate] as const,
@@ -111,13 +123,13 @@ export function useBalanceSheet(asOfDate: string) {
         },
         balanced: Boolean(r.balanced),
         delta:    toNum(r.delta),
-        as_of:    String(r.as_of ?? asOfDate),
+        as_of:    toStr(r.as_of, asOfDate),
         lines: linesRaw.map((l) => {
           const o = (l ?? {}) as Record<string, unknown>;
           return {
-            account_id:    String(o.account_id ?? ''),
-            code:          String(o.code ?? ''),
-            name:          String(o.name ?? ''),
+            account_id:    toStr(o.account_id),
+            code:          toStr(o.code),
+            name:          toStr(o.name),
             debit:         toNum(o.debit),
             credit:        toNum(o.credit),
             balance:       toNum(o.balance),

@@ -59,6 +59,18 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Pendant de `toNum` pour les chaînes. Une réponse `supabase.rpc` est typée
+ * `Json` : passer un objet à `String()` rendrait « [object Object] » dans
+ * l'écran, en silence. On ne convertit donc que les primitives, et on retombe
+ * sur `fallback` pour tout le reste.
+ */
+function toStr(v: unknown, fallback = ''): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return fallback;
+}
+
 export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: string | null) {
   return useQuery<ProfitLoss>({
     queryKey: [...PROFIT_LOSS_QK, dateStart, dateEnd, sectionId ?? null] as const,
@@ -111,9 +123,9 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
         lines: linesRaw.map((l) => {
           const o = (l ?? {}) as Record<string, unknown>;
           return {
-            account_id:    String(o.account_id ?? ''),
-            code:          String(o.code ?? ''),
-            name:          String(o.name ?? ''),
+            account_id:    toStr(o.account_id),
+            code:          toStr(o.code),
+            name:          toStr(o.name),
             debit:         toNum(o.debit),
             credit:        toNum(o.credit),
             balance:       toNum(o.balance),
@@ -121,9 +133,9 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
           };
         }),
         period: {
-          start:      String(period.start ?? dateStart),
-          end:        String(period.end   ?? dateEnd),
-          section_id: period.section_id != null ? String(period.section_id) : null,
+          start:      toStr(period.start, dateStart),
+          end:        toStr(period.end,   dateEnd),
+          section_id: period.section_id != null ? toStr(period.section_id) : null,
         },
       };
     },
