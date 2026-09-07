@@ -36,12 +36,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — financial R
   });
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_profit_loss_v2 returns the expected JSON shape for a 30-day window',
+    'get_profit_loss_v3 returns the expected JSON shape for a 30-day window',
     async () => {
       const sb = jwtClient(adminToken);
       const end   = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_profit_loss_v2', {
+      const { data, error } = await sb.rpc('get_profit_loss_v3', {
         p_date_start: start,
         p_date_end:   end,
       });
@@ -65,11 +65,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — financial R
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_balance_sheet_v2 returns balanced shape + computes CYE',
+    'get_balance_sheet_v3 returns balanced shape + computes CYE',
     async () => {
       const sb = jwtClient(adminToken);
       const today = new Date().toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_balance_sheet_v2', {
+      const { data, error } = await sb.rpc('get_balance_sheet_v3', {
         p_as_of_date: today,
       });
       expect(error).toBeNull();

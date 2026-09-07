@@ -54,7 +54,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_balance_sheet_v2') {
+      if (fn === 'get_balance_sheet_v3') {
         return Promise.resolve({ data: bsPayload(String(args.p_as_of_date)), error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -87,7 +87,7 @@ function renderPage(search = '?start=2026-05-14&end=2026-05-14') {
 
 function asOfQueried(): string[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_balance_sheet_v2')
+    .filter(([fn]) => fn === 'get_balance_sheet_v3')
     .map(([, args]) => String((args as { p_as_of_date: string }).p_as_of_date));
 }
 
@@ -114,7 +114,7 @@ afterEach(() => {
 });
 
 describe('BalanceSheetPage (smoke)', () => {
-  it('renders heading and queries get_balance_sheet_v2 with a YYYY-MM-DD as-of', async () => {
+  it('renders heading and queries get_balance_sheet_v3 with a YYYY-MM-DD as-of', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Balance Sheet', level: 1 })).toBeInTheDocument();
     await waitFor(() => {

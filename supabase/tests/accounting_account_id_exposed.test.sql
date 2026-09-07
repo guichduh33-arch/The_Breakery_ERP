@@ -25,7 +25,7 @@ DECLARE
   v_lines JSONB;
   v_first JSONB;
 BEGIN
-  SELECT get_profit_loss_v2('2020-01-01'::date, '2030-12-31'::date)->'lines'
+  SELECT get_profit_loss_v3('2020-01-01'::date, '2030-12-31'::date)->'lines'
     INTO v_lines;
   v_first := v_lines->0;
   IF v_first IS NULL THEN
@@ -47,7 +47,7 @@ DECLARE
   v_lines JSONB;
   v_first JSONB;
 BEGIN
-  SELECT get_balance_sheet_v2('2030-12-31'::date)->'lines' INTO v_lines;
+  SELECT get_balance_sheet_v3('2030-12-31'::date)->'lines' INTO v_lines;
   v_first := v_lines->0;
   IF v_first IS NULL THEN
     PERFORM set_config('breakery.t2_pass', 'skipped_empty', false);

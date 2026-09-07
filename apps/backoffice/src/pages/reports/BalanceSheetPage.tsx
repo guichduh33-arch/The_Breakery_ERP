@@ -3,7 +3,7 @@
 // Lot E (campagne Reports 2026-08-15) — vague Finance, page 6/8. Migrée sur le
 // socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
-// CE QUI NE CHANGE PAS : les trois sections de `get_balance_sheet_v2` — actif
+// CE QUI NE CHANGE PAS : les trois sections de `get_balance_sheet_v3` — actif
 // (courant, immobilisé), passif (courant, long terme), capitaux propres — avec
 // leurs postes, leur ordre et leurs totaux, servis tels quels. L'INDICATEUR
 // D'ÉQUILIBRE reste : A = L + E + CYE au centime, et il crie quand ce n'est

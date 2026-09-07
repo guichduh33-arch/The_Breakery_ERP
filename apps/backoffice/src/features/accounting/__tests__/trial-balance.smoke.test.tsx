@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/accounting/__tests__/trial-balance.smoke.test.tsx
 //
 // Session 26b / Wave 4 — smoke for TrialBalancePage + CSV builder.
-//   T1 — Renders balanced badge + lines from get_trial_balance_v3.
+//   T1 — Renders balanced badge + lines from get_trial_balance_v4.
 //   T2 — buildTrialBalanceCsv emits BOM + header + locale-formatted numbers.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

@@ -35,7 +35,7 @@
 -- T27 : tr_stock_movement_je respects fiscal guard
 -- T28 : calculate_vat_payable returns correct vat_output - vat_input
 -- T29 : get_balance_sheet_data est droppee (orpheline, remplacee par _v2)
--- T30 : get_balance_sheet_v2 existe, SECURITY DEFINER, et porte son gate
+-- T30 : get_balance_sheet_v3 existe, SECURITY DEFINER, et porte son gate
 -- T31 : record_stock_movement_v1 accepts p_lot_id (B1 pattern a)
 -- T32 : record_stock_movement_v1 backward-compat — old caller without lot_id still works
 -- T33 : refund_order_rpc is dropped ; refund_order_rpc_v2 exists
@@ -528,9 +528,9 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 END $$;
 SELECT ok(
-  (SELECT (calculate_pb1_payable_v2(DATE '2026-01-01', DATE '2026-12-31'))
+  (SELECT (calculate_pb1_payable_v3(DATE '2026-01-01', DATE '2026-12-31'))
           ? 'pb1_payable'),
-  'T28: calculate_pb1_payable_v2 returns object with pb1_payable key (VAT→PB1, ADR-005)'
+  'T28: calculate_pb1_payable_v3 returns object with pb1_payable key (VAT→PB1, ADR-005)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -539,7 +539,7 @@ SELECT ok(
 -- Lot 1 : get_balance_sheet_data etait SECURITY DEFINER sans has_permission et
 -- executable par tout `authenticated`, alors qu elle n avait plus aucun
 -- call-site applicatif — seule cette suite l appelait. Elle est supprimee au
--- profit de get_balance_sheet_v2, qui exige reports.financial.read. On teste
+-- profit de get_balance_sheet_v3, qui exige reports.financial.read. On teste
 -- desormais la disparition de l une et le gate de l autre, comme T33/T34 le
 -- font deja pour refund_order_rpc.
 SELECT ok(
@@ -551,11 +551,11 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
-       AND p.proname = 'get_balance_sheet_v2'
+       AND p.proname = 'get_balance_sheet_v3'
        AND p.prosecdef
        AND pg_get_functiondef(p.oid) LIKE '%reports.financial.read%'
   ),
-  'T30: get_balance_sheet_v2 existe, SECURITY DEFINER, gatee reports.financial.read'
+  'T30: get_balance_sheet_v3 existe, SECURITY DEFINER, gatee reports.financial.read'
 );
 
 -- ---------------------------------------------------------------------------

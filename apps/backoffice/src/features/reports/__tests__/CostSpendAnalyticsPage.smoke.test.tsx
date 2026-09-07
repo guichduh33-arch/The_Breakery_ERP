@@ -6,7 +6,7 @@
 //
 //  · les deux RPC de coût ET le P&L sont interrogés, sur la fenêtre et sur la
 //    précédente ;
-//  · le mock du P&L pointe sur `get_profit_loss_v2` — il visait encore la v1,
+//  · le mock du P&L pointe sur `get_profit_loss_v3` — il visait encore la v1,
 //    droppée : la tuile « Revenue » lisait donc un zéro silencieux en test ;
 //  · un seul graphe, et le partage COGS ↔ OpEx sans étiquette posée sur un
 //    aplat coloré.
@@ -49,7 +49,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      if (fn === 'get_profit_loss_v2') {
+      if (fn === 'get_profit_loss_v3') {
         return Promise.resolve({
           data: {
             revenue: { sales: 2_000_000, discounts: 0, adjustments: 0, total: 2_000_000 },
@@ -132,7 +132,7 @@ describe('CostSpendAnalyticsPage (smoke)', () => {
       expect(windowsOf('get_purchase_cogs_breakdown_v1')).toContain('2026-05-25..2026-05-31');
     });
     expect(windowsOf('get_expenses_by_category_v1')).toContain('2026-05-25..2026-05-31');
-    expect(windowsOf('get_profit_loss_v2')).toContain('2026-05-25..2026-05-31');
+    expect(windowsOf('get_profit_loss_v3')).toContain('2026-05-25..2026-05-31');
   });
 
   it('bande KPI : depense totale en hero, ratio en points, revenu lu de la v2', async () => {

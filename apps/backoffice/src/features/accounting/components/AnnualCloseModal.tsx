@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/accounting/components/AnnualCloseModal.tsx
-// Session 56 — DEV-S54-01 : annual fiscal-year close (close_fiscal_year_v1).
+// Session 56 — DEV-S54-01 : annual fiscal-year close (close_fiscal_year_v2).
 //   Step 1 : year selector (derived from fiscal_periods) + preconditions info
 //   Step 2 : PIN entry + irreversible warning
 //   Done   : recap (entry number, net result carried to 3200, N+1 seeded)

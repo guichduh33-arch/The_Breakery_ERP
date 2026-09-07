@@ -138,7 +138,7 @@ describe('AnnualCloseModal (S56 DEV-S54-01)', () => {
       expect(errEl).not.toBeNull();
       expect(errEl?.textContent ?? '').toContain('This fiscal year is already closed.');
     });
-    expect(mockRpc).toHaveBeenCalledWith('close_fiscal_year_v1',
+    expect(mockRpc).toHaveBeenCalledWith('close_fiscal_year_v2',
       expect.objectContaining({ p_fiscal_year: 2026, p_manager_pin: '123456' }));
   });
 });

@@ -11,7 +11,7 @@
 //
 // CE QUI NE CHANGE PAS non plus : les montants viennent de
 // `get_purchase_cogs_breakdown_v1`, `get_expenses_by_category_v1` et
-// `get_profit_loss_v2` ; la page ne fait qu'additionner les deux enveloppes de
+// `get_profit_loss_v3` ; la page ne fait qu'additionner les deux enveloppes de
 // dépense et rapporter au chiffre d'affaires. Aucun coût n'est réparti,
 // re-valorisé ni imputé ici.
 //

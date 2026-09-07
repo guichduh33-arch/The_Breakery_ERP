@@ -6,7 +6,7 @@
 // CE QUI NE CHANGE PAS — et c'est l'essentiel sur un état comptable : les
 // SECTIONS du compte de résultat (revenue / COGS / gross profit / OpEx / net
 // profit), leur ORDRE, leurs postes de détail et leurs sous-totaux sont ceux de
-// `get_profit_loss_v2`, rendus tels quels. Aucun chiffre n'est recalculé ici,
+// `get_profit_loss_v3`, rendus tels quels. Aucun chiffre n'est recalculé ici,
 // aucun poste n'est fusionné : la seule arithmétique ajoutée est le TAUX DE
 // MARGE affiché en tuile, dérivé de deux montants servis par la RPC.
 //

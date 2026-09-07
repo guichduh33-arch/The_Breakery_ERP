@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useProfitLoss.ts
 //
-// Wraps `get_profit_loss_v2(p_date_start, p_date_end, p_section_id?)`.
+// Wraps `get_profit_loss_v3(p_date_start, p_date_end, p_section_id?)`.
 // S50 W1.2 — bumped v1 → v2 (permission gate: reports.financial.read).
 // Returns the full JSONB envelope as a typed shape.
 
@@ -74,7 +74,7 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
       if (sectionId) {
         args.p_section_id = sectionId;
       }
-      const { data, error } = await supabase.rpc('get_profit_loss_v2', args);
+      const { data, error } = await supabase.rpc('get_profit_loss_v3', args);
       if (error) throw error;
       const r = (data ?? {}) as Record<string, unknown>;
       const rev  = (r.revenue ?? {}) as Record<string, unknown>;
