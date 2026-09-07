@@ -17,7 +17,7 @@
 //       cartStore.voidOrder() runs; no server call.
 //   (c) Spec A — Hold gating on a fired order (pickedUpOrderId set): the draft
 //       hold path would orphan the live DB row, so "Hold" instead re-parks the
-//       fired order via hold_fired_order_v1. It is ENABLED when nothing changed
+//       fired order via hold_fired_order_v2. It is ENABLED when nothing changed
 //       (no unfired lines) and DISABLED while new unfired lines await firing.
 //
 // PinVerificationModal is mocked so we can directly trigger onVerified without

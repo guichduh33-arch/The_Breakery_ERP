@@ -171,7 +171,7 @@ export function BottomActionBar({
   // (pickedUpOrderId set, all lines locked); Send-to-Kitchen is disabled with no
   // new items to fire, and the draft Hold path would orphan the live DB row. So
   // when a fired order is open with no unfired lines, "Hold" re-parks it via
-  // hold_fired_order_v1 and frees the terminal. New unfired lines must go through
+  // hold_fired_order_v2 and frees the terminal. New unfired lines must go through
   // Send to Kitchen first (it fires + parks).
   const hasFiredOrderOpen = pickedUpOrderId !== null;
   const hasUnfiredItems = cart.items.some(
@@ -307,7 +307,7 @@ export function BottomActionBar({
             de commande sans en être une polluait rapports, journal, listes et
             rapprochement de caisse. Une commande n'existe qu'à partir du moment
             où elle part en cuisine ou qu'elle est payée ; le geste passe donc
-            par l'envoi en cuisine, puis hold_fired_order_v1. */}
+            par l'envoi en cuisine, puis hold_fired_order_v2. */}
         {/* Critique run 2 (2026-08-14 P2) — un `title` n'existe pas au doigt et
             un bouton `disabled` n'émet aucun événement : l'état « indisponible »
             reste TAPABLE et explique le parcours au tap (même pattern que la

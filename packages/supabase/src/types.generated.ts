@@ -7505,7 +7505,7 @@ export type Database = {
       }
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
-      hold_fired_order_v1: { Args: { p_order_id: string }; Returns: undefined }
+      hold_fired_order_v2: { Args: { p_order_id: string }; Returns: undefined }
       import_catalog_v2: {
         Args: {
           p_dry_run?: boolean

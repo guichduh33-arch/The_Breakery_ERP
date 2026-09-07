@@ -12,7 +12,7 @@
 // Step plan (fill in when live creds available):
 //   1. As CASHIER (EMP000), fire a counter order via fire_counter_order
 //      → order_id, items with is_locked=true.
-//   2. hold_fired_order_v1(order_id) → row now is_held=true (appears in held list).
+//   2. hold_fired_order_v2(order_id) → row now is_held=true (appears in held list).
 //   3. reopen_held_order_v2(order_id) → returns items[] with is_locked=true +
 //      order_items.id; DB row is_held=false; order NOT deleted (status='pending_payment').
 //   4. A 2nd reopen_held_order_v2(order_id) throws P0002 (already open / not held).

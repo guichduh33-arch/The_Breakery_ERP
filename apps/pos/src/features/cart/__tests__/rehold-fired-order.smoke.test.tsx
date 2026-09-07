@@ -4,7 +4,7 @@
 // lines locked); the draft Hold path is wrong (it would orphan the live DB row)
 // and Send-to-Kitchen is a no-op with nothing new to fire. HOLD is now a
 // first-class button in the bottom bar (moved OUT of the "More ▾" menu, owner
-// decision 2026-07-10): it re-parks via hold_fired_order_v1 and is disabled while
+// decision 2026-07-10): it re-parks via hold_fired_order_v2 and is disabled while
 // there are unfired new lines (Send to Kitchen fires + parks first).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
@@ -86,7 +86,7 @@ function seedReopenedFiredOrder(extraUnfired = false) {
 }
 
 describe('BottomActionBar — re-hold a reopened fired order', () => {
-  it('re-parks the fired order via hold_fired_order_v1 from the first-class HOLD button', async () => {
+  it('re-parks the fired order via hold_fired_order_v2 from the first-class HOLD button', async () => {
     seedReopenedFiredOrder();
     render(wrap(<BottomActionBar />));
 

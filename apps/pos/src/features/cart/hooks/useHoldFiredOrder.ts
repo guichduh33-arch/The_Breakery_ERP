@@ -10,7 +10,7 @@ export function useHoldFiredOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: string): Promise<void> => {
-      const { error } = await supabase.rpc('hold_fired_order_v1', { p_order_id: orderId });
+      const { error } = await supabase.rpc('hold_fired_order_v2', { p_order_id: orderId });
       if (error) throw error;
       // ADR-022 déc. 4 — c'est désormais la SEULE mise en attente. L'émission de
       // `order_held` vivait sur le parcage du panier, qui disparaît : sans ce
