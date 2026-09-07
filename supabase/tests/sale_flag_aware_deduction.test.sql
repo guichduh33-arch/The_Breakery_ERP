@@ -1,11 +1,11 @@
 -- sale_flag_aware_deduction.test.sql
--- Vérifie la déduction flag-aware de complete_order_with_payment_v27 (Task 4) :
+-- Vérifie la déduction flag-aware de complete_order_with_payment_v28 (Task 4) :
 --   - café fait-à-la-commande (track=false, deduct=true) → cascade recette
 --   - croissant pré-fait (track=true, deduct=true) → 1× le fini, pas les matières
 --   - service (track=false, deduct=false) → rien
 --   - réglage allow_negative_stock (blocage vs autorisation)
 --
--- complete_order_with_payment_v27 exige auth.uid() → on simule le contexte JWT
+-- complete_order_with_payment_v28 exige auth.uid() → on simule le contexte JWT
 -- d'un admin (EMP000) via set_config('request.jwt.claims', …, true). Lancer via
 -- MCP execute_sql (enveloppe BEGIN … ROLLBACK portée par ce fichier).
 --
@@ -52,7 +52,7 @@ BEGIN
 
   -- A) Coffee (made-to-order)
   v_price := get_customer_product_price(v_coffee, NULL);
-  PERFORM complete_order_with_payment_v27(
+  PERFORM complete_order_with_payment_v28(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
     p_table_number := 'SFA-T1',  -- v27: garde table_required_for_dine_in (v_otype = 1er label de l'enum = dine_in)
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_coffee,'quantity',1,'unit_price',v_price)),
@@ -62,7 +62,7 @@ BEGIN
 
   -- B) Croissant (pre-made)
   v_price := get_customer_product_price(v_crois, NULL);
-  PERFORM complete_order_with_payment_v27(
+  PERFORM complete_order_with_payment_v28(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
     p_table_number := 'SFA-T1',
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_crois,'quantity',1,'unit_price',v_price)),
@@ -72,7 +72,7 @@ BEGIN
 
   -- C) Service
   v_price := get_customer_product_price(v_service, NULL);
-  PERFORM complete_order_with_payment_v27(
+  PERFORM complete_order_with_payment_v28(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
     p_table_number := 'SFA-T1',
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_service,'quantity',1,'unit_price',v_price)),
@@ -83,7 +83,7 @@ BEGIN
   v_price := get_customer_product_price(v_latte, NULL);
   UPDATE business_config SET allow_negative_stock=false WHERE id=1;
   BEGIN
-    PERFORM complete_order_with_payment_v27(
+    PERFORM complete_order_with_payment_v28(
       p_session_id := v_sess, p_order_type := v_otype::order_type,
       p_table_number := 'SFA-T1',
       p_items := jsonb_build_array(jsonb_build_object('product_id',v_latte,'quantity',1,'unit_price',v_price)),
@@ -95,7 +95,7 @@ BEGIN
 
   -- D2) allow_negative = true → milk 1 - 150 = -149
   UPDATE business_config SET allow_negative_stock=true WHERE id=1;
-  PERFORM complete_order_with_payment_v27(
+  PERFORM complete_order_with_payment_v28(
     p_session_id := v_sess, p_order_type := v_otype::order_type,
     p_table_number := 'SFA-T1',
     p_items := jsonb_build_array(jsonb_build_object('product_id',v_latte,'quantity',1,'unit_price',v_price)),

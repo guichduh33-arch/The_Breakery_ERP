@@ -6,7 +6,7 @@
 -- `create_tablet_order_v8` valide les composants d'un combo mais ne persiste
 -- ni `combo_components` ni `modifier_ingredients_deducted`, et prend
 -- `unit_price` tel quel du client. Le déstockage a lieu au paiement
--- (`pay_existing_order_v19`), qui lit exactement ces deux colonnes : NULL →
+-- (`pay_existing_order_v20`), qui lit exactement ces deux colonnes : NULL →
 -- zéro mouvement de stock sur les composants d'un combo envoyé par la
 -- tablette. `create_tablet_order_v9` (attendue, PAS ENCORE LIVRÉE au moment où
 -- ce fichier est écrit) corrige les trois axes : prix résolu serveur
@@ -17,7 +17,7 @@
 -- Ce fichier est écrit AVANT la migration v9 : il est ROUGE contre le corps
 -- actuel (v9 n'existe pas — `function does not exist`). Il est destiné à être
 -- rejoué par l'orchestrateur une fois v9 livrée. Les DO blocks qui appellent
--- create_tablet_order_v9 / pickup_tablet_order / pay_existing_order_v19
+-- create_tablet_order_v9 / pickup_tablet_order / pay_existing_order_v20
 -- capturent l'exception dans un GUC pour que le fichier aille jusqu'à
 -- `finish()` même si une étape casse — diagnostic complet en un seul passage,
 -- pas un abort de transaction à la première ligne qui manque.
@@ -112,7 +112,7 @@ END $fixture$;
 
 -- ===========================================================================
 -- T1-T5 — chemin nominal : create_tablet_order_v9 -> pickup_tablet_order ->
--- pay_existing_order_v19. Un combo Large+Water avec le composant Large portant
+-- pay_existing_order_v20. Un combo Large+Water avec le composant Large portant
 -- un modificateur Iced rattaché à un ingrédient.
 -- ===========================================================================
 DO $happy$
@@ -145,7 +145,7 @@ BEGIN
       p_source_code  := 'T1'
     );
     PERFORM pickup_tablet_order(v_order_id, current_setting('tcfp.sess')::uuid);
-    PERFORM pay_existing_order_v19(
+    PERFORM pay_existing_order_v20(
       p_order_id := v_order_id,
       p_payment  := '{"method":"cash","amount":48000,"cash_received":48000,"change_given":0}'::jsonb
     );

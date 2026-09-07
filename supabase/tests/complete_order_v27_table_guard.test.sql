@@ -45,7 +45,7 @@ END $$;
 
 -- T1 : dine_in + table NULL → P0011.
 SELECT throws_ok(
-  format($q$ SELECT complete_order_with_payment_v27(
+  format($q$ SELECT complete_order_with_payment_v28(
       p_session_id := %L::uuid, p_order_type := 'dine_in',
       p_items := %L::jsonb,
       p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0)) $q$,
@@ -55,7 +55,7 @@ SELECT throws_ok(
 
 -- T2 : dine_in + table blanche (espaces) → P0011.
 SELECT throws_ok(
-  format($q$ SELECT complete_order_with_payment_v27(
+  format($q$ SELECT complete_order_with_payment_v28(
       p_session_id := %L::uuid, p_order_type := 'dine_in',
       p_items := %L::jsonb,
       p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0),
@@ -67,7 +67,7 @@ SELECT throws_ok(
 -- T3 : dine_in + table valide → vente OK, table_number persisté.
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v27(
+  v_env := complete_order_with_payment_v28(
     p_session_id := current_setting('v27g.sess')::uuid, p_order_type := 'dine_in',
     p_items := current_setting('v27g.items')::jsonb,
     p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0),
@@ -80,7 +80,7 @@ SELECT ok(current_setting('v27g.t3')::boolean, 'T3: dine_in + table valide -> ve
 -- T4 : take_out sans table → vente OK.
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v27(
+  v_env := complete_order_with_payment_v28(
     p_session_id := current_setting('v27g.sess')::uuid, p_order_type := 'take_out',
     p_items := current_setting('v27g.items')::jsonb,
     p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0));
@@ -93,12 +93,12 @@ SELECT ok(current_setting('v27g.t4')::boolean, 'T4: take_out sans table -> vente
 -- la garde : re-appel dine_in SANS table, même clé → enveloppe replay, pas P0011.
 DO $$ DECLARE v_key UUID := gen_random_uuid(); v_env JSONB; v_replay JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v27(
+  v_env := complete_order_with_payment_v28(
     p_session_id := current_setting('v27g.sess')::uuid, p_order_type := 'dine_in',
     p_items := current_setting('v27g.items')::jsonb,
     p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0),
     p_idempotency_key := v_key, p_table_number := 'T2');
-  v_replay := complete_order_with_payment_v27(
+  v_replay := complete_order_with_payment_v28(
     p_session_id := current_setting('v27g.sess')::uuid, p_order_type := 'dine_in',
     p_items := current_setting('v27g.items')::jsonb,
     p_payment := jsonb_build_object('method','cash','amount',10000,'cash_received',10000,'change_given',0),

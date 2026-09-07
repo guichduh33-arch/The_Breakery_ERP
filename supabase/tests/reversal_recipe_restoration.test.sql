@@ -52,7 +52,7 @@ BEGIN
     VALUES (v_mgr_prof, 0, 'open') RETURNING id INTO v_sess;
 
   -- ===== Commande 1 : sera ANNULEE (void) =====
-  r := complete_order_with_payment_v27(
+  r := complete_order_with_payment_v28(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(
@@ -79,7 +79,7 @@ BEGIN
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
   -- ===== Commande 2 : sera REMBOURSEE a moitie =====
-  r := complete_order_with_payment_v27(
+  r := complete_order_with_payment_v28(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(

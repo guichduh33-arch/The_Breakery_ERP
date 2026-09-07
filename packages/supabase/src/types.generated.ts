@@ -6434,7 +6434,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v27: {
+      complete_order_with_payment_v28: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7763,7 +7763,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v19: {
+      pay_existing_order_v20: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
