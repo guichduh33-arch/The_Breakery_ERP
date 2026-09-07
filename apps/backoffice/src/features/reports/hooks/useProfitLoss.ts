@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useProfitLoss.ts
 //
-// Wraps `get_profit_loss_v2(p_date_start, p_date_end, p_section_id?)`.
+// Wraps `get_profit_loss_v3(p_date_start, p_date_end, p_section_id?)`.
 // S50 W1.2 — bumped v1 → v2 (permission gate: reports.financial.read).
 // Returns the full JSONB envelope as a typed shape.
 
@@ -59,6 +59,18 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Pendant de `toNum` pour les chaînes. Une réponse `supabase.rpc` est typée
+ * `Json` : passer un objet à `String()` rendrait « [object Object] » dans
+ * l'écran, en silence. On ne convertit donc que les primitives, et on retombe
+ * sur `fallback` pour tout le reste.
+ */
+function toStr(v: unknown, fallback = ''): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return fallback;
+}
+
 export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: string | null) {
   return useQuery<ProfitLoss>({
     queryKey: [...PROFIT_LOSS_QK, dateStart, dateEnd, sectionId ?? null] as const,
@@ -74,7 +86,7 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
       if (sectionId) {
         args.p_section_id = sectionId;
       }
-      const { data, error } = await supabase.rpc('get_profit_loss_v2', args);
+      const { data, error } = await supabase.rpc('get_profit_loss_v3', args);
       if (error) throw error;
       const r = (data ?? {}) as Record<string, unknown>;
       const rev  = (r.revenue ?? {}) as Record<string, unknown>;
@@ -111,9 +123,9 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
         lines: linesRaw.map((l) => {
           const o = (l ?? {}) as Record<string, unknown>;
           return {
-            account_id:    String(o.account_id ?? ''),
-            code:          String(o.code ?? ''),
-            name:          String(o.name ?? ''),
+            account_id:    toStr(o.account_id),
+            code:          toStr(o.code),
+            name:          toStr(o.name),
             debit:         toNum(o.debit),
             credit:        toNum(o.credit),
             balance:       toNum(o.balance),
@@ -121,9 +133,9 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
           };
         }),
         period: {
-          start:      String(period.start ?? dateStart),
-          end:        String(period.end   ?? dateEnd),
-          section_id: period.section_id != null ? String(period.section_id) : null,
+          start:      toStr(period.start, dateStart),
+          end:        toStr(period.end,   dateEnd),
+          section_id: period.section_id != null ? toStr(period.section_id) : null,
         },
       };
     },

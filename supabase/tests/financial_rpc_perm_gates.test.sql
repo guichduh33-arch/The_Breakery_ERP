@@ -6,7 +6,7 @@
 --   T6–T7  : customer RPCs v3 refusent sans customers.read ET pos.sale.create
 --   T8–T10 : customer RPCs v3 acceptent avec pos.sale.create (CASHIER a ce droit)
 --   T11–T12: RPCs v1 droppés (ne doivent plus exister)
---   T13    : anon ne peut pas EXECUTE get_general_ledger_v2
+--   T13    : anon ne peut pas EXECUTE get_general_ledger_v3
 --
 -- Pattern UUIDs de test :
 --   00000000-0000-0000-0000-000000000001 = faux UID cashier (pas de permission GL)
@@ -31,10 +31,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_general_ledger_v2'
+      AND p.proname = 'get_general_ledger_v3'
       AND p.prosecdef = true
   ),
-  'T1 — get_general_ledger_v2 existe et SECURITY DEFINER'
+  'T1 — get_general_ledger_v3 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -42,10 +42,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_trial_balance_v3'
+      AND p.proname = 'get_trial_balance_v4'
       AND p.prosecdef = true
   ),
-  'T2 — get_trial_balance_v3 existe et SECURITY DEFINER'
+  'T2 — get_trial_balance_v4 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -53,10 +53,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_profit_loss_v2'
+      AND p.proname = 'get_profit_loss_v3'
       AND p.prosecdef = true
   ),
-  'T3 — get_profit_loss_v2 existe et SECURITY DEFINER'
+  'T3 — get_profit_loss_v3 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -64,10 +64,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_balance_sheet_v2'
+      AND p.proname = 'get_balance_sheet_v3'
       AND p.prosecdef = true
   ),
-  'T4 — get_balance_sheet_v2 existe et SECURITY DEFINER'
+  'T4 — get_balance_sheet_v3 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -162,10 +162,10 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege(
     'anon',
-    'public.get_general_ledger_v2(uuid, date, date, int, jsonb)',
+    'public.get_general_ledger_v3(uuid, date, date, int, jsonb)',
     'EXECUTE'
   ),
-  'T12 — anon cannot EXECUTE get_general_ledger_v2'
+  'T12 — anon cannot EXECUTE get_general_ledger_v3'
 );
 
 -- ============================================================

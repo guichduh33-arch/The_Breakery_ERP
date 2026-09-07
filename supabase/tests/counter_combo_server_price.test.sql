@@ -12,7 +12,7 @@
 -- le 2026-09-06 (transaction annulée), même fixture que ci-dessous :
 -- unit_price 40000, line_total 48000 (l'ajustement Iced +2000 du composant est
 -- perdu alors que la caisse facture 50000), composant hors de tout groupe
--- accepté, `pay_existing_order_v19(cash 50000)` refusé (« Sum of tender
+-- accepté, `pay_existing_order_v20(cash 50000)` refusé (« Sum of tender
 -- amounts (50000.00) != order total (48000.00) »).
 --
 -- Ce fichier est écrit AVANT la migration v8 : il est ROUGE contre le corps
@@ -207,7 +207,7 @@ DO $pay$
 DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM pay_existing_order_v19(
+    PERFORM pay_existing_order_v20(
       p_order_id := current_setting('ccsp.order1')::uuid,
       p_payment  := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb
     );
@@ -218,7 +218,7 @@ BEGIN
 END $pay$;
 
 SELECT ok(current_setting('ccsp.pay1_pass')::boolean,
-  'T4: pay_existing_order_v19(cash 50000) accepte le montant facture par la caisse (refuse sous v7 : total 48000) - recu: ' || current_setting('ccsp.pay1_msg'));
+  'T4: pay_existing_order_v20(cash 50000) accepte le montant facture par la caisse (refuse sous v7 : total 48000) - recu: ' || current_setting('ccsp.pay1_msg'));
 
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000e5f02'), 99,
   'T5a: composant Large deduit -1 au paiement');

@@ -2,7 +2,7 @@
 //
 // Session 59 / Task 6a — maps a journal_entries.reference_type (canonical
 // vocabulary, see journal_entries_reference_type_check in
-// 20260710000080_create_close_fiscal_year_v1.sql) to the DrilldownEntity + id
+// 20260710000080_create_close_fiscal_year_v2.sql) to the DrilldownEntity + id
 // used to link back to the originating operation. Reuses the existing
 // buildDrilldownUrl/DrilldownLink infra (reports feature) instead of
 // recoding routes.

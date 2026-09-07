@@ -1,4 +1,4 @@
--- S54 P1.3 (T6) — close_fiscal_year_v1 : clôture annuelle carry-forward → 3200
+-- S54 P1.3 (T6) — close_fiscal_year_v2 : clôture annuelle carry-forward → 3200
 -- (migrations 20260710000079 permission + 20260710000080 contrainte+RPC).
 --
 -- Fixtures isolées dans des années futures (2094 zéro-activité / 2096 perte+dédup /
@@ -62,7 +62,12 @@ INSERT INTO journal_entries (id, entry_number, entry_date, status, total_debit, 
  ('cf960001-0000-0000-0000-000000000001','CFY96-JE1','2096-02-10','posted',500,500,'manual',NULL,(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
  ('cf960002-0000-0000-0000-000000000002','CFY96-JE2','2096-03-10','posted',200,200,'sale','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
  ('cf960003-0000-0000-0000-000000000003','CFY96-JE3','2096-03-11','posted',200,200,'sale_void','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
- ('cf960004-0000-0000-0000-000000000004','CFY96-JE4','2096-03-12','posted',200,200,'sale_refund','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000'));
+ -- Audit lot 2 P0-4 : le `reference_id` d'une JE `sale_refund` est un `refunds.id`,
+ -- JAMAIS un `orders.id` — c'est ce qu'ecrit `fn_create_je_for_refund`. Le fixture
+ -- pointait ici sur la COMMANDE : la dedup ne pouvait donc pas le reconnaitre une
+ -- fois visee sur les ECRITURES. Meme fabrication que celle corrigee dans
+ -- pb1_dedup_void_refund.test.sql.
+ ('cf960004-0000-0000-0000-000000000004','CFY96-JE4','2096-03-12','posted',200,200,'sale_refund','cf960009-0000-0000-0000-00000000000f',(SELECT id FROM user_profiles WHERE employee_code='EMP000'));
 INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, description) VALUES
  ('cf960001-0000-0000-0000-000000000001',(SELECT id FROM accounts WHERE code='6991'),500,0,'x'),
  ('cf960001-0000-0000-0000-000000000001',(SELECT id FROM accounts WHERE code='1992'),0,500,'x'),
@@ -72,36 +77,40 @@ INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, de
  ('cf960003-0000-0000-0000-000000000003',(SELECT id FROM accounts WHERE code='1992'),0,200,'x'),
  ('cf960004-0000-0000-0000-000000000004',(SELECT id FROM accounts WHERE code='4991'),200,0,'x'),
  ('cf960004-0000-0000-0000-000000000004',(SELECT id FROM accounts WHERE code='1992'),0,200,'x');
+-- `is_full_void = false` : un void integral n'emet AUCUNE JE `sale_refund`
+-- (fn_create_je_for_refund sort sur is_full_void, ADR-013 dec. 2). Pour que le
+-- scenario « une vente contre-passee DEUX fois » existe reellement, il faut un
+-- refund PARTIEL — le seul qui produise une JE. Id fixe pour que JE4 le vise.
 INSERT INTO refunds (id, refund_number, order_id, session_id, total, tax_refunded, reason, refunded_by, authorized_by, is_full_void) VALUES
- (gen_random_uuid(),'CFY96-RF1','cf960001-0000-0000-0000-00000000000a','40991f2d-38cd-4886-9ac0-56b0cbbaede7',200,0,'test',
-  (SELECT id FROM user_profiles WHERE employee_code='EMP000'),(SELECT id FROM user_profiles WHERE employee_code='EMP000'),true);
+ ('cf960009-0000-0000-0000-00000000000f','CFY96-RF1','cf960001-0000-0000-0000-00000000000a','40991f2d-38cd-4886-9ac0-56b0cbbaede7',200,0,'test',
+  (SELECT id FROM user_profiles WHERE employee_code='EMP000'),(SELECT id FROM user_profiles WHERE employee_code='EMP000'),false);
 
 -- ==== T1 : profil sans permission → P0003 (jwt bascule le temps de l'appel) ====
 SELECT set_config('request.jwt.claim.sub',
   (SELECT auth_user_id::text FROM user_profiles
     WHERE deleted_at IS NULL AND auth_user_id IS NOT NULL
       AND NOT has_permission(auth_user_id, 'accounting.year.close') LIMIT 1), true);
-SELECT throws_ok($$SELECT close_fiscal_year_v1(2098, '424242')$$, 'P0003', NULL,
+SELECT throws_ok($$SELECT close_fiscal_year_v2(2098, '424242')$$, 'P0003', NULL,
   'T1 — permission accounting.year.close requise');
 SELECT set_config('request.jwt.claim.sub',
   (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
 
 -- ==== T2 : année sans périodes → P0002 ====
-SELECT throws_ok($$SELECT close_fiscal_year_v1(2092, '424242')$$, 'P0002', NULL,
+SELECT throws_ok($$SELECT close_fiscal_year_v2(2092, '424242')$$, 'P0002', NULL,
   'T2 — annee sans periodes seedees rejetee (fiscal_year_periods_missing)');
 
 -- ==== T3 : décembre 2098 open → P0003 ====
-SELECT throws_ok($$SELECT close_fiscal_year_v1(2098, '424242')$$, 'P0003', NULL,
+SELECT throws_ok($$SELECT close_fiscal_year_v2(2098, '424242')$$, 'P0003', NULL,
   'T3 — periode encore open rejetee (fiscal_year_periods_open)');
 
 -- ==== T4 : PIN invalide → P0003 ====
 UPDATE fiscal_periods SET status='closed' WHERE period_start='2098-12-01';
-SELECT throws_ok($$SELECT close_fiscal_year_v1(2098, '999999')$$, 'P0003', NULL,
+SELECT throws_ok($$SELECT close_fiscal_year_v2(2098, '999999')$$, 'P0003', NULL,
   'T4 — PIN invalide rejete (via _verify_pin_with_lockout)');
 
 -- ==== T5-T9 : happy path profit 2098 ====
 CREATE TEMP TABLE _r98 ON COMMIT DROP AS
-  SELECT close_fiscal_year_v1(2098, '424242') AS j;
+  SELECT close_fiscal_year_v2(2098, '424242') AS j;
 
 SELECT ok((SELECT (j->>'net_result')::numeric = 600 AND (j->>'line_count')::int = 2 FROM _r98),
   'T5 — profit : net_result 600, 2 lignes P&L');
@@ -127,12 +136,12 @@ SELECT ok((SELECT (SELECT (j->>'periods_seeded_next_year')::int FROM _r98) = 12
   'T9 — 12 periodes 2099 seedees open (fail-closed _077 sans bombe a retardement)');
 
 -- ==== T10 : replay → year_already_closed ====
-SELECT throws_ok($$SELECT close_fiscal_year_v1(2098, '424242')$$, 'P0003', NULL,
+SELECT throws_ok($$SELECT close_fiscal_year_v2(2098, '424242')$$, 'P0003', NULL,
   'T10 — replay rejete (year_already_closed)');
 
 -- ==== T11-T12 : perte + dédup 2096 ====
 CREATE TEMP TABLE _r96 ON COMMIT DROP AS
-  SELECT close_fiscal_year_v1(2096, '424242') AS j;
+  SELECT close_fiscal_year_v2(2096, '424242') AS j;
 SELECT ok((SELECT (j->>'net_result')::numeric = -500 FROM _r96),
   'T11 — perte 500 : sale_void dedupliquee (sinon -700), net_result -500');
 SELECT ok((SELECT l.debit = 500 AND l.credit = 0 FROM journal_entry_lines l
@@ -142,7 +151,7 @@ SELECT ok((SELECT l.debit = 500 AND l.credit = 0 FROM journal_entry_lines l
 
 -- ==== T13 : zéro activité 2094 → je_id null, pas de JE ====
 CREATE TEMP TABLE _r94 ON COMMIT DROP AS
-  SELECT close_fiscal_year_v1(2094, '424242') AS j;
+  SELECT close_fiscal_year_v2(2094, '424242') AS j;
 SELECT ok((SELECT (j->'je_id') = 'null'::jsonb
       AND NOT EXISTS (SELECT 1 FROM journal_entries
                        WHERE reference_type='year_close' AND entry_date='2094-12-31')
@@ -155,26 +164,26 @@ SELECT ok((SELECT COUNT(*) = 3 FROM audit_logs WHERE action='accounting.year.clo
   'T14 — 1 row audit accounting.year.closed par cloture');
 
 -- ==== T15 : ACL defense-in-depth ====
-SELECT ok(NOT has_function_privilege('anon','public.close_fiscal_year_v1(int,text)','EXECUTE')
-  AND has_function_privilege('authenticated','public.close_fiscal_year_v1(int,text)','EXECUTE'),
+SELECT ok(NOT has_function_privilege('anon','public.close_fiscal_year_v2(int,text)','EXECUTE')
+  AND has_function_privilege('authenticated','public.close_fiscal_year_v2(int,text)','EXECUTE'),
   'T15 — anon sans EXECUTE, authenticated avec');
 
 -- ==== T16-T19 : rapports post-clôture (migration _081 — exclusion year_close) ====
-SELECT ok((SELECT (get_profit_loss_v2('2098-01-01','2098-12-31')->>'net_profit')::numeric = 600),
+SELECT ok((SELECT (get_profit_loss_v3('2098-01-01','2098-12-31')->>'net_profit')::numeric = 600),
   'T16 — P&L exercice 2098 post-cloture lit toujours 600 (year_close exclue)');
 SELECT ok((SELECT (j->>'total_debit')::numeric = 0 AND (j->>'balanced')::boolean
-     FROM (SELECT get_trial_balance_v3('2098-12-01','2098-12-31') AS j) s),
+     FROM (SELECT get_trial_balance_v4('2098-12-01','2098-12-31') AS j) s),
   'T17 — TB decembre 2098 : colonnes de periode non gonflees par la JE de cloture (0, balanced)');
 -- 3200 cumule les DEUX clôtures de la suite : +600 (profit 2098) − 500 (perte 2096) = 100
 SELECT ok((SELECT (e->>'balance')::numeric = 100 AND (e->>'opening_balance')::numeric = 100
-     FROM jsonb_array_elements((get_trial_balance_v3('2099-01-01','2099-01-31'))->'lines') e
+     FROM jsonb_array_elements((get_trial_balance_v4('2099-01-01','2099-01-31'))->'lines') e
     WHERE e->>'code'='3200')
   AND NOT EXISTS (SELECT 1
-     FROM jsonb_array_elements((get_trial_balance_v3('2099-01-01','2099-01-31'))->'lines') e
+     FROM jsonb_array_elements((get_trial_balance_v4('2099-01-01','2099-01-31'))->'lines') e
     WHERE e->>'code' IN ('4991','6991')),
   'T18 — TB 2099 : 3200 porte le report cumule 100 (600-500), 4991/6991 rouvrent a 0');
 SELECT ok((SELECT (l->>'balance')::numeric = 100
-     FROM jsonb_array_elements((get_balance_sheet_v2('2098-12-31'))->'lines') l
+     FROM jsonb_array_elements((get_balance_sheet_v3('2098-12-31'))->'lines') l
     WHERE l->>'code'='3200'),
   'T19 — BS 31/12/2098 : 3200 Retained Earnings = 100 (CYE YTD retombe a 0, aucun changement BS requis)');
 

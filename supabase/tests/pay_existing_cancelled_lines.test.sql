@@ -74,7 +74,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v19(
+  r := pay_existing_order_v20(
     p_order_id := current_setting('c19.order_id')::uuid,
     p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb);
   PERFORM set_config('c19.pay_status', 'ok', false);
@@ -110,9 +110,9 @@ INSERT INTO _cap SELECT ok(
 
 INSERT INTO _cap SELECT ok(
   NOT has_function_privilege('anon',
-    'public.pay_existing_order_v19(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
+    'public.pay_existing_order_v20(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
     'execute'),
-  'T6: anon lacks EXECUTE on pay_existing_order_v19 (defense-in-depth REVOKE pair)');
+  'T6: anon lacks EXECUTE on pay_existing_order_v20 (defense-in-depth REVOKE pair)');
 
 INSERT INTO _cap SELECT hasnt_function('public', 'pay_existing_order_v18',
   ARRAY['uuid','jsonb','uuid','integer','uuid','numeric','text','numeric','text','uuid','uuid','jsonb','jsonb','boolean'],

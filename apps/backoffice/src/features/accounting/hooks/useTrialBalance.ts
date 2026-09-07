@@ -39,7 +39,7 @@ export function useTrialBalance(startDate: string, endDate: string) {
     enabled: startDate !== '' && endDate !== '',
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_trial_balance_v3', {
+      const { data, error } = await supabase.rpc('get_trial_balance_v4', {
         p_date_start: startDate,
         p_date_end:   endDate,
       });

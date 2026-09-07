@@ -6293,7 +6293,7 @@ export type Database = {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
-      calculate_pb1_payable_v2: {
+      calculate_pb1_payable_v3: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
@@ -6380,7 +6380,7 @@ export type Database = {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
       }
-      close_fiscal_year_v1: {
+      close_fiscal_year_v2: {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
@@ -6434,7 +6434,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v27: {
+      complete_order_with_payment_v28: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6861,7 +6861,7 @@ export type Database = {
       get_b2b_dashboard_counters_v1: { Args: never; Returns: Json }
       get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
-      get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
+      get_balance_sheet_v3: { Args: { p_as_of_date: string }; Returns: Json }
       get_basket_analysis_v3: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
@@ -7009,7 +7009,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_general_ledger_v2: {
+      get_general_ledger_v3: {
         Args: {
           p_account_id: string
           p_cursor?: Json
@@ -7078,7 +7078,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pb1_report_v2: {
+      get_pb1_report_v3: {
         Args: { p_period_month: number; p_period_year: number }
         Returns: Json
       }
@@ -7207,7 +7207,7 @@ export type Database = {
           suggested_quantity: number
         }[]
       }
-      get_profit_loss_v2: {
+      get_profit_loss_v3: {
         Args: {
           p_date_end: string
           p_date_start: string
@@ -7475,7 +7475,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_trial_balance_v3: {
+      get_trial_balance_v4: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7505,7 +7505,7 @@ export type Database = {
       }
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
-      hold_fired_order_v1: { Args: { p_order_id: string }; Returns: undefined }
+      hold_fired_order_v2: { Args: { p_order_id: string }; Returns: undefined }
       import_catalog_v2: {
         Args: {
           p_dry_run?: boolean
@@ -7763,7 +7763,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v19: {
+      pay_existing_order_v20: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number

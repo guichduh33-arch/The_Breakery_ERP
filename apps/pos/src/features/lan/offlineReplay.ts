@@ -189,7 +189,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     // 2026-09-05 — v18 → v19 : lignes annulées exclues du total facturé et du
     // déstockage (audit lot 1 P0 n°5). Signature inchangée, replay des intents
     // en file inchangé.
-    const { error } = await supabase.rpc('pay_existing_order_v19', {
+    const { error } = await supabase.rpc('pay_existing_order_v20', {
       p_order_id: orderId,
       ...tenderArgs,
       p_idempotency_key: intent.id,

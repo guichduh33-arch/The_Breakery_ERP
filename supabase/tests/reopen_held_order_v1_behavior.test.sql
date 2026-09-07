@@ -1,5 +1,5 @@
 -- supabase/tests/reopen_held_order_v1_behavior.test.sql
--- Spec A, Bloc 2/3 — BEHAVIORAL round-trip for hold_fired_order_v1 +
+-- Spec A, Bloc 2/3 — BEHAVIORAL round-trip for hold_fired_order_v2 +
 -- reopen_held_order_v2 under a real authenticated CASHIER context.
 --
 -- Controller-run only (MCP execute_sql against the V3 dev cloud) — it sets
@@ -76,7 +76,7 @@ BEGIN
    WHERE oi.order_id = v_oid LIMIT 1;
 
   -- hold → is_held=true
-  PERFORM hold_fired_order_v1(v_oid);
+  PERFORM hold_fired_order_v2(v_oid);
   SELECT is_held INTO v_held FROM orders WHERE id = v_oid;
   IF v_held IS NOT TRUE THEN RAISE EXCEPTION 'FAIL: hold did not set is_held=true'; END IF;
 

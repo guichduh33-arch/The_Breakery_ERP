@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useBalanceSheet.ts
 //
-// Wraps `get_balance_sheet_v2(p_as_of_date)`. Asserts A = L + E + CYE.
+// Wraps `get_balance_sheet_v3(p_as_of_date)`. Asserts A = L + E + CYE.
 // S50 W1.2 — bumped v1 → v2 (permission gate: reports.financial.read).
 
 import { useQuery } from '@tanstack/react-query';
@@ -61,12 +61,24 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Pendant de `toNum` pour les chaînes. Une réponse `supabase.rpc` est typée
+ * `Json` : passer un objet à `String()` rendrait « [object Object] » dans
+ * l'écran, en silence. On ne convertit donc que les primitives, et on retombe
+ * sur `fallback` pour tout le reste.
+ */
+function toStr(v: unknown, fallback = ''): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return fallback;
+}
+
 export function useBalanceSheet(asOfDate: string) {
   return useQuery<BalanceSheet>({
     queryKey: [...BALANCE_SHEET_QK, asOfDate] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_balance_sheet_v2', {
+      const { data, error } = await supabase.rpc('get_balance_sheet_v3', {
         p_as_of_date: asOfDate,
       });
       if (error) throw error;
@@ -111,13 +123,13 @@ export function useBalanceSheet(asOfDate: string) {
         },
         balanced: Boolean(r.balanced),
         delta:    toNum(r.delta),
-        as_of:    String(r.as_of ?? asOfDate),
+        as_of:    toStr(r.as_of, asOfDate),
         lines: linesRaw.map((l) => {
           const o = (l ?? {}) as Record<string, unknown>;
           return {
-            account_id:    String(o.account_id ?? ''),
-            code:          String(o.code ?? ''),
-            name:          String(o.name ?? ''),
+            account_id:    toStr(o.account_id),
+            code:          toStr(o.code),
+            name:          toStr(o.name),
             debit:         toNum(o.debit),
             credit:        toNum(o.credit),
             balance:       toNum(o.balance),

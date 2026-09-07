@@ -40,7 +40,7 @@ export function usePb1Report(params: UsePb1ReportParams) {
   return useQuery<Pb1ReportData, Error>({
     queryKey: ['reports', 'pb1', params.month, params.year],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_pb1_report_v2', {
+      const { data, error } = await supabase.rpc('get_pb1_report_v3', {
         p_period_month: params.month,
         p_period_year:  params.year,
       });

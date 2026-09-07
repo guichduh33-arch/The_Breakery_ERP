@@ -1,4 +1,4 @@
-// Session 56 — DEV-S54-01 : wraps close_fiscal_year_v1 (S54 migration _080).
+// Session 56 — DEV-S54-01 : wraps close_fiscal_year_v2 (S54 migration _080).
 // Zeroes classes 4/5/6 into 3200 Retained Earnings and seeds the 12 periods
 // of year N+1. line_count=0 (no activity) is a SUCCESS with je_id=null.
 
@@ -55,7 +55,7 @@ export function useCloseFiscalYear() {
   const qc = useQueryClient();
   return useMutation<CloseFiscalYearResult, CloseFiscalYearError, CloseFiscalYearArgs>({
     mutationFn: async ({ fiscalYear, managerPin }) => {
-      const { data, error } = await supabase.rpc('close_fiscal_year_v1', {
+      const { data, error } = await supabase.rpc('close_fiscal_year_v2', {
         p_fiscal_year: fiscalYear,
         p_manager_pin: managerPin,
       });

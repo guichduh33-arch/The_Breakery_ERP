@@ -4,7 +4,7 @@
 -- `restore_held_order_v1`, qui fabriquaient une commande `draft` à partir du
 -- panier local, n'existent plus. Ce fichier couvre désormais le SEUL hold
 -- restant, celui de la commande déjà tirée en cuisine —
--- `hold_fired_order_v1` → `reopen_held_order_v2` → `discard_held_order_v2`.
+-- `hold_fired_order_v2` → `reopen_held_order_v2` → `discard_held_order_v2`.
 --
 -- Le fixture monte la commande par la vraie porte (`fire_counter_order_v8`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
@@ -75,12 +75,12 @@ END $fixture$;
 -- ===========================================================================
 DO $hold$
 BEGIN
-  PERFORM hold_fired_order_v1(current_setting('ho.order')::uuid);
+  PERFORM hold_fired_order_v2(current_setting('ho.order')::uuid);
 END $hold$;
 
 SELECT ok(
   (SELECT is_held FROM orders WHERE id = current_setting('ho.order')::uuid),
-  'T1: hold_fired_order_v1 pose is_held=true sur la commande tiree');
+  'T1: hold_fired_order_v2 pose is_held=true sur la commande tiree');
 
 SELECT ok(
   (SELECT o.subtotal = 50000 AND o.total = 50000
@@ -157,8 +157,8 @@ SELECT ok(
 -- Defense in depth — anon sur aucune des trois portes
 -- ===========================================================================
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.hold_fired_order_v1(uuid)', 'EXECUTE'),
-  'T11: anon n''a pas EXECUTE sur hold_fired_order_v1');
+  NOT has_function_privilege('anon', 'public.hold_fired_order_v2(uuid)', 'EXECUTE'),
+  'T11: anon n''a pas EXECUTE sur hold_fired_order_v2');
 
 SELECT ok(
   NOT has_function_privilege('anon', 'public.reopen_held_order_v2(uuid)', 'EXECUTE')

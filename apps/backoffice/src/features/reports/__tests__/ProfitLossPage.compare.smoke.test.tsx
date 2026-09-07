@@ -54,7 +54,7 @@ function renderPage() {
 
 function pnlCalls(): { p_date_start: string; p_date_end: string }[] {
   return rpcSpy.mock.calls
-    .filter(([fn]) => fn === 'get_profit_loss_v2')
+    .filter(([fn]) => fn === 'get_profit_loss_v3')
     .map(([, args]) => args as { p_date_start: string; p_date_end: string });
 }
 

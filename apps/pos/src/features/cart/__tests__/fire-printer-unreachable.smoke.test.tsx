@@ -5,13 +5,13 @@
 // fire_counter_order_v8 BEFORE printing.
 // Updated (branch feat/bulk-import-purchases) to reflect park+clear-on-send:
 //   kitchen printer unreachable still toasts the error, the order is persisted
-//   and held via hold_fired_order_v1, and the terminal is cleared.
+//   and held via hold_fired_order_v2, and the terminal is cleared.
 //   DB/KDS is the source of truth; the order is recoverable from Held Orders.
 //
 // Scenario: barista printer present, kitchen printer ABSENT.
 // After clicking "Send to Kitchen":
 //   • toast.error is called mentioning kitchen ("saved to KDS, not printed").
-//   • fire_counter_order_v8 called first, then hold_fired_order_v1.
+//   • fire_counter_order_v8 called first, then hold_fired_order_v2.
 //   • Terminal is cleared: cart.items=[], pickedUpOrderId=null, printedItemIds=[], lockedItemIds=[].
 
 /// <reference types="@testing-library/jest-dom" />
@@ -162,11 +162,11 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     );
     expect(errorCall).toBeDefined();
 
-    // After fire+print (with kitchen unreachable), hold_fired_order_v1 parks
+    // After fire+print (with kitchen unreachable), hold_fired_order_v2 parks
     // the order and clears the terminal.
     expect(rpcMock).toHaveBeenCalledTimes(2);
     expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v8');
-    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v1');
+    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v2');
     expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1' });
 
     // Terminal is cleared after park.
