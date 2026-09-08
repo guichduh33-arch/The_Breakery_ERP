@@ -7094,7 +7094,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v3: {
+      get_pos_b2b_debts_v4: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
           b2b_credit_limit: number

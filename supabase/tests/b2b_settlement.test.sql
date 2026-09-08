@@ -7,7 +7,7 @@
 --   T4  : targeted allocation settles the chosen (newer) invoice, ignoring FIFO order
 --   T5  : targeted + FIFO remainder — chosen settled, leftover falls to oldest (partial)
 --   T6  : partial payment — view_b2b_invoices outstanding correct, is_unpaid TRUE, paid_at NULL
---   T7  : POS == BO — get_pos_b2b_debts_v3 outstanding == view_b2b_invoices outstanding
+--   T7  : POS == BO — get_pos_b2b_debts_v4 outstanding == view_b2b_invoices outstanding
 --   T8  : cancel unpaid — voided, gone from view, JE reversed balanced, balance + stock restored
 --   T9  : cancel blocked when an allocation exists → order_has_payments (P0011)
 --   T10 : create_b2b_order_v6 over credit limit → P0011 (TOCTOU gate fires)
@@ -248,12 +248,12 @@ BEGIN
   SELECT invoice_id INTO v_inv FROM view_b2b_invoices
    WHERE customer_id='b2b52001-0000-0000-0000-000000000005' LIMIT 1;
   SELECT outstanding INTO v_bo FROM view_b2b_invoices WHERE invoice_id=v_inv;
-  SELECT outstanding INTO v_pos FROM get_pos_b2b_debts_v3('b2b52001-0000-0000-0000-000000000005', 3650)
+  SELECT outstanding INTO v_pos FROM get_pos_b2b_debts_v4('b2b52001-0000-0000-0000-000000000005', 3650)
    WHERE order_id=v_inv;
   PERFORM set_config('breakery.t7', CASE WHEN v_pos = v_bo AND v_bo = 60000 THEN 'true' ELSE 'false' END, false);
 END $t7$;
 SELECT ok(current_setting('breakery.t7')::boolean,
-  'T7: POS get_pos_b2b_debts_v3 outstanding == BO view_b2b_invoices outstanding (60K)');
+  'T7: POS get_pos_b2b_debts_v4 outstanding == BO view_b2b_invoices outstanding (60K)');
 
 -- ===========================================================================
 -- T8 — cancel unpaid : voided, gone from view, JE reversed, balance + stock restored
