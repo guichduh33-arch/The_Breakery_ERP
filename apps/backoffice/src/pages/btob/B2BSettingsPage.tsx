@@ -149,6 +149,27 @@ export default function B2BSettingsPage(): JSX.Element {
         subtitle="Payment terms, overdue thresholds, and aging report configuration."
       />
 
+      {/* Audit b2b-credit 2026-08-31, finding n°5 : les quatre reglages de cette page sont
+          persistes et valides serveur, mais AUCUN n'a de consommateur. L'aging du module B2B
+          est fige 30/60/90 dans view_ar_aging ; celui des rapports est fige dans
+          get_ar_aging. Arbitrage Mamat du 2026-09-08 : afficher l'ecart plutot que de laisser
+          l'ecran mentir. Le branchement reel est un chantier a part (il faut d'abord trancher
+          LAQUELLE des deux definitions de l'aging gagne). Retirer ce bandeau le jour ou les
+          reglages pilotent vraiment un calcul. */}
+      <div
+        role="note"
+        className="flex items-start gap-2 rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary"
+      >
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />
+        <p>
+          <span className="text-text-primary">These settings are saved but not wired yet.</span>{' '}
+          Aging buckets, payment terms and the overdue threshold are stored on the server, but no
+          report reads them today: the B2B aging view and the AR Aging report both use fixed
+          buckets. Changing a value here will not change any figure until the reports are wired
+          to it.
+        </p>
+      </div>
+
       {isLoading && (
         <div role="status" aria-label="Loading settings" className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary">
           Loading settings…
