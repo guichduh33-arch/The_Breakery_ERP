@@ -6301,7 +6301,7 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
-      cancel_b2b_order_v1: {
+      cancel_b2b_order_v2: {
         Args: {
           p_idempotency_key?: string
           p_order_id: string
@@ -6485,7 +6485,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v6: {
+      create_b2b_order_v7: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -7094,7 +7094,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v3: {
+      get_pos_b2b_debts_v4: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
           b2b_credit_limit: number

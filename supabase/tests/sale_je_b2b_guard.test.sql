@@ -9,7 +9,7 @@
 -- couvre aussi la branche 'voided' par principe de symétrie et lève un
 -- blocage fiscal potentiel (check_fiscal_period_open sur la date de CRÉATION
 -- d'une commande B2B ancienne) — mais aucune JE fantôme n'a jamais existé sur
--- ce chemin : cancel_b2b_order_v1 exige status='b2b_pending' en entrée,
+-- ce chemin : cancel_b2b_order exige status='b2b_pending' en entrée,
 -- jamais 'paid', donc la branche void du trigger (OLD.status IN
 -- ('paid','completed')) n'a jamais pu s'activer pour une annulation B2B.
 --
@@ -150,7 +150,7 @@ SELECT ok(current_setting('b2bguard.t6_pass')::boolean,
 --
 -- Durcissement DÉFENSIF (belt-and-suspenders), pas la preuve d'un second bug
 -- corrigé : ce chemin paid -> voided n'est atteignable par AUCUNE RPC vivante
--- aujourd'hui pour une commande B2B — cancel_b2b_order_v1 n'accepte que
+-- aujourd'hui pour une commande B2B — cancel_b2b_order n'accepte que
 -- status='b2b_pending' en entrée, et void_order_rpc échoue en amont sur une
 -- commande B2B (session_id NULL). Ce test verrouille le comportement du
 -- trigger SI ce chemin s'ouvrait un jour (nouvelle RPC, correction manuelle

@@ -6,6 +6,9 @@
 // T2: editing threshold + Save calls update_b2b_settings_v1 with a 4-key patch
 //     whose aging_buckets have NO local ids.
 // T3: the «Read-only preview» banner is absent.
+// T5: le bandeau « not wired yet » est présent — audit b2b-credit finding n°5 : les quatre
+//     réglages sont persistés mais aucun rapport ne les lit. Tant que ce n'est pas branché,
+//     l'écran doit le dire.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
@@ -158,5 +161,13 @@ describe('B2BSettingsPage', () => {
     // Banner text from the old stub must be gone
     expect(screen.queryByText(/read-only preview/i)).toBeNull();
     expect(screen.queryByText(/D-W6-B2BSET-01/i)).toBeNull();
+  });
+
+  it('T5: the «saved but not wired yet» banner is shown', async () => {
+    renderPage();
+    expect(
+      await screen.findByText(/these settings are saved but not wired yet/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent(/fixed buckets/i);
   });
 });
