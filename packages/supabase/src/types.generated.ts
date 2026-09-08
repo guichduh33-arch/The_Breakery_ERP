@@ -7346,7 +7346,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_config_issues_v1: {
+      get_stock_config_issues_v2: {
         Args: never
         Returns: {
           category_name: string
