@@ -6485,7 +6485,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v6: {
+      create_b2b_order_v7: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
