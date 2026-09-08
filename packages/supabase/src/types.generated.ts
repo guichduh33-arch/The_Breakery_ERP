@@ -6815,7 +6815,7 @@ export type Database = {
       fail:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      finalize_opname_v3: {
+      finalize_opname_v4: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
       }
