@@ -268,7 +268,7 @@ export default function OpnameDetailPage(): JSX.Element {
         )}
         {/* `review` UNIQUEMENT. Offrir Finaliser pendant le comptage rendait la
             révélation facultative : on postait le JE définitif sans avoir vu les
-            écarts. Le serveur refuse désormais aussi (finalize_opname_v3). */}
+            écarts. Le serveur refuse désormais aussi (finalize_opname_v4). */}
         {d.status === 'review' && canFinalize && (
           <Button
             variant="ink"
