@@ -10,7 +10,7 @@
 // note requirement still applies, on the review step.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, Currency, FullScreenModal } from '@breakery/ui';
+import { Button, Currency, FullScreenModal, Select } from '@breakery/ui';
 // Critique run 2 (2026-08-14 P2) — une seule notation des milliers sur le
 // parcours d'argent : formatIdr, le formatteur unique (id-ID depuis
 // l'arbitrage du 2026-08-13, voir packages/utils/src/idr.ts), jamais un
@@ -380,9 +380,15 @@ export function CloseShiftModal({
             <label htmlFor="approver_select" className="text-xs uppercase tracking-wide text-text-secondary">
               Manager approval (required — variance above manager threshold)
             </label>
-            <select
+            {/* Audit ui-kit finding F2 : l'anneau de focus était explicitement
+                supprimé (`focus:outline-none`) et remplacé par un changement de
+                couleur de bordure keyé sur `:focus`, pas `:focus-visible` — le
+                motif retiré des alternatives conformes le 2026-08-21. Sur LE
+                champ où un manager approuve un écart de caisse. Le primitif
+                porte l'anneau or `focus-visible` et `border-border-strong`. */}
+            <Select
               id="approver_select"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px]"
               value={approverId}
               onChange={(e) => setApproverId(e.target.value)}
               aria-invalid={approverId === ''}
@@ -394,7 +400,7 @@ export function CloseShiftModal({
                   {u.display_name} ({u.role})
                 </option>
               ))}
-            </select>
+            </Select>
             <input
               id="approver_pin"
               data-vkp="numeric"
