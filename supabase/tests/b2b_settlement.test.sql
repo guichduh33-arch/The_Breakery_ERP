@@ -265,7 +265,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   SELECT current_stock INTO v_stock_before FROM products WHERE id='b2b52002-0000-0000-0000-000000000001';
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000006',3,50000,'2026-06-07'::timestamptz);
-  v_res := cancel_b2b_order_v1(v_inv, 'erroneous invoice');
+  v_res := cancel_b2b_order_v2(v_inv, 'erroneous invoice');
   SELECT current_stock INTO v_stock_after FROM products WHERE id='b2b52002-0000-0000-0000-000000000001';
   SELECT total_debit, total_credit INTO v_je_debit, v_je_credit
     FROM journal_entries WHERE reference_type='b2b_order_cancel' AND reference_id=v_inv;
@@ -293,9 +293,9 @@ BEGIN
   PERFORM set_config('breakery.t9_inv', v_inv::text, false);
 END $t9_setup$;
 SELECT throws_ok(
-  format($$ SELECT cancel_b2b_order_v1(%L, 'try cancel allocated') $$, current_setting('breakery.t9_inv')),
+  format($$ SELECT cancel_b2b_order_v2(%L, 'try cancel allocated') $$, current_setting('breakery.t9_inv')),
   'P0011', NULL,
-  'T9: cancel_b2b_order_v1 on an allocated invoice raises P0011 (order_has_payments)');
+  'T9: cancel_b2b_order_v2 on an allocated invoice raises P0011 (order_has_payments)');
 
 -- ===========================================================================
 -- T10 — create_b2b_order_v6 over credit limit (TOCTOU gate fires)

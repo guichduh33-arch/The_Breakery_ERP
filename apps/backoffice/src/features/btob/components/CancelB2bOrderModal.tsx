@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/btob/components/CancelB2bOrderModal.tsx
 // Session 56 — DEV-S52-03 : cancel an unpaid b2b_pending invoice.
-// Wraps cancel_b2b_order_v1 (reverse JE + sale_void stock + balance).
+// Wraps cancel_b2b_order (reverse JE + sale_void stock, vitrine incluse + balance).
 // Blocked server-side when any allocation exists (order_has_payments).
 // One modal opening = one idempotency key (rotated on close, S55 pattern).
 

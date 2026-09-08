@@ -6301,7 +6301,7 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
-      cancel_b2b_order_v1: {
+      cancel_b2b_order_v2: {
         Args: {
           p_idempotency_key?: string
           p_order_id: string
