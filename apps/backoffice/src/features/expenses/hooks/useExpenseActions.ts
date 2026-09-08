@@ -108,7 +108,7 @@ export function usePayExpense() {
     mutationFn: async ({ id, paymentMethod }) => {
       const args: Record<string, unknown> = { p_expense_id: id };
       if (paymentMethod !== undefined) args.p_payment_method = paymentMethod;
-      const { data, error } = await supabase.rpc('pay_expense_v2', args as never);
+      const { data, error } = await supabase.rpc('pay_expense_v3', args as never);
       if (error) throw error;
       return data as unknown as PayResult;
     },
