@@ -1,16 +1,15 @@
 // supabase/functions/_shared/session-auth.ts
 import { getAdminClient } from './supabase-admin.ts';
 import { jsonResponse } from './cors.ts';
-
-const TIMEOUT_MS = 30 * 60 * 1000;          // 30 min inactivity
-const MAX_AGE_MS = 24 * 60 * 60 * 1000;     // 24h hard cap
-const ACTIVITY_THROTTLE_MS = 60_000;        // D5 — skip last_activity_at UPDATE if last refresh < 60s ago
+import { sessionRejection } from './session-policy.ts';
 
 export interface SessionContext {
   userId: string;          // user_profiles.id
   authUserId: string;      // auth.users.id
   roleCode: string;
   sessionId: string;
+  permissions: string[];
+  sessionTimeoutMinutes: number;
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -32,63 +31,31 @@ export async function requireSession(req: Request): Promise<SessionContext | Res
 
   const { data: session, error } = await admin
     .from('user_sessions')
-    .select('id, user_id, created_at, last_activity_at, ended_at, user_profiles!inner(id, auth_user_id, role_code)')
+    .select('id, user_id, created_at, last_activity_at, ended_at, permissions_snapshot, session_timeout_minutes, user_profiles!inner(id, auth_user_id, role_code, is_active, deleted_at)')
     .eq('session_token_hash', tokenHash)
     .is('ended_at', null)
     .maybeSingle();
 
-  if (error || !session) {
+  if (error) return jsonResponse({ error: 'session_unavailable' }, 503);
+  if (!session) {
     return jsonResponse({ error: 'session_not_found' }, 401);
   }
 
-  const now = Date.now();
-  const lastActivity = new Date(session.last_activity_at).getTime();
-  const created = new Date(session.created_at).getTime();
-
-  if (now - lastActivity > TIMEOUT_MS) {
-    await admin
-      .from('user_sessions')
-      .update({ ended_at: new Date().toISOString(), end_reason: 'timeout' })
-      .eq('id', session.id);
-    return jsonResponse({ error: 'session_timeout' }, 401);
-  }
-
-  if (now - created > MAX_AGE_MS) {
-    await admin
-      .from('user_sessions')
-      .update({ ended_at: new Date().toISOString(), end_reason: 'expired' })
-      .eq('id', session.id);
-    return jsonResponse({ error: 'session_expired' }, 401);
-  }
-
-  // D5 — Refresh activity, throttled to once per ACTIVITY_THROTTLE_MS, fire-and-forget.
-  // Order matters : the TIMEOUT_MS / MAX_AGE_MS guards above MUST run first,
-  // so an expired session is still terminated even when the UPDATE is skipped.
-  // Fire-and-forget : the UPDATE outcome doesn't gate the request — losing one
-  // refresh is harmless because the next call will see a still-fresh timestamp
-  // (we just passed the TIMEOUT_MS check), and a future call will re-attempt.
-  if (now - lastActivity >= ACTIVITY_THROTTLE_MS) {
-    void admin
-      .from('user_sessions')
-      .update({ last_activity_at: new Date().toISOString() })
-      .eq('id', session.id)
-      .then(
-        () => undefined,
-        (err) => {
-          console.error('[session-auth] activity refresh failed:', err);
-        },
-      );
-  }
-
-  // Note: user_profiles vient via Supabase relational select. Type check.
   const profile = Array.isArray(session.user_profiles) ? session.user_profiles[0] : session.user_profiles;
-  if (!profile) return jsonResponse({ error: 'profile_not_found' }, 401);
+  if (!profile || profile.is_active !== true || profile.deleted_at !== null || !profile.auth_user_id) {
+    return jsonResponse({ error: 'active_profile_required' }, 401);
+  }
+
+  const rejection = sessionRejection(session, Date.now());
+  if (rejection) return jsonResponse({ error: rejection }, 401);
 
   return {
     userId: profile.id,
     authUserId: profile.auth_user_id,
     roleCode: profile.role_code,
     sessionId: session.id,
+    permissions: session.permissions_snapshot,
+    sessionTimeoutMinutes: session.session_timeout_minutes,
   };
 }
 

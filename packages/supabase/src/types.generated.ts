@@ -5654,6 +5654,8 @@ export type Database = {
       }
       user_sessions: {
         Row: {
+          permissions_snapshot: string[] | null
+          session_timeout_minutes: number | null
           created_at: string
           device_type: string
           end_reason: string | null
@@ -5666,6 +5668,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           created_at?: string
           device_type: string
           end_reason?: string | null
@@ -5678,6 +5682,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           created_at?: string
           device_type?: string
           end_reason?: string | null
@@ -6329,6 +6335,16 @@ export type Database = {
         Returns: Json
       }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
+      touch_user_session_v1: { Args: { p_session_id: string }; Returns: boolean }
+      change_user_pin_v1: {
+        Args: {
+          p_actor_id: string
+          p_current_pin?: string
+          p_new_pin: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       close_cancelled_tablet_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: {
@@ -6683,7 +6699,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_user_v1: {
+      create_user_v2: {
         Args: {
           p_employee_code: string
           p_full_name: string
@@ -6741,7 +6757,7 @@ export type Database = {
         Args: { p_permission_code: string; p_user_profile_id: string }
         Returns: boolean
       }
-      delete_user_v1: {
+      delete_user_v2: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
@@ -8101,7 +8117,7 @@ export type Database = {
         Args: { p_reason?: string; p_reservation_id: string }
         Returns: Json
       }
-      reset_user_pin_v1: {
+      reset_user_pin_v2: {
         Args: { p_new_pin: string; p_user_id: string }
         Returns: undefined
       }
@@ -8490,7 +8506,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_user_profile_v1: {
+      update_user_profile_v2: {
         Args: {
           p_employee_code: string
           p_full_name: string
@@ -8498,7 +8514,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_user_role_v1: {
+      update_user_role_v2: {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
         Returns: Json
       }

@@ -111,6 +111,7 @@ export const useAuthStore = create<AuthState>()(
             user: res.user,
             sessionToken: res.session.token,
             permissions: res.permissions,
+            sessionTimeoutMinutes: res.session_timeout_minutes ?? 30,
             isAuthenticated: true,
             isLoading: false,
             bootstrapStatus: 'ready',
@@ -190,7 +191,8 @@ export const useAuthStore = create<AuthState>()(
         } catch (err: unknown) {
           const e = err as { status?: number };
           if (e.status === 401) {
-            await get().logout();
+            get().lock('session_expired');
+            set({ bootstrapStatus: 'ready' });
           } else {
             // Backend unreachable — keep the session for retry, surface an error
             // screen instead of silently degrading to an empty/anon state.
@@ -255,6 +257,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         sessionToken: state.sessionToken,
         isAuthenticated: state.isAuthenticated,
+        sessionTimeoutMinutes: state.sessionTimeoutMinutes,
       }),
     },
   ),

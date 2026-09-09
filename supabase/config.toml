@@ -372,6 +372,9 @@ verify_jwt = false
 [functions.auth-get-session]
 verify_jwt = false
 
+[functions.auth-session-activity]
+verify_jwt = false
+
 [functions.auth-logout]
 verify_jwt = false
 

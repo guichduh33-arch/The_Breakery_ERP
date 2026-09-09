@@ -22,7 +22,7 @@ export function useUpdateUserRole() {
   const qc = useQueryClient();
   return useMutation<UpdateUserRoleResult, Error, UpdateUserRoleArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('update_user_role_v1', {
+      const { data, error } = await supabase.rpc('update_user_role_v2', {
         p_user_id:       args.user_id,
         p_new_role_code: args.new_role_code,
         p_reason:        args.reason,

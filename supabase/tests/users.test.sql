@@ -3,16 +3,16 @@
 --
 -- Coverage T_USR_01..10 :
 --   T_USR_01 : RPCs exist with expected signatures.
---   T_USR_02 : create_user_v1 input validation.
---   T_USR_03 : create_user_v1 happy path — auth.users + user_profiles + audit.
---   T_USR_04 : update_user_role_v1 — audit row with old_role/new_role/reason.
---   T_USR_05 : update_user_role_v1 — sessions revoked (user_sessions.ended_at set).
---   T_USR_06 : delete_user_v1 happy path — soft-delete + audit.
---   T_USR_07 : delete_user_v1 last-admin protection (SQLSTATE P0001).
---   T_USR_08 : reset_user_pin_v1 happy path — pin_hash updated + lockout cleared.
---   T_USR_09 : update_user_profile_v1 self-edit allowed without users.update perm.
+--   T_USR_02 : create_user_v2 input validation.
+--   T_USR_03 : create_user_v2 happy path — auth.users + user_profiles + audit.
+--   T_USR_04 : update_user_role_v2 — audit row with old_role/new_role/reason.
+--   T_USR_05 : update_user_role_v2 — sessions revoked (user_sessions.ended_at set).
+--   T_USR_06 : delete_user_v2 happy path — soft-delete + audit.
+--   T_USR_07 : delete_user_v2 last-admin protection (SQLSTATE P0001).
+--   T_USR_08 : reset_user_pin_v2 happy path — pin_hash updated + lockout cleared.
+--   T_USR_09 : update_user_profile_v2 self-edit allowed without users.update perm.
 --   T_USR_10 : has_permission() NOT re-CREATEd (body still contains 'user_permission_overrides').
---   T_USR_11 : update_user_role_v1 last-admin downgrade protection (SQLSTATE P0001, S58 F-1).
+--   T_USR_11 : update_user_role_v2 last-admin downgrade protection (SQLSTATE P0001, S58 F-1).
 --
 -- Runner :
 --   Wrapped in BEGIN ... ROLLBACK via Supabase MCP execute_sql.
@@ -49,32 +49,32 @@ END $$;
 -- T_USR_01 : RPC signatures exist
 -- =============================================================================
 
-SELECT has_function('create_user_v1',
+SELECT has_function('create_user_v2',
   ARRAY['text','text','text','text'],
-  'T_USR_01a create_user_v1(text,text,text,text) exists');
+  'T_USR_01a create_user_v2(text,text,text,text) exists');
 
-SELECT has_function('update_user_role_v1',
+SELECT has_function('update_user_role_v2',
   ARRAY['uuid','text','text'],
-  'T_USR_01b update_user_role_v1(uuid,text,text) exists');
+  'T_USR_01b update_user_role_v2(uuid,text,text) exists');
 
-SELECT has_function('delete_user_v1',
+SELECT has_function('delete_user_v2',
   ARRAY['uuid','text'],
-  'T_USR_01c delete_user_v1(uuid,text) exists');
+  'T_USR_01c delete_user_v2(uuid,text) exists');
 
-SELECT has_function('reset_user_pin_v1',
+SELECT has_function('reset_user_pin_v2',
   ARRAY['uuid','text'],
-  'T_USR_01d reset_user_pin_v1(uuid,text) exists');
+  'T_USR_01d reset_user_pin_v2(uuid,text) exists');
 
-SELECT has_function('update_user_profile_v1',
+SELECT has_function('update_user_profile_v2',
   ARRAY['uuid','text','text'],
-  'T_USR_01e update_user_profile_v1(uuid,text,text) exists');
+  'T_USR_01e update_user_profile_v2(uuid,text,text) exists');
 
 -- =============================================================================
--- T_USR_02 : create_user_v1 input validation (no auth → 28000)
+-- T_USR_02 : create_user_v2 input validation (no auth → 28000)
 -- =============================================================================
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','1234')$$,
+  $$SELECT create_user_v2('USR_T2','Test User','MANAGER','1234')$$,
   '28000',
   NULL,
   'T_USR_02a unauthenticated caller refused'
@@ -93,28 +93,28 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR','Test User','MANAGER','1234')$$,
+  $$SELECT create_user_v2('USR','Test User','MANAGER','1234')$$,
   '22023',
   NULL,
   'T_USR_02b short employee_code refused'
 );
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','T','MANAGER','1234')$$,
+  $$SELECT create_user_v2('USR_T2','T','MANAGER','1234')$$,
   '22023',
   NULL,
   'T_USR_02c short full_name refused'
 );
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','12')$$,
+  $$SELECT create_user_v2('USR_T2','Test User','MANAGER','12')$$,
   '22023',
   NULL,
   'T_USR_02d short pin refused'
 );
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','abcdef')$$,
+  $$SELECT create_user_v2('USR_T2','Test User','MANAGER','abcdef')$$,
   '22023',
   NULL,
   'T_USR_02e non-numeric pin refused'
@@ -124,7 +124,7 @@ SELECT throws_ok(
 -- role-existence check (pin validation runs before the role check in the
 -- function body) — 'NOT_A_ROLE' is what's under test, not the pin.
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','NOT_A_ROLE','123456')$$,
+  $$SELECT create_user_v2('USR_T2','Test User','NOT_A_ROLE','123456')$$,
   '23503',
   NULL,
   'T_USR_02f unknown role refused'
@@ -132,21 +132,21 @@ SELECT throws_ok(
 
 -- S58 (Vague 0, T3c) : pin must be EXACTLY 6 digits (was 4-8).
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','12345')$$,
+  $$SELECT create_user_v2('USR_T2','Test User','MANAGER','12345')$$,
   '22023',
   NULL,
   'T_USR_02g 5-digit pin refused (exactly-6 rule)'
 );
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','1234567')$$,
+  $$SELECT create_user_v2('USR_T2','Test User','MANAGER','1234567')$$,
   '22023',
   NULL,
   'T_USR_02h 7-digit pin refused (exactly-6 rule)'
 );
 
 -- =============================================================================
--- T_USR_03 : create_user_v1 happy path
+-- T_USR_03 : create_user_v2 happy path
 -- =============================================================================
 
 DO $$
@@ -155,7 +155,7 @@ DECLARE
   v_auth_id UUID;
   v_audit_count INTEGER;
 BEGIN
-  v_new_id := create_user_v1('USR_T3','Phase 5D Test User','CASHIER','555444');
+  v_new_id := create_user_v2('USR_T3','Phase 5D Test User','CASHIER','555444');
   SELECT auth_user_id INTO v_auth_id FROM user_profiles WHERE id = v_new_id;
   PERFORM set_config('test.usr_t3_id',      v_new_id::TEXT, true);
   PERFORM set_config('test.usr_t3_auth',    v_auth_id::TEXT, true);
@@ -186,7 +186,7 @@ SELECT is(
 );
 
 -- =============================================================================
--- T_USR_04 : update_user_role_v1 — audit + metadata
+-- T_USR_04 : update_user_role_v2 — audit + metadata
 -- =============================================================================
 
 DO $$
@@ -194,7 +194,7 @@ DECLARE
   v_id UUID := current_setting('test.usr_t3_id')::UUID;
   v_res JSONB;
 BEGIN
-  v_res := update_user_role_v1(v_id, 'MANAGER', 'promotion to shift lead');
+  v_res := update_user_role_v2(v_id, 'MANAGER', 'promotion to shift lead');
   PERFORM set_config('test.usr_t4_res', v_res::TEXT, true);
 END $$;
 
@@ -219,7 +219,7 @@ SELECT ok(
 );
 
 -- =============================================================================
--- T_USR_05 : update_user_role_v1 — sessions revoked
+-- T_USR_05 : update_user_role_v2 — sessions revoked
 -- =============================================================================
 
 DO $$
@@ -233,7 +233,7 @@ BEGIN
   VALUES (v_id, v_token, 'pos');
 
   -- Role-change again
-  v_res := update_user_role_v1(v_id, 'CASHIER', 'demotion test');
+  v_res := update_user_role_v2(v_id, 'CASHIER', 'demotion test');
   PERFORM set_config('test.usr_t5_res', v_res::TEXT, true);
 END $$;
 
@@ -251,7 +251,7 @@ SELECT is(
 );
 
 -- =============================================================================
--- T_USR_06 : delete_user_v1 happy path
+-- T_USR_06 : delete_user_v2 happy path
 -- =============================================================================
 
 DO $$
@@ -259,7 +259,7 @@ DECLARE
   v_id UUID := current_setting('test.usr_t3_id')::UUID;
   v_res JSONB;
 BEGIN
-  v_res := delete_user_v1(v_id, 'left the company');
+  v_res := delete_user_v2(v_id, 'left the company');
   PERFORM set_config('test.usr_t6_res', v_res::TEXT, true);
 END $$;
 
@@ -281,7 +281,7 @@ SELECT ok(
 );
 
 -- =============================================================================
--- T_USR_07 : delete_user_v1 LAST_ADMIN_PROTECTED
+-- T_USR_07 : delete_user_v2 LAST_ADMIN_PROTECTED
 -- =============================================================================
 
 -- S77 : la base dev vivante porte d'autres admins actifs (E2E001 depuis S71,
@@ -298,7 +298,7 @@ UPDATE user_profiles
    AND id <> (SELECT admin_prof FROM _usr_ctx);
 
 SELECT throws_ok(
-  format($f$SELECT delete_user_v1(%L::UUID, 'attempt to remove last admin')$f$,
+  format($f$SELECT delete_user_v2(%L::UUID, 'attempt to remove last admin')$f$,
          (SELECT admin_prof FROM _usr_ctx)),
   'P0001',
   NULL,
@@ -306,11 +306,11 @@ SELECT throws_ok(
 );
 
 -- =============================================================================
--- T_USR_11 : update_user_role_v1 LAST_ADMIN_PROTECTED (downgrade path, S58 F-1)
+-- T_USR_11 : update_user_role_v2 LAST_ADMIN_PROTECTED (downgrade path, S58 F-1)
 -- =============================================================================
 
 SELECT throws_ok(
-  format($f$SELECT update_user_role_v1(%L::UUID, 'CASHIER', 'attempt to downgrade last admin')$f$,
+  format($f$SELECT update_user_role_v2(%L::UUID, 'CASHIER', 'attempt to downgrade last admin')$f$,
          (SELECT admin_prof FROM _usr_ctx)),
   'P0001',
   NULL,
@@ -318,7 +318,7 @@ SELECT throws_ok(
 );
 
 -- =============================================================================
--- T_USR_08 : reset_user_pin_v1 happy path
+-- T_USR_08 : reset_user_pin_v2 happy path
 -- =============================================================================
 
 -- Re-create another user to test (the T_USR_03 user is now soft-deleted).
@@ -326,20 +326,20 @@ DO $$
 DECLARE
   v_new_id UUID;
 BEGIN
-  v_new_id := create_user_v1('USR_T8','Pin Reset Target','CASHIER','999888');
+  v_new_id := create_user_v2('USR_T8','Pin Reset Target','CASHIER','999888');
   -- Simulate a lockout
   UPDATE user_profiles SET failed_login_attempts = 5,
                            locked_until = now() + interval '15 minutes'
    WHERE id = v_new_id;
   PERFORM set_config('test.usr_t8_id', v_new_id::TEXT, true);
 
-  PERFORM reset_user_pin_v1(v_new_id, '777666');
+  PERFORM reset_user_pin_v2(v_new_id, '777666');
 END $$;
 
 SELECT ok(
   (SELECT failed_login_attempts = 0 AND locked_until IS NULL
      FROM user_profiles WHERE id = current_setting('test.usr_t8_id')::UUID),
-  'T_USR_08a lockout cleared by reset_user_pin_v1'
+  'T_USR_08a lockout cleared by reset_user_pin_v2'
 );
 
 SELECT ok(
@@ -350,14 +350,14 @@ SELECT ok(
 SELECT ok(
   (SELECT EXISTS(
      SELECT 1 FROM audit_logs
-      WHERE action = 'user.pin_reset'
+      WHERE action = 'pin.change_admin'
         AND entity_id = current_setting('test.usr_t8_id')::UUID
   )),
   'T_USR_08c audit row written for pin_reset'
 );
 
 -- =============================================================================
--- T_USR_09 : update_user_profile_v1 — self-edit allowed without users.update
+-- T_USR_09 : update_user_profile_v2 — self-edit allowed without users.update
 -- =============================================================================
 
 -- Switch caller to the freshly-created T8 user (cashier role, no users.update).
@@ -372,7 +372,7 @@ BEGIN
     jsonb_build_object('sub', v_target_auth::TEXT, 'role', 'authenticated')::TEXT,
     true);
 
-  PERFORM update_user_profile_v1(v_target_id, 'Pin Reset Target (renamed)', 'USR_T8');
+  PERFORM update_user_profile_v2(v_target_id, 'Pin Reset Target (renamed)', 'USR_T8');
 END $$;
 
 SELECT is(

@@ -4,7 +4,7 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
-import { computePermissionsForRole, checkPermissionForRole } from '../_shared/permissions.ts';
+import { computePermissionsForRole, withPermissionErrors } from '../_shared/permissions.ts';
 import { signJwt, getJwtSecret } from '../_shared/jwt.ts';
 import { logAndRedact, redactError } from '../_shared/error-redact.ts';
 
@@ -25,7 +25,7 @@ interface VerifyPinPayload {
   required_permission?: string;
 }
 
-serve(async (req) => {
+serve(withPermissionErrors(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -80,7 +80,7 @@ serve(async (req) => {
   // 1. Fetch profile
   const { data: profile, error: profileErr } = await admin
     .from('user_profiles')
-    .select('id, auth_user_id, full_name, role_code, employee_code, is_active, locked_until, failed_login_attempts')
+    .select('id, auth_user_id, full_name, role_code, employee_code, is_active, locked_until, failed_login_attempts, role:roles!user_profiles_role_code_fkey(session_timeout_minutes)')
     .eq('id', user_id)
     .is('deleted_at', null)
     .maybeSingle();
@@ -141,19 +141,22 @@ serve(async (req) => {
     return jsonResponse(redactError('server_misconfigured_no_auth_user'), 500);
   }
 
+  // Résolution complète avant de créer une session ou une trace de succès.
+  const permissions = await computePermissionsForRole(profile.role_code, profile.id);
+  const role = Array.isArray(profile.role) ? profile.role[0] : profile.role;
+  const sessionTimeoutMinutes = role?.session_timeout_minutes;
+  if (!Number.isInteger(sessionTimeoutMinutes) || sessionTimeoutMinutes < 5 || sessionTimeoutMinutes > 480) {
+    return jsonResponse({ error: 'session_policy_unavailable' }, 503);
+  }
+  if (required_permission && !permissions.includes(required_permission)) {
+    return jsonResponse(redactError('permission_denied', { code: 'PERMISSION_MISSING' }), 403);
+  }
+
   // 3. PIN OK : reset compteur, set last_login
   await admin
     .from('user_profiles')
     .update({ failed_login_attempts: 0, locked_until: null, last_login_at: new Date().toISOString() })
     .eq('id', user_id);
-
-  // 3b. Optional permission gate — check before issuing session
-  if (required_permission) {
-    const hasPermission = await checkPermissionForRole(profile.role_code, required_permission, profile.id);
-    if (!hasPermission) {
-      return jsonResponse(redactError('permission_denied', { code: 'PERMISSION_MISSING' }), 403);
-    }
-  }
 
   // 4. Generate session token (UUID v4) — sera hashé par trigger DB
   const sessionToken = crypto.randomUUID();
@@ -165,6 +168,8 @@ serve(async (req) => {
       user_id: profile.id,
       session_token_hash: sessionToken,    // trigger hash en SHA-256
       device_type,
+      permissions_snapshot: permissions,
+      session_timeout_minutes: sessionTimeoutMinutes,
       ip_address: ip,
       user_agent: req.headers.get('user-agent') ?? null,
     })
@@ -216,9 +221,6 @@ serve(async (req) => {
     metadata: { device_type, ip, session_id: session.id },
   });
 
-  // 8. Build permissions list (DB-driven — role_permissions + user_permission_overrides)
-  const permissions = await computePermissionsForRole(profile.role_code, profile.id);
-
   // 9. Response
   return jsonResponse({
     verified_user_id: profile.id,
@@ -239,5 +241,6 @@ serve(async (req) => {
       expires_at: verifyData.session.expires_at,
     },
     permissions,
+    session_timeout_minutes: sessionTimeoutMinutes,
   });
-});
+}));

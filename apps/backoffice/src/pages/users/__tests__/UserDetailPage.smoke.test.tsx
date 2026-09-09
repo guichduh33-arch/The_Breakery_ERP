@@ -21,14 +21,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // ---- Hook mocks ------------------------------------------------------------
 
 // useResetUserPin — mutation we control via mockMutate.
-type ResetArgs = { user_id: string; new_pin: string };
-type ResetResult = { ok: true; weak: boolean; weak_reason?: 'sequence'|'repetition'|'common' };
-type Callbacks = {
+interface ResetArgs { user_id: string; new_pin: string; current_pin?: string }
+interface ResetResult { ok: true; weak: boolean; weak_reason?: 'sequence'|'repetition'|'common' }
+interface Callbacks {
   onSuccess?: (data: ResetResult) => void;
   onError?: (e: Error) => void;
-};
+}
 
-let mockMutateImpl: (args: ResetArgs, cb: Callbacks) => void = () => {};
+let mockMutateImpl: (args: ResetArgs, cb: Callbacks) => void = () => undefined;
 
 const mockResetHook = vi.fn(() => ({
   mutate: (args: ResetArgs, cb: Callbacks) => mockMutateImpl(args, cb),
@@ -66,14 +66,16 @@ vi.mock('@/features/users/hooks/useRolesList.js', () => ({
 }));
 
 // useAuthStore — grant users.update, pretend caller is NOT the target user.
+let callerId = 'caller-1';
+let callerRole = 'ADMIN';
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: <T,>(selector: (s: {
     hasPermission: (p: string) => boolean;
-    user: { id: string } | null;
+    user: { id: string; role_code: string } | null;
   }) => T) =>
     selector({
       hasPermission: () => true,
-      user:          { id: 'caller-1' },
+      user:          { id: callerId, role_code: callerRole },
     }),
 }));
 
@@ -111,7 +113,41 @@ function renderPage() {
 describe('UserDetailPage — weak PIN warn UX (Session 19 Phase 3.B)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockMutateImpl = () => {};
+    mockMutateImpl = () => undefined;
+    callerId = 'caller-1';
+    callerRole = 'ADMIN';
+    FIXED_USER.role_code = 'manager';
+  });
+
+  it('demande le PIN courant sur la fiche personnelle', () => {
+    callerId = 'user-1';
+    const mutate = vi.fn();
+    mockMutateImpl = mutate;
+    renderPage();
+    fireEvent.change(screen.getByLabelText('New PIN'), { target: { value: '285741' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Change PIN' }));
+    expect(mutate).not.toHaveBeenCalled();
+    expect(screen.getByText('Enter your current 6-digit PIN.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Current PIN'), { target: { value: '936027' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Change PIN' }));
+    expect(mutate).toHaveBeenCalledWith(
+      { user_id: 'user-1', new_pin: '285741', current_pin: '936027' }, expect.any(Object),
+    );
+  });
+
+  it('masque les mutations SUPER_ADMIN à un ADMIN', () => {
+    FIXED_USER.role_code = 'SUPER_ADMIN';
+    renderPage();
+    expect(screen.queryByRole('button', { name: 'Reset PIN' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Change role' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it('autorise la surface de reset SUPER_ADMIN à un autre SUPER_ADMIN', () => {
+    FIXED_USER.role_code = 'SUPER_ADMIN';
+    callerRole = 'SUPER_ADMIN';
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Reset PIN' })).toBeInTheDocument();
   });
 
   // S21 / 1.C.3 — PIN regex now requires exactly 6 digits (DEV-S19-3.B-01).

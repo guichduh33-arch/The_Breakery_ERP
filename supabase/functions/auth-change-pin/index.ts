@@ -9,11 +9,7 @@ import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 
 const PIN_REGEX = /^\d{6}$/;
 
-interface ChangePinPayload {
-  user_id: string;
-}
-
-serve(async (req) => {
+export async function handleChangePin(req: Request): Promise<Response> {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -24,7 +20,7 @@ serve(async (req) => {
   const sessionResult = await requireSession(req);
   if (sessionResult instanceof Response) return sessionResult;
 
-  let body: ChangePinPayload;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
@@ -36,19 +32,15 @@ serve(async (req) => {
   const current_pin = req.headers.get('x-current-pin') ?? undefined;
   const new_pin = req.headers.get('x-new-pin') ?? undefined;
 
-  const { user_id } = body;
-  if (!user_id || !new_pin) {
+  const user_id = body && typeof body === 'object' && 'user_id' in body ? body.user_id : null;
+  if (typeof user_id !== 'string' || !user_id || !new_pin) {
     return jsonResponse({ error: 'missing_fields' }, 400);
   }
   if (!PIN_REGEX.test(new_pin)) {
     return jsonResponse({ error: 'invalid_new_pin_format' }, 400);
   }
 
-  // Durable rate-limit (SEC-S30-MED-03) — the self-rotate path verifies current_pin
-  // via verify_user_pin, which has NO lockout (unlike auth-verify-pin). Without this,
-  // a holder of a valid session can brute-force the current PIN to rotate it. Bucket on
-  // the TARGET user_id (caps attempts per account regardless of how many sessions the
-  // attacker mints — stronger than a per-session bucket).
+  // Limite durable complémentaire au verrouillage de compte dans la RPC.
   const ip = getClientIp(req);
   const rl = await checkRateLimitDurable({
     functionName: 'auth-change-pin',
@@ -60,50 +52,26 @@ serve(async (req) => {
   if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const admin = getAdminClient();
-  const isSelf = user_id === sessionResult.userId;
-
-  if (isSelf) {
-    if (!current_pin) {
-      return jsonResponse({ error: 'current_pin_required' }, 400);
-    }
-    const { data: pinValid } = await admin.rpc('verify_user_pin', {
-      p_user_id: user_id,
-      p_pin: current_pin,
-    });
-    if (!pinValid) {
-      return jsonResponse({ error: 'invalid_current_pin' }, 401);
-    }
-  } else {
-    // Admin override : caller must have users.update
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(sessionResult.roleCode)) {
-      return jsonResponse({ error: 'permission_denied' }, 403);
-    }
-  }
-
-  const { data: newHash, error: hashErr } = await admin.rpc('hash_pin', { p_pin: new_pin });
-  if (hashErr || !newHash) {
-    return jsonResponse({ error: 'hash_failed' }, 500);
-  }
-
-  const { error: updateErr } = await admin
-    .from('user_profiles')
-    .update({
-      pin_hash: newHash,
-      failed_login_attempts: 0,
-      locked_until: null,
-    })
-    .eq('id', user_id);
-
-  if (updateErr) {
-    return jsonResponse({ error: 'update_failed' }, 500);
-  }
-
-  await admin.from('audit_logs').insert({
-    actor_id: sessionResult.userId,
-    action: isSelf ? 'pin.change_self' : 'pin.change_admin',
-    entity_type: 'user_profiles',
-    entity_id: user_id,
+  // La RPC revalide le profil actif, les permissions effectives et la cible.
+  // Vérification, mutation et audit partagent la même transaction.
+  const { data, error } = await admin.rpc('change_user_pin_v1', {
+    p_actor_id: sessionResult.userId,
+    p_user_id: user_id,
+    p_new_pin: new_pin,
+    p_current_pin: current_pin ?? null,
   });
+  if (error || !data || typeof data !== 'object') {
+    return jsonResponse({ error: 'change_pin_failed' }, 500);
+  }
+  if (data.ok !== true) {
+    const code = typeof data.error === 'string' ? data.error : 'change_pin_failed';
+    if (code === 'account_locked') return rateLimitedResponse(900, code);
+    const status = code === 'invalid_current_pin' || code === 'active_profile_required' ? 401
+      : code === 'current_pin_required' || code === 'invalid_new_pin_format' ? 400
+      : code === 'user_not_found' ? 404
+      : code === 'permission_denied' || code === 'super_admin_only' ? 403 : 500;
+    return jsonResponse({ error: code }, status);
+  }
 
   const strength = evaluatePinStrength(new_pin);
   const responseBody: Record<string, unknown> = { ok: true, weak: strength.weak };
@@ -111,4 +79,6 @@ serve(async (req) => {
     responseBody.weak_reason = strength.reason;
   }
   return jsonResponse(responseBody);
-});
+}
+
+serve(handleChangePin);
