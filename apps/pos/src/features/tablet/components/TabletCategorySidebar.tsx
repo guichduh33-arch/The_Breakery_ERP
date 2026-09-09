@@ -85,7 +85,7 @@ function Tile({
 }
 
 export function TabletCategorySidebar({ selectedSlug, onSelect }: TabletCategorySidebarProps): JSX.Element {
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [], isLoading, isError, refetch } = useCategories();
   // Contract: iPad ≥ 768px only — no phone-width fallback is planned. The
   // tablet surface is documented iPad-first (PRODUCT.md); this fixed rail
   // width is intentional, not an oversight.
@@ -120,6 +120,12 @@ export function TabletCategorySidebar({ selectedSlug, onSelect }: TabletCategory
         slug="favorites"
         label="Favorites"
       />
+      {isError ? (
+        <div role="alert" className="space-y-2 text-xs text-text-secondary">
+          <p>Categories unavailable.</p>
+          <button type="button" className={TILE_BASE} onClick={() => { void refetch(); }}>Retry</button>
+        </div>
+      ) : isLoading ? <p role="status" className="py-3 text-xs text-text-secondary">Loading categories…</p> : null}
       {categories.map((cat) => (
         <Tile
           key={cat.id}

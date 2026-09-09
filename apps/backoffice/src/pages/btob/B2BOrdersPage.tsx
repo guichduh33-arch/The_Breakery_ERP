@@ -171,6 +171,7 @@ export default function B2BOrdersPage(): JSX.Element {
   const countersQuery = useB2bOrdersCounters();
   const c = countersQuery.data;
   const countersDown = countersQuery.isError;
+  const countersUnknown = countersDown || c === undefined;
 
   const rows = useMemo<B2bInvoiceRow[]>(
     () => (query.data?.pages ?? []).flatMap((p) => p.rows),
@@ -183,33 +184,33 @@ export default function B2BOrdersPage(): JSX.Element {
     {
       id: 'all',
       label: 'All orders',
-      value: countersDown ? '—' : (c?.total ?? 0),
+      value: countersUnknown ? '—' : (c?.total ?? 0),
       onSelect: () => { pickPayment('all'); },
     },
     {
       id: 'unpaid',
       label: 'Unpaid',
-      value: countersDown ? '—' : (c?.unpaid ?? 0),
-      ...((c?.unpaid ?? 0) > 0 && !countersDown ? { tone: 'warning' as const } : {}),
+      value: countersUnknown ? '—' : (c?.unpaid ?? 0),
+      ...((c?.unpaid ?? 0) > 0 && !countersUnknown ? { tone: 'warning' as const } : {}),
       onSelect: () => { pickPayment('unpaid'); },
     },
     {
       id: 'paid',
       label: 'Settled',
-      value: countersDown ? '—' : (c?.paid ?? 0),
-      ...((c?.paid ?? 0) > 0 && !countersDown ? { tone: 'success' as const } : {}),
+      value: countersUnknown ? '—' : (c?.paid ?? 0),
+      ...((c?.paid ?? 0) > 0 && !countersUnknown ? { tone: 'success' as const } : {}),
       onSelect: () => { pickPayment('paid'); },
     },
     {
       id: 'outstanding',
       label: 'Outstanding',
-      value: c?.outstandingAr === null || c?.outstandingAr === undefined
+      value: countersUnknown || c?.outstandingAr === null || c?.outstandingAr === undefined
         ? '—'
         : formatCurrency(c.outstandingAr),
-      ...((c?.outstandingAr ?? 0) > 0 ? { tone: 'danger' as const } : {}),
+      ...((c?.outstandingAr ?? 0) > 0 && !countersUnknown ? { tone: 'danger' as const } : {}),
       title: 'Total still owed across every unpaid B2B order — the whole ledger, not the current filter.',
     },
-  ], [c, countersDown, pickPayment]);
+  ], [c, countersUnknown, pickPayment]);
 
   const toggle = (id: string): void => {
     setExpanded((prev) => {

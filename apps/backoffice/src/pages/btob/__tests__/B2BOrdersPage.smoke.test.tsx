@@ -184,6 +184,20 @@ function wrap(ui: ReactElement) {
 }
 
 describe('B2BOrdersPage', () => {
+  it('affiche des tirets pendant le premier chargement des comptes', () => {
+    render(wrap(<B2BOrdersPage />));
+    expect(screen.getByTestId('counter-all')).toHaveTextContent('—');
+    expect(screen.getByTestId('counter-unpaid')).toHaveTextContent('—');
+  });
+  it('cache aussi l’encours en cache quand le refetch des comptes échoue', async () => {
+    viewFails.current = true;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(['b2b-invoices', 'orders-counters'], { total: 2, unpaid: 1, paid: 1, outstandingAr: 1200000 }, { updatedAt: 1 });
+    render(<QueryClientProvider client={qc}><MemoryRouter><B2BOrdersPage /></MemoryRouter></QueryClientProvider>);
+    await screen.findByTestId('b2b-orders-counters-error');
+    expect(screen.getByTestId('counter-all')).toHaveTextContent('—');
+    expect(screen.getByTestId('counter-outstanding')).toHaveTextContent('—');
+  });
   beforeEach(() => {
     itemsSpy.mockReset();
     rpcSpy.mockClear();

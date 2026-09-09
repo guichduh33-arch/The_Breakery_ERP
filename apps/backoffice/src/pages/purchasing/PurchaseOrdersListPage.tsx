@@ -152,7 +152,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
 
   const rows    = list.data ?? [];
   const buckets = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
-  const countersDown = allList.isError;
+  const countersDown = allList.isError || allList.data === undefined;
 
   const counters = useMemo<ListCounter[]>(() => PO_COUNTERS.map((c) => {
     const bucket = buckets[c.value];
