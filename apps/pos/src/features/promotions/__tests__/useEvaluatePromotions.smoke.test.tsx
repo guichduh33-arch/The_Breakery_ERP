@@ -311,6 +311,27 @@ describe('useEvaluatePromotions', () => {
 });
 
 describe('cartToRpcPayload — gift lines are not fed back into the RPC', () => {
+  it('exclut les lignes annulées du payload et du sous-total RPC', async () => {
+    rpcMock.mockResolvedValue({ data: { applied_promotions: [] }, error: null });
+    const { result } = renderHook(() => useEvaluatePromotions(), { wrapper: withProviders() });
+    const cart: Cart = { ...CART_3_BAGUETTES, items: [
+      { ...CART_3_BAGUETTES.items[0]!, quantity: 1 },
+      { ...CART_3_BAGUETTES.items[0]!, id: 'cancelled', quantity: 99, is_cancelled: true },
+    ] };
+    await result.current.runEvaluation(cart, null);
+    expect(rpcMock).toHaveBeenLastCalledWith('evaluate_promotions_v2', expect.objectContaining({
+      p_subtotal: 15000, p_cart_items: [{ line_id: 'l1', product_id: 'prod-baguette', quantity: 1, unit_price: 15000 }],
+    }));
+  });
+  it('retire le cadeau fallback lorsque sa ligne déclenchante est annulée', async () => {
+    rpcMock.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useEvaluatePromotions(), { wrapper: withProviders() });
+    const cart: Cart = { ...CART_3_BAGUETTES, items: [
+      { ...CART_3_BAGUETTES.items[0]!, quantity: 1 },
+      { ...CART_3_BAGUETTES.items[0]!, id: 'cancelled', quantity: 2, is_cancelled: true },
+    ] };
+    expect(await result.current.runEvaluation(cart, null)).toEqual([]);
+  });
   it('excludes is_promo_gift lines from the payload (Bug 1 accumulation guard)', () => {
     const cart: Cart = {
       items: [
