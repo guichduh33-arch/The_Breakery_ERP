@@ -248,7 +248,7 @@ describe('evaluatePromotions — mixed scenarios', () => {
       productPrice: {},
     };
     const c = cart([item({ product_id: 'prod-bev', unit_price: 35000, quantity: 1 })]);
-    const evening = new Date('2026-05-11T18:30:00');
+    const evening = new Date('2026-05-11T18:30:00+08:00');
     const result = evaluatePromotions(promos, c, null, evening, catalog);
     expect(result.map((r) => r.promotion_id)).toEqual(['happy', 'cart']);
     expect(result[0]?.amount).toBe(3500);
@@ -259,7 +259,7 @@ describe('evaluatePromotions — mixed scenarios', () => {
       basePromo({ id: 'A', start_hour: 18, end_hour: 20 }),
     ];
     const c = cart([item({ unit_price: 100000, quantity: 1 })]);
-    const noon = new Date('2026-05-11T12:00:00');
+    const noon = new Date('2026-05-11T12:00:00+08:00');
     expect(evaluatePromotions(promos, c, null, noon, EMPTY_CATALOG)).toHaveLength(0);
   });
 });

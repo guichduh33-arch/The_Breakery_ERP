@@ -19,6 +19,7 @@
 // payment reference; back-dating the JE itself would require an RPC bump.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { STOCK_LEVELS_QUERY_KEY } from './useStockLevels.js';
 import { STOCK_LEDGER_KEY } from '@/features/inventory-movements/hooks/useStockLedger.js';
@@ -102,8 +103,19 @@ type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknow
 
 export function useRecordDirectPurchase() {
   const qc = useQueryClient();
-  return useMutation<DirectPurchaseResult, DirectPurchaseError, DirectPurchaseArgs>({
-    mutationFn: async (args) => {
+  const frozen = useRef<Readonly<DirectPurchaseArgs> | null>(null);
+  const [progress, setProgress] = useState<Partial<DirectPurchaseResult>>({});
+  const mutation = useMutation<DirectPurchaseResult, DirectPurchaseError, DirectPurchaseArgs>({
+    mutationFn: async (input) => {
+      if (frozen.current && frozen.current.idempotencyKey !== input.idempotencyKey) {
+        throw new DirectPurchaseError('create', 'Resume the pending purchase before starting another.');
+      }
+      // Le même identifiant rejoue toujours les paramètres du premier essai.
+      if (!frozen.current) {
+        frozen.current = Object.freeze({ ...input });
+        setProgress({});
+      }
+      const args = frozen.current;
       const rpc = supabase.rpc.bind(supabase) as unknown as Rpc;
 
       // ── 1. Create the 1-line PO (credit terms → we control the payment) ──────
@@ -124,6 +136,7 @@ export function useRecordDirectPurchase() {
       });
       if (createRes.error !== null) throw new DirectPurchaseError('create', createRes.error.message);
       const po = createRes.data as { po_id: string; po_number: string; total_amount: number };
+      setProgress((current) => ({ ...current, poId: po.po_id, poNumber: po.po_number }));
 
       // ── 2. Look up the PO line id (needed by receive) ────────────────────────
       const { data: lineRows, error: lineErr } = await supabase
@@ -143,6 +156,7 @@ export function useRecordDirectPurchase() {
       });
       if (recvRes.error !== null) throw new DirectPurchaseError('receive', recvRes.error.message);
       const grn = recvRes.data as { grn_id: string; grn_number: string };
+      setProgress((current) => ({ ...current, grnId: grn.grn_id, grnNumber: grn.grn_number }));
 
       // ── 4. Record the payment (only when paid now) ───────────────────────────
       let paymentId: string | null = null;
@@ -156,8 +170,10 @@ export function useRecordDirectPurchase() {
         });
         if (payRes.error !== null) throw new DirectPurchaseError('payment', payRes.error.message);
         paymentId = (payRes.data as { payment_id: string }).payment_id;
+        setProgress((current) => ({ ...current, paymentId }));
       }
 
+      frozen.current = null;
       return {
         poId:      po.po_id,
         poNumber:  po.po_number,
@@ -177,4 +193,5 @@ export function useRecordDirectPurchase() {
       ]);
     },
   });
+  return { ...mutation, progress };
 }
