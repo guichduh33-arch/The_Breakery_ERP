@@ -154,6 +154,9 @@ describe('DataTable', () => {
     const skeletons = container.querySelectorAll('.animate-pulse');
     // 3 rows * 2 columns = 6 skeletons.
     expect(skeletons.length).toBe(6);
+    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getAllByRole('row')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading data…');
   });
 
   it('fires onRowClick when a row is clicked', () => {

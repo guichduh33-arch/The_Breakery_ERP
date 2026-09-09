@@ -178,7 +178,8 @@ export function DataTable<TRow>({
       // masquer ; `overflow-y-hidden` conserve le découpage des coins.
       className={cn('w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
     >
-      <table className="w-full border-collapse">
+      <span role="status" className="sr-only">{isLoading ? 'Loading data…' : ''}</span>
+      <table className="w-full border-collapse" aria-busy={Boolean(isLoading)}>
         {caption !== undefined && <caption className="sr-only">{caption}</caption>}
         <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
@@ -255,7 +256,7 @@ export function DataTable<TRow>({
         <tbody>
           {isLoading
             ? Array.from({ length: loadingRowCount }).map((_, i) => (
-                <tr key={`skeleton-${i}`} className="border-t border-border-row">
+                <tr key={`skeleton-${i}`} className="border-t border-border-row" aria-hidden="true">
                   {columns.map((col) => (
                     <td
                       key={col.id}
