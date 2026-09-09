@@ -1,0 +1,103 @@
+/* Instrument A — styles locaux aux surfaces du back-office. Les primitives
+ * partagées et les documents imprimés gardent leur présentation propre. */
+@layer components {
+  .bo-page { min-width: 0; }
+  .bo-page > :where(div, section) { min-width: 0; }
+  .bo-page > :where([class*='space-y-']) > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.25rem;
+  }
+  .bo-page :where(.grid) > * { min-width: 0; }
+  :is(.bo-page, .bo-dialog, .bo-sheet) label.uppercase {
+    font-family: var(--font-body);
+    font-size: var(--type-sm);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .bo-page-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .bo-page-header-actions { max-width: 100%; }
+  .bo-page-header-actions > :where(input, select, div) { min-width: 0; }
+  .bo-filter-bar {
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+  .bo-filter-bar > * { max-width: 100%; }
+  .bo-page .recharts-wrapper,
+  .bo-page .recharts-legend-wrapper { max-width: 100%; }
+  .bo-page [data-promotion-type='bogo'] {
+    color: var(--success);
+    background: var(--success-soft);
+    border-color: var(--success);
+  }
+
+  .bo-tabs-list { border-bottom: 1px solid var(--border-subtle); }
+  .bo-tabs-trigger,
+  .bo-tabs-trigger[data-state='active'] {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+  .bo-tabs-trigger[data-state='active'] {
+    border-bottom-color: var(--gold-base);
+    color: var(--gold-base);
+  }
+
+  /* Le titre vide est une phrase, au même registre que les autres états.
+   * L'action-objet du primitif conserve son handler et son variant explicite. */
+  .bo-empty > :is(h2, h3) {
+    font-family: var(--font-body);
+    font-style: normal;
+    font-size: var(--type-lg);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .bo-empty > [aria-hidden] svg { width: 2rem; height: 2rem; }
+  .bo-empty > div > button { height: 2.25rem; font-weight: 500; }
+
+  /* Le KPI historique reste responsable de son format et de sa variation.
+   * Sa géométrie rejoint les tuiles Instrument des rapports. */
+  .bo-kpi > div:first-child:empty { display: none; }
+  .bo-kpi > div:first-child > [aria-hidden] { display: none; }
+  .bo-kpi > div:first-child:has(> [aria-hidden]:only-child) { display: none; }
+  .bo-kpi > div > .text-3xl {
+    font-size: var(--type-xl);
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .bo-kpi > div > .uppercase {
+    font-family: var(--font-body);
+    font-size: var(--type-sm);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .bo-dialog > button[aria-label='Close'],
+  .bo-sheet > button[aria-label='Close'] { width: 2rem; height: 2rem; }
+
+  @media screen {
+    .bo-page :where(table) { font-size: var(--type-sm); }
+    .bo-page thead th {
+      font-family: var(--font-mono);
+      font-size: var(--type-xs);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .bo-page :where(td, th) { vertical-align: middle; }
+    .bo-page :where(thead) { background: var(--surface-inert); }
+    .bo-page :where(tbody tr) { border-color: var(--border-row); }
+    .bo-table tbody tr:hover,
+    .bo-table tbody tr.bg-surface-4 { background: var(--surface-inert); }
+  }
+}

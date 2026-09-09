@@ -12,7 +12,8 @@
 import { ImageOff } from 'lucide-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Card, CardContent, Currency } from '@breakery/ui';
+import { Badge, Currency } from '@breakery/ui';
+import { Card, CardContent } from '@/components/BackofficeUi.js';
 import { CategoryChip } from './CategoryChip.js';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {

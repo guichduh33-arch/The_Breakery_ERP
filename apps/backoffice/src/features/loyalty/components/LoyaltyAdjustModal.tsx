@@ -5,14 +5,8 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  LoyaltyAdjustForm,
-  type LoyaltyAdjustFormValues,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, LoyaltyAdjustForm, type LoyaltyAdjustFormValues } from '@breakery/ui';
+import { DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useAdjustLoyaltyPoints, AdjustError } from '../hooks/useAdjustLoyaltyPoints.js';
 import { LOYALTY_CUSTOMERS_QUERY_KEY, type CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';
 import { loyaltyHistoryKey } from '../hooks/useCustomerLoyaltyHistory.js';

@@ -19,7 +19,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { FileDown, FileText, Loader2, Signature, XOctagon } from 'lucide-react';
-import { Badge, DataTable, type DataTableColumn } from '@breakery/ui';
+import { Badge, type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';

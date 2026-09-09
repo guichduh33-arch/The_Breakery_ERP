@@ -5,7 +5,8 @@
 // status). Read-only over useProductPurchaseItems; no new RPC.
 
 import { useMemo, type JSX } from 'react';
-import { Badge, Card, EmptyState } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 // La tuile du back-office (23 px, `valueTitle`) et non celle de `@breakery/ui`
 // (34 px) : « Total Spent » cumule des achats fournisseur et déborde dès huit

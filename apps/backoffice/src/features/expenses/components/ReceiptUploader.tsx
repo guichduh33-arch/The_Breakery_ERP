@@ -6,7 +6,7 @@
 
 import { useId, useState } from 'react';
 import { supabase } from '@/lib/supabase.js';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface ReceiptUploaderProps {

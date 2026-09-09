@@ -6,7 +6,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Download, FileText, XCircle } from 'lucide-react';
-import { Button, EmptyState, Select } from '@breakery/ui';
+import { Select } from '@breakery/ui';
+import { Button, EmptyState } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';

@@ -26,15 +26,8 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import {
-  Button,
-  Card,
-  DataTable,
-  KpiTile,
-  LoyaltyBadge,
-  useDebouncedValue,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { LoyaltyBadge, useDebouncedValue, type DataTableColumn } from '@breakery/ui';
+import { Button, Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
 import { tierFromLifetime } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';

@@ -17,8 +17,11 @@
 
 import type { JSX, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, cardVariants, cn } from '@breakery/ui';
+import { ArrowUpRight } from 'lucide-react';
+import { cardVariants, cn } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
+import { FitValue } from './FitValue.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 // LE barème de coloration signée du dépôt — on n'écrit pas `text-danger` ici.
 // Il vit sous features/reports/utils parce que le module reports l'a fait
@@ -27,13 +30,13 @@ import { FOCUS_RING } from '@/components/focusRing.js';
 // empêche un sixième.
 import { VARIANCE_TONE_TEXT, VARIANCE_TONE_TEXT_INK } from '@/features/reports/utils/varianceScale.js';
 
-export const KPI_CARD = 'flex flex-col gap-[5px] px-[15px] py-[13px] shadow-none';
-export const KPI_LABEL = 'font-data text-xs font-semibold text-text-muted';
-export const KPI_VALUE = 'font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary';
+export const KPI_CARD = 'relative flex min-w-0 flex-col gap-1.5 p-4 shadow-none';
+export const KPI_LABEL = 'font-body text-sm font-medium normal-case tracking-normal text-text-secondary';
+export const KPI_VALUE = 'font-data text-[23px] font-medium leading-tight tracking-[-0.025em] tabular-nums text-text-primary';
 export const KPI_NOTE = 'font-data text-xs leading-tight text-text-muted';
 
 export const KPI_CARD_HERO = `${KPI_CARD} border-ink bg-ink`;
-export const KPI_LABEL_HERO = 'font-data text-xs font-semibold text-ink-fg-sub';
+export const KPI_LABEL_HERO = 'font-body text-sm font-medium normal-case tracking-normal text-ink-fg-muted';
 export const KPI_VALUE_HERO = 'font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] tabular-nums text-ink-fg';
 export const KPI_NOTE_HERO = 'font-data text-xs leading-tight text-ink-fg-sub';
 
@@ -115,10 +118,11 @@ export function KpiTile({
 
   const body = (
     <>
-      <SectionLabel as="h3" className={hero ? KPI_LABEL_HERO : KPI_LABEL}>{label}</SectionLabel>
-      <span
+      <SectionLabel as="div" className={cn(hero ? KPI_LABEL_HERO : KPI_LABEL, to !== undefined && 'pr-5')}>{label}</SectionLabel>
+      <FitValue
+        value={value}
+        {...(valueTitle === undefined ? {} : { exact: valueTitle })}
         className={cn(hero ? KPI_VALUE_HERO : KPI_VALUE, toneClass)}
-        title={valueTitle}
         // La VALEUR est adressable seule. Le `testId` de l'appelant désigne la
         // boîte, qui contient aussi le libellé et les notes de `children` : un
         // test qui lisait le `textContent` de l'ancêtre ramassait « 3All time »
@@ -126,9 +130,7 @@ export function KpiTile({
         // aucun nom neuf à tenir côté appelant.
         {...(testId === undefined ? {} : { 'data-testid': `${testId}-value` })}
         {...(unavailable ? { 'aria-hidden': true } : {})}
-      >
-        {value}
-      </span>
+      />
       {unavailable && <span className="sr-only">{unavailableLabel}</span>}
       <div className="flex min-h-[16px] flex-wrap items-baseline gap-x-3 gap-y-0.5">
         {children}
@@ -153,6 +155,7 @@ export function KpiTile({
         )}
       >
         {body}
+        <ArrowUpRight className={cn('absolute right-3 top-4 h-3.5 w-3.5', hero ? 'text-ink-gold' : 'text-gold')} aria-hidden />
         {srHint !== undefined && <span className="sr-only">{srHint}</span>}
       </Link>
     );

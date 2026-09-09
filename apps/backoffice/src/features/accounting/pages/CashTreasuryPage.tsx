@@ -3,7 +3,7 @@
 // Shows wallet cards, ledger table, reconciliation panel, analysis panel, and CSV export.
 import { useMemo, useState } from 'react';
 import { Plus, ChevronRight } from 'lucide-react';
-import { Button, Card } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
 import { useCashWallets } from '../hooks/useCashWallets.js';

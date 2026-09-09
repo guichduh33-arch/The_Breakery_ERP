@@ -22,14 +22,8 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
-import {
-  Button,
-  Card,
-  DataTable,
-  KpiTile,
-  PromotionTypeBadge,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { PromotionTypeBadge, type DataTableColumn } from '@breakery/ui';
+import { Button, Card, DataTable, KpiTile } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PromotionDeleteConfirm } from '@/features/promotions/components/PromotionDeleteConfirm.js';
 import { PromotionFormModal } from '@/features/promotions/components/PromotionFormModal.js';

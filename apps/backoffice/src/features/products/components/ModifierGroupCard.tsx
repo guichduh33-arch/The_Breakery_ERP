@@ -4,7 +4,7 @@
 // and its options. Bubbles the whole edited group up via onChange.
 
 import type { JSX } from 'react';
-import { Button, Card } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { Trash2, Plus } from 'lucide-react';
 import type {
   EditableModifierGroup,

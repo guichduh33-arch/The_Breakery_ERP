@@ -11,7 +11,7 @@
 import type { JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, CheckCircle2, Eye, Mail, Pencil, Phone, Trash2, XCircle } from 'lucide-react';
-import { Button, Card } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import type { SupplierRow } from '../hooks/useSuppliersList.js';
 
 // Même idiome que `ComboCard`, et pour la même raison. La carte portait

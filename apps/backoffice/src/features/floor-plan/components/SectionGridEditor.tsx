@@ -87,7 +87,7 @@ function TableChip({ table, canUpdate, describedBy, onKeyDown }: TableChipProps)
         'flex h-full w-full select-none flex-col items-center justify-center rounded-md border text-center leading-tight',
         'border-border-gold bg-bg-elevated text-text-primary',
         FOCUS_RING,
-        !table.is_active && 'opacity-40',
+        !table.is_active && 'border-dashed border-border-subtle bg-surface-inert',
         canUpdate && 'cursor-grab',
       )}
       title={`${table.name} — ${table.seats} seats${table.is_active ? '' : ' (inactive)'}`}

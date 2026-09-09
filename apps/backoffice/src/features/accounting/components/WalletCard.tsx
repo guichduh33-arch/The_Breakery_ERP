@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/accounting/components/WalletCard.tsx
 // Cash Wallets module — single wallet summary card, selectable.
-import { Card, Badge } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import type { WalletBalance } from '../hooks/useCashWallets.js';
 
 const LABELS: Record<string, string> = {

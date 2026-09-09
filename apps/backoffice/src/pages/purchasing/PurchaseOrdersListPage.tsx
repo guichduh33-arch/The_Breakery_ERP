@@ -30,12 +30,8 @@ import {
   Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Badge,
-  Button,
-  DataTable,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { Badge, type DataTableColumn } from '@breakery/ui';
+import { Button, DataTable } from '@/components/BackofficeUi.js';
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
 // `buildEntityWorkbook` tire `xlsx` (159 Ko gzip) : chargé à la demande dans les
 // deux handlers, pas à l'ouverture de la liste.

@@ -7,10 +7,8 @@
 // (Dialog + effect-driven prefill on `open`).
 
 import { useEffect, useState, type JSX } from 'react';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-  Button, Input, Select,
-} from '@breakery/ui';
+import { Dialog, Input, Select } from '@breakery/ui';
+import { DialogContent, DialogHeader, DialogTitle, DialogFooter, Button } from '@/components/BackofficeUi.js';
 import type { PriceModifierType } from '@breakery/domain';
 import type { CategoryInput } from '../hooks/useCustomerCategoryMutations.js';
 import type { CustomerCategoryRow } from '../hooks/useCustomerCategories.js';

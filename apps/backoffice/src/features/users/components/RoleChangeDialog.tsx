@@ -3,11 +3,8 @@
 
 import { useState, type JSX } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useUpdateUserRole } from '../hooks/useUpdateUserRole.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

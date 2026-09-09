@@ -32,7 +32,7 @@ describe('ListCounterStrip — chrome selon la nature de la bande', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2);
   });
 
-  it('une bande dont aucun compteur ne filtre rend sur papier inerte, sans bouton', () => {
+  it('une bande dont aucun compteur ne filtre rend sur le papier de la page, sans bouton', () => {
     render(
       <ListCounterStrip
         data-testid="strip"
@@ -44,7 +44,7 @@ describe('ListCounterStrip — chrome selon la nature de la bande', () => {
       />,
     );
     const strip = screen.getByTestId('strip');
-    expect(strip.className).toContain('bg-surface-inert');
+    expect(strip.className).toContain('bg-transparent');
     expect(strip.className).toContain('border-border-subtle');
     expect(strip.className).not.toContain('border-border-strong');
     expect(strip).toHaveAttribute('data-informative', 'true');

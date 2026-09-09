@@ -5,7 +5,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Input } from '@breakery/ui';
+import { Input } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';

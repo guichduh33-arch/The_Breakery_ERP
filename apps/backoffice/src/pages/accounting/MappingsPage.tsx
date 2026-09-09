@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useMappings, type MappingRow } from '@/features/accounting-mappings/hooks/useMappings.js';
 import { MappingEditDialog } from '@/features/accounting-mappings/components/MappingEditDialog.js';
 import { PageHeader } from '@/components/PageHeader.js';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { ChevronRight } from 'lucide-react';
 
 export default function MappingsPage() {

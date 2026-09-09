@@ -10,7 +10,8 @@
 
 import { useState, type ChangeEvent, type JSX } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Button, Card, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductsForOrderEdit } from '@/features/orders/hooks/useProductsForOrderEdit.js';

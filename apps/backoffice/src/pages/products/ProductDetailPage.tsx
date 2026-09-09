@@ -10,7 +10,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Package } from 'lucide-react';
-import { EmptyState } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import {
   ProductDetailTabs,

@@ -6,10 +6,8 @@
 // server-side (mirror SignZReportModal).
 
 import { useEffect, useState } from 'react';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Button,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { DialogContent, DialogFooter, DialogHeader, DialogTitle, Button } from '@/components/BackofficeUi.js';
 import { Loader2 } from 'lucide-react';
 import { useVoidZReport } from '../hooks/useVoidZReport.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

@@ -120,12 +120,12 @@ describe('SalesByTablePage smoke', () => {
     for (const id of ['kpi-revenue', 'kpi-rotation', 'kpi-tables', 'kpi-ticket', 'kpi-per-seat']) {
       expect(within(band).getByTestId(id)).toBeInTheDocument();
     }
-    expect(within(band).getByTestId('kpi-revenue')).toHaveTextContent(/350 rb/);
+    expect(within(within(band).getByTestId('kpi-revenue')).getByTitle('Rp 350.000')).toBeInTheDocument();
     // 4 commandes / 2 tables / 31 jours = 0,06… → 0,1.
     expect(within(band).getByTestId('kpi-rotation')).toHaveTextContent('0,1');
     expect(within(band).getByTestId('kpi-tables')).toHaveTextContent('2 / 11');
-    // 350k / 42 sièges = 8 333 → Rp 8,33 rb.
-    expect(within(band).getByTestId('kpi-per-seat')).toHaveTextContent(/8,33 rb/);
+    // 350k / 42 sièges = 8 333 ; l'exact reste accessible quelle que soit la largeur.
+    expect(within(within(band).getByTestId('kpi-per-seat')).getByTitle('Rp 8.333')).toBeInTheDocument();
   });
 
   it('states the floor-only reserve — table-less dine-ins are excluded', async () => {

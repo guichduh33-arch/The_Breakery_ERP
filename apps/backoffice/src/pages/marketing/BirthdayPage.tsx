@@ -16,7 +16,7 @@ export default function BirthdayPage() {
   return (
     <ReportPage
       title="Birthdays"
-      subtitle="Upcoming customer birthdays + recent notification activity. Cron `birthday-notify-daily` fires at 09:00 UTC daily."
+      subtitle="Upcoming customer birthdays and recent notification activity."
     >
       {(upLoading || logLoading) && (
         <p className="text-sm text-text-secondary">Loading…</p>

@@ -5,16 +5,8 @@
 // is required (3..200 chars) and surfaces in the `audit_logs` row.
 
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-  Input,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogTitle } from '@/components/BackofficeUi.js';
 import { useUpdateMapping } from '../hooks/useUpdateMapping.js';
 import { usePostableAccounts, type MappingRow } from '../hooks/useMappings.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

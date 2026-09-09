@@ -4,10 +4,8 @@
 //   Step 2 : lines table (account picker + debit/credit + balance check + PIN)
 
 import { useMemo, useState, type JSX } from 'react';
-import {
-  Button, Input,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@breakery/ui';
+import { Input, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { Plus, Trash2 } from 'lucide-react';
 import { usePostableAccounts } from '../hooks/usePostableAccounts.js';

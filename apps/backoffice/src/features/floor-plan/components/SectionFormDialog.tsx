@@ -2,10 +2,8 @@
 // S75 Task 3 — Create/Edit table section modal.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import type { TableSection } from '@breakery/domain';
 import { useCreateSection, useUpdateSection, mapFloorPlanError } from '../hooks/useFloorPlanAdmin.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

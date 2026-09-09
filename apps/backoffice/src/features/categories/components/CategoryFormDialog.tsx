@@ -2,11 +2,8 @@
 // Session 27b — Create/Edit category modal.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  selectClassName, cn,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, selectClassName, cn } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoryMutations.js';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';

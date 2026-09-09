@@ -5,10 +5,8 @@
 //   Gate : permission accounting.period.close (enforced by RPC).
 
 import { useEffect, useRef, useState, type JSX } from 'react';
-import {
-  Button, Input, Select,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@breakery/ui';
+import { Input, Select, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/BackofficeUi.js';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';
 import { useCloseFiscalPeriod } from '../hooks/useCloseFiscalPeriod.js';
 import { fiscalPeriodLabel } from '../utils/fiscalPeriodLabel.js';

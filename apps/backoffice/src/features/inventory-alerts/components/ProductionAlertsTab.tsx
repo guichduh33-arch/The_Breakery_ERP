@@ -10,7 +10,8 @@
 // d'alpha. Les tokens `*-soft` existent précisément pour ça.
 
 import type { JSX } from 'react';
-import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { formatNumber, formatQuantity } from '@breakery/utils';
 import {
   useProductionSuggestions,

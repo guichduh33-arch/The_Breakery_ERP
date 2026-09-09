@@ -99,6 +99,9 @@ export interface DataTableProps<TRow> {
   renderExpanded?: (row: TRow, rowIndex: number) => ReactNode;
   /** Clés des lignes actuellement dépliées — même valeur que `getRowKey`. */
   expandedKeys?: ReadonlySet<string | number>;
+  /** Présentation ARIA : désactiver si le bouton de dépliage porte déjà
+   * aria-expanded. Le défaut conserve le rendu des consommateurs existants. */
+  announceRowExpansion?: boolean;
   /**
    * Nom accessible de la table, rendu en `<caption class="sr-only">`.
    *
@@ -148,6 +151,7 @@ export function DataTable<TRow>({
   rowClassName,
   renderExpanded,
   expandedKeys,
+  announceRowExpansion = true,
   caption,
   'data-testid': testId,
 }: DataTableProps<TRow>): JSX.Element {
@@ -274,7 +278,7 @@ export function DataTable<TRow>({
                   <Fragment key={key}>
                     <tr
                       onClick={onRowClick !== undefined ? () => onRowClick(row, index) : undefined}
-                      aria-expanded={renderExpanded === undefined ? undefined : isExpanded}
+                      aria-expanded={renderExpanded === undefined || !announceRowExpansion ? undefined : isExpanded}
                       className={cn(
                         'border-t border-border-row',
                         striped && index % 2 === 1 && 'bg-surface-0',

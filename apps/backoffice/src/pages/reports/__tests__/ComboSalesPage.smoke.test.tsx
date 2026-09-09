@@ -122,11 +122,11 @@ describe('ComboSalesPage smoke', () => {
     for (const id of ['kpi-revenue', 'kpi-share', 'kpi-uplift', 'kpi-top-combo']) {
       expect(within(band).getByTestId(id)).toBeInTheDocument();
     }
-    expect(within(band).getByTestId('kpi-revenue')).toHaveTextContent(/260 rb/);
+    expect(within(within(band).getByTestId('kpi-revenue')).getByTitle('Rp 260.000')).toBeInTheDocument();
     // 260k / 394k = 66,0 %.
     expect(within(band).getByTestId('kpi-share')).toHaveTextContent('66,0%');
     // (138k − 39 333) / 39 333 = 250,85 → +250,9 %.
-    expect(within(band).getByTestId('kpi-uplift')).toHaveTextContent(/138 rb/);
+    expect(within(within(band).getByTestId('kpi-uplift')).getByTitle('Rp 138.000')).toBeInTheDocument();
     expect(within(band).getByTestId('kpi-uplift')).toHaveTextContent(/\+250,9%/);
     expect(within(band).getByTestId('kpi-top-combo')).toHaveTextContent('Combo Breakfast');
   });

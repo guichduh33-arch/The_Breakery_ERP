@@ -6,10 +6,8 @@
 // `variance_reason_too_short` check in record_production_v5.
 
 import { useState, type FormEvent, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatPercent, formatQuantity } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

@@ -49,7 +49,7 @@ export function ProductsFilters({
   hiddenColumns = EMPTY_HIDDEN, onToggleColumn,
 }: Props): JSX.Element {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="bo-filter-bar flex flex-wrap items-center gap-2">
       <div className="relative min-w-[220px] flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-text-subtle" aria-hidden />
         <input

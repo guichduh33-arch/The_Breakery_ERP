@@ -4,7 +4,7 @@
 // (radio for single_select, checkbox for multi_select), ingredients-to-deduct.
 
 import type { JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { Trash2 } from 'lucide-react';
 import type {
   EditableModifierOption,

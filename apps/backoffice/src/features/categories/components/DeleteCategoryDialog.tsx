@@ -2,10 +2,8 @@
 // Confirm dialog for soft-deleting a product category.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { AlertTriangle } from 'lucide-react';
 import { useDeleteCategory } from '../hooks/useDeleteCategory.js';
 import type { CategoryRow } from '../hooks/useAllCategories.js';

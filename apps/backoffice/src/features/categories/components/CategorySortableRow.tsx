@@ -9,7 +9,7 @@
 import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
 

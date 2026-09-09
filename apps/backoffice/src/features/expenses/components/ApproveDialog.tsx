@@ -3,10 +3,8 @@
 // passed as the p_manager_pin RPC arg and verified server-side via verify_user_pin.
 // S28 Task 5.H: SOD-aware button state (creator cannot approve their own expense; double-approve blocked).
 import { useState } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useApproveExpense } from '../hooks/useExpenseActions.js';
 import type { ExpenseApprovalRow } from '../hooks/useExpenseApprovals.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

@@ -8,7 +8,8 @@
 // superseded by InfoTab's inline B2B card — purged S76.)
 
 import { useEffect, useState, type ChangeEvent, type JSX } from 'react';
-import { Button, Card, Input } from '@breakery/ui';
+import { Input } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 
 export interface RetailCreditLimitSectionProps {
   value:   number | null;

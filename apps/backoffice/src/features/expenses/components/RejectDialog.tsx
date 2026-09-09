@@ -1,9 +1,7 @@
 // apps/backoffice/src/features/expenses/components/RejectDialog.tsx
 import { useState } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useRejectExpense } from '../hooks/useExpenseActions.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, KeyRound, Trash2, UserCog } from 'lucide-react';
-import { Button, EmptyState } from '@breakery/ui';
+import { Button, EmptyState } from '@/components/BackofficeUi.js';
 import { evaluatePinStrength, formatDate, formatDateTime, type PinWeakReason } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useUserDetail } from '@/features/users/hooks/useUsersList.js';

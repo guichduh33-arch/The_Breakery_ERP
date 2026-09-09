@@ -21,14 +21,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useMemo, useState, type JSX } from 'react';
 import { ChevronRight, Download, FileText, Plus, Tag, Upload } from 'lucide-react';
-import {
-  DataTable,
-  Input,
-  LoyaltyBadge,
-  Select,
-  useDebouncedValue,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { Input, LoyaltyBadge, Select, useDebouncedValue, type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { tierFromLifetime } from '@breakery/domain';
 import { formatCurrency } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';

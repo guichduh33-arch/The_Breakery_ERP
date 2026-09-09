@@ -55,59 +55,64 @@ export function ImportDropzone({ onFile, disabled = false }: Props): JSX.Element
   }
 
   return (
-    <div
-      data-testid="import-dropzone"
-      role="button"
-      tabIndex={disabled ? -1 : 0}
-      aria-label="Upload .xlsx file"
-      className={cn(
-        'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors cursor-pointer',
-        // La zone est focalisable mais n'avait AUCUN anneau : au clavier, rien
-        // ne disait qu'on était dessus (WCAG 2.4.7).
-        FOCUS_RING,
-        isDragOver
-          // Le survol de dépôt se dit par le liseré seul (The Ink-Not-Gold Rule) :
-          // `border-gold` remplace `border-border-subtle`, l'état reste visible.
-          ? 'border-gold'
-          : 'border-border-subtle hover:border-border-strong',
-        disabled && 'opacity-50 pointer-events-none',
-      )}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => { if (!disabled) inputRef.current?.click(); }}
-      onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
-          inputRef.current?.click();
-        }
-      }}
-    >
+    <>
       <input
         ref={inputRef}
         type="file"
         accept=".xlsx"
-        className="sr-only"
+        hidden
+        className="hidden"
         onChange={handleChange}
         disabled={disabled}
         tabIndex={-1}
         aria-hidden
       />
-      <svg
-        className="h-10 w-10 text-text-muted"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        aria-hidden
+      <div
+        data-testid="import-dropzone"
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-label="Upload .xlsx file"
+        aria-disabled={disabled}
+        className={cn(
+          'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors cursor-pointer',
+          // La zone est focalisable mais n'avait AUCUN anneau : au clavier, rien
+          // ne disait qu'on était dessus (WCAG 2.4.7).
+          FOCUS_RING,
+          isDragOver
+            // Le survol de dépôt se dit par le liseré seul (The Ink-Not-Gold Rule) :
+            // `border-gold` remplace `border-border-subtle`, l'état reste visible.
+            ? 'border-gold'
+            : 'border-border-subtle hover:border-border-strong',
+          disabled && 'opacity-50 pointer-events-none',
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => { if (!disabled) inputRef.current?.click(); }}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M12 16v-8m0 0-3 3m3-3 3 3M6.5 19h11a2.5 2.5 0 0 0 0-5H16a4 4 0 1 0-7.93-.75A2.5 2.5 0 0 0 6.5 19Z" />
-      </svg>
-      <p className="text-sm text-text-secondary">
-        Drop your <span className="font-medium">.xlsx</span> file here, or{' '}
-        <span className="text-gold underline">browse</span>
-      </p>
-      <p className="text-xs text-text-muted">Use the template below to structure your data</p>
-    </div>
+        <svg
+          className="h-10 w-10 text-text-muted"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M12 16v-8m0 0-3 3m3-3 3 3M6.5 19h11a2.5 2.5 0 0 0 0-5H16a4 4 0 1 0-7.93-.75A2.5 2.5 0 0 0 6.5 19Z" />
+        </svg>
+        <p className="text-sm text-text-secondary">
+          Drop your <span className="font-medium">.xlsx</span> file here, or{' '}
+          <span className="text-gold underline">browse</span>
+        </p>
+        <p className="text-xs text-text-muted">Use the template below to structure your data</p>
+      </div>
+    </>
   );
 }

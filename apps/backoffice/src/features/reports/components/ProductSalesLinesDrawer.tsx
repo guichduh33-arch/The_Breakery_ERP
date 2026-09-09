@@ -22,10 +22,8 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Loader2, Receipt } from 'lucide-react';
-import {
-  Badge, Button, EmptyState, Sheet, SheetContent, SheetDescription, SheetFooter,
-  SheetHeader, SheetTitle, cn,
-} from '@breakery/ui';
+import { Badge, Sheet, SheetDescription, cn } from '@breakery/ui';
+import { Button, EmptyState, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import {

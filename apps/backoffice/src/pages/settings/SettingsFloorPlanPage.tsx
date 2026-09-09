@@ -7,7 +7,8 @@
 // real "Interior" section if one exists, else rendered as a synthetic group.
 import { useMemo, useState, type JSX } from 'react';
 import { Plus, Pencil, Ban, RotateCcw, Trash2, List, LayoutGrid } from 'lucide-react';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import type { RestaurantTable, TableSection } from '@breakery/domain';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';

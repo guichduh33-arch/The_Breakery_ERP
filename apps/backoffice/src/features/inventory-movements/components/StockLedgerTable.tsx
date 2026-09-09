@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { ChevronRight, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDateShortWita, formatDateTimeShortWita } from '@breakery/utils';
 import type { StockLedgerRow } from '../stockLedgerColumns.js';
 

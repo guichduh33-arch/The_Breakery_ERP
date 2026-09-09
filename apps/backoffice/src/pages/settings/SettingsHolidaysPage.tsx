@@ -6,7 +6,7 @@
 
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useHolidaysList, type HolidayRow } from '@/features/settings/hooks/useHolidays.js';
 import { HolidayFormModal }   from '@/features/settings/components/HolidayFormModal.js';
@@ -26,7 +26,7 @@ function typeLabel(t: string): string {
 function typeBadgeClass(t: string): string {
   switch (t) {
     case 'national':  return 'bg-cat-blue/15 text-cat-blue border-cat-blue/30';
-    case 'religious': return 'bg-cat-amber/15 text-cat-amber border-cat-amber/30';
+    case 'religious': return 'bg-warning-soft text-warning border-warning';
     // Aplat retiré (The Ink-Not-Gold Rule) ; liseré monté à `border-gold` —
     // `border-border-gold` ne vaut que 1,64:1 sur le papier, il ne borde rien.
     case 'company':   return 'text-gold border-gold';

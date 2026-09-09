@@ -9,7 +9,7 @@
 // (qty × factor_to_base × cost_price, line_qty = 1), via the shared domain helper.
 
 import { useMemo, type JSX } from 'react';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import {
   modifierOptionMaterialCost,

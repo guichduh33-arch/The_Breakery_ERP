@@ -15,10 +15,8 @@
 // d'écriture (set_setting_v13) refuse la clé. Le changer suppose une migration.
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { BrandLogoUploader } from '@/features/settings/components/BrandLogoUploader.js';

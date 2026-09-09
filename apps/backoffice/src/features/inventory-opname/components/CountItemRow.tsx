@@ -16,7 +16,7 @@
 // mauvais comportement par accident.
 
 import { useState } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { useSetOpnameCount } from '../hooks/useOpnameMutations.js';
 import type { OpnameItemRow } from '../hooks/useOpnameDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

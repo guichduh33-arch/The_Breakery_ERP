@@ -19,15 +19,8 @@
 
 import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { Trash2, Plus } from 'lucide-react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  Input,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import {
   useCreateB2bOrder,

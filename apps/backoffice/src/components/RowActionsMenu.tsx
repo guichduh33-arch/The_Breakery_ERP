@@ -25,7 +25,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
 import { MoreHorizontal } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 
 // Anneau de focus du back-office.
 const FOCUS_RING =

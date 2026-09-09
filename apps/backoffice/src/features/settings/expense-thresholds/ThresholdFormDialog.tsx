@@ -5,10 +5,8 @@
 // swapping a single field to the @breakery/ui Select primitive would break its internal rhythm).
 // Only Button + Dialog* come from @breakery/ui.
 import { useState, useEffect } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { Trash2, Plus, Check } from 'lucide-react';
 import { useSetExpenseThreshold } from './hooks/useSetExpenseThreshold.js';
 import { useApproverRoles } from './hooks/useApproverRoles.js';

@@ -19,7 +19,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, Layers, Sigma, X } from 'lucide-react';
-import { Button, EmptyState, KpiTile } from '@breakery/ui';
+import { Button, EmptyState, KpiTile } from '@/components/BackofficeUi.js';
 import { formatQuantity } from '@breakery/utils';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';

@@ -15,7 +15,8 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { validateReceive } from '@breakery/domain';
 import { formatQuantity } from '@breakery/utils';
 import {
