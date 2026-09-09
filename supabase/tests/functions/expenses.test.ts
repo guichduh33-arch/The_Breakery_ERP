@@ -109,7 +109,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(lines?.length).toBe(2);  // cash path : 2 lines.
 
     // 6. Pay (no extra JE since not credit).
-    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v2', {
+    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v3', {
       p_expense_id: expenseId,
       p_payment_method: 'cash',
     });
@@ -170,7 +170,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(totalDebit).toBe(totalCredit);
 
     // Pay → expects 2nd JE.
-    const { data: payData } = await sbAdm.rpc('pay_expense_v2', {
+    const { data: payData } = await sbAdm.rpc('pay_expense_v3', {
       p_expense_id: expenseId,
       p_payment_method: 'transfer',
     });

@@ -6056,6 +6056,10 @@ export type Database = {
         }
         Returns: string
       }
+      _expense_settlement_mapping_key: {
+        Args: { p_method: string }
+        Returns: string
+      }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -7782,7 +7786,7 @@ export type Database = {
         }
         Returns: Json
       }
-      pay_expense_v2: {
+      pay_expense_v3: {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
       }
@@ -8220,7 +8224,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      set_expense_threshold_v2: {
+      set_expense_threshold_v3: {
         Args: {
           p_amount_max?: number
           p_amount_min?: number

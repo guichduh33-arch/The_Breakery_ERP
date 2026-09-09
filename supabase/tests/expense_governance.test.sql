@@ -10,8 +10,8 @@
 --   T6  : after step 1 by SUPER_ADMIN → current_approval_step=1
 --   T7  : same approver tries step 2 → P0001 sod_already_approved
 --   T8  : final step by different ADMIN → status=approved
---   T9  : set_expense_threshold_v2 overlapping range → P0002
---   T10 : set_expense_threshold_v2 by MANAGER (no thresholds.write) → 42501
+--   T9  : set_expense_threshold overlapping range → P0002
+--   T10 : set_expense_threshold by MANAGER (no thresholds.write) → 42501
 --   T11 : category-specific 2-step override wins over NULL 1-step default
 --   T12 : sync_cash_expense_to_session trigger → cash_out_total += amount
 --   T13 : sync_cash trigger no open session → audit_log written, no block
@@ -85,7 +85,7 @@ SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}
 SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000003', '123456');
 
 -- Category-specific threshold [100k, 1M) 2 steps (used by T9/T11/T15/T17)
-SELECT set_expense_threshold_v2(
+SELECT set_expense_threshold_v3(
   NULL, 'aaaaaaaa-0000-0000-0000-000000000001', 100000, 1000000,
   '[{"role_codes":["MANAGER","ADMIN","SUPER_ADMIN"],"label":"Manager approval"},
     {"role_codes":["ADMIN","SUPER_ADMIN"],"label":"Owner approval"}]'::jsonb
@@ -191,7 +191,7 @@ SELECT is(
 -- T9: overlapping NULL-category range [50k, 200k) conflicts with existing [0, 100k)
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
 SELECT throws_ok(
-  $$ SELECT set_expense_threshold_v2(NULL, NULL, 50000, 200000, '[]'::jsonb) $$,
+  $$ SELECT set_expense_threshold_v3(NULL, NULL, 50000, 200000, '[]'::jsonb) $$,
   'P0002', NULL,
   'T9 : overlapping NULL-category range → P0002 threshold_overlap'
 );
@@ -199,7 +199,7 @@ SELECT throws_ok(
 -- T10: MANAGER missing expenses.thresholds.write
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
 SELECT throws_ok(
-  $$ SELECT set_expense_threshold_v2(NULL, NULL, 10000000, 20000000, '[]'::jsonb) $$,
+  $$ SELECT set_expense_threshold_v3(NULL, NULL, 10000000, 20000000, '[]'::jsonb) $$,
   '42501', NULL,
   'T10 : MANAGER missing expenses.thresholds.write → 42501'
 );
@@ -262,7 +262,7 @@ SELECT ok(
   AND
   (SELECT COUNT(*) >= 1 FROM audit_logs
    WHERE entity_type = 'expense' AND action = 'expense.approved_step'),
-  'T14 : audit_log rows written for set_expense_threshold_v2 and approve_expense_v2'
+  'T14 : audit_log rows written for set_expense_threshold and approve_expense_v2'
 );
 
 -- T15: boundary 100k inclusive lower → 2-step category bracket
@@ -304,7 +304,7 @@ SELECT is(
   (SELECT bool_and(NOT has_function_privilege('anon', oid, 'EXECUTE'))
    FROM pg_proc
    WHERE proname IN ('submit_expense_v3', 'approve_expense_v4',
-                     'set_expense_threshold_v2', 'delete_expense_threshold_v2')),
+                     'set_expense_threshold_v3', 'delete_expense_threshold_v2')),
   true,
   'T18 : anon REVOKEd on all 4 S28 RPCs (approve now v4)'
 );
