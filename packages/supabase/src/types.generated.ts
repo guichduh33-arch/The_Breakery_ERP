@@ -5654,8 +5654,6 @@ export type Database = {
       }
       user_sessions: {
         Row: {
-          permissions_snapshot: string[] | null
-          session_timeout_minutes: number | null
           created_at: string
           device_type: string
           end_reason: string | null
@@ -5663,13 +5661,13 @@ export type Database = {
           id: string
           ip_address: unknown
           last_activity_at: string
+          permissions_snapshot: string[] | null
+          session_timeout_minutes: number | null
           session_token_hash: string
           user_agent: string | null
           user_id: string
         }
         Insert: {
-          permissions_snapshot?: string[] | null
-          session_timeout_minutes?: number | null
           created_at?: string
           device_type: string
           end_reason?: string | null
@@ -5677,13 +5675,13 @@ export type Database = {
           id?: string
           ip_address?: unknown
           last_activity_at?: string
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           session_token_hash: string
           user_agent?: string | null
           user_id: string
         }
         Update: {
-          permissions_snapshot?: string[] | null
-          session_timeout_minutes?: number | null
           created_at?: string
           device_type?: string
           end_reason?: string | null
@@ -5691,6 +5689,8 @@ export type Database = {
           id?: string
           ip_address?: unknown
           last_activity_at?: string
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           session_token_hash?: string
           user_agent?: string | null
           user_id?: string
@@ -6338,8 +6338,6 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
-      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
-      touch_user_session_v1: { Args: { p_session_id: string }; Returns: boolean }
       change_user_pin_v1: {
         Args: {
           p_actor_id: string
@@ -6349,6 +6347,7 @@ export type Database = {
         }
         Returns: Json
       }
+      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       close_cancelled_tablet_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: {
@@ -8354,6 +8353,10 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] }
+      touch_user_session_v1: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       transfer_order_table_v1: {
         Args: { p_order_id: string; p_to_table: string }
         Returns: Json
