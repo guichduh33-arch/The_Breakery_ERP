@@ -7,6 +7,9 @@ import { AppRoutes } from './routes/index.js';
 import { AppErrorBoundary } from './components/AppErrorBoundary.js';
 import { ErrorState } from './components/ErrorState.js';
 import { useAuthStore } from './stores/authStore.js';
+import { recordSessionActivity, startSessionActivity } from '@breakery/supabase';
+import { supabaseUrl } from './lib/supabase.js';
+import { startSessionRefresh } from './stores/sessionRefresh.js';
 
 /**
  * Session 19 / Phase 3.A — Idle session timeout.
@@ -74,6 +77,15 @@ function BootGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    const stopRefresh = startSessionRefresh();
+    const stopActivity = startSessionActivity({
+      getSession: useAuthStore.getState,
+      send: (token) => recordSessionActivity(supabaseUrl, token),
+      onExpired: () => { void useAuthStore.getState().logout(); },
+    });
+    return () => { stopRefresh(); stopActivity(); };
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

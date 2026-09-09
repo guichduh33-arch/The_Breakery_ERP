@@ -29,6 +29,7 @@ export interface LoginResponse {
   session: { token: string; session_id: string; created_at: string };
   auth: { access_token: string; refresh_token: string; expires_at: number };
   permissions: string[];
+  session_timeout_minutes?: number;
 }
 
 /**
@@ -103,21 +104,19 @@ export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Pro
 }
 
 /**
- * Probe an existing session and refresh its `last_activity_at`.
+ * Restaure le snapshot et le JWT sans renouveler l'activité.
  *
  * Calls `GET {supabaseUrl}/functions/v1/auth-get-session` with
  * `x-session-token`. Used on app boot to rehydrate auth state without forcing
  * a new PIN login.
  *
- * Session 19 / Phase 3.A — the EF now also returns the user's role-derived
- * `session_timeout_minutes` so the POS + BO shells can wire the idle-logout
- * hook (`useIdleTimeout`) without an extra round-trip.
+ * Le délai et les permissions sont figés lors de la connexion.
  *
  * @param supabaseUrl  - Project URL.
  * @param sessionToken - Opaque token from {@link LoginResponse}.session.token.
  * @returns The user's public profile flattened with their permission list and
- *          `session_timeout_minutes` (may be `null` for legacy users without a
- *          role row — callers should treat that as "no idle logout").
+ *          `session_timeout_minutes`. Une ancienne session sans snapshot
+ *          nécessite une nouvelle connexion PIN.
  * @throws {Error & { status: number }} `session_invalid` on any non-2xx response
  *         (expired, revoked, or unknown token).
  */
@@ -226,4 +225,12 @@ export async function changePin(
     const errBody = (await res.json().catch(() => ({}))) as { error?: string };
     throw Object.assign(new Error(errBody.error ?? 'change_pin_failed'), { details: errBody, status: res.status });
   }
+}
+
+/** Signale une activité nouvelle sans renouveler le JWT ni recalculer les droits. */
+export async function recordSessionActivity(supabaseUrl: string, sessionToken: string): Promise<void> {
+  const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-session-activity`, {
+    method: 'POST', headers: { 'x-session-token': sessionToken },
+  });
+  if (!response.ok) throw Object.assign(new Error('session_activity_failed'), { status: response.status });
 }

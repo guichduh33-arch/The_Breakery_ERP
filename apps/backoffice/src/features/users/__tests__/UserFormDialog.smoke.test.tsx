@@ -92,7 +92,7 @@ describe('UserFormDialog — smoke', () => {
     fireEvent.click(screen.getByRole('button', { name: /create user/i }));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('create_user_v1', {
+      expect(rpcMock).toHaveBeenCalledWith('create_user_v2', {
         p_employee_code: 'EMP010',
         p_full_name:     'Test User',
         p_role_code:     'MANAGER',  // first in list

@@ -41,7 +41,7 @@ import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
-import { checkPermissionForRole } from '../_shared/permissions.ts';
+import { checkPermissionForRole, withPermissionErrors } from '../_shared/permissions.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 interface VerifyManagerPinPayload {
@@ -64,7 +64,7 @@ const MINT_SCOPES: Record<string, string> = {
   store_credit_grant: 'customers.store_credit.grant',
 };
 
-serve(async (req) => {
+serve(withPermissionErrors(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -181,4 +181,4 @@ serve(async (req) => {
     verified_user_id: mgr.manager_profile_id,
     ...(authorizationId ? { authorization_id: authorizationId } : {}),
   });
-});
+}));

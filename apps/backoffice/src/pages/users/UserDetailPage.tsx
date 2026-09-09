@@ -20,6 +20,7 @@ export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const currentUserId = useAuthStore((s) => s.user?.id) ?? '';
+  const isSuperAdmin = useAuthStore((s) => s.user?.role_code) === 'SUPER_ADMIN';
 
   const canUpdate = hasPermission('users.update');
 
@@ -30,16 +31,22 @@ export default function UserDetailPage() {
   const [showRole,      setShowRole]      = useState<boolean>(false);
   const [showDelete,    setShowDelete]    = useState<boolean>(false);
   const [pinDraft,      setPinDraft]      = useState<string>('');
+  const [currentPin, setCurrentPin] = useState('');
   const [pinError,      setPinError]      = useState<string | null>(null);
   const [pinSuccess,    setPinSuccess]    = useState<boolean>(false);
   const [pinWeak,       setPinWeak]       = useState<boolean>(false);
   const [pinWeakReason, setPinWeakReason] = useState<PinWeakReason>(null);
 
   const isSelf = user.data?.id === currentUserId;
-  const canResetPin = canUpdate || isSelf;
+  const canMutateTarget = user.data?.role_code !== 'SUPER_ADMIN' || isSuperAdmin;
+  const canResetPin = (canUpdate || isSelf) && canMutateTarget;
 
   function handleResetPin() {
     if (id === undefined) return;
+    if (isSelf && !/^[0-9]{6}$/.test(currentPin)) {
+      setPinError('Enter your current 6-digit PIN.');
+      return;
+    }
     if (!/^[0-9]{6}$/.test(pinDraft)) {
       setPinError('PIN must be exactly 6 digits.');
       setPinSuccess(false);
@@ -47,10 +54,11 @@ export default function UserDetailPage() {
     }
     setPinError(null);
     pinReset.mutate(
-      { user_id: id, new_pin: pinDraft },
+      { user_id: id, new_pin: pinDraft, ...(isSelf ? { current_pin: currentPin } : {}) },
       {
         onSuccess: (response: { ok: true; weak?: boolean; weak_reason?: PinWeakReason }) => {
           setPinDraft('');
+          setCurrentPin('');
           setPinSuccess(true);
           if (response.weak === true) {
             setPinWeak(true);
@@ -106,7 +114,7 @@ export default function UserDetailPage() {
             )}
           </>
         }
-        actions={canUpdate && !isDeleted ? (
+        actions={canUpdate && canMutateTarget && !isDeleted ? (
           <>
             <Button variant="ghost" onClick={() => { setShowRole(true); }}>
               <UserCog className="h-4 w-4 mr-1.5" aria-hidden /> Change role
@@ -158,14 +166,27 @@ export default function UserDetailPage() {
         <div className="bg-bg-elevated rounded p-4 space-y-2">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-text-secondary" aria-hidden />
-            <h2 className="text-sm font-semibold">Reset PIN</h2>
+            <h2 className="text-sm font-semibold">{isSelf ? 'Change PIN' : 'Reset PIN'}</h2>
           </div>
           <p className="text-xs text-text-secondary">
             {isSelf
-              ? 'Pick a new PIN for yourself. It is bcrypt-hashed server-side.'
-              : 'Reset this user\'s PIN. They will be locked out until you communicate the new PIN.'}
+              ? 'Enter your current PIN to choose a new one.'
+              : 'Choose a new PIN and communicate it securely to this user.'}
           </p>
           <div className="flex items-center gap-2">
+            {isSelf && (
+              <input
+                aria-label="Current PIN"
+                type="password"
+                inputMode="numeric"
+                autoComplete="current-password"
+                maxLength={6}
+                value={currentPin}
+                onChange={(e) => { setCurrentPin(e.target.value.replace(/[^0-9]/g, '')); }}
+                placeholder="Current PIN"
+                className={`w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
+              />
+            )}
             <input
               aria-label="New PIN"
               type="password"
@@ -188,7 +209,7 @@ export default function UserDetailPage() {
               className={`w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-strong rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
             />
             <Button variant="ink" onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
-              {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}
+              {pinReset.isPending ? 'Saving…' : isSelf ? 'Change PIN' : 'Reset PIN'}
             </Button>
           </div>
           {pinWeak && !pinSuccess && (
@@ -219,7 +240,7 @@ export default function UserDetailPage() {
           userId={u.id}
           currentRole={u.role_code}
           fullName={u.full_name}
-          roles={(roles.data ?? []).map((r) => ({ code: r.code, name: r.name }))}
+          roles={(roles.data ?? []).filter((r) => isSuperAdmin || r.code !== 'SUPER_ADMIN').map((r) => ({ code: r.code, name: r.name }))}
           onClose={() => { setShowRole(false); }}
         />
       )}

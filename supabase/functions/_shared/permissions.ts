@@ -21,6 +21,28 @@
 //            D-W6-PERMS-01 · docs/workplan/plans/2026-07-14-session-78-vitest-d6-plan.md
 
 import { getAdminClient } from './supabase-admin.ts';
+import { jsonResponse } from './cors.ts';
+
+export class PermissionsUnavailableError extends Error {
+  constructor() {
+    super('authorization_unavailable');
+    this.name = 'PermissionsUnavailableError';
+  }
+}
+
+/** Une lecture incomplète ne permet ni session ni autorisation privilégiée. */
+export function withPermissionErrors(handler: (req: Request) => Promise<Response>) {
+  return async (req: Request): Promise<Response> => {
+    try {
+      return await handler(req);
+    } catch (error) {
+      if (error instanceof PermissionsUnavailableError) {
+        return jsonResponse({ error: 'authorization_unavailable' }, 503);
+      }
+      throw error;
+    }
+  };
+}
 
 /**
  * Compute the effective permission list for a (role, user) pair by querying
@@ -46,7 +68,7 @@ export async function computePermissionsForRole(
 
   if (roleErr) {
     console.error('[permissions] role_permissions fetch error', roleErr);
-    return [];
+    throw new PermissionsUnavailableError();
   }
 
   const perms = new Set<string>((roleGrants ?? []).map((r) => r.permission_code as string));
@@ -61,6 +83,7 @@ export async function computePermissionsForRole(
 
     if (overrideErr) {
       console.error('[permissions] overrides fetch error', overrideErr);
+      throw new PermissionsUnavailableError();
     } else {
       const now = Date.now();
       const active = (overrides ?? []).filter((o) => {

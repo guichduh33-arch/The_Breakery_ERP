@@ -3,8 +3,8 @@
 // Session 13 / Phase 5.D — live Vitest integration tests for the user-management RPCs.
 //
 // Coverage :
-//   - admin can create_user_v1 → row exists + audit row.
-//   - admin can update_user_role_v1 → audit row with old/new/reason + session revoked.
+//   - admin can create_user_v2 → row exists + audit row.
+//   - admin can update_user_role_v2 → audit row with old/new/reason + session revoked.
 //   - admin cannot delete the last remaining admin (P0001 LAST_ADMIN_PROTECTED).
 //   - admin can delete a cashier → soft-delete + audit + sessions revoked.
 
@@ -51,10 +51,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     }
   });
 
-  it('cashier cannot create_user_v1 (missing users.create)', async () => {
+  it('cashier cannot create_user_v2 (missing users.create)', async () => {
     const sb = jwtClient(cashierToken);
     const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
-    const { error } = await sb.rpc('create_user_v1', {
+    const { error } = await sb.rpc('create_user_v2', {
       p_employee_code: `T_C_${suffix}`,
       p_full_name:     'Should Fail',
       p_role_code:     'CASHIER',
@@ -64,11 +64,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     expect((error?.message ?? '').toLowerCase()).toMatch(/permission|denied|42501/);
   });
 
-  it('admin can create_user_v1 → row exists + audit row', async () => {
+  it('admin can create_user_v2 → row exists + audit row', async () => {
     const sb = jwtClient(adminToken);
     const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
     const empCode = `T_A_${suffix}`;
-    const { data: newId, error } = await sb.rpc('create_user_v1', {
+    const { data: newId, error } = await sb.rpc('create_user_v2', {
       p_employee_code: empCode,
       p_full_name:     'Phase 5D Live Test',
       p_role_code:     'CASHIER',
@@ -94,11 +94,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     expect((audit?.metadata as { role_code?: string } | null)?.role_code).toBe('CASHIER');
   });
 
-  it('admin can update_user_role_v1 → audit + sessions revoked', async () => {
+  it('admin can update_user_role_v2 → audit + sessions revoked', async () => {
     const sb = jwtClient(adminToken);
     const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
     const empCode = `T_R_${suffix}`;
-    const { data: newId } = await sb.rpc('create_user_v1', {
+    const { data: newId } = await sb.rpc('create_user_v2', {
       p_employee_code: empCode,
       p_full_name:     'Role Change Target',
       p_role_code:     'CASHIER',
@@ -115,7 +115,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     });
     expect(insErr).toBeNull();
 
-    const { data: res, error: roleErr } = await sb.rpc('update_user_role_v1', {
+    const { data: res, error: roleErr } = await sb.rpc('update_user_role_v2', {
       p_user_id:       profileId,
       p_new_role_code: 'MANAGER',
       p_reason:        'live test promotion',
@@ -165,7 +165,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
       return;
     }
 
-    const { error } = await sb.rpc('delete_user_v1', {
+    const { error } = await sb.rpc('delete_user_v2', {
       p_user_id: superAdmin?.id ?? '',
       p_reason:  'last-admin-guard test',
     });
@@ -177,7 +177,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     const sb = jwtClient(adminToken);
     const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
     const empCode = `T_D_${suffix}`;
-    const { data: newId } = await sb.rpc('create_user_v1', {
+    const { data: newId } = await sb.rpc('create_user_v2', {
       p_employee_code: empCode,
       p_full_name:     'Delete Target',
       p_role_code:     'CASHIER',
@@ -186,7 +186,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     const profileId = newId as unknown as string;
     createdIds.push(profileId);
 
-    const { data: res, error: delErr } = await sb.rpc('delete_user_v1', {
+    const { data: res, error: delErr } = await sb.rpc('delete_user_v2', {
       p_user_id: profileId,
       p_reason:  'live test cleanup',
     });

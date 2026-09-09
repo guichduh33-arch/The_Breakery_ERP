@@ -5661,6 +5661,8 @@ export type Database = {
           id: string
           ip_address: unknown
           last_activity_at: string
+          permissions_snapshot: string[] | null
+          session_timeout_minutes: number | null
           session_token_hash: string
           user_agent: string | null
           user_id: string
@@ -5673,6 +5675,8 @@ export type Database = {
           id?: string
           ip_address?: unknown
           last_activity_at?: string
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           session_token_hash: string
           user_agent?: string | null
           user_id: string
@@ -5685,6 +5689,8 @@ export type Database = {
           id?: string
           ip_address?: unknown
           last_activity_at?: string
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           session_token_hash?: string
           user_agent?: string | null
           user_id?: string
@@ -6332,6 +6338,15 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
+      change_user_pin_v1: {
+        Args: {
+          p_actor_id: string
+          p_current_pin?: string
+          p_new_pin: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       close_cancelled_tablet_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
@@ -6687,7 +6702,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_user_v1: {
+      create_user_v2: {
         Args: {
           p_employee_code: string
           p_full_name: string
@@ -6745,7 +6760,7 @@ export type Database = {
         Args: { p_permission_code: string; p_user_profile_id: string }
         Returns: boolean
       }
-      delete_user_v1: {
+      delete_user_v2: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
@@ -8105,7 +8120,7 @@ export type Database = {
         Args: { p_reason?: string; p_reservation_id: string }
         Returns: Json
       }
-      reset_user_pin_v1: {
+      reset_user_pin_v2: {
         Args: { p_new_pin: string; p_user_id: string }
         Returns: undefined
       }
@@ -8338,6 +8353,10 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] }
+      touch_user_session_v1: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       transfer_order_table_v1: {
         Args: { p_order_id: string; p_to_table: string }
         Returns: Json
@@ -8494,7 +8513,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_user_profile_v1: {
+      update_user_profile_v2: {
         Args: {
           p_employee_code: string
           p_full_name: string
@@ -8502,7 +8521,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_user_role_v1: {
+      update_user_role_v2: {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
         Returns: Json
       }

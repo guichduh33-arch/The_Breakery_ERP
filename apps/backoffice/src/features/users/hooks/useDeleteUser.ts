@@ -24,7 +24,7 @@ export function useDeleteUser() {
   const qc = useQueryClient();
   return useMutation<DeleteUserResult, Error, DeleteUserArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('delete_user_v1', {
+      const { data, error } = await supabase.rpc('delete_user_v2', {
         p_user_id: args.user_id,
         p_reason:  args.reason,
       });
