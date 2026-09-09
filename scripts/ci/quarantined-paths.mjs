@@ -11,10 +11,12 @@
 // (« ../<segment>/… ») n'a pas de préfixe : ancrer aurait rendu la moitié du
 // balayage aveugle, ce qui est arrivé au premier passage.
 //
-// EXCEPTION MOTIVÉE, une seule : le segment « audit » est le seul des huit qui
+// EXCEPTION DE VOCABULAIRE : le segment « audit » est le seul des huit qui
 // se prononce en langue naturelle. Nu, il matche « an audit/log page » — faux
 // positif constaté dans .claude/skills/report-audit. Il exige donc un préfixe
 // « docs/ » ou « _quarantine/ ». Les sept autres sont des noms propres : nus.
+// EXCEPTION DE RÉSOLUTION : un lien « reference » vers un fichier de skill
+// tracké reste permis ; un fichier absent ou un ancien chemin reste refusé.
 //
 // RÉGIMES
 //   1. Exempté en permanence — docs/adr/** et supabase/migrations/** : un
@@ -36,6 +38,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isLiveSkillReference } from './_live-skill-reference.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -87,6 +90,7 @@ function loadBaseline() {
 // Inclusion : on énumère ce qui vit (les fichiers trackés), on n'exclut rien de
 // mort. Un répertoire supprimé disparaît de lui-même de cette liste.
 const tracked = git('ls-files', '-z').split('\0').filter(Boolean);
+const trackedSet = new Set(tracked);
 
 const baseline = loadBaseline();
 if (baseline === null) {
@@ -118,6 +122,9 @@ for (const file of tracked) {
       let m;
       while ((m = re.exec(lines[i])) !== null) {
         const token = m[1];
+        // Un nom partagé avec une ancienne zone ne condamne pas un lien vivant.
+        const tokenIndex = m.index + m[0].lastIndexOf(token);
+        if (token === 'reference' && isLiveSkillReference(file, lines[i], tokenIndex, trackedSet)) continue;
         const hit = { file, line: i + 1, token, kind, text: lines[i].trim().slice(0, 160) };
         if (r === 'baseline') {
           const key = `${file}\t${token}`;
