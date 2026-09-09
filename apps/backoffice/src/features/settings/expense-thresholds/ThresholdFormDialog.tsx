@@ -11,6 +11,7 @@ import {
 } from '@breakery/ui';
 import { Trash2, Plus, Check } from 'lucide-react';
 import { useSetExpenseThreshold } from './hooks/useSetExpenseThreshold.js';
+import { useApproverRoles } from './hooks/useApproverRoles.js';
 import type { ApprovalStep, ExpenseThresholdRow } from './hooks/useExpenseThresholds.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 
@@ -21,7 +22,12 @@ interface Props {
   categories: { id: string; name: string }[];
 }
 
-const ROLE_OPTIONS = ['CASHIER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'] as const;
+// Audit expense-governance finding n°5 : la liste des rôles était en dur ET offrait
+// CASHIER, qui ne détient pas `expenses.approve` — un palier ainsi configuré gelait la
+// tranche, personne ne pouvant l'approuver. Elle vient maintenant de la base
+// (`useApproverRoles`). `FALLBACK_ROLE_OPTIONS` ne sert QUE si la lecture échoue : ce sont
+// les rôles qui détiennent la permission au 2026-09-09, CASHIER exclu.
+const FALLBACK_ROLE_OPTIONS = ['ADMIN', 'MANAGER', 'SUPER_ADMIN'] as const;
 
 const LABEL_CLS = 'font-data font-semibold text-xs uppercase tracking-widest text-text-secondary';
 // `border-border-strong` : bordure de CHAMP = objet graphique, seuil 3:1
@@ -35,6 +41,11 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
   const [amountMax, setAmountMax]   = useState<number>(100000);
   const [steps, setSteps]           = useState<ApprovalStep[]>([]);
   const setMut = useSetExpenseThreshold();
+  const { data: approverRoles } = useApproverRoles();
+  const roleOptions: readonly string[] =
+    approverRoles !== undefined && approverRoles.length > 0
+      ? approverRoles
+      : FALLBACK_ROLE_OPTIONS;
 
   useEffect(() => {
     if (open) {
@@ -194,7 +205,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                   * forme (WCAG 1.4.1) et reste en place, invisible, à l'état
                   * décoché — la puce ne change donc pas de largeur en basculant. */}
                 <div className="flex flex-wrap gap-1">
-                  {ROLE_OPTIONS.map((role) => {
+                  {roleOptions.map((role) => {
                     const isOn = step.role_codes.includes(role);
                     return (
                       <button

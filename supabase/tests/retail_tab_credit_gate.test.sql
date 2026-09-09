@@ -194,10 +194,10 @@ WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t6_inactive', false);
 END $$;
 
--- T7: after T1's attach, the debt shows up in get_pos_b2b_debts_v3 (outstanding = total).
+-- T7: after T1's attach, the debt shows up in get_pos_b2b_debts_v4 (outstanding = total).
 DO $$ DECLARE v_outstanding NUMERIC; BEGIN
   SELECT outstanding INTO v_outstanding
-    FROM get_pos_b2b_debts_v3(current_setting('s62.c1')::uuid, 730)
+    FROM get_pos_b2b_debts_v4(current_setting('s62.c1')::uuid, 730)
    WHERE order_id = current_setting('s62.o1')::uuid;
   INSERT INTO _r VALUES ('t7_debts_view', v_outstanding = 50000);
 EXCEPTION WHEN OTHERS THEN
@@ -232,7 +232,7 @@ INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t3_default_cap'), 'T
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t4_outstanding_counted'), 'T4: existing outstanding counted against the cap (60k+50k>100k)');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t5_not_attachable'), 'T5: paid order raises P0001 order_not_attachable');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t6_inactive'),    'T6: soft-deleted customer raises P0002 customer_not_found_or_inactive');
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t7_debts_view'),  'T7: attached debt appears in get_pos_b2b_debts_v3 with outstanding=total');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t7_debts_view'),  'T7: attached debt appears in get_pos_b2b_debts_v4 with outstanding=total');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t8_reattach'),    'T8: re-attaching the same customer is idempotent (no error, same values)');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t9_cancelled_excluded'), 'T9: cancelled lines excluded from the tab total (40k active + 60k cancelled under a 50k cap)');
 SELECT count(*) FILTER (WHERE l LIKE 'not ok%') AS failures, count(*) AS total, string_agg(l, ' | ') AS lines FROM _cap;

@@ -6062,6 +6062,10 @@ export type Database = {
         }
         Returns: string
       }
+      _expense_settlement_mapping_key: {
+        Args: { p_method: string }
+        Returns: string
+      }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -6307,7 +6311,7 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
-      cancel_b2b_order_v1: {
+      cancel_b2b_order_v2: {
         Args: {
           p_idempotency_key?: string
           p_order_id: string
@@ -6501,7 +6505,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v6: {
+      create_b2b_order_v7: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -6831,7 +6835,7 @@ export type Database = {
       fail:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      finalize_opname_v3: {
+      finalize_opname_v4: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
       }
@@ -7110,7 +7114,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v3: {
+      get_pos_b2b_debts_v4: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
           b2b_credit_limit: number
@@ -7362,7 +7366,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_config_issues_v1: {
+      get_stock_config_issues_v2: {
         Args: never
         Returns: {
           category_name: string
@@ -7798,7 +7802,7 @@ export type Database = {
         }
         Returns: Json
       }
-      pay_expense_v2: {
+      pay_expense_v3: {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
       }
@@ -8236,7 +8240,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      set_expense_threshold_v2: {
+      set_expense_threshold_v3: {
         Args: {
           p_amount_max?: number
           p_amount_min?: number

@@ -22,6 +22,10 @@ const ISSUE_LABEL: Record<StockConfigIssueType, { title: string; hint: string }>
     title: 'Negative stock',
     hint: 'Tracked product sold with no stock — receive it (purchase) or produce it.',
   },
+  unconvertible_recipe_unit: {
+    title: 'Unit mismatch',
+    hint: 'A recipe line uses a unit that cannot convert to the material stock unit — the sale is refused. Fix the recipe unit or add the conversion.',
+  },
   sale_deduct_no_recipe: {
     title: 'No recipe',
     hint: 'Made to order (untracked) but has no recipe → deducts nothing on sale.',

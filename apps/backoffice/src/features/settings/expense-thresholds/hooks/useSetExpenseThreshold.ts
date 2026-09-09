@@ -21,7 +21,7 @@ export function useSetExpenseThreshold() {
         ...(input.threshold_id != null && { p_threshold_id: input.threshold_id }),
         ...(input.category_id  != null && { p_category_id:  input.category_id }),
       };
-      const { data, error } = await supabase.rpc('set_expense_threshold_v2', args as never);
+      const { data, error } = await supabase.rpc('set_expense_threshold_v3', args as never);
       if (error) throw error;
       return data;
     },

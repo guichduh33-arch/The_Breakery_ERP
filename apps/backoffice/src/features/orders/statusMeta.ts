@@ -95,7 +95,7 @@ export function isOrderDetailPaid(order: OrderSettlementFacts): boolean {
 /**
  * Le canal B2B, désigné par sa valeur d'ENUM — `satisfies` casse le build si
  * Postgres la renomme, là où un littéral recopié pourrirait en silence (la
- * classe de bug `take_away` / `take_out`). `create_b2b_order_v6` pose
+ * classe de bug `take_away` / `take_out`). `create_b2b_order` pose
  * `order_type = 'b2b'` : c'est le seul fait qui distingue le canal.
  */
 const B2B_ORDER_TYPE = 'b2b' satisfies OrderType;
