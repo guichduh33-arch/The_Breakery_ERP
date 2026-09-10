@@ -16,6 +16,7 @@ export type OrderType = 'dine_in' | 'take_out' | 'delivery';
  * that only knows `product_id` / `quantity` keeps working.
  */
 export interface ComboComponent {
+  name?: string;
   product_id: string;
   quantity: number;
   modifiers?: SelectedModifiers;
@@ -28,6 +29,10 @@ export interface CartItem {
    * `product_id` is NOT a unique key, but `id` is.
    */
   id: string;
+  /** Identité persistée ; id reste stable pour les gestes et impressions locaux. */
+  server_id?: string;
+  /** Montant brut historique, avant remise de ligne, résolu par le serveur. */
+  server_line_total?: number;
   product_id: string;
   name: string;
   unit_price: number;

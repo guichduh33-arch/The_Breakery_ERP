@@ -83,7 +83,7 @@ function buildOrder() {
 }
 
 // Drive the RefundOrderModal through line pick → tender amount → reason → PIN → submit.
-async function driveModalToSubmit(pin = '123456'): Promise<void> {
+function driveModalToSubmit(pin = '123456'): Promise<void> {
   // 1. Select the (single) line — checkbox aria-label = "Refund line Americano"
   fireEvent.click(screen.getByLabelText(/Refund line Americano/i));
 
@@ -106,6 +106,7 @@ async function driveModalToSubmit(pin = '123456'): Promise<void> {
 
   // 5. Verify
   fireEvent.click(screen.getByRole('button', { name: /^Verify$/i }));
+  return Promise.resolve();
 }
 
 beforeEach(() => {
@@ -139,7 +140,7 @@ describe('S25 useRefundOrder — manager-pin header + idempotency wiring', () =>
           manager: { id: 'm1', full_name: 'Manager', role_code: 'MANAGER' },
         }),
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const { useRefundOrder } = await import('../hooks/useRefundOrder');
     const Wrapper = makeWrapper();
@@ -228,9 +229,9 @@ describe('S25 RefundOrderModal — idempotency UUID lifecycle', () => {
     >[0];
     const captured: SubmitArgs[] = [];
     let shouldFail = true;
-    const onSubmit = vi.fn(async (args: SubmitArgs) => {
+    const onSubmit = vi.fn((args: SubmitArgs) => {
       captured.push(args);
-      if (shouldFail) throw new Error('simulated_failure');
+      return shouldFail ? Promise.reject(new Error('simulated_failure')) : Promise.resolve();
     });
 
     function Harness(): JSX.Element {

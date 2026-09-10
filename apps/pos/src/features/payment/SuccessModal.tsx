@@ -3,9 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, CloudOff, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals, lineTotalOf } from '@breakery/domain';
-import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
+import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine, Tender } from '@breakery/domain';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
-import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
+import { usePaymentStore } from '@/stores/paymentStore';
+import { runReceiptJob, useReceiptJobs } from '@/services/print/receiptJobs';
+import { openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 import { useBusinessIdentity, type BusinessIdentity } from '@/features/settings/hooks/useBusinessIdentity';
@@ -17,6 +19,7 @@ import { toast } from 'sonner';
 export interface SuccessModalProps {
   open: boolean;
   orderNumber: string;
+  receiptId?: string;
   /** Server-authoritative charged total (money-path v15). */
   total: number;
   /**
@@ -42,6 +45,7 @@ export interface SuccessModalProps {
   customerName?: string;
   cart: Cart;
   paymentMethod: PaymentMethod;
+  tenders?: Tender[];
   cashReceived: number;
   cashierName: string;
   onNewOrder: () => void;
@@ -110,6 +114,7 @@ function buildReceiptPayload(
       ...(business.taxId ? { tax_id: business.taxId } : {}),
     },
     order: {
+      ...(props.receiptId ? { id: props.receiptId } : {}),
       order_number: props.orderNumber,
       created_at: new Date().toISOString(),
       cashier_name: props.cashierName,
@@ -128,7 +133,7 @@ function buildReceiptPayload(
         ...(item.modifiers.length > 0 ? {
           modifiers: item.modifiers.map((m) => ({ label: m.option_label, price_adjustment: m.price_adjustment })),
         } : {}),
-        line_total: sl ? sl.line_total : clientLineTotal,
+        line_total: sl ? sl.line_total : Math.max(0, clientLineTotal - (item.discount?.amount ?? 0)),
       };
     }),
     ...(promoLines.length > 0 ? { promotions: promoLines } : {}),
@@ -148,6 +153,7 @@ function buildReceiptPayload(
         ? { cash_received: props.cashReceived, change_given: props.changeGiven ?? 0 }
         : {}),
     },
+    ...(props.tenders && props.tenders.length > 1 ? { payments: props.tenders } : {}),
     ...(props.pointsEarned && props.pointsEarned > 0 ? {
       loyalty: {
         points_earned: props.pointsEarned,
@@ -186,7 +192,8 @@ export function SuccessModal(props: SuccessModalProps) {
   // S72 audit — first receipt print vs. subsequent reprints. The auto-print
   // effect and the manual Print button both call handlePrint; the first pass is
   // `receipt_printed`, every later pass `receipt_reprinted`.
-  const printedOnceRef = useRef(false);
+  const receiptKey = props.receiptId ?? orderNumber;
+  const receiptJob = useReceiptJobs((s) => s.jobs.find((job) => job.id === receiptKey));
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
   const { autoPrint, autoOpenDrawer, isLoading: orgSettingsLoading } = useOrgDisplaySettings();
@@ -208,17 +215,16 @@ export function SuccessModal(props: SuccessModalProps) {
 
   async function handlePrint() {
     setIsPrinting(true);
-    const isReprint = printedOnceRef.current;
-    printedOnceRef.current = true;
+    const isReprint = useReceiptJobs.getState().jobs.some((job) => job.id === receiptKey);
     const payload = buildReceiptPayload(props, taxRate, taxInclusive, businessIdentity, receiptTemplate);
-    const result = await printReceipt(payload, cashierPrinter);
+    const result = await runReceiptJob(payload, cashierPrinter);
     // S72 audit — journal every receipt print (reprints are a fraud signal).
     emitPosEvent(isReprint ? 'receipt_reprinted' : 'receipt_printed', {
       order_number_snap: orderNumber,
       payload: { printed: result.success },
     });
     if (!result.success) {
-      toast.warning('Print server unreachable — receipt not printed');
+      toast.warning('Receipt confirmation unavailable — check Printing before reprinting');
     }
     setIsPrinting(false);
   }
@@ -255,6 +261,12 @@ export function SuccessModal(props: SuccessModalProps) {
       return () => { mountedRef.current = false; };
     }
     firedRef.current = true;
+    try {
+      if (!usePaymentStore.getState().claimSuccessEffects()) return;
+    } catch {
+      toast.warning('Automatic printing paused — saved payment could not be updated. Use Reprint after checking the printer.');
+      return;
+    }
     void (async () => {
       // S72 audit P1: only physically open the drawer when cash is actually
       // involved — a pure card/QRIS payment must NOT pop the till (open drawer =
@@ -262,11 +274,11 @@ export function SuccessModal(props: SuccessModalProps) {
       // includes a cash tender even when paymentMethod (first tender only) isn't
       // 'cash'. Previously the call was gated solely on the autoOpenDrawer
       // setting, so every card/QRIS sale opened the drawer.
-      const needsDrawer = props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0;
+      const needsDrawer = props.tenders?.some((t) => t.method === 'cash') ?? (props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0);
       const drawerTask = autoOpenDrawer && needsDrawer
         ? openCashDrawer()
         : Promise.resolve({ success: true } as const);
-      const printTask = autoPrint ? handlePrint() : Promise.resolve();
+      const printTask = autoPrint && !useReceiptJobs.getState().jobs.some((job) => job.id === receiptKey) ? handlePrint() : Promise.resolve();
       const [drawer] = await Promise.all([drawerTask, printTask]);
       // S72 audit — journal the till kick on a sale (fraud signal: a cash sale
       // that opens the drawer). Emitted for the attempt; `opened` records whether
@@ -351,6 +363,9 @@ export function SuccessModal(props: SuccessModalProps) {
             )}
           </div>
         </div>
+        {receiptJob && <p role="status" className={receiptJob.status === 'confirmed' ? 'text-text-secondary text-sm' : 'text-gold text-sm'}>
+          {receiptJob.status === 'confirmed' ? 'Receipt acknowledged by printer' : 'Receipt printing to verify'}
+        </p>}
         <div className="flex gap-3">
           <Button
             variant="secondary"

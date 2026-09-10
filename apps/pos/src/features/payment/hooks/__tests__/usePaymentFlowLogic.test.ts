@@ -1,9 +1,13 @@
+vi.mock('@/features/settings/hooks/useTaxConfig', () => ({ useTaxConfig: () => ({ taxRate: 0.1, taxInclusive: true }) }));
+vi.mock('@/features/settings/hooks/useEnabledPaymentMethods', () => ({ useEnabledPaymentMethods: () => new Set(['cash', 'card', 'qris', 'store_credit']) }));
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({ useOrgDisplaySettings: () => ({}) }));
+import { useShiftStore } from '@/stores/shiftStore';
 // apps/pos/src/features/payment/hooks/__tests__/usePaymentFlowLogic.test.ts
 // Bonus unit coverage unlocked by the refactor: the derived flags
 // (remaining / draftValid / fastPathReady / canProcess) in isolation.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { toast } from 'sonner';
@@ -18,6 +22,7 @@ import type { OfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentG
 
 // vi.hoisted so the mock fn keeps a stable ref (S39 lesson) and tests can
 // program per-case resolutions/rejections.
+const fireMock = vi.hoisted(() => ({ mutateAsync: vi.fn().mockResolvedValue([]) }));
 const checkoutMock = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 // ADR-015 — gate hors-ligne pilotable par cas. Défaut ONLINE : les suites
 // pré-existantes de ce fichier passent par dispatchCheckout (chemin cloud).
@@ -42,7 +47,7 @@ vi.mock('@/features/lan/offlineOutbox', async (importOriginal) => {
 vi.mock('../useCheckout', () => ({ useCheckout: () => ({ mutateAsync: checkoutMock.mutateAsync, isPending: false }) }));
 vi.mock('@/features/cart/hooks/useFireToStations', () => ({
   // mutateAsync must RESOLVE (the success path chains `.then()` on it).
-  useFireToStations: () => ({ mutation: { mutateAsync: vi.fn().mockResolvedValue([]), isPending: false }, firableCount: 0 }),
+  useFireToStations: () => ({ mutation: { mutateAsync: fireMock.mutateAsync, isPending: false }, firableCount: 0 }),
 }));
 vi.mock('@/features/settings/hooks/usePOSPresets', () => ({
   usePOSPresets: () => ({ presets: { quickPayments: [50_000, 100_000] } }),
@@ -54,6 +59,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 function seedCartOneItem(): void {
+  usePaymentStore.getState().reset();
+  useShiftStore.setState({ current: { id: 's1', opened_at: '', opening_cash: 0 } });
   useCartStore.setState({
     cart: {
       items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 25_000, quantity: 1, modifiers: [] }],
@@ -250,6 +257,8 @@ describe('usePaymentFlowLogic — dispatch hors-ligne (ADR-015)', () => {
     expect(outboxMock.enqueueIntent).not.toHaveBeenCalled();
     expect(result.current.success).toBeNull();
     expect(toast.error).toHaveBeenCalledWith('Store credit unavailable offline — remove this tender');
+    expect(usePaymentStore.getState().attempt).toBeNull();
+    expect(result.current.attemptLocked).toBe(false);
   });
 
   it('refuse tout encaissement quand le réglage est OFF (fail-closed), sans mise en file', async () => {
@@ -262,5 +271,81 @@ describe('usePaymentFlowLogic — dispatch hors-ligne (ADR-015)', () => {
 
     expect(outboxMock.enqueueIntent).not.toHaveBeenCalled();
     expect(result.current.success).toBeNull();
+  });
+});
+
+describe('payment durability', () => {
+  beforeEach(() => {
+    seedCartOneItem();
+    useCartStore.setState({ offlineOrder: null, printedItemIds: [] });
+    checkoutMock.mutateAsync.mockReset();
+    fireMock.mutateAsync.mockReset().mockResolvedValue([]);
+    offlineGateMock.current = { offlineMode: false, paymentsAllowed: false, blockedReason: null };
+    usePaymentStore.setState({ isOpen: true, selectedMethod: 'cash', cashReceivedStr: '25000', tenders: [] });
+  });
+
+  it('persists before dispatch, blocks double taps and survives closing during the call', async () => {
+    let finish!: (value: unknown) => void;
+    checkoutMock.mutateAsync.mockImplementation(() => {
+      expect(localStorage.getItem('breakery.payment-attempt.v1')).toContain('pending');
+      return new Promise((resolve) => { finish = resolve; });
+    });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    let first!: Promise<void>;
+    act(() => { first = result.current.handleProcess(); void result.current.handleProcess(); });
+    const key = usePaymentStore.getState().idempotencyKey;
+    act(() => { result.current.close(); useCartStore.getState().clear(); usePaymentStore.getState().open(); });
+    expect(useCartStore.getState().cart.items).toHaveLength(1);
+    expect(usePaymentStore.getState().idempotencyKey).toBe(key);
+    expect(checkoutMock.mutateAsync).toHaveBeenCalledTimes(1);
+    await act(async () => { finish({ order_id: 'o1', order_number: 'P-1', total: 25000, tax_amount: 0, change_given: 0 }); await first; });
+    expect(usePaymentStore.getState().attempt?.state).toBe('confirmed');
+    act(() => result.current.handleNewOrder());
+    expect(useCartStore.getState().cart.items).toEqual([]);
+    expect(usePaymentStore.getState().attempt).toBeNull();
+  });
+
+  it('replays the exact saved cart and tenders after a lost response and remount', async () => {
+    checkoutMock.mutateAsync.mockRejectedValueOnce(new Error('Failed to fetch'));
+    const mounted = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await mounted.result.current.handleProcess(); });
+    const first = checkoutMock.mutateAsync.mock.calls[0]![0] as unknown;
+    mounted.unmount();
+    const { readPaymentAttempt } = await import('@/stores/paymentAttempt');
+    const recovered = readPaymentAttempt();
+    expect(recovered?.state).toBe('unknown');
+    usePaymentStore.setState({ attempt: recovered, attemptUnsettled: true, isOpen: true });
+    useCartStore.setState({ cart: { items: [], order_type: 'take_out' } });
+    checkoutMock.mutateAsync.mockResolvedValue({ order_id: 'o1', order_number: 'P-1', total: 25000, tax_amount: 0, change_given: 0 });
+    const resumed = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    act(() => { resumed.result.current.handleRetry(); });
+    await waitFor(() => expect(resumed.result.current.success).not.toBeNull());
+    expect(checkoutMock.mutateAsync.mock.calls[1]![0]).toEqual(first);
+    expect(resumed.result.current.success?.orderNumber).toBe('P-1');
+  });
+
+  it('does not dispatch when durable storage fails', async () => {
+    const original = Storage.prototype.setItem.bind(localStorage);
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+      if (key === 'breakery.payment-attempt.v1') throw new DOMException('Storage full', 'QuotaExceededError');
+      original.call(this, key, value);
+    });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleProcess(); });
+    expect(checkoutMock.mutateAsync).not.toHaveBeenCalled();
+    expect(usePaymentStore.getState().attempt).toBeNull();
+    spy.mockRestore();
+  });
+
+  it('queues unsent additions before an offline split payment on an existing local order', async () => {
+    offlineGateMock.current = { offlineMode: true, paymentsAllowed: true, blockedReason: null };
+    useCartStore.setState({ offlineOrder: { clientUuid: 'root-1', localNumber: 'L-1' }, lockedItemIds: [] });
+    const events: string[] = [];
+    fireMock.mutateAsync.mockImplementation(() => { events.push('fire'); useCartStore.getState().markLocked(['l1']); return Promise.resolve([]); });
+    outboxMock.enqueueIntent.mockImplementation(() => { events.push('payment'); return Promise.resolve(); });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleSplitComplete([{ method: 'cash', amount: 10000 }, { method: 'card', amount: 15000 }]); });
+    expect(events).toEqual(['fire', 'payment']);
+    expect(usePaymentStore.getState().attempt?.result?.offline).toBe(true);
   });
 });

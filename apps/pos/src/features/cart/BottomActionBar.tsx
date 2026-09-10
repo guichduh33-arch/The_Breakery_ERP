@@ -1,3 +1,4 @@
+import { PrintJobsPanel } from './PrintJobsPanel';
 // apps/pos/src/features/cart/BottomActionBar.tsx
 //
 // Global POS action bar (bottom of the shell, full width). It concentrates ALL
@@ -99,6 +100,7 @@ export function BottomActionBar({
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
   const voidOrder = useCartStore((s) => s.voidOrder);
+  const paymentLocked = usePaymentStore((s) => Boolean(s.recoveryError !== null || (s.attempt && s.attempt.state !== 'refused')));
   const openPayment = usePaymentStore((s) => s.open);
 
   const heldCount = useHeldOrdersQuery().data?.length ?? 0;
@@ -189,7 +191,7 @@ export function BottomActionBar({
       : '';
 
   async function handleReholdFired(): Promise<void> {
-    if (!pickedUpOrderId) return;
+    if (!pickedUpOrderId || paymentLocked) return;
     try {
       await holdFired.mutateAsync(pickedUpOrderId);
       resetCartAfterCheckout();
@@ -208,6 +210,7 @@ export function BottomActionBar({
   // reprise du plan de salle (`onSelected`) n'est atteignable qu'une fois cette
   // garde franchie, elle n'a donc pas à la refaire.
   function handleCheckout(): void {
+    if (paymentLocked) { openPayment(); return; }
     if (needsShift) {
       toast.info('No shift open — opening the shift form.');
       onOpenShift?.();
@@ -232,6 +235,7 @@ export function BottomActionBar({
     managerPin: string;
     idempotencyKey: string;
   }): Promise<void> {
+    if (paymentLocked) { toast.error('Resume the saved payment before voiding this order'); return; }
     setVoidPending(true);
     try {
       if (pickedUpOrderId) {
@@ -260,7 +264,7 @@ export function BottomActionBar({
       // son border-t, pas par une ombre portée — supprimée.
       // Audit 2026-08-24 (responsive P1) — safe-area : la barre porte Checkout,
       // qui passait sous la barre gestuelle Android en Capacitor.
-      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 pt-2.5 pb-safe-bottom-gutter flex items-center gap-2 max-md:flex-wrap z-50"
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 pt-2.5 pb-safe-bottom-gutter flex items-center gap-2 max-[1099px]:flex-wrap z-50"
       // Audit 2026-08-24 (a11y P2) — role=toolbar promettait la navigation aux
       // flèches (non câblée) ; group dit ce que le clavier sait faire, même
       // doctrine que le popover More et les onglets du panier.
@@ -271,13 +275,13 @@ export function BottomActionBar({
           Wraps to a second row before it can push the validation pair off the
           right edge — this is what fixes the Checkout/total truncation (#14):
           the group is `min-w-0 flex-wrap`, the validation pair is `shrink-0`. */}
-      <div className="flex flex-wrap items-center gap-2 min-w-0 max-md:w-full">
+      <div className="flex flex-wrap items-center gap-2 min-w-0 max-[1099px]:w-full">
         {/* Critique run 4 lot 5 — même contrat que Hold : indisponible ≠
             disabled. Un bouton mort au doigt n'explique rien ; celui-ci reste
             tapable et enseigne le parcours quand la liste est vide. */}
         <button
           type="button"
-          className={`${GHOST_BTN} ${heldCount === 0 ? 'opacity-50' : ''}`}
+          className={`${GHOST_BTN} max-[1099px]:hidden ${heldCount === 0 ? 'opacity-50' : ''}`}
           aria-disabled={heldCount === 0}
           onClick={() => {
             if (heldCount === 0) {
@@ -315,7 +319,7 @@ export function BottomActionBar({
         <button
           type="button"
           className={`${GHOST_BTN} ${holdTitle ? 'opacity-50' : ''}`}
-          disabled={holdFired.isPending}
+          disabled={holdFired.isPending || paymentLocked}
           aria-disabled={holdTitle !== ''}
           {...(holdTitle ? { title: holdTitle } : {})}
           onClick={() => {
@@ -327,7 +331,7 @@ export function BottomActionBar({
           <span>Hold</span>
         </button>
 
-        <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
+        <button type="button" className={`${GHOST_BTN} max-[1099px]:hidden`} onClick={() => onOpenCustomerSearch?.()}>
           {attachedCustomer ? (
             <User className="h-4 w-4" aria-hidden />
           ) : (
@@ -338,7 +342,7 @@ export function BottomActionBar({
           </span>
         </button>
 
-        <TableSelectorButton variant="secondary" className={GHOST_BTN} />
+        <TableSelectorButton variant="secondary" className={`${GHOST_BTN} max-[1099px]:hidden`} />
 
         {/* More — lower-frequency + destructive actions consolidated here so the
             bar stays scannable and never overflows (#13/#14). A badge surfaces
@@ -375,6 +379,12 @@ export function BottomActionBar({
               className="absolute bottom-full left-0 mb-2 w-60 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
             >
               {/* Self-contained buttons restyled as menu rows (own their modals). */}
+              <div className="min-[1100px]:hidden">
+                <button type="button" className={MENU_ITEM} onClick={() => { setMoreOpen(false); setHeldOpen(true); }}><Clock className="h-4 w-4" aria-hidden />Held Orders ({heldCount})</button>
+                <button type="button" className={MENU_ITEM} onClick={() => { setMoreOpen(false); onOpenCustomerSearch?.(); }}><User className="h-4 w-4" aria-hidden />{attachedCustomer?.name ?? 'Customer'}</button>
+                <TableSelectorButton variant="ghost" className={MENU_ITEM} />
+              </div>
+              <PrintJobsPanel />
               <TabletInboxButton className={MENU_ITEM} />
               <PrintBillButton variant="ghost" className={cn(MENU_ITEM, 'justify-start')} />
               <button
@@ -422,7 +432,7 @@ export function BottomActionBar({
       </div>
 
       {/* Spacer — collapses first; the left group wraps before Checkout clips. */}
-      <div className="flex-1 min-w-[24px] max-md:hidden" />
+      <div className="flex-1 min-w-[24px] max-[1099px]:hidden" />
 
       {/* ── Right group : validation ────────────────────────────────────── */}
       {/* LOT 7 (audit 2026-06-25) — visual hierarchy by touch size:
@@ -436,10 +446,10 @@ export function BottomActionBar({
           side can't fit 390px without horizontal scroll (measured 403px), and
           the total must never be truncated. Two stacked full-width rows give
           the waiter maximal one-thumb targets. */}
-      <div className="flex items-center gap-2 max-md:w-full max-md:flex-col max-md:items-stretch">
+      <div className="flex items-center gap-2 max-[1099px]:w-full">
         <SendToKitchenButton
           variant="outlineGold"
-          className="px-4 rounded-md text-sm font-bold uppercase tracking-wide"
+          className="px-3 rounded-md text-sm font-bold uppercase tracking-wide max-[1099px]:flex-1"
           // Critique run 4 lot 8 — l'envoi en cuisine engage autant que
           // l'encaissement : même issue, le formulaire d'ouverture de session.
           {...(onOpenShift ? { onRequireShift: onOpenShift } : {})}
@@ -451,18 +461,18 @@ export function BottomActionBar({
             irreversible final action, where green reads as the universal "go"). */}
         <Button
           variant="gold"
-          size="lg"
-          className="shrink-0 px-7 gap-2.5 text-base font-bold uppercase tracking-wide active:bg-gold-pressed max-md:px-4"
+          size="md"
+          className="shrink-0 px-5 gap-2 text-base font-bold active:bg-gold-pressed max-[1099px]:flex-1 max-md:px-3 max-md:flex-col max-md:gap-0"
           onClick={handleCheckout}
-          disabled={!hasItems}
+          disabled={!hasItems && !paymentLocked}
           // Tapable-et-explique : sans session le bouton reste vivant et MÈNE à
           // l'ouverture de session ; un `disabled` laisserait le caissier
           // pousser un bouton mort sans jamais apprendre pourquoi.
           aria-disabled={needsShift}
           data-testid="checkout-cta"
         >
-          <CreditCard className="h-5 w-5" aria-hidden />
-          <span>Checkout</span>
+          <CreditCard className="h-5 w-5 max-md:hidden" aria-hidden />
+          <span>{paymentLocked ? 'Resume payment' : 'Checkout'}</span>
           <Currency amount={total} className="font-mono" />
         </Button>
       </div>

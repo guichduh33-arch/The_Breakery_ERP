@@ -60,12 +60,12 @@ describe('BottomActionBar — touch hierarchy (LOT 7)', () => {
     });
   });
 
-  it('Checkout is the tallest CTA (touch-large 80px), dominating Send to Kitchen (touch-comfy, the 56px money-path floor)', () => {
+  it('Checkout and Send retain the 56px primary action target', () => {
     render(wrapper(<BottomActionBar />));
     const checkout = screen.getByTestId('checkout-cta');
     const send = screen.getByRole('button', { name: /send to kitchen/i });
 
-    expect(checkout.className).toContain('h-touch-large');
+    expect(checkout.className).toContain('h-touch-comfy');
     expect(send.className).toContain('h-touch-comfy');
     // No dead height overrides riding along — the size prop owns the height.
     expect(send.className).not.toMatch(/\bh-1[24]\b/);

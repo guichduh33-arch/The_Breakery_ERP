@@ -29,7 +29,7 @@ const cartItems: CartItem[] = [
     unit_price: 60_000,
     quantity: 1,
     modifiers: [],
-  } as never,
+  },
   {
     id: 'line-2',
     product_id: 'p2',
@@ -37,7 +37,7 @@ const cartItems: CartItem[] = [
     unit_price: 85_000,
     quantity: 1,
     modifiers: [],
-  } as never,
+  },
 ];
 
 /** Navigate to payer_count via mode_select → items. */

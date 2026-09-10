@@ -1,3 +1,4 @@
+import { openCustomerDisplay } from '@/features/display/displaySource';
 // apps/pos/src/features/nav/SideMenuDrawer.tsx
 //
 // Session 14 — Phase 2.A — Master navigation drawer for the POS shell.
@@ -117,7 +118,7 @@ export function SideMenuDrawer({
 
   function go(path: string): void {
     onClose();
-    navigate(path);
+    void navigate(path);
   }
 
   function dispatch(handler: (() => void) | undefined): void {
@@ -167,7 +168,7 @@ export function SideMenuDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:border-border-strong transition-colors motion-reduce:transition-none focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:border-border-strong transition-colors motion-reduce:transition-none focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2"
           >
             <span aria-hidden className="text-lg leading-none">×</span>
           </button>
@@ -251,6 +252,7 @@ export function SideMenuDrawer({
           </NavGroup>
 
           <NavGroup label="System">
+            <NavLink icon={<Monitor className="h-5 w-5" aria-hidden />} label="Customer Display" onClick={() => { openCustomerDisplay(); onClose(); }} />
             <NavLink
               icon={<Settings className="h-5 w-5" aria-hidden />}
               label="POS Settings"
@@ -275,7 +277,7 @@ export function SideMenuDrawer({
               <button
                 type="button"
                 onClick={() => dispatch(onLogout)}
-                className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-md border border-border-subtle text-text-secondary text-sm font-semibold uppercase tracking-widest hover:text-text-primary hover:border-border-strong transition-colors motion-reduce:transition-none focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2"
+                className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-md border border-border-subtle text-text-secondary text-sm font-semibold uppercase tracking-widest hover:text-text-primary hover:border-border-strong transition-colors motion-reduce:transition-none focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2"
               >
                 Sign out
               </button>

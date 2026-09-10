@@ -18,39 +18,17 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
-import type { CartItem, OrderType } from '@breakery/domain';
+import { fetchOrderSnapshot } from '@/features/inbox/hooks/fetchOrderSnapshot';
+import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 import type { CustomerWithCategory } from './useCustomerSearch';
 import type { OutstandingOrder } from './useOutstandingDebts';
-
-interface OrderItemRow {
-  id: string;
-  product_id: string;
-  // NB: the column is `name_snapshot` (frozen at order time) — there is no
-  // `order_items.name`. Selecting `name` 42703s the whole load (silent in
-  // mocked tests, fatal in prod).
-  name_snapshot: string;
-  unit_price: number;
-  quantity: number;
-  modifiers: unknown;
-  is_cancelled: boolean;
-}
-
-function toCartItem(row: OrderItemRow): CartItem {
-  return {
-    id: row.id,
-    product_id: row.product_id,
-    name: row.name_snapshot,
-    unit_price: row.unit_price,
-    quantity: row.quantity,
-    modifiers: (row.modifiers as CartItem['modifiers']) ?? [],
-  };
-}
 
 export function useLoadDebtOrder() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const loadDebtOrder = async (order: OutstandingOrder, customerId: string): Promise<void> => {
+    if (isLoading || isCartPaymentLocked()) return;
     const cartStore = useCartStore.getState();
     if (cartStore.cart.items.length > 0) {
       const confirmed = window.confirm('Replace the current cart with this unpaid order?');
@@ -59,26 +37,10 @@ export function useLoadDebtOrder() {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('order_items')
-        .select('id, product_id, name_snapshot, unit_price, quantity, modifiers, is_cancelled')
-        .eq('order_id', order.id);
-      if (error) throw new Error(error.message);
-
-      const rows = (data ?? []) as unknown as OrderItemRow[];
-      const liveRows = rows.filter((r) => !r.is_cancelled);
-      if (liveRows.length === 0) throw new Error('No payable items on this order');
-
-      const items = liveRows.map(toCartItem);
-      const ids = items.map((i) => i.id);
-
-      useCartStore.getState().restoreCart({
-        items,
-        order_type: order.order_type as OrderType,
-      });
-      useCartStore.getState().markLocked(ids);
-      useCartStore.getState().markPrinted(ids);
-      useCartStore.getState().setPickedUpOrderId(order.id);
+      const snapshot = await fetchOrderSnapshot(order.id);
+      if (useCartStore.getState().cart !== cartStore.cart || isCartPaymentLocked()) throw new Error('The current order changed — open this unpaid order again');
+      if (!snapshot.items.some((item) => !item.is_cancelled)) throw new Error('No payable items on this order');
+      useCartStore.getState().applyOrderSnapshot(snapshot, true);
 
       // Best-effort customer badge attach (pattern: useReopenHeldOrder) — a
       // lookup miss just leaves the badge absent, pricing already runs off
@@ -86,7 +48,7 @@ export function useLoadDebtOrder() {
       try {
         const { data: customers } = await supabase.rpc('get_customer_v3', { p_id: customerId });
         const customer = (customers ?? [])[0];
-        if (customer) {
+        if (customer && useCartStore.getState().pickedUpOrderId === order.id) {
           useCartStore.getState().attachCustomer({
             ...customer,
             category: (customer as { category?: unknown }).category ?? null,

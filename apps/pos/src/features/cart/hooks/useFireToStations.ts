@@ -3,14 +3,17 @@
 // Session 43 — P0-3 : persist the order via fire_counter_order_v1 BEFORE
 // printing. The DB is the source of truth — a print failure no longer leaves
 // items "unsent" (re-firing them would duplicate the DB lines).
+import { beginOrderSend, finishOrderSend } from '@/stores/orderSendGuard';
 import { useRef } from 'react';
+import type { OrderSnapshot } from '@/stores/orderSnapshot';
+import { mintDiscountAuthorization } from '@/features/discounts/mintDiscountAuthorization';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PrepStation, PrinterRole } from '@breakery/domain';
 import { groupItemsByStation } from '@breakery/domain';
 import type { DispatchStation } from '@breakery/domain';
 import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase';
-import { printStationTicket } from '@/services/print/printService';
+import { runPrintJob } from '@/services/print/printJobs';
 import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -46,6 +49,8 @@ export interface StationFireResult {
 
 export interface FireContext {
   orderNumber?: string;
+  clientUuid?: string;
+  forceOffline?: boolean;
   tableNumber?: string;
   /**
    * S43 P0-3 — post-payment auto-fire (usePaymentFlowLogic): the order ALREADY
@@ -132,6 +137,8 @@ export function useFireToStations(): UseFireToStationsResult {
   const mutation = useMutation<StationFireResult[], Error, FireContext | undefined>({
     mutationFn: async (ctx) => {
       const { orderNumber, tableNumber, printOnly = false } = ctx ?? {};
+      if (!printOnly) beginOrderSend();
+      try {
 
       // Spec A Bloc 4 — this fire is an "additional order" (2nd phase) when the
       // order already exists on the terminal (reopened ⇒ pickedUpOrderId set)
@@ -161,13 +168,13 @@ export function useFireToStations(): UseFireToStationsResult {
       let persistedOrderNumber: string | undefined;
       if (!printOnly) {
         const lockedIds = useCartStore.getState().lockedItemIds;
-        const toPersist = unprinted.filter((i) => !lockedIds.includes(i.id));
+        const toPersist = unprinted.filter((i) => !i.server_id && !lockedIds.includes(i.id));
 
         if (toPersist.length > 0) {
           const sessionId = useShiftStore.getState().current?.id;
           if (!sessionId) throw new Error('no_open_shift');
 
-          fireClientUuidRef.current ??= crypto.randomUUID();
+          fireClientUuidRef.current ??= ctx?.clientUuid ?? crypto.randomUUID();
           const existingOrderId = useCartStore.getState().pickedUpOrderId;
 
           // Spec 006x lots 3+4 — MODE OFFLINE (internet down + hub joignable) :
@@ -180,7 +187,7 @@ export function useFireToStations(): UseFireToStationsResult {
           // retour d'internet. Un re-fire sur la même commande LOCALE devient
           // un APPEND : même identité bus (root_client_uuid + numéro L-),
           // intent séparé (sa propre clé d'idempotence RPC).
-          if (isOfflineMode() && existingOrderId === null) {
+          if ((ctx?.forceOffline || isOfflineMode()) && existingOrderId === null) {
             const stationByProductId = await getStationMap(queryClient).catch(
               (): Record<string, string[]> => ({}),
             );
@@ -203,6 +210,7 @@ export function useFireToStations(): UseFireToStationsResult {
               order_type: useCartStore.getState().cart.order_type,
               table_number: tableNo ?? null,
               items: toPersist.map((i) => ({
+                client_line_id: i.id,
                 product_id: i.product_id,
                 quantity: i.quantity,
                 unit_price: i.unit_price,
@@ -224,11 +232,13 @@ export function useFireToStations(): UseFireToStationsResult {
               fired_at: new Date().toISOString(),
               items: toPersist.map((i) => ({
                 id: i.id,
+                client_line_id: i.id,
                 product_id: i.product_id,
                 product_name: i.name,
                 quantity: i.quantity,
                 unit_price: i.unit_price,
                 modifiers: i.modifiers,
+                component_modifiers: (i.combo_components ?? []).flatMap((component) => (component.modifiers ?? []).map((modifier) => ({ ...modifier, component_name: component.name ?? 'Component' }))),
                 dispatch_stations: stationByProductId[i.product_id] ?? [],
               })),
             };
@@ -255,10 +265,15 @@ export function useFireToStations(): UseFireToStationsResult {
             // (check_violation), à l'envoi — pas au paiement.
             const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
             const sourceCode = getOrderSourceCode();
-            const { data, error } = await supabase.rpc('fire_counter_order_v8', {
+            const authorizationId = fireAuthorizer ? await mintDiscountAuthorization() : undefined;
+            const customerId = useCartStore.getState().cart.customerId;
+            const { data, error } = await supabase.rpc('fire_counter_order_v9', {
               p_client_uuid: fireClientUuidRef.current,
+              ...(customerId ? { p_customer_id: customerId } : {}),
+              ...(authorizationId ? { p_discount_auth_id: authorizationId } : {}),
               p_session_id: sessionId,
               p_items: toPersist.map((i) => ({
+                client_line_id: i.id,
                 product_id: i.product_id,
                 quantity: i.quantity,
                 unit_price: i.unit_price,
@@ -284,6 +299,11 @@ export function useFireToStations(): UseFireToStationsResult {
               idempotent_replay: boolean;
             };
             persistedOrderNumber = env.order_number;
+            if (data && typeof data === 'object' && 'items' in data) {
+              useCartStore.getState().applyOrderSnapshot(data as unknown as OrderSnapshot);
+            } else {
+              useCartStore.setState({ orderNumber: env.order_number, orderOrigin: 'pos' });
+            }
 
             // Success → next fire gets a fresh uuid.
             fireClientUuidRef.current = null;
@@ -301,7 +321,7 @@ export function useFireToStations(): UseFireToStationsResult {
       //    snapshot where a sent item is still editable.
       const allIds = unprinted.map((i) => i.id);
       useCartStore.getState().markLocked(allIds);
-      useCartStore.getState().markPrinted(allIds);
+
 
       // S72 audit — the definitive "sent to kitchen" moment: these lines are now
       // sealed (locked + printed) and, unless printOnly, persisted on the DB
@@ -330,7 +350,7 @@ export function useFireToStations(): UseFireToStationsResult {
       const grouped = groupItemsByStation(unprinted, stationByProductId);
 
       const entries = Object.entries(grouped) as [PrepStation, typeof unprinted][];
-      if (entries.length === 0) return [];
+      if (entries.length === 0) { useCartStore.getState().markPrinted(allIds); return []; }
 
       // Chantier KOT copies (_195) — copies papier par station, org-wide
       // (Settings → Printing). Lu du cache live comme la station map ;
@@ -354,9 +374,6 @@ export function useFireToStations(): UseFireToStationsResult {
 
           // Resolve printer for this station.
           const printer = printersMap?.get(role);
-          if (!printer) {
-            return { role: station, ok: false, error: 'no_printer', itemIds };
-          }
 
           // Build the identifier: caller-supplied order_number if known, else
           // the REAL order number minted by fire_counter_order_v1 (always
@@ -373,7 +390,7 @@ export function useFireToStations(): UseFireToStationsResult {
             items: items.map((item) => ({
               name: item.name,
               quantity: item.quantity,
-              modifiers: item.modifiers.map((m) => m.option_label),
+              modifiers: [ ...item.modifiers.map((m) => m.option_label), ...(item.combo_components ?? []).flatMap((component) => [(component.name ?? 'Component'), ...(component.modifiers ?? []).map((modifier) => `${(component.name ?? 'Component')}: ${modifier.option_label}`)]) ],
             })),
             ...(isAdditional ? { additional: true } : {}),
           };
@@ -381,20 +398,8 @@ export function useFireToStations(): UseFireToStationsResult {
           // N copies séquentielles sur la même imprimante (une imprimante
           // thermique n'aime pas les jobs concurrents) ; on s'arrête à la
           // première erreur — ok = toutes les copies sont sorties.
-          let failure: string | undefined;
-          for (let copy = 0; copy < copies; copy++) {
-            const { success, error } = await printStationTicket(printer, payload);
-            if (!success) {
-              failure = error ?? 'print_failed';
-              break;
-            }
-          }
-          return {
-            role: station,
-            ok: failure === undefined,
-            ...(failure !== undefined ? { error: failure } : {}),
-            itemIds,
-          };
+          const result = await runPrintJob(payload, printer, copies);
+          return { role: station, ok: result.success, ...(result.error ? { error: result.error } : {}), itemIds };
         }),
       );
 
@@ -408,7 +413,7 @@ export function useFireToStations(): UseFireToStationsResult {
           .map((item) => ({
             name: item.name,
             quantity: item.quantity,
-            modifiers: item.modifiers.map((m) => m.option_label),
+            modifiers: [ ...item.modifiers.map((m) => m.option_label), ...(item.combo_components ?? []).flatMap((component) => [(component.name ?? 'Component'), ...(component.modifiers ?? []).map((modifier) => `${(component.name ?? 'Component')}: ${modifier.option_label}`)]) ],
           }));
         if (waiterItems.length > 0) {
           const waiterPayload: StationTicketPayload = {
@@ -422,7 +427,7 @@ export function useFireToStations(): UseFireToStationsResult {
             ...(isAdditional ? { additional: true } : {}),
           };
           // Best effort : un échec n'affecte ni la commande ni les results KOT.
-          await printStationTicket(waiterPrinter, waiterPayload).catch(() => undefined);
+          await runPrintJob(waiterPayload, waiterPrinter);
         }
       }
 
@@ -430,7 +435,12 @@ export function useFireToStations(): UseFireToStationsResult {
       // the RPC succeeded (step 3) — failed stations are NOT re-firable, the
       // ticket lives in the DB/KDS. Callers surface per-station failures via
       // the returned results ("saved to KDS, not printed").
+      // Ces identifiants empêchent l'envoi automatique répété ; la confirmation papier vit dans printJobs.
+      useCartStore.getState().markPrinted(allIds);
       return results;
+      } finally {
+        if (!printOnly) finishOrderSend();
+      }
     },
   });
 

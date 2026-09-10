@@ -8,6 +8,7 @@
 //   3. take_out cart without table → guard is a no-op, fire proceeds.
 
 /// <reference types="@testing-library/jest-dom" />
+import { isOrderSending } from '@/stores/orderSendGuard';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -107,7 +108,8 @@ describe('SendToKitchenButton — dine-in table guard (fiche 02 D2.5)', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await waitFor(() => expect(isOrderSending()).toBe(false));
     vi.unstubAllEnvs();
   });
 
@@ -135,7 +137,7 @@ describe('SendToKitchenButton — dine-in table guard (fiche 02 D2.5)', () => {
 
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalledWith(
-        'fire_counter_order_v8',
+        'fire_counter_order_v9',
         expect.objectContaining({ p_table_number: 'T-01', p_order_type: 'dine_in' }),
       );
     });
@@ -148,7 +150,7 @@ describe('SendToKitchenButton — dine-in table guard (fiche 02 D2.5)', () => {
     fireEvent.click(screen.getByRole('button', { name: /send to kitchen/i }));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('fire_counter_order_v8', expect.anything());
+      expect(rpcMock).toHaveBeenCalledWith('fire_counter_order_v9', expect.anything());
     });
     expect(toast.warning).not.toHaveBeenCalledWith(
       expect.stringMatching(/dine-in orders need a table/i),

@@ -11,7 +11,7 @@ const rpc = vi.fn().mockResolvedValue({
   data: { order_id: 'order-w1', order_number: '#0099', idempotent_replay: false },
   error: null,
 });
-vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]): unknown => rpc(...a) } }));
 
 const PRINTERS_MAP = new Map([
   ['kitchen', { ip_address: '192.168.1.10', port: 9100 }],
@@ -31,7 +31,7 @@ vi.mock('../hooks/useStationMap', () => {
   };
   return {
     useStationMap: () => ({ data: STATION_MAP }),
-    getStationMap: async () => STATION_MAP,
+    getStationMap: () => Promise.resolve(STATION_MAP),
   };
 });
 

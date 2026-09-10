@@ -268,12 +268,12 @@ function KdsOrderCardImpl({ items }: KdsOrderCardProps) {
           bouton All ready, « PAID » sous « Late ». Le wrap fait descendre le
           groupe droit d'une ligne au lieu de superposer. */}
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 w-full">
           {/* S43 P2-5a — never re-prefix `#` (was rendering `##B-123`).
               Numérotation par origine — forme courte P-001 en cuisine, le
               numéro complet P16082026001 reste sur reçus/historique/BO ;
               les formats legacy passent inchangés. */}
-          <span className="font-mono text-2xl font-extrabold tabular-nums text-gold truncate">
+          <span className="font-mono text-2xl font-extrabold tabular-nums text-gold break-all">
             {formatOrderNumberShort(head.order_number)}
           </span>
           {/* Critique run 2 (2026-08-14 P1) — WHERE the plate goes, at the same
@@ -296,7 +296,7 @@ function KdsOrderCardImpl({ items }: KdsOrderCardProps) {
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full">
           <AllReadyButton orderId={head.order_id} items={items} />
           {/* Non-colour urgency signal (colour-blind + 2-3 m glance): the age
               band is spelled out once past the warning threshold. */}
@@ -348,7 +348,7 @@ function KdsOrderCardImpl({ items }: KdsOrderCardProps) {
                       Baguette P… » et « …T… » tronqués sur une ligne sont
                       indistinguables ; la tuile POS s'offre déjà deux lignes. */}
                   <span
-                    className={`text-2xl font-bold line-clamp-2 ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
+                    className={`text-2xl font-bold break-words ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
                   >
                     {item.product_name}
                   </span>

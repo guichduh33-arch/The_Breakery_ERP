@@ -88,7 +88,7 @@ export function WasteDisplayModal({
               value={qty}
               onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
               aria-label="Wasted quantity"
-              className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-input px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold"
+              className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-input px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             />
             <button
               type="button"
@@ -112,7 +112,7 @@ export function WasteDisplayModal({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. end-of-day unsold, damaged…"
-            className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+            className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
           />
         </section>
 

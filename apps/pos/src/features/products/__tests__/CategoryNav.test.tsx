@@ -12,7 +12,7 @@ const { useCategoriesMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('../hooks/useCategories', () => ({
-  useCategories: () => useCategoriesMock(),
+  useCategories: (): unknown => useCategoriesMock(),
 }));
 
 function withQuery(node: React.ReactElement) {
@@ -32,7 +32,7 @@ describe('CategoryNav', () => {
   });
 
   it('renders pinned Favorites + Combos + dynamic categories', () => {
-    render(withQuery(<CategoryNav selectedSlug="favorites" onSelect={() => {}} />));
+    render(withQuery(<CategoryNav selectedSlug="favorites" onSelect={() => { /* fixture sans effet */ }} />));
     expect(screen.getByTestId('category-nav-item-favorites')).toBeInTheDocument();
     expect(screen.getByTestId('category-nav-item-combos')).toBeInTheDocument();
     expect(screen.getByTestId('category-nav-item-beverage')).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe('CategoryNav', () => {
   });
 
   it('marks the active category via aria-current', () => {
-    render(withQuery(<CategoryNav selectedSlug="bread" onSelect={() => {}} />));
+    render(withQuery(<CategoryNav selectedSlug="bread" onSelect={() => { /* fixture sans effet */ }} />));
     const active = screen.getByTestId('category-nav-item-bread');
     expect(active.getAttribute('aria-current')).toBe('page');
     const inactive = screen.getByTestId('category-nav-item-beverage');
@@ -60,7 +60,7 @@ describe('CategoryNav', () => {
       withQuery(
         <CategoryNav
           selectedSlug="favorites"
-          onSelect={() => {}}
+          onSelect={() => { /* fixture sans effet */ }}
           onOpenSettings={onOpenSettings}
         />,
       ),
@@ -71,7 +71,7 @@ describe('CategoryNav', () => {
   });
 
   it('hides the cog when onOpenSettings is omitted', () => {
-    render(withQuery(<CategoryNav selectedSlug="favorites" onSelect={() => {}} />));
+    render(withQuery(<CategoryNav selectedSlug="favorites" onSelect={() => { /* fixture sans effet */ }} />));
     expect(screen.queryByLabelText('POS settings')).toBeNull();
   });
 });

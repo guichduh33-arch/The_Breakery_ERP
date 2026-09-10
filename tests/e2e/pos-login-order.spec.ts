@@ -22,10 +22,11 @@ import { loginPOS } from './fixtures/auth';
 
 test.use({ baseURL: process.env.E2E_POS_URL });
 
-const PIN = process.env.E2E_PIN_CASHIER ?? '123456';
+const PIN = process.env.E2E_PIN_CASHIER ?? '424242';
 
 test.describe('POS: login and complete a cash order', () => {
   test('cashier logs in → adds product to cart → pays cash → receipt visible', async ({ page }) => {
+    test.setTimeout(120_000);
     await page.goto('/');
 
     // ---- Step 1: PIN login ----
@@ -38,25 +39,21 @@ test.describe('POS: login and complete a cash order', () => {
     // ---- Step 2: add a product to cart ----
     // ProductCard.tsx emits data-testid="product-card-{productId}".
     // We click the first available product tile.
-    const firstCard = page.getByTestId(/^product-card-/).first();
-    const hasCard = await firstCard.isVisible({ timeout: 10_000 }).catch(() => false);
-    if (!hasCard) {
-      // Soft fail: catalog empty — document as DEV-S21-1.B.1-01.
-      test.info().annotations.push({
-        type: 'info',
-        description: 'DEV-S21-1.B.1-01: product catalog empty — skipping cart/payment steps.',
-      });
-      return;
-    }
+    await page.getByRole('button', { name: 'Coffee', exact: true }).click();
+    const firstCard = page.getByRole('button', { name: /^Americano\b/ }).first();
+    await expect(firstCard).toBeVisible({ timeout: 20_000 });
     await firstCard.click();
+    const add = page.getByTestId('modifier-add-to-cart');
+    await add.click({ timeout: 8_000 }).catch(() => {});
+    await expect(page.getByTestId('checkout-cta')).toBeEnabled();
 
     // Cart should show at least one item (ActiveOrderPanel).
-    await expect(page.getByTestId('cart-actions-bar')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('cart-items')).toBeVisible({ timeout: 5_000 });
 
     // ---- Step 3: open payment terminal ----
     // CartActionsBar doesn't have a checkout button — the cashier opens
     // PaymentTerminal from the primary CTA in the cart area.
-    await page.getByRole('button', { name: /checkout|pay|process|terminal/i }).click();
+    await page.getByTestId('checkout-cta').click();
 
     // ---- Step 4: select Cash payment method ----
     await page.getByTestId('pay-method-cash').click();

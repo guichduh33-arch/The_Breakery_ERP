@@ -1,3 +1,4 @@
+import type * as UiModule from '@breakery/ui';
 // apps/pos/src/features/products/__tests__/ProductCard.test.tsx
 //
 // Session 14 — Phase 2.A smoke for the new ProductCard.
@@ -17,7 +18,7 @@ import type { Product } from '@breakery/domain';
 // function re-execute".
 const { cnSpy } = vi.hoisted(() => ({ cnSpy: vi.fn() }));
 vi.mock('@breakery/ui', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@breakery/ui')>();
+  const actual = await importOriginal<typeof UiModule>();
   return {
     ...actual,
     cn: (...args: Parameters<typeof actual.cn>) => {

@@ -35,7 +35,7 @@ export function RetryBanner({
         <div className="flex items-start gap-2">
           <AlertCircle className="h-4 w-4 mt-0.5 text-warning shrink-0" aria-hidden />
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-text-primary">Payment did not reach the server</div>
+            <div className="font-semibold text-text-primary">Payment confirmation unknown</div>
             <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
             {/* Audit 2026-08-24 (responsive P1) — Regle des 56 : rejouer un
                 paiement est LE geste d'argent critique, il etait a 36 px. */}

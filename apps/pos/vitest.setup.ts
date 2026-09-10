@@ -1,6 +1,18 @@
 import '@testing-library/jest-dom';
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach, expect, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+
+const unexpectedRequests: string[] = [];
+beforeEach(() => {
+  unexpectedRequests.length = 0;
+  vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    // La journalisation asynchrone a son propre contrat testé dans features/audit.
+    if (url.includes('/rpc/record_pos_events_v1')) return Promise.resolve(new Response('null', { status: 200 }));
+    unexpectedRequests.push(url);
+    return Promise.reject(new Error(`Unexpected test network request: ${url}`));
+  }));
+});
 
 // Session 47 (DEV-S47-D3-02): explicit DOM teardown after every test.
 //
@@ -17,4 +29,5 @@ import { cleanup } from '@testing-library/react';
 // teardown for EVERY file's suite regardless of module-import caching.
 afterEach(() => {
   cleanup();
+  expect(unexpectedRequests, 'Mock network dependencies explicitly').toEqual([]);
 });

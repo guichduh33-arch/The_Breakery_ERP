@@ -31,7 +31,7 @@ function mockFetchResponse(status: number, body: Record<string, unknown>): Retur
     status,
     json: () => Promise.resolve(body),
   });
-  global.fetch = fetchMock as unknown as typeof fetch;
+  global.fetch = fetchMock;
   return fetchMock;
 }
 
@@ -124,7 +124,7 @@ describe('useVerifyManagerPin (S43 raw fetch → verify-manager-pin EF)', () => 
   });
 
   it('network throw → unknown, PIN not stashed', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch')) as unknown as typeof fetch;
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     const verify = useVerifyManagerPin();
     const result = await verify('123456');

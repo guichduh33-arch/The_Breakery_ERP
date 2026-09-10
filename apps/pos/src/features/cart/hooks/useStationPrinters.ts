@@ -51,7 +51,7 @@ export function useStationPrinters() {
       const map: StationPrintersMap = new Map();
 
       for (const row of (data ?? []) as PrinterDeviceRow[]) {
-        const station = row.capabilities?.['station'];
+        const station = row.capabilities?.station;
         if (
           typeof station !== 'string' ||
           station === '' ||

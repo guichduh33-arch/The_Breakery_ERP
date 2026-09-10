@@ -294,8 +294,8 @@ describe('ComboConfigModal', () => {
     expect(result.unitPrice).toBe(50_000);
 
     // components: one entry per chosen option
-    expect(result.components).toContainEqual({ product_id: 'prod-amer', quantity: 1 });
-    expect(result.components).toContainEqual({ product_id: 'prod-cookie', quantity: 1 });
+    expect(result.components).toContainEqual({ name: 'Americano', product_id: 'prod-amer', quantity: 1 });
+    expect(result.components).toContainEqual({ name: 'Cookie', product_id: 'prod-cookie', quantity: 1 });
     expect(result.components).toHaveLength(2);
 
     // modifiers: one entry per chosen option

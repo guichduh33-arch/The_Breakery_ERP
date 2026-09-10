@@ -23,7 +23,7 @@ const { fromSpy } = vi.hoisted(() => ({ fromSpy: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (table: string) => fromSpy(table),
+    from: (table: string): unknown => fromSpy(table),
   },
   supabaseUrl: 'http://localhost:54321',
 }));

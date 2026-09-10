@@ -106,7 +106,7 @@ export function CashInOutModal({
           <input
             id="cash_reason"
             type="text"
-            className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+            className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={direction === 'in' ? 'Float top-up from safe' : 'Petty cash purchase'}

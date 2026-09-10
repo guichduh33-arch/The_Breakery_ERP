@@ -11,7 +11,7 @@ import { setManagerPin } from '../managerPinHolder';
 export function useVerifyManagerPin() {
   // PinVerificationModal calls verifyFn(pin, requiredPermission) — thread it so
   // future call-sites can gate on other permissions (e.g. orders.void).
-  return async (pin: string, requiredPermission: string = 'sales.discount'): Promise<VerifyResult> => {
+  return async (pin: string, requiredPermission = 'sales.discount'): Promise<VerifyResult> => {
     try {
       const accessToken = await getAccessToken();
       const res = await fetch(`${supabaseUrl}/functions/v1/verify-manager-pin`, {

@@ -1,3 +1,4 @@
+import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 // apps/pos/src/features/cart/hooks/useVoidServerOrder.ts
 //
 // Session 37 B4 — server-side void for carts backed by a server orders row.
@@ -29,6 +30,7 @@ export function useVoidServerOrder() {
   const voidLocal = useCartStore((s) => s.voidOrder);
 
   return async (managerPin: string, reason: string, idempotencyKey?: string): Promise<void> => {
+    if (isCartPaymentLocked()) throw new Error('Resume the saved payment before voiding this order');
     const { pickedUpOrderId } = useCartStore.getState();
 
     if (pickedUpOrderId) {

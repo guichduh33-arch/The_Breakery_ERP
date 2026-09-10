@@ -32,11 +32,9 @@ import { openPosSession } from './fixtures/auth';
 test.use({ baseURL: process.env.E2E_POS_URL });
 
 async function addAmericano(p: Page): Promise<void> {
-  // The grid opens on the (often empty) "Favorites" category and its product
-  // search is category-scoped, so switch to "Coffee" where Americano (COF-011,
-  // track_inventory=false → always sellable) lives, then tap its card.
+  // Use the seeded Coffee category and its always-sellable Americano fixture.
   await p.getByRole('button', { name: 'Coffee', exact: true }).click();
-  const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
+  const card = p.getByRole('button', { name: /^Americano\b/ }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
   // Tapping a product with modifier groups opens the ModifierModal (full-screen
@@ -50,6 +48,14 @@ async function addAmericano(p: Page): Promise<void> {
 test.describe('Complete a cash order', () => {
   test('cashier login → add 3 items → pay cash → receipt printed', async ({ page }) => {
     test.setTimeout(120_000);
+    const renderErrors: string[] = [];
+    page.on('pageerror', (error) => { renderErrors.push(error.message); console.error(error.stack); });
+    page.on('console', (message) => {
+      if (message.type() === 'error' && message.text().includes('POS render failed')) {
+        renderErrors.push(message.text());
+        console.error(message.text());
+      }
+    });
 
     // ---- Step 1: PIN login (cold-start-safe helper) ----
     await openPosSession(page);
@@ -85,5 +91,6 @@ test.describe('Complete a cash order', () => {
 
     // No JE-unbalanced error toast (negative guard).
     await expect(page.getByText(/je_unbalanced|unbalanced/i)).not.toBeVisible();
+    expect(renderErrors).toEqual([]);
   });
 });

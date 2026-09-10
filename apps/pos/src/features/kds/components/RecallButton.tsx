@@ -75,7 +75,7 @@ export function RecallButton({ orderId, orderNumber, disabled }: RecallButtonPro
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason (optional)"
           rows={3}
-          className="w-full rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm text-text-primary"
+          className="w-full rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm text-text-primary min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
           aria-label="Recall reason"
         />
         <DialogFooter>

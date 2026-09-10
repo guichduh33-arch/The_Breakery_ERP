@@ -65,18 +65,18 @@ describe('OrderHistoryPanel', () => {
   });
 
   it('renders the Transaction History header and KPI strip when open', () => {
-    render(<OrderHistoryPanel open onClose={() => {}} />);
+    render(<OrderHistoryPanel open onClose={() => { /* fixture sans effet */ }} />);
     expect(screen.getByRole('heading', { name: /transaction history/i })).toBeInTheDocument();
     expect(screen.getByTestId('order-history-stats')).toBeInTheDocument();
   });
 
   it('shows the empty-shift message when the list is []', () => {
-    render(<OrderHistoryPanel open onClose={() => {}} />);
+    render(<OrderHistoryPanel open onClose={() => { /* fixture sans effet */ }} />);
     expect(screen.getByText(/no orders in this shift yet/i)).toBeInTheDocument();
   });
 
   it('renders nothing when open=false', () => {
-    render(<OrderHistoryPanel open={false} onClose={() => {}} />);
+    render(<OrderHistoryPanel open={false} onClose={() => { /* fixture sans effet */ }} />);
     expect(screen.queryByRole('heading', { name: /transaction history/i })).toBeNull();
   });
 
@@ -87,7 +87,7 @@ describe('OrderHistoryPanel', () => {
       isError: false,
       refetch: vi.fn(),
     };
-    render(<OrderHistoryPanel open onClose={() => {}} />);
+    render(<OrderHistoryPanel open onClose={() => { /* fixture sans effet */ }} />);
     expect(screen.getByTestId('history-row-o1')).toBeInTheDocument();
     expect(screen.getByTestId('history-row-o2')).toBeInTheDocument();
     expect(screen.getByText(/voided/i)).toBeInTheDocument();

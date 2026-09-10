@@ -1,3 +1,4 @@
+import { LocalCustomerDisplay } from './LocalCustomerDisplay';
 // apps/pos/src/features/display/CustomerDisplayPage.tsx
 //
 // Session 13 / Phase 4.C — D-4C-4, D-4C-6, D-4C-7.
@@ -71,6 +72,11 @@ function pairingErrorCopy(code: string | null): string {
 }
 
 export default function CustomerDisplayPage() {
+  const source = new URLSearchParams(window.location.search).get('source');
+  return source ? <LocalCustomerDisplay source={source} /> : <KioskCustomerDisplayPage />;
+}
+
+function KioskCustomerDisplayPage() {
   const auth = useKioskAuth();
   // Settings §6.C — push settings propagation for the kiosk surface. The App
   // shell mount is gated on the PIN session, which the display doesn't have;
