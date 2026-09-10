@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from 'react';
-import { ChevronRight, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import { cn, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
+import { AdaptiveCartPanel } from '@/components/AdaptiveCartPanel';
 import { TabletComboLine } from './TabletComboLine';
 
 export interface TabletCartPanelProps {
@@ -23,7 +24,6 @@ export interface TabletCartPanelProps {
   compactAction?: ReactNode;
 }
 
-const COLLAPSED_KEY = 'breakery.tablet-cart.collapsed';
 
 export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps = {}): JSX.Element {
   const items = useTabletCartStore((s) => s.items);
@@ -47,11 +47,6 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
   // product grid. Landscape always shows the full rail (CSS override below).
   // Persisté en sessionStorage comme le reste de la saisie : une mise en
   // veille qui rouvrait le panneau plein contredisait le geste de repli.
-  const [collapsed, setCollapsed] = useState(() => sessionStorage.getItem(COLLAPSED_KEY) === '1');
-  useEffect(() => {
-    sessionStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
-  }, [collapsed]);
-
   // Ticket 2 — brief add-to-cart flash (<300ms) on the cart affordance when the
   // item count grows. Duration comes from the `--motion-base` token, which
   // collapses to 0ms under `prefers-reduced-motion` (see motion.css).
@@ -81,64 +76,11 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
   );
 
   return (
-    <aside
-      className={cn(
-        'shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col transition-[width] duration-base',
-        collapsed ? 'w-20 landscape:w-[340px]' : 'w-[340px]',
-      )}
-      data-testid="tablet-cart-panel"
-    >
-      {/* Collapsed rail (portrait only) — tap to expand. Hidden in landscape.
-          Le CTA compact vit HORS du bouton d'expansion (un bouton dans un
-          bouton est invalide) : l'envoi reste possible sans déplier. */}
-      {collapsed && (
-        <div className="landscape:hidden flex flex-col h-full w-full">
-          <button
-            type="button"
-            onClick={() => setCollapsed(false)}
-            aria-label={`Expand cart, ${itemCount} items`}
-            aria-expanded={false}
-            className={cn(
-              'flex-1 flex flex-col items-center gap-3 pt-4 px-2 text-text-secondary',
-              'transition-colors duration-base',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:-outline-offset-2',
-              flash && 'bg-gold-soft',
-            )}
-          >
-            <ShoppingBag className="h-6 w-6" aria-hidden />
-            {countBadge}
-            {!isEmpty && (
-              <Currency amount={preview.total} className="text-xs tabular-nums text-center leading-tight" />
-            )}
-          </button>
-          {compactAction !== undefined && <div className="p-2 pb-3">{compactAction}</div>}
-        </div>
-      )}
-
-      {/* Full panel — hidden in portrait while collapsed, always shown in landscape. */}
-      <div className={cn('flex-1 flex flex-col overflow-hidden', collapsed && 'portrait:hidden')}>
-        <header
-          className={cn(
-            'p-4 border-b border-border-subtle flex items-center justify-between gap-2 transition-colors duration-base',
-            flash && 'bg-gold-soft',
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs uppercase tracking-widest font-semibold text-text-primary">Order</h2>
-            {!isEmpty && countBadge}
-          </div>
-          {/* Collapse control — portrait only (≥44px). */}
-          <button
-            type="button"
-            onClick={() => setCollapsed(true)}
-            aria-label="Collapse cart"
-            aria-expanded
-            className="landscape:hidden h-11 w-11 -mr-2 grid place-items-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
-          >
-            <ChevronRight className="h-5 w-5" aria-hidden />
-          </button>
+    <AdaptiveCartPanel count={itemCount} total={preview.total} summaryAction={compactAction}>
+      <aside className="w-full flex-1 min-h-0 bg-bg-elevated border-l border-border-subtle flex flex-col" data-testid="tablet-cart-panel">
+        <header className={cn('shrink-0 p-4 border-b border-border-subtle flex gap-2', flash && 'bg-gold-soft')}>
+          <h2 className="text-sm font-semibold">Order</h2>{!isEmpty && countBadge}
         </header>
-
         <div className="flex-1 overflow-y-auto">
           {isEmpty ? (
             <div className="h-full grid place-items-center text-text-muted">
@@ -256,7 +198,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
           )}
           {footer}
         </footer>
-      </div>
-    </aside>
+      </aside>
+    </AdaptiveCartPanel>
   );
 }

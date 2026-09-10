@@ -18,6 +18,7 @@ import {
 import {
   calculateChange,
 } from '@breakery/domain';
+import { usePaymentStore } from '@/stores/paymentStore';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
 import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
@@ -43,23 +44,38 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
     selectedMethod, selectMethod, cashReceivedStr, setCashReceivedStr,
     quickAmounts, draftAmount, isCashDraft, draftTenderAmount, cashChange, draftValid,
     tenders, removeTender,
-    total, remaining, fastPathReady, canProcess, checkoutPending, offlineGate,
+    total, remaining, fastPathReady, canProcess, checkoutPending, offlineGate, attemptLocked,
     success, lastError, splitOpen, setSplitOpen,
     handleAddTender, handleProcess, handleRetry,
     handleDismissAlreadyPaid, handleNewOrder, handleSplitComplete,
   } = usePaymentFlowLogic();
+
+  const paymentId = usePaymentStore((s) => s.idempotencyKey);
+  const recoveryError = usePaymentStore((s) => s.recoveryError);
+  if (recoveryError) return (
+    <FullScreenModal open={isOpen} onOpenChange={close} accessibleTitle="Payment recovery required">
+      <div className="m-auto max-w-lg p-6 space-y-4" role="alert">
+        <h2 className="text-xl font-semibold">Payment recovery required</h2>
+        <p>{recoveryError}</p>
+        <p className="text-text-secondary">Keep this browser's saved data. Reload to retry reading the saved payment.</p>
+        <Button variant="gold" onClick={() => window.location.reload()}>Reload terminal</Button>
+      </div>
+    </FullScreenModal>
+  );
 
   if (success) {
     return (
       <SuccessModal
         open
         orderNumber={success.orderNumber}
+        receiptId={success.orderId ?? paymentId}
         total={success.total}
         taxAmount={success.taxAmount}
         changeGiven={success.changeGiven}
         pointsEarned={success.pointsEarned}
         cart={cart}
         paymentMethod={success.paymentMethod}
+        tenders={tenders}
         // Critique 2026-08-29 (P3) — on a split whose first tender is cash the
         // draft string is stale/empty : the success state now carries the cash
         // actually received, summed from the shipped tenders.
@@ -118,7 +134,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
           Arbitrage 2026-08-29 (propriétaire) — le récap se compacte à 2fr/3fr :
           la moitié pleine répétait le panier et le /display, la place revient
           aux contrôles d'argent. */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-px bg-border-subtle overflow-y-auto md:overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col min-[1100px]:grid min-[1100px]:grid-cols-[2fr_3fr] gap-px bg-border-subtle overflow-y-auto min-[1100px]:overflow-hidden">
         {/* LEFT — order summary */}
         <OrderSummaryPanel
           cart={cart}
@@ -129,7 +145,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         />
 
         {/* RIGHT — payment controls */}
-        <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible max-md:order-first">
+        <section className="bg-bg-base p-4 min-h-0 overflow-y-auto max-[1099px]:shrink-0 max-[1099px]:overflow-visible max-[1099px]:order-first">
           {/* ADR-015 — état hors-ligne : tous moyens sauf l'avoir, ou blocage. */}
           {offlineGate.offlineMode && (
             <div
@@ -210,7 +226,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
           />
 
           {/* Quick-pay row : prominent CASH EXACT (when fast-path-ready) + SPLIT BY ITEM */}
-          {remaining > 0 && (
+          {remaining > 0 && !attemptLocked && (
             <QuickPayRow
               fastPathReady={fastPathReady}
               isCashDraft={isCashDraft}
@@ -227,7 +243,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
             />
           )}
 
-          {remaining > 0 && (
+          {remaining > 0 && !attemptLocked && (
             <>
               <PaymentMethodGrid selectedMethod={selectedMethod} onSelect={selectMethod} />
 
@@ -250,7 +266,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         </section>
       </div>
 
-      <footer className="h-16 flex items-center justify-between px-6 border-t border-border-subtle bg-bg-elevated">
+      <footer className="min-h-20 shrink-0 flex items-center justify-between gap-3 px-4 border-t border-border-subtle bg-bg-elevated">
         <Button variant="secondary" onClick={close}>Cancel</Button>
         {/* GREEN (primary), not gold — intentional. Gold = "go to pay" (the
             Checkout button in BottomActionBar); green = "commit the money"
@@ -262,8 +278,8 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
             focal point remains; it stays enabled as the fallback commit. */}
         <Button
           variant={fastPathReady ? 'secondary' : 'primary'}
-          size="lg"
-          disabled={!canProcess || checkoutPending}
+          size="md"
+          disabled={!canProcess || checkoutPending || attemptLocked}
           onClick={() => { void handleProcess(); }}
         >
           {checkoutPending ? (

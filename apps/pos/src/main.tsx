@@ -3,6 +3,7 @@ import './lib/secureContextPolyfill';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { initSentry } from './lib/sentry';
 import './index.css';
 // Playfair Display — l'italique 400 (marque, `font-display italic`) ET les
@@ -20,6 +21,6 @@ if (!rootEl) throw new Error('Root element #root not found');
 
 createRoot(rootEl).render(
   <StrictMode>
-    <App />
+    <AppErrorBoundary><App /></AppErrorBoundary>
   </StrictMode>
 );

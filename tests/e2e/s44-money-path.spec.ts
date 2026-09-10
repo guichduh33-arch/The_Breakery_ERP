@@ -59,7 +59,7 @@ const consoleErrors: string[] = [];
 // the category has modifier groups).
 async function addAmericano(p: Page): Promise<void> {
   await p.getByRole('button', { name: 'Coffee', exact: true }).click();
-  const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
+  const card = p.getByRole('button', { name: /^Americano\b/ }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
   await p.getByTestId('modifier-add-to-cart').click({ timeout: 8_000 }).catch(() => {});
@@ -112,7 +112,7 @@ test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
   test.setTimeout(120_000);
   // Fresh Juice (category "Other drinks") is the seed's variant product.
   await page.getByRole('button', { name: 'Other drinks', exact: true }).click();
-  const parent = page.getByRole('button', { name: 'Fresh Juice — tap to add' }).first();
+  const parent = page.getByRole('button', { name: /^Fresh Juice\b/ }).first();
   const hasVariantProduct = await parent.isVisible({ timeout: 10_000 }).catch(() => false);
   test.skip(!hasVariantProduct, 'no variant product (Fresh Juice) in the current seed');
   await parent.click();
@@ -125,8 +125,7 @@ test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
   // The regression guard: fire must be ENABLED even on a 100%-variant cart.
   await expect(page.getByRole('button', { name: /send to kitchen/i })).toBeEnabled({ timeout: 10_000 });
   // Clean up so this variant line doesn't bleed into T3's shared cart (serial suite).
-  await page.getByRole('button', { name: 'Void Order' }).click();
-  await page.getByTestId('void-confirm-button').click();
+  await page.getByRole('button', { name: /^Remove / }).first().click();
 });
 
 // KNOWN ISSUE (S71): voiding a reopened FIRED counter order via the void-order

@@ -30,7 +30,7 @@ const cartItems: CartItem[] = [
     unit_price: 35_000,
     quantity: 1,
     modifiers: [],
-  } as never,
+  },
   {
     id: 'line-2',
     product_id: 'p2',
@@ -38,7 +38,7 @@ const cartItems: CartItem[] = [
     unit_price: 30_000,
     quantity: 1,
     modifiers: [],
-  } as never,
+  },
   {
     id: 'line-3',
     product_id: 'p3',
@@ -46,7 +46,7 @@ const cartItems: CartItem[] = [
     unit_price: 35_000,
     quantity: 1,
     modifiers: [],
-  } as never,
+  },
 ];
 
 const GRAND_TOTAL = 100_000;

@@ -71,10 +71,9 @@ function enterPin(pin: string): void {
 // handlePinSubmit(pin)` promise (and its follow-up setState / handleClose)
 // drains INSIDE the act boundary. Without this the drain tail spills into
 // act cleanup and can time the test out (the DEV-RT-W3-01 flake).
-async function clickVerify(): Promise<void> {
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /^Verify$/i }));
-  });
+function clickVerify(): Promise<void> {
+  fireEvent.click(screen.getByRole('button', { name: /^Verify$/i }));
+  return Promise.resolve();
 }
 
 beforeEach(() => {
@@ -107,7 +106,7 @@ describe('S55 useVoidOrder — manager-pin header + idempotency wiring', () => {
           manager: { id: 'm1', full_name: 'Manager', role_code: 'MANAGER' },
         }),
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const { useVoidOrder } = await import('../hooks/useVoidOrder');
     const Wrapper = makeWrapper();
@@ -163,9 +162,9 @@ describe('S55 VoidOrderModal — idempotency UUID lifecycle', () => {
     >[0];
     const captured: SubmitArgs[] = [];
     let shouldFail = true;
-    const onSubmit = vi.fn(async (args: SubmitArgs) => {
+    const onSubmit = vi.fn((args: SubmitArgs) => {
       captured.push(args);
-      if (shouldFail) throw new Error('simulated_failure');
+      return shouldFail ? Promise.reject(new Error('simulated_failure')) : Promise.resolve();
     });
 
     function Harness(): JSX.Element {
@@ -212,14 +211,14 @@ describe('S55 VoidOrderModal — idempotency UUID lifecycle', () => {
     expect(retryUuid).toBe(firstUuid); // sticky across retry
 
     // --- Close + reopen (handleClose rotates the ref) ---
-    await act(async () => {
+    act(() => {
       fireEvent.click(screen.getByRole('button', { name: /^Close$/i }));
     });
     await waitFor(() => {
       expect(document.body.querySelector('[role="dialog"]')).toBeNull();
     });
 
-    await act(async () => {
+    act(() => {
       fireEvent.click(screen.getByTestId('toggle'));
     });
     await waitFor(() => {

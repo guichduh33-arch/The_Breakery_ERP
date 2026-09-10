@@ -63,7 +63,7 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
           value={code}
           onChange={(e) => setCode(e.target.value)}
           autoFocus
-          className="w-full bg-bg-input border border-border-subtle rounded-md px-4 py-3 text-text-primary text-lg focus:outline-none focus:border-border-focus mb-6"
+          className="w-full bg-bg-input border border-border-subtle rounded-md px-4 py-3 text-text-primary text-lg focus:outline-none focus:border-border-focus mb-6 min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
           data-testid="display-pair-code-input"
           placeholder="e.g. display-front-1"
         />
@@ -76,7 +76,7 @@ export function PairDevicePrompt({ onPaired, errorHint }: PairDevicePromptProps)
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="w-full bg-bg-input border border-border-subtle rounded-md px-4 py-3 text-text-primary mb-6"
+          className="w-full bg-bg-input border border-border-subtle rounded-md px-4 py-3 text-text-primary mb-6 min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
           placeholder="Front counter screen"
         />
 

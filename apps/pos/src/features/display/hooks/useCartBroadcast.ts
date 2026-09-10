@@ -1,3 +1,5 @@
+import { displayChannel } from '../displaySource';
+import { usePaymentStore } from '@/stores/paymentStore';
 import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
@@ -38,6 +40,8 @@ export interface PaymentCompleteMessage {
   loyalty_balance_after: number | null;
 }
 
+let paymentSnapshot: { message: PaymentCompleteMessage; expires: number } | null = null;
+
 export type CartBroadcastMessage = CartUpdateMessage | PaymentCompleteMessage;
 
 /** POS side: fire-and-forget a payment_complete snapshot to the customer
@@ -46,8 +50,9 @@ export type CartBroadcastMessage = CartUpdateMessage | PaymentCompleteMessage;
 export function broadcastPaymentComplete(
   payload: Omit<PaymentCompleteMessage, 'type'>,
 ): void {
-  const bc = new BroadcastChannel(CART_CHANNEL);
-  bc.postMessage({ type: 'payment_complete', ...payload } satisfies PaymentCompleteMessage);
+  const bc = new BroadcastChannel(displayChannel());
+  paymentSnapshot = { message: { type: 'payment_complete', ...payload }, expires: Date.now() + PAYMENT_COMPLETE_DISPLAY_MS };
+  bc.postMessage(paymentSnapshot.message);
   bc.close();
 }
 
@@ -64,9 +69,12 @@ export function useCartBroadcast(
   taxInclusive = true,
 ): void {
   useEffect(() => {
-    const bc = new BroadcastChannel(CART_CHANNEL);
+    const bc = new BroadcastChannel(displayChannel());
     const publish = (): void => {
-      const { cart, attachedCustomer } = useCartStore.getState();
+      const state = useCartStore.getState();
+      const attempt = usePaymentStore.getState().attempt;
+      const cart = attempt && attempt.state !== 'refused' ? attempt.cart : state.cart;
+      const attachedCustomer = attempt && attempt.state !== 'refused' ? attempt.customer : state.attachedCustomer;
       // ADR-013 D11 — la promo vit dans `cart.promotionTotal` (écrit par
       // setAppliedPromotions) : calculateTotals applique l'ordre canonique
       // items → promo → redemption → remise → taxe (split PB1 unique), miroir
@@ -87,10 +95,18 @@ export function useCartBroadcast(
       };
       bc.postMessage(msg);
     };
+    bc.onmessage = (event: MessageEvent<{ type?: string }>) => {
+      if (event.data?.type === 'request_state') {
+        if (paymentSnapshot && paymentSnapshot.expires > Date.now()) bc.postMessage(paymentSnapshot.message);
+        else publish();
+      }
+    };
+    const heartbeat = setInterval(() => bc.postMessage({ type: 'presence' }), 2000);
     publish(); // initial snapshot
     const unsub = useCartStore.subscribe(publish);
     return () => {
       unsub();
+      clearInterval(heartbeat);
       bc.close();
     };
   }, [taxRate, taxInclusive]);

@@ -1,3 +1,4 @@
+import type { CartState } from '../cartTypes';
 // apps/pos/src/stores/__tests__/cartStore.networkSplit.test.ts
 //
 // Session 13 / Phase 4.A — verify the cart store survives:
@@ -49,9 +50,9 @@ describe('cartStore — network split + re-mount hardening', () => {
       useCartStore.getState().add(makeProduct('p1', 'Latte'));
       const raw = sessionStorage.getItem('breakery.cart.v2');
       expect(raw).not.toBeNull();
-      const persisted = JSON.parse(raw!);
+      const persisted = JSON.parse(raw!) as { state: CartState };
       expect(persisted.state.cart.items).toHaveLength(1);
-      expect(persisted.state.cart.items[0].name).toBe('Latte');
+      expect(persisted.state.cart.items[0]!.name).toBe('Latte');
     });
 
     it('retains locked items across an in-memory reset (simulating reload)', () => {
@@ -62,14 +63,14 @@ describe('cartStore — network split + re-mount hardening', () => {
       useCartStore.getState().markLocked([lineIds[0]!]);
 
       // 2. Snapshot persisted state.
-      const persisted = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!);
+      const persisted = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!) as { state: CartState };
       expect(persisted.state.lockedItemIds).toEqual([lineIds[0]]);
       expect(persisted.state.cart.items).toHaveLength(2);
 
       // 3. Simulate a tab reload : drop the in-memory state then read what
       // the persist middleware would re-load. We assert the snapshot data
       // is round-trippable so the rehydrate would succeed.
-      const rehydrated = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!);
+      const rehydrated = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!) as { state: CartState };
       expect(rehydrated.state.cart.items.map((i: { name: string }) => i.name))
         .toEqual(['Latte', 'Croissant']);
       expect(rehydrated.state.lockedItemIds).toEqual([lineIds[0]]);
@@ -93,9 +94,9 @@ describe('cartStore — network split + re-mount hardening', () => {
       // call cartStore.add ; persist must show the latest items, not a stale
       // snapshot.
       useCartStore.getState().add(makeProduct('p1', 'Mocha'));
-      const snapshot1 = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!);
+      const snapshot1 = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!) as { state: CartState };
       useCartStore.getState().add(makeProduct('p2', 'Brownie'));
-      const snapshot2 = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!);
+      const snapshot2 = JSON.parse(sessionStorage.getItem('breakery.cart.v2')!) as { state: CartState };
       expect(snapshot1.state.cart.items).toHaveLength(1);
       expect(snapshot2.state.cart.items).toHaveLength(2);
     });

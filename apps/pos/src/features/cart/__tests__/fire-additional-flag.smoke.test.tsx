@@ -7,13 +7,13 @@ vi.stubEnv('VITE_PRINT_MOCK', '1');
 const rpc = vi.fn().mockResolvedValue({
   data: { order_id: 'order-1', order_number: '#0001', idempotent_replay: false }, error: null,
 });
-vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: (...a: unknown[]): unknown => rpc(...a) } }));
 vi.mock('../hooks/useStationPrinters', () => ({
   useStationPrinters: () => ({ data: new Map([['barista', { ip_address: '1.1.1.1', port: 9100 }]]) }),
 }));
 vi.mock('../hooks/useStationMap', () => ({
   useStationMap: () => ({ data: { p1: ['barista'] } }),
-  getStationMap: async () => ({ p1: ['barista'] }),
+  getStationMap: () => Promise.resolve({ p1: ['barista'] }),
 }));
 
 import { renderHook, act } from '@testing-library/react';
@@ -51,7 +51,7 @@ describe('useFireToStations — additional flag', () => {
   it('does NOT mark the ticket additional on a first-phase fire (pickedUpOrderId null)', async () => {
     // First-phase fire: no existing order on the terminal → the RPC mints a new
     // order. The phase-1 ticket must NOT carry the ADDITIONAL ORDER flag.
-    useCartStore.setState((s) => ({ ...s, pickedUpOrderId: null }) as never);
+    useCartStore.setState((s) => ({ ...s, pickedUpOrderId: null }));
     const { result } = renderHook(() => useFireToStations(), { wrapper });
     await act(async () => { await result.current.mutation.mutateAsync(undefined); });
     const stationEntries = getMockPrintBuffer().filter((e) => e.kind === 'prep');

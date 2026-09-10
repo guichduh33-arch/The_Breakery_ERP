@@ -17,6 +17,9 @@ import { calculatePriceAdjustment } from '../modifiers/calculatePriceAdjustment.
  * server's price resolver does the same).
  */
 export function lineUnitEach(item: CartItem): number {
+  if (item.server_line_total !== undefined && item.quantity > 0) {
+    return item.server_line_total / item.quantity;
+  }
   const componentAdjustment = (item.combo_components ?? []).reduce(
     (sum, c) => sum + calculatePriceAdjustment(c.modifiers ?? []),
     0,
@@ -29,5 +32,6 @@ export function lineUnitEach(item: CartItem): number {
  * (adjustments stacked on the unit price BEFORE rounding — spec §3.4).
  */
 export function lineTotalOf(item: CartItem): number {
+  if (item.server_line_total !== undefined) return item.server_line_total;
   return roundIdr(lineUnitEach(item) * item.quantity);
 }

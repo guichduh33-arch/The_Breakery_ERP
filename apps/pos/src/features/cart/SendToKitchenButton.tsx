@@ -5,6 +5,7 @@ import { ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
+import { usePaymentStore } from '@/stores/paymentStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useFireToStations } from './hooks/useFireToStations';
@@ -46,7 +47,8 @@ export function SendToKitchenButton({
   // Disabled when there is nothing that routes to a prep station (bread-only
   // orders, products query still loading, everything already printed) or while
   // a fire is in flight.
-  const disabled = firableCount === 0 || mutation.isPending;
+  const paymentLocked = usePaymentStore((s) => Boolean(s.recoveryError !== null || (s.attempt && s.attempt.state !== 'refused')));
+  const disabled = paymentLocked || firableCount === 0 || mutation.isPending;
 
   async function handleClick() {
     if (disabled) return;
@@ -138,7 +140,7 @@ export function SendToKitchenButton({
         onClick={() => { void handleClick(); }}
       >
         <ChefHat className="h-4 w-4" aria-hidden />
-        {mutation.isPending ? 'Sending…' : 'Send to Kitchen'}
+        {mutation.isPending ? 'Sending…' : <><span className="max-[1099px]:hidden">Send to Kitchen</span><span className="min-[1100px]:hidden">Send</span></>}
       </Button>
       {tableGuard.modal}
     </>

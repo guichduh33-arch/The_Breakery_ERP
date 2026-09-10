@@ -282,7 +282,7 @@ export default function POSStockView(): JSX.Element {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search…"
             aria-label="Search products"
-            className="h-touch-min w-full rounded-md border border-border-subtle bg-bg-elevated pl-9 pr-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            className="h-touch-min w-full rounded-md border border-border-subtle bg-bg-elevated pl-9 pr-3 text-sm focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             data-testid="pos-stock-search"
           />
         </label>

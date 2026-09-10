@@ -34,6 +34,7 @@ function wrap(node: ReactNode): ReactNode {
 
 describe('TabletCartPanel — touch targets (LOT 6)', () => {
   beforeEach(() => {
+  Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true, configurable: true });
     useTabletCartStore.setState({
       items: [
         { id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30_000, quantity: 2, modifiers: [] },

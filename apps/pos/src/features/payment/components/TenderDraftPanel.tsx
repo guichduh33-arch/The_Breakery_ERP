@@ -47,7 +47,7 @@ export function TenderDraftPanel({
         {/* Critique 2026-08-29 (a11y) — le montant saisi au pavé et la monnaie
             à rendre sont des sorties calculées : sans zone live, un lecteur
             d'écran n'entend rien changer. role="status" = aria-live polite. */}
-        <div role="status" className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
+        <div role="status" className="bg-bg-input border-2 border-gold rounded-md py-3 text-center">
           <span className="font-mono tabular-nums text-3xl text-text-primary">
             {formatIdr(Number(cashReceivedStr || '0'))}
           </span>
@@ -70,7 +70,7 @@ export function TenderDraftPanel({
       {/* Critique run 4 lot 1 (adapt) — la paire presets/pavé imbriquée dans
           la colonne droite du terminal tombait à ~90 px par sous-colonne à
           390 px ; sous md elle s'empile, le pavé reprend la pleine largeur. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 min-[1500px]:grid-cols-2 gap-4">
         {/* Preset grid */}
         <div>
           <div className="grid grid-cols-2 gap-2">
@@ -104,14 +104,14 @@ export function TenderDraftPanel({
         </div>
 
         {/* Numpad */}
-        <div>
+        <div className="w-full max-w-md mx-auto [&_button]:min-h-20">
           <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
         </div>
       </div>
 
       <Button
         variant="secondary"
-        size="lg"
+        size="md"
         className="w-full uppercase tracking-widest"
         onClick={onAddTender}
         disabled={!draftValid}

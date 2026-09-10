@@ -58,7 +58,7 @@ export function DenominationGrid({ value, onChange }: DenominationGridProps): JS
                     const n = Number(e.target.value.replace(/\D/g, '') || '0');
                     setQty(key, n);
                   }}
-                  className="h-11 w-14 rounded-md border border-border-subtle bg-bg-overlay text-center font-mono tabular-nums text-sm focus:outline-none focus:border-gold"
+                  className="h-11 w-14 rounded-md border border-border-subtle bg-bg-overlay text-center font-mono tabular-nums text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
                 />
                 <button
                   type="button"

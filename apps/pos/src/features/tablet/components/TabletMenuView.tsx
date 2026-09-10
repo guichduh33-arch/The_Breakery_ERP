@@ -60,9 +60,9 @@ export function TabletMenuView({ selectedSlug, onSelectCategory, toolbar }: Tabl
   }, [qc, cache.cachedAt, cache.cachedProducts, cache.cachedCategories, cache.cachedTables]);
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden max-[1099px]:flex-col">
       <TabletCategorySidebar selectedSlug={selectedSlug} onSelect={onSelectCategory} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
         {toolbar !== undefined && toolbar}
         <div className="flex-1 overflow-hidden flex">
           <TabletProductGrid selectedSlug={selectedSlug} />

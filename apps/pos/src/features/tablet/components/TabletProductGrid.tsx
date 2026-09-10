@@ -190,7 +190,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading products">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-4" aria-busy="true" aria-label="Loading products">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -221,7 +221,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             size="md"
           />
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-4">
             {filtered.map((p) => {
               const soldOut = p.is_sellable === false;
               const lots = lotsByProduct?.get(p.id);

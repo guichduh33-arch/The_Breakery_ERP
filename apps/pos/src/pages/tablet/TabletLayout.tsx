@@ -73,7 +73,7 @@ export default function TabletLayout(): JSX.Element {
   if (!canAccessTablet) return <TabletAccessDenied />;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-bg-base">
+    <div className="h-[100dvh] overflow-hidden flex flex-col bg-bg-base">
       <header className="h-14 px-4 border-b border-border-subtle flex items-center justify-between gap-3 bg-bg-elevated shrink-0">
         {/* Critique 2026-08-24 (a11y) — le h1 nommait la serveuse : le titre le
             plus fort de l'écran désignait l'élément le moins actionnable, et
@@ -117,7 +117,7 @@ export default function TabletLayout(): JSX.Element {
 
       {/* main : landmark manquant — la navigation par landmarks était
           impossible sur /tablet (a11y P2). */}
-      <main id="main-content" tabIndex={-1} className="flex-1 overflow-hidden">
+      <main id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-hidden">
         <Outlet />
       </main>
 

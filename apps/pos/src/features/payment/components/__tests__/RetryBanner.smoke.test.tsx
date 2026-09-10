@@ -3,8 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { RetryBanner } from '../RetryBanner';
 import type { RetryClassification } from '@breakery/domain';
 
-const retryable: RetryClassification = { kind: 'retryable', userMessage: 'try again' } as RetryClassification;
-const alreadyPaid: RetryClassification = { kind: 'already_paid', userMessage: 'done' } as RetryClassification;
+const retryable: RetryClassification = { kind: 'retryable', userMessage: 'try again' };
+const alreadyPaid: RetryClassification = { kind: 'already_paid', userMessage: 'done' };
 const fatal: RetryClassification = { kind: 'fatal', userMessage: 'Discount needs a manager authorization.' };
 
 describe('RetryBanner', () => {

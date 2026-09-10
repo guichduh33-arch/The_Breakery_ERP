@@ -245,7 +245,7 @@ export function TabletOrderPage({
           : raw === 'table_required_for_dine_in'
             ? 'Select a table for a dine-in order'
             : isNetworkError
-              ? 'Network problem — the order was NOT sent. Check the connection and try again.'
+              ? 'Confirmation unavailable — the order may have been sent. Retry to recover the same order.'
               : `Could not send the order (${raw})`,
       );
     }
@@ -270,7 +270,7 @@ export function TabletOrderPage({
   // ── Floor plan overlay ──────────────────────────────────────────────
   if (view === 'floor-plan') {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-h-0">
         <div className="px-6 py-3 border-b border-border-subtle bg-bg-elevated flex items-center gap-4">
           <Button
             variant="ghost"
@@ -301,7 +301,7 @@ export function TabletOrderPage({
   // ── Menu view ───────────────────────────────────────────────────────
   const toolbar = (
     <div
-      className="px-6 py-4 flex items-center gap-4 border-b border-border-subtle bg-bg-elevated"
+      className="px-4 py-3 flex flex-wrap items-center gap-3 border-b border-border-subtle bg-bg-elevated"
       data-testid="tablet-order-toolbar"
     >
       <Button
@@ -384,7 +384,7 @@ export function TabletOrderPage({
           </Button>
         </div>
       )}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden max-[1099px]:flex-col">
         <TabletMenuView
           selectedSlug={selectedSlug}
           onSelectCategory={setSelectedSlug}
@@ -397,7 +397,7 @@ export function TabletOrderPage({
           footer={
             <Button
               variant="primary"
-              size="lg"
+              size="md"
               className="w-full"
               disabled={sendDisabled}
               onClick={() => {
@@ -411,8 +411,8 @@ export function TabletOrderPage({
           compactAction={
             <Button
               variant="primary"
-              size="icon"
-              className="w-full"
+              size="md"
+              className="shrink-0 px-4"
               disabled={sendDisabled}
               onClick={() => {
                 void handleSend();
@@ -420,7 +420,7 @@ export function TabletOrderPage({
               aria-label={sendLabel}
               data-testid="tablet-order-send-compact"
             >
-              <Send className="h-5 w-5" aria-hidden />
+              <Send className="h-5 w-5" aria-hidden /><span>Send</span>
             </Button>
           }
         />

@@ -1,3 +1,4 @@
+import { useReceiptJobs } from '@/services/print/receiptJobs';
 /// <reference types="@testing-library/jest-dom" />
 // apps/pos/src/features/payment/__tests__/success-modal-loyalty.smoke.test.tsx
 //
@@ -66,6 +67,7 @@ function wrap(n: React.ReactElement) {
 }
 
 beforeEach(() => {
+    useReceiptJobs.setState({ jobs: [] });
   vi.clearAllMocks();
   vi.mocked(useOrgDisplaySettings).mockReturnValue({
     displayFooterMessage: '',

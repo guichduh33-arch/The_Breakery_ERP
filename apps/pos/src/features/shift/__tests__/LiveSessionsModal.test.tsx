@@ -49,19 +49,19 @@ describe('LiveSessionsModal', () => {
   });
 
   it('renders the Live Sessions header and active count when open', () => {
-    render(withQuery(<LiveSessionsModal open onClose={() => {}} />));
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} />));
     expect(screen.getByRole('heading', { name: 'Live Sessions' })).toBeInTheDocument();
     expect(screen.getByText(/0 active/i)).toBeInTheDocument();
     expect(screen.getByTestId('live-sessions-modal')).toBeInTheDocument();
   });
 
   it('renders the empty-state when no sessions are open', () => {
-    render(withQuery(<LiveSessionsModal open onClose={() => {}} />));
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} />));
     expect(screen.getByText(/no live sessions/i)).toBeInTheDocument();
   });
 
   it('renders nothing when open=false', () => {
-    render(withQuery(<LiveSessionsModal open={false} onClose={() => {}} />));
+    render(withQuery(<LiveSessionsModal open={false} onClose={() => { /* fixture sans effet */ }} />));
     expect(screen.queryByTestId('live-sessions-modal')).toBeNull();
   });
 
@@ -75,7 +75,7 @@ describe('LiveSessionsModal', () => {
       isError: false,
       isFetching: false,
     };
-    render(withQuery(<LiveSessionsModal open onClose={() => {}} />));
+    render(withQuery(<LiveSessionsModal open onClose={() => { /* fixture sans effet */ }} />));
     expect(screen.getByText('TERM-ALPHA')).toBeInTheDocument();
     expect(screen.getByText('TERM-BRAVO')).toBeInTheDocument();
     expect(screen.getByText(/2 active/i)).toBeInTheDocument();

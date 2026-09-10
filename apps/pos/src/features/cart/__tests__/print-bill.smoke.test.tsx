@@ -81,7 +81,7 @@ describe('PrintBillButton — bill targets cashier printer', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    } as never);
+    });
   });
 
   afterEach(() => {
@@ -96,9 +96,7 @@ describe('PrintBillButton — bill targets cashier printer', () => {
     const btn = screen.getByRole('button', { name: /print bill/i });
     expect(btn).not.toBeDisabled();
 
-    await act(async () => {
-      btn.click();
-    });
+    act(() => { btn.click(); });
 
     await waitFor(() => {
       const buf = getMockPrintBuffer();

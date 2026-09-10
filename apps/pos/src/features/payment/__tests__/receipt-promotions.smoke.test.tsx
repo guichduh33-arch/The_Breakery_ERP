@@ -1,3 +1,4 @@
+import { useReceiptJobs } from '@/services/print/receiptJobs';
 // apps/pos/src/features/payment/__tests__/receipt-promotions.smoke.test.tsx
 //
 // Task 4 (session 60, fiche 13 D1.1) — the printed receipt payload must carry
@@ -102,6 +103,7 @@ async function renderAndGetReceipt(props: SuccessModalProps): Promise<ReceiptPay
 
 describe('SuccessModal — receipt carries named promotion lines', () => {
   beforeEach(() => {
+    useReceiptJobs.setState({ jobs: [] });
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
 

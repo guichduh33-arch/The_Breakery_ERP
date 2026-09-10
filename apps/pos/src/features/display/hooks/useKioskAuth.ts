@@ -47,7 +47,7 @@ export function useKioskAuth(): KioskAuthState & {
     setState({
       status: 'pin_fallback',
       expiresAt: null,
-      error: (result.error as { error?: string }).error ?? 'kiosk_unavailable',
+      error: (result.error).error ?? 'kiosk_unavailable',
     });
   }, []);
 

@@ -1,3 +1,12 @@
+vi.mock('@/features/settings/hooks/useTaxConfig', () => ({ useTaxConfig: () => ({ taxRate: 0.1, taxInclusive: true }) }));
+vi.mock('@/features/settings/hooks/useEnabledPaymentMethods', () => ({ useEnabledPaymentMethods: () => new Set(['cash', 'card', 'qris', 'store_credit']) }));
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({ useOrgDisplaySettings: () => ({}) }));
+vi.mock('@/features/settings/hooks/usePOSPresets', () => ({ usePOSPresets: () => ({ presets: { quickPayments: [50000, 100000] } }) }));
+vi.mock('@/features/lan/hooks/useOfflinePaymentGate', () => ({ useOfflinePaymentGate: () => ({ offlineMode: false, paymentsAllowed: false }) }));
+vi.mock('@/features/cart/hooks/useFireToStations', () => ({ useFireToStations: () => ({ mutation: { mutateAsync: vi.fn().mockResolvedValue([]) } }) }));
+vi.mock('@/features/cart/hooks/useStationPrinters', () => ({ useStationPrinters: () => ({ data: new Map() }) }));
+vi.mock('@/features/settings/hooks/useBusinessIdentity', () => ({ useBusinessIdentity: () => ({ business: { name: 'Test', address: '' } }) }));
+vi.mock('@/features/settings/hooks/useReceiptTemplate', () => ({ useReceiptTemplate: () => ({ template: null }) }));
 // apps/pos/src/features/payment/__tests__/PaymentTerminal.idempotency.test.tsx
 //
 // Session 13 / Phase 4.A — verify the idempotency UX:
@@ -50,6 +59,7 @@ async function clickAndFlush(el: HTMLElement) {
 }
 
 function setupHappyEnvironment(): void {
+  usePaymentStore.getState().reset();
   // Cart : one cheap item so totals.total > 0 and fastPathReady can fire.
   useCartStore.setState({
     cart: {
@@ -204,8 +214,10 @@ describe('PaymentTerminal — idempotency UX', () => {
     await waitFor(() => { expect(mutateAsyncMock).toHaveBeenCalledTimes(2); });
     expect(usePaymentStore.getState().attemptUnsettled).toBe(false);
 
-    // Tentative soldée : le prochain close régénère (nouvelle vente = nouvelle clé).
+    // La confirmation survit aussi à une fermeture ; seule New Order ouvre une autre vente.
     act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).toBe('idem-fixed-test-uuid');
+    act(() => { usePaymentStore.getState().reset(); });
     expect(usePaymentStore.getState().idempotencyKey).not.toBe('idem-fixed-test-uuid');
   });
 

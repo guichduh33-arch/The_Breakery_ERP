@@ -130,7 +130,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v8(
+  r := fire_counter_order_v9(
     p_client_uuid := '00000000-0000-0000-0000-0000000f1e01'::uuid,
     p_session_id  := '00000000-0000-0000-0000-00000000e201',
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b2","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,

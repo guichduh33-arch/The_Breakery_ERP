@@ -183,6 +183,7 @@ export function ComboConfigModal({
         // contribute, so a leftover answer for a deselected option never ships.
         const componentModifiers = modifiersFor(selection, group.id, optionId);
         components.push({
+          name: option.label,
           product_id: option.component_product_id,
           quantity: 1,
           ...(componentModifiers.length > 0 ? { modifiers: componentModifiers } : {}),
@@ -307,7 +308,7 @@ function GroupSection({ group, selection, onSelect }: GroupSectionProps): JSX.El
                   onChange={() =>
                     onSelect((prev) => setSingle(prev, group.id, option.id))
                   }
-                  className="sr-only"
+                  className="sr-only min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
                   aria-label={option.label}
                 />
                 {/* Custom radio indicator */}
@@ -345,7 +346,7 @@ function GroupSection({ group, selection, onSelect }: GroupSectionProps): JSX.El
                 onChange={() =>
                   onSelect((prev) => toggleMulti(prev, group.id, option.id))
                 }
-                className="sr-only"
+                className="sr-only min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
                 aria-label={option.label}
               />
               {/* Custom checkbox indicator */}

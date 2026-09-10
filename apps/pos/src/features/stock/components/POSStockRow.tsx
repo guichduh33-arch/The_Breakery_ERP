@@ -110,7 +110,7 @@ export function POSStockRow({
             value={qty}
             onChange={(e) => entry.setQty(Number(e.target.value) || 0)}
             aria-label={`Enter quantity for ${product.name}`}
-            className="h-touch-comfy w-16 rounded-md border border-border-subtle bg-bg-base px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold"
+            className="h-touch-comfy w-16 rounded-md border border-border-subtle bg-bg-base px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
           />
           <button
             type="button"

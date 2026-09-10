@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, type ReactNode } from 'react';
 import { VirtualKeypadProvider } from '@breakery/ui';
 import LoginPage from '@/pages/Login';
-import PosPage from '@/pages/Pos';
+const PosPage = lazy(() => import('@/pages/Pos'));
 import { useAuthStore } from '@/stores/authStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { isNativeShell } from '@/lib/nativeShell';
@@ -76,7 +76,7 @@ export function AppRoutes() {
         element={
           <Protected>
             <VirtualKeypadProvider>
-              <PosPage />
+              <Suspense fallback={<RouteFallback />}><PosPage /></Suspense>
             </VirtualKeypadProvider>
           </Protected>
         }

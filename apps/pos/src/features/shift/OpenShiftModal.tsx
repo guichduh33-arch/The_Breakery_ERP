@@ -343,7 +343,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
               <SectionLabel as="div">Notes (optional)</SectionLabel>
               <textarea
                 aria-label="Notes (optional)"
-                className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold resize-none"
+                className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold resize-none min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}

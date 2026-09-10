@@ -297,7 +297,7 @@ export function CloseShiftModal({
                   inputMode="numeric"
                   aria-required="true"
                   placeholder="0"
-                  className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+                  className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value.replace(/\D/g, ''))}
                 />
@@ -320,7 +320,7 @@ export function CloseShiftModal({
               inputMode="numeric"
               aria-required="true"
               placeholder="0"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               value={qrisStr}
               onChange={(e) => setQrisStr(e.target.value.replace(/\D/g, ''))}
             />
@@ -339,7 +339,7 @@ export function CloseShiftModal({
               inputMode="numeric"
               aria-required="true"
               placeholder="0"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               value={cardStr}
               onChange={(e) => setCardStr(e.target.value.replace(/\D/g, ''))}
             />
@@ -356,7 +356,7 @@ export function CloseShiftModal({
             <textarea
               id="close_notes"
               data-vkp="qwerty"
-              className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+              className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -412,7 +412,7 @@ export function CloseShiftModal({
               // accessible : il disparaît à la première frappe.
               aria-label="Manager PIN (6 digits)"
               placeholder="Manager PIN (6 digits)"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               value={managerPin}
               onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
               aria-invalid={!/^\d{6}$/.test(managerPin)}

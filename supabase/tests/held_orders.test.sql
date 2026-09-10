@@ -4,9 +4,9 @@
 -- `restore_held_order_v1`, qui fabriquaient une commande `draft` à partir du
 -- panier local, n'existent plus. Ce fichier couvre désormais le SEUL hold
 -- restant, celui de la commande déjà tirée en cuisine —
--- `hold_fired_order_v2` → `reopen_held_order_v2` → `discard_held_order_v2`.
+-- `hold_fired_order_v2` → `reopen_held_order_v3` → `discard_held_order_v2`.
 --
--- Le fixture monte la commande par la vraie porte (`fire_counter_order_v8`) et
+-- Le fixture monte la commande par la vraie porte (`fire_counter_order_v9`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
 -- réellement (lignes verrouillées, envoyées en cuisine, total laissé à 0 par le
 -- fire — c'est le hold qui le renseigne pour la liste des additions).
@@ -59,13 +59,14 @@ BEGIN
   INSERT INTO pos_sessions (opened_by, opening_cash, status)
     VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
 
-  v_env := fire_counter_order_v8(
+  v_env := fire_counter_order_v9(
     p_client_uuid := gen_random_uuid(),
     p_session_id  := v_sess,
     p_items       := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 2, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_order_type  := 'take_out'::order_type);
 
+  PERFORM set_config('ho.expected_total', (SELECT (retail_price * 2)::text FROM products WHERE id = v_prod), true);
   PERFORM set_config('ho.order', (v_env->>'order_id'), false);
   PERFORM set_config('ho.prof',  v_prof::text, false);
 END $fixture$;
@@ -83,12 +84,12 @@ SELECT ok(
   'T1: hold_fired_order_v2 pose is_held=true sur la commande tiree');
 
 SELECT ok(
-  (SELECT o.subtotal = 50000 AND o.total = 50000
+  (SELECT o.subtotal = current_setting('ho.expected_total')::numeric AND o.total = current_setting('ho.expected_total')::numeric
      FROM orders o WHERE o.id = current_setting('ho.order')::uuid)
   AND (SELECT o.total FROM orders o WHERE o.id = current_setting('ho.order')::uuid)
       = (SELECT COALESCE(SUM(oi.line_total), 0) FROM order_items oi
           WHERE oi.order_id = current_setting('ho.order')::uuid),
-  'T2: le hold recalcule subtotal=total=SUM(line_total)=50000 (le fire laissait 0)');
+  'T2: le hold recalcule subtotal=total=SUM(line_total) au prix serveur (le fire laissait 0)');
 
 SELECT ok(
   EXISTS (SELECT 1 FROM audit_logs
@@ -102,7 +103,7 @@ SELECT ok(
 DO $reopen$
 DECLARE v_res JSONB;
 BEGIN
-  v_res := reopen_held_order_v2(current_setting('ho.order')::uuid);
+  v_res := reopen_held_order_v3(current_setting('ho.order')::uuid);
   PERFORM set_config('ho.reopen', v_res::text, false);
 END $reopen$;
 
@@ -119,7 +120,7 @@ SELECT ok(
   'T5: la reouverture reclame la commande (is_held=false) sans la supprimer');
 
 SELECT throws_ok(
-  $q$ SELECT reopen_held_order_v2(current_setting('ho.order')::uuid) $q$,
+  $q$ SELECT reopen_held_order_v3(current_setting('ho.order')::uuid) $q$,
   'P0002', NULL,
   'T6: une 2e reouverture leve P0002 (deja ouverte sur un autre poste)');
 
@@ -161,9 +162,9 @@ SELECT ok(
   'T11: anon n''a pas EXECUTE sur hold_fired_order_v2');
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.reopen_held_order_v2(uuid)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.reopen_held_order_v3(uuid)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.discard_held_order_v2(uuid, text)', 'EXECUTE'),
-  'T12: anon n''a pas EXECUTE sur reopen_held_order_v2 ni discard_held_order_v2');
+  'T12: anon n''a pas EXECUTE sur reopen_held_order_v3 ni discard_held_order_v2');
 
 SELECT * FROM finish();
 ROLLBACK;

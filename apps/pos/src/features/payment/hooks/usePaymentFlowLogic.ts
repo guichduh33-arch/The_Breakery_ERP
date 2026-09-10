@@ -7,16 +7,17 @@
 // IMPORTANT: imports useCheckout from './useCheckout' so the test mock
 // vi.mock('../hooks/useCheckout', ...) (resolved from __tests__/) hits this module.
 
+import { isOrderSending } from '@/stores/orderSendGuard';
 import { useEffect, useState } from 'react';
 import {
   calculateTotals, earnPointsForCustomer,
   validateTenders, sumTenders, computeRemaining,
   classifyCheckoutError, type RetryClassification,
   type Tender,
-  type PaymentResultLine,
-  type AppliedPromotion,
 } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
+import { useShiftStore } from '@/stores/shiftStore';
+import type { PaymentAttempt } from '@/stores/paymentAttempt';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './useCheckout';
@@ -30,36 +31,17 @@ import { hubBus } from '@/features/lan/hubBusClient';
 import { enqueueIntent, nextIntentSeq } from '@/features/lan/offlineOutbox';
 import type { OrderPaidOfflinePayload } from '@/features/lan/busTopics';
 import { toast } from 'sonner';
-import type { PaymentMethod } from '@breakery/domain';
+import type { PaymentSuccessState } from './paymentSuccess';
+import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
+import { getOrderSourceCode } from '@/stores/posSettingsStore';
+export type { PaymentSuccessState } from './paymentSuccess';
 
-export interface PaymentSuccessState {
-  orderNumber: string;
-  total: number;
-  // S51 — server-authoritative tax + per-line breakdown (money-path v15). The
-  // receipt consumes these instead of recomputing client-side. `taxAmount` falls
-  // back to the pre-payment estimate only if the server omitted it.
-  taxAmount: number;
-  subtotal?: number;
-  lines?: PaymentResultLine[];
-  changeGiven: number | null;
-  pointsEarned: number;
-  // S44 D4 — server-resolved loyalty balance (direct/EF path only).
-  loyaltyBalanceAfter?: number;
-  customerName: string | undefined;
-  paymentMethod: PaymentMethod;
-  // Session 60 (fiche 13 D1.1) — snapshot of cartStore.appliedPromotions at the
-  // moment of success, so the receipt shows named promo lines without reading
-  // the store directly (parity with the other frozen PaymentSuccessState fields).
-  appliedPromotions?: AppliedPromotion[];
-  // Critique 2026-08-14 P1 — encaissement mis en file offline (outbox), pas
-  // confirmé serveur : le SuccessModal rend la variante ambre « recorded ».
-  offline?: boolean;
-  // Critique 2026-08-29 P3 — cash réellement reçu, sommé sur les règlements
-  // expédiés (le brouillon cashReceivedStr est périmé/vide sur un split).
-  cashReceived?: number;
-}
+let dispatching = false;
 
 export function usePaymentFlowLogic() {
+  const attempt = usePaymentStore((s) => s.attempt);
+  const activeAttempt = attempt?.state !== 'refused' ? attempt : null;
+  const [dispatchPending, setDispatchPending] = useState(false);
   const isOpen = usePaymentStore((s) => s.isOpen);
   // Lot 4 — clé d'idempotence de la tentative (même cycle de vie que l'EF
   // x-idempotency-key) : c'est elle qui identifie l'encaissement offline.
@@ -71,16 +53,22 @@ export function usePaymentFlowLogic() {
   const selectMethod = usePaymentStore((s) => s.selectMethod);
   const cashReceivedStr = usePaymentStore((s) => s.cashReceivedStr);
   const setCashReceivedStr = usePaymentStore((s) => s.setCashReceivedStr);
-  const tenders = usePaymentStore((s) => s.tenders);
+  const liveTenders = usePaymentStore((s) => s.tenders);
+  const tenders = activeAttempt?.tenders ?? liveTenders;
   const addTender = usePaymentStore((s) => s.addTender);
   const removeTender = usePaymentStore((s) => s.removeTender);
 
-  const cart = useCartStore((s) => s.cart);
-  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
-  const appliedPromotions = useCartStore((s) => s.appliedPromotions);
+  const liveCart = useCartStore((s) => s.cart);
+  const cart = activeAttempt?.cart ?? liveCart;
+  const liveCustomer = useCartStore((s) => s.attachedCustomer);
+  const attachedCustomer = activeAttempt ? activeAttempt.customer : liveCustomer;
+  const livePromotions = useCartStore((s) => s.appliedPromotions);
+  const appliedPromotions = activeAttempt?.context.appliedPromotions ?? livePromotions;
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
-  const { taxRate, taxInclusive } = useTaxConfig();
+  const taxConfig = useTaxConfig();
+  const taxRate = activeAttempt?.taxRate ?? taxConfig.taxRate;
+  const taxInclusive = activeAttempt?.taxInclusive ?? taxConfig.taxInclusive;
   const enabledMethods = useEnabledPaymentMethods();
   // S64 — si la méthode draft vient d'être désactivée au BO (ou si le défaut
   // 'cash' posé par open() est désactivé), on désélectionne. paymentStore.
@@ -144,9 +132,13 @@ export function usePaymentFlowLogic() {
 
   const canProcess = remaining === 0 || fastPathReady;
 
-  const [success, setSuccess] = useState<PaymentSuccessState | null>(null);
-  const [lastError, setLastError] = useState<RetryClassification | null>(null);
-  const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(null);
+  const [success, setSuccessState] = useState<PaymentSuccessState | null>(activeAttempt?.result ?? null);
+  function setSuccess(result: PaymentSuccessState | null) {
+    if (result) usePaymentStore.getState().completeAttempt(result);
+    setSuccessState(result);
+  }
+  const [lastError, setLastError] = useState<RetryClassification | null>(() => activeAttempt && !activeAttempt.result ? { kind: 'retryable', userMessage: 'Payment confirmation unavailable — resume the saved attempt' } : null);
+  const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(() => activeAttempt?.tenders ?? null);
   const [splitOpen, setSplitOpen] = useState(false);
 
   function close(): void {
@@ -173,6 +165,7 @@ export function usePaymentFlowLogic() {
   }
 
   async function handleProcess(): Promise<void> {
+    if (activeAttempt) { await dispatchCheckout(activeAttempt.tenders); return; }
     let tendersToShip: Tender[];
     if (tenders.length > 0 && remaining === 0) {
       tendersToShip = tenders;
@@ -209,43 +202,43 @@ export function usePaymentFlowLogic() {
   // encaisse par sa propre SIM et le POS ne fait qu'enregistrer, tandis que le
   // solde d'un avoir se vérifie serveur sous verrou — un intent d'avoir rejeté
   // au replay bloquerait tout le drain derrière lui.
-  async function dispatchOfflinePayment(tendersToShip: Tender[]): Promise<void> {
-    if (!offlineGate.paymentsAllowed) {
-      toast.error('Offline payments are disabled — ask a manager to enable them in the Back Office');
-      return;
+  function validateOfflinePayment(snapshot: PaymentAttempt): void {
+    const tendersToShip = snapshot.tenders;
+    if (offlineGate.offlineMode && !offlineGate.paymentsAllowed) {
+      throw new Error('Offline payments are disabled — ask a manager to enable them in the Back Office');
     }
     if (tendersToShip.length < 1 || tendersToShip.length > 5) {
-      toast.error('Offline: 1 to 5 tenders per sale');
-      return;
+      throw new Error('Offline: 1 to 5 tenders per sale');
     }
     if (tendersToShip.some((t) => t.method === 'store_credit')) {
-      toast.error('Store credit unavailable offline — remove this tender');
-      return;
+      throw new Error('Store credit unavailable offline — remove this tender');
     }
-    const cartState = useCartStore.getState();
-    if (cartState.pickedUpOrderId !== null) {
-      toast.error('Cloud order — payment unavailable offline');
-      return;
+    if (snapshot.context.pickedUpOrderId !== null) {
+      throw new Error('Cloud order — payment unavailable offline');
     }
-    if (appliedPromotions.length > 0 || cart.cartDiscount !== undefined) {
-      toast.error('Promotions and order discounts unavailable offline — remove before checkout');
-      return;
+    if (snapshot.context.appliedPromotions.length > 0 || snapshot.cart.cartDiscount !== undefined) {
+      throw new Error('Promotions and order discounts unavailable offline — remove before checkout');
     }
-    if ((cart.loyaltyPointsToRedeem ?? 0) > 0) {
-      toast.error('Points redemption unavailable offline');
-      return;
+    if ((snapshot.cart.loyaltyPointsToRedeem ?? 0) > 0) {
+      throw new Error('Points redemption unavailable offline');
     }
 
+  }
+
+  async function dispatchOfflinePayment(snapshot: PaymentAttempt): Promise<void> {
+    const tendersToShip = snapshot.tenders;
+    const cartState = useCartStore.getState();
     // La commande locale doit exister sur le bus/KDS avant l'encaissement :
     // fire offline maintenant si le panier n'a pas encore été envoyé (vente
     // comptoir directe — items 'none' inclus, aucun KOT superflu).
-    if (cartState.offlineOrder === null) {
-      await fireToStations.mutateAsync({});
+    if (cartState.offlineOrder === null || cartState.cart.items.some((item) => !item.is_cancelled && !cartState.lockedItemIds.includes(item.id))) {
+      await fireToStations.mutateAsync({ clientUuid: snapshot.context.appendUuid, forceOffline: true });
     }
     const offlineOrder = useCartStore.getState().offlineOrder;
+    // La liaison créée par l'envoi est durable avant l'enregistrement du règlement.
+    usePaymentStore.getState().updateContext({ offlineOrder, lockedItemIds: useCartStore.getState().lockedItemIds, printedItemIds: useCartStore.getState().printedItemIds });
     if (offlineOrder === null) {
-      toast.error('Offline send failed — nothing to charge');
-      return;
+      throw new Error('Offline send failed — nothing to charge');
     }
 
     // Le rendu monnaie ne concerne que le volet espèces d'un split : les autres
@@ -300,6 +293,7 @@ export function usePaymentFlowLogic() {
 
     setSuccess({
       orderNumber: offlineOrder.localNumber,
+      orderId: offlineOrder.clientUuid,
       total,
       taxAmount: tax_amount,
       changeGiven,
@@ -314,10 +308,54 @@ export function usePaymentFlowLogic() {
   }
 
   async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
-    if (offlineGate.offlineMode) {
-      await dispatchOfflinePayment(tendersToShip);
-      return;
+    if (dispatching) return;
+    if (isOrderSending()) { toast.error('Wait for the order send to finish before paying'); return; }
+    dispatching = true;
+    setDispatchPending(true);
+    let dispatched = false;
+    try {
+      const stored = usePaymentStore.getState().attempt;
+      const saved = stored?.state !== 'refused' ? stored : null;
+      const state = useCartStore.getState();
+      const sessionId = saved?.context.sessionId ?? useShiftStore.getState().current?.id;
+      if (!sessionId || !user) throw new Error('no_open_shift');
+      const snapshot = saved && saved.state !== 'refused' ? saved : JSON.parse(JSON.stringify({
+        version: 1, state: 'pending', cart: state.cart, tenders: tendersToShip,
+        context: {
+          idempotencyKey, appendUuid: crypto.randomUUID(), sessionId, userId: user.id,
+          pickedUpOrderId: state.pickedUpOrderId, orderOrigin: state.orderOrigin,
+          lockedItemIds: state.lockedItemIds, printedItemIds: state.printedItemIds,
+          appliedPromotions: state.appliedPromotions, sourceCode: getOrderSourceCode(), offlineOrder: state.offlineOrder,
+        },
+        customer: state.attachedCustomer, offline: offlineGate.offlineMode, taxRate, taxInclusive,
+      })) as PaymentAttempt;
+      if (snapshot.context.userId !== user.id) throw new Error('Resume this payment with the original cashier');
+      if (snapshot.offline && !snapshot.context.offlineOrder) snapshot.context.offlineOrder = { clientUuid: snapshot.context.appendUuid, localNumber: nextLocalOrderNumber() };
+      if (snapshot.result) { setSuccessState(snapshot.result); return; }
+      if (snapshot.offline && !saved) validateOfflinePayment(snapshot);
+      usePaymentStore.getState().beginAttempt({ ...snapshot, state: 'pending' });
+      setLastTendersShipped(snapshot.tenders);
+      if (snapshot.offline) useCartStore.setState({ cart: snapshot.cart, offlineOrder: snapshot.context.offlineOrder ?? null, lockedItemIds: snapshot.context.lockedItemIds, printedItemIds: snapshot.context.printedItemIds, pickedUpOrderId: snapshot.context.pickedUpOrderId });
+      dispatched = true;
+      if (snapshot.offline) {
+        await dispatchOfflinePayment(snapshot);
+      } else {
+        await dispatchOnlinePayment(snapshot);
+      }
+    } catch (error) {
+      const classified = classifyCheckoutError(error);
+      setLastError(classified);
+      const saved = usePaymentStore.getState().attempt;
+      if (saved && dispatched) usePaymentStore.getState().settleAttempt(saved.offline || classified.kind === 'retryable' ? 'unknown' : 'refused');
+      toast.error(error instanceof Error ? error.message : 'Payment could not be recorded');
+    } finally {
+      dispatching = false;
+      setDispatchPending(false);
     }
+  }
+
+  async function dispatchOnlinePayment(snapshot: PaymentAttempt): Promise<void> {
+    const tendersToShip = snapshot.tenders;
     setLastError(null);
     setLastTendersShipped(tendersToShip);
     // S72 audit — a charge attempt begins (pairs with payment_completed /
@@ -327,11 +365,9 @@ export function usePaymentFlowLogic() {
       payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null },
     });
     try {
-      const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
+      const result = await checkout.mutateAsync({ cart: snapshot.cart, payment: tendersToShip, context: snapshot.context });
       // ADR-013 D13 — la tentative est soldée (un retry réussi lève le flag
       // posé par l'échec retryable précédent) ; reset() régénérera la clé.
-      markAttemptUnsettled(false);
-
       // S43 P0-3 — printOnly: the order already exists in the DB (created by
       // complete_order_with_payment_v11 / paid via pay_existing_order_v7).
       // Persisting here would mint an orphan order or append to a paid one.
@@ -351,6 +387,7 @@ export function usePaymentFlowLogic() {
       // estimate only if the server omitted points (legacy / no customer).
       setSuccess({
         orderNumber: result.order_number,
+        orderId: result.order_id,
         total: result.total,
         // S51 — consume server tax/subtotal/lines; fall back to the pre-payment
         // estimate for tax only if the envelope omitted it (legacy pickup path).
@@ -386,6 +423,7 @@ export function usePaymentFlowLogic() {
       // est vivante (pas de double charge, pas de double intent offline). Un
       // échec fatal ou already_paid SOLDE la tentative (clé régénérée au
       // prochain open/reset, comportement historique conservé).
+      usePaymentStore.getState().settleAttempt(classified.kind === 'retryable' ? 'unknown' : 'refused');
       markAttemptUnsettled(classified.kind === 'retryable');
       // S72 audit — journal the failed charge (fraud/ops signal: repeated
       // failures, or a "failed" payment that actually went through). No order_id:
@@ -407,16 +445,16 @@ export function usePaymentFlowLogic() {
   }
 
   function handleDismissAlreadyPaid(): void {
-    resetCartAfterCheckout();
     reset();
+    resetCartAfterCheckout();
     setLastError(null);
     setLastTendersShipped(null);
   }
 
   function handleNewOrder(): void {
-    setSuccess(null);
-    resetCartAfterCheckout();
     reset();
+    resetCartAfterCheckout();
+    setSuccess(null);
   }
 
   async function handleSplitComplete(splitTenders: Tender[]): Promise<void> {
@@ -444,7 +482,8 @@ export function usePaymentFlowLogic() {
     tenders, removeTender,
     // flow flags
     total, remaining, fastPathReady, canProcess,
-    checkoutPending: checkout.isPending,
+    checkoutPending: checkout.isPending || dispatchPending,
+    attemptLocked: Boolean(activeAttempt),
     // spec 006x lot 4 — mode offline + gate cash (bannières terminal)
     offlineGate,
     // ui state

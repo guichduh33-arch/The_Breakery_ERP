@@ -2469,6 +2469,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -2504,6 +2505,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          client_line_id?: string | null
           combo_components?: Json | null
           created_at?: string
           discount_amount?: number
@@ -2539,6 +2541,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          client_line_id?: string | null
           combo_components?: Json | null
           created_at?: string
           discount_amount?: number
@@ -6688,9 +6691,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v9: {
+      create_tablet_order_v10: {
         Args: {
           p_client_uuid: string
+          p_customer_id?: string
           p_items: Json
           p_notes?: string
           p_order_id?: string
@@ -6840,11 +6844,14 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v8: {
+      fire_counter_order_v9: {
         Args: {
           p_client_uuid: string
+          p_customer_id?: string
+          p_discount_auth_id?: string
           p_discount_authorized_by?: string
           p_items: Json
+          p_offline_replay?: boolean
           p_order_id?: string
           p_order_type?: Database["public"]["Enums"]["order_type"]
           p_session_id: string
@@ -7147,6 +7154,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_order_snapshot_v1: { Args: { p_order_id: string }; Returns: Json }
       get_pos_order_type_category_mix_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -7585,6 +7593,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7637,6 +7646,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7681,6 +7691,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7736,6 +7747,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -8086,7 +8098,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v2: { Args: { p_order_id: string }; Returns: Json }
+      reopen_held_order_v3: { Args: { p_order_id: string }; Returns: Json }
       reorder_categories_v2: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
@@ -8203,6 +8215,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
