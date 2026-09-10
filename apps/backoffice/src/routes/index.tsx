@@ -136,6 +136,7 @@ const RecipeDetailPage = lazy(() =>
 const CustomerCategoriesPage = lazy(() => import('@/pages/customers/CustomerCategoriesPage.js'));
 const B2BDashboardPage = lazy(() => import('@/pages/btob/B2BDashboardPage.js'));
 const B2BOrdersPage = lazy(() => import('@/pages/btob/B2BOrdersPage.js'));
+const B2BOrderDetailPage = lazy(() => import('@/pages/btob/B2BOrderDetailPage.js'));
 const B2BPaymentsPage = lazy(() => import('@/pages/btob/B2BPaymentsPage.js'));
 const B2BSettingsPage = lazy(() => import('@/pages/btob/B2BSettingsPage.js'));
 
@@ -592,6 +593,10 @@ export function AppRoutes() {
               <B2BOrdersPage />
             </PermissionGate>
           }
+        />
+        <Route
+          path="b2b/orders/:orderId"
+          element={<PermissionGate required="b2b.read"><B2BOrderDetailPage /></PermissionGate>}
         />
         <Route
           path="b2b/payments"

@@ -146,6 +146,7 @@ export function useCreateB2bOrder() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: B2B_DASHBOARD_QUERY_KEY }),
         qc.invalidateQueries({ queryKey: ['customers'] }),
+        qc.invalidateQueries({ queryKey: ['b2b-invoices'] }),
       ]);
     },
   });

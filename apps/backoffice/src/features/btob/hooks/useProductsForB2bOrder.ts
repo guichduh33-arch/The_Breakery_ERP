@@ -14,6 +14,7 @@ export interface B2bOrderProductOption {
   name:          string;
   price:         number;
   current_stock: number;
+  track_inventory: boolean;
   unit:          string | null;
 }
 
@@ -29,7 +30,7 @@ export function useProductsForB2bOrder() {
         // `price` is an alias of the real column retail_price (products has no `price`
         // column) — used only as the client-side prefill fallback; the server (v5) is
         // authoritative and resolves negotiated > category > retail regardless.
-        .select('id, sku, name, price:retail_price, current_stock, unit')
+        .select('id, sku, name, price:retail_price, current_stock, track_inventory, unit')
         .is('deleted_at', null)
         .eq('is_active', true)
         .order('name', { ascending: true })

@@ -25,7 +25,7 @@
 // compteur — sont conservés tels quels.
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
@@ -38,6 +38,7 @@ interface InvoiceFixture {
   invoice_total: number; invoice_date: string; paid_at: string | null;
   order_status: string; age_days: number; is_unpaid: boolean;
   amount_paid: number; outstanding: number; pickup_date: string | null;
+  b2b_delivered_at?: string | null;
 }
 
 const INVOICES: InvoiceFixture[] = [
@@ -47,6 +48,7 @@ const INVOICES: InvoiceFixture[] = [
     invoice_total: 1_200_000, invoice_date: '2026-08-01T08:00:00Z', paid_at: null,
     order_status: 'completed', age_days: 7, is_unpaid: true,
     amount_paid: 0, outstanding: 1_200_000, pickup_date: '2026-08-09',
+    b2b_delivered_at: '2026-08-09T02:00:00Z',
   },
   {
     invoice_id: 'o-new', order_number: 'B2B-0002', invoice_number: 'INV/2026/2',
@@ -100,6 +102,8 @@ function makeViewChain() {
     const ordered = [...kept].sort((a, b) => {
       const va = a[sortCol] as string | number;
       const vb = b[sortCol] as string | number;
+      if (va === null) return vb === null ? 0 : 1;
+      if (vb === null) return -1;
       const cmp = va === vb ? 0 : va < vb ? -1 : 1;
       return sortAsc ? cmp : -cmp;
     });
@@ -212,11 +216,11 @@ describe('B2BOrdersPage', () => {
     itemsSpy.mockReturnValue(chain);
   });
 
-  it('lists one row per order, most recent first', async () => {
+  it('lists orders by pickup date, with unscheduled orders last', async () => {
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0002')).toBeInTheDocument());
     const numbers = screen.getAllByText(/^B2B-000\d$/).map((n) => n.textContent);
-    expect(numbers).toEqual(['B2B-0002', 'B2B-0001']);
+    expect(numbers).toEqual(['B2B-0001', 'B2B-0002']);
   });
 
   it('does not load any order line until a row is opened', async () => {
@@ -225,52 +229,17 @@ describe('B2BOrdersPage', () => {
     expect(itemsSpy).not.toHaveBeenCalled();
   });
 
-  it('opens the order onto its lines, keeping a cancelled line visible at zero', async () => {
+  it('opens the full order through an accessible link', async () => {
     render(wrap(<B2BOrdersPage />));
-    await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByText('B2B-0001'));
-
-    await waitFor(() => expect(screen.getByTestId('b2b-items-panel')).toBeInTheDocument());
-    expect(itemsSpy).toHaveBeenCalledWith('order_items');
-    expect(screen.getByText('Baguette tradition')).toBeInTheDocument();
-
-    // La ligne annulée reste — la faire disparaître donnerait une somme qui ne
-    // retombe pas sur le total, et laisserait croire qu'elle n'a pas existé.
-    const cancelled = screen.getByText('Pain de mie');
-    expect(cancelled).toBeInTheDocument();
-    expect(cancelled.className).toMatch(/line-through/);
-  });
-
-  it('opens an order from the keyboard — the chevron is a button, not an ornament', async () => {
-    // Le clic-ligne du DataTable ne se prend ni au Tab ni à Entrée : sans ce
-    // bouton, le détail d'une commande était inatteignable au clavier
-    // (WCAG 2.1.1). Un <button> natif est dans l'ordre de tabulation et
-    // Entrée / Espace y émettent un clic — c'est ce clic qu'on rejoue ici.
-    render(wrap(<B2BOrdersPage />));
-    await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
-
-    const toggle = screen.getByRole('button', { name: /show the lines of order B2B-0001/i });
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    toggle.focus();
-    expect(document.activeElement).toBe(toggle);
-
-    fireEvent.click(toggle);
-
-    await waitFor(() => expect(screen.getByTestId('b2b-items-panel')).toBeInTheDocument());
-    const opened = screen.getByRole('button', { name: /hide the lines of order B2B-0001/i });
-    expect(opened).toHaveAttribute('aria-expanded', 'true');
-
-    // Le bouton ne bascule qu'UNE fois : son clic ne doit pas remonter jusqu'à
-    // la ligne, qui refermerait aussitôt ce qu'il vient d'ouvrir.
-    fireEvent.click(opened);
-    await waitFor(() => expect(screen.queryByTestId('b2b-items-panel')).not.toBeInTheDocument());
+    const link = await screen.findByRole('link', { name: 'B2B-0001' });
+    expect(link).toHaveAttribute('href', '/backoffice/b2b/orders/o-old');
+    expect(screen.queryByTestId('b2b-items-panel')).not.toBeInTheDocument();
   });
 
   it('marks an order with an outstanding balance as unpaid', async () => {
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
-    expect(screen.getByText('unpaid')).toBeInTheDocument();
+    expect(within(screen.getByText('B2B-0001').closest('tr')!).getByText('Unpaid')).toBeInTheDocument();
   });
 
   it('lot 3 — breadcrumb, badge de statut unifié et action de création dans le bandeau', async () => {
@@ -278,10 +247,29 @@ describe('B2BOrdersPage', () => {
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
     expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Orders');
     // Le badge vient de statusMeta : libellé humain, plus la valeur brute.
-    expect(screen.getAllByText('Completed').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Delivered')).toBeInTheDocument();
+    expect(screen.getByText('Awaiting pickup')).toBeInTheDocument();
     expect(screen.queryByText('completed')).not.toBeInTheDocument();
     // D3 acté : la liste porte l'action de création (désactivée sans la gate).
     expect(screen.getByRole('button', { name: /new b2b order/i })).toBeInTheDocument();
+  });
+
+  it('keeps delivery independent from payment', async () => {
+    render(wrap(<B2BOrdersPage />));
+    const unpaidRow = (await screen.findByText('B2B-0001')).closest('tr')!;
+    expect(within(unpaidRow).getByText('Delivered')).toBeInTheDocument();
+    expect(within(unpaidRow).getByText('Unpaid')).toBeInTheDocument();
+    const paidRow = screen.getByText('B2B-0002').closest('tr')!;
+    expect(within(paidRow).getByText('Awaiting pickup')).toBeInTheDocument();
+    expect(within(paidRow).getByText('Paid')).toBeInTheDocument();
+    expect(within(paidRow).queryByRole('button', { name: 'Record payment' })).not.toBeInTheDocument();
+  });
+
+  it('shows status only, with no pickup or payment buttons in the list', async () => {
+    permRef.current = new Set(['b2b.read', 'pos.sale.create', 'b2b.payment.record']);
+    render(wrap(<B2BOrdersPage />));
+    await screen.findByText('B2B-0002');
+    expect(screen.queryByRole('button', { name: /Mark delivered|Schedule pickup|Record payment/ })).not.toBeInTheDocument();
   });
 
   it('shows the pickup day, and says so when none was agreed', async () => {

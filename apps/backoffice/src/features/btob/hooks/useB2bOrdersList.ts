@@ -27,7 +27,7 @@
 //
 // ── Ce que la base fournit déjà ─────────────────────────────────────────────
 //
-// AUCUNE migration, aucun bump de RPC. `view_b2b_invoices` est une vue
+// `view_b2b_invoices` est une vue
 // `security_invoker` lue par PostgREST : `.range()`, `{ count: 'exact' }`,
 // `.or(…ilike…)` et `.order()` sont des capacités de l'existant. La RLS suit
 // l'appelant, comme avant.
@@ -37,12 +37,12 @@ import { supabase } from '@/lib/supabase.js';
 import { B2B_INVOICES_QUERY_KEY, type B2bInvoiceRow } from './useB2bInvoices.js';
 
 /** Colonnes triables — celles que la VUE porte telles qu'on les AFFICHE. */
-export type B2bOrdersSortColumn = 'invoice_date' | 'order_number' | 'invoice_total';
+export type B2bOrdersSortColumn = 'invoice_date' | 'pickup_date' | 'order_number' | 'invoice_total';
 export type B2bOrdersSortDir = 'asc' | 'desc';
 export type B2bPaymentFilter = 'all' | 'unpaid' | 'paid';
 
 export const B2B_ORDERS_SORT_COLUMNS: readonly B2bOrdersSortColumn[] =
-  ['invoice_date', 'order_number', 'invoice_total'];
+  ['invoice_date', 'pickup_date', 'order_number', 'invoice_total'];
 
 /**
  * Taille de fenêtre. 50, comme `useOrdersList` : assez pour que le premier
@@ -53,7 +53,7 @@ export const B2B_ORDERS_PAGE_SIZE = 50;
 const COLS =
   'invoice_id, order_number, invoice_number, customer_id, b2b_company_name, ' +
   'customer_name, invoice_total, invoice_date, paid_at, order_status, age_days, ' +
-  'is_unpaid, amount_paid, outstanding, pickup_date';
+  'is_unpaid, amount_paid, outstanding, pickup_date, b2b_delivered_at';
 
 /**
  * Une recherche part dans une chaîne de filtre PostgREST où la virgule sépare
@@ -89,7 +89,7 @@ export function useB2bOrdersList(params: B2bOrdersListParams) {
       let q = supabase
         .from('view_b2b_invoices')
         .select(COLS, { count: 'exact' })
-        .order(params.sort, { ascending: params.dir === 'asc' })
+        .order(params.sort, { ascending: params.dir === 'asc', nullsFirst: false })
         // Départage STABLE : à `invoice_date` égal (deux commandes du même
         // instant, ou tri par montant), l'ordre serait sinon libre côté
         // Postgres — et une fenêtre suivante pourrait rendre une ligne déjà

@@ -2702,6 +2702,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          b2b_delivered_at: string | null
           created_at: string
           created_via: string
           customer_id: string | null
@@ -2740,6 +2741,7 @@ export type Database = {
           waiter_id: string | null
         }
         Insert: {
+          b2b_delivered_at?: string | null
           created_at?: string
           created_via?: string
           customer_id?: string | null
@@ -2778,6 +2780,7 @@ export type Database = {
           waiter_id?: string | null
         }
         Update: {
+          b2b_delivered_at?: string | null
           created_at?: string
           created_via?: string
           customer_id?: string | null
@@ -5879,6 +5882,7 @@ export type Database = {
       }
       view_b2b_invoices: {
         Row: {
+          b2b_delivered_at: string | null
           age_days: number | null
           amount_paid: number | null
           b2b_company_name: string | null
@@ -8386,6 +8390,14 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
+      }
+      update_b2b_pickup_v1: {
+        Args: {
+          p_mark_delivered?: boolean
+          p_order_id: string
+          p_pickup_date?: string
+        }
+        Returns: Json
       }
       update_b2b_settings_v1: { Args: { p_patch: Json }; Returns: Json }
       update_category_v2: {

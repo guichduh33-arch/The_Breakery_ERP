@@ -144,7 +144,8 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     if (!Number.isFinite(q) || q <= 0) return false;
     if (!Number.isFinite(p) || p < 0)  return false;
     const product = productById.get(r.productId);
-    if (product !== undefined && product.current_stock < q) return false;
+    // Untracked products consume recipe components; the RPC validates their stock.
+    if (product?.track_inventory === true && product.current_stock < q) return false;
     return true;
   });
 
@@ -276,7 +277,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               {items.map((row, idx) => {
                 const product   = row.productId !== '' ? productById.get(row.productId) ?? null : null;
                 const q         = Number.parseFloat(row.quantity);
-                const overstock = product !== null && Number.isFinite(q) && q > product.current_stock;
+                const overstock = product?.track_inventory === true && Number.isFinite(q) && q > product.current_stock;
                 return (
                   <div key={row.rowKey} className="grid grid-cols-12 gap-2 items-start">
                     <Select
