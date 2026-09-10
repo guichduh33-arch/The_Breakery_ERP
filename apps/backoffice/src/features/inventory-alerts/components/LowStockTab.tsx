@@ -6,7 +6,8 @@
 // contenu et la source de données sont inchangés.
 
 import type { JSX } from 'react';
-import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { formatQuantity } from '@breakery/utils';
 import { useLowStock, type LowStockRow } from '../hooks/useLowStock.js';
 import { ProductCell } from './ProductCell.js';

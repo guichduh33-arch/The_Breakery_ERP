@@ -14,7 +14,8 @@
 // dépendance et un parcours clavier à réinventer.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, Currency } from '@breakery/ui';
+import { Currency } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useShowcaseCandidates } from '../hooks/useShowcaseCandidates.js';
 import { ShowcaseProductPicker } from './ShowcaseProductPicker.js';

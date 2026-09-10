@@ -9,7 +9,8 @@
 // appliquer d'alpha — d'où les tokens `*-soft`).
 
 import type { JSX } from 'react';
-import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import {
   useStockConfigIssues,
   type StockConfigIssueRow,

@@ -35,7 +35,7 @@
 import { Fragment, useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import type { CsvColumn } from '@breakery/domain';
 import { formatDateTimeWita } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';

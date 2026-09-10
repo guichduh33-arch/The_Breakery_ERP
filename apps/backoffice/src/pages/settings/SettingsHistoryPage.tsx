@@ -12,7 +12,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { History } from 'lucide-react';
-import { Badge, Button, Card, EmptyState } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Button, Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatDateTimeWita } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';

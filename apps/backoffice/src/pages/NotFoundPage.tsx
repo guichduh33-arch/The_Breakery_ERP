@@ -9,7 +9,7 @@
 import { type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Compass } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 
 export default function NotFoundPage(): JSX.Element {
   const navigate = useNavigate();

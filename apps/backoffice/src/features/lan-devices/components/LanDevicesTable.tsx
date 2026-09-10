@@ -8,7 +8,7 @@
 import { useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatDateTime } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useLanDevices, type LanDeviceRow } from '../hooks/useLanDevices.js';

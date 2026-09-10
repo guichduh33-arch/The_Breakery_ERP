@@ -24,7 +24,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button, Card, Select } from '@breakery/ui';
+import { Select } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';

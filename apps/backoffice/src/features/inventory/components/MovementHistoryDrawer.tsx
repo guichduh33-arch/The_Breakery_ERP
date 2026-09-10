@@ -5,16 +5,8 @@
 // reason / supplier reference. 50 entries per page.
 
 import { useState, type JSX } from 'react';
-import {
-  Badge,
-  Button,
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@breakery/ui';
+import { Badge, Sheet, SheetDescription } from '@breakery/ui';
+import { Button, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import { classifyMovement } from '@breakery/domain';
 import type { StockMovement } from '@breakery/domain';
 import {

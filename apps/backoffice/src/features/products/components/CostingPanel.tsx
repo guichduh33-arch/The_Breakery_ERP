@@ -10,7 +10,7 @@
 
 import { useRef, useState, type JSX } from 'react';
 import { DollarSign, Percent, Tag } from 'lucide-react';
-import { Button, Card, EmptyState } from '@breakery/ui';
+import { Button, Card, EmptyState } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatPercent } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';

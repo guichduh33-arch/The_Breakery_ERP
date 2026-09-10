@@ -16,10 +16,8 @@
 
 import { useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useDeleteProduct } from '../hooks/useDeleteProduct.js';
 import type { ProductRow } from '../types.js';
 

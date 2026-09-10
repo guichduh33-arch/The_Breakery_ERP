@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatTimeWita } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

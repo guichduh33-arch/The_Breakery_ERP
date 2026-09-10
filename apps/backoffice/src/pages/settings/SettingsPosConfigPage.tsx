@@ -5,7 +5,7 @@
 // POS Settings General tab keeps its own editor). No parallel schema.
 import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';

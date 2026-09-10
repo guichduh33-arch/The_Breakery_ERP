@@ -12,7 +12,8 @@
 import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input } from '@breakery/ui';
+import { Dialog, DialogDescription, Input } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { validateAdjust } from '@breakery/domain';
 // Comme dans WasteModal : `ProductTypeaheadRow` ne transporte pas l'unité, les
 // quantités se formatent donc sans suffixe plutôt qu'avec une unité supposée.

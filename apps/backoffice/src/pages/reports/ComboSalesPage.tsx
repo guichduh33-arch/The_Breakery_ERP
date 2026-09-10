@@ -103,6 +103,7 @@ export default function ComboSalesPage(): JSX.Element {
     },
     {
       key: 'uplift', label: 'Ticket with combo',
+      ...(summary?.avg_ticket_with != null ? { title: formatIdrFull(summary.avg_ticket_with) } : {}),
       value: summary?.avg_ticket_with != null ? formatIdrCompact(summary.avg_ticket_with) : '—',
       note:  uplift !== null && summary?.avg_ticket_without != null
         ? `vs ${formatIdrCompact(summary.avg_ticket_without)} without (${uplift >= 0 ? '+' : ''}${formatPct1(uplift)})`

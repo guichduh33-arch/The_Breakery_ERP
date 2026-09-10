@@ -19,7 +19,8 @@ describe('KpiTile', () => {
       <KpiTile label="Net revenue" value="Rp 8,42 jt" valueTitle="Rp 8.424.000" testId="tile" />,
     );
     expect(screen.getByText('Net revenue')).toBeInTheDocument();
-    expect(screen.getByText('Rp 8,42 jt')).toHaveAttribute('title', 'Rp 8.424.000');
+    expect(screen.getByTestId('tile-value')).toHaveAttribute('title', 'Rp 8.424.000');
+    expect(screen.getByText('Rp 8,42 jt')).toBeInTheDocument();
   });
 
   it('héro : fond encre et valeur 26 px', () => {

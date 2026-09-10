@@ -2,7 +2,7 @@
 // Session 13 — Phase 3.A — POFormDraft minimal render + validation smoke.
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import {
   POFormDraft,
   emptyPOFormDraftValue,
@@ -19,6 +19,21 @@ const PRODUCTS = [
 ];
 
 describe('POFormDraft smoke', () => {
+  it('document layout keeps the draft totals and submits the same form', () => {
+    const value: POFormDraftValue = {
+      ...emptyPOFormDraftValue(), supplierId: 'sup-1', vatRate: 0.11,
+      items: [{ productId: 'prod-1', quantity: 5, unit: 'kg', unitFactorToBase: 1, unitCost: 3000, notes: '' }],
+    };
+    const submit = vi.fn();
+    render(<POFormDraft layout="document" value={value} onChange={vi.fn()} suppliers={SUPPLIERS} products={PRODUCTS} onSubmit={submit} />);
+    const summary = within(screen.getByRole('complementary', { name: 'Purchase order summary' }));
+    expect(summary.getByText(/15.000/)).toBeInTheDocument();
+    expect(summary.getByText(/1.650/)).toBeInTheDocument();
+    expect(summary.getByText(/16.650/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Create purchase order/i }));
+    expect(submit).toHaveBeenCalledTimes(1);
+  });
+
   it('renders header fields, line table, and submit button', () => {
     const onChange = vi.fn();
     render(
@@ -105,7 +120,7 @@ describe('POFormDraft — constrained unit select (R2)', () => {
         products={RAW_PRODUCTS}
       />,
     );
-    const unitSelect = screen.getByLabelText(/Unit for line 1/i) as HTMLSelectElement;
+    const unitSelect = screen.getByLabelText<HTMLSelectElement>(/Unit for line 1/i);
     expect(unitSelect.tagName).toBe('SELECT');
     const optionTexts = Array.from(unitSelect.options).map((o) => o.value);
     expect(optionTexts).toEqual(['kg', 'sack']);

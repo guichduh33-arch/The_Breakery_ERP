@@ -14,14 +14,8 @@
 import { useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@breakery/ui';
+import { Sheet, SheetDescription } from '@breakery/ui';
+import { SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import {
   CalendarDays,
   Clock,
@@ -36,7 +30,8 @@ import {
   Undo2,
   XCircle,
 } from 'lucide-react';
-import { Button, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 // Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas).
 // Les montants passent par `formatCurrency`, qui pose lui-même le préfixe
 // « Rp » — audit UX/UI 2026-08-13, lot 1.

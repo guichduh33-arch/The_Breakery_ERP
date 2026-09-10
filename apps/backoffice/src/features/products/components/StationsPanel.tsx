@@ -10,7 +10,7 @@
 import { Factory, Star } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Button, Card } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSections } from '@/hooks/useSections.js';
 import { useProductSections } from '../hooks/useProductSections.js';

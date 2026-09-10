@@ -5,10 +5,8 @@
 // n'en garde qu'une par station côté POS).
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Button, Input, Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
+import { DialogContent, DialogHeader, DialogTitle, DialogFooter, Button } from '@/components/BackofficeUi.js';
 import type { LanDeviceRow, LanDeviceType } from '../hooks/useLanDevices.js';
 import { useUpsertLanDevice } from '../hooks/useUpsertLanDevice.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

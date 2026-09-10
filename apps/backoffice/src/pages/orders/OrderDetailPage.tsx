@@ -15,7 +15,8 @@ import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ChevronRight, Download } from 'lucide-react';
-import { Card, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 // formatDateTimeShortWita : le format de lecture des tables du BO (24 h, mois
 // en lettres) — plus de fuseau ni de formatteur redéclarés ici (ADR-019 D5).
 import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
@@ -42,7 +43,7 @@ function rp(n: number | null): string {
   return formatCurrency(Number(n ?? 0));
 }
 
-const SECTION_LABEL = 'font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
+const SECTION_LABEL = 'font-body text-lg font-medium tracking-tight text-text-primary';
 const TH = 'px-3.5 py-2.5 text-left font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
 
 // Le fil d'Ariane porte l'invariant C4/BO-12 (retour vers /backoffice/orders) :

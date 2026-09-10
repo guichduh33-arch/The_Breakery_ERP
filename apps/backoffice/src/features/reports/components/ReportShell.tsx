@@ -13,7 +13,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { Card, EmptyState } from '@breakery/ui';
+import { Card, EmptyState } from '@/components/BackofficeUi.js';
 import type { EmptyStateProps } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
 

@@ -13,7 +13,8 @@
 
 import type { JSX, ReactNode } from 'react';
 import { Lock } from 'lucide-react';
-import { Card, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 
 export interface PanelCardProps {
@@ -56,8 +57,8 @@ export function PanelCard({
       className={cn('flex flex-col p-4 shadow-none', className)}
       data-testid={testId}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <SectionLabel as="h2" className="font-body text-lg font-medium normal-case tracking-tight text-text-primary">
           {title}
         </SectionLabel>
         {aside}

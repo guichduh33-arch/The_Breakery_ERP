@@ -15,7 +15,8 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 import { checkFeasibility } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';

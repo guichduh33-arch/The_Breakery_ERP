@@ -12,7 +12,8 @@
 // `discount_kind` radio.
 
 import { useState, type FormEvent, type JSX } from 'react';
-import { Button, Input, type PromotionFormValues } from '@breakery/ui';
+import { Input, type PromotionFormValues } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { emptyThresholdValues } from '../utils/emptyPromotionDefaults';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

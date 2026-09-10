@@ -10,7 +10,7 @@
 //   - Each line: product, qty > 0, unit_cost >= 0.
 
 import { useId, useMemo, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
 import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
@@ -57,6 +57,8 @@ export interface POFormDraftItem {
 }
 
 export interface POFormDraftProps {
+  /** Le rail est réservé à la page ; l'édition en dialogue reste empilée. */
+  layout?: 'stacked' | 'document';
   value:        POFormDraftValue;
   onChange:     (next: POFormDraftValue) => void;
   suppliers:    SupplierOption[];
@@ -123,6 +125,7 @@ export function POFormDraft({
   value, onChange, suppliers, products,
   onSubmit, submitting = false, error,
   submitLabel = 'Create purchase order',
+  layout = 'stacked',
 }: POFormDraftProps): JSX.Element {
   const reactId = useId();
   const subtotal = useMemo(() =>
@@ -173,6 +176,8 @@ export function POFormDraft({
       onSubmit={(e) => { e.preventDefault(); onSubmit?.(); }}
       className="space-y-4"
     >
+      <div className={layout === 'document' ? 'grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]' : ''}>
+      <div className="min-w-0 space-y-5 rounded-md border border-border-subtle bg-bg-elevated p-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="space-y-1 md:col-span-2">
           <label htmlFor={`${reactId}-supplier`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -361,7 +366,7 @@ export function POFormDraft({
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-bg-overlay text-sm">
+            {layout === 'stacked' && <tfoot className="bg-bg-overlay text-sm">
               <tr className="border-t border-border-subtle">
                 <td colSpan={4} className="px-3 py-1.5 text-right text-text-secondary">Subtotal</td>
                 <td className="px-3 py-1.5 text-right font-data tabular-nums">{formatCurrency(subtotal)}</td>
@@ -377,7 +382,7 @@ export function POFormDraft({
                 <td className="px-3 py-1.5 text-right font-data font-semibold tabular-nums">{formatCurrency(total)}</td>
                 <td />
               </tr>
-            </tfoot>
+            </tfoot>}
           </table>
         </div>
       </div>
@@ -403,6 +408,21 @@ export function POFormDraft({
           {error}
         </div>
       )}
+      </div>
+
+      {layout === 'document' && (
+        <aside aria-label="Purchase order summary" className="rounded-md border border-border-subtle bg-bg-elevated p-5 xl:sticky xl:top-0">
+          <h2 className="text-lg font-medium tracking-tight">Order summary</h2>
+          <p className="mt-1 text-xs text-text-muted">Calculated from the draft lines.</p>
+          <dl className="mt-5 space-y-3 text-sm">
+            <div className="flex flex-wrap justify-between gap-2"><dt className="text-text-secondary">Subtotal</dt><dd className="font-data tabular-nums">{formatCurrency(subtotal)}</dd></div>
+            <div className="flex flex-wrap justify-between gap-2"><dt className="text-text-secondary">VAT</dt><dd className="font-data tabular-nums">{formatCurrency(vatAmount)}</dd></div>
+            <div className="space-y-1 border-t border-border-subtle pt-3"><dt className="text-text-secondary">Total</dt><dd className="font-data text-xl font-medium tabular-nums">{formatCurrency(total)}</dd></div>
+          </dl>
+          <p className="mt-5 border-t border-border-subtle pt-4 text-sm text-text-secondary">Goods are received later from the order detail.</p>
+        </aside>
+      )}
+      </div>
 
       <div className="flex justify-end">
         <Button type="submit" size="sm" variant="ink" disabled={submitting}>

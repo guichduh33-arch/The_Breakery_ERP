@@ -8,15 +8,8 @@
 // `reports.inventory.read` at the route level.
 
 import { useMemo, useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import type { CsvColumn } from '@breakery/domain';
 import { formatCurrency, formatDateTimeShortWita, formatPercent, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';

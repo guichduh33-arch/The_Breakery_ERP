@@ -4,7 +4,7 @@
 //   • Top Petty Cash spend categories
 //   • Movements summary: bank deposits + boss withdrawals totals
 import { useQuery } from '@tanstack/react-query';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { supabase } from '@/lib/supabase.js';
 
 // `style: 'currency'` comme `WalletCard` et `WalletLedgerTable` : ce panneau

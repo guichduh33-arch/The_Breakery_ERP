@@ -60,7 +60,7 @@ export default function NewPurchaseOrderPage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-7xl">
       <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
         <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
         <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
@@ -78,6 +78,7 @@ export default function NewPurchaseOrderPage(): JSX.Element {
         subtitle="Draft a PO. Receipt (goods + JE posting) happens later from the detail page."
       />
       <POFormDraft
+        layout="document"
         value={value}
         onChange={setValue}
         suppliers={(suppliers.data ?? []).map((s) => ({ id: s.id, code: s.code, name: s.name }))}

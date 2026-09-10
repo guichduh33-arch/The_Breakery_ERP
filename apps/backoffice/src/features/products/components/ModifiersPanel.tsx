@@ -6,7 +6,7 @@
 // immediately; ingredients_to_deduct is captured for Phase 2.
 
 import { useEffect, useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { Plus } from 'lucide-react';
 import {
   validateModifierDraft,

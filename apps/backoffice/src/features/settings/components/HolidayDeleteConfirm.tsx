@@ -3,14 +3,8 @@
 // Session 13 / Phase 5.C — Confirms a soft-delete of a holiday row.
 
 import { useState } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogTitle } from '@/components/BackofficeUi.js';
 import { useDeleteHoliday, type HolidayRow } from '../hooks/useHolidays.js';
 
 export interface HolidayDeleteConfirmProps {

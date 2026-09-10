@@ -7,7 +7,8 @@
 import { useRef, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@breakery/ui';
+import { CardDescription, Badge } from '@breakery/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import { ProductsPageTabs } from '@/features/products/components/ProductsPageTabs.js';
 import { ImportDropzone } from '@/features/catalog-import/components/ImportDropzone.js';
 import { ImportSummaryCards } from '@/features/catalog-import/components/ImportSummaryCards.js';

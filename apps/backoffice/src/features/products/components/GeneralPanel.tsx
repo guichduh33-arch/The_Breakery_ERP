@@ -15,7 +15,8 @@
 // the Save action is disabled at the page level.
 
 import { useEffect, useState, type JSX } from 'react';
-import { Card, Currency, Input, Select } from '@breakery/ui';
+import { Currency, Input, Select } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { CategoryOption, ProductRow } from '../types.js';

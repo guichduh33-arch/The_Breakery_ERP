@@ -4,7 +4,7 @@
 
 import { AlertCircle, Box, CheckCircle2 } from 'lucide-react';
 import type { JSX } from 'react';
-import { KpiTile } from '@breakery/ui';
+import { KpiTile } from '@/components/BackofficeUi.js';
 import type { CombosKpis } from '../types.js';
 
 interface Props {

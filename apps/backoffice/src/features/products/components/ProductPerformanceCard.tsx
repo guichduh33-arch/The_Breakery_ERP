@@ -17,7 +17,8 @@
 
 import { Lock } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
-import { Card, Currency } from '@breakery/ui';
+import { Currency } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { useProductPerformance } from '../hooks/useProductPerformance.js';
 import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 

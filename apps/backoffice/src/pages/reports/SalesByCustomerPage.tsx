@@ -211,6 +211,7 @@ export default function SalesByCustomerPage(): JSX.Element {
     },
     {
       key: 'basket', label: 'Identified vs anonymous basket',
+      ...(identifiedBasket !== null ? { title: formatIdrFull(identifiedBasket) } : {}),
       value: identifiedBasket === null ? '—' : formatIdrCompact(identifiedBasket),
       note:  identifiedBasket !== null && anonymousBasket !== null && anonymousBasket > 0
         ? `vs ${formatIdrCompact(anonymousBasket)} — ×${(identifiedBasket / anonymousBasket).toLocaleString('id-ID', { maximumFractionDigits: 1 })}`

@@ -30,15 +30,8 @@ import {
   Search,
   Tag,
 } from 'lucide-react';
-import {
-  DataTable,
-  EmptyState,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { Tabs, TabsContent, type DataTableColumn } from '@breakery/ui';
+import { DataTable, EmptyState, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { useAuthStore } from '@/stores/authStore.js';

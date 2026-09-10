@@ -18,7 +18,8 @@
 import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Package, Settings2 } from 'lucide-react';
-import { EmptyState, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
 import { formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
 import { formatQuantity } from '@breakery/utils';

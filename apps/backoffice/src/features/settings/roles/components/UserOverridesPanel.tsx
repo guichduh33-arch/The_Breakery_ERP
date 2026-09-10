@@ -13,10 +13,8 @@
 // n'exporte ni Select ni RadioGroup.
 
 import { useMemo, useState, type JSX } from 'react';
-import {
-  Badge, Button,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
-} from '@breakery/ui';
+import { Badge, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { Plus, Trash2 } from 'lucide-react';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useUsersList } from '@/features/users/hooks/useUsersList.js';

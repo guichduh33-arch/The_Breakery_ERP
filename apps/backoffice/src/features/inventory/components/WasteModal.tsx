@@ -8,7 +8,8 @@
 import { useEffect, useId, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input, Select } from '@breakery/ui';
+import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { validateWaste } from '@breakery/domain';
 // `ProductTypeaheadRow` ne porte PAS l'unité du produit (la conversion depuis
 // `StockLevelRow` la laisse tomber) : toutes les quantités de cette modale

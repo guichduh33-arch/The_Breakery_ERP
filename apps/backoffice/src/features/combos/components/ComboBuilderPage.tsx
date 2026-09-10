@@ -11,7 +11,7 @@ import { useState, useEffect, type JSX } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Plus, Box, ArrowLeft } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
 import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
 import { useAuthStore } from '@/stores/authStore.js';

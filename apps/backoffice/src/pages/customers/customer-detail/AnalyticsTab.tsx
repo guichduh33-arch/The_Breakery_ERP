@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { useCustomerAnalytics } from '@/features/customers/hooks/useCustomerAnalytics.js';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE } from '@/features/reports/utils/chartColors.js';
 import { rp } from './shared.js';

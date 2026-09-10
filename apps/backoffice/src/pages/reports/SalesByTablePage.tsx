@@ -118,6 +118,7 @@ export default function SalesByTablePage(): JSX.Element {
     },
     {
       key: 'ticket', label: 'Avg table ticket',
+      ...(summary !== undefined && summary.orders > 0 ? { title: formatIdrFull(summary.revenue / summary.orders) } : {}),
       value: summary !== undefined && summary.orders > 0
         ? formatIdrCompact(summary.revenue / summary.orders)
         : '—',
@@ -125,6 +126,7 @@ export default function SalesByTablePage(): JSX.Element {
     },
     {
       key: 'per-seat', label: 'Revenue per seat',
+      ...(perSeat !== null ? { title: formatIdrFull(perSeat) } : {}),
       value: perSeat !== null ? formatIdrCompact(perSeat) : '—',
       note:  `over ${formatCount(summary?.active_seats ?? 0)} active seats`,
     },

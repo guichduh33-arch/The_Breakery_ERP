@@ -24,7 +24,8 @@ import { useMemo, useState, type JSX } from 'react';
 import {
   CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { EmptyState, selectClassName, cn } from '@breakery/ui';
+import { selectClassName, cn } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import { TrendingUp } from 'lucide-react';
 import {
   PURCHASE_PRICE_RISE_THRESHOLD_PCT, classifyPriceDelta, risingSpendSharePct,

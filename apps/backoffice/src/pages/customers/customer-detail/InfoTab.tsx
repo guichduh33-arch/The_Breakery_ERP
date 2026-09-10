@@ -5,7 +5,7 @@
 
 import { useState, type JSX } from 'react';
 import { Mail, Phone } from 'lucide-react';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { formatDate } from '@breakery/utils';
 import type { CustomerDetailRow } from '@/features/customers/hooks/useCustomerDetail.js';
 import { useUpdateRetailCreditLimit } from '@/features/customers/hooks/useUpdateRetailCreditLimit.js';

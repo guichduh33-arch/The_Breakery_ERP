@@ -12,7 +12,7 @@ import type { JSX } from 'react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
-import { EmptyState } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import {
   COGS_BASE, CHART_SERIES_OFF, CHART_GRID_STROKE, CHART_AXIS_STROKE,
   CHART_AXIS_TICK, CHART_TOOLTIP_STYLE, formatIdrCompact, formatIdrFull,

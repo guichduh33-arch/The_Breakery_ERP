@@ -15,7 +15,8 @@
 import { Box } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
-import { Card, CardContent, Currency } from '@breakery/ui';
+import { Currency } from '@breakery/ui';
+import { Card, CardContent } from '@/components/BackofficeUi.js';
 import { savingsPct } from '@breakery/domain';
 import type { Combo } from '../types.js';
 import { formatCurrency } from '@breakery/utils';

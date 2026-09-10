@@ -3,10 +3,8 @@
 // Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCancelOpname } from '../hooks/useOpnameMutations.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

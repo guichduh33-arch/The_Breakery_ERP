@@ -90,7 +90,7 @@ export function BackofficeLayout() {
       >
         <RouteErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
-            <Outlet />
+            <div className="bo-page"><Outlet /></div>
           </Suspense>
         </RouteErrorBoundary>
       </main>

@@ -1,4 +1,5 @@
 @import '@breakery/ui/tokens.css';
+@import './instrument.css';
 
 /* Audit cohérence 2026-08-01 — le Backoffice ne remappe plus les polices : il
  * partage la pile canonique du système (Inter corps, Playfair display,
@@ -59,7 +60,7 @@
   .login {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 38% 1fr;
+    grid-template-columns: minmax(280px, 30%) minmax(0, 1fr);
     background: var(--bg-base);
   }
   .login-ink {
@@ -114,11 +115,11 @@
   /* Hors production seulement — l'absence de la ligne EST le signal « prod ». */
   .login-marker dd.is-env { color: var(--ink-danger); }
 
-  .login-light { display: grid; place-items: center; padding: 44px; }
+  .login-light { display: grid; place-items: center; min-width: 0; padding: 32px; }
   .login-panel {
     display: grid;
-    grid-template-columns: 1fr 1px 300px;
-    gap: 34px;
+    grid-template-columns: minmax(0, 1fr) 1px minmax(230px, 300px);
+    gap: 24px;
     align-items: start;
     width: 100%;
     max-width: 748px;
@@ -149,11 +150,11 @@
   .login-row:hover { background: var(--surface-4); }
   .login-row:focus-visible { outline: 2px solid var(--gold-base); outline-offset: -2px; }
   .login-row[aria-pressed='true'] {
-    background: #fff;
+    background: var(--surface-2);
     border: 1px solid var(--border-strong);
     border-radius: 3px;
   }
-  .login-name { font-size: 15px; color: var(--text-primary); }
+  .login-name { font-size: var(--type-sm); color: var(--text-primary); }
   .login-row[aria-pressed='true'] .login-name { font-weight: 600; }
   .login-role {
     font-family: var(--font-mono);
@@ -183,7 +184,7 @@
     height: 56px;
     display: grid;
     place-items: center;
-    background: #fff;
+    background: var(--surface-2);
     border: 1px solid var(--border-strong);
     border-radius: 4px;
     font-family: var(--font-mono);

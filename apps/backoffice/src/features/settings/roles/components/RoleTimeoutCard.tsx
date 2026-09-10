@@ -12,7 +12,7 @@ import { useState, type JSX } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase.js';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { RBAC_MATRIX_KEY, rbacErrorMessage, type RbacRole } from '../hooks/useRbacMatrix.js';
 

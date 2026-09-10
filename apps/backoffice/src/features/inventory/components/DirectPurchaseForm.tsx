@@ -13,7 +13,8 @@
 // réception ne demande plus aucun choix d'emplacement.
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
-import { Button, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';

@@ -5,7 +5,7 @@
 //         recipes:{products_replaced}}
 
 import type { JSX } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import type { ImportReport } from '../hooks/useImportCatalog.js';
 
 interface Props {

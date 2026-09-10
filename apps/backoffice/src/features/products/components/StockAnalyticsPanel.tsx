@@ -27,7 +27,8 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { Badge, Card, EmptyState, cn } from '@breakery/ui';
+import { Badge, cn } from '@breakery/ui';
+import { Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, formatDateShortWita, formatNumber, formatQuantity } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
@@ -420,7 +421,7 @@ function Panel({ title, subtitle, icon: Icon, right, children }: {
         <div className="flex items-center gap-2">
           {Icon && <Icon className="h-4 w-4 text-gold" aria-hidden />}
           <div>
-            <SectionLabel as="h3" size="sm">{title}</SectionLabel>
+            <SectionLabel as="h2">{title}</SectionLabel>
             {subtitle && <p className="mt-0.5 text-xs text-text-muted">{subtitle}</p>}
           </div>
         </div>
@@ -447,7 +448,7 @@ function RecordCard({ title, icon: Icon, count, unit, empty, wide, children }: {
       <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-gold" aria-hidden />
-          <SectionLabel as="h3" size="sm">{title}</SectionLabel>
+          <SectionLabel as="h2">{title}</SectionLabel>
         </div>
         <span className="text-xs text-text-muted">{count} {unit}</span>
       </div>

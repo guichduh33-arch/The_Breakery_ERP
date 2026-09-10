@@ -3,7 +3,7 @@
 // One-click adjustment: posts an adjustment_gain (counted > GL) or adjustment_loss (counted < GL)
 // via useRecordCashMovement, which creates a balanced JE.
 import { useState } from 'react';
-import { Card, Button } from '@breakery/ui';
+import { Card, Button } from '@/components/BackofficeUi.js';
 import { todayIsoDate } from '@breakery/utils';
 import type { WalletBalance } from '../hooks/useCashWallets.js';
 import { useRecordCashMovement } from '../hooks/useRecordCashMovement.js';

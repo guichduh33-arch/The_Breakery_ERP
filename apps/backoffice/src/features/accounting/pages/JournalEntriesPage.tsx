@@ -3,7 +3,8 @@
 // Gate route : accounting.gl.read ; "+ New manual JE" gated par accounting.je.create_manual.
 
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
-import { Button, Input, Select, useDebouncedValue } from '@breakery/ui';
+import { Input, Select, useDebouncedValue } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, formatDateShortWita, monthStartIsoDate, todayIsoDate } from '@breakery/utils';
 import { Plus, ChevronRight } from 'lucide-react';
