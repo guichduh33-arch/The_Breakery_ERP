@@ -14,7 +14,10 @@ vi.mock('sonner', () => ({
 }));
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+beforeEach(() => {
+  mockFetch.mockReset();
+  vi.stubGlobal('fetch', mockFetch);
+});
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -43,7 +46,7 @@ describe('pay-existing smoke', () => {
     // ADR-013 D9 — le nonce discount est piloté par le PIN porté ; on repart PIN vide.
     const { clearManagerPin } = await import('@/features/discounts/managerPinHolder');
     clearManagerPin();
-    mocks.rpc.mockResolvedValue({ data: { order_number: '#T001' }, error: null });
+    mocks.rpc.mockResolvedValue({ data: { order_id: 'order-tablet-1', order_number: '#T001', subtotal: 35000, total: 35000, tax_amount: 0, change_given: 0 }, error: null });
     useCartStore.setState({
       cart: {
         items: [
