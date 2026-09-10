@@ -7,6 +7,6 @@
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.115.0",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   }
 }
