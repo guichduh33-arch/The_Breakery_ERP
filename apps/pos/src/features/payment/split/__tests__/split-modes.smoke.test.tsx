@@ -15,6 +15,10 @@ import type { ReactNode } from 'react';
 import type { CartItem, Tender } from '@breakery/domain';
 import { SplitPaymentFlow } from '../SplitPaymentFlow';
 
+vi.mock('@/features/settings/hooks/useEnabledPaymentMethods', () => ({
+  useEnabledPaymentMethods: () => new Set(['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit']),
+}));
+
 // S64 — PerPayerMethodStep now reads useEnabledPaymentMethods (React Query),
 // so every render needs a QueryClientProvider ancestor.
 function wrapper({ children }: { children: ReactNode }) {
