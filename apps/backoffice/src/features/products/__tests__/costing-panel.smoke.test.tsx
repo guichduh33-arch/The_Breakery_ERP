@@ -116,12 +116,12 @@ const PRODUCT = {
 
 // ── Render helper ─────────────────────────────────────────────────────────────
 
-function renderPanel() {
+function renderPanel(product = PRODUCT) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <CostingPanel product={PRODUCT} />
+        <CostingPanel product={product} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -130,6 +130,13 @@ function renderPanel() {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('CostingPanel [S39 WB2]', () => {
+  it('does not claim a 100% margin before the cost is known', () => {
+    renderPanel({ ...PRODUCT, cost_price: 0 });
+    const card = screen.getByTestId('costing-card-margin');
+    expect(card).toHaveTextContent('—');
+    expect(card).not.toHaveTextContent('100,0%');
+    expect(card).toHaveTextContent('Set a cost price to calculate margin.');
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mockState.hasPerm    = true;

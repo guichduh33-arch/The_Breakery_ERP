@@ -23,7 +23,8 @@ export interface CostingPanelProps {
 }
 
 function computeMargin(cost: number, retail: number): number | null {
-  if (retail <= 0) return null;
+  // Comme la liste catalogue, un coût nul représente un coût non renseigné.
+  if (cost <= 0 || retail <= 0 || !Number.isFinite(cost) || !Number.isFinite(retail)) return null;
   return ((retail - cost) / retail) * 100;
 }
 
@@ -107,6 +108,9 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
           <p className="font-mono text-lg font-semibold text-text-primary">
             {formatPercent(margin)}
           </p>
+          {product.cost_price <= 0 && (
+            <p className="mt-1 text-xs text-text-secondary">Set a cost price to calculate margin.</p>
+          )}
         </Card>
       </div>
 
