@@ -5882,10 +5882,10 @@ export type Database = {
       }
       view_b2b_invoices: {
         Row: {
-          b2b_delivered_at: string | null
           age_days: number | null
           amount_paid: number | null
           b2b_company_name: string | null
+          b2b_delivered_at: string | null
           customer_id: string | null
           customer_name: string | null
           invoice_date: string | null
@@ -6358,6 +6358,7 @@ export type Database = {
       close_cancelled_tablet_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: {
+          b2b_delivered_at: string | null
           created_at: string
           created_via: string
           customer_id: string | null
@@ -7842,6 +7843,7 @@ export type Database = {
       pickup_tablet_order: {
         Args: { p_order_id: string; p_session_id: string }
         Returns: {
+          b2b_delivered_at: string | null
           created_at: string
           created_via: string
           customer_id: string | null
@@ -8474,7 +8476,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_product_v3: {
+      update_product_v4: {
         Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }

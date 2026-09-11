@@ -350,6 +350,7 @@ export default function ProductsPage(): JSX.Element {
           // de la vue TABLE, dont les lignes ne sont pas des liens.
           <ProductsGrid
             rows={sorted}
+            isLoading={products.isLoading}
             parentIds={parentIds}
             page={page}
             onPage={setPage}

@@ -7,7 +7,7 @@
 //
 // URL: /backoffice/products/:productId
 
-import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Package } from 'lucide-react';
 import { EmptyState } from '@/components/BackofficeUi.js';
@@ -23,6 +23,8 @@ import { useProductDisplayStock } from '@/features/products/hooks/useProductDisp
 import { useUpdateProduct, type ProductUpdatePatch } from '@/features/products/hooks/useUpdateProduct.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
+import { Button } from '@breakery/ui';
 import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
 
 // Optimize — les neuf panneaux étaient importés statiquement, et le chunk de
@@ -67,6 +69,7 @@ export default function ProductDetailPage(): JSX.Element {
   const categories = useCategories();
   const updateProduct = useUpdateProduct();
   const canUpdate = useAuthStore((s) => s.hasPermission('products.update'));
+  const canUpdateRecipe = useAuthStore((s) => s.hasPermission('inventory.recipes.update'));
   // Harden — l'onglet actif vit dans l'URL, comme le compteur de la liste
   // (`Products.tsx`). La lecture unique au montage cassait trois gestes natifs :
   // F5 renvoyait sur le premier onglet, Retour éjectait de la fiche, et le
@@ -80,23 +83,55 @@ export default function ProductDetailPage(): JSX.Element {
     : DEFAULT_TAB;
   const setTab = (next: ProductDetailTab): void => { setTabParam(next); };
   const [patch, setPatch] = useState<ProductUpdatePatch>({});
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
+  const activeProductId = useRef(productId);
+  const draft = useMemo(() => product.data ? { ...product.data, ...patch } : null, [product.data, patch]);
 
   useEffect(() => {
+    activeProductId.current = productId;
     setPatch({});
-  }, [product.data?.id]);
+    setSaveWarning(null);
+  }, [productId]);
 
   const isDirty = useMemo(() => Object.keys(patch).length > 0, [patch]);
 
   function handleFieldChange(p: Partial<ProductRow>): void {
-    setPatch((prev) => ({ ...prev, ...(p as ProductUpdatePatch) }));
+    if (activeProductId.current !== productId) return;
+    setSaveWarning(null);
+    setPatch((prev) => {
+      const next = { ...prev, ...(p as ProductUpdatePatch) };
+      for (const key of Object.keys(next) as (keyof ProductUpdatePatch)[]) {
+        if (JSON.stringify(next[key]) === JSON.stringify(product.data?.[key])) delete next[key];
+      }
+      return next;
+    });
   }
 
   function handleSave(): void {
-    if (productId === undefined || !isDirty) return;
+    if (productId === undefined || !isDirty || !canUpdate || updateProduct.isPending || !draft) return;
+    if (!draft.name.trim() || !draft.sku.trim() || !Number.isFinite(draft.retail_price) || draft.retail_price < 0) {
+      setSaveWarning('Enter a name, a SKU and a retail price of zero or more.');
+      return;
+    }
+    setSaveWarning(null);
     updateProduct.mutate(
       { productId, patch },
       {
-        onSuccess: () => setPatch({}),
+        onSuccess: ({ ignored_fields }) => {
+          if (activeProductId.current !== productId) return;
+          if (ignored_fields.length > 0) {
+            setSaveWarning(`Some changes were not saved: ${ignored_fields.join(', ')}.`);
+          }
+          // Ne retire que les valeurs envoyées et acceptées : une édition plus
+          // récente (par exemple un upload terminé entre-temps) reste visible.
+          setPatch((current) => {
+            const next = { ...current };
+            for (const key of Object.keys(patch) as (keyof ProductUpdatePatch)[]) {
+              if (!ignored_fields.includes(key) && JSON.stringify(current[key]) === JSON.stringify(patch[key])) delete next[key];
+            }
+            return next;
+          });
+        },
       },
     );
   }
@@ -106,8 +141,14 @@ export default function ProductDetailPage(): JSX.Element {
   }
   if (product.error !== null && product.error !== undefined) {
     return (
-      <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load product: {(product.error).message}
+      <div className="space-y-4">
+        <Link to="/backoffice/products" className={`inline-flex items-center gap-1 text-sm text-text-secondary ${FOCUS_RING}`}>
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to products
+        </Link>
+        <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
+          Failed to load product: {(product.error).message}
+        </div>
+        <Button variant="secondary" onClick={() => { void product.refetch(); }}>Retry</Button>
       </div>
     );
   }
@@ -138,6 +179,7 @@ export default function ProductDetailPage(): JSX.Element {
         onSave={canUpdate ? handleSave : undefined}
         isSaving={updateProduct.isPending}
       />
+      {saveWarning && <div role="alert" className="rounded-md border border-red bg-red-soft p-3 text-sm text-red">{saveWarning}</div>}
       {updateProduct.error !== null && (
         <div
           role="alert"
@@ -172,9 +214,9 @@ export default function ProductDetailPage(): JSX.Element {
         <Suspense fallback={<PanelFallback />}>
         {tab === 'general'  && (
           <GeneralPanel
-            product={p}
+            product={draft ?? p}
             categories={categories.data ?? []}
-            readOnly={!canUpdate}
+            readOnly={!canUpdate || updateProduct.isPending}
             onChange={handleFieldChange}
             displayStockQty={displayStock.data ?? null}
           />
@@ -185,7 +227,7 @@ export default function ProductDetailPage(): JSX.Element {
             productId={p.id}
             productName={p.name}
             productUnit={p.unit}
-            readOnly={false}
+            readOnly={!canUpdateRecipe}
           />
         )}
         {tab === 'variants' && (

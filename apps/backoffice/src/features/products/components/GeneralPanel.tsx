@@ -160,10 +160,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
         <Card padding="md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Visual Asset</h2>
-            <span className="rounded-sm border border-gold px-3 py-0.5 text-xs font-semibold uppercase tracking-widest text-gold">
-              High Resolution
-            </span>
+            <h2 className="font-data text-sm font-bold uppercase tracking-widest text-text-muted">Product image</h2>
           </div>
           <ProductImageUploader
             productId={draft.id}

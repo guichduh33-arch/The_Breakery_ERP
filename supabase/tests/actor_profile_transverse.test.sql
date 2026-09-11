@@ -22,7 +22,7 @@
 --   T2  helper : anon et authenticated n'ont pas EXECUTE (helper interne)
 --   T3  create_category_v2      → audit category.create, actor = profil (RED : 23503)
 --   T4  create_product_v3       → audit product.create, actor = profil
---   T5  update_product_v3       → audit product.update, actor = profil
+--   T5  update_product_v4       → audit product.update, actor = profil
 --   T6  set_product_is_test_v2  → audit product.set_test_flag, actor = profil
 --   T7  upsert_section_v2       → audit section.create, actor = profil
 --   T8  delete_section_v2       → audit section.delete, actor = profil
@@ -82,7 +82,7 @@ BEGIN
   v_prod := create_product_v3(jsonb_build_object(
               'name', 'Actor product 0906', 'sku', 'ACTOR0906-P1',
               'category_id', v_cat->>'id', 'retail_price', 10000, 'unit', 'pcs'));
-  PERFORM update_product_v3((v_prod->'product'->>'id')::uuid, jsonb_build_object('name', 'Actor product 0906 renamed'));
+  PERFORM update_product_v4((v_prod->'product'->>'id')::uuid, jsonb_build_object('name', 'Actor product 0906 renamed'));
   PERFORM set_product_is_test_v2((v_prod->'product'->>'id')::uuid, TRUE);
   v_sec := upsert_section_v2(jsonb_build_object('code', 'ACT0906', 'name', 'Actor section', 'kind', 'warehouse'));
   PERFORM delete_section_v2((v_sec->>'id')::uuid);
@@ -166,7 +166,7 @@ SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'product.update'
      AND entity_id = current_setting('apt.prod')::uuid ORDER BY created_at DESC LIMIT 1),
   current_setting('apt.prof')::uuid,
-  'T5: update_product_v3 — actor_id = profil');
+  'T5: update_product_v4 — actor_id = profil');
 
 SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'product.set_test_flag'
@@ -291,7 +291,7 @@ SELECT is(
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
-      'update_category_v2','update_order_item_qty_v6','update_product_v3','update_variant_v2',
+      'update_category_v2','update_order_item_qty_v6','update_product_v4','update_variant_v2',
       'upsert_product_modifiers_v2','upsert_section_v2')),
   32::bigint,
   'T22: les 32 nouvelles versions existent');
@@ -305,7 +305,7 @@ SELECT is(
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
-      'update_category_v2','update_order_item_qty_v6','update_product_v3','update_variant_v2',
+      'update_category_v2','update_order_item_qty_v6','update_product_v4','update_variant_v2',
       'upsert_product_modifiers_v2','upsert_section_v2')
       AND has_function_privilege('anon', p.oid, 'EXECUTE')),
   0::bigint,
