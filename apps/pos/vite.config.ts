@@ -27,7 +27,8 @@ export default defineConfig({
     environment: 'jsdom',
     // Use forks pool to avoid Windows VirtualAlloc OOM with multiple threads
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
+    isolate: false,
     setupFiles: [],
     coverage: {
       provider: 'v8',
