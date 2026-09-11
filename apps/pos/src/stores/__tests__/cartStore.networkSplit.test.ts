@@ -151,13 +151,13 @@ describe('cartStore — network split + re-mount hardening', () => {
 
     it('initNetworkListener is a no-op without window (SSR safety)', () => {
       // Save & restore globals to simulate a non-browser env.
-      const originalWindow = global.window;
+      const originalWindow = globalThis.window;
       // @ts-expect-error — deliberate
-      delete global.window;
+      delete globalThis.window;
       const cleanup = initNetworkListener();
       expect(typeof cleanup).toBe('function');
       cleanup(); // doesn't throw
-      global.window = originalWindow;
+      globalThis.window = originalWindow;
     });
   });
 

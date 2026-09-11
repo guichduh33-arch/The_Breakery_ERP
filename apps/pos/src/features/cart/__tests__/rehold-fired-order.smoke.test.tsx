@@ -24,6 +24,9 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
 vi.mock('@/features/cart/hooks/useHoldFiredOrder', () => ({
   useHoldFiredOrder: () => ({ mutateAsync: holdFiredMutate, isPending: false }),
 }));
+vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
+  useStationPrinters: () => ({ data: new Map() }),
+}));
 vi.mock('@/features/discounts/hooks/useApplyCartDiscount', () => ({
   useApplyCartDiscount: () => ({
     discountModalOpen: false,

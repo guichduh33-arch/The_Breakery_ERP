@@ -41,7 +41,7 @@ vi.mock('@/lib/supabase', () => ({
 
 // ---- Shared helpers ----
 
-const originalFetch = global.fetch;
+const originalFetch = globalThis.fetch;
 
 function makeWrapper(): (props: { children: ReactNode }) => JSX.Element {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -114,7 +114,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  global.fetch = originalFetch;
+  globalThis.fetch = originalFetch;
   cleanup();
 });
 
@@ -140,7 +140,7 @@ describe('S25 useRefundOrder — manager-pin header + idempotency wiring', () =>
           manager: { id: 'm1', full_name: 'Manager', role_code: 'MANAGER' },
         }),
     });
-    global.fetch = fetchMock;
+    globalThis.fetch = fetchMock;
 
     const { useRefundOrder } = await import('../hooks/useRefundOrder');
     const Wrapper = makeWrapper();

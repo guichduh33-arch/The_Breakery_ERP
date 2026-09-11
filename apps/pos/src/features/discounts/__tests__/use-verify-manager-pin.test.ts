@@ -23,7 +23,7 @@ vi.mock('@/lib/accessToken', () => ({
 import { useVerifyManagerPin } from '../hooks/useVerifyManagerPin';
 import { getManagerPin, clearManagerPin } from '../managerPinHolder';
 
-const originalFetch = global.fetch;
+const originalFetch = globalThis.fetch;
 
 function mockFetchResponse(status: number, body: Record<string, unknown>): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -31,7 +31,7 @@ function mockFetchResponse(status: number, body: Record<string, unknown>): Retur
     status,
     json: () => Promise.resolve(body),
   });
-  global.fetch = fetchMock;
+  globalThis.fetch = fetchMock;
   return fetchMock;
 }
 
@@ -41,7 +41,7 @@ describe('useVerifyManagerPin (S43 raw fetch → verify-manager-pin EF)', () => 
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     vi.clearAllMocks();
   });
 
@@ -124,7 +124,7 @@ describe('useVerifyManagerPin (S43 raw fetch → verify-manager-pin EF)', () => 
   });
 
   it('network throw → unknown, PIN not stashed', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     const verify = useVerifyManagerPin();
     const result = await verify('123456');
