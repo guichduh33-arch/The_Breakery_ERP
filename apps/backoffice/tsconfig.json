@@ -6,7 +6,7 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] },
-    "types": ["vite/client", "@testing-library/jest-dom", "vitest/globals"]
+    "types": ["node", "vite/client", "@testing-library/jest-dom", "vitest/globals"]
   },
   "include": ["src/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
