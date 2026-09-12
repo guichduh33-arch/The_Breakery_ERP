@@ -64,6 +64,14 @@ describe('pageSlice', () => {
 });
 
 describe('ProductsGrid — pagination parity with the table', () => {
+  it('shows a loading state before an empty catalogue can be known', () => {
+    const { rerender } = render(<MemoryRouter><ProductsGrid rows={[]} isLoading /></MemoryRouter>);
+    expect(screen.getByRole('status', { name: 'Loading products' })).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByText('No products to show')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('list-page-range')).not.toBeInTheDocument();
+    rerender(<MemoryRouter><ProductsGrid rows={[]} /></MemoryRouter>);
+    expect(screen.getByText('No products to show')).toBeInTheDocument();
+  });
   it('renders one page of cards, not the whole filtered set', () => {
     render(<MemoryRouter><ProductsGrid rows={makeRows(40)} /></MemoryRouter>);
     expect(gridCards()).toBe(LIST_PAGE_SIZE_DEFAULT);

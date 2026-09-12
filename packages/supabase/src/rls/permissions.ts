@@ -89,6 +89,7 @@ export type PermissionCode =
   | 'inventory.opname.create'
   | 'inventory.opname.finalize'
   | 'inventory.sections.update'
+  | 'inventory.recipes.update'
   // POS display-stock isolation — vitrine counter management
   | 'display.read'
   | 'display.manage'
