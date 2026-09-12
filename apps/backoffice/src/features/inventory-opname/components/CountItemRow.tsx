@@ -15,11 +15,12 @@
 // ne disent pas la même chose : les séparer évite qu'un futur statut hérite du
 // mauvais comportement par accident.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/BackofficeUi.js';
 import { useSetOpnameCount } from '../hooks/useOpnameMutations.js';
 import type { OpnameItemRow } from '../hooks/useOpnameDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { parseStockQuantity } from '@/features/inventory/stockQuantity.js';
 
 export interface CountItemRowProps {
   countId:  string;
@@ -38,18 +39,22 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
   const [error, setError] = useState<string | null>(null);
 
   const setCountMutation = useSetOpnameCount();
+  const saving = useRef(false);
 
   function handleSubmit() {
-    const num = Number(count);
-    if (!Number.isFinite(num) || num < 0) {
-      setError('Enter a non-negative number.');
+    if (locked || setCountMutation.isPending || saving.current) return;
+    const num = parseStockQuantity(count);
+    if (num === null) {
+      setError('Enter a non-negative quantity with up to 3 decimal places.');
       return;
     }
     setError(null);
+    saving.current = true;
     setCountMutation.mutate(
       { countId, countItemId: item.id, countedQty: num, notes: notes.trim() === '' ? undefined : notes },
       {
         onError: (e) => { setError(e.message); },
+        onSettled: () => { saving.current = false; },
       },
     );
   }
@@ -73,8 +78,10 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             {item.counted_qty ?? '—'} {item.unit}
           </span>
         ) : (
+          <div className="flex items-center gap-2">
           <input
             type="number"
+            inputMode="decimal"
             step="0.001"
             min={0}
             value={count}
@@ -82,7 +89,11 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             onBlur={handleSubmit}
             className={`w-24 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
             aria-label={`Counted quantity for ${item.product?.name}`}
+            aria-invalid={error !== null}
+            disabled={setCountMutation.isPending}
           />
+          <span className="text-xs text-text-secondary">{item.unit}</span>
+          </div>
         )}
       </td>
       {revealed && (
@@ -110,6 +121,7 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             className={`w-full px-2 py-1 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Optional notes"
             aria-label={`Notes for ${item.product?.name}`}
+            disabled={setCountMutation.isPending}
           />
         )}
       </td>
@@ -124,7 +136,7 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             {setCountMutation.isPending ? '…' : 'Save'}
           </Button>
           {error !== null && (
-            <div className="text-xs text-danger mt-1">{error}</div>
+            <div role="alert" className="text-xs text-danger mt-1">{error}</div>
           )}
         </td>
       )}

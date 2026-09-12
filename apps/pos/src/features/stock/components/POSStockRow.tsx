@@ -12,19 +12,22 @@ import { cn, Button } from '@breakery/ui';
 import type { POSStockProductRow } from '../hooks/usePOSStockProducts';
 import { useStockQuickEntry } from '../hooks/useStockQuickEntry';
 import { StockGestureModals } from './StockGestureModals';
+import { isDisplayQuantity } from '../quantity';
 
 export interface POSStockRowProps {
   product: POSStockProductRow;
   isReceiving: boolean;
-  onReceive: (qty: number) => void;
-  onReturnToKitchen?: ((qty: number) => void) | undefined;
-  onWaste?: ((qty: number, reason: string) => void) | undefined;
-  onAdjust?: ((newQty: number, reason: string) => void) | undefined;
+  retryPending?: boolean;
+  onReceive?: ((qty: number) => Promise<boolean>) | undefined;
+  onReturnToKitchen?: ((qty: number) => Promise<boolean>) | undefined;
+  onWaste?: ((qty: number, reason: string) => Promise<boolean>) | undefined;
+  onAdjust?: ((newQty: number, reason: string) => Promise<boolean>) | undefined;
 }
 
 export function POSStockRow({
   product,
   isReceiving,
+  retryPending = false,
   onReceive,
   onReturnToKitchen,
   onWaste,
@@ -35,6 +38,7 @@ export function POSStockRow({
   const [expanded, setExpanded] = useState(false);
 
   const stockTextTone = isOut ? 'text-red-as-text' : isLow ? 'text-amber-warn' : 'text-text-primary';
+  const disabled = isReceiving || retryPending || !onReceive;
   const hasClosure = Boolean(onReturnToKitchen ?? onWaste ?? onAdjust);
 
   return (
@@ -93,19 +97,22 @@ export function POSStockRow({
         </div>
 
         {/* Stepper — 56px touch targets */}
+        {onReceive && <>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             aria-label="Decrease"
             onClick={() => entry.bump(-1)}
-            disabled={isReceiving}
+            disabled={disabled}
             className="h-touch-comfy w-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
           >
             <Minus className="h-5 w-5" aria-hidden />
           </button>
           <input
             type="number"
-            inputMode="numeric"
+            inputMode="decimal"
+          step="any"
+          disabled={disabled}
             min={0}
             value={qty}
             onChange={(e) => entry.setQty(Number(e.target.value) || 0)}
@@ -116,7 +123,7 @@ export function POSStockRow({
             type="button"
             aria-label="Increase"
             onClick={() => entry.bump(1)}
-            disabled={isReceiving}
+            disabled={disabled}
             className="h-touch-comfy w-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
           >
             <Plus className="h-5 w-5" aria-hidden />
@@ -125,10 +132,10 @@ export function POSStockRow({
 
         {/* Receive */}
         <Button
-          variant="gold"
+          variant="primary"
           size="md"
-          onClick={entry.submitReceive}
-          disabled={isReceiving || qty <= 0}
+          onClick={() => { void entry.submitReceive(); }}
+          disabled={disabled || qty <= 0 || !isDisplayQuantity(qty)}
           className="shrink-0 whitespace-nowrap"
         >
           Receive{qty > 0 ? ` +${qty}` : ''}
@@ -147,17 +154,18 @@ export function POSStockRow({
             aria-hidden
           />
         </button>
+        </>}
       </div>
 
       {/* Inline expansion — quick-add chips + closure gestures */}
-      {expanded && (
+      {onReceive && expanded && (
         <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
           {increments.map((n) => (
             <button
               key={n}
               type="button"
-              onClick={() => entry.submitPreset(n)}
-              disabled={isReceiving}
+              onClick={() => { void entry.submitPreset(n); }}
+              disabled={disabled}
               className="h-11 px-4 inline-flex items-center justify-center rounded-md border border-border-subtle text-sm font-semibold text-text-secondary hover:bg-bg-overlay hover:text-text-primary disabled:opacity-50 transition-colors"
             >
               +{n}
@@ -168,19 +176,19 @@ export function POSStockRow({
             <Button
               variant="secondary"
               size="md"
-              onClick={entry.submitReturn}
-              disabled={isReceiving || qty <= 0}
+              onClick={() => { void entry.submitReturn(); }}
+              disabled={disabled || qty <= 0 || !isDisplayQuantity(qty)}
             >
               Return to kitchen
             </Button>
           )}
           {onWaste && (
-            <Button variant="ghostDestructive" size="md" onClick={() => entry.setWasteOpen(true)} disabled={isReceiving}>
+            <Button variant="ghostDestructive" size="md" onClick={() => entry.setWasteOpen(true)} disabled={disabled}>
               Waste
             </Button>
           )}
           {onAdjust && (
-            <Button variant="ghost" size="md" onClick={() => entry.setAdjustOpen(true)} disabled={isReceiving}>
+            <Button variant="ghost" size="md" onClick={() => entry.setAdjustOpen(true)} disabled={disabled}>
               Adjust
             </Button>
           )}
@@ -192,6 +200,7 @@ export function POSStockRow({
           product={product}
           entry={entry}
           isPending={isReceiving}
+        locked={retryPending}
           hasWaste={Boolean(onWaste)}
           hasAdjust={Boolean(onAdjust)}
         />

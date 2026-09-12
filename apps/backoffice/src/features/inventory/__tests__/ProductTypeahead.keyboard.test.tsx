@@ -15,8 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProductTypeahead } from '../components/ProductTypeahead.js';
 
 const MOCK_PRODUCTS = [
-  { id: 'p-1', sku: 'BEV-AMER', name: 'Café Americano', current_stock: 100 },
-  { id: 'p-2', sku: 'BEV-LATT', name: 'Café Latte',     current_stock:  42 },
+  { id: 'p-1', sku: 'BEV-AMER', name: 'Café Americano', current_stock: 100, unit: 'pcs' },
+  { id: 'p-2', sku: 'BEV-LATT', name: 'Café Latte',     current_stock:  42, unit: 'pcs' },
 ];
 
 // Le motif `ilike` traverse le mock : la liste rétrécit réellement quand on
@@ -29,7 +29,7 @@ interface MockChain {
   select: () => MockChain;
   eq:     () => MockChain;
   is:     () => MockChain;
-  ilike:  (col: string, pattern: string) => MockChain;
+  or:     (filter: string) => MockChain;
   order:  () => MockChain;
   limit:  () => Promise<RpcResult>;
 }
@@ -39,11 +39,14 @@ vi.mock('@/lib/supabase.js', () => {
     select: () => chain,
     eq:     () => chain,
     is:     () => chain,
-    ilike:  (_col, pattern) => { state.pattern = pattern; return chain; },
+    or: (filter) => {
+      state.pattern = JSON.parse(filter.slice('name.ilike.'.length).split(',sku.ilike.')[0]!) as string;
+      return chain;
+    },
     order:  () => chain,
     limit:  () => {
       const needle = state.pattern.replaceAll('%', '').toLowerCase();
-      const data = MOCK_PRODUCTS.filter((p) => p.name.toLowerCase().includes(needle));
+      const data = MOCK_PRODUCTS.filter((p) => p.name.toLowerCase().includes(needle) || p.sku.toLowerCase().includes(needle));
       return Promise.resolve({ data, error: null });
     },
   };

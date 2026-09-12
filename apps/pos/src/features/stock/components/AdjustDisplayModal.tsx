@@ -5,9 +5,10 @@
 // + une raison (requise ≥ 3 chars, comme adjust_display_stock_v2), puis délègue
 // au callback onConfirm(newQty, reason).
 
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import { Button, CenterModal } from '@breakery/ui';
+import { isDisplayQuantity } from '../quantity';
 
 const MIN_REASON = 3;
 
@@ -19,7 +20,8 @@ export interface AdjustDisplayModalProps {
   /** Quantité vitrine actuelle — sert de valeur initiale. */
   currentQty: number;
   isPending: boolean;
-  onConfirm: (newQty: number, reason: string) => void;
+  locked?: boolean;
+  onConfirm: (newQty: number, reason: string) => Promise<boolean>;
 }
 
 export function AdjustDisplayModal({
@@ -29,33 +31,35 @@ export function AdjustDisplayModal({
   unit,
   currentQty,
   isPending,
+  locked = false,
   onConfirm,
 }: AdjustDisplayModalProps): JSX.Element {
-  const [newQty, setNewQty] = useState<number>(Math.max(0, currentQty));
+  const [newQty, setNewQty] = useState<number | ''>(Math.max(0, currentQty));
   const [reason, setReason] = useState<string>('');
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpen.current && !locked) {
       setNewQty(Math.max(0, currentQty));
       setReason('');
     }
-  }, [open, currentQty]);
+    wasOpen.current = open;
+  }, [open, currentQty, locked]);
 
   const reasonOk = reason.trim().length >= MIN_REASON;
   const unchanged = newQty === currentQty;
-  const canConfirm = newQty >= 0 && reasonOk && !unchanged && !isPending;
-  const delta = newQty - currentQty;
+  const canConfirm = newQty !== '' && isDisplayQuantity(newQty) && reasonOk && (!unchanged || locked) && !isPending;
+  const delta = Number(newQty) - currentQty;
 
-  function handleConfirm(): void {
+  async function handleConfirm(): Promise<void> {
     if (!canConfirm) return;
-    onConfirm(newQty, reason.trim());
-    onOpenChange(false);
+    if (await onConfirm(newQty, reason.trim())) onOpenChange(false);
   }
 
   return (
     <CenterModal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => { if (!isPending && !locked) onOpenChange(next); }}
       title={`Adjust display — ${productName}`}
       className="w-[min(440px,92vw)]"
       data-testid="adjust-display-modal"
@@ -77,32 +81,34 @@ export function AdjustDisplayModal({
             <button
               type="button"
               aria-label="Decrease"
-              onClick={() => setNewQty((q) => Math.max(0, q - 1))}
-              disabled={isPending}
+              onClick={() => setNewQty((q) => Math.max(0, Number(q) - 1))}
+              disabled={isPending || locked}
               className="h-touch-comfy w-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
             >
               <Minus className="h-4 w-4" aria-hidden />
             </button>
             <input
               type="number"
-              inputMode="numeric"
+              inputMode="decimal"
+              step="any"
+              disabled={isPending || locked}
               min={0}
               value={newQty}
-              onChange={(e) => setNewQty(Math.max(0, Number(e.target.value) || 0))}
+              onChange={(e) => setNewQty(e.target.value === '' ? '' : Number(e.target.value))}
               aria-label="New quantity"
               className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-input px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             />
             <button
               type="button"
               aria-label="Increase"
-              onClick={() => setNewQty((q) => q + 1)}
-              disabled={isPending}
+              onClick={() => setNewQty((q) => Number(q) + 1)}
+              disabled={isPending || locked}
               className="h-touch-comfy w-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
             >
               <Plus className="h-4 w-4" aria-hidden />
             </button>
           </div>
-          {!unchanged && (
+          {newQty !== '' && !unchanged && (
             <p className="text-xs text-text-muted tabular-nums">
               Delta: {delta > 0 ? `+${delta}` : delta} {unit}
             </p>
@@ -116,6 +122,7 @@ export function AdjustDisplayModal({
           <input
             id="adjust_reason"
             type="text"
+            disabled={isPending || locked}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. physical recount, data-entry error…"
@@ -124,17 +131,17 @@ export function AdjustDisplayModal({
         </section>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending}>
+          <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending || locked}>
             Cancel
           </Button>
           <Button
-            variant="gold"
+            variant="primary"
             size="lg"
-            onClick={handleConfirm}
+            onClick={() => { void handleConfirm(); }}
             disabled={!canConfirm}
             data-testid="adjust-display-confirm"
           >
-            {isPending ? 'Saving…' : `Adjust to ${newQty}`}
+            {isPending ? 'Saving…' : locked ? 'Retry same operation' : `Adjust to ${newQty}`}
           </Button>
         </div>
       </div>

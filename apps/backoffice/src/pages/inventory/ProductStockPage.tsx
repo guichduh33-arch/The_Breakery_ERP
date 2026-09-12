@@ -18,11 +18,11 @@
 import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Package, Settings2 } from 'lucide-react';
-import { cn } from '@breakery/ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent, Select } from '@breakery/ui';
 import { EmptyState } from '@/components/BackofficeUi.js';
 import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
 import { formatIdr, formatIdrShort } from '@/features/dashboard/utils/format.js';
-import { formatQuantity } from '@breakery/utils';
+import { formatStockQuantity as formatQuantity } from '@/features/inventory/stockQuantity.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
 import {
@@ -31,7 +31,7 @@ import {
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { PageHeader } from '@/components/PageHeader.js';
-import { FOCUS_RING } from '@/components/focusRing.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 
 const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
@@ -62,9 +62,9 @@ export default function ProductStockPage(): JSX.Element {
   }
   if (product.error !== null && product.error !== undefined) {
     return (
-      <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
+      <QueryErrorBanner onRetry={() => { void product.refetch(); }}>
         Failed to load product: {product.error.message}
-      </div>
+      </QueryErrorBanner>
     );
   }
   if (product.data === null || product.data === undefined) {
@@ -84,7 +84,7 @@ export default function ProductStockPage(): JSX.Element {
   }
 
   const p = product.data;
-  const d = dash.data;
+  const d = dash.isError ? undefined : dash.data;
   const a = analytics.data;
   const valueAtCost = d
     ? Math.round(Number(d.product.value_at_cost) || 0)
@@ -115,16 +115,16 @@ export default function ProductStockPage(): JSX.Element {
                 <label htmlFor="stock-days" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                   Window
                 </label>
-                <select
+                <Select
                   id="stock-days"
                   value={days}
                   onChange={(e) => { setDays(Number(e.target.value)); }}
-                  className={`h-9 rounded-md border border-border-strong bg-bg-input px-3 text-sm text-text-primary ${FOCUS_RING}`}
+                  className="w-auto"
                 >
                   {WINDOW_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
           }
@@ -172,67 +172,50 @@ export default function ProductStockPage(): JSX.Element {
         />
       </section>
 
-      {/* Tab strip */}
-      <div className="border-b border-border-subtle">
-        <nav role="tablist" aria-label="Product stock sections" className="flex flex-wrap gap-x-6">
-          {TABS.map((t) => {
-            const selected = t.id === tab;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => { setTab(t.id); }}
-                className={cn(
-                  'relative -mb-px py-3 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
-                  selected ? 'text-gold' : 'text-text-muted hover:text-text-primary',
-                )}
-              >
-                {t.label}
-                {selected && <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 bg-gold" />}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      <div data-testid={`stock-tab-${tab}`}>
-        {tab === 'stock' && (
-          <div className="space-y-6">
-            {d !== null && d !== undefined && (
-              <SalesVelocityChart data={d.sales_velocity_daily} unit={p.unit} />
-            )}
-          </div>
-        )}
-
-        {tab !== 'stock' && (
-          <AnalyticsTab
-            tab={tab}
-            isLoading={analytics.isLoading}
-            error={analytics.error}
-            data={a}
-          />
-        )}
-      </div>
+      {dash.isError && (
+        <QueryErrorBanner onRetry={() => { void dash.refetch(); }}>
+          Stock activity could not be loaded. Sales indicators are unavailable.
+        </QueryErrorBanner>
+      )}
+      <Tabs value={tab} onValueChange={(value) => { setTab(value as StockTab); }}>
+        <TabsList aria-label="Product stock sections" className="h-auto justify-start rounded-none border-b border-border-subtle bg-transparent p-0">
+          {TABS.map((t) => (
+            <TabsTrigger key={t.id} value={t.id}
+              className="rounded-none px-4 py-3 text-xs uppercase tracking-widest data-[state=active]:bg-transparent data-[state=active]:border-0 data-[state=active]:border-b-2 data-[state=active]:shadow-none">
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="stock" data-testid="stock-tab-stock">
+          {dash.isLoading ? <p role="status" className="py-8 text-sm text-text-secondary">Loading stock activity…</p>
+            : d ? <SalesVelocityChart data={d.sales_velocity_daily} unit={p.unit} />
+              : !dash.isError && <p className="py-8 text-sm text-text-secondary">No stock activity available.</p>}
+        </TabsContent>
+        {TABS.filter((t) => t.id !== 'stock').map((t) => (
+          <TabsContent key={t.id} value={t.id} data-testid={`stock-tab-${t.id}`}>
+            <AnalyticsTab tab={t.id as Exclude<StockTab, 'stock'>} isLoading={analytics.isLoading} error={analytics.error} data={a} onRetry={() => { void analytics.refetch(); }} />
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }
 
-function AnalyticsTab({ tab, isLoading, error, data }: {
+function AnalyticsTab({ tab, isLoading, error, data, onRetry }: {
   tab: Exclude<StockTab, 'stock'>;
   isLoading: boolean;
   error: Error | null;
   data: ReturnType<typeof useProductAnalytics>['data'];
+  onRetry: () => void;
 }): JSX.Element {
   if (isLoading) {
     return <div className="py-16 text-center text-sm text-text-secondary">Loading analytics…</div>;
   }
   if (error !== null && error !== undefined) {
     return (
-      <div role="alert" className="rounded-lg border border-red bg-red-soft p-3 text-sm text-red">
+      <QueryErrorBanner onRetry={onRetry}>
         Failed to load analytics: {error.message}
-      </div>
+      </QueryErrorBanner>
     );
   }
   if (data === null || data === undefined) {

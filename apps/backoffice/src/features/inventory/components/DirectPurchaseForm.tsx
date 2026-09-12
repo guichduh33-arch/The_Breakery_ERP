@@ -20,6 +20,7 @@ import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useInventoryReferenceData } from '../hooks/useInventoryReferenceData.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useRecordDirectPurchase,
@@ -101,7 +102,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
     const selectedUnit = p.defaultPurchaseUnit !== '' ? p.defaultPurchaseUnit : p.unit;
     setUnit(selectedUnit);
     const selectedFactor = p.unitOptions.find((option) => option.code === selectedUnit)?.factor ?? 1;
-    if (price === '' && p.cost_price !== null && p.cost_price > 0) setPrice(String(p.cost_price * selectedFactor));
+    setPrice(p.cost_price !== null && p.cost_price > 0 ? String(p.cost_price * selectedFactor) : '');
   }
 
   function changeUnit(nextUnit: string): void {
@@ -190,6 +191,10 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       noValidate
       className="max-w-2xl space-y-4 rounded-lg border border-border-subtle bg-bg-elevated p-6"
     >
+      {products.isError && <QueryErrorBanner onRetry={() => { void products.refetch(); }}>Products could not be loaded.</QueryErrorBanner>}
+      {refData.isError && <QueryErrorBanner onRetry={() => { void refData.refetch(); }}>Suppliers could not be loaded.</QueryErrorBanner>}
+      {(products.isLoading || refData.isLoading) && <p role="status" className="text-sm text-text-secondary">Loading products and suppliers…</p>}
+      {!refData.isLoading && !refData.isError && suppliers.length === 0 && <p role="status" className="text-sm text-text-secondary">No suppliers available. Add a supplier before recording a purchase.</p>}
       {formError !== null && (
         <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">{formError}</div>
       )}
@@ -230,6 +235,9 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         {/* Le descendant actif ne déplace pas le focus : sans annonce, l'apparition
             des résultats est muette pour un lecteur d'écran. */}
         <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
+        {pickerOpen && !products.isLoading && !products.isError && filtered.length === 0 && (
+          <p role="status" className="text-sm text-text-secondary">No raw materials match this search.</p>
+        )}
         {listOpen && (
           <ul id={keyboard.listboxId} role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-border-subtle bg-bg-elevated shadow-lg">
             {filtered.map((p, i) => (

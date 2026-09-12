@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useWasteStock.ts
 //
-// Calls `waste_stock_v1` RPC (session 12). Records a negative movement of
+// Calls `waste_stock_v2` RPC (session 12). Records a negative movement of
 // type `waste` and decrements `products.current_stock`. Server enforces
 // non-negative invariant.
 //
@@ -16,6 +16,8 @@ import { supabase } from '@/lib/supabase.js';
 import { STOCK_LEVELS_QUERY_KEY } from './useStockLevels.js';
 
 export type WasteStockErrorCode =
+  | 'idempotency_conflict'
+  | 'invalid_quantity'
   | 'forbidden'
   | 'quantity_must_be_positive'
   | 'product_not_found'
@@ -37,6 +39,8 @@ export interface WasteStockArgs {
 }
 
 function classify(message: string): WasteStockErrorCode {
+  if (message.includes('idempotency_conflict')) return 'idempotency_conflict';
+  if (message.includes('invalid_quantity')) return 'invalid_quantity';
   if (message.includes('forbidden'))                 return 'forbidden';
   if (message.includes('quantity_must_be_positive')) return 'quantity_must_be_positive';
   if (message.includes('insufficient_stock'))        return 'insufficient_stock';
@@ -48,7 +52,7 @@ export function useWasteStock() {
   const qc = useQueryClient();
   return useMutation<StockMovementRpcResult, WasteStockError, WasteStockArgs>({
     mutationFn: async ({ productId, quantity, reason, idempotencyKey }) => {
-      const { data, error } = await supabase.rpc('waste_stock_v1', {
+      const { data, error } = await supabase.rpc('waste_stock_v2', {
         p_product_id:      productId,
         p_quantity:        quantity,
         p_reason:          reason,

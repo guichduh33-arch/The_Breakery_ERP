@@ -4,7 +4,7 @@
 // Contract:
 //   - Quantity > current_stock is rejected client-side (disabled submit + inline error)
 //   - Reason preset "Other" reveals a textarea (3+ chars required)
-//   - Submit calls waste_stock_v1 with productId, quantity (positive), reason, idempotencyKey
+//   - Submit calls waste_stock_v2 with productId, quantity (positive), reason, idempotencyKey
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -18,7 +18,7 @@ const emptyChain = {
   select: () => emptyChain,
   is:     () => emptyChain,
   eq:     () => emptyChain,
-  ilike:  () => emptyChain,
+  or:     () => emptyChain,
   order:  () => emptyChain,
   limit:  () => Promise.resolve(emptyResult),
 };
@@ -87,6 +87,29 @@ describe('WasteModal', () => {
     expect(screen.getByLabelText(/^Reason$/i)).toHaveValue('Expired');
   });
 
+  it('preserves decimal quantities and units in the payload and confirmation', async () => {
+    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 1.875 }, error: null });
+    renderModal({ ...STOCK_ROW, unit: 'kg', current_stock: 2 });
+    fireEvent.change(screen.getByLabelText(/Quantity wasted.*kg/i), { target: { value: '0.125' } });
+    expect(screen.getByText(/2 kg → 1,875 kg/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Record waste' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('waste_stock_v2', expect.objectContaining({ p_quantity: 0.125 })));
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('0,125 kg')));
+  });
+
+  it('locks an uncertain waste and retries the same movement', async () => {
+    mockRpc.mockReturnValue({ data: null, error: { message: 'network unavailable' } });
+    renderModal(STOCK_ROW);
+    const quantity = screen.getByLabelText(/Quantity wasted/i);
+    fireEvent.change(quantity, { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Record waste' }));
+    await screen.findByRole('button', { name: 'Retry waste' });
+    expect(quantity).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry waste' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
+    expect(mockRpc.mock.calls[1]).toEqual(mockRpc.mock.calls[0]);
+  });
+
   it('Record waste button is disabled until qty within stock + preset selected', () => {
     renderModal(STOCK_ROW);
     const submit = screen.getByRole('button', { name: /Record waste|Recording/i });
@@ -124,7 +147,7 @@ describe('WasteModal', () => {
 
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('waste_stock_v1');
+    expect(call[0]).toBe('waste_stock_v2');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_quantity:   3,
@@ -148,7 +171,7 @@ describe('WasteModal', () => {
   it('previews the resulting stock, not the current one twice', () => {
     renderModal(STOCK_ROW);           // current_stock = 25
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
-    expect(screen.getByText(/25 → 22/)).toBeInTheDocument();
+    expect(screen.getByText(/25 pcs → 22 pcs/)).toBeInTheDocument();
     expect(screen.getByText(/−3/)).toBeInTheDocument();
   });
 
@@ -167,7 +190,7 @@ describe('WasteModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
 
     await waitFor(() => { expect(mockToast.success).toHaveBeenCalledTimes(1); });
-    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/3 × Waste Sample.*On hand: 22/);
+    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/3 pcs × Waste Sample.*On hand: 22 pcs/);
   });
 
   // Un rejeu ne doit pas se présenter comme une seconde perte enregistrée.

@@ -19,20 +19,23 @@ import { cn, Button } from '@breakery/ui';
 import type { POSStockProductRow } from '../hooks/usePOSStockProducts';
 import { useStockQuickEntry } from '../hooks/useStockQuickEntry';
 import { StockGestureModals } from './StockGestureModals';
+import { isDisplayQuantity } from '../quantity';
 
 export interface POSStockCardProps {
   product: POSStockProductRow;
   isReceiving: boolean;
-  onReceive: (qty: number) => void;
+  retryPending?: boolean;
+  onReceive?: ((qty: number) => Promise<boolean>) | undefined;
   /** Closure gestures (display-stock isolation). Optional — gated by display.manage upstream. */
-  onReturnToKitchen?: ((qty: number) => void) | undefined;
-  onWaste?: ((qty: number, reason: string) => void) | undefined;
-  onAdjust?: ((newQty: number, reason: string) => void) | undefined;
+  onReturnToKitchen?: ((qty: number) => Promise<boolean>) | undefined;
+  onWaste?: ((qty: number, reason: string) => Promise<boolean>) | undefined;
+  onAdjust?: ((newQty: number, reason: string) => Promise<boolean>) | undefined;
 }
 
 export function POSStockCard({
   product,
   isReceiving,
+  retryPending = false,
   onReceive,
   onReturnToKitchen,
   onWaste,
@@ -51,6 +54,7 @@ export function POSStockCard({
 
   const stockTextTone = isOut ? 'text-red-as-text' : isLow ? 'text-amber-warn' : 'text-text-primary';
 
+  const disabled = isReceiving || retryPending || !onReceive;
   const hasClosure = Boolean(onReturnToKitchen ?? onWaste ?? onAdjust);
 
   return (
@@ -112,19 +116,22 @@ export function POSStockCard({
       )}
 
       {/* Stepper row — 56px touch targets (h-touch-comfy) */}
+      {onReceive && <>
       <div className="flex items-center gap-2">
         <button
           type="button"
           aria-label="Decrease"
           onClick={() => entry.bump(-1)}
-          disabled={isReceiving}
+          disabled={disabled}
           className="h-touch-comfy w-touch-comfy shrink-0 inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
         >
           <Minus className="h-5 w-5" aria-hidden />
         </button>
         <input
           type="number"
-          inputMode="numeric"
+          inputMode="decimal"
+          step="any"
+          disabled={disabled}
           min={0}
           value={qty}
           onChange={(e) => entry.setQty(Number(e.target.value) || 0)}
@@ -135,7 +142,7 @@ export function POSStockCard({
           type="button"
           aria-label="Increase"
           onClick={() => entry.bump(1)}
-          disabled={isReceiving}
+          disabled={disabled}
           className="h-touch-comfy w-touch-comfy shrink-0 inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
         >
           <Plus className="h-5 w-5" aria-hidden />
@@ -148,14 +155,14 @@ export function POSStockCard({
           <PresetChip
             key={n}
             label={`+${n}`}
-            onClick={() => entry.submitPreset(n)}
-            disabled={isReceiving}
+            onClick={() => { void entry.submitPreset(n); }}
+            disabled={disabled}
           />
         ))}
       </div>
 
       {qty > 0 ? (
-        <Button variant="gold" size="md" onClick={entry.submitReceive} disabled={isReceiving} className="w-full">
+        <Button variant="primary" size="md" onClick={() => { void entry.submitReceive(); }} disabled={disabled || !isDisplayQuantity(qty)} className="w-full">
           Receive +{qty}
         </Button>
       ) : (
@@ -163,17 +170,18 @@ export function POSStockCard({
           Enter quantity
         </div>
       )}
+      </>}
 
       {/* Closure gestures (display-stock isolation) — only rendered when wired by the view. */}
       {hasClosure && (
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {onReturnToKitchen && (
             <Button
               variant="secondary"
               size="md"
-              onClick={entry.submitReturn}
-              disabled={isReceiving || qty <= 0}
-              className="flex-1"
+              onClick={() => { void entry.submitReturn(); }}
+              disabled={disabled || qty <= 0 || !isDisplayQuantity(qty)}
+              className="col-span-2 w-full"
             >
               Return to kitchen
             </Button>
@@ -183,8 +191,8 @@ export function POSStockCard({
               variant="ghostDestructive"
               size="md"
               onClick={() => entry.setWasteOpen(true)}
-              disabled={isReceiving}
-              className="flex-1"
+              disabled={disabled}
+              className="w-full"
             >
               Waste
             </Button>
@@ -194,8 +202,8 @@ export function POSStockCard({
               variant="ghost"
               size="md"
               onClick={() => entry.setAdjustOpen(true)}
-              disabled={isReceiving}
-              className="flex-1"
+              disabled={disabled}
+              className="w-full"
             >
               Adjust
             </Button>
@@ -207,6 +215,7 @@ export function POSStockCard({
         product={product}
         entry={entry}
         isPending={isReceiving}
+        locked={retryPending}
         hasWaste={Boolean(onWaste)}
         hasAdjust={Boolean(onAdjust)}
       />

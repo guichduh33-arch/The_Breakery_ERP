@@ -91,7 +91,7 @@ const SECTIONS: ReportSection[] = [
       // ADR-004 (acté le 2026-07-04), conséquence 2 : « retirer la page
       // /inventory/expiring et le rapport perishable-turnover de la
       // navigation ». The Breakery ne suit ni lots ni dates de péremption ; la
-      // péremption se déclare en perte (`waste_stock_v1`, raison `Expired`).
+      // péremption se déclare en perte (`waste_stock_v2`, raison `Expired`).
       // Une grille de tuiles cliquables EST une navigation, quel que soit son
       // nom — arbitrage du propriétaire, 2026-08-22.
       //

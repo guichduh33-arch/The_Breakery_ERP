@@ -1,5 +1,5 @@
 // supabase/tests/functions/waste-stock.test.ts
-// Session 12 — Live integration tests for waste_stock_v1 RPC.
+// Session 12 — Live integration tests for waste_stock_v2 RPC.
 //
 // Coverage:
 //   - Happy path (MANAGER, qty within stock, negative movement recorded)
@@ -15,7 +15,7 @@ import { loginAs, jwtClient } from './_helpers/auth';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v2 RPC — integration', () => {
   let managerToken: string;
   let productId:    string;
 
@@ -24,7 +24,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: p } = await admin.from('products')
       .select('id').eq('sku', 'BEV-AMER').single();
-    productId = p!.id;
+    productId = String(p!.id);
   });
 
   beforeEach(async () => {
@@ -34,11 +34,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
 
   it('manager happy path: decrement stock + insert negative movement', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await sb.rpc('waste_stock_v1', {
+    const { data, error } = await sb.rpc('waste_stock_v2', {
       p_product_id: productId,
       p_quantity:   8,
       p_reason:     'Expired stock thrown out',
-    });
+    }).returns<unknown>();
     expect(error).toBeNull();
     const result = data as { movement_id: string; new_current_stock: number };
     expect(Number(result.new_current_stock)).toBe(92);
@@ -55,7 +55,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
 
   it('manager: qty > current_stock → insufficient_stock', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('waste_stock_v1', {
+    const { error } = await sb.rpc('waste_stock_v2', {
       p_product_id: productId,
       p_quantity:   500,  // baseline is 100
       p_reason:     'Should fail: not enough on hand',
@@ -65,7 +65,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
 
   it('manager: reason missing/short → reason_required (from record_stock_movement_v1)', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('waste_stock_v1', {
+    const { error } = await sb.rpc('waste_stock_v2', {
       p_product_id: productId,
       p_quantity:   1,
       p_reason:     'no',
@@ -75,9 +75,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
 
   it('idempotency: same key on retry returns idempotent_replay=true, single row', async () => {
     const sb = jwtClient(managerToken);
-    const key = '00000000-0000-0000-0000-00000000cdef';
+    const key = crypto.randomUUID();
 
-    const r1 = await sb.rpc('waste_stock_v1', {
+    const r1 = await sb.rpc('waste_stock_v2', {
       p_product_id: productId,
       p_quantity:   5,
       p_reason:     'Waste idempotency',
@@ -86,10 +86,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
     expect(r1.error).toBeNull();
     const id1 = (r1.data as { movement_id: string }).movement_id;
 
-    const r2 = await sb.rpc('waste_stock_v1', {
+    const r2 = await sb.rpc('waste_stock_v2', {
       p_product_id: productId,
       p_quantity:   5,
-      p_reason:     'Waste idempotency retry',
+      p_reason:     'Waste idempotency',
       p_idempotency_key: key,
     });
     expect(r2.error).toBeNull();
@@ -108,7 +108,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
   it('manager: quantity <= 0 → quantity_must_be_positive', async () => {
     const sb = jwtClient(managerToken);
     for (const qty of [0, -3]) {
-      const { error } = await sb.rpc('waste_stock_v1', {
+      const { error } = await sb.rpc('waste_stock_v2', {
         p_product_id: productId,
         p_quantity:   qty,
         p_reason:     'Non-positive qty should be rejected',
@@ -119,7 +119,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — 
 
   it('manager: nonexistent product_id → product_not_found', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('waste_stock_v1', {
+    const { error } = await sb.rpc('waste_stock_v2', {
       p_product_id: '00000000-0000-0000-0000-000000000000',
       p_quantity:   1,
       p_reason:     'Bogus product id',
