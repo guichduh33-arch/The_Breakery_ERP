@@ -1,5 +1,5 @@
--- supabase/tests/get_audit_logs_v3.test.sql
--- pgTAP for get_audit_logs_v3 — the entity_id-aware audit log RPC powering the
+-- supabase/tests/get_audit_logs_v4.test.sql
+-- pgTAP for get_audit_logs_v4 — the entity_id-aware audit log RPC powering the
 -- product detail History tab, plus the business-date window added by the
 -- Reports audit of 2026-08-01 (R-10, migration 20260801000003).
 --
@@ -18,14 +18,14 @@ INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, metadata, crea
 
 -- T1: function exists with the 8-arg signature.
 SELECT has_function(
-  'public', 'get_audit_logs_v3',
-  ARRAY['timestamp with time zone','integer','uuid','text','text','uuid','text','text'],
-  'get_audit_logs_v3 exists with the entity_id + date-window signature'
+  'public', 'get_audit_logs_v4',
+  ARRAY['text','integer','uuid','text','text','uuid','text','text'],
+  'get_audit_logs_v4 exists with the entity_id + date-window signature'
 );
 
 -- T2: filtering by entity_id returns ONLY that product's rows.
 SELECT is(
-  (SELECT count(*)::int FROM public.get_audit_logs_v3(
+  (SELECT count(*)::int FROM public.get_audit_logs_v4(
      p_entity_type := 'product',
      p_entity_id   := '11111111-1111-1111-1111-111111111111'
    ) WHERE action LIKE 's_test.%'),
@@ -35,7 +35,7 @@ SELECT is(
 
 -- T3: the other product is excluded by the entity_id filter.
 SELECT is(
-  (SELECT count(*)::int FROM public.get_audit_logs_v3(
+  (SELECT count(*)::int FROM public.get_audit_logs_v4(
      p_entity_type := 'product',
      p_entity_id   := '11111111-1111-1111-1111-111111111111'
    ) WHERE entity_id = '22222222-2222-2222-2222-222222222222'),
@@ -45,7 +45,7 @@ SELECT is(
 
 -- T4: NULL entity_id keeps the historical behaviour (no per-entity restriction).
 SELECT ok(
-  (SELECT count(*)::int FROM public.get_audit_logs_v3(
+  (SELECT count(*)::int FROM public.get_audit_logs_v4(
      p_entity_type := 'product'
    ) WHERE action LIKE 's_test.%') >= 3,
   'NULL p_entity_id returns all product rows (backwards-compatible)'
@@ -55,16 +55,16 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege(
     'anon',
-    'public.get_audit_logs_v3(timestamp with time zone,integer,uuid,text,text,uuid,text,text)',
+    'public.get_audit_logs_v4(text,integer,uuid,text,text,uuid,text,text)',
     'EXECUTE'
   ),
-  'anon cannot execute get_audit_logs_v3'
+  'anon cannot execute get_audit_logs_v4'
 );
 
 -- T6: une fenetre metier qui couvre aujourd'hui ramene les lignes fixtures.
 -- Les 3 fixtures sont posees a now() / -1h / -2h, donc dans la journee locale.
 SELECT ok(
-  (SELECT count(*)::int FROM public.get_audit_logs_v3(
+  (SELECT count(*)::int FROM public.get_audit_logs_v4(
      p_limit      := 200,
      p_action     := 's_test.product.updated',
      p_date_start := (now() AT TIME ZONE (SELECT COALESCE(MAX(timezone), 'Asia/Makassar') FROM business_config WHERE id = 1))::date::text,
@@ -75,7 +75,7 @@ SELECT ok(
 
 -- T7: une fenetre passee lointaine n'en ramene aucune.
 SELECT is(
-  (SELECT count(*)::int FROM public.get_audit_logs_v3(
+  (SELECT count(*)::int FROM public.get_audit_logs_v4(
      p_limit      := 200,
      p_action     := 's_test.product.updated',
      p_date_start := '1999-01-01',

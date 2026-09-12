@@ -2,11 +2,11 @@
 //
 // Settings History view (ADR-006 décision 9) — merged, cursor-paginated feed
 // of `setting.update` (business_config via set_setting_vN) and
-// `b2b_settings.updated` audit entries, read through get_audit_logs_v3.
+// `b2b_settings.updated` audit entries, read through get_audit_logs_v4.
 // `audit_logs` is admin_read RLS-gated and the RPC is SECURITY INVOKER, so a
 // non-admin gets an empty feed by design (the route is also admin-gated).
 //
-// Two actions → two infinite queries merged client-side: get_audit_logs_v3
+// Two actions → two infinite queries merged client-side: get_audit_logs_v4
 // only takes a single `p_action` equality. Global ordering across the two
 // feeds is only guaranteed up to the older of the two page cursors, which is
 // acceptable at this volume (~40 rows per action after two months) — the
@@ -30,7 +30,7 @@ export interface SettingsHistoryEntry {
   changes:   SettingChange[]; // settings rows always carry exactly one
 }
 
-export const SETTINGS_HISTORY_QK = ['settings', 'history'] as const;
+export const SETTINGS_HISTORY_QK = ['settings', 'history', 'cursor-v4'] as const;
 const PAGE_SIZE = 50;
 
 interface RawAuditRow {
@@ -97,7 +97,7 @@ function useAuditFeed(action: string) {
       const cursor = pageParam as string | null;
       if (cursor !== null) args.p_cursor = cursor;
 
-      const { data, error } = await supabase.rpc('get_audit_logs_v3', args);
+      const { data, error } = await supabase.rpc('get_audit_logs_v4', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
         id:         Number(r.id),
@@ -109,7 +109,7 @@ function useAuditFeed(action: string) {
     getNextPageParam: (lastPage) => {
       if (lastPage.length < PAGE_SIZE) return undefined; // exhausted
       const last = lastPage[lastPage.length - 1];
-      return last ? last.created_at : undefined;
+      return last ? `${last.created_at}|${last.id}` : undefined;
     },
   });
 }

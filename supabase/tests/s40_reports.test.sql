@@ -12,8 +12,8 @@
 --   T7  : get_purchase_items_v1 MANAGER → 2 lines returned; p_supplier_id filter scopes correctly
 --   T8  : get_purchase_by_date_v1 CASHIER → 42501
 --   T9  : get_purchase_by_date_v1 MANAGER → summary.po_count = 1
---   T10 : get_purchase_by_supplier_v1 CASHIER → 42501
---   T11 : get_purchase_by_supplier_v1 MANAGER → share_pct = 100 for single supplier
+--   T10 : get_purchase_by_supplier_v2 CASHIER → 42501
+--   T11 : get_purchase_by_supplier_v2 MANAGER → share_pct = 100 for single supplier
 --   T12 : get_daily_sales_v3 end < start → P0001
 --   T13 : get_staff_performance_v1 CASHIER → 42501
 --   T14 : get_staff_performance_v1 MANAGER → cashier row orders_served >= 2 ; manager row voids_count >= 1
@@ -410,7 +410,7 @@ SELECT ok(
 );
 
 -- ============================================================
--- S40.5 — get_purchase_by_supplier_v1 (T10-T11)
+-- S40.5 — get_purchase_by_supplier_v2 (T10-T11)
 -- ============================================================
 
 -- T10 : CASHIER → 42501
@@ -420,7 +420,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_purchase_by_supplier_v1('2026-01-01', '2026-12-31');
+    PERFORM get_purchase_by_supplier_v2('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -428,7 +428,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t10_pass')::boolean,
-  'T10: get_purchase_by_supplier_v1 CASHIER raises 42501'
+  'T10: get_purchase_by_supplier_v2 CASHIER raises 42501'
 );
 
 -- T11 : if only 1 supplier in the window, share_pct = 100
@@ -445,7 +445,7 @@ BEGIN
   v_supplier_id := current_setting('breakery.t_s40_supplier_id')::uuid;
 
   -- Query a narrow window that only has our single test supplier
-  v_result := get_purchase_by_supplier_v1(
+  v_result := get_purchase_by_supplier_v2(
     (CURRENT_DATE - INTERVAL '7 days')::text,
     CURRENT_DATE::text
   );
@@ -478,7 +478,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t11_pass')::boolean,
-  'T11: get_purchase_by_supplier_v1 → share_pct sums correctly (100 if single supplier)'
+  'T11: get_purchase_by_supplier_v2 → share_pct sums correctly (100 if single supplier)'
 );
 
 -- ============================================================

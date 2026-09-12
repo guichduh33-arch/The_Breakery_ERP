@@ -6868,7 +6868,7 @@ export type Database = {
       }
       format_type_string: { Args: { "": string }; Returns: string }
       get_ar_aging_v1: { Args: never; Returns: Json }
-      get_audit_logs_v3: {
+      get_audit_logs_v4: {
         Args: {
           p_action?: string
           p_actor_id?: string
@@ -7259,7 +7259,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_purchase_by_supplier_v1: {
+      get_purchase_by_supplier_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }

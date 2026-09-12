@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/reports/hooks/usePurchaseBySupplier.ts
-// S40 Wave B2 — Query hook for get_purchase_by_supplier_v1 RPC.
+// S40 Wave B2 — Query hook for get_purchase_by_supplier_v2 RPC.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -13,6 +13,8 @@ export interface PurchaseBySupplierRow {
   received_count:  number;
   cancelled_count: number;
   avg_lead_days:   number | null;
+  lead_days_total: number;
+  lead_sample_count: number;
   share_pct:       number;
 }
 
@@ -30,7 +32,7 @@ export function usePurchaseBySupplier(params: UsePurchaseBySupplierParams) {
   return useQuery<PurchaseBySupplierData, Error>({
     queryKey: ['reports', 'purchase-by-supplier', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_purchase_by_supplier_v1', {
+      const { data, error } = await supabase.rpc('get_purchase_by_supplier_v2', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
@@ -52,6 +54,8 @@ export function usePurchaseBySupplier(params: UsePurchaseBySupplierParams) {
             received_count:  toNum(o.received_count),
             cancelled_count: toNum(o.cancelled_count),
             avg_lead_days:   o.avg_lead_days == null ? null : toNum(o.avg_lead_days),
+            lead_days_total: toNum(o.lead_days_total),
+            lead_sample_count: toNum(o.lead_sample_count),
             share_pct:       toNum(o.share_pct),
           };
         }),
