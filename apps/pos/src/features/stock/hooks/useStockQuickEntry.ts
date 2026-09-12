@@ -11,10 +11,10 @@ import { deriveStockIncrements } from '@breakery/domain';
 import type { POSStockProductRow } from './usePOSStockProducts';
 
 export interface StockQuickEntryCallbacks {
-  onReceive: (qty: number) => void;
-  onReturnToKitchen?: ((qty: number) => void) | undefined;
-  onWaste?: ((qty: number, reason: string) => void) | undefined;
-  onAdjust?: ((newQty: number, reason: string) => void) | undefined;
+  onReceive?: ((qty: number) => Promise<boolean>) | undefined;
+  onReturnToKitchen?: ((qty: number) => Promise<boolean>) | undefined;
+  onWaste?: ((qty: number, reason: string) => Promise<boolean>) | undefined;
+  onAdjust?: ((newQty: number, reason: string) => Promise<boolean>) | undefined;
 }
 
 export interface StockQuickEntry {
@@ -30,11 +30,11 @@ export interface StockQuickEntry {
   adjustOpen: boolean;
   setAdjustOpen: (open: boolean) => void;
   /** Immediate receive of a preset increment (no confirm step). */
-  submitPreset: (preset: number) => void;
-  submitReceive: () => void;
-  submitReturn: () => void;
-  confirmWaste: (wasteQty: number, reason: string) => void;
-  confirmAdjust: (newQty: number, reason: string) => void;
+  submitPreset: (preset: number) => Promise<boolean>;
+  submitReceive: () => Promise<boolean>;
+  submitReturn: () => Promise<boolean>;
+  confirmWaste: (wasteQty: number, reason: string) => Promise<boolean>;
+  confirmAdjust: (newQty: number, reason: string) => Promise<boolean>;
 }
 
 export function useStockQuickEntry(
@@ -56,34 +56,35 @@ export function useStockQuickEntry(
   const setQty = (v: number): void => setQtyRaw(Math.max(0, v));
   const bump = (delta: number): void => setQtyRaw((q) => Math.max(0, q + delta));
 
-  const submitPreset = (preset: number): void => {
-    if (preset <= 0) return;
-    cb.onReceive(preset);
-    setQtyRaw(0);
+  const submitPreset = async (preset: number): Promise<boolean> => {
+    if (preset <= 0 || !cb.onReceive) return false;
+    const ok = await cb.onReceive(preset);
+    if (ok) setQtyRaw(0);
+    return ok;
   };
-
-  const submitReceive = (): void => {
-    if (qty <= 0) return;
-    cb.onReceive(qty);
-    setQtyRaw(0);
+  const submitReceive = async (): Promise<boolean> => {
+    if (qty <= 0 || !cb.onReceive) return false;
+    const ok = await cb.onReceive(qty);
+    if (ok) setQtyRaw(0);
+    return ok;
   };
-
-  const submitReturn = (): void => {
-    if (qty <= 0 || !cb.onReturnToKitchen) return;
-    cb.onReturnToKitchen(qty);
-    setQtyRaw(0);
+  const submitReturn = async (): Promise<boolean> => {
+    if (qty <= 0 || !cb.onReturnToKitchen) return false;
+    const ok = await cb.onReturnToKitchen(qty);
+    if (ok) setQtyRaw(0);
+    return ok;
   };
-
-  const confirmWaste = (wasteQty: number, reason: string): void => {
-    if (!cb.onWaste) return;
-    cb.onWaste(wasteQty, reason);
-    setQtyRaw(0);
+  const confirmWaste = async (wasteQty: number, reason: string): Promise<boolean> => {
+    if (!cb.onWaste) return false;
+    const ok = await cb.onWaste(wasteQty, reason);
+    if (ok) { setQtyRaw(0); setWasteOpen(false); }
+    return ok;
   };
-
-  const confirmAdjust = (newQty: number, reason: string): void => {
-    if (!cb.onAdjust) return;
-    cb.onAdjust(newQty, reason);
-    setQtyRaw(0);
+  const confirmAdjust = async (newQty: number, reason: string): Promise<boolean> => {
+    if (!cb.onAdjust) return false;
+    const ok = await cb.onAdjust(newQty, reason);
+    if (ok) { setQtyRaw(0); setAdjustOpen(false); }
+    return ok;
   };
 
   return {

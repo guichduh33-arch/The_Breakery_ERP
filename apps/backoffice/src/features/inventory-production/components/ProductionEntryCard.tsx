@@ -1,48 +1,6 @@
 // apps/backoffice/src/features/inventory-production/components/ProductionEntryCard.tsx
 //
-// Left card of the redesigned Production page. Multi-row production entry for a
-// single station (section). Each row = a producible product (strictly filtered
-// to the station via product_sections) + quantity in a chosen unit + waste +
-// note. Submit is atomic via record_batch_production_v7 — any insufficient
-// stock rolls the whole batch back.
-//
-// Logic kept from the legacy form: required section, idempotency key, atomic
-// rollback, insufficient-stock surfacing. The entry's date/time may be
-// backdated (production_date only — the ledger/JEs stay at now()).
-//
-// Per-row notes are persisted at batch level (the RPC has no per-item note
-// field): non-empty notes are combined into the batch notes as "Product: note".
-//
-// ADR-008 D3 — une ligne qui déclare un raté doit en donner la cause. Le serveur
-// refuse le lot entier sinon (`waste_reason_required`, DETAIL nommant la ligne) ;
-// la garde côté table évite l'aller-retour.
-//
-// ADR-008 D4 — un stock insuffisant BLOQUE le lot. L'échappatoire (forçage) ne
-// s'affiche qu'après un refus, et seulement pour un utilisateur porteur de
-// `inventory.production.force_negative` : forcer reste un acte volontaire et
-// tracé, jamais un réglage laissé coché par défaut.
-//
-// LE PANNEAU EST ENCRÉ (2026-08-21). DESIGN.md § Page Archetypes, archétype 9
-// « Append-only log » : « le panneau de saisie est la SEULE surface encrée de la
-// page ». Il était une feuille blanche parmi d'autres, donc rien ne disait où
-// l'on écrit sur un écran dont tout le reste est en lecture seule. Quatre
-// conséquences, toutes tenues par `../inkPanel.js` :
-//
-//   · les premiers plans changent de FAMILLE — `ink-fg` / `ink-fg-muted` /
-//     `ink-fg-dim` / `ink-fg-sub` ;
-//   · la sémantique change de TEINTE — The Ink Semantics Rule : `ink-danger` et
-//     non `red`, qui tombe à 2,77:1 sur l'encre ;
-//   · le focus passe à `ink-gold` (7,79:1) — `gold` y vaut 2,70:1 ;
-//   · le bouton de soumission CÈDE l'encre. Il portait `TOOLBAR_BTN_PRIMARY`,
-//     c'est-à-dire un aplat `bg-ink` : posé sur un panneau encré il aurait été
-//     invisible ET aurait fait une seconde surface encrée (The One Ink Fill
-//     Rule). Il s'inverse en ivoire plein à libellé encre. Accessoirement, cette
-//     chaîne appartient au BANDEAU DE PAGE et à lui seul (DESIGN.md § Boutons,
-//     garde CI n° 8) : elle n'avait rien à faire dans une carte.
-//
-// Deux surfaces restent CLAIRES à l'intérieur, et c'est délibéré : la liste de
-// résultats de la recherche et l'aperçu d'ingrédients FLOTTENT ou RÉPONDENT —
-// ce sont des feuilles posées sur l'encre, pas des surfaces encrées de plus.
+// Saisie atomique par station ; quantités converties en unité de base.
 
 import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
@@ -59,9 +17,8 @@ import {
 import {
   useRecordBatchProduction,
   RecordBatchProductionError,
-  type BatchItemInput,
 } from '../hooks/useRecordBatchProduction.js';
-import type { WasteReason } from '../hooks/useRecordProduction.js';
+import { validateProductionEntry, type EntryRow } from '../productionEntryValidation.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { IngredientAggregatePreview } from './IngredientAggregatePreview.js';
 import {
@@ -73,16 +30,6 @@ interface Props {
   sectionName: string;
   /** Day the page is viewing — the entry date/time defaults to it (backdating). */
   selectedDate: Date;
-}
-
-interface EntryRow {
-  rowId: string;
-  product: ProducibleProduct;
-  unitCode: string;
-  quantity: string;
-  waste: string;
-  wasteReason: WasteReason | '';
-  note: string;
 }
 
 /** Format a Date as a `datetime-local` value in local time: YYYY-MM-DDTHH:mm. */
@@ -163,37 +110,11 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
     setForceNegative(false);
   }
 
-  /** Build the RPC items (quantities converted to the product base unit). */
-  const items: BatchItemInput[] = useMemo(() => {
-    return rows
-      .map((r): BatchItemInput | null => {
-        const qty = Number.parseFloat(r.quantity);
-        const factor = r.product.units.find((u) => u.code === r.unitCode)?.factor_to_base ?? 1;
-        if (!Number.isFinite(qty) || qty <= 0) return null;
-        const wasteBase = Number.parseFloat(r.waste);
-        const out: BatchItemInput = {
-          productId: r.product.id,
-          quantityProduced: qty * factor,
-        };
-        if (Number.isFinite(wasteBase) && wasteBase > 0) {
-          out.quantityWaste = wasteBase;
-          if (r.wasteReason !== '') out.wasteReason = r.wasteReason;
-        }
-        return out;
-      })
-      .filter((x): x is BatchItemInput => x !== null);
-  }, [rows]);
-
-  /** ADR-008 D3 — au moins une ligne déclare un raté sans en donner la cause. */
-  const wasteReasonMissing = useMemo(
-    () => rows.some((r) => {
-      const w = Number.parseFloat(r.waste);
-      return Number.isFinite(w) && w > 0 && r.wasteReason === '';
-    }),
-    [rows],
+  const { items, error: validationError } = useMemo(
+    () => validateProductionEntry(rows, productionAt),
+    [rows, productionAt],
   );
-
-  const canSubmit = items.length > 0 && !wasteReasonMissing && !recordMut.isPending;
+  const canSubmit = rows.length > 0 && validationError === null && !recordMut.isPending;
 
   function handleSubmit(): void {
     if (!canSubmit) return;
@@ -272,20 +193,6 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
     <Card padding="md" className="space-y-5 border-ink bg-ink text-ink-fg">
       {/* Header + search */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Titre de CARTE = rôle Title (DESIGN.md § Typography) : mono, 12 px,
-            capitales interlettrées — c'est ce que rend `SectionLabel`. Il
-            portait `font-display text-2xl`, deux défauts d'une même ligne :
-            `font-display` ne rend AUCUN serif sous ce thème (la classe ment,
-            garde CI n° 7), et 30 px passaient au-dessus du `<h1>` de la page
-            (23 px), inversant la hiérarchie. Le nombre n'est pas réécrit à la
-            main : le primitif lit la rampe.
-
-            Title et Label partagent le MÊME palier (12 px, `--type-xs`) — c'est
-            écrit au § Typography : « un écran ne peut pas s'appuyer sur un
-            contraste de taille entre le titre d'une carte et un en-tête de
-            colonne ». La distinction se fait donc par la couleur et la
-            position : ce titre est en `ink-fg`, les en-têtes de la table de
-            saisie en `ink-fg-dim`. */}
         <SectionLabel as="h2" size="xs" className="text-ink-fg">
           Production Entry <span className="text-ink-fg-dim">— {sectionName}</span>
         </SectionLabel>
@@ -390,6 +297,10 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             </label>
           )}
         </div>
+      )}
+
+      {rows.length > 0 && validationError !== null && (
+        <p role="alert" className="text-sm text-ink-danger">{validationError}</p>
       )}
 
       {/* Table */}

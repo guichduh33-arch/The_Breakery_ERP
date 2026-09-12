@@ -22,9 +22,10 @@
 
 import { Plus, Truck, Trash2, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Input, Select } from '@breakery/ui';
-import { formatCurrency, formatQuantity, businessDateIso, todayIsoDate } from '@breakery/utils';
+import { formatCurrency, businessDateIso, todayIsoDate } from '@breakery/utils';
+import { formatStockQuantity as formatQuantity } from '@/features/inventory/stockQuantity.js';
 import { type DataTableColumn } from '@breakery/ui';
 import { DataTable } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -349,13 +350,12 @@ export default function InventoryPage() {
       // interdisait l'ouverture dans un nouvel onglet.
       render: (r) => (
         <span className="flex items-center">
-          <a
-            href={`/backoffice/inventory/${r.product_id}`}
-            onClick={(e) => { e.preventDefault(); void navigate(`/backoffice/inventory/${r.product_id}`); }}
+          <Link
+            to={`/backoffice/inventory/${r.product_id}`}
             className="text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
             {r.name}
-          </a>
+          </Link>
           {r.track_inventory && (
             <LowStockBadge currentStock={r.current_stock} minStockThreshold={r.min_stock_threshold} />
           )}

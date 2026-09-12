@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
-const mocks = vi.hoisted(() => ({ mutate: vi.fn(), products: [] as PoProductRow[] }));
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({ useAllProductsForPO: () => ({ data: mocks.products }) }));
-vi.mock('../hooks/useInventoryReferenceData.js', () => ({ useInventoryReferenceData: () => ({ data: { suppliers: [{ id: 'supplier', name: 'Supplier', code: 'S' }] } }) }));
+const mocks = vi.hoisted(() => ({ mutate: vi.fn(), products: [] as PoProductRow[], productsError: false, suppliersError: false, retryProducts: vi.fn(), retrySuppliers: vi.fn() }));
+vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({ useAllProductsForPO: () => ({ data: mocks.products, isError: mocks.productsError, refetch: mocks.retryProducts }) }));
+vi.mock('../hooks/useInventoryReferenceData.js', () => ({ useInventoryReferenceData: () => ({ isError: mocks.suppliersError, refetch: mocks.retrySuppliers, data: { suppliers: [{ id: 'supplier', name: 'Supplier', code: 'S' }] } }) }));
 vi.mock('../hooks/useRecordDirectPurchase.js', async (original) => ({
   ...await original<object>(), useRecordDirectPurchase: () => ({ mutateAsync: mocks.mutate, isPending: false, progress: { poId: 'po-1', poNumber: 'PO-1' } }),
 }));
@@ -12,6 +12,8 @@ import DirectPurchaseForm from '../components/DirectPurchaseForm.js';
 describe('achat direct — prix et reprise', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.productsError = false;
+    mocks.suppliersError = false;
     mocks.products = [{ id: 'product', sku: 'FLOUR', name: 'Flour', unit: 'kg', cost_price: 10000,
       defaultPurchaseUnit: 'bag', unitOptions: [{ code: 'kg', factor: 1 }, { code: 'bag', factor: 25 }, { code: 'half', factor: 0.5 }] }];
   });
@@ -31,6 +33,27 @@ describe('achat direct — prix et reprise', () => {
     expect(screen.getByLabelText('Price / unit')).toHaveValue(12000);
     fireEvent.change(screen.getByLabelText('Purchase unit'), { target: { value: 'half' } });
     expect(screen.getByLabelText('Price / unit')).toHaveValue(6000);
+  });
+  it('remplace le prix lors du changement de produit et efface un coût absent', () => {
+    mocks.products.push({ ...mocks.products[0]!, id: 'salt', sku: 'SALT', name: 'Salt', cost_price: 2000, defaultPurchaseUnit: 'kg' });
+    mocks.products.push({ ...mocks.products[0]!, id: 'water', sku: 'WATER', name: 'Water', cost_price: null });
+    render(<DirectPurchaseForm />); selectProduct();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Product' }), { target: { value: 'Salt' } });
+    fireEvent.mouseDown(screen.getByRole('option', { name: /Salt/ }));
+    expect(screen.getByLabelText('Price / unit')).toHaveValue(2000);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Product' }), { target: { value: 'Water' } });
+    fireEvent.mouseDown(screen.getByRole('option', { name: /Water/ }));
+    expect(screen.getByLabelText('Price / unit')).toHaveValue(null);
+  });
+  it('affiche les deux erreurs de chargement avec une reprise indépendante', () => {
+    mocks.productsError = true;
+    mocks.suppliersError = true;
+    render(<DirectPurchaseForm />);
+    expect(screen.getByText('Products could not be loaded.')).toBeInTheDocument();
+    expect(screen.getByText('Suppliers could not be loaded.')).toBeInTheDocument();
+    screen.getAllByRole('button', { name: /try again/i }).forEach((button) => fireEvent.click(button));
+    expect(mocks.retryProducts).toHaveBeenCalledOnce();
+    expect(mocks.retrySuppliers).toHaveBeenCalledOnce();
   });
   it('verrouille les champs et réessaie avec la même clé et le même contenu après erreur', async () => {
     mocks.mutate.mockRejectedValue(new Error('response lost'));

@@ -1,7 +1,7 @@
 -- supabase/tests/adjustment_je_emit.test.sql
 --
 -- Audit stock 2026-07-27 (Q1) — le movement_type legacy 'adjustment'
--- (delta signé émis par adjust_stock_v1) émet désormais une JE via
+-- (delta signé émis par adjust_stock_v2) émet désormais une JE via
 -- tr_stock_movement_je (migration 20260727000246).
 --
 -- Runner : MCP execute_sql (enveloppe BEGIN … ROLLBACK), pas de runner local.

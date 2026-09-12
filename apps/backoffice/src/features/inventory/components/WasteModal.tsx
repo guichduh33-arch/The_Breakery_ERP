@@ -11,10 +11,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { validateWaste } from '@breakery/domain';
-// `ProductTypeaheadRow` ne porte PAS l'unité du produit (la conversion depuis
-// `StockLevelRow` la laisse tomber) : toutes les quantités de cette modale
-// passent donc `null` — on ne suppose pas « pcs » sur un produit au poids.
-import { formatQuantity } from '@breakery/utils';
+import { formatStockQuantity as formatQuantity, parseStockQuantity } from '../stockQuantity.js';
 import { useWasteStock, WasteStockError } from '../hooks/useWasteStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
@@ -33,7 +30,7 @@ const PRESETS: readonly ReasonPreset[] = ['Expired', 'Damaged', 'Spoiled', 'Othe
 const MAX_REASON = 500;
 
 function stockLevelToTypeaheadRow(row: StockLevelRow): ProductTypeaheadRow {
-  return { id: row.product_id, sku: row.sku, name: row.name, current_stock: row.current_stock };
+  return { id: row.product_id, sku: row.sku, name: row.name, current_stock: row.current_stock, unit: row.unit };
 }
 
 export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): JSX.Element {
@@ -54,12 +51,14 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
   const [preset, setPreset] = useState<ReasonPreset>('Expired');
   const [otherReason, setOtherReason] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [attemptLocked, setAttemptLocked] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
 
   useEffect(() => {
     if (open) {
       setProduct(initialProduct !== undefined ? stockLevelToTypeaheadRow(initialProduct) : null);
       setQty('');
+      setAttemptLocked(false);
       setPreset('Expired');
       setOtherReason('');
       setFormError(null);
@@ -70,7 +69,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialProduct?.product_id]);
 
-  const numericQty = Number.parseFloat(qty);
+  const numericQty = parseStockQuantity(qty) ?? Number.NaN;
   const isQtyPositive = Number.isFinite(numericQty) && numericQty > 0;
   const isQtyWithinStock = product !== null ? numericQty <= product.current_stock : false;
   const isQtyValid = isQtyPositive && isQtyWithinStock;
@@ -81,6 +80,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
   const canSubmit = product !== null && isQtyValid && isReasonValid && !wasteMut.isPending;
 
   function handleClose(): void {
+    if (attemptLocked || wasteMut.isPending) return;
     setFormError(null);
     onClose();
   }
@@ -102,6 +102,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
     }
 
     setFormError(null);
+    setAttemptLocked(true);
     try {
       const res = await wasteMut.mutateAsync({
         productId:      product.id,
@@ -117,13 +118,21 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
         toast.info(`Already recorded — ${product.name} was not decremented twice.`);
       } else {
         toast.success(
-          `Waste recorded — ${formatQuantity(numericQty, null)} × ${product.name}. On hand: ${formatQuantity(res.new_current_stock, null)}.`,
+          `Waste recorded — ${formatQuantity(numericQty, product.unit)} × ${product.name}. On hand: ${formatQuantity(res.new_current_stock, product.unit)}.`,
         );
       }
-      handleClose();
+      setAttemptLocked(false);
+      onClose();
     } catch (err) {
       if (err instanceof WasteStockError) {
+        if (err.code !== 'unknown' && err.code !== 'idempotency_conflict') setAttemptLocked(false);
         switch (err.code) {
+          case 'idempotency_conflict':
+            setFormError('This request key belongs to different details. Check movement history before starting another operation.');
+            break;
+          case 'invalid_quantity':
+            setFormError('Enter a valid quantity with up to 3 decimal places.');
+            break;
           case 'forbidden':
             setFormError('You no longer have permission to record waste. Please refresh.');
             break;
@@ -131,7 +140,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             setFormError('Quantity must be greater than zero.');
             break;
           case 'insufficient_stock':
-            setFormError(`Only ${formatQuantity(product.current_stock, null)} in stock — stock changed elsewhere. Refresh and retry.`);
+            setFormError(`Only ${formatQuantity(product.current_stock, product.unit)} in stock — stock changed elsewhere. Refresh and retry.`);
             void qc.invalidateQueries({ queryKey: STOCK_LEVELS_QUERY_KEY });
             break;
           case 'product_not_found':
@@ -166,6 +175,10 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             </div>
           )}
 
+          {attemptLocked && !wasteMut.isPending && (
+            <p role="status" className="text-sm text-text-secondary">Details are locked. Retry sends the same request; check movement history before starting another operation.</p>
+          )}
+          <fieldset disabled={attemptLocked || wasteMut.isPending} className="space-y-4">
           {!isLockedProduct && (
             <div className="space-y-1">
               <label htmlFor={productInputId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -184,14 +197,14 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             <div className="text-sm text-text-secondary">
               Current stock:{' '}
               <span className="font-mono tabular-nums text-text-primary">
-                {formatQuantity(product.current_stock, null)}
+                {formatQuantity(product.current_stock, product.unit)}
               </span>
             </div>
           )}
 
           <div className="space-y-1">
             <label htmlFor={qtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-              Quantity wasted
+              Quantity wasted {product?.unit ? `(${product.unit})` : ''}
             </label>
             <Input
               id={qtyId}
@@ -211,7 +224,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             )}
             {qty !== '' && isQtyPositive && product !== null && !isQtyWithinStock && (
               <p id={qtyErrId} className="text-red-as-text text-xs">
-                Cannot exceed current stock ({formatQuantity(product.current_stock, null)}).
+                Cannot exceed current stock ({formatQuantity(product.current_stock, product.unit)}).
               </p>
             )}
           </div>
@@ -223,9 +236,9 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             <div className="text-sm text-text-secondary">
               After this:{' '}
               <span className="font-mono tabular-nums text-text-primary">
-                {formatQuantity(product.current_stock, null)} → {formatQuantity(product.current_stock - numericQty, null)}
+                {formatQuantity(product.current_stock, product.unit)} → {formatQuantity(product.current_stock - numericQty, product.unit)}
               </span>{' '}
-              <span className="font-mono tabular-nums text-red-as-text">(−{formatQuantity(numericQty, null)})</span>
+              <span className="font-mono tabular-nums text-red-as-text">(−{formatQuantity(numericQty, product.unit)})</span>
             </div>
           )}
 
@@ -275,10 +288,11 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             movement, never by editing this one.
           </p>
 
+          </fieldset>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={handleClose} disabled={attemptLocked || wasteMut.isPending}>Cancel</Button>
             <Button type="submit" variant="ink" disabled={!canSubmit}>
-              {wasteMut.isPending ? 'Recording…' : 'Record waste'}
+              {wasteMut.isPending ? 'Recording…' : attemptLocked ? 'Retry waste' : 'Record waste'}
             </Button>
           </div>
         </form>

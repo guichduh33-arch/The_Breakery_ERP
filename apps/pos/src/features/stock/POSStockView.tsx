@@ -21,50 +21,25 @@
 //
 // Reachable at `/pos/stock`. Triggered from SideMenuDrawer "Cafe Stock".
 
-import { useMemo, useRef, useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, LayoutGrid, List, Search, Settings, Package } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button, cn, EmptyState } from '@breakery/ui';
-import { usePOSStockProducts, type POSStockProductRow } from './hooks/usePOSStockProducts';
-import { usePOSReceiveStock, POSReceiveStockError } from './hooks/usePOSReceiveStock';
-import { useReturnToKitchen, DisplayGestureError } from './hooks/useReturnToKitchen';
-import { useWasteDisplay } from './hooks/useWasteDisplay';
-import { useAdjustDisplay } from './hooks/useAdjustDisplay';
+import { usePOSStockProducts } from './hooks/usePOSStockProducts';
+import { useDisplayStockGestures } from './hooks/useDisplayStockGestures';
 import { POSStockCard } from './components/POSStockCard';
 import { POSStockRow } from './components/POSStockRow';
 import { POSStockCategoriesSettings } from './components/POSStockCategoriesSettings';
 import { useAuthStore } from '@/stores/authStore';
 
 const STOCK_VIEW_KEY = 'pos-stock-view';
-const PERMISSION_MSG = 'You do not have permission to manage display stock.';
 
 export default function POSStockView(): JSX.Element {
   const navigate = useNavigate();
   const products = usePOSStockProducts();
-  const receive = usePOSReceiveStock();
-  const returnToKitchen = useReturnToKitchen();
-  const wasteDisplay = useWasteDisplay();
-  const adjustDisplay = useAdjustDisplay();
   const hasDisplayManage = useAuthStore((s) => s.hasPermission('display.manage'));
   const hasInventoryManage = useAuthStore((s) => s.hasPermission('settings.update'));
-
-  // Idempotency keys, one per (gesture, product), stable until the gesture
-  // succeeds. A lost response + re-tap replays the same server operation
-  // instead of doubling it; the key rotates only once the server confirmed.
-  const gestureKeys = useRef(new Map<string, string>());
-  function gestureKey(kind: string, productId: string): string {
-    const mapKey = `${kind}:${productId}`;
-    let key = gestureKeys.current.get(mapKey);
-    if (key === undefined) {
-      key = crypto.randomUUID();
-      gestureKeys.current.set(mapKey, key);
-    }
-    return key;
-  }
-  function rotateGestureKey(kind: string, productId: string): void {
-    gestureKeys.current.delete(`${kind}:${productId}`);
-  }
+  const gestures = useDisplayStockGestures(hasDisplayManage);
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -87,12 +62,6 @@ export default function POSStockView(): JSX.Element {
   // useMemo : `products.data ?? []` créait un tableau neuf à chaque render et
   // invalidait les 3 useMemo dérivés (lint react-hooks/exhaustive-deps).
   const rows = useMemo(() => products.data ?? [], [products.data]);
-  const isMutating =
-    receive.isPending ||
-    returnToKitchen.isPending ||
-    wasteDisplay.isPending ||
-    adjustDisplay.isPending;
-
   // KPI counts
   const counts = useMemo(() => {
     let out = 0;
@@ -125,89 +94,6 @@ export default function POSStockView(): JSX.Element {
       return r.name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q);
     });
   }, [rows, search, activeCategory, enabledCategories]);
-
-  function handleReceive(product: POSStockProductRow, qty: number): void {
-    if (!hasDisplayManage) {
-      toast.error(PERMISSION_MSG);
-      return;
-    }
-    if (qty <= 0) return;
-    receive.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: gestureKey('receive', product.id), reason: 'pos_mise_en_vitrine' },
-      {
-        onSuccess: () => {
-          rotateGestureKey('receive', product.id);
-          toast.success(`${product.name}: +${qty} ${product.unit} to display`);
-        },
-        onError: (err: unknown) => {
-          const e = err instanceof POSReceiveStockError ? err : null;
-          toast.error(`Receive failed: ${e?.code ?? 'unknown'}`);
-        },
-      },
-    );
-  }
-
-  function handleReturnToKitchen(product: POSStockProductRow, qty: number): void {
-    if (!hasDisplayManage) {
-      toast.error(PERMISSION_MSG);
-      return;
-    }
-    if (qty <= 0) return;
-    returnToKitchen.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: gestureKey('return', product.id), reason: 'pos_retour_cuisine' },
-      {
-        onSuccess: () => {
-          rotateGestureKey('return', product.id);
-          toast.success(`${product.name}: −${qty} ${product.unit} returned to kitchen`);
-        },
-        onError: (err: unknown) => {
-          const e = err instanceof DisplayGestureError ? err : null;
-          toast.error(`Return to kitchen failed: ${e?.code ?? 'unknown'}`);
-        },
-      },
-    );
-  }
-
-  function handleWaste(product: POSStockProductRow, qty: number, reason: string): void {
-    if (!hasDisplayManage) {
-      toast.error(PERMISSION_MSG);
-      return;
-    }
-    if (qty <= 0) return;
-    wasteDisplay.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: gestureKey('waste', product.id), reason },
-      {
-        onSuccess: () => {
-          rotateGestureKey('waste', product.id);
-          toast.success(`${product.name}: −${qty} ${product.unit} waste`);
-        },
-        onError: (err: unknown) => {
-          const e = err instanceof DisplayGestureError ? err : null;
-          toast.error(`Waste failed: ${e?.code ?? 'unknown'}`);
-        },
-      },
-    );
-  }
-
-  function handleAdjust(product: POSStockProductRow, newQty: number, reason: string): void {
-    if (!hasDisplayManage) {
-      toast.error(PERMISSION_MSG);
-      return;
-    }
-    adjustDisplay.mutate(
-      { productId: product.id, newQty, reason, idempotencyKey: gestureKey('adjust', product.id) },
-      {
-        onSuccess: () => {
-          rotateGestureKey('adjust', product.id);
-          toast.success(`${product.name}: display adjusted to ${newQty} ${product.unit}`);
-        },
-        onError: (err: unknown) => {
-          const e = err instanceof DisplayGestureError ? err : null;
-          toast.error(`Adjust failed: ${e?.code ?? 'unknown'}`);
-        },
-      },
-    );
-  }
 
   return (
     <div className="h-dvh flex flex-col bg-bg-base text-text-primary">
@@ -272,6 +158,13 @@ export default function POSStockView(): JSX.Element {
         <KpiChip tone="neutral" label={`${counts.total} products`} />
       </header>
 
+      {!hasDisplayManage && <p role="status" className="px-4 py-2 text-sm text-text-secondary">Read-only access to display stock.</p>}
+      {gestures.pending.map((attempt) => (
+        <div key={attempt.product.id} role="status" className="flex items-center justify-between gap-3 px-4 py-2 bg-warning-soft text-text-primary">
+          <span>Awaiting confirmation: {gestures.description(attempt)}. Retry uses these same details.</span>
+          <Button variant="primary" disabled={gestures.running.includes(attempt.product.id)} onClick={() => { void gestures.retry(attempt); }}>Retry operation</Button>
+        </div>
+      ))}
       {/* Search + category chips */}
       <div className="px-4 py-3 flex items-center gap-3 border-b border-border-subtle">
         <label className="relative flex-1 max-w-xs">
@@ -344,16 +237,17 @@ export default function POSStockView(): JSX.Element {
         {!products.isError &&
           filtered.length > 0 &&
           (viewMode === 'card' ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
               {filtered.map((p) => (
                 <POSStockCard
-                  key={p.id}
+                  key={`${p.id}:${gestures.completed[p.id] ?? 0}`}
                   product={p}
-                  isReceiving={isMutating}
-                  onReceive={(qty) => handleReceive(p, qty)}
-                  onReturnToKitchen={hasDisplayManage ? (qty) => handleReturnToKitchen(p, qty) : undefined}
-                  onWaste={hasDisplayManage ? (qty, reason) => handleWaste(p, qty, reason) : undefined}
-                  onAdjust={hasDisplayManage ? (newQty, reason) => handleAdjust(p, newQty, reason) : undefined}
+                  isReceiving={gestures.running.includes(p.id)}
+                  retryPending={gestures.pending.some((a) => a.product.id === p.id)}
+                  onReceive={hasDisplayManage ? (qty) => gestures.submit('receive', p, qty, 'pos_mise_en_vitrine') : undefined}
+                  onReturnToKitchen={hasDisplayManage ? (qty) => gestures.submit('return', p, qty, 'pos_retour_cuisine') : undefined}
+                  onWaste={hasDisplayManage ? (qty, reason) => gestures.submit('waste', p, qty, reason) : undefined}
+                  onAdjust={hasDisplayManage ? (newQty, reason) => gestures.submit('adjust', p, newQty, reason) : undefined}
                 />
               ))}
             </div>
@@ -361,13 +255,14 @@ export default function POSStockView(): JSX.Element {
             <div className="flex flex-col gap-2">
               {filtered.map((p) => (
                 <POSStockRow
-                  key={p.id}
+                  key={`${p.id}:${gestures.completed[p.id] ?? 0}`}
                   product={p}
-                  isReceiving={isMutating}
-                  onReceive={(qty) => handleReceive(p, qty)}
-                  onReturnToKitchen={hasDisplayManage ? (qty) => handleReturnToKitchen(p, qty) : undefined}
-                  onWaste={hasDisplayManage ? (qty, reason) => handleWaste(p, qty, reason) : undefined}
-                  onAdjust={hasDisplayManage ? (newQty, reason) => handleAdjust(p, newQty, reason) : undefined}
+                  isReceiving={gestures.running.includes(p.id)}
+                  retryPending={gestures.pending.some((a) => a.product.id === p.id)}
+                  onReceive={hasDisplayManage ? (qty) => gestures.submit('receive', p, qty, 'pos_mise_en_vitrine') : undefined}
+                  onReturnToKitchen={hasDisplayManage ? (qty) => gestures.submit('return', p, qty, 'pos_retour_cuisine') : undefined}
+                  onWaste={hasDisplayManage ? (qty, reason) => gestures.submit('waste', p, qty, reason) : undefined}
+                  onAdjust={hasDisplayManage ? (newQty, reason) => gestures.submit('adjust', p, newQty, reason) : undefined}
                 />
               ))}
             </div>

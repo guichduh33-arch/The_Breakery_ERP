@@ -14,6 +14,7 @@ export interface StockGestureModalsProps {
   product: POSStockProductRow;
   entry: StockQuickEntry;
   isPending: boolean;
+  locked: boolean;
   hasWaste: boolean;
   hasAdjust: boolean;
 }
@@ -22,6 +23,7 @@ export function StockGestureModals({
   product,
   entry,
   isPending,
+  locked,
   hasWaste,
   hasAdjust,
 }: StockGestureModalsProps): JSX.Element {
@@ -35,6 +37,7 @@ export function StockGestureModals({
           unit={product.unit}
           defaultQty={entry.qty}
           isPending={isPending}
+          locked={locked}
           onConfirm={entry.confirmWaste}
         />
       )}
@@ -46,6 +49,7 @@ export function StockGestureModals({
           unit={product.unit}
           currentQty={product.display_stock}
           isPending={isPending}
+          locked={locked}
           onConfirm={entry.confirmAdjust}
         />
       )}

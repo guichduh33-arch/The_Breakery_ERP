@@ -12,17 +12,14 @@ export interface ProductTypeaheadRow {
   sku:            string;
   name:           string;
   current_stock:  number;
-}
-
-// PostgREST `.or()` and `.ilike()` treat `%` and `_` as wildcards; strip them
-// before interpolation to avoid surprising matches.
-const ILIKE_UNSAFE = /[%_\\]/g;
-function sanitize(term: string): string {
-  return term.replace(ILIKE_UNSAFE, '').slice(0, 64);
+  unit:           string | null;
 }
 
 export function useProductsForInventory(search: string) {
-  const term = sanitize(search.trim());
+  const term = search.trim().slice(0, 64);
+  // Échapper LIKE puis citer la valeur pour la grammaire OR : SKU avec "_" et
+  // noms avec virgules/guillemets restent des valeurs, jamais des filtres.
+  const pattern = JSON.stringify(`%${term.replace(/[\\%_]/g, '\\$&')}%`);
   return useQuery<ProductTypeaheadRow[]>({
     queryKey: ['products-typeahead', term] as const,
     enabled:  term.length >= 2,
@@ -30,10 +27,10 @@ export function useProductsForInventory(search: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, sku, name, current_stock')
+        .select('id, sku, name, current_stock, unit')
         .is('deleted_at', null)
         .eq('track_inventory', true)   // was .eq('is_active', true) — audit M1
-        .ilike('name', `%${term}%`)
+        .or(`name.ilike.${pattern},sku.ilike.${pattern}`)
         .order('name')
         .limit(20);
       if (error) throw error;

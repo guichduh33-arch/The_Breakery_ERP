@@ -4,9 +4,10 @@
 // Remplace le window.prompt historique. Collecte quantité + raison, puis
 // délègue au callback onConfirm(qty, reason) (le parent câble waste_display_stock_v2).
 
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { Button, CenterModal } from '@breakery/ui';
+import { isDisplayQuantity } from '../quantity';
 
 const MIN_REASON = 3;
 
@@ -15,10 +16,11 @@ export interface WasteDisplayModalProps {
   onOpenChange: (open: boolean) => void;
   productName: string;
   unit: string;
-  /** Quantité pré-remplie (depuis le stepper de la carte). Min 1. */
+  /** Quantity prefilled from the card, including fractions. */
   defaultQty: number;
   isPending: boolean;
-  onConfirm: (qty: number, reason: string) => void;
+  locked?: boolean;
+  onConfirm: (qty: number, reason: string) => Promise<boolean>;
 }
 
 export function WasteDisplayModal({
@@ -28,32 +30,34 @@ export function WasteDisplayModal({
   unit,
   defaultQty,
   isPending,
+  locked = false,
   onConfirm,
 }: WasteDisplayModalProps): JSX.Element {
-  const [qty, setQty] = useState<number>(Math.max(1, defaultQty));
+  const [qty, setQty] = useState<number | ''>((defaultQty > 0 ? defaultQty : 1));
   const [reason, setReason] = useState<string>('');
+  const wasOpen = useRef(false);
 
   // Re-seed when (re)opened for a fresh gesture.
   useEffect(() => {
-    if (open) {
-      setQty(Math.max(1, defaultQty));
+    if (open && !wasOpen.current && !locked) {
+      setQty((defaultQty > 0 ? defaultQty : 1));
       setReason('');
     }
-  }, [open, defaultQty]);
+    wasOpen.current = open;
+  }, [open, defaultQty, locked]);
 
   const reasonOk = reason.trim().length >= MIN_REASON;
-  const canConfirm = qty > 0 && reasonOk && !isPending;
+  const canConfirm = qty !== '' && isDisplayQuantity(qty) && qty > 0 && reasonOk && !isPending;
 
-  function handleConfirm(): void {
+  async function handleConfirm(): Promise<void> {
     if (!canConfirm) return;
-    onConfirm(qty, reason.trim());
-    onOpenChange(false);
+    if (await onConfirm(qty, reason.trim())) onOpenChange(false);
   }
 
   return (
     <CenterModal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => { if (!isPending && !locked) onOpenChange(next); }}
       title={`Display waste — ${productName}`}
       className="w-[min(440px,92vw)]"
       data-testid="waste-display-modal"
@@ -75,26 +79,28 @@ export function WasteDisplayModal({
             <button
               type="button"
               aria-label="Decrease"
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-              disabled={isPending}
+              onClick={() => setQty((q) => Math.max(0.001, Number(q) - 1))}
+              disabled={isPending || locked}
               className="h-touch-comfy w-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
             >
               <Minus className="h-4 w-4" aria-hidden />
             </button>
             <input
               type="number"
-              inputMode="numeric"
-              min={1}
+              inputMode="decimal"
+              step="any"
+              disabled={isPending || locked}
+              min={0.001}
               value={qty}
-              onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
+              onChange={(e) => setQty(e.target.value === '' ? '' : Number(e.target.value))}
               aria-label="Wasted quantity"
               className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-input px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             />
             <button
               type="button"
               aria-label="Increase"
-              onClick={() => setQty((q) => q + 1)}
-              disabled={isPending}
+              onClick={() => setQty((q) => Number(q) + 1)}
+              disabled={isPending || locked}
               className="h-touch-comfy w-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
             >
               <Plus className="h-4 w-4" aria-hidden />
@@ -109,6 +115,7 @@ export function WasteDisplayModal({
           <input
             id="waste_reason"
             type="text"
+            disabled={isPending || locked}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. end-of-day unsold, damaged…"
@@ -117,17 +124,17 @@ export function WasteDisplayModal({
         </section>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending}>
+          <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending || locked}>
             Cancel
           </Button>
           <Button
-            variant="gold"
+            variant="primary"
             size="lg"
-            onClick={handleConfirm}
+            onClick={() => { void handleConfirm(); }}
             disabled={!canConfirm}
             data-testid="waste-display-confirm"
           >
-            {isPending ? 'Saving…' : `Waste −${qty}`}
+            {isPending ? 'Saving…' : locked ? 'Retry same operation' : `Waste −${qty}`}
           </Button>
         </div>
       </div>

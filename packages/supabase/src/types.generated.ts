@@ -6293,7 +6293,7 @@ export type Database = {
           txn_id: string
         }[]
       }
-      adjust_stock_v1: {
+      adjust_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -7997,7 +7997,7 @@ export type Database = {
         }
         Returns: string
       }
-      record_incoming_stock_v1: {
+      record_incoming_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -8641,7 +8641,7 @@ export type Database = {
         }
         Returns: Json
       }
-      waste_stock_v1: {
+      waste_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string

@@ -15,9 +15,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogDescription, Input } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { validateAdjust } from '@breakery/domain';
-// Comme dans WasteModal : `ProductTypeaheadRow` ne transporte pas l'unité, les
-// quantités se formatent donc sans suffixe plutôt qu'avec une unité supposée.
-import { formatQuantity } from '@breakery/utils';
+import { formatStockQuantity as formatQuantity, parseStockQuantity } from '../stockQuantity.js';
 import { useAdjustStock, AdjustStockError } from '../hooks/useAdjustStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
@@ -33,7 +31,7 @@ export interface AdjustModalProps {
 const MAX_REASON = 500;
 
 function stockLevelToTypeaheadRow(row: StockLevelRow): ProductTypeaheadRow {
-  return { id: row.product_id, sku: row.sku, name: row.name, current_stock: row.current_stock };
+  return { id: row.product_id, sku: row.sku, name: row.name, current_stock: row.current_stock, unit: row.unit };
 }
 
 export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps): JSX.Element {
@@ -52,6 +50,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
   const [newQty, setNewQty] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [attemptLocked, setAttemptLocked] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
 
   // Reset internal state every time we open the modal afresh.
@@ -59,6 +58,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
     if (open) {
       setProduct(initialProduct !== undefined ? stockLevelToTypeaheadRow(initialProduct) : null);
       setNewQty('');
+      setAttemptLocked(false);
       setReason('');
       setFormError(null);
       setIdempotencyKey(crypto.randomUUID());
@@ -68,8 +68,8 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialProduct?.product_id]);
 
-  const numericNewQty = Number.parseInt(newQty, 10);
-  const isNewQtyValid = Number.isInteger(numericNewQty) && numericNewQty >= 0 && /^\d+$/.test(newQty);
+  const numericNewQty = parseStockQuantity(newQty) ?? Number.NaN;
+  const isNewQtyValid = Number.isFinite(numericNewQty);
   const isReasonValid = reason.trim().length >= 3 && reason.trim().length <= MAX_REASON;
 
   const delta = useMemo<number | null>(() => {
@@ -80,6 +80,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
   const canSubmit = product !== null && isNewQtyValid && isReasonValid && !adjustMut.isPending;
 
   function handleClose(): void {
+    if (attemptLocked || adjustMut.isPending) return;
     setFormError(null);
     onClose();
   }
@@ -100,6 +101,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
     }
 
     setFormError(null);
+    setAttemptLocked(true);
     try {
       const res = await adjustMut.mutateAsync({
         productId:      product.id,
@@ -112,16 +114,24 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
       if (res.idempotent_replay === true) {
         toast.info(`Already recorded — ${product.name} was not adjusted twice.`);
       } else if (res.noop === true) {
-        toast.info(`${product.name} was already at ${formatQuantity(numericNewQty, null)} — no movement recorded.`);
+        toast.info(`${product.name} was already at ${formatQuantity(numericNewQty, product.unit)} — no movement recorded.`);
       } else {
         toast.success(
-          `Stock adjusted — ${product.name} is now ${formatQuantity(res.new_current_stock, null)}.`,
+          `Stock adjusted — ${product.name} is now ${formatQuantity(res.new_current_stock, product.unit)}.`,
         );
       }
-      handleClose();
+      setAttemptLocked(false);
+      onClose();
     } catch (err) {
       if (err instanceof AdjustStockError) {
+        if (err.code !== 'unknown' && err.code !== 'idempotency_conflict') setAttemptLocked(false);
         switch (err.code) {
+          case 'idempotency_conflict':
+            setFormError('This request key belongs to different details. Check movement history before starting another operation.');
+            break;
+          case 'invalid_quantity':
+            setFormError('Enter a valid quantity with up to 3 decimal places.');
+            break;
           case 'forbidden':
             setFormError('You no longer have permission to adjust stock. Please refresh.');
             break;
@@ -163,6 +173,10 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             </div>
           )}
 
+          {attemptLocked && !adjustMut.isPending && (
+            <p role="status" className="text-sm text-text-secondary">Details are locked. Retry sends the same request; check movement history before starting another operation.</p>
+          )}
+          <fieldset disabled={attemptLocked || adjustMut.isPending} className="space-y-4">
           {!isLockedProduct && (
             <div className="space-y-1">
               <label htmlFor={productInputId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -181,7 +195,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             <div className="text-sm text-text-secondary">
               Current stock:{' '}
               <span className="text-text-primary font-mono tabular-nums">
-                {formatQuantity(product.current_stock, null)}
+                {formatQuantity(product.current_stock, product.unit)}
               </span>{' '}
               <span className="text-text-muted">({product.sku})</span>
             </div>
@@ -189,14 +203,14 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
 
           <div className="space-y-1">
             <label htmlFor={newQtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-              New on-hand quantity
+              New on-hand quantity {product?.unit ? `(${product.unit})` : ''}
             </label>
             <Input
               id={newQtyId}
               type="number"
-              inputMode="numeric"
+              inputMode="decimal"
               min={0}
-              step={1}
+              step="0.001"
               value={newQty}
               onChange={(e) => setNewQty(e.target.value)}
               aria-invalid={newQty !== '' && !isNewQtyValid}
@@ -205,7 +219,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             />
             {newQty !== '' && !isNewQtyValid && (
               <p id={newQtyErrId} className="text-red-as-text text-xs">
-                Enter a non-negative integer.
+                Enter a non-negative quantity with up to 3 decimal places.
               </p>
             )}
           </div>
@@ -214,10 +228,10 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             <div className="text-sm text-text-secondary">
               Preview:{' '}
               <span className="text-text-primary font-mono tabular-nums">
-                {formatQuantity(product.current_stock, null)} → {formatQuantity(numericNewQty, null)}
+                {formatQuantity(product.current_stock, product.unit)} → {formatQuantity(numericNewQty, product.unit)}
               </span>{' '}
               <span className={delta === 0 ? 'text-text-muted' : delta > 0 ? 'text-green' : 'text-red-as-text'}>
-                (Δ {delta > 0 ? '+' : ''}{delta})
+                (Δ {delta > 0 ? '+' : ''}{formatQuantity(delta, product.unit)})
               </span>
             </div>
           )}
@@ -248,10 +262,11 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             movement, never by editing this one.
           </p>
 
+          </fieldset>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={handleClose} disabled={attemptLocked || adjustMut.isPending}>Cancel</Button>
             <Button type="submit" variant="ink" disabled={!canSubmit}>
-              {adjustMut.isPending ? 'Applying…' : 'Apply'}
+              {adjustMut.isPending ? 'Applying…' : attemptLocked ? 'Retry adjustment' : 'Apply'}
             </Button>
           </div>
         </form>

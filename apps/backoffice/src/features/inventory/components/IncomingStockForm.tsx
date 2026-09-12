@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory/components/IncomingStockForm.tsx
 //
 // Inline form (NOT a modal) that records a free-form stock receipt via
-// `record_incoming_stock_v1`. Mirrors ReceiveModal's field setup but:
+// `record_incoming_stock_v2`. Mirrors ReceiveModal's field setup but:
 //   - supplier is OPTIONAL (first option = "No supplier (free-form receipt)")
 //   - lives on a standalone page, so it clears itself on success instead of
 //     closing a Dialog
@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Input, Select } from '@breakery/ui';
 import { Button } from '@/components/BackofficeUi.js';
 import { validateReceive } from '@breakery/domain';
-import { formatQuantity } from '@breakery/utils';
+import { formatStockQuantity as formatQuantity, parseStockQuantity } from '../stockQuantity.js';
 import {
   useRecordIncomingStock,
   RecordIncomingStockError,
@@ -53,6 +53,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
   const [unitCost, setUnitCost] = useState<string>('');
   const [reason,   setReason  ] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [attemptLocked, setAttemptLocked] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,7 +63,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
     if (successTimerRef.current !== null) clearTimeout(successTimerRef.current);
   }, []);
 
-  const numericQty = Number.parseFloat(qty);
+  const numericQty = parseStockQuantity(qty) ?? Number.NaN;
   const isQtyValid = Number.isFinite(numericQty) && numericQty > 0;
 
   const numericUnitCost = unitCost === '' ? undefined : Number.parseFloat(unitCost);
@@ -83,6 +84,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
     !recordMut.isPending;
 
   function resetForm(): void {
+    setAttemptLocked(false);
     setProduct(null);
     setSupplier('');
     setQty('');
@@ -115,9 +117,10 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
     }
 
     setFormError(null);
+    setAttemptLocked(true);
     try {
       const productName = product.name;
-      await recordMut.mutateAsync({
+      const result = await recordMut.mutateAsync({
         productId:  product.id,
         quantity:   numericQty,
         ...(supplier !== '' ? { supplierId: supplier } : {}),
@@ -126,13 +129,20 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         idempotencyKey,
       });
       resetForm();
-      setSuccessMsg(`Receipt recorded for ${productName}.`);
+      setSuccessMsg(`${result.idempotent_replay === true ? 'Receipt already recorded' : 'Receipt recorded'} for ${productName}. On hand after receipt: ${formatQuantity(result.new_current_stock, product.unit)}.`);
       if (successTimerRef.current !== null) clearTimeout(successTimerRef.current);
       successTimerRef.current = setTimeout(() => setSuccessMsg(null), 3000);
       onSuccess?.();
     } catch (err) {
       if (err instanceof RecordIncomingStockError) {
+        if (err.code !== 'unknown' && err.code !== 'idempotency_conflict') setAttemptLocked(false);
         switch (err.code) {
+          case 'idempotency_conflict':
+            setFormError('This request key belongs to different details. Check movement history before starting another operation.');
+            break;
+          case 'invalid_quantity':
+            setFormError('Enter a valid quantity with up to 3 decimal places.');
+            break;
           case 'forbidden':
             setFormError('You no longer have permission to record incoming stock. Please refresh.');
             break;
@@ -172,6 +182,10 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         </div>
       )}
 
+      {attemptLocked && !recordMut.isPending && (
+        <p role="status" className="text-sm text-text-secondary">Details are locked. Retry sends the same request; check movement history before starting another operation.</p>
+      )}
+      <fieldset disabled={attemptLocked || recordMut.isPending} className="space-y-4">
       <div className="space-y-1">
         <label htmlFor={productId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
           Product
@@ -184,7 +198,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         />
         {product !== null && (
           <p className="text-text-muted text-xs">
-            Current stock: <span className="font-mono tabular-nums">{formatQuantity(product.current_stock, null)}</span>
+            Current stock: <span className="font-mono tabular-nums">{formatQuantity(product.current_stock, product.unit)}</span>
           </p>
         )}
       </div>
@@ -210,7 +224,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label htmlFor={qtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-            Quantity received
+            Quantity received {product?.unit ? `(${product.unit})` : ''}
           </label>
           <Input
             id={qtyId}
@@ -230,7 +244,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         </div>
         <div className="space-y-1">
           <label htmlFor={unitCostId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-            Unit cost
+            Unit cost {product?.unit ? `(IDR / ${product.unit})` : '(IDR)'}
           </label>
           <Input
             id={unitCostId}
@@ -262,9 +276,10 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         />
       </div>
 
+      </fieldset>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="submit" variant="ink" disabled={!canSubmit}>
-          {recordMut.isPending ? 'Recording…' : 'Record receipt'}
+          {recordMut.isPending ? 'Recording…' : attemptLocked ? 'Retry receipt' : 'Record receipt'}
         </Button>
       </div>
     </form>

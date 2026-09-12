@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useAdjustStock.ts
 //
-// Calls `adjust_stock_v1` RPC (session 12). Surfaces RPC errors as a typed
+// Calls `adjust_stock_v2` RPC (session 12). Surfaces RPC errors as a typed
 // enum so the modal can map them to inline form errors. Pattern mirrors
 // useAdjustLoyaltyPoints.ts.
 //
@@ -16,6 +16,8 @@ import { supabase } from '@/lib/supabase.js';
 import { STOCK_LEVELS_QUERY_KEY } from './useStockLevels.js';
 
 export type AdjustStockErrorCode =
+  | 'idempotency_conflict'
+  | 'invalid_quantity'
   | 'forbidden'
   | 'negative_qty_not_allowed'
   | 'product_not_found'
@@ -37,6 +39,8 @@ export interface AdjustStockArgs {
 }
 
 function classify(message: string): AdjustStockErrorCode {
+  if (message.includes('idempotency_conflict')) return 'idempotency_conflict';
+  if (message.includes('invalid_quantity')) return 'invalid_quantity';
   if (message.includes('forbidden'))                return 'forbidden';
   if (message.includes('negative_qty_not_allowed')) return 'negative_qty_not_allowed';
   if (message.includes('product_not_found'))        return 'product_not_found';
@@ -48,7 +52,7 @@ export function useAdjustStock() {
   const qc = useQueryClient();
   return useMutation<StockMovementRpcResult, AdjustStockError, AdjustStockArgs>({
     mutationFn: async ({ productId, newQty, reason, idempotencyKey }) => {
-      const { data, error } = await supabase.rpc('adjust_stock_v1', {
+      const { data, error } = await supabase.rpc('adjust_stock_v2', {
         p_product_id:      productId,
         p_new_qty:         newQty,
         p_reason:          reason,

@@ -16,7 +16,7 @@ const MOCK_CATEGORIES = [
   { id: 'c-1', name: 'Beverage' },
 ];
 const MOCK_PRODUCTS = [
-  { id: 'p-1', sku: 'BEV-AMER', name: 'Americano', current_stock: 100 },
+  { id: 'p-1', sku: 'BEV-AMER', name: 'Americano', current_stock: 100, unit: 'pcs' },
 ];
 
 interface RpcResult { data: unknown; error: { message: string; code?: string } | null }
@@ -25,7 +25,7 @@ interface MockChain {
   select: () => MockChain;
   eq:     () => MockChain;
   is:     () => MockChain;
-  ilike:  () => MockChain;
+  or:     () => MockChain;
   order:  () => MockChain | Promise<RpcResult>;
   limit:  () => Promise<RpcResult>;
 }
@@ -41,7 +41,7 @@ vi.mock('@/lib/supabase.js', () => {
       select: () => chain,
       eq:     () => chain,
       is:     () => chain,
-      ilike:  () => chain,
+      or:     () => chain,
       order:  () => {
         // Reference-data hook awaits .order() directly (categories/suppliers).
         // Typeahead hook chains .order().limit(); return a chain for that path.
@@ -92,6 +92,22 @@ describe('IncomingStockForm', () => {
     mockRpc.mockReset();
   });
 
+  it('locks uncertain receipt details and reuses its request on retry', async () => {
+    mockRpc.mockReturnValue({ data: null, error: { message: 'network unavailable' } });
+    renderForm();
+    await pickProduct();
+    const quantity = screen.getByLabelText(/Quantity received/i);
+    fireEvent.change(quantity, { target: { value: '0.125' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Record receipt' }));
+    await screen.findByRole('button', { name: 'Retry receipt' });
+    expect(quantity).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Clear selected product' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry receipt' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
+    expect(mockRpc.mock.calls[1]).toEqual(mockRpc.mock.calls[0]);
+    expect(mockRpc.mock.calls[0]?.[1]).toMatchObject({ p_quantity: 0.125 });
+  });
+
   it('renders all fields including the "No supplier" option', async () => {
     renderForm();
     // Fields
@@ -135,7 +151,7 @@ describe('IncomingStockForm', () => {
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
 
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('record_incoming_stock_v1');
+    expect(call[0]).toBe('record_incoming_stock_v2');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_quantity:   5,
@@ -174,5 +190,13 @@ describe('IncomingStockForm', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/permission/i);
     });
+  });
+  it('confirms a replay using the recorded result and visible base unit', async () => {
+    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', product_id: 'p-1', new_current_stock: 1.375, idempotent_replay: true }, error: null });
+    renderForm();
+    await pickProduct();
+    fireEvent.change(screen.getByLabelText(/Quantity received/i), { target: { value: '0.375' } });
+    fireEvent.click(screen.getByRole('button', { name: /Record receipt/ }));
+    expect(await screen.findByText(/Receipt already recorded.*1,375 pcs/)).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 // supabase/tests/functions/inventory-concurrent.test.ts
-// Session 12 â€” T16: concurrency / row-lock serialization for adjust_stock_v1.
+// Session 12 â€” T16: concurrency / row-lock serialization for adjust_stock_v2.
 //
-// adjust_stock_v1 acquires a FOR UPDATE lock on `products` before computing
+// adjust_stock_v2 acquires a FOR UPDATE lock on `products` before computing
 // the signed delta. Two parallel adjusts on the same product MUST therefore
 // serialize: one wins the lock, runs first, the second runs against the
 // updated current_stock. This test fires both calls via Promise.all and
@@ -21,7 +21,7 @@ import { loginAs, jwtClient } from './_helpers/auth';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency â€” adjust_stock_v1 row-lock serialization', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency â€” adjust_stock_v2 row-lock serialization', () => {
   let adminToken: string;
   let productId:  string;
 
@@ -30,7 +30,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency â
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: p } = await admin.from('products')
       .select('id').eq('sku', 'BEV-AMER').single();
-    productId = p!.id;
+    productId = String(p!.id);
   });
 
   beforeEach(async () => {
@@ -49,12 +49,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency â
     const sb2 = jwtClient(adminToken);
 
     const [r1, r2] = await Promise.all([
-      sb1.rpc('adjust_stock_v1', {
+      sb1.rpc('adjust_stock_v2', {
         p_product_id: productId,
         p_new_qty: 150,
         p_reason:  'concurrent T16 path A (150)',
       }),
-      sb2.rpc('adjust_stock_v1', {
+      sb2.rpc('adjust_stock_v2', {
         p_product_id: productId,
         p_new_qty: 200,
         p_reason:  'concurrent T16 path B (200)',
@@ -110,12 +110,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency â
     const sb2 = jwtClient(adminToken);
 
     const [rA, rB] = await Promise.all([
-      sb1.rpc('adjust_stock_v1', {
+      sb1.rpc('adjust_stock_v2', {
         p_product_id: productId,
         p_new_qty: 130,
         p_reason: 'concurrent T16 path A adjust',
       }),
-      sb2.rpc('waste_stock_v1', {
+      sb2.rpc('waste_stock_v2', {
         p_product_id: productId,
         p_quantity: 10,
         p_reason: 'concurrent T16 path B waste',

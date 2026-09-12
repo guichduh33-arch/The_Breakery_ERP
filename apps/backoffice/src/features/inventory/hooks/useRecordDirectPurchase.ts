@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory/hooks/useRecordDirectPurchase.ts
 //
 // "Direct purchase" — an accounted stock purchase entered without first
-// drafting a Purchase Order. Unlike record_incoming_stock_v1 (movement_type
+// drafting a Purchase Order. Unlike record_incoming_stock_v2 (movement_type
 // 'incoming', which does NOT feed WAC and posts NO journal entry), this routes
 // through the battle-tested Purchasing money-path so the purchase is fully
 // integrated:
