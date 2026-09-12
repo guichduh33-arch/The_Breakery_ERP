@@ -56,6 +56,10 @@ DB migrations, SQL, pgTAP and type regen are applied through the Supabase MCP to
 
 | Command | Effect |
 |---|---|
+| `pnpm context:snapshot:pos` | Liste le périmètre de contexte POS (surtout pour démarrage de session) |
+| `pnpm context:snapshot:bo` | Liste le périmètre de contexte Backoffice |
+| `pnpm context:snapshot:domain` | Liste le périmètre de contexte Domain |
+| `pnpm context:snapshot:supabase` | Liste le périmètre de contexte Supabase |
 | `pnpm dev` | Démarre les 2 apps en parallèle |
 | `pnpm build` | Build prod des 2 apps |
 | `pnpm lint` | ESLint sur tout (0 warning toléré) |
@@ -66,6 +70,43 @@ DB migrations, SQL, pgTAP and type regen are applied through the Supabase MCP to
 | `pnpm db:types` | Régénère `packages/supabase/src/types.generated.ts` (préférer le MCP `generate_typescript_types`) |
 
 > `pnpm db:start` / `pnpm db:reset` (Docker-based) sont obsolètes — la DB cible est le projet cloud V3 dev, géré via les outils Supabase MCP. Voir `CLAUDE.md`.
+
+## Gestion du contexte par session
+
+Quand une session porte uniquement sur un sous-domaine (POS, BO, domaine, Supabase), on charge d'abord un périmètre ciblé pour garder la fenêtre légère :
+
+- `pnpm context:snapshot:pos`
+- `pnpm context:snapshot:bo`
+- `pnpm context:snapshot:domain`
+- `pnpm context:snapshot:supabase`
+
+Le détail des profils et des dépendances est dans [`docs/context-profiles.md`](docs/context-profiles.md).
+
+## MCP Headroom (Cloud/remote sessions)
+
+Le projet inclut désormais la configuration Headroom dans [`.mcp.json`](.mcp.json) :
+
+- `headroom` est déclaré dans `mcpServers` avec `headroom mcp serve`.
+- La config est versionnée, donc disponible pour toutes les sessions cloud associées au dépôt.
+- `autoStart` est sur `true` pour démarrer automatiquement le plugin Headroom dans les sessions qui chargent `.mcp.json`.
+
+Lancement local recommandé (premier usage) :
+
+```bash
+uvx --from "headroom-ai[mcp]" headroom mcp install
+```
+
+Le serveur MCP dans ce repo démarre ensuite via la config partagée (`.mcp.json`) quand le host le charge.
+
+Test rapide du démarrage :
+
+```bash
+# Vérifie que Headroom est installé et enregistré
+uvx --from "headroom-ai[mcp]" headroom mcp status
+
+# Test de lancement direct (doit afficher le log de démarrage sans erreur)
+uvx --from "headroom-ai[mcp]" headroom mcp serve --debug
+```
 
 ## Testing
 

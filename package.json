@@ -8,6 +8,11 @@
   },
   "packageManager": "pnpm@11.17.0",
   "scripts": {
+    "context:snapshot": "node scripts/context-snapshot.mjs",
+    "context:snapshot:pos": "node scripts/context-snapshot.mjs pos",
+    "context:snapshot:bo": "node scripts/context-snapshot.mjs backoffice",
+    "context:snapshot:domain": "node scripts/context-snapshot.mjs domain",
+    "context:snapshot:supabase": "node scripts/context-snapshot.mjs supabase",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
