@@ -7,11 +7,16 @@ CREATE TEMP TABLE stock_fixture AS SELECT gen_random_uuid() product_id,
   gen_random_uuid() noop_key, gen_random_uuid() waste_key, gen_random_uuid() incoming_key,
   gen_random_uuid() count_id;
 CREATE TEMP TABLE stock_results(name text PRIMARY KEY, result jsonb);
+-- Exclure le compte systeme du cron et conserver le meme acteur apres chaque changement.
+CREATE TEMP TABLE primary_actor AS SELECT auth_user_id FROM user_profiles
+ WHERE role_code='SUPER_ADMIN' AND deleted_at IS NULL
+ AND is_active AND auth_user_id IS NOT NULL ORDER BY id LIMIT 1;
+INSERT INTO audit_results SELECT is((SELECT count(*) FROM primary_actor),1::bigint,'Active authenticated primary actor exists');
 INSERT INTO products(id,sku,name,category_id,retail_price,cost_price,unit,current_stock)
 SELECT product_id,'AUDIT-' || product_id,'Stock audit fixture',
  (SELECT id FROM categories LIMIT 1),0,0,'pcs',0 FROM stock_fixture;
 SELECT set_config('request.jwt.claim.sub',
- (SELECT auth_user_id::text FROM user_profiles WHERE role_code='SUPER_ADMIN' AND deleted_at IS NULL LIMIT 1),true);
+ (SELECT auth_user_id::text FROM primary_actor),true);
 INSERT INTO stock_results SELECT 'noop',public.adjust_stock_v2(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
 SELECT public.record_incoming_stock_v2(product_id,5,NULL,NULL,'Audit receipt',NULL) FROM stock_fixture;
 INSERT INTO stock_results SELECT 'noop_replay',public.adjust_stock_v2(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
@@ -39,7 +44,8 @@ INSERT INTO audit_results SELECT is((SELECT (result->>'new_current_stock')::nume
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM stock_movements WHERE idempotency_key=(SELECT incoming_key FROM stock_fixture)),1::bigint,'Incoming key creates one movement');
 -- Second acteur explicitement autorise dans la transaction, independamment de sa matrice.
 CREATE TEMP TABLE second_actor AS SELECT id,auth_user_id FROM user_profiles
- WHERE deleted_at IS NULL AND role_code <> 'SUPER_ADMIN' AND auth_user_id IS NOT NULL LIMIT 1;
+ WHERE deleted_at IS NULL AND is_active AND role_code <> 'SUPER_ADMIN'
+ AND auth_user_id IS NOT NULL ORDER BY id LIMIT 1;
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM second_actor),1::bigint,'Second actor fixture exists');
 INSERT INTO user_permission_overrides(user_profile_id,permission_code,is_granted,reason,expires_at)
  SELECT id,'inventory.receive',true,'Stock audit second actor',NULL FROM second_actor
@@ -54,7 +60,7 @@ INSERT INTO audit_results SELECT throws_ok(
  '22023','idempotency_conflict','Authorized second actor cannot reuse original actor key') FROM stock_fixture;
 RESET ROLE;
 SELECT set_config('request.jwt.claim.sub',
- (SELECT auth_user_id::text FROM user_profiles WHERE role_code='SUPER_ADMIN' AND deleted_at IS NULL LIMIT 1),true);
+ (SELECT auth_user_id::text FROM primary_actor),true);
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM stock_fixture)),2::numeric,'Actor conflict leaves stock unchanged');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM stock_movements WHERE idempotency_key=(SELECT incoming_key FROM stock_fixture)),1::bigint,'Actor conflict leaves ledger unchanged');
 INSERT INTO audit_results SELECT throws_ok(
@@ -109,7 +115,7 @@ INSERT INTO audit_results SELECT throws_ok(
 RESET ROLE;
 -- Exact regression: a fractional no-op, an intervening outgoing movement, then replay.
 SELECT set_config('request.jwt.claim.sub',
- (SELECT auth_user_id::text FROM user_profiles WHERE role_code='SUPER_ADMIN' AND deleted_at IS NULL LIMIT 1),true);
+ (SELECT auth_user_id::text FROM primary_actor),true);
 CREATE TEMP TABLE decrement_fixture AS SELECT gen_random_uuid() product_id,gen_random_uuid() request_key;
 INSERT INTO products(id,sku,name,category_id,retail_price,cost_price,unit,current_stock)
  SELECT product_id,'AUDIT-KG-' || product_id,'Fractional stock audit fixture',

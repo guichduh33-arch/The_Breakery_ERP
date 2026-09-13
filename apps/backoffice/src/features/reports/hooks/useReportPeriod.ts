@@ -77,6 +77,15 @@ export function derivePreset(start: string, end: string, today: string): PeriodP
   return 'custom';
 }
 
+function validRange(start: string, end: string): boolean {
+  const validDate = (value: string): boolean => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  };
+  return validDate(start) && validDate(end) && start <= end;
+}
+
 function readStored(): { start: string; end: string } | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
@@ -85,7 +94,7 @@ function readStored(): { start: string; end: string } | null {
     if (typeof parsed !== 'object' || parsed === null) return null;
     const o = parsed as Record<string, unknown>;
     if (typeof o.start !== 'string' || typeof o.end !== 'string') return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(o.start) || !/^\d{4}-\d{2}-\d{2}$/.test(o.end)) return null;
+    if (!validRange(o.start, o.end)) return null;
     return { start: o.start, end: o.end };
   } catch {
     return null;
@@ -152,6 +161,8 @@ function snapToMonth(date: string): { start: string; end: string } {
 }
 
 export interface ReportPeriod {
+  /** Bornes invalides remplacées par une période valide, annoncée au contrôle. */
+  validationError?: string;
   start:   string;
   end:     string;
   /** Preset dérivé des bornes courantes (`custom` si aucune correspondance). */
@@ -193,9 +204,11 @@ export function useReportPeriod(options: UseReportPeriodOptions = {}): ReportPer
 
   // La borne de FIN porte le mois : une fenêtre à cheval héritée de la session
   // (19 juil. → 15 août) doit donner août, le mois en cours, pas juillet.
-  const snapped = snapTo === 'month' ? snapToMonth(rawEnd) : null;
-  const start = snapped?.start ?? rawStart;
-  const end   = snapped?.end   ?? rawEnd;
+  const invalid = !validRange(rawStart, rawEnd);
+  const safe = invalid ? presetRange(defaultPreset, today) : { start: rawStart, end: rawEnd };
+  const snapped = snapTo === 'month' ? snapToMonth(safe.end) : null;
+  const start = snapped?.start ?? safe.start;
+  const end   = snapped?.end   ?? safe.end;
 
   // La période suit la navigation : chaque fenêtre consultée devient le défaut
   // du prochain rapport ouvert dans la même session. Hors période partagée, on
@@ -233,5 +246,8 @@ export function useReportPeriod(options: UseReportPeriodOptions = {}): ReportPer
   const preset = derivePreset(start, end, today);
   const compareRange = useMemo(() => previousPeriod(start, end), [start, end]);
 
-  return { start, end, preset, compare, compareRange, setPreset, setRange, setCompare };
+  return {
+    start, end, preset, compare, compareRange, setPreset, setRange, setCompare,
+    ...(invalid ? { validationError: `Invalid report period. Showing ${start} – ${end}. Choose valid dates.` } : {}),
+  };
 }

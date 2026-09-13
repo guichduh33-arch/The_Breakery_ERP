@@ -15,11 +15,19 @@ import { MemoryRouter } from 'react-router-dom';
 
 // Mutable flag: tests set this to true to inject an RPC error.
 let injectRpcError = false;
+let unevenLeadTimes = false;
+const downloadCsv = vi.hoisted(() => vi.fn());
+const requestedPeriods = vi.hoisted(() => vi.fn());
+vi.mock('@breakery/domain', async (importOriginal) => ({
+  ...await importOriginal<Record<string, unknown>>(),
+  downloadCsv,
+}));
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc: (fn: string) => {
-      if (fn === 'get_purchase_by_supplier_v1') {
+    rpc: (fn: string, args: unknown) => {
+      if (fn === 'get_purchase_by_supplier_v2') {
+        requestedPeriods(args);
         if (injectRpcError) {
           return Promise.resolve({ data: null, error: new Error('RPC error: permission denied') });
         }
@@ -30,11 +38,13 @@ vi.mock('@/lib/supabase.js', () => ({
               {
                 supplier_id:     's-1',
                 supplier_name:   'Bali Flour',
-                po_count:        4,
+                po_count:        unevenLeadTimes ? 100 : 4,
                 total:           2_000_000,
                 received_count:  3,
                 cancelled_count: 1,
-                avg_lead_days:   3.5,
+                avg_lead_days:   unevenLeadTimes ? 2 : 3.5,
+                lead_days_total: unevenLeadTimes ? 2 : 10.5,
+                lead_sample_count: unevenLeadTimes ? 1 : 3,
                 share_pct:       80.00,
               },
               {
@@ -44,7 +54,9 @@ vi.mock('@/lib/supabase.js', () => ({
                 total:           500_000,
                 received_count:  1,
                 cancelled_count: 0,
-                avg_lead_days:   null,
+                avg_lead_days:   unevenLeadTimes ? 10 : null,
+                lead_days_total: unevenLeadTimes ? 10 : 0,
+                lead_sample_count: unevenLeadTimes ? 1 : 0,
                 share_pct:       20.00,
               },
             ],
@@ -70,11 +82,11 @@ Object.defineProperty(globalThis, 'ResizeObserver', {
   configurable: true, writable: true, value: StubResizeObserver,
 });
 
-function renderPage() {
+function renderPage(entry = '/backoffice/reports/purchase-by-supplier') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><PurchaseBySupplierPage /></MemoryRouter>
+      <MemoryRouter initialEntries={[entry]}><PurchaseBySupplierPage /></MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -83,6 +95,11 @@ function renderPage() {
 // `reports.export`, et les pages a export maison desactivent leur bouton. Ce
 // test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
 beforeEach(() => {
+  unevenLeadTimes = false;
+  injectRpcError = false;
+  sessionStorage.clear();
+  downloadCsv.mockClear();
+  requestedPeriods.mockClear();
   useAuthStore.setState({ permissions: ['reports.export'] });
 });
 
@@ -95,6 +112,22 @@ async function loadedTable(): Promise<HTMLElement> {
 }
 
 describe('PurchaseBySupplierPage (smoke)', () => {
+  it('pondère les délais par les réceptions mesurées, pas les commandes en attente', async () => {
+    unevenLeadTimes = true;
+    renderPage();
+    await loadedTable();
+    expect(screen.getByTestId('kpi-lead')).toHaveTextContent('6,0 d');
+  });
+
+  it('annonce la période réellement servie quand la RPC réduit la plage', async () => {
+    renderPage('/backoffice/reports/purchase-by-supplier?start=2024-01-01&end=2026-06-12');
+    await loadedTable();
+    expect(screen.getByText('Report limited to 2026-05-13 – 2026-06-12.')).toBeInTheDocument();
+    expect(requestedPeriods).toHaveBeenCalledWith({ p_date_start: '2026-04-12', p_date_end: '2026-05-12' });
+    fireEvent.click(screen.getByTestId('export-menu'));
+    fireEvent.click(screen.getByTestId('export-csv'));
+    expect(downloadCsv).toHaveBeenCalledWith(expect.any(String), 'purchase-by-supplier-2026-05-13_2026-06-12');
+  });
   it('renders heading, supplier rows, null avg_lead_days as em-dash and the server share', async () => {
     injectRpcError = false;
     renderPage();
@@ -124,9 +157,9 @@ describe('PurchaseBySupplierPage (smoke)', () => {
     expect(within(card).getByText('Total purchased')).toBeInTheDocument();
   });
 
-  // Le délai moyen est pondéré par les commandes : (3,5×4) / 4 = 3,5 j — le
+  // Le délai moyen porte les réceptions mesurées : 10,5 / 3 = 3,5 j — le
   // fournisseur sans délai mesuré ne tire pas la moyenne vers zéro.
-  it('weights the average lead time by orders, and ignores the supplier without one', async () => {
+  it('weights the average lead time by measured receipts, and ignores the supplier without one', async () => {
     injectRpcError = false;
     renderPage();
     const tile = await screen.findByTestId('kpi-lead');
