@@ -21,8 +21,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase.js';
-import { STOCK_LEVELS_QUERY_KEY } from './useStockLevels.js';
-import { STOCK_LEDGER_KEY } from '@/features/inventory-movements/hooks/useStockLedger.js';
+import { invalidateStockQueries } from '../invalidateStockQueries.js';
 
 export type DirectPurchasePaymentMethod = 'cash' | 'transfer';
 
@@ -183,12 +182,10 @@ export function useRecordDirectPurchase() {
         paymentId,
       };
     },
-    onSuccess: async () => {
+    // La réception peut avoir réussi même si le paiement a échoué.
+    onSettled: async () => {
       await Promise.all([
-        qc.invalidateQueries({ queryKey: STOCK_LEVELS_QUERY_KEY }),
-        qc.invalidateQueries({ queryKey: STOCK_LEDGER_KEY }),
-        qc.invalidateQueries({ queryKey: ['product-dashboard'] }),
-        qc.invalidateQueries({ queryKey: ['product-analytics'] }),
+        invalidateStockQueries(qc),
         qc.invalidateQueries({ queryKey: ['purchase-orders'] }),
       ]);
     },

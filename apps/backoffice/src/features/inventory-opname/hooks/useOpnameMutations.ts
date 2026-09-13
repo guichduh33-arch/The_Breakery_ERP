@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import { OPNAME_LIST_QUERY_KEY } from './useOpnameList.js';
 import { opnameDetailKey } from './useOpnameDetail.js';
+import { invalidateStockQueries } from '@/features/inventory/invalidateStockQueries.js';
 
 type RpcFn = (
   fn: string,
@@ -104,10 +105,10 @@ export function useSetOpnameCount() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, SetOpnameCountArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('set_opname_count_v1', {
+      const { data, error } = await rpc()('set_opname_count_v2', {
         p_count_item_id: args.countItemId,
         p_counted_qty: args.countedQty,
-        ...(args.notes !== undefined && args.notes.trim() !== '' ? { p_notes: args.notes.trim() } : {}),
+        ...(args.notes !== undefined ? { p_notes: args.notes.trim() } : {}),
       });
       if (error !== null) throw new Error(error.message);
       return data;
@@ -126,7 +127,7 @@ export function useValidateOpname() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
-      const { data, error } = await rpc()('validate_opname_v1', { p_count_id: countId });
+      const { data, error } = await rpc()('validate_opname_v2', { p_count_id: countId });
       if (error !== null) throw new Error(error.message);
       return data;
     },
@@ -170,7 +171,7 @@ export function useFinalizeOpname() {
       idemKey.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: opnameDetailKey(args.countId) });
       await qc.invalidateQueries({ queryKey: OPNAME_LIST_QUERY_KEY });
-      await qc.invalidateQueries({ queryKey: ['stock-levels'] });
+      await invalidateStockQueries(qc);
     },
   });
 }

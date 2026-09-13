@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/reports/hooks/usePurchaseBySupplier.ts
-// S40 Wave B2 — Query hook for get_purchase_by_supplier_v1 RPC.
+// S40 Wave B2 — Query hook for get_purchase_by_supplier_v2 RPC.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -30,7 +30,7 @@ export function usePurchaseBySupplier(params: UsePurchaseBySupplierParams) {
   return useQuery<PurchaseBySupplierData, Error>({
     queryKey: ['reports', 'purchase-by-supplier', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_purchase_by_supplier_v1', {
+      const { data, error } = await supabase.rpc('get_purchase_by_supplier_v2', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

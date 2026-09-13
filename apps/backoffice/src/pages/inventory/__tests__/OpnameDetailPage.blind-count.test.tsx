@@ -88,12 +88,19 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     detail = makeDetail('counting');
   });
 
+  it('blocks reveal immediately when an already-counted quantity is edited', () => {
+    renderPage();
+    fireEvent.change(screen.getByLabelText('Counted quantity for White Flour'), { target: { value: '10' } });
+    expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeDisabled();
+    expect(screen.getByText(/Save all changes/i)).toBeInTheDocument();
+  });
+
   it('pendant le comptage, ne montre ni attendu, ni écart, ni total des écarts', () => {
     renderPage();
 
     expect(screen.queryByText('Expected')).not.toBeInTheDocument();
     expect(screen.queryByText('Variance')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Total \|variance\|/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Products with variance')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cell-expected')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cell-variance')).not.toBeInTheDocument();
     // La valeur attendue ne doit pas non plus fuir par un autre chemin.
@@ -109,7 +116,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
 
     expect(screen.getByTestId('cell-expected')).toHaveTextContent('12 kg');
     expect(screen.getByTestId('cell-variance')).toHaveTextContent('-3');
-    expect(screen.getByText(/Total \|variance\|/i)).toBeInTheDocument();
+    expect(screen.getByText('Products with variance')).toBeInTheDocument();
     expect(screen.queryByTestId('blind-count-notice')).not.toBeInTheDocument();
 
     expect(screen.queryByLabelText('Counted quantity for White Flour')).not.toBeInTheDocument();

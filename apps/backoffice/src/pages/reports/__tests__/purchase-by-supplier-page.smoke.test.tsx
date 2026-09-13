@@ -19,7 +19,7 @@ let injectRpcError = false;
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string) => {
-      if (fn === 'get_purchase_by_supplier_v1') {
+      if (fn === 'get_purchase_by_supplier_v2') {
         if (injectRpcError) {
           return Promise.resolve({ data: null, error: new Error('RPC error: permission denied') });
         }
