@@ -96,6 +96,7 @@ function renderPage() {
 
 describe('confirmation d’envoi hors-ligne (persistante)', () => {
   beforeEach(() => {
+  Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true, configurable: true });
     vi.clearAllMocks();
     mocks.rpc.mockReturnValue(rpcResult('unused-offline'));
     // Panier prêt : table + un article, donc la vue initiale est le menu.

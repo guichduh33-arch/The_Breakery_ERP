@@ -6,14 +6,8 @@
 
 import { useEffect, useState } from 'react';
 import { FOCUS_RING } from '@/components/focusRing.js';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogTitle } from '@/components/BackofficeUi.js';
 import {
   useCreateHoliday,
   useUpdateHoliday,

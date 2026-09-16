@@ -144,7 +144,7 @@ export function cartToRpcPayload(cart: Cart): {
   unit_price: number;
 }[] {
   return cart.items
-    .filter((it) => !it.is_promo_gift)
+    .filter((it) => !it.is_promo_gift && !it.is_cancelled)
     .map((it) => ({
       line_id: it.id,
       product_id: it.product_id,
@@ -174,11 +174,12 @@ export function useEvaluatePromotions(): UseEvaluatePromotionsResult {
 
   const runEvaluation = useCallback(
     async (
-      cart: Cart,
+      inputCart: Cart,
       customer: PromotionCustomer | null,
       dismissedIds?: ReadonlySet<string>,
       now: Date = new Date(),
     ): Promise<AppliedPromotion[]> => {
+      const cart = { ...inputCart, items: inputCart.items.filter((item) => !item.is_cancelled) };
       if (cart.items.length === 0) return [];
 
       // 1. Try the RPC. The function is SECURITY DEFINER + GRANT EXECUTE

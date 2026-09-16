@@ -2,7 +2,7 @@
 // Session 13 / Phase 2.D — add a product line to an in-progress opname.
 
 import { useState } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { ProductTypeahead } from '@/features/inventory/components/ProductTypeahead.js';
 import type { ProductTypeaheadRow } from '@/features/inventory/hooks/useProductsForInventory.js';

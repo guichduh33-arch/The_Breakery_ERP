@@ -1,3 +1,4 @@
+import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 // apps/pos/src/features/cart/hooks/useCancelOrderItem.ts
 //
 // Session 10 — call the cancel-item Edge Function with the cashier JWT, manager
@@ -47,6 +48,7 @@ export function useCancelOrderItem() {
 
   return useMutation({
     mutationFn: async ({ orderItemId, reason, managerPin, idempotencyKey, wasteQty }: CancelItemArgs): Promise<CancelItemResponse> => {
+      if (isCartPaymentLocked()) throw new Error('Resume the saved payment before cancelling an item');
       const accessToken = await getAccessToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -61,7 +63,7 @@ export function useCancelOrderItem() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          order_item_id: orderItemId,
+          order_item_id: useCartStore.getState().cart.items.find((item) => item.id === orderItemId)?.server_id ?? orderItemId,
           reason,
           // ADR-010 D4 — forwarded as p_waste_qty (required by the RPC when locked).
           ...(wasteQty !== undefined ? { waste_qty: wasteQty } : {}),

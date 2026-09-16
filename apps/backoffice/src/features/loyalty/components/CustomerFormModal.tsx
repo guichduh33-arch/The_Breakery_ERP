@@ -6,14 +6,8 @@
 // is preserved so they can retry.
 
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  CustomerForm,
-  type CustomerFormValues,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, CustomerForm, type CustomerFormValues } from '@breakery/ui';
+import { DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreateCustomer } from '../hooks/useCreateCustomer.js';
 import { useUpdateCustomer } from '../hooks/useUpdateCustomer.js';
 import type { CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';

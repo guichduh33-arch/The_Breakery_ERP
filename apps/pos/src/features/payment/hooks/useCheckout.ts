@@ -3,6 +3,9 @@ import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, PaymentInput, PaymentResult, PaymentResultLine } from '@breakery/domain';
 import { buildOrderPayload } from '@breakery/domain';
+import type { CheckoutContext } from '@/stores/paymentAttempt';
+import type { OrderSnapshot } from '@/stores/orderSnapshot';
+import { mintDiscountAuthorization } from '@/features/discounts/mintDiscountAuthorization';
 import type { Database, Json } from '@breakery/supabase';
 
 type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v20']['Args'];
@@ -22,6 +25,7 @@ import { usePaymentStore } from '@/stores/paymentStore';
 import { clearManagerPin, getManagerPin } from '@/features/discounts/managerPinHolder';
 
 interface CheckoutInput {
+  context?: CheckoutContext;
   cart: Cart;
   /**
    * Single PaymentInput (legacy v7) OR an array of Tenders (session 10 split-pay).
@@ -47,8 +51,8 @@ interface CheckoutResponse {
 }
 
 export function useCheckout() {
-  const sessionId = useShiftStore((s) => s.current?.id);
-  const idempotencyKey = usePaymentStore((s) => s.idempotencyKey);
+  const currentSessionId = useShiftStore((s) => s.current?.id);
+  const currentIdempotencyKey = usePaymentStore((s) => s.idempotencyKey);
   const queryClient = useQueryClient();
 
   // S43 P0-3 — append idempotency. This mutation has NO automatic retry
@@ -62,7 +66,10 @@ export function useCheckout() {
   const appendUuidRef = useRef<{ attempt: string; uuid: string } | null>(null);
 
   return useMutation({
+    retry: false,
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
+      const sessionId = input.context?.sessionId ?? currentSessionId;
+      const idempotencyKey = input.context?.idempotencyKey ?? currentIdempotencyKey;
       // Critique run 4 lot 2 — details.error porte le code jusqu'au
       // classifier ; sans lui, la bannière fatale affichait le code brut.
       if (!sessionId) {
@@ -71,7 +78,8 @@ export function useCheckout() {
         });
       }
       const { useCartStore } = await import('@/stores/cartStore');
-      const cartState = useCartStore.getState();
+      const liveCart = useCartStore.getState();
+      const cartState = input.context ? { ...input.context, cart: input.cart } : liveCart;
       const { customerId, loyaltyPointsToRedeem, tableNumber, cartDiscount } = cartState.cart;
       const { pickedUpOrderId, appliedPromotions } = cartState;
 
@@ -106,24 +114,26 @@ export function useCheckout() {
         // idempotencyKey → new p_client_uuid, so the uuid replay alone
         // cannot protect us there).
         const printedIds = cartState.printedItemIds;
-        const isCounterFired = printedIds.length > 0;
+        const isCounterFired = cartState.orderOrigin === 'pos' || (cartState.orderOrigin === null && printedIds.length > 0);
         const unsynced = cartState.cart.items.filter(
-          (i) => !i.is_cancelled
+          (i) => !i.is_cancelled && !i.server_id
             && !printedIds.includes(i.id)
             && !cartState.lockedItemIds.includes(i.id),
         );
         if (isCounterFired && unsynced.length > 0) {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
-            appendUuidRef.current = { attempt: idempotencyKey, uuid: crypto.randomUUID() };
+            appendUuidRef.current = { attempt: idempotencyKey, uuid: input.context?.appendUuid ?? crypto.randomUUID() };
           }
           // S44 P0-C(3) — fire_counter_order gates any appended line discount
           // on an authorizing manager (sales.discount). Hoist the first
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v8', {
+          const authorizationId = unsynced.some((i) => i.discount) ? await savedDiscountAuthorization(input.context, 'appendDiscountAuthId') : undefined;
+          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v9', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
+              client_line_id: i.id,
               product_id: i.product_id,
               quantity: i.quantity,
               unit_price: i.unit_price,
@@ -134,6 +144,8 @@ export function useCheckout() {
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
             })) as unknown as Json,
             p_order_id: pickedUpOrderId,
+            ...(customerId ? { p_customer_id: customerId } : {}),
+            ...(authorizationId ? { p_discount_auth_id: authorizationId } : {}),
             // ADR-022 déc. 3 — appel d'appoint du checkout : on pousse au serveur
             // les lignes saisies depuis le dernier fire, client devant la caisse.
             // Un refus de vendabilité arriverait ici TROP TARD : il ne protège
@@ -150,6 +162,9 @@ export function useCheckout() {
           // printOnly auto-fire computes from unprintedItems() and must still
           // print their prep tickets.
           useCartStore.getState().markLocked(unsynced.map((i) => i.id));
+          if (appended && typeof appended === 'object' && 'items' in appended) {
+            useCartStore.getState().applyOrderSnapshot(appended as unknown as OrderSnapshot);
+          }
         }
 
         // Session 11 — tablet pay_existing_order v5 supports multi-tender. We forward
@@ -188,31 +203,7 @@ export function useCheckout() {
         // qu'au panier. Sans nonce valide → la remise est refusée (E1 clos).
         const pickupHasDiscount = (cartDiscount?.amount ?? 0) > 0;
         if (pickupHasDiscount) {
-          const pickupManagerPin = getManagerPin();
-          if (!pickupManagerPin) {
-            throw Object.assign(new Error('discount_requires_authorizer'), {
-              details: { error: 'discount_requires_authorizer' }, status: 403,
-            });
-          }
-          const mintToken = await getAccessToken();
-          const mintRes = await fetch(`${supabaseUrl}/functions/v1/verify-manager-pin`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${mintToken}`,
-              // S25 — PIN en header, jamais dans le body.
-              'x-manager-pin': pickupManagerPin,
-            },
-            body: JSON.stringify({ required_permission: 'sales.discount', mint_scope: 'discount' }),
-          });
-          const mintBody = await mintRes.json().catch(() => ({})) as { authorization_id?: string; error?: string };
-          if (!mintRes.ok || !mintBody.authorization_id) {
-            const code = mintRes.status === 429 ? 'account_locked'
-              : mintRes.status === 403 ? 'permission_missing'
-              : mintBody.error ?? 'wrong_pin';
-            throw Object.assign(new Error(code), { details: { error: code }, status: mintRes.status });
-          }
-          args.p_discount_auth_id = mintBody.authorization_id;
+          args.p_discount_auth_id = await savedDiscountAuthorization(input.context, 'paymentDiscountAuthId');
         }
 
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
@@ -232,6 +223,9 @@ export function useCheckout() {
           loyalty_points_earned?: number;
           idempotent_replay: boolean;
         };
+        if (!envelope?.order_number || !Number.isFinite(envelope.total) || !Number.isFinite(envelope.tax_amount)) {
+          throw new Error('network_error');
+        }
         clearManagerPin();
         return {
           ok: true,
@@ -268,7 +262,8 @@ export function useCheckout() {
       // header (S25 pattern, never in the JSON body); RPC v11 re-validates it.
       const managerPin = getManagerPin();
       const hasDiscount = Boolean(cartDiscount) || input.cart.items.some((i) => i.discount);
-      const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
+      const sourceCode = input.context ? input.context.sourceCode : getOrderSourceCode();
+      const body = await requestPayment(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,18 +274,9 @@ export function useCheckout() {
         // réglage terminal est invalide (défaut serveur 'P').
         body: JSON.stringify({
           ...payload,
-          ...(getOrderSourceCode() !== null ? { source_code: getOrderSourceCode() } : {}),
+          ...(sourceCode != null ? { source_code: sourceCode } : {}),
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as CheckoutResponse;
-        const code = err.error ?? 'checkout_failed';
-        // S38 — `account_locked` (manager hit 5 failed discount PINs) is mapped to a
-        // dedicated French message by classifyCheckoutError via the `account_locked`
-        // code; we just forward the envelope so `details.error` carries the code.
-        throw Object.assign(new Error(code), { details: err, status: res.status });
-      }
-      const body = await res.json() as CheckoutResponse;
       clearManagerPin();
       return {
         ok: true,
@@ -314,4 +300,31 @@ export function useCheckout() {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
+}
+
+async function savedDiscountAuthorization(context: CheckoutContext | undefined, key: 'appendDiscountAuthId' | 'paymentDiscountAuthId'): Promise<string> {
+  const saved = context?.[key] ?? (context ? usePaymentStore.getState().attempt?.context[key] : undefined);
+  if (saved) return saved;
+  const authorizationId = await mintDiscountAuthorization();
+  if (context) usePaymentStore.getState().updateContext({ [key]: authorizationId });
+  return authorizationId;
+}
+/** Keep the timeout active through the response body; supports older tablet WebViews. */
+async function requestPayment(url: string, options: RequestInit): Promise<CheckoutResponse> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    if (!response.ok) {
+      const details = await response.json().catch(() => ({})) as CheckoutResponse;
+      throw Object.assign(new Error(details.error ?? 'checkout_failed'), { details, status: response.status });
+    }
+    const body = await response.json().catch(() => { throw new Error('network_error'); }) as CheckoutResponse;
+    if (!body?.order_id || !body.order_number || !Number.isFinite(body.total) || !Number.isFinite(body.tax_amount)) {
+      throw new Error('network_error');
+    }
+    return body;
+  } finally {
+    clearTimeout(timer);
+  }
 }

@@ -12,14 +12,13 @@
 //
 // Copy is in ENGLISH like the rest of the back-office (audit UX/UI 2026-08-13) —
 // and it says DEACTIVATE, not delete: the row action is destructive-looking, the
-// effect is reversible from the product detail page.
+// La fiche exclut les produits supprimés : ne pas promettre une restauration
+// depuis cette même fiche.
 
 import { useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useDeleteProduct } from '../hooks/useDeleteProduct.js';
 import type { ProductRow } from '../types.js';
 
@@ -62,7 +61,7 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
         <DialogHeader>
           <DialogTitle>Deactivate "{product?.name ?? ''}"</DialogTitle>
           <DialogDescription>
-            The product will be hidden from the catalogue and the POS (soft delete). Past
+            The product will be removed from the catalogue and the POS. Past
             orders are preserved. SKU: <code className="font-mono text-xs">{product?.sku ?? ''}</code>
           </DialogDescription>
         </DialogHeader>
@@ -72,8 +71,8 @@ export function DeleteProductDialog({ product, onClose }: DeleteProductDialogPro
           role="note"
           aria-label="Warning"
         >
-          The product stays deactivated until someone reactivates it by hand from the
-          product detail page.
+          The product will also disappear from the Inactive filter. Its detail page
+          will no longer be available.
         </div>
 
         {error !== null && (

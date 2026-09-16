@@ -5,12 +5,13 @@ import {
   loginWithPin,
   getSession,
   logoutSession,
+  setSupabaseAccessToken,
   type LoginResponse,
   type PermissionCode,
   hasPermission as has,
 } from '@breakery/supabase';
 import { safeStorage, logger } from '@breakery/utils';
-import { supabase, supabaseUrl } from '../lib/supabase.js';
+import { supabaseUrl } from '../lib/supabase.js';
 
 interface AuthUser {
   id: string;
@@ -104,14 +105,12 @@ export const useAuthStore = create<AuthState>()(
             pin,
             device_type: 'backoffice',
           });
-          await supabase.auth.setSession({
-            access_token: res.auth.access_token,
-            refresh_token: res.auth.refresh_token,
-          });
+          setSupabaseAccessToken(res.auth.access_token);
           set({
             user: res.user,
             sessionToken: res.session.token,
             permissions: res.permissions,
+            sessionTimeoutMinutes: res.session_timeout_minutes ?? 30,
             isAuthenticated: true,
             isLoading: false,
             bootstrapStatus: 'ready',
@@ -130,7 +129,7 @@ export const useAuthStore = create<AuthState>()(
         if (token) {
           try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
         }
-        await supabase.auth.signOut().catch((_err: unknown) => { /* ignore signOut error */ });
+        setSupabaseAccessToken(null);
         set({
           user: null,
           sessionToken: null,
@@ -172,17 +171,14 @@ export const useAuthStore = create<AuthState>()(
           permissions.length > 0;
         if (snapshotUsable) {
           try {
-            await supabase.auth.setSession({
-              access_token: authSnapshot.access_token,
-              refresh_token: authSnapshot.refresh_token,
-            });
+            setSupabaseAccessToken(authSnapshot.access_token);
             set({ bootstrapStatus: 'ready', error: null });
             // Revalidation en arrière-plan : rafraîchit permissions + JWT,
             // et un 401 (session révoquée côté serveur) déclenche le logout.
             void get().validateSession();
             return;
           } catch {
-            // setSession a échoué sur le cache — retomber sur le chemin bloquant.
+            // Restauration du bearer échouée — reprendre le chemin bloquant.
           }
         }
 
@@ -192,10 +188,7 @@ export const useAuthStore = create<AuthState>()(
           if (session.auth) {
             // Restore the PostgREST bearer so RLS-protected queries stop 401-ing
             // ("permission denied for table products"). Mirrors login().
-            await supabase.auth.setSession({
-              access_token: session.auth.access_token,
-              refresh_token: session.auth.refresh_token,
-            });
+            setSupabaseAccessToken(session.auth.access_token);
           }
           set({
             user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
@@ -227,10 +220,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const session = await getSession(supabaseUrl, token);
           if (session.auth) {
-            await supabase.auth.setSession({
-              access_token: session.auth.access_token,
-              refresh_token: session.auth.refresh_token,
-            });
+            setSupabaseAccessToken(session.auth.access_token);
           }
           set({
             user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },

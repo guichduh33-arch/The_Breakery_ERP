@@ -179,12 +179,12 @@ export default function AccountingIndexPage(): JSX.Element {
               // `FOCUS_RING` : ces quatre tuiles sont les portes du module, et
               // leur seul retour était le survol SOURIS — au clavier, on
               // traversait le hub sans savoir où l'on était (WCAG 2.4.11).
-              className={`rounded-lg border border-border-subtle bg-bg-elevated p-4 hover:border-border-strong transition-colors ${FOCUS_RING}`}
+              className={`min-w-0 rounded-md border border-border-subtle bg-bg-elevated p-5 hover:border-border-strong transition-colors ${FOCUS_RING}`}
               data-testid={`accounting-tile-${tile.permission}`}
             >
               <div className="flex items-center gap-3">
                 <Icon className="h-5 w-5 text-text-secondary" aria-hidden />
-                <h2 className="font-semibold text-text-primary">{tile.label}</h2>
+                <h2 className="text-lg font-medium tracking-tight text-text-primary">{tile.label}</h2>
               </div>
               {Value !== undefined
                 ? <div className="mt-2"><Value /></div>

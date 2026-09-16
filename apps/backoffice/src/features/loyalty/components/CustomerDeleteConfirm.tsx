@@ -5,7 +5,8 @@
 // and surfaces the error so the typed-name guard isn't silently lost.
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogTitle, Button, Input } from '@breakery/ui';
+import { Dialog, DialogDescription, Input } from '@breakery/ui';
+import { DialogContent, DialogTitle, Button } from '@/components/BackofficeUi.js';
 import { useDeleteCustomer } from '../hooks/useDeleteCustomer.js';
 import type { CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';
 

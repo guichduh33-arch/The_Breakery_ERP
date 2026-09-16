@@ -6,7 +6,7 @@
 // ADR-027 — le filtre de section a disparu de la barre : le stock est global.
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
@@ -43,14 +43,16 @@ vi.mock('@/features/inventory-movements/hooks/useStockLedger.js', async (importO
   };
 });
 
+const aggregateState = vi.hoisted(() => ({ error: null as Error | null, refetch: vi.fn(), filters: vi.fn() }));
 vi.mock('@/features/inventory-movements/hooks/useMovementAggregates.js', () => ({
-  useMovementAggregates: () => ({
+  useMovementAggregates: (filters: unknown) => { aggregateState.filters(filters); return ({
     data: [
-      { movement_type: 'sale',     count: 10, qty_total: -20, value_total: 0 },
-      { movement_type: 'purchase', count: 3,  qty_total:  72, value_total: 360000 },
+      { movement_type: 'sale', unit: 'pcs', direction: -1, count: 10, qty_total: 20, value_total: -100000 },
+      { movement_type: 'purchase', unit: 'pcs', direction: 1, count: 3, qty_total: 72, value_total: 360000 },
+      { movement_type: 'adjustment', unit: 'kg', direction: 1, count: 1, qty_total: 1.375, value_total: 5000 },
     ],
-    isLoading: false, error: null,
-  }),
+    isLoading: false, error: aggregateState.error, refetch: aggregateState.refetch,
+  }); },
 }));
 
 function renderPage() {
@@ -65,10 +67,31 @@ function renderPage() {
 // Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
 // `reports.export`. Ce test verifie le cablage de l'export, pas le RBAC.
 beforeEach(() => {
+  aggregateState.error = null;
+  vi.clearAllMocks();
   useAuthStore.setState({ permissions: ['reports.export'] });
 });
 
 describe('StockMovementsPage (stock-card rewrite)', () => {
+  it('keeps units separate and classifies positive adjustments as incoming', () => {
+    renderPage();
+    const incoming = within(screen.getByTestId('kpi-stock-in'));
+    expect(incoming.getByText('72 pcs')).toBeInTheDocument();
+    expect(incoming.getByText('1,375 kg')).toBeInTheDocument();
+    expect(within(screen.getByTestId('kpi-stock-out')).getByText('20 pcs')).toBeInTheDocument();
+  });
+  it('withholds stale totals and offers retry when aggregates fail', () => {
+    aggregateState.error = new Error('offline');
+    renderPage();
+    expect(screen.getByTestId('kpi-movements-value')).toHaveTextContent('—');
+    expect(screen.queryByText('72 pcs')).not.toBeInTheDocument();
+    expect(screen.getByText('Movement totals could not be loaded.')).toBeInTheDocument();
+  });
+  it('passes the selected movement type to the aggregate query', () => {
+    renderPage();
+    fireEvent.change(screen.getByLabelText(/Type/i), { target: { value: 'sale' } });
+    expect(aggregateState.filters).toHaveBeenLastCalledWith(expect.objectContaining({ movementType: 'sale' }));
+  });
   it('renders the page header and KPI tiles', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /Stock movements/i })).toBeInTheDocument();

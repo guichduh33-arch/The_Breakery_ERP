@@ -1,3 +1,4 @@
+import { useReceiptJobs } from '@/services/print/receiptJobs';
 // apps/pos/src/features/payment/__tests__/receipt-template-applied.smoke.test.tsx
 //
 // Settings §6.A — the default receipt template (receipt_templates) and the
@@ -97,6 +98,7 @@ function buildProps(): SuccessModalProps {
 
 describe('SuccessModal — receipt template + identity applied to the payload', () => {
   beforeEach(() => {
+    useReceiptJobs.setState({ jobs: [] });
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });

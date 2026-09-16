@@ -27,6 +27,21 @@ describe('ImportDropzone [S42 smoke]', () => {
     expect((input as HTMLInputElement).tabIndex).toBe(-1);
   });
 
+  it('activates once with Space, prevents scrolling, and exposes its disabled state', () => {
+    const { container, rerender } = render(<ImportDropzone onFile={vi.fn()} />);
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const click = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+    const zone = screen.getByRole('button', { name: 'Upload .xlsx file' });
+    expect(zone.contains(input)).toBe(false);
+    expect(fireEvent.keyDown(zone, { key: ' ' })).toBe(false);
+    expect(click).toHaveBeenCalledTimes(1);
+    rerender(<ImportDropzone onFile={vi.fn()} disabled />);
+    expect(zone).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.keyDown(zone, { key: 'Enter' });
+    expect(click).toHaveBeenCalledTimes(1);
+    click.mockRestore();
+  });
+
   it('P5b: dropping a non-xlsx file shows an error and does not call onFile', () => {
     const onFile = vi.fn();
     render(<ImportDropzone onFile={onFile} />);

@@ -151,7 +151,7 @@ describe('offline fire chaos (spec 006x lot 5)', () => {
     expect(intent.local_number).toBe('L-1');
     expect(intent.session_id).toBe('sess-1');
     expect(intent.items).toEqual([
-      { product_id: 'p-barista', quantity: 1, unit_price: 30_000, modifiers: [] },
+      { client_line_id: 'l1', product_id: 'p-barista', quantity: 1, unit_price: 30_000, modifiers: [] },
     ]);
 
     // Publish tenté (best effort) puis ignoré — pas d'exception.

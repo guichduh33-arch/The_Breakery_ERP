@@ -9,7 +9,8 @@
 // `display.read` at the route level.
 
 import { type JSX } from 'react';
-import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita, formatQuantity } from '@breakery/utils';
 import {
   useDisplayStock,

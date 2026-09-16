@@ -5,9 +5,8 @@
 // idempotency key in `x-idempotency-key` (S55 parity, S60).
 
 import { useState, useRef, type JSX } from 'react';
-import {
-  Button, Dialog, DialogContent, DialogTitle, DialogDescription,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useVoidOrder } from '@/features/orders/hooks/useVoidOrder.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

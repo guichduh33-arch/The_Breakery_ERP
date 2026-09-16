@@ -434,15 +434,30 @@ describe('Session 5 golden path — tablet pickup-and-pay', () => {
     expect(useCartStore.getState().pickedUpOrderId).toBe('tablet-order-99');
   });
 
-  it('restoreCart after pickup does NOT touch pickedUpOrderId', () => {
-    useCartStore.getState().setPickedUpOrderId('tablet-order-99');
-    useCartStore.getState().restoreCart({
-      items: TABLET_ITEMS,
+  it('pickup snapshot restores the order identity and seals the server lines', () => {
+    useCartStore.getState().applyOrderSnapshot({
+      order_id: 'tablet-order-99',
+      order_number: 'T-99',
+      created_via: 'tablet',
+      customerId: null,
+      notes: null,
+      items: TABLET_ITEMS.map((item) => ({
+        ...item, client_line_id: `local-${item.id}`, is_locked: true, kitchen_status: 'pending',
+      })),
       order_type: 'dine_in',
       tableNumber: 'T-03',
-    });
-    expect(useCartStore.getState().pickedUpOrderId).toBe('tablet-order-99');
-    expect(useCartStore.getState().cart.items).toHaveLength(2);
+    }, true);
+    const state = useCartStore.getState();
+    expect(state.pickedUpOrderId).toBe('tablet-order-99');
+    expect(state.orderNumber).toBe('T-99');
+    expect(state.orderOrigin).toBe('tablet');
+    expect(state.cart.tableNumber).toBe('T-03');
+    expect(state.cart.items).toMatchObject([
+      { id: 'local-ti1', server_id: 'ti1' },
+      { id: 'local-ti2', server_id: 'ti2' },
+    ]);
+    expect(state.lockedItemIds).toEqual(['local-ti1', 'local-ti2']);
+    expect(state.canEdit('local-ti1')).toBe(false);
   });
 
   it('markLocked after restoreCart locks all tablet items', () => {

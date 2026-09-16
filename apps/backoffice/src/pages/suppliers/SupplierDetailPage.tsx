@@ -37,7 +37,8 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
-import { Badge, Button, Card, EmptyState, KpiTile, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
+import { Badge, Tabs, TabsContent } from '@breakery/ui';
+import { Button, Card, EmptyState, KpiTile, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, formatNumber } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -381,12 +382,12 @@ function DetailRow({
   value: ReactNode;
 }): JSX.Element {
   return (
-    <div className="flex items-start gap-2 py-1">
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />
-      <div className="min-w-0">
-        <SectionLabel as="span" size="xs" className="mr-2">{label}</SectionLabel>
-        <span className="text-sm text-text-primary">{value}</span>
-      </div>
+    <div className="min-w-0 py-1">
+      <dt className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />
+        {label}
+      </dt>
+      <dd className="mt-1 pl-5 text-sm text-text-primary break-words">{value}</dd>
     </div>
   );
 }

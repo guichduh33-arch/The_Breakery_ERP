@@ -29,7 +29,8 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react';
-import { Badge, Button, Card, EmptyState } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Button, Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -656,17 +657,17 @@ function PaymentStatusBadge({ status }: { status: PoPaymentStatus }): JSX.Elemen
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }): JSX.Element {
   return (
     <div className="rounded-md bg-surface-inert px-3 py-2">
-      <SectionLabel as="div" size="xs">{label}</SectionLabel>
-      <div className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono' : ''}`}>{value}</div>
+      <dt className="text-sm font-medium text-text-secondary">{label}</dt>
+      <dd className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono' : ''}`}>{value}</dd>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="flex items-center justify-between text-text-secondary">
-      <span>{label}</span>
-      <span className="font-data tabular-nums text-text-primary">{value}</span>
+    <div className="flex flex-wrap items-baseline justify-between gap-2 text-text-secondary">
+      <dt>{label}</dt>
+      <dd className="font-data tabular-nums text-text-primary">{value}</dd>
     </div>
   );
 }

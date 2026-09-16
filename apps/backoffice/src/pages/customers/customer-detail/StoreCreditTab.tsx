@@ -3,7 +3,7 @@
 // ledger append-only. Clone structurel de LoyaltyTab (co-located split).
 
 import type { JSX } from 'react';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { formatDate } from '@breakery/utils';
 import {
   useStoreCreditHistory, type StoreCreditSource,

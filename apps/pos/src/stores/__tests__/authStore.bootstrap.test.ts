@@ -7,6 +7,7 @@
 //   anon key (which 401s + triggers the retry storm).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type * as BreakerySupabase from '@breakery/supabase';
 
 const { getSession, logoutSession, setSupabaseAccessToken } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -17,7 +18,7 @@ const { getSession, logoutSession, setSupabaseAccessToken } = vi.hoisted(() => (
 vi.mock('@/lib/supabase', () => ({ supabaseUrl: 'http://test.local' }));
 
 vi.mock('@breakery/supabase', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@breakery/supabase')>();
+  const actual = await importOriginal<typeof BreakerySupabase>();
   return { ...actual, getSession, logoutSession, setSupabaseAccessToken };
 });
 
@@ -70,16 +71,18 @@ describe('POS authStore.bootstrap', () => {
     expect(s.hasPermission('reports.sales.read')).toBe(true);
   });
 
-  it('logs out on a 401 (revoked/expired session)', async () => {
+  it('verrouille sans effacer la session locale sur un 401', async () => {
     useAuthStore.setState({ sessionToken: 'tok', isAuthenticated: true });
     getSession.mockRejectedValue(Object.assign(new Error('session_invalid'), { status: 401 }));
 
     await useAuthStore.getState().bootstrap();
 
     const s = useAuthStore.getState();
-    expect(logoutSession).toHaveBeenCalled();
-    expect(setSupabaseAccessToken).toHaveBeenCalledWith(null); // dropped by logout()
-    expect(s.isAuthenticated).toBe(false);
+    expect(logoutSession).not.toHaveBeenCalled();
+    expect(s.sessionToken).toBe('tok');
+    expect(s.isAuthenticated).toBe(true);
+    expect(s.isLocked).toBe(true);
+    expect(s.lockReason).toBe('session_expired');
     expect(s.bootstrapStatus).toBe('ready');
   });
 

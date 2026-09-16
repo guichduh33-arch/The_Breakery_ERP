@@ -6,10 +6,8 @@
 // variant under the newly-created parent grouping.
 
 import { useState, type JSX } from 'react';
-import {
-  Button, Input,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Input, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useConvertProductToParent } from '../hooks/useConvertProductToParent.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

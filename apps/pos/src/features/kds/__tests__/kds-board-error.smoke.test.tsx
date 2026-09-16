@@ -17,6 +17,12 @@ const refetch = vi.fn();
 vi.mock('../hooks/useKdsOrders', () => ({
   useKdsOrders: () => ({ data: [], isLoading: false, isError: true, refetch }),
 }));
+vi.mock('../hooks/useKdsServedOrders', () => ({
+  useKdsServedOrders: () => ({ data: [] }),
+}));
+vi.mock('../hooks/useKdsConfig', () => ({
+  useKdsConfig: () => ({ warningMs: 300_000, urgentMs: 600_000, archiveMs: 300_000 }),
+}));
 vi.mock('../hooks/useAgeTimer', () => ({
   useAgeTimer: () => Date.parse('2026-05-14T12:00:00.000Z'),
   useAgeDerived: (compute: (now: number) => unknown) =>

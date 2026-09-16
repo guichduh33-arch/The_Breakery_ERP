@@ -2,10 +2,8 @@
 // Session 27b — Modal form to create a new product via create_product_v3 RPC.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreateProduct } from '../hooks/useCreateProduct.js';
 import type { CategoryOption } from '../types.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

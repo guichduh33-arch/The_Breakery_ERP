@@ -33,6 +33,7 @@ export function useCreateTabletOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: false,
     mutationFn: async ({ cart, waiterId, clientUuid, appendToOrderId }: CreateTabletOrderArgs): Promise<CreateTabletOrderResult> => {
       const payload = buildSubmitPayload(cart, waiterId);
       const isAppend = appendToOrderId !== undefined;
@@ -101,7 +102,8 @@ export function useCreateTabletOrder() {
             quantity: i.quantity,
             unit_price: i.unit_price,
             modifiers: i.modifiers,
-            dispatch_stations: stationByProductId[i.product_id] ?? [],
+            component_modifiers: (i.combo_components ?? []).flatMap((component) => (component.modifiers ?? []).map((modifier) => ({ ...modifier, component_name: component.name ?? 'Component' }))),
+                dispatch_stations: stationByProductId[i.product_id] ?? [],
           })),
         };
         hubBus.publish('order.fired', firedPayload);
@@ -120,7 +122,7 @@ export function useCreateTabletOrder() {
       // TypeError synchrone casserait l'envoi à 100 % sur cet appareil.
       const timeoutController = new AbortController();
       const timeoutHandle = setTimeout(() => timeoutController.abort(), 15_000);
-      const { data, error } = await supabase.rpc('create_tablet_order_v9', {
+      const { data, error } = await supabase.rpc('create_tablet_order_v10', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',

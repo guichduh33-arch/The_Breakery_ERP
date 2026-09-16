@@ -16,7 +16,7 @@ const rpc = vi.fn().mockResolvedValue({
 });
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (...a: unknown[]) => rpc(...a) },
+  supabase: { rpc: (...a: unknown[]): unknown => rpc(...a) },
 }));
 
 const PRINTERS_MAP = new Map([
@@ -30,7 +30,7 @@ vi.mock('../hooks/useStationPrinters', () => ({
 
 vi.mock('../hooks/useStationMap', () => ({
   useStationMap: () => ({ data: { [PID]: ['kitchen', 'display'] } }),
-  getStationMap: async () => ({ [PID]: ['kitchen', 'display'] }),
+  getStationMap: () => Promise.resolve({ [PID]: ['kitchen', 'display'] }),
 }));
 
 vi.mock('@/stores/authStore', () => ({

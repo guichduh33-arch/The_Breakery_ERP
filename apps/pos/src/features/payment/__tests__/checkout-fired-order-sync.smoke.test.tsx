@@ -1,9 +1,10 @@
+vi.mock('@/features/discounts/mintDiscountAuthorization', () => ({ mintDiscountAuthorization: vi.fn().mockResolvedValue('discount-proof') }));
 // apps/pos/src/features/payment/__tests__/checkout-fired-order-sync.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : checkout d'un ordre comptoir FIRED.
 // pay_existing_order_v20 paie les order_items PERSISTÉS, pas le panier local —
 // les items ajoutés APRÈS le dernier fire doivent être appendés à l'ordre DB
-// (fire_counter_order_v8 append mode) AVANT le paiement, sinon le client paie
+// (fire_counter_order_v9 append mode) AVANT le paiement, sinon le client paie
 // un total partiel.
 //
 // Couvre :
@@ -109,7 +110,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
   beforeEach(() => {
     rpcMock.mockReset();
     rpcMock.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === 'fire_counter_order_v8' ? FIRE_OK : PAY_OK),
+      Promise.resolve(fn === 'fire_counter_order_v9' ? FIRE_OK : PAY_OK),
     );
     useShiftStore.setState({ current: { id: 'sess-1', opened_at: '', opening_cash: 0 } });
     usePaymentStore.setState({ idempotencyKey: 'attempt-1' });
@@ -120,7 +121,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     await runCheckout();
 
     expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual([
-      'fire_counter_order_v8',
+      'fire_counter_order_v9',
       'pay_existing_order_v20',
     ]);
 
@@ -131,7 +132,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     // Only l2 — l1 is already persisted (printedItemIds).
     expect(appendArgs.p_items).toHaveLength(1);
     expect(appendArgs.p_items).toEqual([
-      { product_id: 'p2', quantity: 2, unit_price: 15_000, modifiers: [], discount_amount: 1_000 },
+      { client_line_id: 'l2', product_id: 'p2', quantity: 2, unit_price: 15_000, modifiers: [], discount_amount: 1_000 },
     ]);
 
     const payArgs = rpcMock.mock.calls[1]![1] as Record<string, unknown>;
@@ -165,7 +166,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
   it('retry after an append FAILURE replays the SAME p_client_uuid (nothing was locked)', async () => {
     rpcMock.mockImplementation((fn: unknown) =>
       Promise.resolve(
-        fn === 'fire_counter_order_v8' ? { data: null, error: { message: 'append_boom' } } : PAY_OK,
+        fn === 'fire_counter_order_v9' ? { data: null, error: { message: 'append_boom' } } : PAY_OK,
       ),
     );
 
@@ -185,7 +186,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     expect(useCartStore.getState().lockedItemIds).not.toContain('l2');
 
     rpcMock.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === 'fire_counter_order_v8' ? FIRE_OK : PAY_OK),
+      Promise.resolve(fn === 'fire_counter_order_v9' ? FIRE_OK : PAY_OK),
     );
     await act(async () => {
       await result.current.mutateAsync({
@@ -195,7 +196,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     });
 
     // …with the SAME uuid (RPC flavor-2 idempotent replay, no duplicate).
-    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v8');
+    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v9');
     expect(fireCalls).toHaveLength(2);
     const uuid1 = (fireCalls[0]![1] as Record<string, unknown>).p_client_uuid;
     const uuid2 = (fireCalls[1]![1] as Record<string, unknown>).p_client_uuid;
@@ -205,7 +206,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
   it('retry after append SUCCESS + pay failure makes ZERO additional append calls (lines locked)', async () => {
     rpcMock.mockImplementation((fn: unknown) =>
       Promise.resolve(
-        fn === 'fire_counter_order_v8' ? FIRE_OK : { data: null, error: { message: 'network' } },
+        fn === 'fire_counter_order_v9' ? FIRE_OK : { data: null, error: { message: 'network' } },
       ),
     );
 
@@ -225,7 +226,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     expect(useCartStore.getState().lockedItemIds).toContain('l2');
 
     rpcMock.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === 'fire_counter_order_v8' ? FIRE_OK : PAY_OK),
+      Promise.resolve(fn === 'fire_counter_order_v9' ? FIRE_OK : PAY_OK),
     );
     await act(async () => {
       await result.current.mutateAsync({
@@ -235,7 +236,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     });
 
     // unsynced is now empty → no second fire call, just the pay.
-    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v8');
+    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v9');
     expect(fireCalls).toHaveLength(1);
   });
 
@@ -249,7 +250,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     // dans ce cas).
     rpcMock.mockImplementation((fn: unknown) =>
       Promise.resolve(
-        fn === 'fire_counter_order_v8' ? FIRE_OK : { data: null, error: { message: 'network' } },
+        fn === 'fire_counter_order_v9' ? FIRE_OK : { data: null, error: { message: 'network' } },
       ),
     );
 
@@ -271,7 +272,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     });
 
     rpcMock.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === 'fire_counter_order_v8' ? FIRE_OK : PAY_OK),
+      Promise.resolve(fn === 'fire_counter_order_v9' ? FIRE_OK : PAY_OK),
     );
     await act(async () => {
       await result.current.mutateAsync({
@@ -280,7 +281,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
       });
     });
 
-    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v8');
+    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v9');
     expect(fireCalls).toHaveLength(1); // first attempt only — l2 stayed locked
   });
 });

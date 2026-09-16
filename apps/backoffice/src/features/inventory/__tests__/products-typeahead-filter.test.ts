@@ -15,16 +15,18 @@ import React from 'react';
 // --- Spy on the PostgREST query-builder chain --------------------------------
 // We capture every `.eq(col, val)` call so we can assert which filters are applied.
 
+const orSpy = vi.fn().mockReturnThis();
+const selectSpy = vi.fn().mockReturnThis();
 const eqSpy = vi.fn().mockReturnThis();
 const limitMock = vi.fn().mockResolvedValue({ data: [], error: null });
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
+      select: selectSpy,
       is: vi.fn().mockReturnThis(),
       eq: eqSpy,
-      ilike: vi.fn().mockReturnThis(),
+      or: orSpy,
       order: vi.fn().mockReturnThis(),
       limit: limitMock,
     })),
@@ -45,6 +47,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useProductsForInventory — audit M1 filter contract', () => {
   beforeEach(() => {
     eqSpy.mockClear();
+    orSpy.mockClear();
+    selectSpy.mockClear();
     limitMock.mockClear();
     limitMock.mockResolvedValue({ data: [], error: null });
   });
@@ -67,4 +71,18 @@ describe('useProductsForInventory — audit M1 filter contract', () => {
     expect(result.current.fetchStatus).toBe('idle');
     expect(eqSpy).not.toHaveBeenCalled();
   });
+
+  it.each(['T_PROD_FLOUR', 'Flour,"(white)', '100% flour', 'path\\flour'])(
+    'quotes literal name/SKU search safely: %s', async (term) => {
+      const { result } = renderHook(() => useProductsForInventory(term), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const filter = orSpy.mock.calls[0]?.[0] as string;
+      const values = filter.split(',sku.ilike.');
+      expect(values).toHaveLength(2);
+      const expectedPattern = `%${term.replace(/[\\%_]/g, '\\$&')}%`;
+      expect(JSON.parse(values[0]!.slice('name.ilike.'.length))).toBe(expectedPattern);
+      expect(JSON.parse(values[1]!)).toBe(expectedPattern);
+      expect(selectSpy).toHaveBeenCalledWith('id, sku, name, current_stock, unit');
+    },
+  );
 });

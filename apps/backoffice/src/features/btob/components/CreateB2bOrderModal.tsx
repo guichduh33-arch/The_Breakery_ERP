@@ -10,7 +10,7 @@
 // would_exceed_by so the operator can either adjust the basket or escalate.
 //
 // S69 Volet B (Task 8) — the line unit_price field is a display convenience
-// only: create_b2b_order_v6 resolves the authoritative price server-side
+// only: create_b2b_order resolves the authoritative price server-side
 // (negotiated customer price > category price > retail), ignoring whatever
 // is sent here. To avoid showing a stale retail price for customers with a
 // negotiated deal, prefill from useCustomerNegotiatedPrices(customerId) when
@@ -19,15 +19,8 @@
 
 import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { Trash2, Plus } from 'lucide-react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  Input,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import {
   useCreateB2bOrder,
@@ -95,7 +88,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     [customers.data, customerId],
   );
 
-  // Display-only prefill: create_b2b_order_v6 re-resolves the authoritative
+  // Display-only prefill: create_b2b_order re-resolves the authoritative
   // price server-side (negotiated > category > retail) regardless of what's
   // sent, but showing a stale retail default when this customer has a
   // negotiated deal would be confusing for the operator.
@@ -151,7 +144,8 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     if (!Number.isFinite(q) || q <= 0) return false;
     if (!Number.isFinite(p) || p < 0)  return false;
     const product = productById.get(r.productId);
-    if (product !== undefined && product.current_stock < q) return false;
+    // Untracked products consume recipe components; the RPC validates their stock.
+    if (product?.track_inventory === true && product.current_stock < q) return false;
     return true;
   });
 
@@ -283,7 +277,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
               {items.map((row, idx) => {
                 const product   = row.productId !== '' ? productById.get(row.productId) ?? null : null;
                 const q         = Number.parseFloat(row.quantity);
-                const overstock = product !== null && Number.isFinite(q) && q > product.current_stock;
+                const overstock = product?.track_inventory === true && Number.isFinite(q) && q > product.current_stock;
                 return (
                   <div key={row.rowKey} className="grid grid-cols-12 gap-2 items-start">
                     <Select

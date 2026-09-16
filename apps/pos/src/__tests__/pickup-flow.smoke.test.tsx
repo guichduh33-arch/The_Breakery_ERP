@@ -85,6 +85,14 @@ describe('pickup-flow smoke', () => {
     });
 
     mocks.rpc.mockImplementation((name: string) => {
+      if (name === 'get_pos_order_snapshot_v1') {
+        return Promise.resolve({ data: {
+          order_id: PICKUP_RESULT.id, order_number: PICKUP_RESULT.order_number,
+          order_type: PICKUP_RESULT.order_type, tableNumber: PICKUP_RESULT.table_number,
+          created_via: 'tablet', customerId: null, notes: null,
+          items: ORDER_ITEMS.map((item) => ({ ...item, is_locked: true, kitchen_status: 'pending' })),
+        }, error: null });
+      }
       if (name === 'pickup_tablet_order') {
         return Promise.resolve({ data: PICKUP_RESULT, error: null });
       }
@@ -124,6 +132,8 @@ describe('pickup-flow smoke', () => {
     await waitFor(() => {
       const state = useCartStore.getState();
       expect(state.pickedUpOrderId).toBe('order-tablet-1');
+      expect(state.orderNumber).toBe('#T001');
+      expect(state.orderOrigin).toBe('tablet');
       expect(state.cart.items).toHaveLength(2);
       // name_snapshot → CartItem.name mapping
       expect(state.cart.items.map((i) => i.name)).toEqual(['Americano', 'Croissant']);

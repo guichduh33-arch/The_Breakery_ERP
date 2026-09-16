@@ -102,9 +102,11 @@ describe('useCartBroadcastReceiver — payment_complete (C-D4)', () => {
     });
     expect(result.current?.type).toBe('cart_update');
 
-    // The stale revert timer must not fire now that a cart is showing.
+    // Le POS reste présent pendant que la minuterie de remerciement expire.
     act(() => {
-      vi.advanceTimersByTime(PAYMENT_COMPLETE_DISPLAY_MS);
+      vi.advanceTimersByTime(4000);
+      const bc = new FakeBC('breakery-cart'); bc.postMessage({ type: 'presence' }); bc.close();
+      vi.advanceTimersByTime(4000);
     });
     expect(result.current?.type).toBe('cart_update');
   });

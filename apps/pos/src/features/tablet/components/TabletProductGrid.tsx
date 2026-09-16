@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Search } from 'lucide-react';
 import { toast } from 'sonner';
-import { EmptyState, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
+import { Button, EmptyState, FullScreenModal, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
 import type { Product, SelectedModifiers } from '@breakery/domain';
 import { allLotsExpiredOrConsumed } from '@breakery/domain';
@@ -190,7 +190,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading products">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-4" aria-busy="true" aria-label="Loading products">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -221,7 +221,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             size="md"
           />
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-4">
             {filtered.map((p) => {
               const soldOut = p.is_sellable === false;
               const lots = lotsByProduct?.get(p.id);
@@ -259,6 +259,20 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
           onClose={handleClose}
           onConfirm={handleConfirm}
         />
+      )}
+      {product && !modifiersQuery.isSuccess && (
+        <FullScreenModal open onOpenChange={(open) => { if (!open) handleClose(); }} accessibleTitle={`Options for ${product.name}`}>
+          <div className="m-auto w-full max-w-lg space-y-6 p-6">
+            <h2 className="text-xl font-semibold">{product.name}</h2>
+            {modifiersQuery.isError ? (
+              <div role="alert" className="space-y-4">
+                <p>Unable to load product options. Check your connection and retry.</p>
+                <Button className="min-h-12" onClick={() => { void modifiersQuery.refetch(); }}>Retry</Button>
+              </div>
+            ) : <p role="status">Loading product options…</p>}
+            <Button className="min-h-12" variant="secondary" onClick={handleClose}>Cancel</Button>
+          </div>
+        </FullScreenModal>
       )}
 
       {/* Lot D — configurateur combo, miroir du comptoir (ProductTapHandler).

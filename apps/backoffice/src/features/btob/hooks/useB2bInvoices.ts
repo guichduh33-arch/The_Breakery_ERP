@@ -25,11 +25,10 @@ export interface B2bInvoiceRow {
    * Jour convenu pour le RETRAIT de la commande (le modèle B2B est le retrait
    * sur place, il n'y a pas de tournée de livraison).
    *
-   * `null` partout tant que la saisie n'est pas branchée : la colonne a été
-   * ouverte le 2026-08-08 sans toucher à create_b2b_order, dont le bump est un
-   * lot distinct. L'écran l'affiche comme non convenue plutôt que d'inventer.
+   * NULL indique qu'aucun jour n'a été convenu, notamment sur les anciens ordres.
    */
   pickup_date:      string | null;
+  b2b_delivered_at?: string | null;
 }
 
 export const B2B_INVOICES_QUERY_KEY = ['b2b-invoices'] as const;

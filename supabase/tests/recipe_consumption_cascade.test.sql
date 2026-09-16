@@ -4,7 +4,7 @@
 -- Lancer via MCP execute_sql (enveloppe BEGIN … ROLLBACK portée par ce fichier).
 
 BEGIN;
-SELECT plan(4);
+SELECT plan(6);
 
 -- Fixture : cappuccino (non suivi) → espresso (non suivi) → grains (suivi) ;
 --           cappuccino → lait (suivi). Catégorie : première dispo.
@@ -51,6 +51,34 @@ SELECT ok(
   NOT EXISTS(SELECT 1 FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'),1)
            WHERE product_id = (SELECT id FROM _ids WHERE label='beans')),
   'no longer descends to beans once espresso is tracked');
+
+-- 5 (F1, contrôle POSITIF) : une unité différente mais CONVERTIBLE est bien
+--    convertie. 0,15 lt de lait doivent donner 150 (l'unité de stock est le ml).
+--    Sans ce contrôle, un résolveur qui refuserait TOUTE unité différente
+--    passerait le test 6 sans rien prouver.
+UPDATE recipes SET quantity = 0.15, unit = 'lt'
+ WHERE product_id = (SELECT id FROM _ids WHERE label='cap')
+   AND material_id = (SELECT id FROM _ids WHERE label='milk');
+SELECT is(
+  (SELECT qty_base FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'), 1)
+     WHERE product_id = (SELECT id FROM _ids WHERE label='milk')),
+  150::numeric, 'convertible unit is converted: 0.15 lt -> 150 ml');
+
+-- 6 (F1) : une paire d'unités INCONVERTIBLE échoue franchement (P0002) au lieu de
+--    déduire la quantité brute. Avant le correctif, cette ligne rendait 10 `cup`
+--    au lieu de 10 g — la classe d'erreur x1000, écrite dans un ledger append-only.
+DO $$
+DECLARE v_cat uuid; v_cupmat uuid := gen_random_uuid();
+BEGIN
+  SELECT id INTO v_cat FROM categories LIMIT 1;
+  INSERT INTO products (id, sku, name, category_id, retail_price, unit, track_inventory, deduct_stock, current_stock)
+    VALUES (v_cupmat, 'T-CUPMAT-'||v_cupmat, 'Test Cup Material', v_cat, 0, 'cup', true, false, 100);
+  INSERT INTO recipes (product_id, material_id, quantity, unit)
+    VALUES ((SELECT id FROM _ids WHERE label='cap'), v_cupmat, 10, 'g');
+END $$;
+SELECT throws_ok(
+  $$ SELECT * FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'), 1) $$,
+  'P0002', NULL, 'unconvertible unit pair raises instead of deducting raw qty');
 
 SELECT * FROM finish();
 ROLLBACK;

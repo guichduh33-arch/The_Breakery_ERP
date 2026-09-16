@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/suppliers/components/SupplierListRow.tsx
 import { Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import type { SupplierRow } from '../hooks/useSuppliersList.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

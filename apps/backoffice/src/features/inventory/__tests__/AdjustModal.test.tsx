@@ -8,9 +8,9 @@
 //
 // Behavioural contract:
 //   - Locked-product mode (initialProduct provided) hides the typeahead.
-//   - The "Apply" button is disabled until product + non-negative integer
+//   - The "Apply" button is disabled until product + non-negative quantity
 //     newQty + 3+-char reason are all valid.
-//   - Submitting calls supabase.rpc('adjust_stock_v1', {...}) with the
+//   - Submitting calls supabase.rpc('adjust_stock_v2', {...}) with the
 //     correct args (productId, newQty, reason, idempotencyKey).
 //   - The delta preview reflects (newQty - current_stock).
 
@@ -28,7 +28,7 @@ const emptyChain = {
   select: () => emptyChain,
   is:     () => emptyChain,
   eq:     () => emptyChain,
-  ilike:  () => emptyChain,
+  or:     () => emptyChain,
   order:  () => emptyChain,
   limit:  () => Promise.resolve(emptyResult),
 };
@@ -95,10 +95,45 @@ describe('AdjustModal', () => {
     expect(screen.queryByLabelText(/^Product$/i)).not.toBeInTheDocument();
   });
 
+  it('submits decimal stock in its base unit without truncation', async () => {
+    renderModal({ ...STOCK_ROW, unit: 'kg', current_stock: 2 });
+    fireEvent.change(screen.getByLabelText(/New on-hand quantity.*kg/i), { target: { value: '1.375' } });
+    fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
+    expect(screen.getByText(/2 kg → 1,375 kg/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('adjust_stock_v2', expect.objectContaining({ p_new_qty: 1.375 })));
+  });
+
+  it('locks uncertain details and retries with the identical key and payload', async () => {
+    mockRpc.mockReturnValue({ data: null, error: { message: 'network unavailable' } });
+    renderModal(STOCK_ROW);
+    const quantity = screen.getByLabelText(/New on-hand quantity/i);
+    fireEvent.change(quantity, { target: { value: '12' } });
+    fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await screen.findByRole('button', { name: 'Retry adjustment' });
+    expect(quantity).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry adjustment' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
+    expect(mockRpc.mock.calls[1]).toEqual(mockRpc.mock.calls[0]);
+  });
+
+  it.each([
+    ['idempotency_conflict', 'Check movement history'],
+    ['invalid_quantity', '3 decimal places'],
+  ])('explains %s without a generic error', async (code, message) => {
+    mockRpc.mockReturnValue({ data: null, error: { message: code } });
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '12' } });
+    fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(message));
+  });
+
   it('shows current stock and renders Apply button (initially disabled)', () => {
     renderModal(STOCK_ROW);
     expect(screen.getByText(/Current stock:/)).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('10 pcs')).toBeInTheDocument();
     const apply = screen.getByRole('button', { name: /Apply/i });
     expect(apply).toBeDisabled();
   });
@@ -133,7 +168,7 @@ describe('AdjustModal', () => {
 
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('adjust_stock_v1');
+    expect(call[0]).toBe('adjust_stock_v2');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_new_qty:    22,

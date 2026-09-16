@@ -6,14 +6,8 @@
 // server errors surfaced as a banner.
 
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreateSupplier } from '../hooks/useCreateSupplier.js';
 import { useUpdateSupplier } from '../hooks/useUpdateSupplier.js';
 import type { SupplierRow } from '../hooks/useSuppliersList.js';

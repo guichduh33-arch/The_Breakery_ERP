@@ -1,5 +1,5 @@
 // supabase/tests/functions/adjust-stock.test.ts
-// Session 12 — Live integration tests for adjust_stock_v1 RPC.
+// Session 12 — Live integration tests for adjust_stock_v2 RPC.
 // Pattern mirrors loyalty-adjust.test.ts: PIN-login → JWT-bearing client → rpc().
 //
 // Coverage:
@@ -17,7 +17,7 @@ import { loginAs, jwtClient } from './_helpers/auth';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v2 RPC — integration', () => {
   let adminToken:   string;
   let managerToken: string;
   let productId:    string;
@@ -32,11 +32,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
     // Seed product profile id for audit assertions
     const { data: prof } = await admin.from('user_profiles').select('id')
       .eq('employee_code', 'EMP000').single();
-    adminProfileId = prof!.id;
+    adminProfileId = String(prof!.id);
 
     const { data: p } = await admin.from('products')
       .select('id').eq('sku', 'BEV-AMER').single();
-    productId = p!.id;
+    productId = String(p!.id);
   });
 
   beforeEach(async () => {
@@ -47,11 +47,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('admin happy path: sets new_qty, records signed delta movement', async () => {
     const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_stock_v1', {
+    const { data, error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 75,
       p_reason: 'Initial recount after physical audit',
-    });
+    }).returns<unknown>();
     expect(error).toBeNull();
     expect(data).not.toBeNull();
     const result = data as { new_current_stock: number; movement_id: string; idempotent_replay: boolean };
@@ -71,11 +71,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('admin: audit_logs row inserted with actor_id + metadata', async () => {
     const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_stock_v1', {
+    const { data, error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 60,
       p_reason: 'Audit trail verification',
-    });
+    }).returns<unknown>();
     expect(error).toBeNull();
     const result = data as { movement_id: string };
 
@@ -96,9 +96,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('idempotency: same key on retry returns idempotent_replay=true, single row', async () => {
     const sb = jwtClient(adminToken);
-    const key = '00000000-0000-0000-0000-00000000abcd';
+    const key = crypto.randomUUID();
 
-    const r1 = await sb.rpc('adjust_stock_v1', {
+    const r1 = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 80,
       p_reason: 'Idempotency first call',
@@ -108,10 +108,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
     const data1 = r1.data as { movement_id: string; idempotent_replay: boolean };
     expect(data1.idempotent_replay).toBe(false);
 
-    const r2 = await sb.rpc('adjust_stock_v1', {
+    const r2 = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 80,
-      p_reason: 'Idempotency retry',
+      p_reason: 'Idempotency first call',
       p_idempotency_key: key,
     });
     expect(r2.error).toBeNull();
@@ -131,7 +131,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('manager: forbidden (no inventory.adjust)', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('adjust_stock_v1', {
+    const { error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 100,
       p_reason: 'Manager attempting adjust',
@@ -141,7 +141,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('admin: p_new_qty < 0 -> negative_qty_not_allowed', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_stock_v1', {
+    const { error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: -5,
       p_reason: 'Negative target should be rejected',
@@ -151,11 +151,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('admin: no-op when new_qty == current_stock (no movement, noop=true)', async () => {
     const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_stock_v1', {
+    const { data, error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 50,    // baseline set in beforeEach
       p_reason: 'Same value — noop expected',
-    });
+    }).returns<unknown>();
     expect(error).toBeNull();
     const result = data as { movement_id: string | null; noop?: boolean; new_current_stock: number };
     expect(result.noop).toBe(true);
@@ -165,7 +165,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
 
   it('admin: short reason (<3 chars) is rejected upstream by record_stock_movement_v1', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_stock_v1', {
+    const { error } = await sb.rpc('adjust_stock_v2', {
       p_product_id: productId,
       p_new_qty: 70,
       p_reason: 'hi',

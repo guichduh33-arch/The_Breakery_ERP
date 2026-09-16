@@ -1,3 +1,5 @@
+import { usePaymentStore } from '@/stores/paymentStore';
+import { useReceiptJobs } from '@/services/print/receiptJobs';
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
@@ -41,6 +43,8 @@ function props(p?: Partial<SuccessModalProps>): SuccessModalProps {
 function wrap(n: React.ReactElement) { return <QueryClientProvider client={new QueryClient()}>{n}</QueryClientProvider>; }
 
 beforeEach(() => {
+  useReceiptJobs.setState({ jobs: [] });
+  usePaymentStore.getState().reset();
   vi.clearAllMocks();
   useOrgDisplaySettingsMock.mockReturnValue({
     displayFooterMessage: '',
@@ -54,6 +58,18 @@ beforeEach(() => {
 });
 
 describe('SuccessModal auto toggles', () => {
+  it('does not auto-print the same saved receipt after remount; an explicit reprint is marked', async () => {
+    const view = render(wrap(<SuccessModal {...props()} />));
+    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+    view.unmount();
+    const restored = render(wrap(<SuccessModal {...props()} />));
+    await waitFor(() => expect(restored.getByText('Receipt acknowledged by printer')).toBeVisible());
+    expect(printMock).toHaveBeenCalledTimes(1);
+    restored.getByRole('button', { name: 'Reprint' }).click();
+    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(2));
+    expect(printMock.mock.calls[1]?.[0].template?.header).toContain('DUPLICATE');
+  });
+
   it('autoPrint=false skips printReceipt on mount', async () => {
     useOrgDisplaySettingsMock.mockReturnValue({
       displayFooterMessage: '',

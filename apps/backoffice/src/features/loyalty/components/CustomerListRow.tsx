@@ -5,7 +5,8 @@
 
 import { useEffect, useId, useRef, useState, type JSX } from 'react';
 import { MoreHorizontal } from 'lucide-react';
-import { LoyaltyBadge, Button } from '@breakery/ui';
+import { LoyaltyBadge } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { tierFromLifetime } from '@breakery/domain';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CustomerListRow as Row } from '../hooks/useLoyaltyCustomersList.js';

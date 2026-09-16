@@ -9,7 +9,7 @@
 // owner can see how the COGS varies per option (e.g. Oat milk vs Fresh).
 
 import { useMemo, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { Trash2, Plus } from 'lucide-react';
 import {

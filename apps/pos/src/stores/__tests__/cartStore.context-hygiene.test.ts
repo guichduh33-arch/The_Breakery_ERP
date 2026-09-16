@@ -51,7 +51,7 @@ describe('cartStore context hygiene (S44)', () => {
   it('P1-B: clear() WITH locked items keeps the context (same in-flight fired order)', () => {
     const s = useCartStore.getState();
     s.add(makeProduct('p1', 'Latte'));
-    const lineId = (useCartStore.getState().cart.items as Array<{ id: string }>)[0]!.id;
+    const lineId = (useCartStore.getState().cart.items as { id: string }[])[0]!.id;
     s.markLocked([lineId]);
     s.attachCustomer(CUSTOMER as never);
     s.setTableNumber('T-09');
@@ -62,6 +62,6 @@ describe('cartStore context hygiene (S44)', () => {
     expect(after.cart.tableNumber).toBe('T-09');
     expect(after.attachedCustomer).not.toBeNull();
     // The locked line survives.
-    expect((after.cart.items as Array<{ id: string }>).map((i) => i.id)).toEqual([lineId]);
+    expect((after.cart.items as { id: string }[]).map((i) => i.id)).toEqual([lineId]);
   });
 });

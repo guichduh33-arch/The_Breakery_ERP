@@ -5,15 +5,8 @@
 // Single-screen Dialog form ; mirrors the ReceiveModal pattern.
 
 import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  Input,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import {
   useRecordB2bPayment,

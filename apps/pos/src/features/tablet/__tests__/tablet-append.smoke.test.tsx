@@ -113,6 +113,7 @@ function enterAppendMode(): void {
 }
 
 beforeEach(() => {
+  Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true, configurable: true });
   mocks.rpc.mockReset().mockReturnValue(rpcResult('order-cloud-1'));
   enqueueIntentMock.mockClear();
   publishMock.mockClear();
@@ -162,7 +163,7 @@ describe('ajout à une commande de salle existante', () => {
 
     await waitFor(() => {
       expect(mocks.rpc).toHaveBeenCalledWith(
-        'create_tablet_order_v9',
+        'create_tablet_order_v10',
         expect.objectContaining({ p_order_id: 'order-open-1' }),
       );
     });

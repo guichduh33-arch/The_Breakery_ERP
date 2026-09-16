@@ -12,8 +12,8 @@
 -- format create_user_v1 réel (id <> auth_user_id, cf.
 -- close_shift_v8_closed_by_profile.test.sql:27-40) — un créateur SUPER_ADMIN et un
 -- approbateur ADMIN — et exerce les SEPT RPCs versionnées (create_expense_v2,
--- submit_expense_v3, approve_expense_v4, reject_expense_v2, pay_expense_v2,
--- set_expense_threshold_v2, delete_expense_threshold_v2) plus le helper interne
+-- submit_expense_v3, approve_expense_v4, reject_expense_v2, pay_expense,
+-- set_expense_threshold, delete_expense_threshold_v2) plus le helper interne
 -- _emit_expense_je (appelé en place par submit/approve).
 --
 -- AVANT la migration de fix (les 7 RPCs ci-dessus n'existent pas encore sous ces noms) :
@@ -36,10 +36,10 @@
 --   T4c : journal_entries.created_by (reference_type='expense', 2e dépense) = profil approbateur.
 --   T5  : reject_expense_v2 par l'approbateur sur une 3e dépense soumise →
 --         audit_logs.actor_id pour action='expense.reject' = profil approbateur.
---   T6a : pay_expense_v2 (dépense credit, 4e dépense) → journal_entries.created_by
+--   T6a : pay_expense (dépense credit, 4e dépense) → journal_entries.created_by
 --         (reference_type='expense_payment') = profil payeur (approbateur).
 --   T6b : audit_logs.actor_id pour action='expense.pay' = profil payeur.
---   T7  : set_expense_threshold_v2 → audit_logs.actor_id pour
+--   T7  : set_expense_threshold → audit_logs.actor_id pour
 --         action='expense_threshold.created' = profil approbateur.
 --   T8  : delete_expense_threshold_v2 sur ce même threshold → audit_logs.actor_id pour
 --         action='expense_threshold.deleted' = profil approbateur.
@@ -192,7 +192,7 @@ SELECT is(
 );
 
 -- T6a/T6b : 4th expense, credit method, created + submitted + paid entirely by the
--- approver (auto-approve bracket, so pay_expense_v2 emits the 2nd JE, credit path).
+-- approver (auto-approve bracket, so pay_expense emits the 2nd JE, credit path).
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
                       description, expense_date, created_by, status)
@@ -204,7 +204,7 @@ VALUES (
 );
 
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e4');
-SELECT pay_expense_v2('a7a70000-0000-0000-0000-0000000000e4', 'transfer');
+SELECT pay_expense_v3('a7a70000-0000-0000-0000-0000000000e4', 'transfer');
 
 SELECT is(
   (SELECT je.created_by FROM journal_entries je
@@ -223,9 +223,9 @@ SELECT is(
   'T6b : audit_logs.actor_id for expense.pay = payer profile id'
 );
 
--- T7 : set_expense_threshold_v2 by the approver (ADMIN has expenses.thresholds.write).
+-- T7 : set_expense_threshold by the approver (ADMIN has expenses.thresholds.write).
 
-SELECT set_expense_threshold_v2(
+SELECT set_expense_threshold_v3(
   NULL, 'a7a70000-0000-0000-0000-0000000000c1'::uuid, 5000000, 6000000,
   '[{"role_codes":["ADMIN","SUPER_ADMIN"],"label":"ActorProf test step"}]'::jsonb
 );
@@ -280,8 +280,8 @@ SELECT is(
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname IN (
      'create_expense_v2', 'submit_expense_v3', 'approve_expense_v4',
-     'reject_expense_v2', 'pay_expense_v2',
-     'set_expense_threshold_v2', 'delete_expense_threshold_v2'
+     'reject_expense_v2', 'pay_expense_v3',
+     'set_expense_threshold_v3', 'delete_expense_threshold_v2'
    )),
   true,
   'T10 : anon REVOKEd on all 7 new actor-profile-fix RPC versions'

@@ -10,8 +10,8 @@ describe('POS lock terminal wiring', () => {
       user: { id: 'u1', full_name: 'Bob', role_code: 'CASHIER', employee_code: 'E1' },
       sessionToken: 'tok', permissions: [], isAuthenticated: true, isLoading: false,
       error: null, sessionTimeoutMinutes: 30, isLocked: true,
-      login: async () => {}, unlock: () => {},
-    } as never);
+      login: async () => { /* fixture sans effet */ }, unlock: () => { /* fixture sans effet */ },
+    });
   });
 
   it('renders TerminalLockedOverlay when authStore.isLocked is true', () => {

@@ -15,6 +15,8 @@ import { supabase } from '@/lib/supabase.js';
 
 export interface MovementAggregate {
   movement_type: string;
+  unit: string;
+  direction: number;
   count:         number;
   qty_total:     number;
   value_total:   number | null;
@@ -22,6 +24,7 @@ export interface MovementAggregate {
 
 export interface AggregateFilters {
   productId?:  string;
+  movementType?: string;
   dateStart?:  string;
   dateEnd?:    string;
 }
@@ -42,13 +45,15 @@ export function useMovementAggregates(filters: AggregateFilters = {}) {
     queryFn: async () => {
       const args: Record<string, unknown> = {};
       if (filters.productId !== undefined && filters.productId !== '') args.p_product_id = filters.productId;
-      // Bare 'YYYY-MM-DD' bounds would parse as 00:00 in the session timezone, so an
-      // end == start (e.g. the "Today" preset) excludes the whole day's movements.
-      // Send explicit start-of-day / end-of-day so the day is fully covered (parsed in
-      // the DB session timezone = business Asia/Makassar). Matches the ledger RPC fix.
+      if (filters.movementType) args.p_movement_type = filters.movementType;
+      // Intervalle semi-ouvert : aucune microseconde de fin de journée n'est perdue.
       if (filters.dateStart !== undefined && filters.dateStart !== '') args.p_date_start = `${filters.dateStart}T00:00:00`;
-      if (filters.dateEnd   !== undefined && filters.dateEnd   !== '') args.p_date_end   = `${filters.dateEnd}T23:59:59.999`;
-      const { data, error } = await rpc()('get_movement_aggregates_v2', args);
+      if (filters.dateEnd !== undefined && filters.dateEnd !== '') {
+        const nextDay = new Date(`${filters.dateEnd}T00:00:00Z`);
+        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+        args.p_date_end = `${nextDay.toISOString().slice(0, 10)}T00:00:00`;
+      }
+      const { data, error } = await rpc()('get_movement_aggregates_v3', args);
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

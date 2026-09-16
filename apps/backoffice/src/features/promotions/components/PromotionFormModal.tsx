@@ -6,14 +6,8 @@
 //
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §4.5
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  PromotionForm,
-  type PromotionFormValues,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, PromotionForm, type PromotionFormValues } from '@breakery/ui';
+import { DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreatePromotion } from '../hooks/useCreatePromotion.js';
 import { usePromotionReferenceData } from '../hooks/usePromotionReferenceData.js';
 import { useUpdatePromotion } from '../hooks/useUpdatePromotion.js';

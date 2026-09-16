@@ -5,10 +5,8 @@
 //   Done   : recap (entry number, net result carried to 3200, N+1 seeded)
 
 import { useMemo, useState, type JSX } from 'react';
-import {
-  Button, Input, Select,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@breakery/ui';
+import { Input, Select, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { useFiscalPeriods } from '../hooks/useFiscalPeriods.js';
 import {

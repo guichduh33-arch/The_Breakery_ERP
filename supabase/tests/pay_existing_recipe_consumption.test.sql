@@ -24,7 +24,7 @@ INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v8(
+  r := fire_counter_order_v9(
     p_client_uuid := '00000000-0000-0000-0000-0000000e18bb'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf018',
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000e1802","quantity":1,"unit_price":5000,"modifiers":[]},

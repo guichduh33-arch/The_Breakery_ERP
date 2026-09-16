@@ -2,7 +2,7 @@
 //
 // Session 59 (17 D1.1) — order-level note wiring: typing in the
 // TabletCartPanel note textarea updates tabletCartStore, and sending the
-// order forwards it as p_notes to create_tablet_order_v9.
+// order forwards it as p_notes to create_tablet_order_v10.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -65,8 +65,9 @@ function wrap(node: ReactNode): ReactNode {
   );
 }
 
-describe('tablet order note — textarea → store → create_tablet_order_v9', () => {
+describe('tablet order note — textarea → store → create_tablet_order_v10', () => {
   beforeEach(() => {
+  Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true, configurable: true });
     mocks.rpc.mockReset().mockReturnValue(rpcResult('order-uuid'));
     useTabletCartStore.setState({
       items: [
@@ -111,7 +112,7 @@ describe('tablet order note — textarea → store → create_tablet_order_v9', 
 
     await waitFor(() => {
       expect(mocks.rpc).toHaveBeenCalledWith(
-        'create_tablet_order_v9',
+        'create_tablet_order_v10',
         expect.objectContaining({ p_notes: 'No gluten — nut allergy' }),
       );
     });

@@ -6,7 +6,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.115.0",
-    "vitest": "^3.2.6"
+    "@supabase/supabase-js": "^2.116.0",
+    "vitest": "^4.1.11"
   }
 }

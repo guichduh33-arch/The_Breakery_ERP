@@ -32,7 +32,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Card, EmptyState, IngredientPicker, Input, Select, Tabs, TabsContent, TabsList, TabsTrigger, type IngredientSearchResult } from '@breakery/ui';
+import { IngredientPicker, Input, Select, Tabs, TabsContent, type IngredientSearchResult } from '@breakery/ui';
+import { Button, Card, EmptyState, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import type { RecipeGraph, RecipeGraphProduct, RecipeRow } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';

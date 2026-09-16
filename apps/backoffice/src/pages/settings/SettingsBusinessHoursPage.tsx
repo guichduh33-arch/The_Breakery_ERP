@@ -7,7 +7,7 @@
 // écrit les 7 jours explicitement.
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';

@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/data-import/components/EntitySummaryGrid.tsx
 // Generic summary grid: one card per top-level summary key, one row per metric.
 import type { JSX } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import type { ImportReport } from '../entityImportDef.js';
 
 function metricLabel(key: string): string {

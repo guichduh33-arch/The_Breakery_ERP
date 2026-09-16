@@ -98,7 +98,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="px-6 py-4 flex items-center justify-between gap-4 border-b border-border-subtle">
+      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle">
         {/* Functional title (not the decorative serif that duplicated the rail
             active state, #11): plain heading + live item count. */}
         <h1 className="flex items-baseline gap-2 min-w-0">
@@ -109,7 +109,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             </span>
           )}
         </h1>
-        <div className="relative w-72">
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
           <Search
             aria-hidden
             className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none"
@@ -126,7 +126,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {isError ? (
           <ErrorState
             title="Cannot load products"
@@ -149,7 +149,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             // h2 : l'état vide vit directement sous le h1 de la grille — h3
             // créait un saut h1→h3 dans l'outline (détecteur, critique run 3).
             headingLevel="h2"
-            title={query.trim() ? 'No matches' : 'No products yet'}
+            title={query.trim() ? 'No matches' : products.length === 0 ? 'Catalog unavailable' : 'No products in this category'}
             description={
               query.trim()
                 ? `No products match "${query.trim()}".`

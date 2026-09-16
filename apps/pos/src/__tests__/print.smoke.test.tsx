@@ -186,7 +186,7 @@ describe('SuccessModal auto-print integration', () => {
     ));
 
     await waitFor(() => {
-      expect(vi.mocked(toast.warning)).toHaveBeenCalledWith('Print server unreachable — receipt not printed');
+      expect(vi.mocked(toast.warning)).toHaveBeenCalledWith('Receipt confirmation unavailable — check Printing before reprinting');
     });
     // Heading query — the sr-only dialog title duplicates the text (S43 E2 a11y).
     expect(screen.getByRole('heading', { name: /payment successful/i })).toBeInTheDocument();

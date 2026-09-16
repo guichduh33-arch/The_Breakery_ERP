@@ -9,7 +9,8 @@
 // appliquer d'alpha — d'où les tokens `*-soft`).
 
 import type { JSX } from 'react';
-import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import {
   useStockConfigIssues,
   type StockConfigIssueRow,
@@ -21,6 +22,10 @@ const ISSUE_LABEL: Record<StockConfigIssueType, { title: string; hint: string }>
   negative_stock: {
     title: 'Negative stock',
     hint: 'Tracked product sold with no stock — receive it (purchase) or produce it.',
+  },
+  unconvertible_recipe_unit: {
+    title: 'Unit mismatch',
+    hint: 'A recipe line uses a unit that cannot convert to the material stock unit — the sale is refused. Fix the recipe unit or add the conversion.',
   },
   sale_deduct_no_recipe: {
     title: 'No recipe',

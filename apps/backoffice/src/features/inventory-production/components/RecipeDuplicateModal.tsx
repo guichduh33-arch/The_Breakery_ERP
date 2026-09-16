@@ -8,11 +8,8 @@
 // `target_has_active_recipes`, `recipe_cycle_detected`).
 
 import { useMemo, useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
 import {
   useDuplicateRecipe,

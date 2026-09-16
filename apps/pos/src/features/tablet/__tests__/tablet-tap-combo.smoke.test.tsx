@@ -193,7 +193,7 @@ describe('TabletProductGrid — combo flow (audit lot 1 P0 n°6, lot D)', () => 
       // l'auto-ajout nu) ne porte ni product_type: 'combo' ni
       // combo_components — c'est exactement le P0.
       expect(line?.product_type).toBe('combo');
-      expect(line?.combo_components).toEqual([{ product_id: 'prod-amer-tablet', quantity: 1 }]);
+      expect(line?.combo_components).toEqual([{ name: 'Americano', product_id: 'prod-amer-tablet', quantity: 1 }]);
       expect(line?.unit_price).toBe(75000);
     },
     20000,

@@ -6,7 +6,7 @@
 //
 // Session 13 / Phase 6.B.
 
-import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatPercent } from '@breakery/utils';
 import type { PromoRoi } from '../hooks/usePromoRoi.js';
 
@@ -23,14 +23,14 @@ interface StatRowProps {
 
 function StatRow({ label, value, hint, emphasis = false }: StatRowProps) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-2 border-b border-border-subtle last:border-0">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 border-b border-border-subtle last:border-0">
       <div>
         <div className={`text-sm ${emphasis ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>
           {label}
         </div>
         {hint !== undefined && <div className="text-xs text-text-secondary mt-0.5">{hint}</div>}
       </div>
-      <div className={`font-mono tabular-nums ${emphasis ? 'text-base text-text-primary font-semibold' : 'text-sm text-text-primary'}`}>
+      <div className={`font-mono tabular-nums whitespace-nowrap ${emphasis ? 'text-base text-text-primary font-medium' : 'text-sm text-text-primary'}`}>
         {typeof value === 'number' ? value.toLocaleString('id-ID') : value}
       </div>
     </div>
@@ -41,7 +41,7 @@ export function PromoRoiSummary({ data }: PromoRoiSummaryProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-baseline justify-between gap-3">
+        <CardTitle className="flex flex-wrap items-baseline justify-between gap-3">
           <span>{data.name}</span>
           <span className="font-mono text-xs uppercase tracking-widest text-text-secondary">
             {data.code}
@@ -73,7 +73,7 @@ export function PromoRoiSummary({ data }: PromoRoiSummaryProps) {
           hint="((net revenue − discount cost) ÷ discount cost) × 100"
           emphasis
         />
-        <p className="pt-3 text-xs text-text-secondary italic">
+        <p className="pt-3 text-xs text-text-secondary">
           ROI is a proxy. True incrementality would require a control-group experiment;
           there is no control group to compare flagged orders against.
         </p>

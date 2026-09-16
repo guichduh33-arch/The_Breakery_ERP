@@ -3,7 +3,7 @@
 // Session 13 / Phase 5.C — Editor + preview for a single receipt template.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import {
   useUpdateReceiptTemplate,
   type ReceiptTemplateRow,

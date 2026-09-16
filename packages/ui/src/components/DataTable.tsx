@@ -99,6 +99,9 @@ export interface DataTableProps<TRow> {
   renderExpanded?: (row: TRow, rowIndex: number) => ReactNode;
   /** Clés des lignes actuellement dépliées — même valeur que `getRowKey`. */
   expandedKeys?: ReadonlySet<string | number>;
+  /** Présentation ARIA : désactiver si le bouton de dépliage porte déjà
+   * aria-expanded. Le défaut conserve le rendu des consommateurs existants. */
+  announceRowExpansion?: boolean;
   /**
    * Nom accessible de la table, rendu en `<caption class="sr-only">`.
    *
@@ -148,6 +151,7 @@ export function DataTable<TRow>({
   rowClassName,
   renderExpanded,
   expandedKeys,
+  announceRowExpansion = true,
   caption,
   'data-testid': testId,
 }: DataTableProps<TRow>): JSX.Element {
@@ -178,7 +182,8 @@ export function DataTable<TRow>({
       // masquer ; `overflow-y-hidden` conserve le découpage des coins.
       className={cn('w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
     >
-      <table className="w-full border-collapse">
+      <span role="status" className="sr-only">{isLoading ? 'Loading data…' : ''}</span>
+      <table className="w-full border-collapse" aria-busy={Boolean(isLoading)}>
         {caption !== undefined && <caption className="sr-only">{caption}</caption>}
         <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
@@ -255,7 +260,7 @@ export function DataTable<TRow>({
         <tbody>
           {isLoading
             ? Array.from({ length: loadingRowCount }).map((_, i) => (
-                <tr key={`skeleton-${i}`} className="border-t border-border-row">
+                <tr key={`skeleton-${i}`} className="border-t border-border-row" aria-hidden="true">
                   {columns.map((col) => (
                     <td
                       key={col.id}
@@ -273,7 +278,7 @@ export function DataTable<TRow>({
                   <Fragment key={key}>
                     <tr
                       onClick={onRowClick !== undefined ? () => onRowClick(row, index) : undefined}
-                      aria-expanded={renderExpanded === undefined ? undefined : isExpanded}
+                      aria-expanded={renderExpanded === undefined || !announceRowExpansion ? undefined : isExpanded}
                       className={cn(
                         'border-t border-border-row',
                         striped && index % 2 === 1 && 'bg-surface-0',

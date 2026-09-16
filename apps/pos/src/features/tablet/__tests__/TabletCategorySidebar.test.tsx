@@ -5,12 +5,14 @@
 // 10px).
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TabletCategorySidebar } from '../components/TabletCategorySidebar';
+const query = vi.hoisted(() => ({ isLoading: false, isError: false, refetch: vi.fn() }));
 
 vi.mock('@/features/products/hooks/useCategories', () => ({
   useCategories: () => ({
+    ...query,
     data: [
       { id: 'c1', name: 'Beverage', slug: 'beverage' },
       { id: 'c2', name: 'Bread', slug: 'bread' },
@@ -19,6 +21,21 @@ vi.mock('@/features/products/hooks/useCategories', () => ({
 }));
 
 describe('TabletCategorySidebar (LOT 6)', () => {
+  beforeEach(() => { query.isLoading = false; query.isError = false; query.refetch.mockClear(); });
+  it('annonce le chargement et garde All accessible', () => {
+    query.isLoading = true;
+    render(<TabletCategorySidebar selectedSlug="bread" onSelect={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading categories');
+    expect(screen.getByRole('button', { name: 'All' })).toBeEnabled();
+  });
+  it('garde la sélection et propose Retry après un échec de refetch', () => {
+    query.isError = true;
+    render(<TabletCategorySidebar selectedSlug="bread" onSelect={vi.fn()} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Categories unavailable');
+    expect(screen.getByRole('button', { name: 'Bread' })).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(query.refetch).toHaveBeenCalledOnce();
+  });
   it('is ≥104px wide and labels are text-xs', () => {
     const { container } = render(
       <TabletCategorySidebar selectedSlug="beverage" onSelect={vi.fn()} />,

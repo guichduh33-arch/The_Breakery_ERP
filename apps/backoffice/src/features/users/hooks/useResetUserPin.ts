@@ -9,12 +9,15 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { evaluatePinStrength, type PinWeakReason } from '@breakery/utils';
-import { supabase } from '@/lib/supabase.js';
+import { changePin } from '@breakery/supabase';
+import { supabase, supabaseUrl } from '@/lib/supabase.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import { USER_DETAIL_KEY } from './useUsersList.js';
 
 export interface ResetUserPinArgs {
   user_id: string;
   new_pin: string;
+  current_pin?: string;
 }
 
 export interface ResetUserPinResult {
@@ -27,11 +30,18 @@ export function useResetUserPin() {
   const qc = useQueryClient();
   return useMutation<ResetUserPinResult, Error, ResetUserPinArgs>({
     mutationFn: async (args) => {
-      const { error } = await supabase.rpc('reset_user_pin_v1', {
-        p_user_id: args.user_id,
-        p_new_pin: args.new_pin,
-      });
-      if (error !== null) throw new Error(error.message);
+      const { user, sessionToken } = useAuthStore.getState();
+      if (user?.id === args.user_id) {
+        if (!sessionToken) throw new Error('session_token_required');
+        if (!args.current_pin) throw new Error('current_pin_required');
+        await changePin(supabaseUrl, sessionToken, args);
+      } else {
+        const { error } = await supabase.rpc('reset_user_pin_v2', {
+          p_user_id: args.user_id,
+          p_new_pin: args.new_pin,
+        });
+        if (error !== null) throw new Error(error.message);
+      }
       const strength = evaluatePinStrength(args.new_pin);
       const result: ResetUserPinResult = { ok: true, weak: strength.weak };
       if (strength.reason !== null) {

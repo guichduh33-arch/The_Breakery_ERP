@@ -4,7 +4,7 @@
 // Native HTML element pattern: @breakery/ui has no Table/Select/Input exports for forms.
 
 import { useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useExpenseThresholds, type ExpenseThresholdRow } from './hooks/useExpenseThresholds.js';
 import { useDeleteExpenseThreshold } from './hooks/useDeleteExpenseThreshold.js';

@@ -14,7 +14,8 @@
 import { useState, type JSX } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetDescription, SheetTitle, cn } from '@breakery/ui';
+import { Sheet, SheetDescription, cn } from '@breakery/ui';
+import { SheetContent, SheetTitle } from '@/components/BackofficeUi.js';
 import type { NavDomain } from './nav.js';
 
 export interface MobileNavDrawerProps {

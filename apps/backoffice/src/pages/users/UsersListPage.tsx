@@ -6,7 +6,7 @@
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 import { Plus, ShieldCheck, UsersRound, UserCheck, UserX, ShieldHalf } from 'lucide-react';
-import { Button, KpiTile } from '@breakery/ui';
+import { Button, KpiTile } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useUsersList } from '@/features/users/hooks/useUsersList.js';
 import { useRolesList } from '@/features/users/hooks/useRolesList.js';

@@ -73,7 +73,12 @@ const RETRYABLE_CODES = new Set<string>([
  */
 export function classifyCheckoutError(err: unknown): RetryClassification {
   const shape = extractErrorShape(err);
-  const code = (shape.code ?? '').toLowerCase();
+  const code = (shape.code ?? shape.message ?? '').toLowerCase();
+  const transport = err as { status?: number; name?: string } | null;
+  if ((transport?.status !== undefined && (transport.status >= 500 || [408, 429].includes(transport.status)))
+    || transport?.name === 'AbortError' || transport?.name === 'TimeoutError') {
+    return { kind: 'retryable', userMessage: 'Payment confirmation unknown. Retry the saved payment when the connection returns.' };
+  }
 
   if (code && ALREADY_PAID_CODES.has(code)) {
     return {
@@ -86,7 +91,7 @@ export function classifyCheckoutError(err: unknown): RetryClassification {
     return {
       kind: 'retryable',
       userMessage:
-        'Payment did not reach the server. Tap Retry to resend — your customer will not be charged twice.',
+        'Payment confirmation unknown. Tap Retry to check the saved payment using the same payment ID.',
     };
   }
 

@@ -17,9 +17,9 @@
   "dependencies": {
     "@breakery/domain": "workspace:*",
     "@breakery/utils": "workspace:*",
-    "@supabase/supabase-js": "^2.115.0"
+    "@supabase/supabase-js": "^2.116.0"
   },
   "devDependencies": {
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   }
 }

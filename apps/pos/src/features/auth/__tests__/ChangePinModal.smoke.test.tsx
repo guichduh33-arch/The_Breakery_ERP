@@ -37,6 +37,10 @@ vi.mock('sonner', () => ({
   toast: toastMock,
 }));
 
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: { getState: () => ({ sessionToken: 'session-test-token' }) },
+}));
+
 // Mock the NumpadPin primitive — render a button that fires the configured
 // pin on click. Each test that calls fireEvent.click on it drives one step
 // of the modal's state machine. The `key` prop makes it remount between
@@ -178,7 +182,7 @@ describe('ChangePinModal', () => {
     await vi.waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith('auth-change-pin', {
         body: { user_id: 'u1' },
-        headers: { 'x-current-pin': '999111', 'x-new-pin': '123456' },
+        headers: { 'x-session-token': 'session-test-token', 'x-current-pin': '999111', 'x-new-pin': '123456' },
       });
     });
 

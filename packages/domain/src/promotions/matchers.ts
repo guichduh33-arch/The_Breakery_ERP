@@ -6,6 +6,11 @@
 
 import type { Cart } from '../types/index.js';
 import type { Promotion, PromotionCustomer } from './types.js';
+import { TIMEZONE } from '@breakery/utils';
+
+const businessClock = new Intl.DateTimeFormat('en-US', {
+  timeZone: TIMEZONE, weekday: 'short', hour: 'numeric', hourCycle: 'h23',
+});
 
 /**
  * True if `now` falls inside the promotion's [start_at, end_at] window.
@@ -34,7 +39,9 @@ export function matchDateRange(promo: Promotion, now: Date): boolean {
 export function matchDayOfWeek(promo: Promotion, now: Date): boolean {
   if (!Number.isFinite(promo.day_of_week_mask)) return false;
   if (promo.day_of_week_mask <= 0) return false;
-  const bitIdx = (now.getDay() + 6) % 7; // 0=Mon..6=Sun
+  const weekday = businessClock.formatToParts(now).find((part) => part.type === 'weekday')?.value;
+  const bitIdx = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(weekday ?? '');
+  if (bitIdx < 0) return false;
   return (promo.day_of_week_mask & (1 << bitIdx)) !== 0;
 }
 
@@ -46,7 +53,7 @@ export function matchDayOfWeek(promo: Promotion, now: Date): boolean {
 export function matchHour(promo: Promotion, now: Date): boolean {
   if (promo.start_hour == null && promo.end_hour == null) return true;
   if (promo.start_hour == null || promo.end_hour == null) return false;
-  const h = now.getHours();
+  const h = Number(businessClock.formatToParts(now).find((part) => part.type === 'hour')?.value);
   return h >= promo.start_hour && h < promo.end_hour;
 }
 

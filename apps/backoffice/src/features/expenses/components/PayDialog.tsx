@@ -1,10 +1,7 @@
 // apps/backoffice/src/features/expenses/components/PayDialog.tsx
 import { useState } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { usePayExpense } from '../hooks/useExpenseActions.js';
 
 export interface PayDialogProps {

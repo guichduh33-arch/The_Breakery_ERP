@@ -7,7 +7,7 @@
 //     pure spy. No live DB, no UI rendering — we exercise the
 //     `useCreateTabletOrder` hook in isolation with React Query.
 //   - Verifies that the post-S25 hook signature `{ cart, waiterId, clientUuid }`
-//     forwards `clientUuid` as `p_client_uuid` to the `create_tablet_order_v9`
+//     forwards `clientUuid` as `p_client_uuid` to the `create_tablet_order_v10`
 //     RPC, and that a retry with the SAME `clientUuid` re-sends the SAME
 //     `p_client_uuid` value (sticky UUID lifecycle).
 
@@ -56,7 +56,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     supaMocks.rpc.mockReset();
   });
 
-  it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v9', async () => {
+  it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v10', async () => {
     supaMocks.rpc.mockReturnValue(rpcResult('order-id-1'));
 
     const wrapper = makeWrapper();
@@ -73,7 +73,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
 
     expect(supaMocks.rpc).toHaveBeenCalledTimes(1);
     expect(supaMocks.rpc).toHaveBeenCalledWith(
-      'create_tablet_order_v9',
+      'create_tablet_order_v10',
       expect.objectContaining({
         p_client_uuid: myUuid,
         p_waiter_id: 'w-1',
@@ -115,8 +115,8 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     const firstCallArgs = supaMocks.rpc.mock.calls[0]!;
     const secondCallArgs = supaMocks.rpc.mock.calls[1]!;
 
-    expect(firstCallArgs[0]).toBe('create_tablet_order_v9');
-    expect(secondCallArgs[0]).toBe('create_tablet_order_v9');
+    expect(firstCallArgs[0]).toBe('create_tablet_order_v10');
+    expect(secondCallArgs[0]).toBe('create_tablet_order_v10');
 
     const firstClientUuid = (firstCallArgs[1] as { p_client_uuid: string }).p_client_uuid;
     const secondClientUuid = (secondCallArgs[1] as { p_client_uuid: string }).p_client_uuid;
@@ -133,7 +133,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
   // clé dans `p_items`. Enregistré rouge le 2026-09-05 avant la passe client,
   // vert depuis que `p_items[]` porte `combo_components` et que le hook cible
   // la v9.
-  it('C4: a combo cart line forwards combo_components to create_tablet_order_v9', async () => {
+  it('C4: a combo cart line forwards combo_components to create_tablet_order_v10', async () => {
     supaMocks.rpc.mockReturnValue(rpcResult('order-id-4'));
 
     const wrapper = makeWrapper();
@@ -169,7 +169,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     // typé `any` et réveille no-unsafe-assignment sur le ratchet).
     expect(supaMocks.rpc).toHaveBeenCalledTimes(1);
     const callArgs = supaMocks.rpc.mock.calls[0]!;
-    expect(callArgs[0]).toBe('create_tablet_order_v9');
+    expect(callArgs[0]).toBe('create_tablet_order_v10');
     const items = (callArgs[1] as { p_items: { combo_components?: unknown }[] }).p_items;
     expect(items[0]?.combo_components).toEqual([{ product_id: 'comp-1', quantity: 1 }]);
   });

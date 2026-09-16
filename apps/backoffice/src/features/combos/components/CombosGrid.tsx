@@ -5,7 +5,8 @@
 
 import { Search, Sparkles } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
-import { EmptyState, Input } from '@breakery/ui';
+import { Input } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import { ComboCard } from './ComboCard.js';
 import type { Combo } from '../types.js';
 

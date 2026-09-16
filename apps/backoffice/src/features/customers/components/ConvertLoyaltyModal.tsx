@@ -6,9 +6,8 @@
 
 import { useState, useRef, type JSX } from 'react';
 import { toast } from 'sonner';
-import {
-  Button, Dialog, DialogContent, DialogTitle, DialogDescription,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import {

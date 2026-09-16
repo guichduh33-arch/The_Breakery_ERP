@@ -37,6 +37,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Test live skill link exceptions
+        run: node --test scripts/ci/_live-skill-reference.test.mjs scripts/ci/_staging-safety.test.mjs
+
       - name: Garde 1 — aucun chemin quarantainé dans un fichier tracké
         run: node scripts/ci/quarantined-paths.mjs
 
@@ -322,11 +325,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: stub
           VITE_SENTRY_DSN_POS: ''
           VITE_SENTRY_DSN_BACKOFFICE: ''
-          # The Breakery runs in Asia/Jakarta. Session-9 promotion matchers
-          # use `Date#getHours()` / `getDay()` (local time). CI runners default
-          # to UTC, which shifts Mon 18:30 +07 into Mon 11:30 UTC and breaks
-          # Happy Hour window tests. Pin the runner TZ to match prod.
-          TZ: Asia/Jakarta
+          # Fuseau métier Makassar ; les scénarios UTC ci-dessous vérifient
+          # que les promotions ne dépendent pas de l'horloge du terminal.
+          TZ: Asia/Makassar
 
       - name: Unit tests (full suite — push to master)
         if: github.base_ref == ''
@@ -338,7 +339,12 @@ jobs:
           VITE_SUPABASE_ANON_KEY: stub
           VITE_SENTRY_DSN_POS: ''
           VITE_SENTRY_DSN_BACKOFFICE: ''
-          TZ: Asia/Jakarta
+          TZ: Asia/Makassar
+
+      - name: Promotion timezone regression (UTC terminal)
+        run: pnpm --filter @breakery/domain exec vitest run --coverage.enabled=false src/promotions/__tests__/matchers.test.ts
+        env:
+          TZ: UTC
 
       - name: Build
         run: pnpm build

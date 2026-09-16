@@ -1,0 +1,36 @@
+.b2b-orders-page,
+.b2b-orders-page *,
+.b2b-orders-page .font-data,
+.b2b-orders-page .font-mono,
+.b2b-orders-page .font-body {
+  font-family: Arial, Helvetica, sans-serif;
+  letter-spacing: normal;
+}
+.b2b-orders-page th,
+.b2b-orders-page th button,
+.b2b-orders-page [class*='uppercase'] {
+  text-transform: none;
+  letter-spacing: normal;
+}
+.b2b-orders-page th {
+  font-size: 14px;
+  font-weight: 600;
+}
+.b2b-orders-page td {
+  padding-top: 22px;
+  padding-bottom: 22px;
+  font-size: 14px;
+}
+.b2b-orders-page td:nth-child(4),
+.b2b-orders-page td:nth-child(5) {
+  white-space: nowrap;
+}
+.b2b-orders-page [data-testid='b2b-orders-table'] td:last-child > div {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.b2b-orders-page [data-testid='b2b-orders-table'] td:last-child span {
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}

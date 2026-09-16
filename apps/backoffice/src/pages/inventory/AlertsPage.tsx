@@ -21,7 +21,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { AlertTriangle, ShoppingCart, SlidersHorizontal, Wheat, ChevronRight } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger, cn } from '@breakery/ui';
+import { Tabs, TabsContent, cn } from '@breakery/ui';
+import { TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { formatQuantity } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useLowStock } from '@/features/inventory-alerts/hooks/useLowStock.js';

@@ -12,7 +12,8 @@
 import { ImageOff } from 'lucide-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Card, CardContent, Currency } from '@breakery/ui';
+import { Badge, Currency } from '@breakery/ui';
+import { Card, CardContent } from '@/components/BackofficeUi.js';
 import { CategoryChip } from './CategoryChip.js';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import {
@@ -26,6 +27,7 @@ import { formatCurrency } from '@breakery/utils';
 
 interface Props {
   rows: readonly ProductRow[];
+  isLoading?: boolean;
   /** Session 27c — set of product ids that are parents (i.e. have variants). */
   parentIds?: ReadonlySet<string>;
   /** Page courante, 1-based — même contrat que ProductsTable. */
@@ -37,6 +39,7 @@ interface Props {
 
 export function ProductsGrid({
   rows,
+  isLoading = false,
   parentIds,
   page = 1,
   onPage,
@@ -44,6 +47,22 @@ export function ProductsGrid({
   onPageSize,
 }: Props): JSX.Element {
   const { pageRows } = pageSlice(rows, page, pageSize);
+
+  if (isLoading) {
+    return (
+      <div role="status" aria-label="Loading products" aria-busy="true" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} aria-hidden="true" className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+            <div className="aspect-[4/3] animate-pulse bg-surface-4 motion-reduce:animate-none" />
+            <div className="space-y-3 p-4">
+              <div className="h-4 w-2/3 animate-pulse rounded bg-surface-4 motion-reduce:animate-none" />
+              <div className="h-3 w-1/3 animate-pulse rounded bg-surface-4 motion-reduce:animate-none" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3.5" data-testid="products-grid">

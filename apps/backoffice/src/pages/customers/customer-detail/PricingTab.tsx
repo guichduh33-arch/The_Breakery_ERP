@@ -11,12 +11,13 @@
 //
 // S69 Volet B (Task 8) — mounts NegotiatedPricesSection below the category
 // overrides table: per-customer negotiated prices, which take priority over
-// the category rule server-side (create_b2b_order_v6). Rendered for every
+// the category rule server-side (create_b2b_order). Rendered for every
 // customer (empty by default) — not gated on category/modifier type.
 
 import { useState, type ChangeEvent, type JSX } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Button, Card, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductsForOrderEdit } from '@/features/orders/hooks/useProductsForOrderEdit.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';

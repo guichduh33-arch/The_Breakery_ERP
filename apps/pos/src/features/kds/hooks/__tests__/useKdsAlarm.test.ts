@@ -93,14 +93,14 @@ class FakeAudioContext {
 }
 
 describe('useKdsAlarm', () => {
-  let createOscillatorSpy: ReturnType<typeof vi.fn>;
+  let createOscillatorSpy: FakeAudioContext['createOscillator'];
 
   beforeEach(() => {
     mockAlarmMuted = false;
     createOscillatorSpy = vi.fn(() => new FakeOscillator());
     (window as unknown as { AudioContext: unknown }).AudioContext = vi
       .fn()
-      .mockImplementation(() => {
+      .mockImplementation(function () {
         const ctx = new FakeAudioContext();
         ctx.createOscillator = createOscillatorSpy;
         return ctx;
@@ -177,7 +177,7 @@ describe('useKdsAlarm', () => {
     const resumeMock = vi.fn().mockResolvedValue(undefined);
     (window as unknown as { AudioContext: unknown }).AudioContext = vi
       .fn()
-      .mockImplementation(() => {
+      .mockImplementation(function () {
         const ctx = new FakeAudioContext();
         ctx.state = 'suspended';
         ctx.resume = resumeMock;
@@ -213,7 +213,7 @@ describe('useKdsAlarm', () => {
     const resumeMock = vi.fn().mockRejectedValue(new Error('autoplay blocked'));
     (window as unknown as { AudioContext: unknown }).AudioContext = vi
       .fn()
-      .mockImplementation(() => {
+      .mockImplementation(function () {
         const ctx = new FakeAudioContext();
         ctx.state = 'suspended';
         ctx.resume = resumeMock;

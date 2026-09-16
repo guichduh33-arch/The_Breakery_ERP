@@ -16,7 +16,8 @@ import type { Database as DatabaseGenerated } from './types.generated.js';
 export type TypedSupabaseClient = SupabaseClientGeneric<DatabaseGenerated>;
 export * from './enums.js';
 export { hasPermission, hasAnyPermission, type PermissionCode } from './rls/permissions.js';
-export { loginWithPin, getSession, logoutSession, changePin } from './auth/pinAuth.js';
+export { loginWithPin, getSession, logoutSession, changePin, recordSessionActivity } from './auth/pinAuth.js';
+export { startSessionActivity } from './auth/sessionActivity.js';
 export type { LoginRequest, LoginResponse, LoginError, ChangePinRequest } from './auth/pinAuth.js';
 export { issueKioskJwt } from './auth/kioskAuth.js';
 export type {

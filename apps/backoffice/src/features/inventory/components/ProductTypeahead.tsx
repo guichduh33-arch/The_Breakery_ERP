@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { Input } from '@breakery/ui';
-import { formatQuantity } from '@breakery/utils';
+import { formatStockQuantity } from '../stockQuantity.js';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProductsForInventory,
@@ -70,7 +70,7 @@ export function ProductTypeahead({
         aria-controls={keyboard.listboxId}
         aria-autocomplete="list"
         aria-activedescendant={keyboard.activeDescendantId}
-        placeholder={placeholder ?? 'Search by name (min 2 chars)…'}
+        placeholder={placeholder ?? 'Search by name or SKU (min 2 chars)…'}
         disabled={disabled === true}
         onFocus={() => setOpen(true)}
         onKeyDown={keyboard.handleKeyDown}
@@ -92,6 +92,7 @@ export function ProductTypeahead({
         <button
           type="button"
           onClick={handleClear}
+          disabled={disabled === true}
           aria-label="Clear selected product"
           className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary text-xs"
         >
@@ -140,10 +141,8 @@ export function ProductTypeahead({
                   produits au nom proche. */}
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate">{p.name}</span>
-                {/* La requête du typeahead ne sélectionne pas `unit` : stock
-                    sans suffixe, séparateurs de milliers id-ID compris. */}
                 <span className="shrink-0 font-mono tabular-nums text-xs text-text-secondary">
-                  {p.sku} · {formatQuantity(p.current_stock, null)}
+                  {p.sku} · {formatStockQuantity(p.current_stock, p.unit)}
                 </span>
               </div>
             </div>

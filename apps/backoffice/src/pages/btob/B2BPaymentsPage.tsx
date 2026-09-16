@@ -17,16 +17,8 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import {
-  Button,
-  Card,
-  EmptyState,
-  Select,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@breakery/ui';
+import { Select, Tabs, TabsContent } from '@breakery/ui';
+import { Button, Card, EmptyState, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDateTime } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 // Voir B2BDashboardPage : la tuile du back-office (23 px + `valueTitle`) et non

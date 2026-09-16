@@ -4,7 +4,7 @@
 // row, and a card-wrapped content area. Pure presentational.
 
 import type { ReactNode } from 'react';
-import { Card, CardContent, EmptyState } from '@breakery/ui';
+import { Card, CardContent, EmptyState } from '@/components/BackofficeUi.js';
 import type { EmptyStateProps } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
 
@@ -34,10 +34,11 @@ export function ReportPage({
 }: ReportPageProps) {
   const showEmpty = isEmpty === true && emptyState !== undefined;
   return (
-    <div className="space-y-4">
-      <PageHeader title={title} subtitle={subtitle} actions={filters} />
+    <div className="space-y-5">
+      <PageHeader title={title} subtitle={subtitle} />
+      {filters != null && <div className="bo-filter-bar flex flex-wrap items-end gap-3">{filters}</div>}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-5">
           {showEmpty ? <EmptyState size="sm" {...emptyState} /> : children}
         </CardContent>
       </Card>

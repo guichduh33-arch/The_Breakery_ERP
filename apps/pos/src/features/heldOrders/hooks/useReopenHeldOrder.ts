@@ -1,3 +1,4 @@
+import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
@@ -7,7 +8,7 @@ import type { CustomerWithCategory } from '@/features/customers/hooks/useCustome
 
 /**
  * Spec A, Bloc 3 — reopen a held FIRED order (status='pending_payment') via
- * reopen_held_order_v2. Unlike useRestoreHeldOrder (draft, deletes server-side,
+ * reopen_held_order_v3. Unlike useRestoreHeldOrder (draft, deletes server-side,
  * fresh ids), this preserves order_items.id + lock state so already-fired lines
  * stay non-editable / non-reprinted. The RPC claims the order (is_held=false).
  *
@@ -18,12 +19,15 @@ export function useReopenHeldOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: string): Promise<string> => {
-      const { data, error } = await supabase.rpc('reopen_held_order_v2', {
+      if (isCartPaymentLocked()) throw new Error('Resume the saved payment first');
+      const before = useCartStore.getState();
+      const { data, error } = await supabase.rpc('reopen_held_order_v3', {
         p_order_id: orderId,
       });
       if (error) throw error;
       const payload = data as unknown as ReopenOrderPayload;
 
+      if (useCartStore.getState().cart !== before.cart || useCartStore.getState().pickedUpOrderId !== before.pickedUpOrderId || isCartPaymentLocked()) throw new Error('The current order changed — open the held order again');
       useCartStore.getState().reopenOrder(payload);
 
       // S72 audit — a held FIRED order was reopened onto this terminal.
@@ -42,7 +46,7 @@ export function useReopenHeldOrder() {
             p_id: payload.customerId,
           });
           const customer = (customers ?? [])[0];
-          if (customer) {
+          if (customer && useCartStore.getState().pickedUpOrderId === payload.order_id) {
             useCartStore.getState().attachCustomer({
               ...customer,
               category: (customer as { category?: unknown }).category ?? null,

@@ -14,41 +14,10 @@ import DashboardPage from '@/pages/Dashboard.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { DashboardOverview } from '@/features/dashboard/hooks/useDashboardOverview.js';
 
-// LOT 9 — CE FICHIER AVAIT UN TEST INTERMITTENT, ET ON L'A DÉSAMORCÉ ICI.
-//
-// Le cas « renders empty states rather than zeros… » lâchait sous la charge de
-// la suite complète, jamais en isolation, sur `Unable to find an element with
-// the text: /No revenue data/i`. Cause : les deux graphes du tableau de bord
-// sont passés en `React.lazy` (lot 3, 117 ko sortis du premier téléchargement)
-// et leurs états vides vivent DANS ces composants — il faut donc que le chunk
-// se résolve. Or ce chunk embarque `recharts` : sa TRANSFORMATION à froid,
-// quand 280 fichiers de test se disputent le pipeline vite-node, tombait dans
-// la fenêtre de 5 s du `findByText` et la débordait par intermittence.
-//
-// On ne masque pas le problème, on le SORT de la fenêtre chronométrée : les
-// deux modules sont importés une fois pour toutes ici, avec la MÊME spécifieuse
-// que `Dashboard.tsx`, donc sous la même clé de registre. Quand le test rend,
-// la promesse de `React.lazy` est déjà tenue et se règle en une microtâche ;
-// `findByText` la voit à son premier sondage. Le coût de transformation est
-// payé dans un `beforeAll` (timeout de hook : 30 s), pas dans une attente de 5 s.
-//
-// POURQUOI PAS UN `vi.mock` DES DEUX GRAPHES — l'autre issue possible. Il aurait
-// rendu le test déterministe en supprimant le `lazy`, mais il aurait aussi
-// supprimé ce que le test PROUVE : que l'état vide vient du vrai composant. Or
-// AUCUN autre test du dépôt ne couvre « No revenue data » ni « No sales today
-// yet » (relevé : ces deux chaînes n'existent que dans `RevenueTrendChart.tsx`,
-// `HourlySalesChart.tsx` et ce fichier). Un mock aurait aussi vidé de son sens
-// l'assertion du bloc d'erreur — « never claims there were no sales » — qui
-// vérifie que les graphes ne mentent PAS quand la RPC échoue : contre un
-// composant mocké, elle passe sans rien prouver. Le trou aurait été déplacé,
-// pas fermé.
-// Le délai du hook est porté à 90 s EXPRÈS. Le défaut du dépôt est 30 s, et il
-// suffit largement en isolation — mais ce préchargement transforme `recharts`
-// (443 ko) à froid, et quand 282 fichiers de test se disputent le pipeline
-// vite-node, cette transformation a dépassé les 30 s. Le symptôme n'était alors
-// plus un cas rouge mais le FICHIER entier en échec, ce qui est plus difficile
-// à lire. Un délai généreux ne coûte rien au cas passant : il ne borne que
-// l'échec.
+// Précharger les vrais graphes lazy avant les assertions : transformer recharts
+// à froid sous la charge de la suite dépassait le délai de findByText.
+// Ne pas les mocker : les tests vérifient leurs états vides et leurs erreurs.
+// Le délai du hook absorbe la transformation sous la charge de la suite complète.
 beforeAll(async () => {
   await Promise.all([
     import('@/features/dashboard/components/RevenueTrendChart.js'),
@@ -157,6 +126,31 @@ function renderWith(o: DashboardOverview | null, extra: Partial<{ isLoading: boo
 }
 
 describe('DashboardPage — écran 1c', () => {
+  it('keeps four primary measures and preserves secondary drill-downs', () => {
+    grant('reports.sales.read');
+    renderWith(overviewFixture());
+    const primary = within(screen.getByTestId('dashboard-kpi-row'));
+    const secondary = within(screen.getByTestId('dashboard-secondary-kpis'));
+    for (const id of ['net-revenue', 'orders', 'gross-margin', 'cash-on-hand']) {
+      expect(primary.getByTestId(`kpi-${id}`)).toBeInTheDocument();
+    }
+    for (const id of ['customers', 'items-sold', 'avg-basket']) {
+      expect(primary.queryByTestId(`kpi-${id}`)).not.toBeInTheDocument();
+      expect(secondary.getByTestId(`kpi-${id}`)).toBeInTheDocument();
+    }
+    expect(secondary.getByTestId('kpi-avg-basket').tagName).toBe('A');
+    expect(screen.getAllByTestId('gross-margin-basis')).toHaveLength(1);
+  });
+
+  it('keeps operational panels together above the secondary figures', () => {
+    renderWith(overviewFixture());
+    const floor = screen.getByRole('region', { name: 'On the floor' });
+    expect(within(floor).getByTestId('card-open-orders')).toBeInTheDocument();
+    expect(within(floor).getByTestId('card-display-stock')).toBeInTheDocument();
+    expect(floor.compareDocumentPosition(screen.getByTestId('dashboard-secondary-kpis'))
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('renders the "Today · <date>" title and the six KPI labels', () => {
     renderWith(overviewFixture());
     expect(screen.getByRole('heading', { level: 1, name: /^Today · / })).toBeInTheDocument();

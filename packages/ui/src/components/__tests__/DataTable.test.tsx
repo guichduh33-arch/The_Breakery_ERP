@@ -154,6 +154,9 @@ describe('DataTable', () => {
     const skeletons = container.querySelectorAll('.animate-pulse');
     // 3 rows * 2 columns = 6 skeletons.
     expect(skeletons.length).toBe(6);
+    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getAllByRole('row')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading data…');
   });
 
   it('fires onRowClick when a row is clicked', () => {
@@ -198,6 +201,14 @@ describe('DataTable', () => {
 // l'appelant : la table rend ce qu'on lui dit d'ouvrir, elle ne le décide pas.
 describe('DataTable — détail dépliable', () => {
   const detail = (r: Row) => <div data-testid={`detail-${r.id}`}>{r.name} lines</div>;
+  it('can delegate the expansion announcement to the row button without changing the default', () => {
+    const props = { columns: COLUMNS, rows: ROWS, getRowKey: (r: Row) => r.id, renderExpanded: detail, expandedKeys: new Set(['1']) };
+    const { container, rerender } = render(<DataTable {...props} />);
+    expect(container.querySelector('tbody tr')).toHaveAttribute('aria-expanded', 'true');
+    rerender(<DataTable {...props} announceRowExpansion={false} />);
+    expect(container.querySelector('tbody tr')).not.toHaveAttribute('aria-expanded');
+    expect(screen.getByTestId('detail-1')).toBeInTheDocument();
+  });
 
   it('renders nothing extra when no row is expanded', () => {
     render(

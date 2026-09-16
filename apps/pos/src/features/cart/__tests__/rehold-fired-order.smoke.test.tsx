@@ -1,3 +1,7 @@
+vi.mock('@/features/settings/hooks/useTaxConfig', () => ({ useTaxConfig: () => ({ taxRate: 0.1, taxInclusive: true }) }));
+vi.mock('@/features/settings/hooks/usePOSPresets', () => ({ usePOSPresets: () => ({ presets: { discountPresets: [] } }) }));
+vi.mock('@/features/shift/hooks/useShift', () => ({ useCurrentShift: () => ({ isLoading: false }) }));
+vi.mock('@/features/inbox/hooks/usePendingTabletOrders', () => ({ usePendingTabletOrders: () => ({ data: [] }) }));
 /// <reference types="@testing-library/jest-dom" />
 // A reopened FIRED order ("addition ouverte") can be put back on hold with no
 // changes. After reopen the order sits on the terminal (pickedUpOrderId set, all
@@ -19,6 +23,9 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
 }));
 vi.mock('@/features/cart/hooks/useHoldFiredOrder', () => ({
   useHoldFiredOrder: () => ({ mutateAsync: holdFiredMutate, isPending: false }),
+}));
+vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
+  useStationPrinters: () => ({ data: new Map() }),
 }));
 vi.mock('@/features/discounts/hooks/useApplyCartDiscount', () => ({
   useApplyCartDiscount: () => ({

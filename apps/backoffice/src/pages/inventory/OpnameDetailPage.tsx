@@ -16,10 +16,11 @@
 // révélation est d'annuler l'inventaire, d'où la confirmation sur Valider et le
 // bouton Annuler qui reste offert en revue.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useCallback, useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, Layers, Sigma, X } from 'lucide-react';
-import { Button, EmptyState, KpiTile } from '@breakery/ui';
+import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, X } from 'lucide-react';
+import { Button, EmptyState } from '@/components/BackofficeUi.js';
+import { KpiTile, KPI_NOTE } from '@/components/kpi/KpiTile.js';
 import { formatQuantity } from '@breakery/utils';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
@@ -44,9 +45,18 @@ export default function OpnameDetailPage(): JSX.Element {
   const [showValidate, setShowValidate] = useState<boolean>(false);
   const [showFinalize, setShowFinalize] = useState<boolean>(false);
   const [showCancel,   setShowCancel  ] = useState<boolean>(false);
+  const [editingItems, setEditingItems] = useState<ReadonlySet<string>>(new Set());
+  const onEditingChange = useCallback((itemId: string, blocked: boolean) => {
+    setEditingItems((prev) => {
+      if (prev.has(itemId) === blocked) return prev;
+      const next = new Set(prev);
+      if (blocked) next.add(itemId); else next.delete(itemId);
+      return next;
+    });
+  }, []);
 
   // Compute even when data is undefined so hook order stays stable.
-  const items    = detail.data?.items ?? [];
+  const items = useMemo(() => detail.data?.items ?? [], [detail.data?.items]);
   const status   = detail.data?.status;
   /** Phase comptage : rien de l'attendu ne doit filtrer à l'écran. */
   const counting = status === 'draft' || status === 'counting';
@@ -59,13 +69,13 @@ export default function OpnameDetailPage(): JSX.Element {
   const stats     = useMemo(() => {
     let counted = 0;
     let pending = 0;
-    let varianceTotal = 0;
+    let withVariance = 0;
     for (const i of items) {
       if (i.counted_qty === null) pending += 1;
       else counted += 1;
-      varianceTotal += Math.abs(i.variance ?? 0);
+      if (i.variance !== null && i.variance !== 0) withVariance += 1;
     }
-    return { counted, pending, varianceTotal };
+    return { counted, pending, withVariance };
   }, [items]);
   /**
    * Ce qui verrouille l'action terminale, en toutes lettres. `null` = rien ne
@@ -73,6 +83,7 @@ export default function OpnameDetailPage(): JSX.Element {
    * sur un comptage de plusieurs dizaines de lignes.
    */
   const blockReason = useMemo<string | null>(() => {
+    if (counting && items.some((item) => editingItems.has(item.id))) return 'Save all changes and resolve any errors before validating.';
     if (items.length === 0) return 'Add at least one line before validating.';
     if (stats.pending > 0) {
       return stats.pending === 1
@@ -80,7 +91,7 @@ export default function OpnameDetailPage(): JSX.Element {
         : `${String(stats.pending)} lines still uncounted — enter their quantities to continue.`;
     }
     return null;
-  }, [items.length, stats.pending]);
+  }, [counting, editingItems, items, stats.pending]);
   if (detail.isLoading) {
     return <DetailPageSkeleton label="Loading stock count" data-testid="opname-detail-loading" />;
   }
@@ -138,22 +149,22 @@ export default function OpnameDetailPage(): JSX.Element {
         <KpiTile
           label="Section"
           value={d.section?.name ?? 'Global'}
-          icon={Layers}
-          footer={d.section?.code ?? undefined}
-        />
+        >
+          <span className={KPI_NOTE}>{d.section?.code ?? 'One stock location'}</span>
+        </KpiTile>
         <KpiTile
           label="Items counted"
-          value={stats.counted}
-          icon={CheckCircle2}
-          footer={`${stats.pending} pending of ${items.length}`}
-        />
+          value={formatQuantity(stats.counted, null)}
+        >
+          <span className={KPI_NOTE}>{stats.pending} pending of {items.length}</span>
+        </KpiTile>
         {revealed ? (
           <KpiTile
-            label="Total |variance|"
-            value={formatQuantity(stats.varianceTotal, null)}
-            icon={Sigma}
-            footer="Sum of absolute deltas"
-          />
+            label="Products with variance"
+            value={formatQuantity(stats.withVariance, null)}
+          >
+            <span className={KPI_NOTE}>Counted quantity differs from expected</span>
+          </KpiTile>
         ) : (
           // Le total des écarts révélerait l'attendu par soustraction. La tuile
           // n'est pas retirée : sa place dit qu'il y a bien quelque chose à
@@ -210,7 +221,7 @@ export default function OpnameDetailPage(): JSX.Element {
             </thead>
             <tbody>
               {items.map((it) => (
-                <CountItemRow key={it.id} countId={d.id} item={it} revealed={revealed} locked={locked} />
+                <CountItemRow key={it.id} countId={d.id} item={it} revealed={revealed} locked={locked || !canCreate || showValidate} onEditingChange={onEditingChange} />
               ))}
             </tbody>
           </table>
@@ -268,7 +279,7 @@ export default function OpnameDetailPage(): JSX.Element {
         )}
         {/* `review` UNIQUEMENT. Offrir Finaliser pendant le comptage rendait la
             révélation facultative : on postait le JE définitif sans avoir vu les
-            écarts. Le serveur refuse désormais aussi (finalize_opname_v3). */}
+            écarts. Le serveur refuse désormais aussi (finalize_opname_v4). */}
         {d.status === 'review' && canFinalize && (
           <Button
             variant="ink"
@@ -292,6 +303,7 @@ export default function OpnameDetailPage(): JSX.Element {
         <ValidateOpnameDialog
           countId={d.id}
           countedItems={stats.counted}
+          blocked={blockReason !== null}
           onClose={() => { setShowValidate(false); }}
         />
       )}

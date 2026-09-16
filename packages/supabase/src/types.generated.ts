@@ -2469,6 +2469,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -2504,6 +2505,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          client_line_id?: string | null
           combo_components?: Json | null
           created_at?: string
           discount_amount?: number
@@ -2539,6 +2541,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          client_line_id?: string | null
           combo_components?: Json | null
           created_at?: string
           discount_amount?: number
@@ -2699,6 +2702,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          b2b_delivered_at: string | null
           created_at: string
           created_via: string
           customer_id: string | null
@@ -2737,6 +2741,7 @@ export type Database = {
           waiter_id: string | null
         }
         Insert: {
+          b2b_delivered_at?: string | null
           created_at?: string
           created_via?: string
           customer_id?: string | null
@@ -2775,6 +2780,7 @@ export type Database = {
           waiter_id?: string | null
         }
         Update: {
+          b2b_delivered_at?: string | null
           created_at?: string
           created_via?: string
           customer_id?: string | null
@@ -5661,6 +5667,8 @@ export type Database = {
           id: string
           ip_address: unknown
           last_activity_at: string
+          permissions_snapshot: string[] | null
+          session_timeout_minutes: number | null
           session_token_hash: string
           user_agent: string | null
           user_id: string
@@ -5673,6 +5681,8 @@ export type Database = {
           id?: string
           ip_address?: unknown
           last_activity_at?: string
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           session_token_hash: string
           user_agent?: string | null
           user_id: string
@@ -5685,6 +5695,8 @@ export type Database = {
           id?: string
           ip_address?: unknown
           last_activity_at?: string
+          permissions_snapshot?: string[] | null
+          session_timeout_minutes?: number | null
           session_token_hash?: string
           user_agent?: string | null
           user_id?: string
@@ -5873,6 +5885,7 @@ export type Database = {
           age_days: number | null
           amount_paid: number | null
           b2b_company_name: string | null
+          b2b_delivered_at: string | null
           customer_id: string | null
           customer_name: string | null
           invoice_date: string | null
@@ -6056,6 +6069,10 @@ export type Database = {
         }
         Returns: string
       }
+      _expense_settlement_mapping_key: {
+        Args: { p_method: string }
+        Returns: string
+      }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -6221,7 +6238,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      add_display_stock_v1: {
+      add_display_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -6259,7 +6276,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_display_stock_v1: {
+      adjust_display_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -6276,7 +6293,7 @@ export type Database = {
           txn_id: string
         }[]
       }
-      adjust_stock_v1: {
+      adjust_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -6301,7 +6318,7 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
-      cancel_b2b_order_v1: {
+      cancel_b2b_order_v2: {
         Args: {
           p_idempotency_key?: string
           p_order_id: string
@@ -6328,10 +6345,20 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
+      change_user_pin_v1: {
+        Args: {
+          p_actor_id: string
+          p_current_pin?: string
+          p_new_pin: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       close_cancelled_tablet_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: {
+          b2b_delivered_at: string | null
           created_at: string
           created_via: string
           customer_id: string | null
@@ -6485,7 +6512,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v6: {
+      create_b2b_order_v7: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -6669,9 +6696,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v9: {
+      create_tablet_order_v10: {
         Args: {
           p_client_uuid: string
+          p_customer_id?: string
           p_items: Json
           p_notes?: string
           p_order_id?: string
@@ -6683,7 +6711,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_user_v1: {
+      create_user_v2: {
         Args: {
           p_employee_code: string
           p_full_name: string
@@ -6741,7 +6769,7 @@ export type Database = {
         Args: { p_permission_code: string; p_user_profile_id: string }
         Returns: boolean
       }
-      delete_user_v1: {
+      delete_user_v2: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
@@ -6815,17 +6843,20 @@ export type Database = {
       fail:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      finalize_opname_v3: {
+      finalize_opname_v4: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v8: {
+      fire_counter_order_v9: {
         Args: {
           p_client_uuid: string
+          p_customer_id?: string
+          p_discount_auth_id?: string
           p_discount_authorized_by?: string
           p_items: Json
+          p_offline_replay?: boolean
           p_order_id?: string
           p_order_type?: Database["public"]["Enums"]["order_type"]
           p_session_id: string
@@ -6837,7 +6868,7 @@ export type Database = {
       }
       format_type_string: { Args: { "": string }; Returns: string }
       get_ar_aging_v1: { Args: never; Returns: Json }
-      get_audit_logs_v3: {
+      get_audit_logs_v4: {
         Args: {
           p_action?: string
           p_actor_id?: string
@@ -7044,10 +7075,11 @@ export type Database = {
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
-      get_movement_aggregates_v2: {
+      get_movement_aggregates_v3: {
         Args: {
           p_date_end?: string
           p_date_start?: string
+          p_movement_type?: string
           p_product_id?: string
           p_section_id?: string
         }
@@ -7094,7 +7126,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v3: {
+      get_pos_b2b_debts_v4: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
           b2b_credit_limit: number
@@ -7128,6 +7160,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_order_snapshot_v1: { Args: { p_order_id: string }; Returns: Json }
       get_pos_order_type_category_mix_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -7227,7 +7260,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_purchase_by_supplier_v1: {
+      get_purchase_by_supplier_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7346,7 +7379,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_config_issues_v1: {
+      get_stock_config_issues_v2: {
         Args: never
         Returns: {
           category_name: string
@@ -7566,6 +7599,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7618,6 +7652,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7662,6 +7697,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7717,6 +7753,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -7782,7 +7819,7 @@ export type Database = {
         }
         Returns: Json
       }
-      pay_expense_v2: {
+      pay_expense_v3: {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
       }
@@ -7807,6 +7844,7 @@ export type Database = {
       pickup_tablet_order: {
         Args: { p_order_id: string; p_session_id: string }
         Returns: {
+          b2b_delivered_at: string | null
           created_at: string
           created_via: string
           customer_id: string | null
@@ -7960,7 +7998,7 @@ export type Database = {
         }
         Returns: string
       }
-      record_incoming_stock_v1: {
+      record_incoming_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -8067,7 +8105,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v2: { Args: { p_order_id: string }; Returns: Json }
+      reopen_held_order_v3: { Args: { p_order_id: string }; Returns: Json }
       reorder_categories_v2: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
@@ -8101,7 +8139,7 @@ export type Database = {
         Args: { p_reason?: string; p_reservation_id: string }
         Returns: Json
       }
-      reset_user_pin_v1: {
+      reset_user_pin_v2: {
         Args: { p_new_pin: string; p_user_id: string }
         Returns: undefined
       }
@@ -8113,7 +8151,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
-      return_display_to_kitchen_v1: {
+      return_display_to_kitchen_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -8184,6 +8222,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          client_line_id: string | null
           combo_components: Json | null
           created_at: string
           discount_amount: number
@@ -8220,7 +8259,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      set_expense_threshold_v2: {
+      set_expense_threshold_v3: {
         Args: {
           p_amount_max?: number
           p_amount_min?: number
@@ -8230,7 +8269,7 @@ export type Database = {
         }
         Returns: string
       }
-      set_opname_count_v1: {
+      set_opname_count_v2: {
         Args: {
           p_count_item_id: string
           p_counted_qty: number
@@ -8334,6 +8373,10 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] }
+      touch_user_session_v1: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       transfer_order_table_v1: {
         Args: { p_order_id: string; p_to_table: string }
         Returns: Json
@@ -8350,6 +8393,14 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
+      }
+      update_b2b_pickup_v1: {
+        Args: {
+          p_mark_delivered?: boolean
+          p_order_id: string
+          p_pickup_date?: string
+        }
+        Returns: Json
       }
       update_b2b_settings_v1: { Args: { p_patch: Json }; Returns: Json }
       update_category_v2: {
@@ -8426,7 +8477,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_product_v3: {
+      update_product_v4: {
         Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }
@@ -8490,7 +8541,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_user_profile_v1: {
+      update_user_profile_v2: {
         Args: {
           p_employee_code: string
           p_full_name: string
@@ -8498,7 +8549,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_user_role_v1: {
+      update_user_role_v2: {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
         Returns: Json
       }
@@ -8563,7 +8614,7 @@ export type Database = {
         Args: { p_customer_id: string; p_order_amount: number }
         Returns: Json
       }
-      validate_opname_v1: { Args: { p_count_id: string }; Returns: Json }
+      validate_opname_v2: { Args: { p_count_id: string }; Returns: Json }
       verify_user_pin: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
@@ -8582,7 +8633,7 @@ export type Database = {
         Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }
-      waste_display_stock_v1: {
+      waste_display_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -8591,7 +8642,7 @@ export type Database = {
         }
         Returns: Json
       }
-      waste_stock_v1: {
+      waste_stock_v2: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string

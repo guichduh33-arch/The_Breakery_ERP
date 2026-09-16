@@ -1,3 +1,4 @@
+import { useReceiptJobs } from '@/services/print/receiptJobs';
 // apps/pos/src/features/payment/__tests__/receipt-targets-cashier.smoke.test.tsx
 //
 // Session 34 / W4 — SuccessModal routes receipt to cashier printer.
@@ -100,6 +101,7 @@ function buildProps(overrides?: Partial<SuccessModalProps>): SuccessModalProps {
 
 describe('SuccessModal — receipt routed to cashier printer', () => {
   beforeEach(() => {
+    useReceiptJobs.setState({ jobs: [] });
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
 

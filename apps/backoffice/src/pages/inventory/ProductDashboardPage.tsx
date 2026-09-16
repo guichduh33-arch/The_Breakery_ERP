@@ -10,7 +10,7 @@
 import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Inbox } from 'lucide-react';
-import { EmptyState } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita, formatCurrency } from '@breakery/utils';
 // La tuile du BACK-OFFICE, pas celle de `@breakery/ui` : celle-ci rend la valeur
 // à 23 px avec `valueTitle`, l'autre à 34 px sans échappatoire. « Value at cost »

@@ -10,7 +10,7 @@
 import { AlertTriangle, BookOpen, Box, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Button, Card } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductUnits, type ProductUnitAlt, type ProductUnitContexts } from '../hooks/useProductUnits.js';

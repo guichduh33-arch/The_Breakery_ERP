@@ -6,7 +6,7 @@
 // user-facing copy — log it to the console/monitoring instead.
 
 import { AlertTriangle } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 
 export interface ErrorStateProps {
   /** User-facing title. Defaults to a generic message. */

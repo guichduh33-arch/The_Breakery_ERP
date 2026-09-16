@@ -32,7 +32,8 @@
 import { useMemo, useState, type JSX } from 'react';
 import type { CsvColumn } from '@breakery/domain';
 import { formatPercent } from '@breakery/utils';
-import { Button, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
 import { ReportShell } from '@/features/reports/components/ReportShell.js';

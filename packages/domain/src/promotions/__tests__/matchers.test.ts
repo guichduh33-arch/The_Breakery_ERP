@@ -106,73 +106,83 @@ describe('matchDateRange', () => {
 /* ----------------------------- matchDayOfWeek -------------------------- */
 
 describe('matchDayOfWeek', () => {
+  it('bascule de dimanche à lundi à minuit Makassar, indépendamment du terminal', () => {
+    const p = basePromo({ day_of_week_mask: 1 });
+    expect(matchDayOfWeek(p, new Date('2026-05-10T15:59:59Z'))).toBe(false);
+    expect(matchDayOfWeek(p, new Date('2026-05-10T16:00:00Z'))).toBe(true);
+  });
   it('mask 127 matches every day', () => {
     const p = basePromo({ day_of_week_mask: 127 });
     // Sunday 2026-05-10, Monday 2026-05-11, ...
     for (let d = 10; d <= 16; d++) {
-      expect(matchDayOfWeek(p, new Date(`2026-05-${d}T12:00:00`))).toBe(true);
+      expect(matchDayOfWeek(p, new Date(`2026-05-${d}T12:00:00+08:00`))).toBe(true);
     }
   });
 
   it('mask 0 matches no day', () => {
     const p = basePromo({ day_of_week_mask: 0 });
-    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00'))).toBe(false);
+    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00+08:00'))).toBe(false);
   });
 
   it('matches only Mondays when mask=1 (bit 0 = Mon)', () => {
     const p = basePromo({ day_of_week_mask: 1 });
     // 2026-05-11 is a Monday
-    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00'))).toBe(true);
+    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00+08:00'))).toBe(true);
     // 2026-05-12 is a Tuesday
-    expect(matchDayOfWeek(p, new Date('2026-05-12T12:00:00'))).toBe(false);
+    expect(matchDayOfWeek(p, new Date('2026-05-12T12:00:00+08:00'))).toBe(false);
   });
 
   it('matches only Sundays when mask=64 (bit 6 = Sun)', () => {
     const p = basePromo({ day_of_week_mask: 64 });
     // 2026-05-10 is a Sunday
-    expect(matchDayOfWeek(p, new Date('2026-05-10T12:00:00'))).toBe(true);
+    expect(matchDayOfWeek(p, new Date('2026-05-10T12:00:00+08:00'))).toBe(true);
     // 2026-05-11 is a Monday
-    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00'))).toBe(false);
+    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00+08:00'))).toBe(false);
   });
 
   it('matches weekdays-only when mask=31 (Mon..Fri = bits 0..4)', () => {
     const p = basePromo({ day_of_week_mask: 31 });
-    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00'))).toBe(true); // Mon
-    expect(matchDayOfWeek(p, new Date('2026-05-15T12:00:00'))).toBe(true); // Fri
-    expect(matchDayOfWeek(p, new Date('2026-05-16T12:00:00'))).toBe(false); // Sat
-    expect(matchDayOfWeek(p, new Date('2026-05-10T12:00:00'))).toBe(false); // Sun
+    expect(matchDayOfWeek(p, new Date('2026-05-11T12:00:00+08:00'))).toBe(true); // Mon
+    expect(matchDayOfWeek(p, new Date('2026-05-15T12:00:00+08:00'))).toBe(true); // Fri
+    expect(matchDayOfWeek(p, new Date('2026-05-16T12:00:00+08:00'))).toBe(false); // Sat
+    expect(matchDayOfWeek(p, new Date('2026-05-10T12:00:00+08:00'))).toBe(false); // Sun
   });
 });
 
 /* ----------------------------- matchHour ------------------------------- */
 
 describe('matchHour', () => {
+  it('interprète les limites horaires dans le fuseau métier', () => {
+    const p = basePromo({ start_hour: 0, end_hour: 1 });
+    expect(matchHour(p, new Date('2026-05-10T16:00:00Z'))).toBe(true);
+    expect(matchHour(p, new Date('2026-05-10T17:00:00Z'))).toBe(false);
+  });
   it('matches all hours when both bounds null', () => {
     const p = basePromo({ start_hour: null, end_hour: null });
-    expect(matchHour(p, new Date('2026-05-11T03:00:00'))).toBe(true);
-    expect(matchHour(p, new Date('2026-05-11T23:30:00'))).toBe(true);
+    expect(matchHour(p, new Date('2026-05-11T03:00:00+08:00'))).toBe(true);
+    expect(matchHour(p, new Date('2026-05-11T23:30:00+08:00'))).toBe(true);
   });
 
   it('matches inside happy-hour window 18..20', () => {
     const p = basePromo({ start_hour: 18, end_hour: 20 });
-    expect(matchHour(p, new Date('2026-05-11T18:00:00'))).toBe(true);
-    expect(matchHour(p, new Date('2026-05-11T18:30:00'))).toBe(true);
-    expect(matchHour(p, new Date('2026-05-11T19:59:59'))).toBe(true);
+    expect(matchHour(p, new Date('2026-05-11T18:00:00+08:00'))).toBe(true);
+    expect(matchHour(p, new Date('2026-05-11T18:30:00+08:00'))).toBe(true);
+    expect(matchHour(p, new Date('2026-05-11T19:59:59+08:00'))).toBe(true);
   });
 
   it('does not match at end_hour boundary (half-open)', () => {
     const p = basePromo({ start_hour: 18, end_hour: 20 });
-    expect(matchHour(p, new Date('2026-05-11T20:00:00'))).toBe(false);
+    expect(matchHour(p, new Date('2026-05-11T20:00:00+08:00'))).toBe(false);
   });
 
   it('does not match before start_hour', () => {
     const p = basePromo({ start_hour: 18, end_hour: 20 });
-    expect(matchHour(p, new Date('2026-05-11T17:59:59'))).toBe(false);
+    expect(matchHour(p, new Date('2026-05-11T17:59:59+08:00'))).toBe(false);
   });
 
   it('returns false if only one bound set', () => {
     const p = basePromo({ start_hour: 18, end_hour: null });
-    expect(matchHour(p, new Date('2026-05-11T19:00:00'))).toBe(false);
+    expect(matchHour(p, new Date('2026-05-11T19:00:00+08:00'))).toBe(false);
   });
 });
 
@@ -254,11 +264,11 @@ describe('matchCustomerTier', () => {
 describe('matchAllConditions', () => {
   it('passes when every matcher passes', () => {
     const p = basePromo();
-    expect(matchAllConditions(p, cartWith([]), null, new Date('2026-05-11T18:00:00'))).toBe(true);
+    expect(matchAllConditions(p, cartWith([]), null, new Date('2026-05-11T18:00:00+08:00'))).toBe(true);
   });
 
   it('fails when one matcher fails', () => {
     const p = basePromo({ start_hour: 18, end_hour: 20 });
-    expect(matchAllConditions(p, cartWith([]), null, new Date('2026-05-11T17:00:00'))).toBe(false);
+    expect(matchAllConditions(p, cartWith([]), null, new Date('2026-05-11T17:00:00+08:00'))).toBe(false);
   });
 });

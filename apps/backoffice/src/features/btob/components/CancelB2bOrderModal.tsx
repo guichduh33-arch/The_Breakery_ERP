@@ -1,14 +1,12 @@
 // apps/backoffice/src/features/btob/components/CancelB2bOrderModal.tsx
 // Session 56 — DEV-S52-03 : cancel an unpaid b2b_pending invoice.
-// Wraps cancel_b2b_order_v1 (reverse JE + sale_void stock + balance).
+// Wraps cancel_b2b_order (reverse JE + sale_void stock, vitrine incluse + balance).
 // Blocked server-side when any allocation exists (order_has_payments).
 // One modal opening = one idempotency key (rotated on close, S55 pattern).
 
 import { useRef, useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogTitle, DialogDescription,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCancelB2bOrder, CancelB2bOrderError } from '../hooks/useCancelB2bOrder.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

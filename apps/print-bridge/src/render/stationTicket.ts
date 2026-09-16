@@ -8,6 +8,7 @@ export function renderStationTicket(p: PrinterLike, t: StationTicketPayload): vo
   p.setTextSize(1, 1);
   p.println(t.role.toUpperCase());
   p.setTextNormal();
+  if (t.duplicate === true) p.println('*** DUPLICATE ***');
   if (t.additional === true) {
     p.println('*** ADDITIONAL ORDER ***');
   }

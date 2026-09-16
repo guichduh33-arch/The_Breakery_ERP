@@ -6,14 +6,8 @@
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §3.5, §7
 
 import { useState } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogTitle } from '@/components/BackofficeUi.js';
 import { useDeletePromotion } from '../hooks/useDeletePromotion.js';
 import type { PromotionListRow } from '../hooks/usePromotionsList.js';
 

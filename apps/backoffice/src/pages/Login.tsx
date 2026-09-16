@@ -143,6 +143,7 @@ export default function LoginPage() {
       </aside>
 
       <main className="login-light bg-page-grid">
+        <h1 className="sr-only">Sign in to The Breakery backoffice</h1>
         <div className="login-panel">
           <div>
             <p className="login-label" id="login-roster-label">

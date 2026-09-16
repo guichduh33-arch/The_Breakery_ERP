@@ -22,9 +22,9 @@ describe('CustomerAttachModal + VKP', () => {
       <VirtualKeypadProvider>
         <CustomerAttachModal
           open
-          onClose={() => {}}
-          onSelect={() => {}}
-          searchFn={async () => []}
+          onClose={() => { /* fixture sans effet */ }}
+          onSelect={() => { /* fixture sans effet */ }}
+          searchFn={() => Promise.resolve([])}
         />
       </VirtualKeypadProvider>,
     );
@@ -40,7 +40,7 @@ describe('CustomerAttachModal + VKP', () => {
     expect(overlay).not.toBeNull();
     // The QWERTY layout renders one button per key; "q" proves it's the qwerty layout.
     expect(
-      within(overlay as HTMLElement).getByText('q', { selector: 'button' }),
+      within(overlay!).getByText('q', { selector: 'button' }),
     ).toBeInTheDocument();
   });
 });

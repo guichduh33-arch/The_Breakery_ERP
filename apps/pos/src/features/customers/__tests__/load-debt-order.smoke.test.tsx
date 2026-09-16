@@ -77,6 +77,14 @@ describe('load-debt-order smoke', () => {
     });
 
     mocks.rpc.mockImplementation((name: string) => {
+      if (name === 'get_pos_order_snapshot_v1') {
+        return Promise.resolve({ data: {
+          order_id: DEBT_ORDER.id, order_number: DEBT_ORDER.order_number,
+          order_type: DEBT_ORDER.order_type, tableNumber: null,
+          created_via: 'pos', customerId: 'cust-1', notes: null,
+          items: ORDER_ITEMS.map((item) => ({ ...item, is_locked: true, kitchen_status: 'pending' })),
+        }, error: null });
+      }
       if (name === 'get_customer_v3') {
         return Promise.resolve({ data: [{ id: 'cust-1', name: 'Jane Doe' }], error: null });
       }
@@ -98,6 +106,8 @@ describe('load-debt-order smoke', () => {
     await waitFor(() => {
       const state = useCartStore.getState();
       expect(state.cart.items).toHaveLength(2);
+      expect(state.orderNumber).toBe('#D001');
+      expect(state.orderOrigin).toBe('pos');
       expect(state.cart.items.map((i) => i.name)).toEqual(['Americano', 'Croissant']);
       expect(state.lockedItemIds).toEqual(expect.arrayContaining(['item-1', 'item-2']));
       expect(state.printedItemIds).toEqual(expect.arrayContaining(['item-1', 'item-2']));

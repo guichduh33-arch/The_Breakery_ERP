@@ -1,3 +1,4 @@
+import type { DispatchStation } from '@breakery/domain';
 // apps/pos/src/features/cart/__tests__/station-map-variants.smoke.test.tsx
 // S44 P0-B : une ligne panier issue d'une VARIANTE (product_id enfant, absent
 // du cache ['products'] qui filtre parent_product_id IS NULL) doit quand même
@@ -77,8 +78,8 @@ describe('S44 P0-B — station map routes variant children', () => {
 
   it('T3: groupItemsByStation places the variant line under barista', () => {
     const grouped = groupItemsByStation(
-      [VARIANT_LINE as never],
-      STATION_MAP as Record<string, import('@breakery/domain').DispatchStation[]>,
+      [VARIANT_LINE],
+      STATION_MAP as Record<string, DispatchStation[]>,
     );
     expect(grouped.barista?.map((i) => i.id)).toEqual(['line-1']);
   });

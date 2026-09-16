@@ -6,7 +6,8 @@
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Scale } from 'lucide-react';
-import { Card, Button, Badge, EmptyState } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Card, Button, EmptyState } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { useRecipeDetail } from '@/features/recipes/hooks/useRecipeDetail.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
@@ -14,7 +15,7 @@ import { formatPct1, sharePct } from '@/features/reports/utils/reportFigures.js'
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import { DetailPageSkeleton } from '@/components/DetailPageSkeleton.js';
-import { PAGE_TITLE_CLS } from '@/components/PageHeader.js';
+import { PageHeader } from '@/components/PageHeader.js';
 
 /** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data Rule). */
 const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
@@ -73,40 +74,24 @@ export function RecipeDetailPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 flex-wrap">
+      <PageHeader title={product.name} subtitle={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {product.is_semi_finished && <Badge variant="info">Semi-finished</Badge>}
+          {active_version_number != null && <span>v{active_version_number} ({version_count} versions)</span>}
+        </span>
+      } actions={
         <Button variant="ghost" asChild>
           <Link to="/backoffice/inventory/recipes">
             <ArrowLeft size={16} /> Back
           </Link>
         </Button>
-        <h1 className={PAGE_TITLE_CLS}>{product.name}</h1>
-        {product.is_semi_finished && (
-          <Badge variant="info">Semi-finished</Badge>
-        )}
-        {active_version_number != null && (
-          <span className="text-sm text-text-muted">
-            v{active_version_number} ({version_count} versions)
-          </span>
-        )}
-      </div>
+      } />
 
-      <Card className="p-4 space-y-1">
-        <h2 className="text-sm font-medium text-text-muted">Output product</h2>
-        <div className="text-sm">
-          SKU: {product.sku ?? '—'} · Unit: {product.unit ?? '—'}
-        </div>
-        <div className="text-sm">
-          Cost / unit (current): <strong>{fmtIdr(product.cost_price)}</strong>
-        </div>
-        <div className="text-sm">
-          <DrilldownLink entity="product" id={product.id} label="View product detail" />
-        </div>
-      </Card>
-
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-text-muted">
-            Ingredients (cascade flat, depth ≤ 5)
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+      <Card className="min-w-0 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg font-medium tracking-tight">
+            Ingredients
           </h2>
           <div className="text-sm">
             Computed cost: <strong>{fmtIdr(total_cost)}</strong>
@@ -167,6 +152,16 @@ export function RecipeDetailPage(): JSX.Element {
           </div>
         )}
       </Card>
+      <Card className="space-y-4 p-5 xl:sticky xl:top-0">
+        <h2 className="text-lg font-medium tracking-tight">Output product</h2>
+        <dl className="space-y-3 text-sm">
+          <div className="flex flex-wrap justify-between gap-2"><dt className="text-text-muted">SKU</dt><dd className="font-data break-all">{product.sku ?? '—'}</dd></div>
+          <div className="flex justify-between gap-2"><dt className="text-text-muted">Unit</dt><dd>{product.unit ?? '—'}</dd></div>
+          <div className="border-t border-border-subtle pt-3"><dt className="text-text-muted">Cost / unit (current)</dt><dd className="mt-1 font-data text-xl tabular-nums">{fmtIdr(product.cost_price)}</dd></div>
+        </dl>
+        <DrilldownLink entity="product" id={product.id} label="View product detail" />
+      </Card>
+      </div>
     </div>
   );
 }

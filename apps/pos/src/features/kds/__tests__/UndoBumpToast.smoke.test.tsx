@@ -15,7 +15,7 @@ vi.mock('sonner', () => ({
 const rpcMock = vi.fn();
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...args: unknown[]) => rpcMock(...args),
+    rpc: (...args: unknown[]): unknown => rpcMock(...args),
   },
 }));
 
@@ -37,7 +37,7 @@ describe('UndoBumpToast', () => {
   it('renders countdown and Undo CTA at mount', () => {
     const bumpedAtMs = Date.now();
     render(withQuery(
-      <UndoBumpToast orderItemId="oi-1" bumpedAtMs={bumpedAtMs} onClose={() => {}} />,
+      <UndoBumpToast orderItemId="oi-1" bumpedAtMs={bumpedAtMs} onClose={() => { /* fixture sans effet */ }} />,
     ));
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /undo bump/i })).toBeInTheDocument();

@@ -11,7 +11,8 @@
 import { type JSX, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Download, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button, DataTable, Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { Input, Select, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { Button, DataTable } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatTimeWita, formatDateShortWita, todayIsoDate } from '@breakery/utils';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';

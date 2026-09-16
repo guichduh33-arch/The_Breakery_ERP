@@ -4,7 +4,7 @@
 // Co-located split (S57 E-D4) — behaviour unchanged.
 
 import type { JSX } from 'react';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { formatDate } from '@breakery/utils';
 import { useCustomerLoyaltyHistory } from '@/features/loyalty/hooks/useCustomerLoyaltyHistory.js';
 

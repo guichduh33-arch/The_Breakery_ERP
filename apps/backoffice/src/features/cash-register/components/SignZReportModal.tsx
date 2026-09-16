@@ -4,10 +4,8 @@
 // On sign success, regenerates PDF and opens it in a new tab.
 
 import { useEffect, useState } from 'react';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Button,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { DialogContent, DialogFooter, DialogHeader, DialogTitle, Button } from '@/components/BackofficeUi.js';
 import { formatCurrency, roundIdr } from '@breakery/utils';
 import { cn } from '@breakery/ui';
 import { Loader2 } from 'lucide-react';

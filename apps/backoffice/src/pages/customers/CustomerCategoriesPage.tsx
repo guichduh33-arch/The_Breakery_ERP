@@ -17,18 +17,8 @@
 import { useMemo, useState, type JSX } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 import { PenSquare, Trash2 } from 'lucide-react';
-import {
-  cn,
-  DataTable,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Button,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { cn, Dialog, DialogDescription, type DataTableColumn } from '@breakery/ui';
+import { DataTable, DialogContent, DialogFooter, DialogHeader, DialogTitle, Button } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';

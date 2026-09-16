@@ -11,13 +11,8 @@
 // conservée, elle est simplement obtenue à la hauteur du système. Un primitif
 // posé ici ne détonnerait plus.
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Button,
-} from '@breakery/ui';
+import { Dialog } from '@breakery/ui';
+import { DialogContent, DialogHeader, DialogTitle, Button } from '@/components/BackofficeUi.js';
 import { todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

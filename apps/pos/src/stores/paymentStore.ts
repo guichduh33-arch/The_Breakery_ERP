@@ -17,10 +17,23 @@
 // de double intent cash offline (la clé sert d'id d'intent).
 
 import { create } from 'zustand';
+import { readPaymentAttempt, savePaymentAttempt, type PaymentAttempt } from './paymentAttempt';
+import type { CheckoutContext } from './paymentAttempt';
+import type { PaymentSuccessState } from '@/features/payment/hooks/paymentSuccess';
+let recoveredAttempt: PaymentAttempt | null = null;
+let recoveryError: string | null = null;
+try { recoveredAttempt = readPaymentAttempt(); } catch { recoveryError = 'Saved payment could not be read. Ask a manager to recover this terminal before taking another payment.'; }
 import type { PaymentMethod, Tender } from '@breakery/domain';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 
 interface PaymentState {
+  attempt: PaymentAttempt | null;
+  recoveryError: string | null;
+  claimSuccessEffects: () => boolean;
+  completeAttempt: (result: PaymentSuccessState) => void;
+  updateContext: (context: Partial<CheckoutContext>) => void;
+  beginAttempt: (attempt: PaymentAttempt) => void;
+  settleAttempt: (state: 'unknown' | 'confirmed' | 'refused') => void;
   isOpen: boolean;
   /** Current draft method for the next tender being composed. */
   selectedMethod: PaymentMethod | null;
@@ -53,13 +66,46 @@ interface PaymentState {
   reset: () => void;
 }
 
-export const usePaymentStore = create<PaymentState>((set) => ({
-  isOpen: false,
+export const usePaymentStore = create<PaymentState>((set, get) => ({
+  attempt: recoveredAttempt,
+  recoveryError,
+  claimSuccessEffects: () => {
+    const current = get().attempt;
+    if (!current) return true;
+    if (current.successEffectsStarted) return false;
+    const attempt = { ...current, successEffectsStarted: true };
+    savePaymentAttempt(attempt);
+    set({ attempt });
+    return true;
+  },
+  updateContext: (context) => set((s) => {
+    if (!s.attempt) return s;
+    const attempt = { ...s.attempt, context: { ...s.attempt.context, ...context } };
+    savePaymentAttempt(attempt);
+    return { attempt };
+  }),
+  completeAttempt: (result) => set((s) => {
+    const attempt = s.attempt ? { ...s.attempt, state: 'confirmed' as const, result } : null;
+    // Si la dernière écriture échoue, le snapshot précédent reste rejouable avec la même clé.
+    try { savePaymentAttempt(attempt); } catch { /* la confirmation reste visible en mémoire */ }
+    return { attempt, attemptUnsettled: false };
+  }),
+  beginAttempt: (attempt) => {
+    if (recoveryError) throw new Error(recoveryError);
+    savePaymentAttempt(attempt);
+    set({ attempt, attemptUnsettled: true, idempotencyKey: attempt.context.idempotencyKey });
+  },
+  settleAttempt: (state) => set((s) => {
+    const attempt = s.attempt ? { ...s.attempt, state } : null;
+    try { savePaymentAttempt(attempt); } catch { /* conserver la tentative déjà persistée */ }
+    return { attempt, attemptUnsettled: state === 'unknown' };
+  }),
+  isOpen: recoveredAttempt !== null || recoveryError !== null,
   selectedMethod: null,
   cashReceivedStr: '',
   tenders: [],
-  idempotencyKey: crypto.randomUUID(),
-  attemptUnsettled: false,
+  idempotencyKey: recoveredAttempt?.context.idempotencyKey ?? crypto.randomUUID(),
+  attemptUnsettled: recoveredAttempt?.state === 'unknown',
   open: () =>
     set((s) => ({
       isOpen: true,
@@ -68,14 +114,14 @@ export const usePaymentStore = create<PaymentState>((set) => ({
       tenders: [],
       // D13 — nouvelle tentative → nouvelle clé, SAUF si une tentative
       // retryable est en suspens (le retry doit rejouer la même clé).
-      ...(s.attemptUnsettled ? {} : { idempotencyKey: crypto.randomUUID() }),
+      ...((s.attemptUnsettled || (s.attempt && s.attempt.state !== 'refused')) ? {} : { idempotencyKey: crypto.randomUUID() }),
     })),
   close: () =>
     set((s) => ({
       isOpen: false,
       // D13 — fermer le modal ne solde pas une tentative retryable : la clé
       // survit au close→reopen tant que la bannière Retry est vivante.
-      ...(s.attemptUnsettled ? {} : { idempotencyKey: crypto.randomUUID() }),
+      ...((s.attemptUnsettled || (s.attempt && s.attempt.state !== 'refused')) ? {} : { idempotencyKey: crypto.randomUUID() }),
     })),
   selectMethod: (m) => {
     set({ selectedMethod: m, cashReceivedStr: '' });
@@ -95,8 +141,10 @@ export const usePaymentStore = create<PaymentState>((set) => ({
     })),
   clearTenders: () => set({ tenders: [] }),
   markAttemptUnsettled: (unsettled) => set({ attemptUnsettled: unsettled }),
-  reset: () =>
+  reset: () => {
+    savePaymentAttempt(null);
     set({
+      attempt: null,
       isOpen: false,
       selectedMethod: null,
       cashReceivedStr: '',
@@ -105,5 +153,6 @@ export const usePaymentStore = create<PaymentState>((set) => ({
       // régénération inconditionnelle + flag levé.
       idempotencyKey: crypto.randomUUID(),
       attemptUnsettled: false,
-    }),
+    });
+  },
 }));

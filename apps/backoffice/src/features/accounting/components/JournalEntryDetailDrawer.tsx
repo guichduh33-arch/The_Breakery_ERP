@@ -2,7 +2,8 @@
 // Session 26b / Wave 2.B — Drilldown drawer for a single journal_entry.
 
 import { useMemo, type JSX } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@breakery/ui';
+import { Sheet, SheetDescription } from '@breakery/ui';
+import { SheetContent, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency } from '@breakery/utils';
 import { useJournalEntryLines } from '../hooks/useJournalEntryLines.js';

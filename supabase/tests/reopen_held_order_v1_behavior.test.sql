@@ -1,6 +1,6 @@
 -- supabase/tests/reopen_held_order_v1_behavior.test.sql
 -- Spec A, Bloc 2/3 — BEHAVIORAL round-trip for hold_fired_order_v2 +
--- reopen_held_order_v2 under a real authenticated CASHIER context.
+-- reopen_held_order_v3 under a real authenticated CASHIER context.
 --
 -- Controller-run only (MCP execute_sql against the V3 dev cloud) — it sets
 -- `role authenticated` + a request.jwt.claims sub, which the platform pooler
@@ -8,7 +8,7 @@
 -- counter order, exercises the two RPCs, asserts via RAISE EXCEPTION, rolls back.
 -- A clean run returns NO rows and NO error (any failed assertion raises).
 --
--- 2026-09-05 (audit lot 1 P0 n°5, lot C) — repointe sur reopen_held_order_v2 :
+-- 2026-09-05 (audit lot 1 P0 n°5, lot C) — repointe sur reopen_held_order_v3 :
 -- v1 renvoyait les lignes annulees (pas de filtre is_cancelled = false) et
 -- n'exposait ni product_type ni combo_components, obligeant le client a les
 -- redemander. v2 filtre les lignes annulees et joint products pour les deux
@@ -80,12 +80,14 @@ BEGIN
   SELECT is_held INTO v_held FROM orders WHERE id = v_oid;
   IF v_held IS NOT TRUE THEN RAISE EXCEPTION 'FAIL: hold did not set is_held=true'; END IF;
 
-  -- reopen → returns 2 non-cancelled locked items (with order_items.id), claims
-  -- is_held=false, no delete. The 3rd seeded line (Croissant, is_cancelled=true)
-  -- must NOT leak through.
-  v_env := reopen_held_order_v2(v_oid);
-  IF jsonb_array_length(v_env->'items') <> 2 THEN
-    RAISE EXCEPTION 'FAIL: reopen returned % items (cancelled line leaked)', jsonb_array_length(v_env->'items');
+  -- Reopen returns the full snapshot, including cancellation facts, and claims the order.
+  v_env := reopen_held_order_v3(v_oid);
+  IF jsonb_array_length(v_env->'items') <> 3 THEN
+    RAISE EXCEPTION 'FAIL: reopen returned % items (incomplete snapshot)', jsonb_array_length(v_env->'items');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_env->'items') item
+      WHERE item->>'name' = 'Croissant' AND (item->>'is_cancelled')::boolean) THEN
+    RAISE EXCEPTION 'FAIL: reopened snapshot lost cancellation state';
   END IF;
   IF (v_env->'items'->0->>'is_locked')::boolean IS NOT TRUE THEN RAISE EXCEPTION 'FAIL: reopened item not locked'; END IF;
   IF (v_env->'items'->0->'id') IS NULL THEN RAISE EXCEPTION 'FAIL: reopened item missing order_items.id'; END IF;
@@ -114,7 +116,7 @@ BEGIN
 
   -- second reopen on an already-open order → P0002 (concurrency claim)
   BEGIN
-    PERFORM reopen_held_order_v2(v_oid);
+    PERFORM reopen_held_order_v3(v_oid);
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_threw := true;
   END;
   IF NOT v_threw THEN RAISE EXCEPTION 'FAIL: second reopen did not raise P0002'; END IF;

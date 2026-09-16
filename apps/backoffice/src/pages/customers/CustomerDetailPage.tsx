@@ -32,7 +32,8 @@ import {
   User as UserIcon,
   Wallet,
 } from 'lucide-react';
-import { Button, Card, LoyaltyBadge } from '@breakery/ui';
+import { LoyaltyBadge } from '@breakery/ui';
+import { Button, Card } from '@/components/BackofficeUi.js';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
 import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';

@@ -86,14 +86,16 @@ SELECT is(
   OR has_function_privilege('anon', 'public.create_customer_v3(text, text, text, customer_type)', 'EXECUTE'),
   false, 'T5 anon cannot execute the live customer RPCs');
 
--- T7 (DB-06, _020 → S52 v3) : get_pos_b2b_debts_v3 existe, v2 droppée, anon sans EXECUTE
+-- T7 (DB-06, _020 → S52 v3, gate 2026-09-08) : la version LIVE de la famille
+-- get_pos_b2b_debts existe, les anciennes sont droppées, anon reste sans EXECUTE
 SELECT is(
   (SELECT count(*)::int FROM pg_proc
-    WHERE proname = 'get_pos_b2b_debts_v3' AND pronamespace = 'public'::regnamespace) = 1
+    WHERE proname = 'get_pos_b2b_debts_v4' AND pronamespace = 'public'::regnamespace) = 1
   AND (SELECT count(*)::int FROM pg_proc
-    WHERE proname = 'get_pos_b2b_debts_v2' AND pronamespace = 'public'::regnamespace) = 0
-  AND NOT has_function_privilege('anon', 'public.get_pos_b2b_debts_v3(uuid, int)', 'EXECUTE'),
-  true, 'T7 get_pos_b2b_debts_v3 replaces v2 (B2B paid from allocations), anon revoked');
+    WHERE proname IN ('get_pos_b2b_debts_v2','get_pos_b2b_debts_v3')
+      AND pronamespace = 'public'::regnamespace) = 0
+  AND NOT has_function_privilege('anon', 'public.get_pos_b2b_debts_v4(uuid, int)', 'EXECUTE'),
+  true, 'T7 get_pos_b2b_debts_v4 replaces v2/v3 (B2B paid from allocations), anon revoked');
 
 -- T6 (post-_018 SEULEMENT) : la policy SELECT exige customers.read
 SELECT is(

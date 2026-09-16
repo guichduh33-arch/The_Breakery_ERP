@@ -5,7 +5,7 @@
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { formatDate } from '@breakery/utils';
 import type { useCustomerDetail } from '@/features/customers/hooks/useCustomerDetail.js';
 import { rp, StatusPill } from './shared.js';

@@ -14,7 +14,7 @@ function modifierSignature(modifiers: SelectedModifiers): string {
     const ga = a.group_name.localeCompare(b.group_name);
     return ga !== 0 ? ga : a.option_label.localeCompare(b.option_label);
   });
-  return sorted.map((m) => `${m.group_name}::${m.option_label}`).join('|');
+  return JSON.stringify(sorted.map((m) => [m.group_name, m.option_label, m.price_adjustment]));
 }
 
 function lineSignature(productId: string, modifiers: SelectedModifiers): string {
@@ -56,6 +56,7 @@ export function addItem(
   modifiers: SelectedModifiers = [],
   quantity = 1,
   unitPriceOverride?: number,
+  sealedLineIds: readonly string[] = [],
 ): Cart {
   // D11 (session 8 perf-debt): single-pass map with `merged` flag instead of
   // `find()` then `map()` (two passes). The flag preserves first-match
@@ -64,7 +65,9 @@ export function addItem(
   const sig = lineSignature(product.id, modifiers);
   let merged = false;
   const nextItems = cart.items.map((i) => {
-    if (!merged && lineSignature(i.product_id, i.modifiers) === sig) {
+    if (!merged && !i.is_cancelled && !i.is_promo_gift && !i.discount && !i.server_id
+      && !sealedLineIds.includes(i.id) && i.unit_price === (unitPriceOverride ?? product.retail_price)
+      && lineSignature(i.product_id, i.modifiers) === sig) {
       merged = true;
       return { ...i, quantity: i.quantity + quantity };
     }
@@ -101,6 +104,7 @@ export function addComboItem(
   components: ComboComponent[],
   quantity = 1,
   unitPriceOverride?: number,
+  sealedLineIds: readonly string[] = [],
 ): Cart {
   // Combos merge on the same product + chosen options + component configuration.
   //
@@ -111,7 +115,9 @@ export function addComboItem(
   const sig = comboSignature(product.id, modifiers, components);
   let merged = false;
   const nextItems = cart.items.map((i) => {
-    if (!merged && comboSignature(i.product_id, i.modifiers, i.combo_components ?? []) === sig) {
+    if (!merged && !i.is_cancelled && !i.is_promo_gift && !i.discount && !i.server_id
+      && !sealedLineIds.includes(i.id) && i.unit_price === (unitPriceOverride ?? product.retail_price)
+      && comboSignature(i.product_id, i.modifiers, i.combo_components ?? []) === sig) {
       merged = true;
       return { ...i, quantity: i.quantity + quantity };
     }

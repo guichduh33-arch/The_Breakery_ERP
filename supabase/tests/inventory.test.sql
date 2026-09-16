@@ -14,34 +14,34 @@
 -- Coverage matrix:
 --   T1  record_stock_movement_v1: rejects sale movement_type
 --   T2  record_stock_movement_v1: rejects quantity = 0
---   T3  adjust_stock_v1: happy path 10 -> 15 (+ audit_logs + signed movement)
---   T4  adjust_stock_v1: idempotent replay (same idempotency_key)
---   T5  adjust_stock_v1: MANAGER lacking inventory.adjust -> forbidden (P0003)
---   T6  adjust_stock_v1: p_new_qty < 0 rejected
+--   T3  adjust_stock_v2: happy path 10 -> 15 (+ audit_logs + signed movement)
+--   T4  adjust_stock_v2: idempotent replay (same idempotency_key)
+--   T5  adjust_stock_v2: MANAGER lacking inventory.adjust -> forbidden (P0003)
+--   T6  adjust_stock_v2: p_new_qty < 0 rejected
 --   T7  receive_stock_v1 est DROPPÉE (Q3 audit 2026-07-27 — réception valorisée
 --       via le flux PO/achat direct uniquement)
---   T8  record_incoming_stock_v1 existe toujours (entrées non-achat conservées)
---   T9  waste_stock_v1: qty > on-hand -> insufficient_stock (P0002)
---   T10 waste_stock_v1: happy path (current_stock decremented, movement negative)
+--   T8  record_incoming_stock_v2 existe toujours (entrées non-achat conservées)
+--   T9  waste_stock_v2: qty > on-hand -> insufficient_stock (P0002)
+--   T10 waste_stock_v2: happy path (current_stock decremented, movement negative)
 --   T11 RLS: direct INSERT into stock_movements blocked for `authenticated`
 --   T12 get_stock_levels_v4: bucket 'low' filters out rows with threshold = 0
 --   T13 Row-lock serialization: two adjusts on same row sum correctly (no lost update)
 --   T14 void_order_rpc + complete_order regression (sale_void restores stock)
 --   T15 record_stock_movement_v1: REVOKE EXECUTE enforced on `authenticated` role
---   T16 record_incoming_stock_v1: CASHIER -> forbidden (P0003)
---   T17 record_incoming_stock_v1: MANAGER + qty 0 -> quantity_must_be_positive
---   T18 record_incoming_stock_v1: MANAGER happy path (no supplier) — movement row +
+--   T16 record_incoming_stock_v2: CASHIER -> forbidden (P0003)
+--   T17 record_incoming_stock_v2: MANAGER + qty 0 -> quantity_must_be_positive
+--   T18 record_incoming_stock_v2: MANAGER happy path (no supplier) — movement row +
 --       current_stock bump + audit row
---   T19 record_incoming_stock_v1: MANAGER + soft-deleted supplier -> P0002
---   T20 record_incoming_stock_v1: idempotent replay (same key, identical args)
+--   T19 record_incoming_stock_v2: MANAGER + soft-deleted supplier -> P0002
+--   T20 record_incoming_stock_v2: idempotent replay (same key, identical args)
 --   T21 get_stock_counters_v1: total independent of the page window, and readable on an empty result
 --   T22 get_stock_levels_v4: search is case-insensitive (ILIKE) — upper/lower both match
 --   T23 get_stock_levels_v4: p_category_id filter returns only matching products
 --   T24 get_stock_levels_v4: bucket 'low' excludes products with current_stock >= threshold (threshold>0)
---   T25 adjust_stock_v1: p_new_qty=0 sets stock to 0 and emits negative delta movement
---   T26 adjust_stock_v1: idempotent replay with different reason still returns original movement_id
---   T27 waste_stock_v1: reason shorter than 3 chars rejected with reason_required
---   T28 waste_stock_v1: qty > current_stock rejected with insufficient_stock (P0002) — distinct product
+--   T25 adjust_stock_v2: p_new_qty=0 sets stock to 0 and emits negative delta movement
+--   T26 adjust_stock_v2: key reuse with different reason is rejected
+--   T27 waste_stock_v2: reason shorter than 3 chars rejected with reason_required
+--   T28 waste_stock_v2: qty > current_stock rejected with insufficient_stock (P0002) — distinct product
 --   T41 ADR-024: counters equal the row count of get_stock_levels_v4 for every bucket
 --   T42 ADR-024: CASHIER -> forbidden P0003 on get_stock_counters_v1 (negative gate)
 --
@@ -68,7 +68,7 @@ INSERT INTO suppliers (id, code, name, is_active)
 VALUES ('11111111-2222-3333-4444-666666666666'::uuid, 'PGTAP-INACT', 'pgTAP Inactive', false)
 ON CONFLICT (id) DO NOTHING;
 
--- Soft-deleted supplier fixture for T19 (record_incoming_stock_v1).
+-- Soft-deleted supplier fixture for T19 (record_incoming_stock_v2).
 INSERT INTO suppliers (id, code, name, is_active, deleted_at)
 VALUES (
   '11111111-2222-3333-4444-777777777777'::uuid,
@@ -158,7 +158,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T3 — adjust_stock_v1 happy path 10 -> 15 (+ movement +5, audit_logs row)
+-- T3 — adjust_stock_v2 happy path 10 -> 15 (+ movement +5, audit_logs row)
 -- =========================================================================
 DO $t3$
 DECLARE
@@ -175,7 +175,7 @@ BEGIN
   UPDATE products SET current_stock = 10
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT adjust_stock_v1(
+  SELECT adjust_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 15.000, 'T3 happy path'
   ) INTO v_result;
 
@@ -199,7 +199,7 @@ SELECT ok(current_setting('breakery.t3_pass')::boolean,
   'T3: adjust 10->15 yields +5 movement, new_stock=15, audit row with actor_profile_id');
 
 -- =========================================================================
--- T4 — adjust_stock_v1 idempotent replay returns same movement_id
+-- T4 — adjust_stock_v2 idempotent replay returns same movement_id
 -- =========================================================================
 DO $t4$
 DECLARE
@@ -214,11 +214,11 @@ BEGIN
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
   DELETE FROM stock_movements WHERE idempotency_key = v_key;
 
-  SELECT adjust_stock_v1(
+  SELECT adjust_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 12, 'T4 first', v_key
   ) INTO v_r1;
-  SELECT adjust_stock_v1(
-    '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 12, 'T4 second', v_key
+  SELECT adjust_stock_v2(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 12, 'T4 first', v_key
   ) INTO v_r2;
   SELECT COUNT(*) INTO v_count FROM stock_movements WHERE idempotency_key = v_key;
 
@@ -230,10 +230,10 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t4$;
 SELECT ok(current_setting('breakery.t4_pass')::boolean,
-  'T4: adjust_stock_v1 idempotency_key replay yields one row + same movement_id');
+  'T4: adjust_stock_v2 idempotency_key replay yields one row + same movement_id');
 
 -- =========================================================================
--- T5 — adjust_stock_v1 from MANAGER (no inventory.adjust) -> forbidden P0003
+-- T5 — adjust_stock_v2 from MANAGER (no inventory.adjust) -> forbidden P0003
 -- =========================================================================
 DO $$
 DECLARE v_manager UUID;
@@ -243,7 +243,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT adjust_stock_v1(
+  $$ SELECT adjust_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 20.000, 'T5 manager should fail'
      ) $$,
   'P0003',
@@ -257,15 +257,15 @@ BEGIN
 END $$;
 
 -- =========================================================================
--- T6 — adjust_stock_v1 with p_new_qty < 0
+-- T6 — adjust_stock_v2 with p_new_qty < 0
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT adjust_stock_v1(
+  $$ SELECT adjust_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid, -1.000, 'T6 negative'
      ) $$,
   NULL,
   'negative_qty_not_allowed',
-  'T6: adjust_stock_v1 rejects p_new_qty < 0'
+  'T6: adjust_stock_v2 rejects p_new_qty < 0'
 );
 
 -- =========================================================================
@@ -282,19 +282,19 @@ SELECT ok(
   'T7: receive_stock_v1 is dropped (valued receipts go through the PO flow)');
 
 -- =========================================================================
--- T8 — record_incoming_stock_v1 existe toujours (entrées non-achat : stock
+-- T8 — record_incoming_stock_v2 existe toujours (entrées non-achat : stock
 -- initial d'un site migré, etc. — conservée par décision Q3).
 -- =========================================================================
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v1'
+    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v2'
   ),
-  'T8: record_incoming_stock_v1 still exists (non-purchase entries kept)');
+  'T8: record_incoming_stock_v2 still exists (non-purchase entries kept)');
 
 -- =========================================================================
--- T9 — waste_stock_v1 with qty > on-hand -> insufficient_stock P0002
+-- T9 — waste_stock_v2 with qty > on-hand -> insufficient_stock P0002
 -- =========================================================================
 DO $$
 DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
@@ -305,16 +305,16 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT waste_stock_v1(
+  $$ SELECT waste_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 50.000, 'T9 too much'
      ) $$,
   'P0002',
   'insufficient_stock',
-  'T9: waste_stock_v1 rejects qty > current_stock with insufficient_stock'
+  'T9: waste_stock_v2 rejects qty > current_stock with insufficient_stock'
 );
 
 -- =========================================================================
--- T10 — waste_stock_v1 happy path
+-- T10 — waste_stock_v2 happy path
 -- =========================================================================
 DO $t10$
 DECLARE
@@ -328,7 +328,7 @@ BEGIN
   UPDATE products SET current_stock = 20
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT waste_stock_v1(
+  SELECT waste_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 4.000, 'T10 spoilage'
   ) INTO v_result;
 
@@ -344,7 +344,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t10$;
 SELECT ok(current_setting('breakery.t10_pass')::boolean,
-  'T10: waste_stock_v1 decrements stock by qty and inserts negative movement');
+  'T10: waste_stock_v2 decrements stock by qty and inserts negative movement');
 
 -- =========================================================================
 -- T11 — RLS: direct INSERT into stock_movements blocked for `authenticated`
@@ -420,11 +420,11 @@ BEGIN
    WHERE product_id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid
      AND reason LIKE 'T13 step%';
 
-  PERFORM adjust_stock_v1('99999999-aaaa-bbbb-cccc-222222222222'::uuid, 70.000, 'T13 step 1');
+  PERFORM adjust_stock_v2('99999999-aaaa-bbbb-cccc-222222222222'::uuid, 70.000, 'T13 step 1');
   SELECT current_stock INTO v_after_first FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
 
-  PERFORM waste_stock_v1('99999999-aaaa-bbbb-cccc-222222222222'::uuid, 5.000, 'T13 step 2 waste');
+  PERFORM waste_stock_v2('99999999-aaaa-bbbb-cccc-222222222222'::uuid, 5.000, 'T13 step 2 waste');
   SELECT current_stock INTO v_after_second FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
 
@@ -512,7 +512,7 @@ SELECT ok(
 );
 
 -- =========================================================================
--- T16 — record_incoming_stock_v1 from CASHIER (no inventory.receive) -> P0003
+-- T16 — record_incoming_stock_v2 from CASHIER (no inventory.receive) -> P0003
 -- =========================================================================
 DO $$
 DECLARE v_cashier UUID;
@@ -525,7 +525,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v1(
+  $$ SELECT record_incoming_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        1.000,
        NULL, NULL, 'T16 cashier should fail'
@@ -548,10 +548,10 @@ BEGIN
 END $$;
 
 -- =========================================================================
--- T17 — record_incoming_stock_v1 with quantity = 0 -> quantity_must_be_positive
+-- T17 — record_incoming_stock_v2 with quantity = 0 -> quantity_must_be_positive
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v1(
+  $$ SELECT record_incoming_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        0,
        NULL, NULL, 'T17 zero qty'
@@ -562,7 +562,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T18 — record_incoming_stock_v1 MANAGER happy path (no supplier, qty 5):
+-- T18 — record_incoming_stock_v2 MANAGER happy path (no supplier, qty 5):
 --       stock_movements row with movement_type='incoming' and supplier_id IS NULL,
 --       products.current_stock increased by 5, one new audit_logs row.
 -- =========================================================================
@@ -583,7 +583,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v1(
+  SELECT record_incoming_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     5.000,
     NULL, NULL, 'T18 free-form receipt'
@@ -611,10 +611,10 @@ SELECT ok(current_setting('breakery.t18_pass')::boolean,
   'T18: MANAGER + no supplier + qty 5.000 yields incoming movement, +5 stock, 1 audit row');
 
 -- =========================================================================
--- T19 — record_incoming_stock_v1 with soft-deleted supplier -> P0002
+-- T19 — record_incoming_stock_v2 with soft-deleted supplier -> P0002
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v1(
+  $$ SELECT record_incoming_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        3.000,
        '11111111-2222-3333-4444-777777777777'::uuid,
@@ -626,7 +626,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T20 — record_incoming_stock_v1 idempotent replay (same idempotency_key):
+-- T20 — record_incoming_stock_v2 idempotent replay (same idempotency_key):
 --       second call returns idempotent_replay=true, only ONE stock_movements
 --       row exists for that key, current_stock only bumped once.
 -- =========================================================================
@@ -650,7 +650,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v1(
+  SELECT record_incoming_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -658,10 +658,10 @@ BEGIN
   SELECT current_stock INTO v_after_first FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v1(
+  SELECT record_incoming_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
-    NULL, NULL, 'T20 second (replay)', v_key
+    NULL, NULL, 'T20 first', v_key
   ) INTO v_r2;
   SELECT current_stock INTO v_after_second FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
@@ -681,7 +681,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t20$;
 SELECT ok(current_setting('breakery.t20_pass')::boolean,
-  'T20: record_incoming_stock_v1 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
+  'T20: record_incoming_stock_v2 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
 
 -- =========================================================================
 -- T21 — ADR-024 déc. 1 : le total ne voyage plus sur les lignes. Il vient de
@@ -820,7 +820,7 @@ SELECT ok(current_setting('breakery.t24_pass')::boolean,
   'T24: get_stock_levels_v4 bucket low excludes rows where current_stock >= threshold (threshold>0)');
 
 -- =========================================================================
--- T25 — adjust_stock_v1 p_new_qty=0 is allowed (sets stock exactly to 0).
+-- T25 — adjust_stock_v2 p_new_qty=0 is allowed (sets stock exactly to 0).
 -- Setup: PGTAP-PROD-1 to 5; adjust to 0; expect movement quantity = -5.
 -- =========================================================================
 DO $t25$
@@ -835,7 +835,7 @@ BEGIN
   UPDATE products SET current_stock = 5
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT adjust_stock_v1(
+  SELECT adjust_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 0.000, 'T25 set to zero'
   ) INTO v_result;
 
@@ -852,12 +852,10 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t25$;
 SELECT ok(current_setting('breakery.t25_pass')::boolean,
-  'T25: adjust_stock_v1(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');
+  'T25: adjust_stock_v2(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');
 
 -- =========================================================================
--- T26 — adjust_stock_v1 idempotency replay with a DIFFERENT reason but the
--- SAME idempotency_key still returns the original movement_id and does NOT
--- mutate the stored reason (replay short-circuits before re-inserting).
+-- T26 — une cle rejouee avec un autre motif est refusee ; le mouvement reste intact.
 -- =========================================================================
 DO $t26$
 DECLARE
@@ -873,28 +871,32 @@ BEGIN
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
   DELETE FROM stock_movements WHERE idempotency_key = v_key;
 
-  SELECT adjust_stock_v1(
+  SELECT adjust_stock_v2(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 13, 'T26 original reason', v_key
   ) INTO v_r1;
-  SELECT adjust_stock_v1(
-    '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 13, 'T26 DIFFERENT reason on replay', v_key
-  ) INTO v_r2;
+  BEGIN
+    PERFORM adjust_stock_v2(
+      '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 13, 'T26 DIFFERENT reason on replay', v_key
+    );
+    v_r2 := '{"conflict": false}'::jsonb;
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    v_r2 := jsonb_build_object('conflict', SQLERRM = 'idempotency_conflict');
+  END;
   SELECT COUNT(*) INTO v_row_count FROM stock_movements WHERE idempotency_key = v_key;
   SELECT reason INTO v_stored_reason FROM stock_movements WHERE idempotency_key = v_key;
 
   PERFORM set_config('breakery.t26_pass',
     CASE WHEN
-      (v_r1->>'movement_id') = (v_r2->>'movement_id')
-      AND (v_r2->>'idempotent_replay')::boolean = true
+      (v_r2->>'conflict')::boolean = true
       AND v_row_count = 1
       AND v_stored_reason = 'T26 original reason'
     THEN 'true' ELSE 'false' END, false);
 END $t26$;
 SELECT ok(current_setting('breakery.t26_pass')::boolean,
-  'T26: adjust_stock_v1 idempotency replay with different reason returns original movement_id (reason unchanged)');
+  'T26: adjust_stock_v2 rejects key reuse with a different reason (original movement unchanged)');
 
 -- =========================================================================
--- T27 — waste_stock_v1 with short reason (< 3 chars) -> reason_required
+-- T27 — waste_stock_v2 with short reason (< 3 chars) -> reason_required
 -- =========================================================================
 DO $$
 BEGIN
@@ -904,16 +906,16 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT waste_stock_v1(
+  $$ SELECT waste_stock_v2(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 1.000, 'ab'
      ) $$,
   NULL,
   'reason_required',
-  'T27: waste_stock_v1 rejects reason shorter than 3 chars with reason_required'
+  'T27: waste_stock_v2 rejects reason shorter than 3 chars with reason_required'
 );
 
 -- =========================================================================
--- T28 — waste_stock_v1 qty > current_stock -> insufficient_stock P0002
+-- T28 — waste_stock_v2 qty > current_stock -> insufficient_stock P0002
 -- Uses PGTAP-PROD-LOW (stock=5) to keep PGTAP-PROD-1 state independent.
 -- =========================================================================
 DO $$
@@ -924,12 +926,12 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT waste_stock_v1(
+  $$ SELECT waste_stock_v2(
        '99999999-aaaa-bbbb-cccc-333333333333'::uuid, 100.000, 'T28 over-waste'
      ) $$,
   'P0002',
   'insufficient_stock',
-  'T28: waste_stock_v1 rejects qty > current_stock with insufficient_stock (distinct product)'
+  'T28: waste_stock_v2 rejects qty > current_stock with insufficient_stock (distinct product)'
 );
 
 -- =========================================================================

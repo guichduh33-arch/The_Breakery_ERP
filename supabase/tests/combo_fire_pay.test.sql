@@ -1,10 +1,10 @@
 -- supabase/tests/combo_fire_pay.test.sql
--- Session 47 / fire-path extension — fire_counter_order_v8 + pay_existing_order_v20
+-- Session 47 / fire-path extension — fire_counter_order_v9 + pay_existing_order_v20
 -- combo-aware. Cashier ...0002 has pos.sale.create + payments.process.
 -- Fire a combo (persists combo_components), then pay → component stock deducted,
 -- combo product stock untouched.
 --
--- 2026-09-06 (fire_counter_order_v8, décision 6 du 2026-09-05) : le fire price
+-- 2026-09-06 (fire_counter_order_v9, décision 6 du 2026-09-05) : le fire price
 -- les combos serveur via _resolve_combo_price_v1, qui exige que chaque
 -- composant soit une option d'un groupe du combo. La fixture déclare donc les
 -- deux groupes (Main / Drinks, surcharge 0) — sous v7 le combo « sans groupes »
@@ -32,7 +32,7 @@ INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_d
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v8(
+  r := fire_counter_order_v9(
     p_client_uuid := '00000000-0000-0000-0000-0000000cfaaa'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf001',
     p_items := $items$[

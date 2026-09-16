@@ -17,10 +17,8 @@
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useUsersList } from '@/features/users/hooks/useUsersList.js';
 import { useDeleteRole } from '../hooks/useDeleteRole.js';
 import { rbacErrorMessage, type RbacRole } from '../hooks/useRbacMatrix.js';

@@ -5,14 +5,8 @@
 // useId-scoped labels, inline alert on error).
 
 import { useEffect, useId, useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  Input,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Input } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { useAdjustB2bBalance } from '../hooks/useAdjustB2bBalance.js';
 
 export interface AdjustB2bBalanceModalProps {

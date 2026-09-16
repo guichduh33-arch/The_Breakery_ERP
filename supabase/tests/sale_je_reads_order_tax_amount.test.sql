@@ -9,7 +9,7 @@
 --
 --   T4-T6  Vente B2B — CHANGÉ deux fois, l'un renforçant l'autre :
 --
---          (1) 2026-07-17 — `create_b2b_order_v6` écrit tax_amount = 0 (vente
+--          (1) 2026-07-17 — `create_b2b_order` écrit tax_amount = 0 (vente
 --          en gros hors champ PBJT, ADR-005, décision propriétaire). AVANT ce
 --          correctif, le trigger recalculait round_idr(total * r/(1+r)) et
 --          créditait 2110 malgré tout : 81 600 IDR de PB1 fantôme sur la V3

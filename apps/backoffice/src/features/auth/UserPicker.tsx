@@ -2,7 +2,7 @@
 // Vague 0 / Tâche 3b — dynamic picker via `list_login_users_v1` (was
 // hardcoded to 2 seed accounts — any employee created in the BackOffice
 // used to be invisible at login).
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { useLoginUsers } from './hooks/useLoginUsers.js';
 
 export interface UserPickerProps {

@@ -7,10 +7,10 @@
 --   T4  : targeted allocation settles the chosen (newer) invoice, ignoring FIFO order
 --   T5  : targeted + FIFO remainder — chosen settled, leftover falls to oldest (partial)
 --   T6  : partial payment — view_b2b_invoices outstanding correct, is_unpaid TRUE, paid_at NULL
---   T7  : POS == BO — get_pos_b2b_debts_v3 outstanding == view_b2b_invoices outstanding
+--   T7  : POS == BO — get_pos_b2b_debts_v4 outstanding == view_b2b_invoices outstanding
 --   T8  : cancel unpaid — voided, gone from view, JE reversed balanced, balance + stock restored
 --   T9  : cancel blocked when an allocation exists → order_has_payments (P0011)
---   T10 : create_b2b_order_v6 over credit limit → P0011 (TOCTOU gate fires)
+--   T10 : create_b2b_order over credit limit → P0011 (TOCTOU gate fires)
 --   T11 : reconcile_b2b_balance_v1 — consistent cache ⇒ has_drift FALSE (before & after settle)
 --   T12 : gate — CASHIER calling record_b2b_payment_v3 → permission_denied (P0003)
 --   T13 : idempotency replay record_b2b_payment_v3 — 1 payment, 1 alloc, replay flag
@@ -103,7 +103,7 @@ CREATE OR REPLACE FUNCTION pg_temp.mk_invoice(p_cust UUID, p_qty NUMERIC, p_pric
 RETURNS UUID LANGUAGE plpgsql AS $$
 DECLARE v_res JSONB; v_id UUID;
 BEGIN
-  v_res := create_b2b_order_v6(
+  v_res := create_b2b_order_v7(
     p_customer_id => p_cust,
     p_items => jsonb_build_array(jsonb_build_object(
       'product_id','b2b52002-0000-0000-0000-000000000001','quantity',p_qty,'unit_price',p_price)));
@@ -248,12 +248,12 @@ BEGIN
   SELECT invoice_id INTO v_inv FROM view_b2b_invoices
    WHERE customer_id='b2b52001-0000-0000-0000-000000000005' LIMIT 1;
   SELECT outstanding INTO v_bo FROM view_b2b_invoices WHERE invoice_id=v_inv;
-  SELECT outstanding INTO v_pos FROM get_pos_b2b_debts_v3('b2b52001-0000-0000-0000-000000000005', 3650)
+  SELECT outstanding INTO v_pos FROM get_pos_b2b_debts_v4('b2b52001-0000-0000-0000-000000000005', 3650)
    WHERE order_id=v_inv;
   PERFORM set_config('breakery.t7', CASE WHEN v_pos = v_bo AND v_bo = 60000 THEN 'true' ELSE 'false' END, false);
 END $t7$;
 SELECT ok(current_setting('breakery.t7')::boolean,
-  'T7: POS get_pos_b2b_debts_v3 outstanding == BO view_b2b_invoices outstanding (60K)');
+  'T7: POS get_pos_b2b_debts_v4 outstanding == BO view_b2b_invoices outstanding (60K)');
 
 -- ===========================================================================
 -- T8 — cancel unpaid : voided, gone from view, JE reversed, balance + stock restored
@@ -265,7 +265,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   SELECT current_stock INTO v_stock_before FROM products WHERE id='b2b52002-0000-0000-0000-000000000001';
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000006',3,50000,'2026-06-07'::timestamptz);
-  v_res := cancel_b2b_order_v1(v_inv, 'erroneous invoice');
+  v_res := cancel_b2b_order_v2(v_inv, 'erroneous invoice');
   SELECT current_stock INTO v_stock_after FROM products WHERE id='b2b52002-0000-0000-0000-000000000001';
   SELECT total_debit, total_credit INTO v_je_debit, v_je_credit
     FROM journal_entries WHERE reference_type='b2b_order_cancel' AND reference_id=v_inv;
@@ -293,12 +293,12 @@ BEGIN
   PERFORM set_config('breakery.t9_inv', v_inv::text, false);
 END $t9_setup$;
 SELECT throws_ok(
-  format($$ SELECT cancel_b2b_order_v1(%L, 'try cancel allocated') $$, current_setting('breakery.t9_inv')),
+  format($$ SELECT cancel_b2b_order_v2(%L, 'try cancel allocated') $$, current_setting('breakery.t9_inv')),
   'P0011', NULL,
-  'T9: cancel_b2b_order_v1 on an allocated invoice raises P0011 (order_has_payments)');
+  'T9: cancel_b2b_order_v2 on an allocated invoice raises P0011 (order_has_payments)');
 
 -- ===========================================================================
--- T10 — create_b2b_order_v6 over credit limit (TOCTOU gate fires)
+-- T10 — create_b2b_order over credit limit (TOCTOU gate fires)
 -- ===========================================================================
 DO $t10_setup$
 DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
@@ -307,12 +307,12 @@ BEGIN
   UPDATE customers SET b2b_current_balance=0 WHERE id='b2b52001-0000-0000-0000-000000000008';
 END $t10_setup$;
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v6(
+  $$ SELECT create_b2b_order_v7(
        p_customer_id=>'b2b52001-0000-0000-0000-000000000008',
        p_items=>jsonb_build_array(jsonb_build_object(
          'product_id','b2b52002-0000-0000-0000-000000000001','quantity',12,'unit_price',50000))) $$,
   'P0011', NULL,
-  'T10: create_b2b_order_v6 over credit limit raises P0011 (re-check after lock)');
+  'T10: create_b2b_order over credit limit raises P0011 (re-check after lock)');
 
 -- ===========================================================================
 -- T11 — reconcile consistent ⇒ has_drift FALSE (before & after settling)

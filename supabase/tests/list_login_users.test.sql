@@ -53,7 +53,7 @@ SELECT ok(
 -- T4 : excludes soft-deleted users
 -- =============================================================================
 
--- create_user_v1 requires an authenticated caller with users.create — pgTAP
+-- create_user_v2 requires an authenticated caller with users.create — pgTAP
 -- runs as service_role/superuser so auth.uid() is NULL by default. Impersonate
 -- the seeded SUPER_ADMIN via request.jwt.claim.sub (same fixture as
 -- users.test.sql T_USR_02+).
@@ -72,7 +72,7 @@ BEGIN
     jsonb_build_object('sub', v_admin_auth::TEXT, 'role', 'authenticated')::TEXT,
     true);
 
-  v_new_id := create_user_v1('USR_LLU4', 'Soft Deleted Test', 'CASHIER', '135790');
+  v_new_id := create_user_v2('USR_LLU4', 'Soft Deleted Test', 'CASHIER', '135790');
   UPDATE user_profiles SET deleted_at = now(), is_active = false WHERE id = v_new_id;
   PERFORM set_config('test.llu4_id', v_new_id::TEXT, true);
 END $$;

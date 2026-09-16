@@ -7,7 +7,7 @@ import {
   useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { Plus } from 'lucide-react';
 import {
   useAllCategories,

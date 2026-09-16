@@ -25,7 +25,10 @@ vi.mock('@/stores/authStore.js', () => {
     bootstrap: vi.fn(),
     logout: vi.fn(),
   };
-  return { useAuthStore: (selector: (s: typeof state) => unknown) => selector(state) };
+  return { useAuthStore: Object.assign((selector: (s: typeof state) => unknown) => selector(state), {
+    getState: () => state,
+    subscribe: () => () => undefined,
+  }) };
 });
 
 // La vraie page de login monte le picker d'utilisateurs (RPC réseau) — hors

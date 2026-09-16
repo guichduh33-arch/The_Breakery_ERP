@@ -26,7 +26,7 @@ import {
   Upload,
   XCircle,
 } from 'lucide-react';
-import { EmptyState, KpiTile } from '@breakery/ui';
+import { EmptyState, KpiTile } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { SupplierCard } from '@/features/suppliers/components/SupplierCard.js';

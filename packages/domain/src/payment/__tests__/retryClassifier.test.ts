@@ -25,6 +25,10 @@ describe('classifyCheckoutError', () => {
   });
 
   describe('retryable bucket', () => {
+    it.each([Object.assign(new Error('checkout_failed'), { status: 502 }), new DOMException('signal timed out', 'TimeoutError'), new Error('network_error')])('keeps an uncertain transport result retryable', (error) => {
+      expect(classifyCheckoutError(error).kind).toBe('retryable');
+      expect(classifyCheckoutError(error).userMessage).not.toMatch(/did not reach/i);
+    });
     it.each(['network_error', 'fetch_failed', 'timeout', 'server_error', '5xx', 'PGRST301'])(
       'classifies %s as retryable',
       (code) => {

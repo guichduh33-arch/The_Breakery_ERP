@@ -27,218 +27,18 @@ import {
   pointsToValue,
   calculateTotals,
 } from '@breakery/domain';
-import type {
-  AppliedPromotion,
-  Cart,
-  CartItem,
-  ComboComponent,
-  Customer,
-  CustomerCategory,
-  Discount,
-  OrderType,
-  Product,
-  ProductType,
-  SelectedModifiers,
-} from '@breakery/domain';
+import { reconcileOrderItems, snapshotCart } from './orderSnapshot';
 import { usePosSettingsStore } from './posSettingsStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 
-export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
-
-export interface ReopenOrderItem {
-  id: string;
-  product_id: string;
-  name: string;
-  unit_price: number;
-  quantity: number;
-  modifiers: unknown;
-  is_locked: boolean;
-  kitchen_status: string | null;
-  /**
-   * Type du produit tel que renvoyé par `reopen_held_order_v2` (enum Postgres
-   * `product_type`). Absent des payloads antérieurs, d'où l'optionnalité.
-   */
-  product_type?: string | null;
-  /**
-   * Composants résolus d'une ligne combo (`null` hors combo). Sans eux, une
-   * ligne combo réouverte s'afficherait comme un produit simple.
-   */
-  combo_components?: ComboComponent[] | null;
-}
-export interface ReopenOrderPayload {
-  order_id: string;
-  order_type: string;
-  customerId: string | null;
-  tableNumber: string | null;
-  notes: string | null;
-  items: ReopenOrderItem[];
-}
-
-/**
- * Stable id for a promotion-driven gift line. Deterministic per promotion id
- * so duplicate `setAppliedPromotions` calls (e.g. from React strict-mode
- * double-invoke) cannot insert two gift rows for the same promo.
- */
-function makeGiftLineId(promotionId: string): string {
-  return `gift-${promotionId}`;
-}
-
-interface CartState {
-  cart: Cart;
-  /** Line ids that have been "sent to kitchen" — read-only afterwards. */
-  lockedItemIds: string[];
-  /** Line ids whose ticket has already been printed — prevents re-printing on reconnect / re-render. */
-  printedItemIds: string[];
-  /** Full customer object for display — mirrors cart.customerId. */
-  attachedCustomer: CustomerWithCategory | null;
-  /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
-  pickedUpOrderId: string | null;
-  /**
-   * Spec 006x lot 4 — identité de la commande LOCALE quand le cart a été firé
-   * en mode OFFLINE (bus LAN) : client_uuid racine (idempotence du fire au
-   * replay) + numéro local `L-<seq>`. Miroir offline de `pickedUpOrderId` :
-   * un re-fire APPEND au lieu de minter une 2ᵉ commande locale, et le cash
-   * offline sait quelle commande il encaisse. Persisté (sessionStorage) pour
-   * survivre à un reload en pleine coupure. Effacé quand le replay raccorde
-   * la commande au cloud (setPickedUpOrderId prend le relais).
-   */
-  offlineOrder: { clientUuid: string; localNumber: string } | null;
-  /**
-   * Session 13 / Phase 4.A — true when the device has lost network. Drives
-   * read-only graceful degradation in the UI (browse cached products,
-   * disable order completion). Updated via {@link initNetworkListener}.
-   */
-  isOffline: boolean;
-  /**
-   * Session 9 — currently applied promotions (latest evaluator output).
-   * In-memory only ; the auto-eval orchestrator recomputes this on every
-   * cart/customer/dismissal change.
-   */
-  appliedPromotions: AppliedPromotion[];
-  /**
-   * Session 9 — promotion ids the user has manually dismissed during this
-   * cart session (typically free-gift lines they removed). Skipped by the
-   * evaluator until the cart is cleared. Anti-loop guard for spec §7 risk
-   * "Gift product retiré accidentellement".
-   */
-  dismissedPromotionIds: Set<string>;
-
-  // Actions
-  add: (product: Product, modifiers?: SelectedModifiers, unitPriceOverride?: number) => void;
-  /**
-   * Session 47 — add a configured combo line. Unlike `add`, this always
-   * creates a combo cart line carrying the cashier's chosen `components`
-   * (for server-side stock deduction) and the resolved `modifiers` snapshot
-   * (for cart-line display). `unitPrice` is the configured price emitted by
-   * `ComboConfigModal` (base_price; surcharges ride in `modifiers`).
-   */
-  addCombo: (
-    product: Product,
-    modifiers: SelectedModifiers,
-    components: ComboComponent[],
-    unitPrice: number,
-  ) => void;
-  update: (lineId: string, quantity: number) => void;
-  remove: (lineId: string) => void;
-  /**
-   * Cart redesign v2 — re-insert a line that was just removed, at its former
-   * index. Backs the 5s "undo" toast on the delete gesture (no blocking
-   * confirm on a frequent action). No-op if a line with the same id already
-   * exists (double-undo / race safety).
-   */
-  restoreLine: (item: CartItem, index: number) => void;
-  clear: () => void;
-  /**
-   * Session 36 — full order void. Unlike {@link clear} (which keeps locked /
-   * already-sent lines), this wipes EVERY line including those fired to the
-   * kitchen, plus all per-order transient state (locks, print flags, promos,
-   * cart discount, redemption). Used by the bottom-bar "Void Order" action,
-   * which gates this behind a manager PIN once anything has been sent.
-   */
-  voidOrder: () => void;
-  setOrderType: (type: OrderType) => void;
-
-  // Table selection (session 4)
-  setTableNumber: (name: string | null) => void;
-
-  // Customer + loyalty
-  attachCustomer: (customer: Customer | CustomerWithCategory) => void;
-  detachCustomer: () => void;
-  setRedeemPoints: (points: number) => void;
-  redemptionAmount: () => number;
-
-  // Locking
-  canEdit: (lineId: string) => boolean;
-  markLocked: (lineIds: string[]) => void;
-  unlockedItems: () => CartItem[];
-  unlockedItemIds: () => string[];
-
-  // Print tracking
-  markPrinted: (lineIds: string[]) => void;
-  unprintedItems: () => CartItem[];
-  unprintedItemIds: () => string[];
-
-  /**
-   * Session 10 — flip a locked item to cancelled state. Called after a
-   * successful cancel-item EF round-trip; mirrors the server's is_cancelled flag
-   * on the local CartItem so the cart panel renders strikethrough + CANCELLED
-   * badge and excludes the line from totals (calculateTotals ignores cancelled).
-   */
-  markCancelled: (lineId: string) => void;
-
-  // Held orders restore (session 4)
-  restoreCart: (cart: Cart) => void;
-
-  /**
-   * Spec A (held-order lifecycle) — rehydrate a REOPENED fired order. Unlike
-   * `restoreCart` (draft, fresh ids, no locks), this reuses each
-   * `order_items.id` as the cart line id and pushes already-fired
-   * (`is_locked`) lines into BOTH `lockedItemIds` (non-editable, excluded from
-   * the next fire's RPC) AND `printedItemIds` (never reprinted). Sets
-   * `pickedUpOrderId` so the next fire appends and checkout pays the existing
-   * order.
-   */
-  reopenOrder: (payload: ReopenOrderPayload) => void;
-
-  // Tablet pickup (session 5)
-  setPickedUpOrderId: (id: string | null) => void;
-
-  // Commande locale offline (spec 006x lot 4)
-  setOfflineOrder: (o: { clientUuid: string; localNumber: string } | null) => void;
-
-  // Discounts (session 6)
-  setCartDiscount: (d: Discount | null) => void;
-  setLineDiscount: (itemId: string, d: Discount | null) => void;
-
-  // Promotions (session 9)
-  /**
-   * Replace the current applied promotions and reconcile gift lines:
-   * for each AppliedPromotion with `gift_to_add`, add a unit_price=0 cart
-   * line if not already present ; for each existing gift line whose
-   * promotion_id is not in `next`, remove it. Returns the diff so callers
-   * can surface toasts ("Free X added" / "Free X removed").
-   */
-  setAppliedPromotions: (
-    next: AppliedPromotion[],
-    productLookup?: Record<string, { name: string }>,
-  ) => { addedGifts: { name: string; promotion_id: string }[]; removedGifts: { name: string; promotion_id: string }[] };
-  /**
-   * Mark a promotion id as dismissed so the evaluator skips it. Called
-   * automatically when the user removes a gift line via `remove()`.
-   */
-  dismissPromotion: (promotionId: string) => void;
-
-  /**
-   * Session 13 / Phase 4.A — toggle the offline flag explicitly. Used by
-   * {@link initNetworkListener} when `online`/`offline` events fire, and by
-   * tests that simulate split-network conditions.
-   */
-  setOffline: (offline: boolean) => void;
-}
+import type { CartState } from './cartTypes';
+export type { CartState, CustomerWithCategory, ReopenOrderItem, ReopenOrderPayload } from './cartTypes';
+import { reconcilePromotions } from './cartPromotions';
+import { guardCartActions, isCartPaymentLocked } from './cartPaymentGuard';
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set, get) => ({
+    (set, get) => guardCartActions({
       // Session 43 / P2-6 — default order type is take_out (counter bakery
       // flow ; D9, owner to ratify). Resets (clear/voidOrder/checkout) keep the
       // current order_type via spread, so this is the only default site.
@@ -251,6 +51,9 @@ export const useCartStore = create<CartState>()(
       printedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
+      orderNumber: null,
+      orderSnapshotVersion: 0,
+      orderOrigin: null,
       offlineOrder: null,
       appliedPromotions: [],
       dismissedPromotionIds: new Set<string>(),
@@ -275,7 +78,7 @@ export const useCartStore = create<CartState>()(
           // and BUILD a cart offline, but you cannot complete an order until
           // connectivity is back. We do NOT short-circuit add() here ; the
           // ProcessPayment button reads `isOffline` and disables itself.
-          return { cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) };
+          return { cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride, [...s.lockedItemIds, ...s.printedItemIds]) };
         });
         if (wasEmpty) emitPosEvent('order_opened', { payload: { order_type: get().cart.order_type } });
         emitPosEvent('item_added', { payload: { product_id: product.id, name: product.name } });
@@ -284,7 +87,7 @@ export const useCartStore = create<CartState>()(
       // Session 47 — add a configured combo line after ComboConfigModal confirms.
       addCombo: (product, modifiers, components, unitPrice) => {
         const wasEmpty = get().cart.items.length === 0;
-        set((s) => ({ cart: addComboItem(s.cart, product, modifiers, components, 1, unitPrice) }));
+        set((s) => ({ cart: addComboItem(s.cart, product, modifiers, components, 1, unitPrice, [...s.lockedItemIds, ...s.printedItemIds]) }));
         if (wasEmpty) emitPosEvent('order_opened', { payload: { order_type: get().cart.order_type } });
         emitPosEvent('item_added', {
           amount: unitPrice,
@@ -394,6 +197,8 @@ export const useCartStore = create<CartState>()(
             // routing append/pay to the voided order (P0002 loop, persisted in
             // sessionStorage → reload inoperant). The DB order is gone.
             pickedUpOrderId: null,
+      orderNumber: null,
+      orderOrigin: null,
             // Lot 4 — void d'une commande locale offline : purge aussi ses
             // intents de l'outbox (rien ne doit être rejoué en DB). Le ticket
             // KDS déjà affiché reste (pas de topic cancel en lot 4).
@@ -457,7 +262,7 @@ export const useCartStore = create<CartState>()(
 
       redemptionAmount: () => pointsToValue(get().cart.loyaltyPointsToRedeem ?? 0),
 
-      canEdit: (lineId) => !get().lockedItemIds.includes(lineId),
+      canEdit: (lineId) => !isCartPaymentLocked() && !get().lockedItemIds.includes(lineId) && !get().cart.items.find((item) => item.id === lineId)?.is_cancelled,
 
       markLocked: (lineIds) =>
         set((s) => ({
@@ -501,6 +306,7 @@ export const useCartStore = create<CartState>()(
       markCancelled: (lineId) => {
         const cancelled = get().cart.items.find((i) => i.id === lineId);
         set((s) => ({
+          orderSnapshotVersion: s.orderSnapshotVersion + 1,
           cart: {
             ...s.cart,
             items: s.cart.items.map((it) =>
@@ -517,7 +323,7 @@ export const useCartStore = create<CartState>()(
       },
 
       restoreCart: (restoredCart) =>
-        set((s) => ({
+        set(() => ({
           // ADR-013 D11 — un cart restauré (hold) repart sans promotionTotal :
           // `appliedPromotions` est remis à zéro juste en dessous, l'orchestrateur
           // recalculera les deux ensemble au prochain mount.
@@ -528,7 +334,9 @@ export const useCartStore = create<CartState>()(
           lockedItemIds: [],
           printedItemIds: [],
           attachedCustomer: null,
-          pickedUpOrderId: s.pickedUpOrderId,
+          pickedUpOrderId: null,
+          orderOrigin: null,
+          orderNumber: null,
           // Lot 4 — un restore installe un AUTRE contexte de commande : ne
           // jamais laisser le lien offline de l'ancien cart encaisser le
           // nouveau (le hold offline n'est pas un flux supporté, A1).
@@ -539,45 +347,27 @@ export const useCartStore = create<CartState>()(
           dismissedPromotionIds: new Set<string>(),
         })),
 
-      reopenOrder: (payload) =>
-        set(() => {
-          const items: CartItem[] = payload.items.map((it) => ({
-            id: it.id,
-            product_id: it.product_id,
-            name: it.name,
-            unit_price: it.unit_price,
-            quantity: it.quantity,
-            modifiers: (it.modifiers ?? []) as SelectedModifiers,
-            // Miroir d'`addItem` / `addComboItem` : `product_type` n'est posé
-            // que hors `finished`, `combo_components` que s'il porte des
-            // composants, pour qu'une ligne simple réouverte reste
-            // structurellement identique à une ligne saisie.
-            ...(it.product_type && it.product_type !== 'finished'
-              ? { product_type: it.product_type as ProductType }
-              : {}),
-            ...(it.combo_components && it.combo_components.length > 0
-              ? { combo_components: it.combo_components }
-              : {}),
-          }));
-          const lockedIds = payload.items.filter((it) => it.is_locked).map((it) => it.id);
-
-          const cart: Cart = { items, order_type: payload.order_type as OrderType };
-          if (payload.customerId !== null) cart.customerId = payload.customerId;
-          if (payload.tableNumber !== null) cart.tableNumber = payload.tableNumber;
-
+      applyOrderSnapshot: (snapshot, replace = false) =>
+        set((state) => {
+          if (replace && isCartPaymentLocked()) return state;
+          if (!replace && state.pickedUpOrderId && state.pickedUpOrderId !== snapshot.order_id) return state;
+          const items = replace ? snapshotCart(snapshot).items : reconcileOrderItems(state.cart.items, snapshot.items);
+          const rowById = new Map(snapshot.items.map((item) => [item.id, item]));
+          const locked = items.filter((item) => item.server_id && rowById.get(item.server_id)?.is_locked).map((item) => item.id);
           return {
-            cart,
-            // Locked = already fired → non-editable AND non-reprinted.
-            lockedItemIds: lockedIds,
-            printedItemIds: lockedIds,
-            attachedCustomer: null,
-            pickedUpOrderId: payload.order_id,
-            // Lot 4 — une commande cloud réouverte remplace tout lien local.
+            cart: replace ? snapshotCart(snapshot) : { ...state.cart, items },
+            lockedItemIds: [...new Set([...(replace ? [] : state.lockedItemIds), ...locked])],
+            printedItemIds: replace ? locked : state.printedItemIds,
+            pickedUpOrderId: snapshot.order_id,
+            orderSnapshotVersion: state.orderSnapshotVersion + 1,
+            orderNumber: snapshot.order_number ?? state.orderNumber,
+            orderOrigin: snapshot.created_via === 'tablet' ? 'tablet' : 'pos',
             offlineOrder: null,
-            appliedPromotions: [],
-            dismissedPromotionIds: new Set<string>(),
+            ...(replace ? { attachedCustomer: null, appliedPromotions: [], dismissedPromotionIds: new Set<string>() } : {}),
           };
         }),
+
+      reopenOrder: (payload) => get().applyOrderSnapshot(payload, true),
 
       setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
 
@@ -620,103 +410,9 @@ export const useCartStore = create<CartState>()(
 
       // Session 9 — promotions
       setAppliedPromotions: (next, productLookup = {}) => {
-        const addedGifts: { name: string; promotion_id: string }[] = [];
-        const removedGifts: { name: string; promotion_id: string }[] = [];
-
-        const state = get();
-        const nextById = new Map(next.map((ap) => [ap.promotion_id, ap]));
-
-        // Index existing gift lines by promotion_id for fast lookup.
-        const existingGiftPromoIds = new Set<string>();
-        for (const it of state.cart.items) {
-          if (it.is_promo_gift && it.promotion_id) {
-            existingGiftPromoIds.add(it.promotion_id);
-          }
-        }
-
-        // 1. Drop gift lines whose promotion is no longer applied.
-        let nextItems: CartItem[] = state.cart.items.filter((it) => {
-          if (!it.is_promo_gift || !it.promotion_id) return true;
-          const stillApplied = nextById.has(it.promotion_id);
-          if (!stillApplied) {
-            removedGifts.push({ name: it.name, promotion_id: it.promotion_id });
-          }
-          return stillApplied;
-        });
-
-        // 2. Add gift lines for newly-applied free_product promos.
-        for (const ap of next) {
-          if (!ap.gift_to_add) continue;
-          if (existingGiftPromoIds.has(ap.promotion_id)) continue;
-          const giftName = productLookup[ap.gift_to_add.product_id]?.name ?? ap.name;
-          const giftLine: CartItem = {
-            id: makeGiftLineId(ap.promotion_id),
-            product_id: ap.gift_to_add.product_id,
-            name: giftName,
-            unit_price: 0,
-            quantity: ap.gift_to_add.qty,
-            modifiers: [],
-            is_promo_gift: true,
-            promotion_id: ap.promotion_id,
-          };
-          nextItems = [...nextItems, giftLine];
-          addedGifts.push({ name: giftName, promotion_id: ap.promotion_id });
-        }
-
-        // ADR-013 D11 — la promo entre dans le pipeline canonique du domaine :
-        // `cart.promotionTotal` est écrit ICI (source unique), les call-sites
-        // appellent `calculateTotals` sans post-traitement. Clamp du rachat de
-        // points dans le MÊME set : l'éval promo est asynchrone (debounce +
-        // RPC), un rachat validé avant l'arrivée d'une promo peut dépasser le
-        // post-promo — on le réduit au max valide pour que les gardes du
-        // domaine (RedemptionExceedsTotalError) restent un filet jamais touché.
-        // items_total exact du domaine (lignes annulées exclues, remises
-        // ligne déduites) sur un cart nu — aucune garde ne peut throw ici.
-        const itemsTotal = calculateTotals(
-          { items: nextItems, order_type: state.cart.order_type },
-          0,
-        ).subtotal;
-        // Promo clampée aux items : un montant évalué > items_total (petit
-        // panier + fixed_amount généreux) ne doit jamais mettre le cart dans
-        // un état où DiscountExceedsTotalError throw au render.
-        const promoTotal = Math.min(
-          next.reduce((sum, ap) => sum + ap.amount, 0),
-          itemsTotal,
-        );
-        const promoChanged = (state.cart.promotionTotal ?? 0) !== promoTotal;
-
-        const currentPoints = state.cart.loyaltyPointsToRedeem ?? 0;
-        let clampedPoints = currentPoints;
-        if (currentPoints > 0) {
-          const postPromo = itemsTotal - promoTotal;
-          const maxPoints = Math.floor(postPromo / pointsToValue(1));
-          clampedPoints = Math.min(currentPoints, maxPoints);
-        }
-        const pointsChanged = clampedPoints !== currentPoints;
-
-        // Session 36 / Bug 1 fix — idempotent reconcile. When nothing changed,
-        // `nextItems` is content-identical to the current cart (only a fresh
-        // array instance). Preserve the EXISTING `cart` reference in that case
-        // so `usePromotionsAutoEval` (whose effect depends on `cart`) does NOT
-        // re-fire and re-call `evaluate_promotions_v2` on a 200ms loop.
-        // `appliedPromotions` is not in that effect's deps, so refreshing it is
-        // safe. Quand seul `promotionTotal` change, la nouvelle référence cart
-        // déclenche UNE éval supplémentaire qui converge (2ᵉ passage : montant
-        // identique → référence préservée).
-        const giftsChanged = addedGifts.length > 0 || removedGifts.length > 0;
-        const cartChanged = giftsChanged || promoChanged || pointsChanged;
-        set({
-          cart: cartChanged
-            ? {
-                ...state.cart,
-                items: nextItems,
-                promotionTotal: promoTotal,
-                ...(pointsChanged ? { loyaltyPointsToRedeem: clampedPoints } : {}),
-              }
-            : state.cart,
-          appliedPromotions: next,
-        });
-        return { addedGifts, removedGifts };
+        const { patch, ...changes } = reconcilePromotions(get(), next, productLookup);
+        set(patch);
+        return changes;
       },
 
       dismissPromotion: (promotionId) =>
@@ -747,6 +443,8 @@ export const useCartStore = create<CartState>()(
         printedItemIds: state.printedItemIds,
         attachedCustomer: state.attachedCustomer,
         pickedUpOrderId: state.pickedUpOrderId,
+        orderNumber: state.orderNumber,
+        orderOrigin: state.orderOrigin,
         // Lot 4 — la commande locale offline survit à un reload en coupure.
         offlineOrder: state.offlineOrder,
       }),
@@ -783,6 +481,7 @@ export function initNetworkListener(): () => void {
  * order has been completed successfully.
  */
 export function resetCartAfterCheckout(): void {
+  if (isCartPaymentLocked()) return;
   useCartStore.setState((s) => {
     const cleared = clearCart(s.cart);
     const { customerId: _c, loyaltyPointsToRedeem: _l, tableNumber: _t, cartDiscount: _cd, promotionTotal: _pt, ...rest } = cleared;
@@ -792,6 +491,8 @@ export function resetCartAfterCheckout(): void {
       printedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
+      orderNumber: null,
+      orderOrigin: null,
       // Lot 4 — la commande locale est soldée (cash offline encaissé) ; son
       // devenir cloud appartient à l'outbox, plus au cart.
       offlineOrder: null,

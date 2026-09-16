@@ -54,7 +54,8 @@
 
 import type { JSX } from 'react';
 import { Lock } from 'lucide-react';
-import { Card, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import type { PermissionCode } from '@breakery/supabase';
 import { roleLabel, type RoleCode } from '@/lib/roleLabels.js';
 

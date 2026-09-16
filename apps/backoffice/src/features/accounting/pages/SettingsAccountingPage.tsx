@@ -3,7 +3,7 @@
 // Route /settings/accounting (style /settings/security S19).
 
 import { useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
 import { Lock, ChevronRight, CalendarCheck } from 'lucide-react';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';

@@ -18,30 +18,33 @@
 // Cart panel / payment terminal / shift / customer-search modal are
 // unchanged — pos-cart / pos-flow own those surfaces in Phase 2.B/C.
 
-import { useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Menu, History } from 'lucide-react';
 import {
   BrandMark,
   Button,
+  FullScreenModal,
 } from '@breakery/ui';
 import { usePickedUpOrderSync } from '@/features/inbox/hooks/usePickedUpOrderSync';
 import { CategoryNav } from '@/features/products/CategoryNav';
 import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { SideMenuDrawer } from '@/features/nav/SideMenuDrawer';
-import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
+import { CartEffects } from '@/features/cart/CartEffects';
+import { ResponsiveOrderPanel } from '@/features/cart/ResponsiveOrderPanel';
+import { useProducts } from '@/features/products/hooks/useProducts';
 import { BottomActionBar } from '@/features/cart/BottomActionBar';
-import { CustomerAttachModal } from '@/features/cart/CustomerAttachModal';
+const CustomerAttachModal = lazy(() => import('@/features/cart/CustomerAttachModal').then((module) => ({ default: module.CustomerAttachModal })));
 import { HeldOrdersModal } from '@/features/cart/HeldOrdersModal';
 import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
-import { CloseShiftModal } from '@/features/shift/components/CloseShiftModal';
+const CloseShiftModal = lazy(() => import('@/features/shift/components/CloseShiftModal').then((module) => ({ default: module.CloseShiftModal })));
 import { useShiftCloseSummary } from '@/features/shift/hooks/useShiftCloseSummary';
 import { ShiftClosedState } from '@/features/shift/ShiftClosedState';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
-import { OrderHistoryPanel } from '@/features/order-history/OrderHistoryPanel';
-import { LiveSessionsModal } from '@/features/shift/LiveSessionsModal';
-import { ChangePinModal } from '@/features/auth/ChangePinModal';
+const OrderHistoryPanel = lazy(() => import('@/features/order-history/OrderHistoryPanel').then((module) => ({ default: module.OrderHistoryPanel })));
+const LiveSessionsModal = lazy(() => import('@/features/shift/LiveSessionsModal').then((module) => ({ default: module.LiveSessionsModal })));
+const ChangePinModal = lazy(() => import('@/features/auth/ChangePinModal').then((module) => ({ default: module.ChangePinModal })));
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
@@ -66,6 +69,10 @@ export default function PosPage() {
   const isLocked = useAuthStore((s) => s.isLocked);
   const lock = useAuthStore((s) => s.lock);
   const [selectedSlug, setSelectedSlug] = useState<string | null>('favorites');
+  const catalog = useProducts();
+  useEffect(() => {
+    if (catalog.data && selectedSlug === 'favorites' && !catalog.data.some((p) => p.is_favorite)) setSelectedSlug(null);
+  }, [catalog.data, selectedSlug]);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -94,9 +101,11 @@ export default function PosPage() {
   // runs while the modal is requested so the preview is fresh at open time;
   // close_shift_v2 recomputes server-side regardless.
   const [closeShiftOpen, setCloseShiftOpen] = useState(false);
-  const { data: closeSummary } = useShiftCloseSummary(
+  const closeSummaryQuery = useShiftCloseSummary(
     closeShiftOpen ? (currentShift?.id ?? null) : null,
   );
+
+  const closeSummary = closeSummaryQuery.data;
 
   const attachCustomer = useCartStore((s) => s.attachCustomer);
   const detachCustomer = useCartStore((s) => s.detachCustomer);
@@ -125,10 +134,11 @@ export default function PosPage() {
   // ADR-013 Lot 4 — v3 → v4 (+ store_credit_balance).
   async function searchCustomers(query: string): Promise<CustomerWithCategory[]> {
     if (query.trim().length < 2) return [];
-    const { data } = await supabase.rpc('search_customers_v4', {
+    const { data, error } = await supabase.rpc('search_customers_v4', {
       p_query: query,
       p_limit: 10,
     });
+    if (error) throw new Error('Customer search unavailable — try again');
     return (data ?? []).map((row) => ({
       ...row,
       category: row.category ?? null,
@@ -240,16 +250,17 @@ export default function PosPage() {
       {/* Below md (waiter phone, one-hand) the 3-column desktop layout stacks:
           category strip on top, grid, then the order panel — no horizontal
           scroll at 390px (pos-design-craft P0, 2026-07-06). */}
-      <div className="flex-1 min-h-0 flex overflow-hidden max-md:flex-col">
+      <div className="flex-1 min-h-0 flex overflow-hidden max-[1099px]:flex-col">
         <CategoryNav
           selectedSlug={selectedSlug}
-          onSelect={setSelectedSlug}
+          onSelect={(slug) => setSelectedSlug(slug === 'all' ? null : slug)}
           onOpenSettings={() => { void navigate('/pos/settings'); }}
         />
         <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col overflow-hidden">
           <ProductTapHandler selectedSlug={selectedSlug} />
         </main>
-        <ActiveOrderPanel onDetachCustomer={handleDetachCustomer} />
+        <CartEffects />
+        <ResponsiveOrderPanel onDetachCustomer={handleDetachCustomer} />
       </div>
 
       {/* Global action bar — all order actions live here (full width).
@@ -277,11 +288,12 @@ export default function PosPage() {
         {...(currentUserId ? { onChangePin: () => setChangePinOpen(true) } : {})}
         onLogout={() => { void handleLogout(); }}
       />
-      <LiveSessionsModal
+      <Suspense fallback={<FullScreenModal open onOpenChange={() => { setLiveSessionsOpen(false); setHistoryOpen(false); setCustomerSearchOpen(false); setChangePinOpen(false); setCloseShiftOpen(false); }} accessibleTitle="Loading"><p role="status" className="p-6">Loading…</p></FullScreenModal>}>
+      {liveSessionsOpen && <LiveSessionsModal
         open={liveSessionsOpen}
         onClose={() => setLiveSessionsOpen(false)}
-      />
-      {currentUserId && (
+      />}
+      {currentUserId && changePinOpen && (
         <ChangePinModal
           open={changePinOpen}
           onClose={() => setChangePinOpen(false)}
@@ -319,6 +331,11 @@ export default function PosPage() {
           }
         }}
       />
+      {closeShiftOpen && !closeSummary && <FullScreenModal open onOpenChange={() => setCloseShiftOpen(false)} accessibleTitle="Close shift">
+        <div className="m-auto p-6 space-y-4"><p role={closeSummaryQuery.isError ? 'alert' : 'status'}>{closeSummaryQuery.isError ? 'Shift summary could not be loaded' : 'Loading shift summary…'}</p>
+          {closeSummaryQuery.isError && <Button onClick={() => { void closeSummaryQuery.refetch(); }}>Try again</Button>}
+          <Button variant="secondary" onClick={() => setCloseShiftOpen(false)}>Back</Button></div>
+      </FullScreenModal>}
       {currentShift && closeShiftOpen && closeSummary && (
         <CloseShiftModal
           open
@@ -339,14 +356,15 @@ export default function PosPage() {
       {heldFromMenuOpen && (
         <HeldOrdersModal open onClose={() => setHeldFromMenuOpen(false)} />
       )}
-      <OrderHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
-      <CustomerAttachModal
+      {historyOpen && <OrderHistoryPanel open onClose={() => setHistoryOpen(false)} />}
+      {customerSearchOpen && <CustomerAttachModal
         open={customerSearchOpen}
         onClose={() => setCustomerSearchOpen(false)}
         onSelect={(customer) => { attachCustomer(customer); setCustomerSearchOpen(false); }}
         searchFn={searchCustomers}
         createFn={createCustomer}
-      />
+      />}
+      </Suspense>
 
       {isLocked && <TerminalLockedOverlay />}
     </div>

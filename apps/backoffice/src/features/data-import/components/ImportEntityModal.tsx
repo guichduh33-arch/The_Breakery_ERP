@@ -4,9 +4,8 @@
 
 import { useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import {
-  Badge, Button, Dialog, DialogContent, DialogDescription, DialogTitle,
-} from '@breakery/ui';
+import { Badge, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { ImportDropzone } from '@/features/catalog-import/components/ImportDropzone.js';
 import { ImportErrorsTable } from '@/features/catalog-import/components/ImportErrorsTable.js';
 import { EntitySummaryGrid } from './EntitySummaryGrid.js';

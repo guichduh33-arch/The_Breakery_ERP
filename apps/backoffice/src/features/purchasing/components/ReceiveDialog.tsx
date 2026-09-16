@@ -9,10 +9,8 @@
 // une réception ne demande plus aucun choix d'emplacement.
 
 import { useMemo, useRef, useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

@@ -5,7 +5,7 @@
 // declared `variables` array filled with placeholder text.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import {
   useUpdateEmailTemplate,
   type EmailTemplateRow,

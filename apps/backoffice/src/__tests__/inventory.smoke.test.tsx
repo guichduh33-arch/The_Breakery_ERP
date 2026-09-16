@@ -7,9 +7,9 @@
 //      absent sans purchasing.po.create (Q3 audit 2026-07-27 : receive_stock_v1
 //      droppée, la réception passe par l'achat direct compté /inventory/incoming)
 //   2. Row action menu n'offre plus « Receive stock »
-//   3. Open Waste → fill form → submit → waste_stock_v1 RPC called
+//   3. Open Waste → fill form → submit → waste_stock_v2 RPC called
 //   4. ADMIN role (re-render with elevated perms) → Adjust visible →
-//      open modal → submit → adjust_stock_v1 RPC called
+//      open modal → submit → adjust_stock_v2 RPC called
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
@@ -201,7 +201,7 @@ describe('Inventory smoke E2E', () => {
     expect(w.getByRole('menuitem', { name: /Record waste/i })).toBeInTheDocument();
   });
 
-  it('MANAGER flow: open Waste from row → submit → waste_stock_v1 RPC fired', { timeout: 20_000 }, async () => {
+  it('MANAGER flow: open Waste from row → submit → waste_stock_v2 RPC fired', { timeout: 20_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Croissant'), { timeout: 15_000 });
@@ -218,7 +218,7 @@ describe('Inventory smoke E2E', () => {
     fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'waste_stock_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'waste_stock_v2');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
         p_product_id: 'p-2',
@@ -228,7 +228,7 @@ describe('Inventory smoke E2E', () => {
     });
   });
 
-  it('ADMIN flow: Adjust button visible → submit → adjust_stock_v1 RPC fired', { timeout: 20_000 }, async () => {
+  it('ADMIN flow: Adjust button visible → submit → adjust_stock_v2 RPC fired', { timeout: 20_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.adjust', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });
@@ -249,7 +249,7 @@ describe('Inventory smoke E2E', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Apply$|Applying/i }));
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'adjust_stock_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'adjust_stock_v2');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
         p_product_id: 'p-1',

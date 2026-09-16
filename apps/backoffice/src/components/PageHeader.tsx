@@ -1,19 +1,5 @@
-// apps/backoffice/src/components/PageHeader.tsx
-//
-// Shared backoffice page header — the single source of truth for the
-// "serif title + muted subtitle + right-aligned actions" band that every
-// BO page reinvented on its own (design audit 2026-07-07, finding I3-I5).
-//
-// Canonical style: Inter 23 px 600, `tracking-[-0.015em]` title + `text-sm
-// text-text-secondary` subtitle. Actions bottom-align with the title band
-// (`items-end`) so date pickers / export buttons sit on the same baseline.
-// Pure presentational — no business logic.
-//
-// Refonte shell 2026-08-05 — le titre PERD le serif. Playfair Display sur des
-// titres de page était le signal « boulangerie artisanale » le plus fort dans
-// un outil de gestion ; il ne sert plus qu'au monogramme de marque de la top
-// bar. Ce composant étant l'unique source du bandeau de titre, le changement
-// porte d'un coup sur toutes les pages qui l'utilisent.
+// Bandeau commun : titre Instrument Sans, sous-titre et actions sur une ligne souple.
+// Présentation uniquement ; le titre reste le h1 unique de la page.
 
 import type { ReactNode } from 'react';
 import { cn } from '@breakery/ui';
@@ -24,7 +10,7 @@ import { cn } from '@breakery/ui';
 // taille, mais en pixels, donc sourde au réglage de corps du navigateur. La
 // recopie diverge toujours ; la constante, non.
 export const PAGE_TITLE_CLS =
-  'text-[1.4375rem] font-semibold leading-tight tracking-[-0.015em] text-text-primary';
+  'text-2xl font-semibold leading-tight tracking-[-0.025em] text-text-primary';
 
 export interface PageHeaderProps {
   /** Page title, rendered as the single `<h1>` for the view. */
@@ -49,7 +35,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-end justify-between gap-3',
+        'bo-page-header flex flex-wrap items-end justify-between gap-x-6 gap-y-3',
         className,
       )}
     >
@@ -65,7 +51,7 @@ export function PageHeader({
           ))}
       </div>
       {actions != null && (
-        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+        <div className="bo-page-header-actions flex flex-wrap items-center gap-2">{actions}</div>
       )}
     </div>
   );

@@ -12,8 +12,8 @@ beforeEach(() => {
     user: { id: 'u1', full_name: 'Alice', role_code: 'CASHIER', employee_code: 'E1' },
     sessionToken: 'tok', permissions: [], isAuthenticated: true, isLoading: false,
     error: null, sessionTimeoutMinutes: 30, isLocked: true,
-    login: loginMock, unlock: () => useAuthStore.setState({ isLocked: false } as never),
-  } as never);
+    login: loginMock, unlock: () => useAuthStore.setState({ isLocked: false }),
+  });
 });
 
 describe('TerminalLockedOverlay', () => {

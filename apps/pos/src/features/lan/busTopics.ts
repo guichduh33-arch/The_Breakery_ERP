@@ -10,6 +10,7 @@ export interface BusModifierLine {
 }
 
 export interface BusFiredItem {
+  component_modifiers?: { component_name: string; group_name: string; option_label: string; price_adjustment: number }[];
   /** UUID client — identité de la ligne sur le bus (pas d'id DB offline). */
   id: string;
   product_id: string;
@@ -84,6 +85,7 @@ function isFiredItem(x: unknown): x is BusFiredItem {
     && typeof x.product_name === 'string'
     && typeof x.quantity === 'number' && x.quantity > 0
     && typeof x.unit_price === 'number'
+    && (x.component_modifiers === undefined || (Array.isArray(x.component_modifiers) && x.component_modifiers.every((m) => isModifier(m) && isRecord(m) && typeof m.component_name === 'string')))
     && Array.isArray(x.modifiers) && x.modifiers.every(isModifier)
     && Array.isArray(x.dispatch_stations) && x.dispatch_stations.every((s) => typeof s === 'string');
 }

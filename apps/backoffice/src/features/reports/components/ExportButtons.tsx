@@ -2,7 +2,7 @@
 //
 // S29 Wave 4.A.2 — pair of buttons (CSV local + PDF via EF). Generic <T>.
 
-import { Button } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';

@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card, EmptyState } from '@breakery/ui';
+import { Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { CHART_TITLE } from './chartTitle.js';
 import { Clock } from 'lucide-react';

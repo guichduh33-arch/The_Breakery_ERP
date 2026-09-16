@@ -22,7 +22,8 @@
 // reviendront avec les RPC, pas avant.
 
 import type { JSX } from 'react';
-import { Badge, DataTable, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { Badge, cn, type DataTableColumn, type DataTableSort } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { RowActionsMenu } from '@/components/RowActionsMenu.js';
 import { formatCurrency, formatPercent, formatQuantity } from '@breakery/utils';
 import { ProductTypeBadge } from './ProductTypeBadge.js';

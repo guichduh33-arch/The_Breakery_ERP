@@ -8,12 +8,8 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ClipboardList, CheckCircle2, Loader2, Plus, ChevronRight } from 'lucide-react';
-import {
-  Button,
-  DataTable,
-  KpiTile,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { Button, DataTable, KpiTile } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {

@@ -20,7 +20,8 @@
 // shape fields populated and the legacy array-shape left empty.
 
 import { useState, type FormEvent, type JSX } from 'react';
-import { Button, Input, selectClassName, cn, type PromotionFormOption, type PromotionFormValues } from '@breakery/ui';
+import { Input, selectClassName, cn, type PromotionFormOption, type PromotionFormValues } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { emptyBogoNewValues } from '../utils/emptyPromotionDefaults';
 
 export interface BogoFormProps {

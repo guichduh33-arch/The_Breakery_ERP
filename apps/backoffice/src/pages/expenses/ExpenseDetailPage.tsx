@@ -22,7 +22,7 @@ import {
   Tag,
   XCircle,
 } from 'lucide-react';
-import { Card, EmptyState } from '@breakery/ui';
+import { Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -337,20 +337,20 @@ function DetailRow({
 }): JSX.Element {
   return (
     <div className="rounded-md bg-surface-inert px-3 py-2">
-      <div className="flex items-center gap-1.5">
+      <dt className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-text-muted" aria-hidden />
-        <SectionLabel as="div" size="xs">{label}</SectionLabel>
-      </div>
-      <div className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono capitalize' : ''}`}>{value}</div>
+        <span className="text-sm font-medium text-text-secondary">{label}</span>
+      </dt>
+      <dd className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono capitalize' : ''}`}>{value}</dd>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="flex items-center justify-between text-text-secondary">
-      <span>{label}</span>
-      <span className="tabular-nums text-text-primary">{value}</span>
+    <div className="flex flex-wrap items-baseline justify-between gap-2 text-text-secondary">
+      <dt>{label}</dt>
+      <dd className="font-data tabular-nums text-text-primary">{value}</dd>
     </div>
   );
 }

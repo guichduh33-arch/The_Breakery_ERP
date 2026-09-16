@@ -65,7 +65,7 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
-import { checkPermissionForRole } from '../_shared/permissions.ts';
+import { checkPermissionForRole, withPermissionErrors } from '../_shared/permissions.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { logAndRedact } from '../_shared/error-redact.ts';
 
@@ -151,7 +151,7 @@ function isValidPaymentEntry(p: PaymentEntry | undefined): p is PaymentEntry {
   return true;
 }
 
-serve(async (req) => {
+serve(withPermissionErrors(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -398,4 +398,4 @@ serve(async (req) => {
   }
 
   return jsonResponse(data);
-});
+}));

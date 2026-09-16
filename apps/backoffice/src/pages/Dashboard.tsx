@@ -8,9 +8,7 @@
 //
 //   1. Chaque chiffre porte ses COMPARAISONS (J-1 et même jour la semaine
 //      passée). « Rp 8,42 jt » ne dit rien ; « ▲12,4% vs hier » dit tout.
-//   2. Une file d'ACTIONS s'intercale entre les chiffres et les graphes : ce
-//      qui reste à faire (caisse non clôturée, PO à recevoir, facture B2B en
-//      retard) vaut mieux qu'une sixième courbe.
+//   2. Les opérations accompagnent le graphique principal (proposition A).
 //   3. L'état du plancher et de la vitrine arrive en REALTIME, pas en poll :
 //      leur marqueur « live » est une promesse tenue (useDashboardPanels).
 //
@@ -29,7 +27,8 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, BellRing, Building2, CalendarHeart, FileDown, RefreshCw,
 } from 'lucide-react';
-import { Card, cn } from '@breakery/ui';
+import { cn } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { toLocalDateStr } from '@breakery/domain';
 import { formatDateLong } from '@breakery/utils';
@@ -175,9 +174,10 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       : null;
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-5">
       <PageHeader
         title={title}
+        titleClassName="text-2xl"
         subtitle={
           <span className="inline-flex items-center gap-2" aria-live="polite">
             {hours !== null && <>Open since {hours.open} · closes {hours.close} · </>}
@@ -202,7 +202,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
         }
         actions={
           <>
-            {shortcuts.map(({ to, label, icon: Icon }) => (
+            {shortcuts.filter((s) => s.label === 'Daily sales').map(({ to, label, icon: Icon }) => (
               <Link key={to} to={to} className={TOOLBAR_BTN_SECONDARY}>
                 <Icon className={TOOLBAR_ICON} aria-hidden />
                 {label}
@@ -279,12 +279,12 @@ export default function DashboardPage({ data }: DashboardPageProps) {
             </Card>
           )}
 
-          <DashboardKpiStrip kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
+          <DashboardKpiStrip group="primary" kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
 
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
             <Card variant="default" padding="none" className="p-4 shadow-none">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
+                <SectionLabel as="h2" className="font-body text-lg font-semibold normal-case tracking-normal text-text-primary">
                   {revenueLink === null ? (
                     'Revenue · 30 days'
                   ) : (
@@ -312,9 +312,39 @@ export default function DashboardPage({ data }: DashboardPageProps) {
               </div>
             </Card>
 
+            <section aria-label="On the floor" className="min-w-0 space-y-4 rounded-md border border-border-subtle bg-surface-2 p-4 [&>div]:border-0 [&>div]:p-0">
+              <h2 className="text-lg font-semibold text-text-primary">On the floor</h2>
+              <OpenOrdersCard
+                panel={openOrders.data ?? null}
+                isLoading={openOrders.isLoading}
+                isRestricted={isRestricted(openOrders.error)}
+                error={isRestricted(openOrders.error) ? null : openOrders.error}
+              />
+              <DisplayStockCard
+                panel={displayStock.data ?? null}
+                isLoading={displayStock.isLoading}
+                isRestricted={isRestricted(displayStock.error)}
+                error={isRestricted(displayStock.error) ? null : displayStock.error}
+              />
+              <div className="flex flex-wrap gap-2">
+                {shortcuts.filter((s) => s.label !== 'Daily sales').map(({ to, label, icon: Icon }) => (
+                  <Link key={to} to={to} className={TOOLBAR_BTN_SECONDARY}>
+                    <Icon className={TOOLBAR_ICON} aria-hidden />{label}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <DashboardKpiStrip group="secondary" kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
+
+          {/* `items-start` : chaque carte se dimensionne à son contenu. En
+              `stretch` avec des contenus inégaux, les courtes montrent un tiers
+              inférieur blanc et mort. */}
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
             <Card variant="default" padding="none" className="p-4 shadow-none">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <SectionLabel as="h2" className="font-data text-xs font-semibold text-text-primary">
+                <SectionLabel as="h2" className="font-body text-lg font-semibold normal-case tracking-normal text-text-primary">
                   Sales by hour
                 </SectionLabel>
                 <span className="text-xs text-text-muted">today vs same weekday last week</span>
@@ -332,29 +362,12 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 </Suspense>
               </div>
             </Card>
-          </div>
-
-          {/* `items-start` : chaque carte se dimensionne à son contenu. En
-              `stretch` avec des contenus inégaux, les courtes montrent un tiers
-              inférieur blanc et mort. */}
-          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <OpenOrdersCard
-              panel={openOrders.data ?? null}
-              isLoading={openOrders.isLoading}
-              isRestricted={isRestricted(openOrders.error)}
-              error={isRestricted(openOrders.error) ? null : openOrders.error}
-            />
             <CostMtdCard
               cost={overview?.cost_mtd ?? null}
               isLoading={isLoading}
               error={error}
             />
-            <DisplayStockCard
-              panel={displayStock.data ?? null}
-              isLoading={displayStock.isLoading}
-              isRestricted={isRestricted(displayStock.error)}
-              error={isRestricted(displayStock.error) ? null : displayStock.error}
-            />
+
             <RevenueShareCard
               share={overview?.revenue_share ?? []}
               payments={overview?.payments ?? null}

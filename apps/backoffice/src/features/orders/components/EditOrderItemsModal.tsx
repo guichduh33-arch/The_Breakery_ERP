@@ -19,7 +19,8 @@
 // update_order_item_qty déduit la perte sur le delta.
 
 import { useState, useMemo } from 'react';
-import { Button, CenterModal, Input } from '@breakery/ui';
+import { CenterModal, Input } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { useEditOrderItems } from '@/features/orders/hooks/useEditOrderItems.js';
 import { ProductPicker } from '@/features/orders/components/ProductPicker.js';

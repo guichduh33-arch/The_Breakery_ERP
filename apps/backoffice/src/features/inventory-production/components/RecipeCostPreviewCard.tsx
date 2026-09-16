@@ -11,7 +11,8 @@
 //   product.cost_price > 5% (Spec §6.3.B last bullet)
 
 import { useMemo, type JSX } from 'react';
-import { Badge, Card, cn } from '@breakery/ui';
+import { Badge, cn } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { formatPercent } from '@breakery/utils';
 import { bomCost, type RecipeRow } from '@breakery/domain';
 import { useProductSummary } from '../hooks/useProductSummary.js';

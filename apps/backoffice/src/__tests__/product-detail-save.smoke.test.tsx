@@ -2,10 +2,10 @@
 //
 // Session 27 / Wave 3 — Smoke test for the ProductDetail save flow.
 // Verifies the page transitions from "no dirty" → "dirty" → "saved" and
-// calls update_product_v3 with the patch.
+// calls update_product_v4 with the patch.
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
@@ -41,6 +41,11 @@ const MOCK_CATEGORIES = [
 ];
 
 const rpcSpy = vi.fn();
+const response = vi.hoisted(() => ({ ignored: [] as string[], canEditRecipe: true }));
+
+vi.mock('@/features/recipes/index.js', () => ({
+  RecipeBuilder: ({ readOnly }: { readOnly: boolean }) => <div>{readOnly ? 'Recipe read only' : 'Recipe editable'}</div>,
+}));
 
 vi.mock('@/lib/supabase.js', () => {
   function buildChain(table: string): unknown {
@@ -60,9 +65,9 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (t: string) => buildChain(t),
       rpc: (...args: unknown[]) => {
-        rpcSpy(...args);
-        return Promise.resolve({
-          data: { product: { ...MOCK_PRODUCT, name: 'Affogato Deluxe' }, ignored_fields: [] },
+        const override = rpcSpy(...args) as Promise<unknown> | undefined;
+        return override ?? Promise.resolve({
+          data: { product: { ...MOCK_PRODUCT, name: 'Affogato Deluxe' }, ignored_fields: response.ignored },
           error: null,
         });
       },
@@ -74,13 +79,13 @@ vi.mock('@/lib/supabase.js', () => {
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (selector: (s: unknown) => unknown) =>
     selector({
-      hasPermission: (_code: string) => true,
+      hasPermission: (code: string) => code !== 'inventory.recipes.update' || response.canEditRecipe,
     }),
 }));
 
 function renderDetail(productId = 'p-1') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const view = render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[`/backoffice/products/${productId}`]}>
         <Routes>
@@ -89,9 +94,77 @@ function renderDetail(productId = 'p-1') {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, qc };
 }
 
 describe('ProductDetailPage — save flow (S27)', () => {
+  beforeEach(() => { response.ignored = []; response.canEditRecipe = true; rpcSpy.mockReset(); });
+
+  it('preserves edits when a background query refreshes the product', async () => {
+    const { qc } = renderDetail();
+    fireEvent.change(await screen.findByLabelText('Product name'), { target: { value: 'Draft name' } });
+    act(() => {
+      qc.setQueryData(['products', 'detail', 'p-1'], (old: object) => ({ ...old, current_stock: 99 }));
+    });
+    expect(screen.getByLabelText('Product name')).toHaveValue('Draft name');
+    await waitFor(() => expect(screen.getByLabelText('Current stock')).toHaveValue('99'));
+  });
+
+  it('locks the draft while its save is pending', async () => {
+    let resolveSave!: (value: unknown) => void;
+    const pending = new Promise((resolve) => { resolveSave = resolve; });
+    rpcSpy.mockImplementation((name: string) => name === 'update_product_v4' ? pending : undefined);
+    renderDetail();
+    fireEvent.change(await screen.findByLabelText('Product name'), { target: { value: 'Affogato Deluxe' } });
+    fireEvent.click(screen.getByTestId('product-detail-save'));
+    await waitFor(() => expect(screen.getByLabelText('Product name')).toBeDisabled());
+    expect(screen.getByTestId('product-detail-save')).toBeDisabled();
+    await act(async () => { resolveSave({ data: { product: MOCK_PRODUCT, ignored_fields: [] }, error: null }); await pending; });
+    await waitFor(() => expect(screen.getByLabelText('Product name')).not.toBeDisabled());
+  });
+
+  it('uses the recipe permission separately from product editing', async () => {
+    response.canEditRecipe = false;
+    renderDetail();
+    await screen.findByLabelText('Product name');
+    fireEvent.click(screen.getByRole('tab', { name: /recipe/i }));
+    expect(await screen.findByText('Recipe read only')).toBeInTheDocument();
+  });
+
+  it('keeps the visible draft when switching tabs', async () => {
+    renderDetail();
+    fireEvent.change(await screen.findByLabelText('Product name'), { target: { value: 'Draft name' } });
+    fireEvent.click(screen.getByRole('tab', { name: /history/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /general/i }));
+    expect(await screen.findByLabelText('Product name')).toHaveValue('Draft name');
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+  });
+
+  it('disables save again when the edit is reverted', async () => {
+    renderDetail();
+    const input = await screen.findByLabelText('Product name');
+    fireEvent.change(input, { target: { value: 'Draft name' } });
+    fireEvent.change(input, { target: { value: 'Affogato' } });
+    expect(screen.getByTestId('product-detail-save')).toBeDisabled();
+  });
+
+  it('keeps rejected fields visible and dirty with an explanation', async () => {
+    response.ignored = ['name'];
+    renderDetail();
+    fireEvent.change(await screen.findByLabelText('Product name'), { target: { value: 'Draft name' } });
+    fireEvent.click(screen.getByTestId('product-detail-save'));
+    expect(await screen.findByText('Some changes were not saved: name.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Product name')).toHaveValue('Draft name');
+    expect(screen.getByTestId('product-detail-save')).not.toBeDisabled();
+  });
+
+  it('rejects a negative price before sending a mutation', async () => {
+    renderDetail();
+    fireEvent.change(await screen.findByLabelText('Retail price (IDR)'), { target: { value: '-1' } });
+    fireEvent.click(screen.getByTestId('product-detail-save'));
+    expect(await screen.findByText(/Enter a name, a SKU/)).toBeInTheDocument();
+    expect(rpcSpy).not.toHaveBeenCalledWith('update_product_v4', expect.anything());
+  });
   it('disables Save Changes when nothing is dirty', async () => {
     renderDetail();
     expect(await screen.findByText('Affogato')).toBeInTheDocument();
@@ -99,7 +172,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     expect(btn).toBeDisabled();
   });
 
-  it('saves an edited min_stock_threshold through update_product_v3 (audit M7)', async () => {
+  it('saves an edited min_stock_threshold through update_product_v4 (audit M7)', async () => {
     rpcSpy.mockClear();
     renderDetail();
     expect(await screen.findByText('Affogato')).toBeInTheDocument();
@@ -127,7 +200,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith(
-        'update_product_v3',
+        'update_product_v4',
         expect.objectContaining({
           p_product_id: 'p-1',
           p_patch: expect.objectContaining({ min_stock_threshold: 12 }) as unknown,
@@ -136,7 +209,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     });
   });
 
-  it('enables Save when a field changes, then calls update_product_v3', async () => {
+  it('enables Save when a field changes, then calls update_product_v4', async () => {
     rpcSpy.mockClear();
     renderDetail();
     expect(await screen.findByText('Affogato')).toBeInTheDocument();
@@ -154,7 +227,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith(
-        'update_product_v3',
+        'update_product_v4',
         expect.objectContaining({
           p_product_id: 'p-1',
           p_patch: expect.objectContaining({ name: 'Affogato Deluxe' }) as unknown,

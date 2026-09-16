@@ -1,6 +1,9 @@
 // apps/backoffice/src/features/btob/hooks/useCancelB2bOrder.ts
 //
-// Session 52 / P1.2 — call cancel_b2b_order_v1 (migration _068).
+// Session 52 / P1.2 — call cancel_b2b_order (migration _068).
+// 2026-09-08 — audit b2b-credit finding n°3 — bumped to `cancel_b2b_order_v2` :
+// la v1 recopiait la logique de stock et ne rendait pas le stock vitrine. La v2
+// passe par le helper partagé `_restore_sale_stock`, miroir de la vente.
 //
 // Cancels an UNPAID b2b invoice: the RPC reverses the creation JE
 // (DR revenue / CR AR), restores stock (sale_void), decrements the customer's
@@ -64,7 +67,7 @@ export function useCancelB2bOrder() {
   const qc = useQueryClient();
   return useMutation<CancelB2bOrderResult, CancelB2bOrderError, CancelB2bOrderArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('cancel_b2b_order_v1', {
+      const { data, error } = await supabase.rpc('cancel_b2b_order_v2', {
         p_order_id:        args.orderId,
         p_reason:          args.reason,
         p_idempotency_key: args.idempotencyKey,

@@ -167,6 +167,7 @@ export default function ProductionReportPage(): JSX.Element {
     },
     {
       key: 'busiest', label: 'Busiest day',
+      title: formatIdrFull(byDay.reduce((m, d) => Math.max(m, d.value), 0)),
       value: formatIdrCompact(
         byDay.reduce((m, d) => Math.max(m, d.value), 0),
       ),

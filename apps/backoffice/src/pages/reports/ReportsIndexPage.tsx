@@ -36,7 +36,8 @@ import {
   GitCommitHorizontal, Undo2, BadgePercent,
   LineChart, Sparkles, Megaphone, Cake, History, SearchX, type LucideIcon,
 } from 'lucide-react';
-import { cardVariants, cn, EmptyState, Input } from '@breakery/ui';
+import { cardVariants, cn, Input } from '@breakery/ui';
+import { EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -90,7 +91,7 @@ const SECTIONS: ReportSection[] = [
       // ADR-004 (acté le 2026-07-04), conséquence 2 : « retirer la page
       // /inventory/expiring et le rapport perishable-turnover de la
       // navigation ». The Breakery ne suit ni lots ni dates de péremption ; la
-      // péremption se déclare en perte (`waste_stock_v1`, raison `Expired`).
+      // péremption se déclare en perte (`waste_stock_v2`, raison `Expired`).
       // Une grille de tuiles cliquables EST une navigation, quel que soit son
       // nom — arbitrage du propriétaire, 2026-08-22.
       //

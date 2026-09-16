@@ -11,4 +11,3 @@
 1	apps/backoffice/src/features/categories/components/CategoryFormDialog.tsx
 1	apps/backoffice/src/features/products/components/GeneralPanel.tsx
 1	apps/backoffice/src/layouts/TopBar.tsx
-1	apps/backoffice/src/pages/inventory/ProductStockPage.tsx

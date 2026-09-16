@@ -18,6 +18,7 @@ import type { BusModifierLine } from './busTopics';
 
 /** Ligne d'items au format attendu par fire_counter_order p_items. */
 export interface OfflineFireItem {
+  client_line_id?: string;
   product_id: string;
   quantity: number;
   unit_price: number;

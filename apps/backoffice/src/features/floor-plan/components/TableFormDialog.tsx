@@ -2,11 +2,8 @@
 // S75 Task 3 — Create/Edit restaurant table modal.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-  selectClassName, cn,
-} from '@breakery/ui';
+import { Dialog, selectClassName, cn } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import type { RestaurantTable, TableSection } from '@breakery/domain';
 import { useCreateTable, useUpdateTable, mapFloorPlanError } from '../hooks/useFloorPlanAdmin.js';
 import { FOCUS_RING } from '@/components/focusRing.js';

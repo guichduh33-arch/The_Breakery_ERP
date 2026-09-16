@@ -6,10 +6,8 @@
 // n'exige plus rien. Les notes restent facultatives.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreateOpname } from '../hooks/useOpnameMutations.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

@@ -2,11 +2,8 @@
 // Session 13 / Phase 5.D — Modal form to create a new user.
 
 import { useState, type JSX } from 'react';
-import {
-  Button,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-  Select,
-} from '@breakery/ui';
+import { Dialog, DialogDescription, Select } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { useCreateUser } from '../hooks/useCreateUser.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

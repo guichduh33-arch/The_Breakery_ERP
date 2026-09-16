@@ -1,3 +1,4 @@
+import { useReceiptJobs } from '@/services/print/receiptJobs';
 // apps/pos/src/features/payment/__tests__/receipt-payment-method.smoke.test.tsx
 //
 // POS receipt payment-method fix — the buffered receipt payload must carry the
@@ -104,6 +105,7 @@ async function renderAndGetReceipt(props: SuccessModalProps): Promise<ReceiptPay
 
 describe('SuccessModal — receipt reflects the real payment method', () => {
   beforeEach(() => {
+    useReceiptJobs.setState({ jobs: [] });
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
 

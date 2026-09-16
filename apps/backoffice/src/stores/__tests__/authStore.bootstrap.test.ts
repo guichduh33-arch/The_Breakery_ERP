@@ -15,21 +15,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type * as BreakerySupabase from '@breakery/supabase';
 
 // Hoisted so the (hoisted) vi.mock factories below can reference them safely.
-const { setSession, signOut, getSession, logoutSession } = vi.hoisted(() => ({
-  setSession: vi.fn().mockResolvedValue({ data: {}, error: null }),
+const { setSupabaseAccessToken, signOut, getSession, logoutSession } = vi.hoisted(() => ({
+  setSupabaseAccessToken: vi.fn().mockResolvedValue({ data: {}, error: null }),
   signOut: vi.fn().mockResolvedValue({ error: null }),
   getSession: vi.fn(),
   logoutSession: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { auth: { setSession, signOut } },
+  supabase: { auth: { setSupabaseAccessToken, signOut } },
   supabaseUrl: 'http://test.local',
 }));
 
 vi.mock('@breakery/supabase', async (importOriginal) => {
   const actual = await importOriginal<typeof BreakerySupabase>();
-  return { ...actual, getSession, logoutSession };
+  return { ...actual, getSession, logoutSession, setSupabaseAccessToken };
 });
 
 import { useAuthStore } from '@/stores/authStore.js';
@@ -84,7 +84,7 @@ describe('authStore.bootstrap', () => {
     const s = useAuthStore.getState();
     expect(getSession).toHaveBeenCalledWith('http://test.local', 'tok');
     // Bearer restored (the fix for "permission denied for table products").
-    expect(setSession).toHaveBeenCalledWith({ access_token: 'access-x', refresh_token: 'refresh-x' });
+    expect(setSupabaseAccessToken).toHaveBeenCalledWith('access-x');
     expect(s.permissions).toContain('orders.read');
     expect(s.sessionTimeoutMinutes).toBe(60);
     expect(s.bootstrapStatus).toBe('ready');
@@ -128,7 +128,7 @@ describe('authStore.bootstrap', () => {
     const s = useAuthStore.getState();
     expect(s.bootstrapStatus).toBe('ready');
     // Bearer restored from the CACHED snapshot, not from the network.
-    expect(setSession).toHaveBeenCalledWith({ access_token: 'cached-access', refresh_token: 'cached-refresh' });
+    expect(setSupabaseAccessToken).toHaveBeenCalledWith('cached-access');
     expect(s.permissions).toContain('orders.read');
     // Background revalidation was fired.
     expect(getSession).toHaveBeenCalledWith('http://test.local', 'tok');
@@ -182,8 +182,8 @@ describe('authStore.bootstrap', () => {
     await useAuthStore.getState().bootstrap();
 
     // The bearer came from the round-trip, never from the stale snapshot.
-    expect(setSession).toHaveBeenCalledWith({ access_token: 'fresh-access', refresh_token: 'fresh-refresh' });
-    expect(setSession).not.toHaveBeenCalledWith({ access_token: 'stale', refresh_token: 'stale-r' });
+    expect(setSupabaseAccessToken).toHaveBeenCalledWith('fresh-access');
+    expect(setSupabaseAccessToken).not.toHaveBeenCalledWith('stale');
     expect(useAuthStore.getState().bootstrapStatus).toBe('ready');
   });
 
@@ -203,7 +203,7 @@ describe('authStore.bootstrap', () => {
 
     await useAuthStore.getState().bootstrap();
 
-    expect(setSession).toHaveBeenCalledWith({ access_token: 'fresh-access', refresh_token: 'fresh-refresh' });
+    expect(setSupabaseAccessToken).toHaveBeenCalledWith('fresh-access');
     expect(useAuthStore.getState().permissions).toContain('orders.read');
     expect(useAuthStore.getState().bootstrapStatus).toBe('ready');
   });

@@ -31,6 +31,30 @@ beforeEach(() => {
   sessionStorage.clear();
 });
 
+describe('périodes invalides récupérables', () => {
+  it.each([
+    ['oops', '2026-08-15'],
+    ['2026-02-30', '2026-08-15'],
+    ['2026-08-16', '2026-08-15'],
+  ])('refuse %s → %s sans planter ni conserver les bornes invalides', (start, end) => {
+    const { result } = renderHook(() => useReportPeriod(), {
+      wrapper: wrapperAt(`/backoffice/reports/daily-sales?start=${start}&end=${end}`),
+    });
+    expect(result.current.start).toBe('2026-07-19');
+    expect(result.current.end).toBe('2026-08-15');
+    expect(result.current).toHaveProperty('validationError', expect.stringContaining('Invalid report period'));
+    act(() => result.current.setRange('2026-08-01', '2026-08-15'));
+    expect(result.current.start).toBe('2026-08-01');
+    expect(result.current.validationError).toBeUndefined();
+  });
+
+  it('ignore une période de session dont le jour est impossible', () => {
+    sessionStorage.setItem('breakery.reports.period.v1', JSON.stringify({ start: '2026-02-30', end: '2026-08-15' }));
+    const { result } = renderHook(() => useReportPeriod(), { wrapper: wrapperAt('/backoffice/reports/daily-sales') });
+    expect(result.current.start).toBe('2026-07-19');
+  });
+});
+
 describe('presetRange / derivePreset (purs)', () => {
   const today = '2026-08-15';
 

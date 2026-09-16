@@ -15,11 +15,11 @@ import { supabase } from '@/lib/supabase';
 
 export const STATION_MAP_KEY = ['station-map'] as const;
 
-type Row = {
+interface Row {
   id: string;
   dispatch_stations: string[] | null;
-  categories: { dispatch_station: string | null } | Array<{ dispatch_station: string | null }> | null;
-};
+  categories: { dispatch_station: string | null } | { dispatch_station: string | null }[] | null;
+}
 
 /** Résout le tableau de stations pour un produit.
  * - Override produit (dispatch_stations) prime s'il est non-vide.

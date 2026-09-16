@@ -30,12 +30,8 @@ import {
   Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Badge,
-  Button,
-  DataTable,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { Badge, type DataTableColumn } from '@breakery/ui';
+import { Button, DataTable } from '@/components/BackofficeUi.js';
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
 // `buildEntityWorkbook` tire `xlsx` (159 Ko gzip) : chargé à la demande dans les
 // deux handlers, pas à l'ouverture de la liste.
@@ -152,7 +148,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
 
   const rows    = list.data ?? [];
   const buckets = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
-  const countersDown = allList.isError;
+  const countersDown = allList.isError || allList.data === undefined;
 
   const counters = useMemo<ListCounter[]>(() => PO_COUNTERS.map((c) => {
     const bucket = buckets[c.value];

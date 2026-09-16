@@ -19,6 +19,7 @@ import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   name:      string;
@@ -40,7 +41,7 @@ export function ProductDetailHeader({
             est celle de `CustomerDetailPage` — domaine › liste › objet. */}
         <span>Stock</span>
         <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-        <Link to="/backoffice/products" className="hover:text-text-secondary">Products</Link>
+        <Link to="/backoffice/products" className={`hover:text-text-secondary ${FOCUS_RING}`}>Products</Link>
       </nav>
 
       <PageHeader
@@ -49,6 +50,7 @@ export function ProductDetailHeader({
           <span className="inline-flex items-center gap-1.5">
             SKU
             <span className="font-mono font-semibold text-text-primary">{sku}</span>
+            {isDirty && <span role="status" className="ml-2 text-text-secondary">Unsaved changes</span>}
           </span>
         }
         actions={

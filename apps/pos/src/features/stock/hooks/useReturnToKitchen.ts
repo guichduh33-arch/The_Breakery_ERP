@@ -1,7 +1,7 @@
 // apps/pos/src/features/stock/hooks/useReturnToKitchen.ts
 //
 // POS display-stock isolation — closure gesture "Retour cuisine".
-// Wraps `return_display_to_kitchen_v1` (gate display.manage): moves vitrine
+// Wraps `return_display_to_kitchen_v2` (gate display.manage): moves vitrine
 // stock back to the kitchen (BO) at end of service.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -47,7 +47,7 @@ export function useReturnToKitchen() {
       if (args.reason !== undefined && args.reason.trim() !== '') {
         rpcArgs.p_reason = args.reason.trim();
       }
-      const { data, error } = await supabase.rpc('return_display_to_kitchen_v1', rpcArgs);
+      const { data, error } = await supabase.rpc('return_display_to_kitchen_v2', rpcArgs);
       if (error) throw new DisplayGestureError(classify(error.message), error.message);
       return data;
     },

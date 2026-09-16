@@ -8,7 +8,7 @@
 -- `unit_price` tel quel du client. Le déstockage a lieu au paiement
 -- (`pay_existing_order_v20`), qui lit exactement ces deux colonnes : NULL →
 -- zéro mouvement de stock sur les composants d'un combo envoyé par la
--- tablette. `create_tablet_order_v9` (attendue, PAS ENCORE LIVRÉE au moment où
+-- tablette. `create_tablet_order_v10` (attendue, PAS ENCORE LIVRÉE au moment où
 -- ce fichier est écrit) corrige les trois axes : prix résolu serveur
 -- (`_resolve_combo_price_v1`), `combo_components` persisté,
 -- `modifier_ingredients_deducted` résolu (`_resolve_combo_modifier_ingredients_v1`),
@@ -17,7 +17,7 @@
 -- Ce fichier est écrit AVANT la migration v9 : il est ROUGE contre le corps
 -- actuel (v9 n'existe pas — `function does not exist`). Il est destiné à être
 -- rejoué par l'orchestrateur une fois v9 livrée. Les DO blocks qui appellent
--- create_tablet_order_v9 / pickup_tablet_order / pay_existing_order_v20
+-- create_tablet_order_v10 / pickup_tablet_order / pay_existing_order_v20
 -- capturent l'exception dans un GUC pour que le fichier aille jusqu'à
 -- `finish()` même si une étape casse — diagnostic complet en un seul passage,
 -- pas un abort de transaction à la première ligne qui manque.
@@ -111,7 +111,7 @@ BEGIN
 END $fixture$;
 
 -- ===========================================================================
--- T1-T5 — chemin nominal : create_tablet_order_v9 -> pickup_tablet_order ->
+-- T1-T5 — chemin nominal : create_tablet_order_v10 -> pickup_tablet_order ->
 -- pay_existing_order_v20. Un combo Large+Water avec le composant Large portant
 -- un modificateur Iced rattaché à un ingrédient.
 -- ===========================================================================
@@ -136,7 +136,7 @@ DECLARE
   ));
 BEGIN
   BEGIN
-    v_order_id := create_tablet_order_v9(
+    v_order_id := create_tablet_order_v10(
       p_client_uuid  := '00000000-0000-0000-0000-0000000ca001'::uuid,
       p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
       p_table_number := '',
@@ -161,7 +161,7 @@ SELECT ok(
   AND (SELECT combo_components IS NOT NULL FROM order_items
         WHERE order_id = current_setting('tcfp.order1')::uuid
           AND product_id = '00000000-0000-0000-0000-0000000cd001'),
-  'T1: create_tablet_order_v9 persiste combo_components (NULL sous v8, le P0) - recu: ' || current_setting('tcfp.order1_msg'));
+  'T1: create_tablet_order_v10 persiste combo_components (NULL sous v8, le P0) - recu: ' || current_setting('tcfp.order1_msg'));
 
 SELECT is(
   (SELECT unit_price::int FROM order_items
@@ -220,7 +220,7 @@ SELECT is(
 -- par defaut (false) -> refus check_violation.
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT create_tablet_order_v9(
+  $q$ SELECT create_tablet_order_v10(
         p_client_uuid  := '00000000-0000-0000-0000-0000000ca006'::uuid,
         p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
         p_table_number := '',
@@ -244,7 +244,7 @@ DECLARE
   v_msg      TEXT := '';
 BEGIN
   BEGIN
-    v_order_id := create_tablet_order_v9(
+    v_order_id := create_tablet_order_v10(
       p_client_uuid  := '00000000-0000-0000-0000-0000000ca007'::uuid,
       p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
       p_table_number := '',
@@ -279,8 +279,8 @@ SELECT ok(
              AND entity_id = current_setting('tcfp.order7')::uuid
              AND (metadata->>'product_id') = '00000000-0000-0000-0000-0000000cd001'
              AND (metadata->>'client_uuid') = '00000000-0000-0000-0000-0000000ca007'
-             AND (metadata->>'rpc_version') = 'tablet_v9'),
-  'T7c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version tablet_v9)');
+             AND (metadata->>'rpc_version') = 'tablet_v10'),
+  'T7c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version tablet_v10)');
 
 -- ===========================================================================
 -- T8/T9 — versionnage monotone + defense-in-depth anon.
@@ -290,8 +290,8 @@ SELECT hasnt_function('public', 'create_tablet_order_v8',
 
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.create_tablet_order_v9(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text)', 'EXECUTE'),
-  'T9: anon n''a pas EXECUTE sur create_tablet_order_v9');
+    'public.create_tablet_order_v10(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text,uuid)', 'EXECUTE'),
+  'T9: anon n''a pas EXECUTE sur create_tablet_order_v10');
 
 SELECT * FROM finish();
 ROLLBACK;

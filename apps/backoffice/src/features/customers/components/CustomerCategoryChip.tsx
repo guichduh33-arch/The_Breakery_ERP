@@ -13,8 +13,8 @@ export interface CustomerCategoryChipProps {
 const TONES: Record<string, string> = {
   retail:    'bg-cat-blue/15 text-cat-blue',
   general:   'bg-cat-blue/15 text-cat-blue',
-  wholesale: 'bg-cat-emerald/15 text-cat-emerald',
-  vip:       'bg-cat-amber/15 text-cat-amber',
+  wholesale: 'bg-success-soft text-success',
+  vip:       'bg-warning-soft text-warning',
   staff:     'bg-cat-violet/15 text-cat-violet',
   asap:      'bg-cat-rose/15 text-cat-rose',
   enak:      'bg-cat-indigo/15 text-cat-indigo',

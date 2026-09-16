@@ -32,7 +32,7 @@ export interface DisplayOrder {
 const FRESH_WINDOW_MIN = 15;
 export const DISPLAY_ORDERS_LIMIT = 5;
 
-export function useDisplayOrders(enabled: boolean = true) {
+export function useDisplayOrders(enabled = true) {
   return useQuery<DisplayOrder[]>({
     queryKey: DISPLAY_ORDERS_QUERY_KEY,
     enabled,
@@ -48,7 +48,7 @@ export function useDisplayOrders(enabled: boolean = true) {
         .order('paid_at', { ascending: false })
         .limit(DISPLAY_ORDERS_LIMIT);
       if (error) throw error;
-      return (data ?? []) as DisplayOrder[];
+      return (data ?? []);
     },
     staleTime: 30_000,
     refetchOnWindowFocus: false,

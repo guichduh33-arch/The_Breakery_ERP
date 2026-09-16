@@ -20,7 +20,7 @@ function mockFetchOk() {
     status: 200,
     json: () => Promise.resolve({}),
   });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
+  globalThis.fetch = fetchMock;
   return fetchMock;
 }
 

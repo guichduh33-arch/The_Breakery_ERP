@@ -8,6 +8,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 import type { PinWeakReason } from '@breakery/utils';
 
 export interface ChangePinArgs {
@@ -25,13 +26,15 @@ export interface ChangePinResult {
 export function useChangePin() {
   return useMutation({
     mutationFn: async ({ userId, currentPin, newPin }: ChangePinArgs): Promise<ChangePinResult> => {
+      const token = useAuthStore.getState().sessionToken;
+      if (!token) throw new Error('session_token_required');
       // S25 hard cutover (session 59) — PINs travel via headers, never the
       // JSON body (request bodies get logged by PostgREST/pgaudit/proxies).
       const response = await supabase.functions.invoke<
         ChangePinResult | { ok?: false; error?: string }
       >('auth-change-pin', {
         body: { user_id: userId },
-        headers: { 'x-current-pin': currentPin, 'x-new-pin': newPin },
+        headers: { 'x-session-token': token, 'x-current-pin': currentPin, 'x-new-pin': newPin },
       });
       const { data } = response;
       // functions-js types `error` as `any` — pin it to `unknown` before use.

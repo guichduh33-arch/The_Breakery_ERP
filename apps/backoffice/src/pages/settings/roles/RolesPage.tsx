@@ -13,7 +13,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Info, Plus } from 'lucide-react';
-import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
+import { Badge, Tabs, TabsContent } from '@breakery/ui';
+import { TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';

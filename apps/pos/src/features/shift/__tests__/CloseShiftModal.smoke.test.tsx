@@ -368,6 +368,33 @@ describe('CloseShiftModal', () => {
     expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
   });
 
+  // Audit ui-kit 2026-08-31, finding F2 (P1) — ce sélecteur supprimait son anneau de
+  // focus (`focus:outline-none` + changement de bordure keyé sur `:focus`, pas
+  // `:focus-visible`). C'est le champ où un manager approuve un écart de caisse : au
+  // clavier, rien n'indiquait où on se trouvait. La garde CI ne peut pas le voir — son
+  // périmètre est `apps/backoffice/src/` seulement.
+  it('the manager approval select carries the canonical focus ring', async () => {
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={570_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        pinThresholdAbs={200_000}
+        pinThresholdPct={0.02}
+        onClose={vi.fn()}
+      />,
+    ));
+    countAndConfirm('270000');
+    await screen.findByTestId('manager-approval-section');
+    const select = screen.getByLabelText(/manager approval/i);
+    expect(select.className).toContain('focus-visible:outline-gold');
+    // La bordure `strong` tient les 3:1 de WCAG 1.4.11 ; `subtle` ne délimitait rien.
+    expect(select.className).toContain('border-border-strong');
+    expect(select.className).not.toContain('focus:outline-none');
+  });
+
   it('does not show the manager approval section below the PIN threshold', () => {
     render(withQuery(
       <CloseShiftModal

@@ -11,7 +11,8 @@
 // focus au premier champ fautif.
 
 import { useState } from 'react';
-import { Button, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { FormField } from '@/components/FormField.js';
 import { CategoryPicker } from './CategoryPicker.js';
 import { ReceiptUploader } from './ReceiptUploader.js';

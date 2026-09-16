@@ -2,13 +2,8 @@
 //
 // Read-only ledger view for one customer. Last 50 entries.
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@breakery/ui';
+import { Sheet, SheetDescription } from '@breakery/ui';
+import { SheetContent, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import { formatDateTime } from '@breakery/utils';
 import { useCustomerLoyaltyHistory, type LoyaltyTxnRow } from '../hooks/useCustomerLoyaltyHistory.js';
 import type { CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';

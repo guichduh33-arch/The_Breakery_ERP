@@ -1,8 +1,8 @@
 // apps/backoffice/src/features/reports/hooks/useAuditLogs.ts
 //
-// Cursor-paginated wrapper over `get_audit_logs_v3`. Uses
+// Cursor-paginated wrapper over `get_audit_logs_v4`. Uses
 // useInfiniteQuery so the page calls `fetchNextPage()` on scroll. Each
-// page returns ≤ 50 rows by default ; cursor is the `created_at` of the
+// page returns ≤ 50 rows by default ; cursor combines `created_at` and `id` of the
 // last row of the previous page.
 //
 // Audit Reports 2026-08-01 (R-10) — repointed v1 → v3. La page n'offrait
@@ -34,7 +34,7 @@ export interface AuditLogFilters {
   pageSize?:    number;
 }
 
-export const AUDIT_LOGS_QK = ['reports', 'audit-logs'] as const;
+export const AUDIT_LOGS_QK = ['reports', 'audit-logs', 'cursor-v4'] as const;
 const DEFAULT_PAGE_SIZE = 50;
 
 export function useAuditLogs(filters: AuditLogFilters = {}) {
@@ -66,7 +66,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
       if (filters.dateStart)  args.p_date_start  = filters.dateStart;
       if (filters.dateEnd)    args.p_date_end    = filters.dateEnd;
 
-      const { data, error } = await supabase.rpc('get_audit_logs_v3', args);
+      const { data, error } = await supabase.rpc('get_audit_logs_v4', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
         id:          Number(r.id),
@@ -81,7 +81,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
     getNextPageParam: (lastPage) => {
       if (lastPage.length < pageSize) return undefined; // exhausted
       const last = lastPage[lastPage.length - 1];
-      return last ? last.created_at : undefined;
+      return last ? `${last.created_at}|${last.id}` : undefined;
     },
   });
 }

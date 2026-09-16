@@ -105,6 +105,9 @@ BEGIN
       'product_id', '00000000-0000-0000-0000-0000000e5f10', 'qty', 5, 'unit', 'pcs'))
   );
 
+  INSERT INTO product_modifiers(product_id, group_name, group_required, group_type, option_label, price_adjustment, is_active)
+    VALUES ('00000000-0000-0000-0000-0000000e5f01', 'Extra', false, 'single_select', 'Cheese', 1000, true);
+
   PERFORM set_config('ccsp.actor_uid', v_actor_uid::text, false);
   PERFORM set_config('ccsp.actor_pid', v_actor_pid::text, false);
   PERFORM set_config('ccsp.sess',      v_sess::text,      false);
@@ -141,7 +144,7 @@ DECLARE
   v_msg TEXT := '';
 BEGIN
   BEGIN
-    r := fire_counter_order_v8(
+    r := fire_counter_order_v9(
       p_client_uuid := '00000000-0000-0000-0000-0000000e5c01'::uuid,
       p_session_id  := current_setting('ccsp.sess')::uuid,
       p_items       := pg_temp.ccsp_combo_line(),
@@ -159,7 +162,7 @@ SELECT ok(
   AND (SELECT combo_components IS NOT NULL FROM order_items
         WHERE order_id = current_setting('ccsp.order1')::uuid
           AND product_id = '00000000-0000-0000-0000-0000000e5001'),
-  'T1: fire_counter_order_v8 accepte un combo valide et persiste combo_components - recu: ' || current_setting('ccsp.order1_msg'));
+  'T1: fire_counter_order_v9 accepte un combo valide et persiste combo_components - recu: ' || current_setting('ccsp.order1_msg'));
 
 SELECT is(
   (SELECT unit_price::int FROM order_items
@@ -238,7 +241,7 @@ SELECT is(
 -- deux passaient en silence.
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT fire_counter_order_v8(
+  $q$ SELECT fire_counter_order_v9(
         p_client_uuid := '00000000-0000-0000-0000-0000000e5c06'::uuid,
         p_session_id  := current_setting('ccsp.sess')::uuid,
         p_items       := jsonb_build_array(jsonb_build_object(
@@ -252,7 +255,7 @@ SELECT throws_ok(
   'T6: composant hors groupes -> combo_invalid_component (check_violation), p_tolerate_unsellable=false');
 
 SELECT throws_ok(
-  $q$ SELECT fire_counter_order_v8(
+  $q$ SELECT fire_counter_order_v9(
         p_client_uuid := '00000000-0000-0000-0000-0000000e5c07'::uuid,
         p_session_id  := current_setting('ccsp.sess')::uuid,
         p_items       := jsonb_build_array(jsonb_build_object(
@@ -278,7 +281,7 @@ DECLARE
   v_msg TEXT := '';
 BEGIN
   BEGIN
-    r := fire_counter_order_v8(
+    r := fire_counter_order_v9(
       p_client_uuid := '00000000-0000-0000-0000-0000000e5c08'::uuid,
       p_session_id  := current_setting('ccsp.sess')::uuid,
       p_items       := jsonb_build_array(jsonb_build_object(
@@ -319,16 +322,14 @@ SELECT ok(
              AND entity_id = current_setting('ccsp.order8')::uuid
              AND (metadata->>'product_id') = '00000000-0000-0000-0000-0000000e5001'
              AND (metadata->>'client_uuid') = '00000000-0000-0000-0000-0000000e5c08'
-             AND (metadata->>'rpc_version') = 'fire_v8'
+             AND (metadata->>'rpc_version') = 'fire_v9'
              AND (metadata->>'client_unit_price')::numeric = 40000
              AND (metadata->>'tolerated_unit_price')::numeric = 50000
              AND (metadata->>'sqlstate') = '23514'),
-  'T8c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version fire_v8, prix client et tolere, sqlstate)');
+  'T8c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version fire_v9, prix client et tolere, sqlstate)');
 
 -- ===========================================================================
--- T9 — garde de non-regression : une ligne NON combo garde le prix client et
--- ses modificateurs de ligne payants (le pricing serveur des lignes simples
--- n'est pas dans ce lot).
+-- T9 — ligne simple : prix et supplément canoniques du catalogue serveur.
 -- ===========================================================================
 DO $plain$
 DECLARE
@@ -336,7 +337,7 @@ DECLARE
   v_msg TEXT := '';
 BEGIN
   BEGIN
-    r := fire_counter_order_v8(
+    r := fire_counter_order_v9(
       p_client_uuid := '00000000-0000-0000-0000-0000000e5c09'::uuid,
       p_session_id  := current_setting('ccsp.sess')::uuid,
       p_items       := jsonb_build_array(jsonb_build_object(
@@ -357,7 +358,7 @@ SELECT ok(
      FROM order_items
     WHERE order_id = current_setting('ccsp.order9')::uuid
       AND product_id = '00000000-0000-0000-0000-0000000e5f01'),
-  'T9: ligne non combo inchangee — prix client 15000, modificateur +1000 x 2, line_total 32000 - recu: ' || current_setting('ccsp.order9_msg'));
+  'T9: ligne non combo — prix serveur 15000, modificateur +1000 x 2, line_total 32000 - recu: ' || current_setting('ccsp.order9_msg'));
 
 -- ===========================================================================
 -- T10/T11 — versionnage monotone + defense-in-depth anon.
@@ -367,8 +368,8 @@ SELECT hasnt_function('public', 'fire_counter_order_v7',
 
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.fire_counter_order_v8(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text)', 'EXECUTE'),
-  'T11: anon n''a pas EXECUTE sur fire_counter_order_v8');
+    'public.fire_counter_order_v9(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text,uuid,uuid,boolean)', 'EXECUTE'),
+  'T11: anon n''a pas EXECUTE sur fire_counter_order_v9');
 
 SELECT * FROM finish();
 ROLLBACK;

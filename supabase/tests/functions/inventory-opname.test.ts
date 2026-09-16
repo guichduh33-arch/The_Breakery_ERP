@@ -11,9 +11,9 @@
 //   - create_opname_v2 happy path + idempotency (sans section).
 //   - add_opname_item_v2 auto-loads expected_qty from products.current_stock
 //     when p_expected_qty is omitted.
-//   - set_opname_count_v1 records counted_qty ; variance is GENERATED.
-//   - validate_opname_v1 transitions counting → review (rejects with missing counts).
-//   - finalize_opname_v3 emits opname_in / opname_out stock_movements (sans
+//   - set_opname_count_v2 records counted_qty ; variance is GENERATED.
+//   - validate_opname_v2 transitions counting → review (rejects with missing counts).
+//   - finalize_opname_v4 emits opname_in / opname_out stock_movements (sans
 //     section) + tr_20_je_emit posts a balanced JE for each non-zero variance row.
 //   - cancel_opname_v1 succeeds pre-finalize, refused post-finalize.
 //   - MANAGER allowed to create, ADMIN required to finalize.
@@ -124,13 +124,13 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     });
 
     // Set counted_qty = 95 → variance = -5 (opname_out).
-    await rpc(sb)('set_opname_count_v1', {
+    await rpc(sb)('set_opname_count_v2', {
       p_count_item_id: item.item_id,
       p_counted_qty: 95,
     });
 
     // Validate draft|counting → review.
-    const { data: validated, error: vErr } = await rpc(sb)('validate_opname_v1', {
+    const { data: validated, error: vErr } = await rpc(sb)('validate_opname_v2', {
       p_count_id: countId,
     });
     expect(vErr).toBeNull();
@@ -143,7 +143,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
 
     // Finalize.
-    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v3', {
+    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v4', {
       p_count_id: countId,
       p_idempotency_key: crypto.randomUUID(),
     });
@@ -171,7 +171,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
     expect((jeAfter ?? 0) - (jeBefore ?? 0)).toBe(1);
 
-    // ADR-027 : finalize_opname_v3 émet ses mouvements sans section.
+    // ADR-027 : finalize_opname_v4 émet ses mouvements sans section.
     const { data: mvt } = await admin.from('stock_movements')
       .select('from_section_id, to_section_id')
       .eq('id', movementId)
@@ -180,14 +180,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     expect(mvt!.to_section_id).toBeNull();
 
     // Replay finalize → idempotent_replay=true.
-    const { data: replay } = await rpc(sb)('finalize_opname_v3', {
+    const { data: replay } = await rpc(sb)('finalize_opname_v4', {
       p_count_id: countId,
     });
     expect(replay.idempotent_replay).toBe(true);
     expect(replay.movements_emitted).toBe(1);
   });
 
-  it('T_OPN_LIVE_04: validate_opname_v1 raises missing_counts when counted_qty is NULL', async () => {
+  it('T_OPN_LIVE_04: validate_opname_v2 raises missing_counts when counted_qty is NULL', async () => {
     const sb = jwtClient(managerToken);
     const { data: created } = await rpc(sb)('create_opname_v2', {
       p_idempotency_key: crypto.randomUUID(),
@@ -200,7 +200,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       p_expected_qty: 100,
     });
     // No set_opname_count → validate should fail.
-    const { error } = await rpc(sb)('validate_opname_v1', { p_count_id: created.count_id });
+    const { error } = await rpc(sb)('validate_opname_v2', { p_count_id: created.count_id });
     expect(error?.message ?? '').toMatch(/missing_counts/);
   });
 
@@ -239,7 +239,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       p_count_id: countId, p_product_id: productId, p_expected_qty: 100,
     });
 
-    const { error: fErr } = await rpc(managerSb)('finalize_opname_v3', { p_count_id: countId });
+    const { error: fErr } = await rpc(managerSb)('finalize_opname_v4', { p_count_id: countId });
     expect(fErr?.message ?? '').toMatch(/forbidden/);
   });
 });

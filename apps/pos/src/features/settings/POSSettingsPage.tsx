@@ -351,7 +351,7 @@ function NumericPresetGroup({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             data-vkp="numeric"
-            className="h-11 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            className="h-11 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             aria-label={`New ${title} preset`}
           />
           <Button variant="secondary" size="sm" onClick={add} disabled={isPending || draft.trim() === ''}>
@@ -501,7 +501,7 @@ function DiscountPresetsGroup({
             value={draftName}
             onChange={(e) => setDraftName(e.target.value)}
             data-vkp="qwerty"
-            className="h-11 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            className="h-11 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             aria-label="New discount preset name"
           />
           <input
@@ -511,7 +511,7 @@ function DiscountPresetsGroup({
             value={draftPct}
             onChange={(e) => setDraftPct(e.target.value)}
             data-vkp="numeric"
-            className="h-11 w-24 rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
+            className="h-11 w-24 rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             aria-label="New discount preset percent"
           />
           <Button variant="secondary" size="sm" onClick={add} disabled={isPending || draftPct.trim() === ''}>

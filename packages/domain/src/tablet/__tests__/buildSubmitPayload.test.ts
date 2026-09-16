@@ -9,7 +9,7 @@ const baseCart: TabletCart = {
 };
 
 describe('buildSubmitPayload', () => {
-  it('maps items to p_items with product_id, quantity, unit_price, modifiers', () => {
+  it('maps items to p_items with stable client identities and product details', () => {
     const cart: TabletCart = {
       ...baseCart,
       items: [
@@ -19,8 +19,8 @@ describe('buildSubmitPayload', () => {
     };
     const payload = buildSubmitPayload(cart, 'waiter-uuid');
     expect(payload.p_items).toEqual([
-      { product_id: 'p1', quantity: 2, unit_price: 35000, modifiers: [] },
-      { product_id: 'p2', quantity: 1, unit_price: 40000, modifiers: [] },
+      { client_line_id: 'l1', product_id: 'p1', quantity: 2, unit_price: 35000, modifiers: [] },
+      { client_line_id: 'l2', product_id: 'p2', quantity: 1, unit_price: 40000, modifiers: [] },
     ]);
   });
 
@@ -69,13 +69,14 @@ describe('buildSubmitPayload', () => {
     expect(payload.p_table_number).toBeNull();
   });
 
-  it('does not include cart item id or name in p_items', () => {
+  it('sends the local id as client_line_id without claiming a server id or name', () => {
     const cart: TabletCart = {
       ...baseCart,
       items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
     };
     const payload = buildSubmitPayload(cart, 'w1');
     const item = payload.p_items[0] as Record<string, unknown>;
+    expect(item.client_line_id).toBe('l1');
     expect('id' in item).toBe(false);
     expect('name' in item).toBe(false);
   });

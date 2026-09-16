@@ -30,7 +30,10 @@ vi.mock('sonner', () => ({
 }));
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+beforeEach(() => {
+  mockFetch.mockReset();
+  vi.stubGlobal('fetch', mockFetch);
+});
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {

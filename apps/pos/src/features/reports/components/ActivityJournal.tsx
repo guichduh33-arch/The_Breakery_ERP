@@ -27,7 +27,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { Currency, EmptyState, cn } from '@breakery/ui';
+import { Currency, EmptyState, cn, selectClassName } from '@breakery/ui';
 import { buildCsv, downloadCsv } from '@breakery/domain';
 import type { ReportsPeriod } from '../hooks/useReportsPeriod';
 import {
@@ -238,7 +238,12 @@ export function ActivityJournal({ period }: { period: ReportsPeriod }): JSX.Elem
           aria-label="Filter by device"
           value={deviceId ?? ''}
           onChange={(e) => setDeviceId(e.target.value || null)}
-          className="h-8 rounded-md bg-bg-elevated border border-border-subtle text-xs text-text-primary px-2"
+          // Audit ui-kit finding F1 : ces deux filtres n'avaient AUCUN
+          // `focus-visible:`, donc l'anneau du navigateur, mesuré à 2,398:1 —
+          // sous les 3:1 de WCAG 1.4.11. Ils héritent maintenant de la classe
+          // canonique du primitif (anneau or, `border-border-strong`,
+          // `bg-bg-input`) et ne gardent que la densité du bandeau.
+          className={cn(selectClassName, 'h-8 px-2 text-xs')}
         >
           <option value="">All devices</option>
           {devices.map((d) => (
@@ -249,7 +254,12 @@ export function ActivityJournal({ period }: { period: ReportsPeriod }): JSX.Elem
           aria-label="Filter by operator"
           value={actorId ?? ''}
           onChange={(e) => setActorId(e.target.value || null)}
-          className="h-8 rounded-md bg-bg-elevated border border-border-subtle text-xs text-text-primary px-2"
+          // Audit ui-kit finding F1 : ces deux filtres n'avaient AUCUN
+          // `focus-visible:`, donc l'anneau du navigateur, mesuré à 2,398:1 —
+          // sous les 3:1 de WCAG 1.4.11. Ils héritent maintenant de la classe
+          // canonique du primitif (anneau or, `border-border-strong`,
+          // `bg-bg-input`) et ne gardent que la densité du bandeau.
+          className={cn(selectClassName, 'h-8 px-2 text-xs')}
         >
           <option value="">All operators</option>
           {actors.map((a) => (

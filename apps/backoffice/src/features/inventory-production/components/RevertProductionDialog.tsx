@@ -12,10 +12,8 @@
 // Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
 
 import { useState, type FormEvent, type JSX } from 'react';
-import {
-  Button, Input,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@breakery/ui';
+import { Input, Dialog, DialogDescription } from '@breakery/ui';
+import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
 import {
   useRevertProduction, RevertProductionError, type RevertBlocker,

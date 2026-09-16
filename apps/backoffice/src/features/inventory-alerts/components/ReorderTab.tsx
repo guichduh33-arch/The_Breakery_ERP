@@ -7,7 +7,8 @@
 // pas le calcul est un ordre, pas une suggestion.
 
 import { useState, type JSX } from 'react';
-import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { DataTable } from '@/components/BackofficeUi.js';
 import { formatDateShortWita, formatNumber, formatQuantity } from '@breakery/utils';
 import { useReorderSuggestions, type ReorderSuggestion } from '../hooks/useReorderSuggestions.js';
 import { ProductCell } from './ProductCell.js';

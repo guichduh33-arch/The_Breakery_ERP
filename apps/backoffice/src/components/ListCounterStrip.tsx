@@ -48,10 +48,10 @@ const TONE: Record<CounterTone, string> = {
   success: 'text-success',
 };
 
-const LABEL = 'font-data text-xs uppercase tracking-widest text-text-muted';
+const LABEL = 'font-body text-sm font-medium text-text-secondary';
 // Palier « Valeur KPI ordinaire » de DESIGN.md (mono, 600, 23 px, -0.02em,
 // tabulaire) — même écriture que DashboardKpiStrip ; la couleur vient du ton.
-const VALUE = 'font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums';
+const VALUE = 'font-data text-xl font-medium leading-tight tracking-[-0.02em] tabular-nums whitespace-nowrap';
 
 export interface ListCounterStripProps {
   counters: readonly ListCounter[];
@@ -102,7 +102,7 @@ export function ListCounterStrip({
         // extrémités puisque la boîte reste un conteneur de défilement.
         'flex items-stretch overflow-x-auto rounded-md border',
         informative
-          ? 'border-border-subtle bg-surface-inert'
+          ? 'rounded-none border-x-0 border-border-subtle bg-transparent'
           : 'border-border-strong bg-bg-elevated',
         className,
       )}
@@ -113,7 +113,7 @@ export function ListCounterStrip({
           ? 'text-text-muted'
           : TONE[counter.tone ?? 'neutral'];
         const shell = cn(
-          'flex flex-col gap-0.5 px-[18px] py-[11px] text-left',
+          'flex min-w-0 flex-col gap-1 px-4 py-3 text-left',
           'border-r border-border-muted last:border-r-0',
           isActive && 'shadow-[inset_2px_0_0_var(--gold-base)]',
         );

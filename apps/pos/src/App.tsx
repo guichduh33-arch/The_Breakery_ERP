@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { initSessionDeathWatch, disposeSessionDeathWatch } from './features/auth/sessionDeathWatch';
 import { initSessionRefresh, disposeSessionRefresh } from './features/auth/sessionRefresh';
+import { recordSessionActivity, startSessionActivity } from '@breakery/supabase';
+import { supabaseUrl } from './lib/supabase';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -67,7 +69,13 @@ export default function App() {
   useEffect(() => {
     initSessionDeathWatch();
     initSessionRefresh();
+    const stopActivity = startSessionActivity({
+      getSession: useAuthStore.getState,
+      send: (token) => recordSessionActivity(supabaseUrl, token),
+      onExpired: () => { useAuthStore.getState().lock('session_expired'); },
+    });
     return () => {
+      stopActivity();
       disposeSessionRefresh();
       disposeSessionDeathWatch();
     };

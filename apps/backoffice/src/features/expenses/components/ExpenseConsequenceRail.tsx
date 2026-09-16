@@ -17,7 +17,7 @@
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { Card } from '@breakery/ui';
+import { Card } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import { formatCurrency } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';

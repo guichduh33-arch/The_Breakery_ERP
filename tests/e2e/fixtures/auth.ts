@@ -49,6 +49,8 @@ async function enterPinAwaitingAuth(
   pin: string,
   submit?: () => Promise<void>,
 ): Promise<AuthAttemptResult> {
+  // Aucun ticket physique dans la recette automatisée.
+  await page.route(/\/(?:print(?:\/|$)|drawer\/open)/, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) }));
   const respP = page
     .waitForResponse(
       (r) => r.url().includes(AUTH_VERIFY_PIN_PATH) && r.request().method() === 'POST',
@@ -150,8 +152,8 @@ export async function loginWithPin(
  * The POS numpad digits are plain <button aria-label="N"> elements inside a
  * role="group" aria-label="PIN numpad" group.
  */
-export async function loginPOS(page: Page, pin: string): Promise<void> {
-  // POS auto-selects the first seed user (no picker); rate-limit-resilient.
+export async function loginPOS(page: Page, pin: string, userName = 'E2E Cashier'): Promise<void> {
+  // Select the fixture user explicitly; retry only through the existing login policy.
   await loginWithRateLimitRetry(
     page,
     async () => {
@@ -159,6 +161,11 @@ export async function loginPOS(page: Page, pin: string): Promise<void> {
       await expect(page.getByRole('group', { name: 'PIN numpad' })).toBeVisible({
         timeout: 60_000,
       });
+      const cashier = page.getByRole('button', { name: new RegExp(userName) });
+      const switchUser = page.getByRole('button', { name: /^Switch$/i });
+      await expect(cashier.or(switchUser).first()).toBeVisible({ timeout: 60000 });
+      if (await switchUser.isVisible()) await switchUser.click();
+      await cashier.click();
       return enterPinAwaitingAuth(page, pin, async () => {
         const signInBtn = page.getByTestId('login-sign-in-btn');
         if (await signInBtn.isEnabled({ timeout: 2_000 }).catch(() => false)) {

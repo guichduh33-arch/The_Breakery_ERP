@@ -26,10 +26,7 @@ import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
-import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
-import { usePromotionsRealtime } from '@/features/promotions/hooks/usePromotionsRealtime';
 import { PromotionsList } from '@/features/promotions/components/PromotionsList';
-import { useCartBroadcast } from '@/features/display/hooks/useCartBroadcast';
 import { CartLineRow } from './CartLineRow';
 import { CustomerBadge } from './CustomerBadge';
 import { CancelItemModal } from './CancelItemModal';
@@ -71,12 +68,12 @@ const SERVICE_TABS: { value: OrderType; label: string }[] = [
   { value: 'delivery', label: 'Delivery' },
 ];
 
-function orderLabel(pickedUpOrderId: string | null): string {
-  if (!pickedUpOrderId) return '#NEW';
-  return `POS-${pickedUpOrderId.slice(-4).toUpperCase()}`;
+function orderLabel(number: string | null): string {
+  return number ?? '#NEW';
 }
 
 export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): JSX.Element {
+  const orderNumber = useCartStore((s) => s.orderNumber);
   // ── store reads ──────────────────────────────────────────────────────────
   const cart = useCartStore((s) => s.cart);
   const lockedIds = useCartStore((s) => s.lockedItemIds);
@@ -95,9 +92,6 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const { taxRate, taxInclusive } = useTaxConfig();
 
   // ── orchestrators anchored here (single source of truth) ─────────────────
-  usePromotionsAutoEval();
-  usePromotionsRealtime();
-  useCartBroadcast(taxRate, taxInclusive);
 
   // ── per-line cancel (tablet pickups) ─────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
@@ -147,7 +141,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   return (
     <aside
       aria-label="Active order"
-      className="w-[340px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full max-md:w-full max-md:h-[42%] max-md:border-l-0 max-md:border-t"
+      className="w-full min-h-0 shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full max-[1099px]:border-l-0"
     >
       {/* Header ──────────────────────────────────────────────────────────── */}
       {/* Critique 2026-08-23 (P2) — shrink-0 : sans lui, sous contrainte de
@@ -161,7 +155,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               Order
             </span>
             <span className="font-bold text-base text-gold">
-              {orderLabel(pickedUpOrderId)}
+              {orderLabel(orderNumber)}
             </span>
           </div>
         </div>

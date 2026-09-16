@@ -180,7 +180,7 @@ describe('ComboConfigModal — modificateurs des composants (ADR-017)', () => {
 
     // Le composant sans modificateur n'invente pas de clé vide.
     const plate = arg.components.find((c) => c.product_id === 'p-omelette');
-    expect(plate).toEqual({ product_id: 'p-omelette', quantity: 1 });
+    expect(plate).toEqual({ name: 'Omelette', product_id: 'p-omelette', quantity: 1 });
 
     // Le prix reste base_price : le serveur re-résout tout depuis components.
     expect(arg.unitPrice).toBe(50_000);

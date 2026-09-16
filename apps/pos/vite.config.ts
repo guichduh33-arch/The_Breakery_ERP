@@ -9,7 +9,7 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') }
   },
   server: { port: 5173, host: true },
-  build: { target: 'es2022' },
+  build: { target: 'es2022', manifest: true },
   // esbuild 0.28+ regression: with Vite's default browser target list,
   // it refuses to transform `let { x, ...rest } = obj` style destructuring
   // even though every supported browser handles it natively. Tell esbuild
@@ -27,7 +27,8 @@ export default defineConfig({
     environment: 'jsdom',
     // Use forks pool to avoid Windows VirtualAlloc OOM with multiple threads
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
+    isolate: false,
     setupFiles: [],
     coverage: {
       provider: 'v8',

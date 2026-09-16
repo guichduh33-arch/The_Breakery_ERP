@@ -13,17 +13,20 @@
 // réception ne demande plus aucun choix d'emplacement.
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
-import { Button, Input, Select } from '@breakery/ui';
+import { Input, Select } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatQuantity } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
 import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useInventoryReferenceData } from '../hooks/useInventoryReferenceData.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import {
   useRecordDirectPurchase,
   DirectPurchaseError,
   type DirectPurchasePaymentMethod,
+  type DirectPurchaseArgs,
 } from '../hooks/useRecordDirectPurchase.js';
 
 type PayChoice = 'cash' | 'transfer' | 'unpaid';
@@ -54,6 +57,8 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
   const [successMsg,   setSuccessMsg  ] = useState<string | null>(null);
   const [idemKey,      setIdemKey     ] = useState<string>(() => crypto.randomUUID());
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submitted = useRef<DirectPurchaseArgs | null>(null);
+  const [formLocked, setFormLocked] = useState(false);
 
   useEffect(() => () => { if (successTimer.current !== null) clearTimeout(successTimer.current); }, []);
 
@@ -94,8 +99,16 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
     setProduct(p);
     setQuery(p.name);
     setPickerOpen(false);
-    setUnit(p.defaultPurchaseUnit !== '' ? p.defaultPurchaseUnit : p.unit);
-    if (price === '' && p.cost_price !== null && p.cost_price > 0) setPrice(String(p.cost_price));
+    const selectedUnit = p.defaultPurchaseUnit !== '' ? p.defaultPurchaseUnit : p.unit;
+    setUnit(selectedUnit);
+    const selectedFactor = p.unitOptions.find((option) => option.code === selectedUnit)?.factor ?? 1;
+    setPrice(p.cost_price !== null && p.cost_price > 0 ? String(p.cost_price * selectedFactor) : '');
+  }
+
+  function changeUnit(nextUnit: string): void {
+    const nextFactor = product?.unitOptions.find((option) => option.code === nextUnit)?.factor ?? 1;
+    if (isPriceValid) setPrice(String(numPrice * nextFactor / factor));
+    setUnit(nextUnit);
   }
 
   function resetForm(): void {
@@ -107,6 +120,8 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
     setPayAmount('');
     setFormError(null);
     setIdemKey(crypto.randomUUID());
+    submitted.current = null;
+    setFormLocked(false);
   }
 
   async function handleSubmit(e: FormEvent): Promise<void> {
@@ -115,7 +130,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
     setFormError(null);
     const method: DirectPurchasePaymentMethod | null = pay === 'unpaid' ? null : pay;
     try {
-      const res = await purchase.mutateAsync({
+      submitted.current ??= {
         supplierId,
         productId:        product.id,
         quantity:         numQty,
@@ -127,7 +142,10 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         paymentAmount:    pay === 'unpaid' ? 0 : numPayAmount,
         paymentDate:      payDate,
         idempotencyKey:   idemKey,
-      });
+      };
+      setFormLocked(true);
+      setPickerOpen(false);
+      const res = await purchase.mutateAsync(submitted.current);
       resetForm();
       setSuccessMsg(`Purchase ${res.poNumber} recorded (${res.grnNumber}). Stock + accounting updated.`);
       if (successTimer.current !== null) clearTimeout(successTimer.current);
@@ -173,12 +191,25 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       noValidate
       className="max-w-2xl space-y-4 rounded-lg border border-border-subtle bg-bg-elevated p-6"
     >
+      {products.isError && <QueryErrorBanner onRetry={() => { void products.refetch(); }}>Products could not be loaded.</QueryErrorBanner>}
+      {refData.isError && <QueryErrorBanner onRetry={() => { void refData.refetch(); }}>Suppliers could not be loaded.</QueryErrorBanner>}
+      {(products.isLoading || refData.isLoading) && <p role="status" className="text-sm text-text-secondary">Loading products and suppliers…</p>}
+      {!refData.isLoading && !refData.isError && suppliers.length === 0 && <p role="status" className="text-sm text-text-secondary">No suppliers available. Add a supplier before recording a purchase.</p>}
       {formError !== null && (
         <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">{formError}</div>
       )}
       {successMsg !== null && (
         <div role="status" className="rounded-md border border-success bg-success-soft p-2 text-xs text-success">{successMsg}</div>
       )}
+      {formLocked && (
+        <div role="status" className="text-sm text-text-secondary">
+          <p>Purchase details are locked. Retry resumes this same purchase.</p>
+          {purchase.progress?.poId && <p>Order confirmed: {purchase.progress.poNumber} ({purchase.progress.poId})</p>}
+          {purchase.progress?.grnId && <p>Receipt confirmed: {purchase.progress.grnNumber} ({purchase.progress.grnId})</p>}
+          {purchase.progress?.paymentId && <p>Payment confirmed: {purchase.progress.paymentId}</p>}
+        </div>
+      )}
+      <fieldset disabled={formLocked} className="space-y-4">
 
       {/* Product (searchable, raw materials only) */}
       <div className="relative space-y-1">
@@ -204,6 +235,9 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         {/* Le descendant actif ne déplace pas le focus : sans annonce, l'apparition
             des résultats est muette pour un lecteur d'écran. */}
         <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
+        {pickerOpen && !products.isLoading && !products.isError && filtered.length === 0 && (
+          <p role="status" className="text-sm text-text-secondary">No raw materials match this search.</p>
+        )}
         {listOpen && (
           <ul id={keyboard.listboxId} role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-border-subtle bg-bg-elevated shadow-lg">
             {filtered.map((p, i) => (
@@ -235,7 +269,7 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         </div>
         <div className="space-y-1">
           <label htmlFor={`${rid}-unit`} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">Purchase unit</label>
-          <Select id={`${rid}-unit`} value={unit} onChange={(e) => setUnit(e.target.value)}
+          <Select id={`${rid}-unit`} value={unit} onChange={(e) => changeUnit(e.target.value)}
             className="w-full" disabled={purchase.isPending || product === null}>
             {product === null ? <option value="">—</option> : product.unitOptions.map((u) => (
               <option key={u.code} value={u.code}>{u.code}{u.factor !== 1 ? ` (×${u.factor} ${product.unit})` : ''}</option>
@@ -305,9 +339,10 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         )}
       </fieldset>
 
+      </fieldset>
       <div className="flex justify-end pt-2">
         <Button type="submit" variant="ink" disabled={!canSubmit}>
-          {purchase.isPending ? 'Recording…' : 'Record purchase'}
+          {purchase.isPending ? 'Recording…' : formLocked ? 'Retry purchase' : 'Record purchase'}
         </Button>
       </div>
     </form>

@@ -98,7 +98,7 @@ runGuard({
   number: 5,
   title: 'aucun contrôle sans anneau de focus ni placeholder tokenisé',
   baselinePath: 'scripts/ci/focus-ring-controls-baseline.txt',
-  scanned: ['apps/backoffice/src/'],
+  scanned: ['apps/backoffice/src/', 'apps/pos/src/'],
   extRe: /\.tsx$/,
   collect,
   scannedLabel: 'balises input/select/textarea écrites à la main',

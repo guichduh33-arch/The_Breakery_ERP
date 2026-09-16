@@ -15,11 +15,12 @@
 // ne disent pas la même chose : les séparer évite qu'un futur statut hérite du
 // mauvais comportement par accident.
 
-import { useState } from 'react';
-import { Button } from '@breakery/ui';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Button } from '@/components/BackofficeUi.js';
 import { useSetOpnameCount } from '../hooks/useOpnameMutations.js';
 import type { OpnameItemRow } from '../hooks/useOpnameDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { formatStockQuantity, parseStockQuantity } from '@/features/inventory/stockQuantity.js';
 
 export interface CountItemRowProps {
   countId:  string;
@@ -28,28 +29,42 @@ export interface CountItemRowProps {
   revealed: boolean;
   /** Figer la saisie (phase revue et au-delà). */
   locked:   boolean;
+  onEditingChange?: (itemId: string, blocked: boolean) => void;
 }
 
-export function CountItemRow({ countId, item, revealed, locked }: CountItemRowProps) {
+export function CountItemRow({ countId, item, revealed, locked, onEditingChange }: CountItemRowProps) {
   const [count, setCount] = useState<string>(
     item.counted_qty === null ? '' : String(item.counted_qty),
   );
   const [notes, setNotes] = useState<string>(item.notes ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState({ count: item.counted_qty === null ? '' : String(item.counted_qty), notes: item.notes ?? '' });
+  const errorId = useId();
+  const dirty = count !== saved.count || notes !== saved.notes;
 
   const setCountMutation = useSetOpnameCount();
+  const saving = useRef(false);
+  useEffect(() => {
+    onEditingChange?.(item.id, !locked && (dirty || error !== null || setCountMutation.isPending));
+  }, [dirty, error, item.id, locked, onEditingChange, setCountMutation.isPending]);
+  useEffect(() => () => { onEditingChange?.(item.id, false); }, [item.id, onEditingChange]);
 
   function handleSubmit() {
-    const num = Number(count);
-    if (!Number.isFinite(num) || num < 0) {
-      setError('Enter a non-negative number.');
+    if (locked || setCountMutation.isPending || saving.current) return;
+    const num = parseStockQuantity(count);
+    if (num === null) {
+      setError('Enter a non-negative quantity with up to 3 decimal places.');
       return;
     }
+    if (!dirty && error === null) return;
     setError(null);
+    saving.current = true;
     setCountMutation.mutate(
-      { countId, countItemId: item.id, countedQty: num, notes: notes.trim() === '' ? undefined : notes },
+      { countId, countItemId: item.id, countedQty: num, notes: notes.trim() },
       {
+        onSuccess: () => { setSaved({ count, notes }); },
         onError: (e) => { setError(e.message); },
+        onSettled: () => { saving.current = false; },
       },
     );
   }
@@ -64,17 +79,19 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
       </td>
       {revealed && (
         <td className="py-2 px-3 text-sm font-mono text-right" data-testid="cell-expected">
-          {item.expected_qty} {item.unit}
+          {formatStockQuantity(item.expected_qty, item.unit)}
         </td>
       )}
       <td className="py-2 px-3">
         {locked ? (
           <span className="font-mono text-sm">
-            {item.counted_qty ?? '—'} {item.unit}
+            {item.counted_qty === null ? '—' : formatStockQuantity(item.counted_qty, item.unit)}
           </span>
         ) : (
+          <div className="flex items-center gap-2">
           <input
             type="number"
+            inputMode="decimal"
             step="0.001"
             min={0}
             value={count}
@@ -82,7 +99,12 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             onBlur={handleSubmit}
             className={`w-24 px-2 py-1 text-right font-mono text-sm bg-bg-base border border-border-strong rounded ${FOCUS_RING}`}
             aria-label={`Counted quantity for ${item.product?.name}`}
+            aria-invalid={error !== null}
+            aria-describedby={error !== null ? errorId : undefined}
+            disabled={setCountMutation.isPending}
           />
+          <span className="text-xs text-text-secondary">{item.unit}</span>
+          </div>
         )}
       </td>
       {revealed && (
@@ -92,9 +114,9 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
           ) : variance === 0 ? (
             <span className="text-success">0</span>
           ) : variance > 0 ? (
-            <span className="text-success">+{variance}</span>
+            <span className="text-success">+{formatStockQuantity(variance, item.unit)}</span>
           ) : (
-            <span className="text-danger">{variance}</span>
+            <span className="text-danger">{formatStockQuantity(variance, item.unit)}</span>
           )}
         </td>
       )}
@@ -110,6 +132,7 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
             className={`w-full px-2 py-1 text-sm bg-bg-base border border-border-strong rounded placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Optional notes"
             aria-label={`Notes for ${item.product?.name}`}
+            disabled={setCountMutation.isPending}
           />
         )}
       </td>
@@ -123,8 +146,11 @@ export function CountItemRow({ countId, item, revealed, locked }: CountItemRowPr
           >
             {setCountMutation.isPending ? '…' : 'Save'}
           </Button>
+          <span role="status" className="block text-xs text-text-secondary">
+            {setCountMutation.isPending ? 'Saving…' : error !== null ? 'Not saved' : dirty ? 'Unsaved changes' : item.counted_qty !== null || saved.count !== '' ? 'Saved' : ''}
+          </span>
           {error !== null && (
-            <div className="text-xs text-danger mt-1">{error}</div>
+            <div id={errorId} role="alert" className="text-xs text-danger mt-1">{error}</div>
           )}
         </td>
       )}

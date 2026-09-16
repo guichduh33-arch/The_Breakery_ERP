@@ -12,6 +12,10 @@
 // `paid` is now derived from the `b2b_payment_allocations` ledger (not
 // `order_payments`, which B2B payments never populate), so the POS panel and
 // the BackOffice AR views agree on outstanding. Retail ardoise unchanged.
+// 2026-09-08 — audit b2b-credit finding n°2 — bumped to `get_pos_b2b_debts_v4`:
+// la v3 n'avait aucune gate de permission (un simple `auth.uid() IS NOT NULL`),
+// alors qu'elle rend tout le carnet de créances. La v4 exige `b2b.debts.view`,
+// accordée à CASHIER et waiter pour que cet écran reste ouvert à la caisse.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -44,7 +48,7 @@ export function useOutstandingDebts() {
   return useQuery<OutstandingDebt[]>({
     queryKey: ['pos-outstanding-debts'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_b2b_debts_v3', {
+      const { data, error } = await supabase.rpc('get_pos_b2b_debts_v4', {
         p_lookback_days: DEBT_LOOKBACK_DAYS,
       });
 

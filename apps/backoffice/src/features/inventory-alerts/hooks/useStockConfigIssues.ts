@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/inventory-alerts/hooks/useStockConfigIssues.ts
-// Audit 2026-07-08 — get_stock_config_issues_v1 wrapper.
+// Audit 2026-07-08 — get_stock_config_issues_v2 wrapper.
 // Produits dont les flags track_inventory/deduct_stock + recette ne déduisent
 // pas le stock attendu à la vente.
 
@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase.js';
 export type StockConfigSeverity = 'critical' | 'warning' | 'info';
 export type StockConfigIssueType =
   | 'negative_stock'
+  | 'unconvertible_recipe_unit'
   | 'sale_deduct_no_recipe'
   | 'orphan_recipe'
   | 'tracked_recipe_at_prod';
@@ -34,14 +35,14 @@ function rpc(): RpcFn {
   return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
-export const STOCK_CONFIG_ISSUES_KEY = ['stock-config-issues-v1'] as const;
+export const STOCK_CONFIG_ISSUES_KEY = ['stock-config-issues-v2'] as const;
 
 export function useStockConfigIssues() {
   return useQuery<StockConfigIssueRow[]>({
     queryKey: STOCK_CONFIG_ISSUES_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await rpc()('get_stock_config_issues_v1');
+      const { data, error } = await rpc()('get_stock_config_issues_v2');
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

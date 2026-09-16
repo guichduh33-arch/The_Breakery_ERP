@@ -105,7 +105,8 @@ jobs:
             exit 1
           fi
           if [ "${STAGING_REF}" != "ikcyvlovptebroadgtvd" ]; then
-            echo "::warning::Project ref '${STAGING_REF}' does not match expected V3 dev project 'ikcyvlovptebroadgtvd'."
+            echo "::error::Unexpected staging project target."
+            exit 1
           fi
 
       - name: Link to staging Supabase project
@@ -114,14 +115,12 @@ jobs:
             --project-ref "${STAGING_REF}" \
             --password "${STAGING_DB_PASSWORD}"
 
-      - name: Apply migrations to staging DB
-        # `--linked` uses the project linked above; `--password` is read from env.
-        # `--include-all` ensures all migrations in supabase/migrations/ are pushed.
+      - name: Require targeted schema validation before deployment
+        # Historique cloud incompatible avec un replay global. Le déploiement
+        # reste bloqué jusqu'à une procédure ciblée validée par le propriétaire.
         run: |
-          supabase db push \
-            --linked \
-            --password "${STAGING_DB_PASSWORD}" \
-            --include-all
+          echo "::error::Automatic schema deployment is disabled. Apply and validate targeted migrations through the approved database workflow first."
+          exit 1
 
       - name: Deploy Edge Functions to staging
         # Deploys every directory under supabase/functions/ (skips _shared automatically).

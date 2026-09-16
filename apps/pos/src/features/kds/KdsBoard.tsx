@@ -213,7 +213,7 @@ export function KdsBoard({
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex-1 overflow-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min"
+        className="flex-1 overflow-auto p-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] gap-4 auto-rows-min"
       >
         {isError && !offlineMode ? (
           // Never fall through to "No active tickets" on a fetch error — the

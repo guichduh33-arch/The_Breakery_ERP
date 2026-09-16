@@ -10,12 +10,8 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { Edit2, Factory, Plus, Trash2, ChevronRight } from 'lucide-react';
-import {
-  Button,
-  DataTable,
-  KpiTile,
-  type DataTableColumn,
-} from '@breakery/ui';
+import { type DataTableColumn } from '@breakery/ui';
+import { Button, DataTable, KpiTile } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useSectionsList,

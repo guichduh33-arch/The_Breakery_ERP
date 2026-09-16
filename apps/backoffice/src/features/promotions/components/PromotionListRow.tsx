@@ -6,7 +6,8 @@
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §4.5, BO2
 
 import { Pencil, Trash2 } from 'lucide-react';
-import { Button, PromotionTypeBadge } from '@breakery/ui';
+import { PromotionTypeBadge } from '@breakery/ui';
+import { Button } from '@/components/BackofficeUi.js';
 import type { PromotionListRow as PromotionListRowType } from '../hooks/usePromotionsList.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 

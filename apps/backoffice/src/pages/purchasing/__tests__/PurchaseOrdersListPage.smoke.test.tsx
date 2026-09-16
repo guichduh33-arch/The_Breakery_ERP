@@ -4,7 +4,7 @@
 // permissions ; on vérifie l'en-tête, la BANDE DE COMPTEURS (qui a remplacé les
 // tuiles de KPI et les pastilles de statut) et les lignes de la table.
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -69,6 +69,8 @@ const ROWS: PurchaseOrderListRow[] = [
     suppliers:        { code: 'BU', name: 'Banyu Urip' },
   },
 ];
+let queryData: PurchaseOrderListRow[] | undefined = ROWS;
+let queryError = false;
 
 vi.mock('@/features/purchasing/hooks/useHistoricalPurchasesExport.js', () => ({
   useHistoricalPurchasesExport: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -92,7 +94,7 @@ vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOri
   const actual = await importOriginal<typeof UsePurchaseOrdersListModule>();
   return {
     ...actual,
-    usePurchaseOrdersList: () => ({ data: ROWS, isLoading: false, error: null }),
+    usePurchaseOrdersList: () => ({ data: queryData, isLoading: queryData === undefined, isError: queryError, error: null }),
   };
 });
 
@@ -124,6 +126,22 @@ function renderPage(): ReturnType<typeof render> {
 }
 
 describe('PurchaseOrdersListPage', () => {
+  beforeEach(() => { queryData = ROWS; queryError = false; currentPerms = new Set(['purchasing.po.read']); });
+  it('affiche un tiret avant réponse puis zéro seulement pour une réponse vide', () => {
+    queryData = undefined;
+    const view = renderPage();
+    expect(screen.getByTestId('counter-all')).toHaveTextContent('—');
+    view.unmount();
+    queryData = [];
+    renderPage();
+    expect(screen.getByTestId('counter-all')).toHaveTextContent('0');
+  });
+  it('masque un compte en cache quand le refetch échoue', () => {
+    queryError = true;
+    renderPage();
+    expect(screen.getByTestId('counter-all')).toHaveTextContent('—');
+    expect(screen.getByTestId('counter-pending')).toHaveTextContent('—');
+  });
   it('renders header, the counter strip, and rows', () => {
     currentPerms = new Set(['purchasing.po.read', 'purchasing.po.create']);
     renderPage();

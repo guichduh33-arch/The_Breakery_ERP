@@ -29,7 +29,8 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
-import { Badge, Button, EmptyState } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
+import { Button, EmptyState } from '@/components/BackofficeUi.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductVariants, type VariantRow } from '../hooks/useProductVariants.js';
 import { useProductParent } from '../hooks/useProductParent.js';

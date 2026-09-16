@@ -10,7 +10,7 @@
 // note requirement still applies, on the review step.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, Currency, FullScreenModal } from '@breakery/ui';
+import { Button, Currency, FullScreenModal, Select } from '@breakery/ui';
 // Critique run 2 (2026-08-14 P2) — une seule notation des milliers sur le
 // parcours d'argent : formatIdr, le formatteur unique (id-ID depuis
 // l'arbitrage du 2026-08-13, voir packages/utils/src/idr.ts), jamais un
@@ -297,7 +297,7 @@ export function CloseShiftModal({
                   inputMode="numeric"
                   aria-required="true"
                   placeholder="0"
-                  className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+                  className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value.replace(/\D/g, ''))}
                 />
@@ -320,7 +320,7 @@ export function CloseShiftModal({
               inputMode="numeric"
               aria-required="true"
               placeholder="0"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               value={qrisStr}
               onChange={(e) => setQrisStr(e.target.value.replace(/\D/g, ''))}
             />
@@ -339,7 +339,7 @@ export function CloseShiftModal({
               inputMode="numeric"
               aria-required="true"
               placeholder="0"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               value={cardStr}
               onChange={(e) => setCardStr(e.target.value.replace(/\D/g, ''))}
             />
@@ -356,7 +356,7 @@ export function CloseShiftModal({
             <textarea
               id="close_notes"
               data-vkp="qwerty"
-              className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+              className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -380,9 +380,15 @@ export function CloseShiftModal({
             <label htmlFor="approver_select" className="text-xs uppercase tracking-wide text-text-secondary">
               Manager approval (required — variance above manager threshold)
             </label>
-            <select
+            {/* Audit ui-kit finding F2 : l'anneau de focus était explicitement
+                supprimé (`focus:outline-none`) et remplacé par un changement de
+                couleur de bordure keyé sur `:focus`, pas `:focus-visible` — le
+                motif retiré des alternatives conformes le 2026-08-21. Sur LE
+                champ où un manager approuve un écart de caisse. Le primitif
+                porte l'anneau or `focus-visible` et `border-border-strong`. */}
+            <Select
               id="approver_select"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px]"
               value={approverId}
               onChange={(e) => setApproverId(e.target.value)}
               aria-invalid={approverId === ''}
@@ -394,7 +400,7 @@ export function CloseShiftModal({
                   {u.display_name} ({u.role})
                 </option>
               ))}
-            </select>
+            </Select>
             <input
               id="approver_pin"
               data-vkp="numeric"
@@ -406,7 +412,7 @@ export function CloseShiftModal({
               // accessible : il disparaît à la première frappe.
               aria-label="Manager PIN (6 digits)"
               placeholder="Manager PIN (6 digits)"
-              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
               value={managerPin}
               onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
               aria-invalid={!/^\d{6}$/.test(managerPin)}

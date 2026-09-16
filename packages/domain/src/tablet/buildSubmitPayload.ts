@@ -7,6 +7,7 @@ export interface TabletSubmitPayload {
   p_table_number: string | null;
   p_order_type: 'dine_in' | 'take_out';
   p_items: {
+    client_line_id?: string;
     product_id: string;
     quantity: number;
     unit_price: number;
@@ -35,6 +36,7 @@ export function buildSubmitPayload(
     p_table_number: cart.tableNumber,
     p_order_type: cart.orderType,
     p_items: cart.items.map((i) => ({
+      client_line_id: i.id,
       product_id: i.product_id,
       quantity: i.quantity,
       unit_price: i.unit_price,

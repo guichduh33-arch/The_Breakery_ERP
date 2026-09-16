@@ -27,7 +27,7 @@ export function OrderSummaryPanel({
   taxInclusive,
 }: OrderSummaryPanelProps) {
   return (
-    <section className="bg-bg-base p-6 overflow-y-auto max-md:overflow-visible">
+    <section className="bg-bg-base p-6 overflow-y-auto max-[1099px]:overflow-visible max-[1099px]:shrink-0">
       <h3 className="text-xs uppercase tracking-widest text-text-primary mb-4">Current Order</h3>
       <table className="w-full text-sm">
         <thead className="text-text-secondary text-xs uppercase tracking-wide border-b border-border-subtle">

@@ -216,7 +216,7 @@ describe('ProductTapHandler — combo flow (Session 47 D3)', () => {
 
       expect(calledProduct.id).toBe('prod-combo-tap-001');
       expect(calledUnitPrice).toBe(75000);
-      expect(calledComponents).toEqual([{ product_id: 'prod-amer-tap', quantity: 1 }]);
+      expect(calledComponents).toEqual([{ name: 'Americano', product_id: 'prod-amer-tap', quantity: 1 }]);
       expect(calledModifiers).toEqual([
         { group_name: 'Choose a drink', option_label: 'Americano', price_adjustment: 0 },
       ]);

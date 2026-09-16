@@ -5,16 +5,8 @@
 // reason / supplier reference. 50 entries per page.
 
 import { useState, type JSX } from 'react';
-import {
-  Badge,
-  Button,
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@breakery/ui';
+import { Badge, Sheet, SheetDescription } from '@breakery/ui';
+import { Button, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/BackofficeUi.js';
 import { classifyMovement } from '@breakery/domain';
 import type { StockMovement } from '@breakery/domain';
 import {
@@ -24,6 +16,8 @@ import {
 } from '../hooks/useStockMovements.js';
 import type { StockLevelRow } from '../hooks/useStockLevels.js';
 import { formatDateTimeShortWita } from '@breakery/utils';
+import { formatStockQuantity } from '../stockQuantity.js';
+import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 
 export interface MovementHistoryDrawerProps {
   product: StockLevelRow | undefined;
@@ -133,11 +127,11 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
 
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {q.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
-          {q.error && <div className="text-red-as-text py-12 text-center">{q.error.message}</div>}
-          {q.data?.length === 0 && page === 0 && (
+          {q.error && <QueryErrorBanner onRetry={() => { void q.refetch(); }}>Stock movements could not be loaded.</QueryErrorBanner>}
+          {!q.error && q.data?.length === 0 && page === 0 && (
             <div className="text-text-secondary py-12 text-center">No movements recorded yet.</div>
           )}
-          {q.data !== undefined && q.data.length > 0 && (
+          {!q.error && q.data !== undefined && q.data.length > 0 && (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -168,7 +162,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                             </Badge>
                           </td>
                           <td className={`px-2 py-1 text-right font-mono ${qtyClass}`}>
-                            {row.quantity > 0 ? '+' : ''}{row.quantity}
+                            {row.quantity > 0 ? '+' : ''}{formatStockQuantity(row.quantity, row.unit)}
                           </td>
                           <td className="px-2 py-1">{describeReference(row)}</td>
                           <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
@@ -178,10 +172,13 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                   </tbody>
                 </table>
               </div>
-
+            </>
+          )}
+          {!q.error && q.data?.length === 0 && page > 0 && <p role="status">No more movements on this page.</p>}
+          {(page > 0 || (q.data?.length ?? 0) > 0) && (
               <div className="flex items-center justify-between pt-3 text-xs">
                 <span className="text-text-secondary">
-                  Page {page + 1} · showing {q.data.length} {q.data.length === 1 ? 'entry' : 'entries'}
+                  Page {page + 1} · showing {q.data?.length ?? 0} entries
                 </span>
                 <div className="flex gap-2">
                   <Button
@@ -189,7 +186,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                     variant="ghost"
                     size="sm"
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    disabled={page === 0}
+                    disabled={page === 0 || q.isFetching}
                   >
                     Previous
                   </Button>
@@ -198,13 +195,12 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                     variant="ghost"
                     size="sm"
                     onClick={() => setPage((p) => p + 1)}
-                    disabled={!hasMore}
+                    disabled={!hasMore || q.isFetching || !!q.error}
                   >
                     Next
                   </Button>
                 </div>
               </div>
-            </>
           )}
         </div>
 
