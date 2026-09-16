@@ -68,6 +68,8 @@ apps/print-bridge/hub-buffer.jsonl
 # sont versionnés.
 .impeccable/config.local.json
 .impeccable/hook.cache.json
+# Impeccable — moteur téléchargé par plateforme, récupéré par le lanceur.
+.agents/skills/impeccable/scripts/bin/
 ruvector.db
 *.ruvector.db
 
