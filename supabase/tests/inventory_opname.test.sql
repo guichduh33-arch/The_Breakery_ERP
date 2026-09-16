@@ -46,8 +46,8 @@ SELECT is(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'create_opname_v2','add_opname_item_v2','set_opname_count_v1',
-      'validate_opname_v1','finalize_opname_v4','cancel_opname_v1',
+      'create_opname_v2','add_opname_item_v2','set_opname_count_v2',
+      'validate_opname_v2','finalize_opname_v4','cancel_opname_v1',
       'next_count_number'
     )),
   7,
@@ -152,7 +152,7 @@ SELECT ok(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'get_stock_movements_v1','get_movement_aggregates_v2',
+      'get_stock_movements_v1','get_movement_aggregates_v3',
       'get_low_stock_v2','get_reorder_suggestions_v1','get_product_dashboard_v3'
     )),
   5,
@@ -251,8 +251,8 @@ BEGIN
    WHERE count_id = v_count_id
      AND product_id = '99999999-00e0-00e0-00e0-111111111111'::uuid;
 
-  PERFORM set_opname_count_v1(v_item_id, 50.000, 'T_OPN_15 counted');
-  PERFORM validate_opname_v1(v_count_id);
+  PERFORM set_opname_count_v2(v_item_id, 50.000, 'T_OPN_15 counted');
+  PERFORM validate_opname_v2(v_count_id);
 
   SELECT finalize_opname_v4(v_count_id) INTO v_finalize;
 
@@ -282,7 +282,7 @@ SELECT ok(current_setting('breakery.t_opn_15_pass')::boolean,
 -- =========================================================================
 -- T_OPN_16 — la révélation n'est pas contournable. finalize_opname_v4 refuse
 -- le statut `counting` : le seul chemin depuis le comptage est
--- validate_opname_v1, qui fige la saisie et découvre les écarts. v2
+-- validate_opname_v2, qui fige la saisie et découvre les écarts. v2
 -- l'acceptait, ce qui rendait l'écriture comptable définitive postable sans
 -- que personne ait vu les écarts validés.
 -- =========================================================================
@@ -308,7 +308,7 @@ BEGIN
 
   -- Toutes les lignes sont comptées : `missing_counts` ne peut pas masquer
   -- la garde de statut qu'on veut prouver.
-  PERFORM set_opname_count_v1(v_item_id, 12.000, 'T_OPN_16 counted');
+  PERFORM set_opname_count_v2(v_item_id, 12.000, 'T_OPN_16 counted');
 
   SELECT status INTO v_status FROM inventory_counts WHERE id = v_count_id;
   IF v_status <> 'counting' THEN

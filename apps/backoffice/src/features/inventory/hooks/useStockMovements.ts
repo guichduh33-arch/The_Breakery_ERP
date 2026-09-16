@@ -15,6 +15,7 @@ export interface StockMovementRow {
   product_id:       string;
   movement_type:    MovementType;
   quantity:         number;
+  unit:             string;
   reason:           string | null;
   unit_cost:        number | null;
   supplier_id:      string | null;
@@ -46,7 +47,7 @@ export function useStockMovements(productId: string | null, page: number) {
       const { data, error } = await supabase
         .from('stock_movements')
         .select(`
-          id, product_id, movement_type, quantity, reason, unit_cost,
+          id, product_id, movement_type, quantity, unit, reason, unit_cost,
           supplier_id, reference_type, reference_id, idempotency_key,
           created_at, created_by,
           supplier:suppliers(code, name),
@@ -54,6 +55,7 @@ export function useStockMovements(productId: string | null, page: number) {
         `)
         .eq('product_id', productId)
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .range(from, to);
       if (error) throw error;
       return data ?? [];

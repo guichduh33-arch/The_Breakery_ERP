@@ -7075,10 +7075,11 @@ export type Database = {
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
-      get_movement_aggregates_v2: {
+      get_movement_aggregates_v3: {
         Args: {
           p_date_end?: string
           p_date_start?: string
+          p_movement_type?: string
           p_product_id?: string
           p_section_id?: string
         }
@@ -8268,7 +8269,7 @@ export type Database = {
         }
         Returns: string
       }
-      set_opname_count_v1: {
+      set_opname_count_v2: {
         Args: {
           p_count_item_id: string
           p_counted_qty: number
@@ -8613,7 +8614,7 @@ export type Database = {
         Args: { p_customer_id: string; p_order_amount: number }
         Returns: Json
       }
-      validate_opname_v1: { Args: { p_count_id: string }; Returns: Json }
+      validate_opname_v2: { Args: { p_count_id: string }; Returns: Json }
       verify_user_pin: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean

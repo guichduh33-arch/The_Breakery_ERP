@@ -19,11 +19,9 @@ export function FinalizeOpnameDialog({ countId, items, onClose }: FinalizeOpname
   const [error, setError] = useState<string | null>(null);
 
   const withVariance = items.filter((i) => i.variance !== null && i.variance !== 0);
-  const totalVarianceAbs = withVariance.reduce(
-    (s, i) => s + Math.abs(i.variance ?? 0), 0,
-  );
 
   function handleSubmit() {
+    if (finalize.isPending) return;
     setError(null);
     finalize.mutate(
       { countId },
@@ -35,7 +33,7 @@ export function FinalizeOpnameDialog({ countId, items, onClose }: FinalizeOpname
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o && !finalize.isPending) onClose(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Finalize stock count</DialogTitle>
@@ -46,13 +44,12 @@ export function FinalizeOpnameDialog({ countId, items, onClose }: FinalizeOpname
 
         <div className="space-y-3 text-sm text-text-secondary">
           <p>
-            This emits <strong>{withVariance.length}</strong> stock-movement row(s) totalling{' '}
-            <strong className="font-mono">{totalVarianceAbs}</strong> unit(s) of variance.
-            The accounting trigger will post a balanced journal entry per movement.
+            <strong>{withVariance.length}</strong> product(s) have a variance.
+            Finalizing records the stock corrections and their applicable accounting entries.
           </p>
           <p>
-            This action is <strong>not reversible</strong>. Cancel from this screen
-            before clicking finalize if you need more changes.
+            This action is <strong>not reversible</strong>. To correct a counting
+            mistake, close this dialog, cancel the count and start a new count.
           </p>
 
           {error !== null && (
@@ -61,7 +58,7 @@ export function FinalizeOpnameDialog({ countId, items, onClose }: FinalizeOpname
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose} disabled={finalize.isPending}>Back to review</Button>
           <Button variant="ink" onClick={handleSubmit} disabled={finalize.isPending}>
             {finalize.isPending ? 'Finalizing…' : 'Finalize & post JE'}
           </Button>

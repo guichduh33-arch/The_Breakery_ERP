@@ -13,7 +13,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockMovementRpcResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
-import { STOCK_LEVELS_QUERY_KEY } from './useStockLevels.js';
+import { invalidateStockQueries } from '../invalidateStockQueries.js';
 
 export type AdjustStockErrorCode =
   | 'idempotency_conflict'
@@ -62,11 +62,6 @@ export function useAdjustStock() {
       if (data === null) throw new AdjustStockError('unknown', 'Empty RPC response');
       return data as unknown as StockMovementRpcResult;
     },
-    onSuccess: async (_data, vars) => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: STOCK_LEVELS_QUERY_KEY }),
-        qc.invalidateQueries({ queryKey: ['stock-movements', vars.productId] }),
-      ]);
-    },
+    onSuccess: () => invalidateStockQueries(qc),
   });
 }

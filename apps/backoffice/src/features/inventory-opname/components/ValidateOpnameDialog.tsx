@@ -19,17 +19,20 @@ export interface ValidateOpnameDialogProps {
   /** Nombre de lignes comptées — ce qui sera comparé à l'attendu. */
   countedItems: number;
   onClose:      () => void;
+  blocked?: boolean;
 }
 
 export function ValidateOpnameDialog({
   countId,
   countedItems,
   onClose,
+  blocked = false,
 }: ValidateOpnameDialogProps): JSX.Element {
   const validate = useValidateOpname();
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(): void {
+    if (blocked || validate.isPending) return;
     setError(null);
     validate.mutate(
       { countId },
@@ -73,7 +76,7 @@ export function ValidateOpnameDialog({
           <Button
             variant="ink"
             onClick={handleSubmit}
-            disabled={validate.isPending}
+            disabled={blocked || validate.isPending}
             data-testid="confirm-validate"
           >
             {validate.isPending ? 'Validating…' : 'Reveal & lock'}
