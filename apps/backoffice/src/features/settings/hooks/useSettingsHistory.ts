@@ -30,7 +30,7 @@ export interface SettingsHistoryEntry {
   changes:   SettingChange[]; // settings rows always carry exactly one
 }
 
-export const SETTINGS_HISTORY_QK = ['settings', 'history'] as const;
+export const SETTINGS_HISTORY_QK = ['settings', 'history', 'cursor-v4'] as const;
 const PAGE_SIZE = 50;
 
 interface RawAuditRow {
@@ -109,7 +109,7 @@ function useAuditFeed(action: string) {
     getNextPageParam: (lastPage) => {
       if (lastPage.length < PAGE_SIZE) return undefined; // exhausted
       const last = lastPage[lastPage.length - 1];
-      return last ? last.created_at + "|" + last.id : undefined;
+      return last ? `${last.created_at}|${last.id}` : undefined;
     },
   });
 }

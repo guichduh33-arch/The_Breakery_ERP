@@ -90,7 +90,10 @@ export function PeriodControl({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      {period.validationError !== undefined && (
+        <p role="alert" className="w-full text-xs text-danger">{period.validationError}</p>
+      )}
       <div ref={rootRef} className="relative">
         <button
           ref={triggerRef}

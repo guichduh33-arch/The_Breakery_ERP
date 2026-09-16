@@ -2,8 +2,8 @@
 //
 // Cursor-paginated wrapper over `get_audit_logs_v4`. Uses
 // useInfiniteQuery so the page calls `fetchNextPage()` on scroll. Each
-// page returns ≤ 50 rows by default ; cursor is the `created_at` of the
-// last row of the previous page, followed by its id (created_at|id).
+// page returns ≤ 50 rows by default ; cursor combines `created_at` and `id` of the
+// last row of the previous page.
 //
 // Audit Reports 2026-08-01 (R-10) — repointed v1 → v3. La page n'offrait
 // aucune borne temporelle : ni v1 ni v2 n'en acceptaient, il fallait dérouler
@@ -34,7 +34,7 @@ export interface AuditLogFilters {
   pageSize?:    number;
 }
 
-export const AUDIT_LOGS_QK = ['reports', 'audit-logs'] as const;
+export const AUDIT_LOGS_QK = ['reports', 'audit-logs', 'cursor-v4'] as const;
 const DEFAULT_PAGE_SIZE = 50;
 
 export function useAuditLogs(filters: AuditLogFilters = {}) {
@@ -81,7 +81,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
     getNextPageParam: (lastPage) => {
       if (lastPage.length < pageSize) return undefined; // exhausted
       const last = lastPage[lastPage.length - 1];
-      return last ? last.created_at + "|" + last.id : undefined;
+      return last ? `${last.created_at}|${last.id}` : undefined;
     },
   });
 }

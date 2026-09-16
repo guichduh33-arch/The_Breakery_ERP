@@ -28,7 +28,7 @@
 // socle, aucun repli legacy n'est nécessaire.
 
 import { useMemo, type JSX } from 'react';
-import type { CsvColumn } from '@breakery/domain';
+import { previousPeriod, type CsvColumn } from '@breakery/domain';
 import { formatNumber, formatPercent } from '@breakery/utils';
 import { PanelCard } from '@/components/PanelCard.js';
 import { KpiTile, KPI_NOTE, KPI_NOTE_HERO } from '@/components/kpi/KpiTile.js';
@@ -63,7 +63,7 @@ const sum = (rows: PurchaseBySupplierRow[], pick: (r: PurchaseBySupplierRow) => 
   rows.reduce((s, r) => s + pick(r), 0);
 
 /**
- * Délai moyen PONDÉRÉ PAR LES COMMANDES. Une moyenne de moyennes donnerait le
+ * Délai moyen pondéré par les réceptions mesurées. Une moyenne de moyennes donnerait le
  * même poids à un fournisseur livré une fois qu'à celui livré quarante fois.
  * `null` quand aucun fournisseur ne porte de délai — un zéro dirait « livré le
  * jour même », ce que personne n'a mesuré.
@@ -72,9 +72,9 @@ function weightedLeadDays(rows: PurchaseBySupplierRow[]): number | null {
   let acc = 0;
   let weight = 0;
   for (const r of rows) {
-    if (r.avg_lead_days === null || r.po_count <= 0) continue;
-    acc += r.avg_lead_days * r.po_count;
-    weight += r.po_count;
+    if (r.lead_sample_count <= 0) continue;
+    acc += r.lead_days_total;
+    weight += r.lead_sample_count;
   }
   return weight === 0 ? null : acc / weight;
 }
@@ -86,9 +86,11 @@ interface KpiDescriptor {
 
 export default function PurchaseBySupplierPage(): JSX.Element {
   const period = useReportPeriod();
-  const { start, end, compareRange } = period;
+  const { start, end } = period;
 
   const current = usePurchaseBySupplier({ start, end });
+  const served = current.data?.period ?? { start, end };
+  const compareRange = previousPeriod(served.start, served.end);
   const compare = usePurchaseBySupplier({ start: compareRange.start, end: compareRange.end });
 
   const data     = current.data;
@@ -158,7 +160,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
       value: leadDays === null ? '—' : `${formatNumber(leadDays, { digits: 1 })} d`,
       delta: leadDays !== null && prevLeadDays !== null ? leadDays - prevLeadDays : null,
       unit:  'pt', invert: true,
-      note:  'days, weighted by orders',
+      note:  'days, measured receipts',
     },
   ];
 
@@ -166,7 +168,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
     <>
       <PeriodControl period={period} showCompare />
       <ExportMenu
-        csv={{ rows, columns: csvColumns, filename: `purchase-by-supplier-${start}_${end}` }}
+        csv={{ rows, columns: csvColumns, filename: `purchase-by-supplier-${served.start}_${served.end}` }}
         disabled={rows.length === 0}
       />
     </>
@@ -175,7 +177,7 @@ export default function PurchaseBySupplierPage(): JSX.Element {
   return (
     <ReportShell
       title="Purchase by Supplier"
-      subtitle={`${periodLabel(start, end)} · purchase volume, value and lead time per supplier`}
+      subtitle={`${periodLabel(served.start, served.end)} · purchase volume, value and lead time per supplier`}
       breadcrumb={[{ label: 'Reports', to: '/backoffice/reports' }, { label: 'Inventory' }]}
       toolbar={toolbar}
       error={current.error}
@@ -212,6 +214,11 @@ export default function PurchaseBySupplierPage(): JSX.Element {
         </KpiBand>
       }
     >
+      {(served.start !== start || served.end !== end) && (
+        <p role="status" className="mb-3 text-sm text-text-secondary">
+          Report limited to {served.start} – {served.end}.
+        </p>
+      )}
       <BreakdownCard
         title="Spend by supplier"
         subtitle={top.note ?? 'Share of the purchased value over the period.'}

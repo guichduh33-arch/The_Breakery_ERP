@@ -88,6 +88,15 @@ describe('AuditPage — filtres + contexte déplié', () => {
     expect(screen.getByTestId('audit-row-2')).toBeInTheDocument();
   });
 
+  it('affiche une période récupérable pour une URL invalide', () => {
+    renderPage('/reports/audit?start=oops&end=2026-08-15');
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid report period');
+    expect(screen.getByTestId('audit-row-1')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('period-control'));
+    fireEvent.click(screen.getByTestId('period-preset-today'));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('borne la requête sur la période du socle (start / end)', () => {
     renderPage();
     const args = mockUseAuditLogs.mock.calls[0]?.[0] as { dateStart: string; dateEnd: string };
