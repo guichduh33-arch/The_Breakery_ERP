@@ -13,6 +13,7 @@ import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useRestoreTabletMenuCache, useTabletMenuCacheWriter } from '@/features/tablet/hooks/useTabletMenuCache';
 import { useTabletOrderStatusListener } from '@/features/tablet/hooks/useTabletOrderStatusListener';
+import { useStationMap } from '@/features/cart/hooks/useStationMap';
 
 function TabletAccessDenied(): JSX.Element {
   useEffect(() => {
@@ -28,6 +29,8 @@ function TabletAccessDenied(): JSX.Element {
 export default function TabletLayout(): JSX.Element {
   useRestoreTabletMenuCache();
   useTabletMenuCacheWriter();
+  // Charger les destinations avant la coupure, comme le catalogue.
+  useStationMap();
   useTabletOrderStatusListener();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);

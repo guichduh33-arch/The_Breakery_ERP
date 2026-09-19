@@ -24,7 +24,7 @@
 
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Category, Product, RestaurantTable } from '@breakery/domain';
+import type { Category, Product, RestaurantTable, DispatchStation } from '@breakery/domain';
 
 const STORAGE_KEY = 'tablet-menu-cache-v1';
 const MAX_AGE_MS  = 24 * 60 * 60 * 1000; // 24h
@@ -39,6 +39,7 @@ interface MenuSnapshot {
   categories:  Category[];
   products:    Product[];
   tables?:     RestaurantTable[];
+  stationMap?: Record<string, DispatchStation[]>;
 }
 
 function readSnapshot(): MenuSnapshot | null {
@@ -65,6 +66,7 @@ function writeSnapshot(snap: Omit<MenuSnapshot, 'version' | 'cachedAt'>): void {
       categories: snap.categories,
       products:   snap.products,
       tables:     snap.tables ?? [],
+      ...(snap.stationMap !== undefined ? { stationMap: snap.stationMap } : {}),
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
@@ -114,6 +116,9 @@ export function useRestoreTabletMenuCache(): void {
         qc.setQueryData([key], rows, { updatedAt: new Date(snapshot.cachedAt).getTime() });
       }
     }
+    if (snapshot.stationMap && qc.getQueryData(['station-map']) === undefined) {
+      qc.setQueryData(['station-map'], snapshot.stationMap, { updatedAt: new Date(snapshot.cachedAt).getTime() });
+    }
   }, [qc]);
 }
 
@@ -137,7 +142,9 @@ export function useTabletMenuCacheWriter(): void {
         // du cache, et le sélecteur de table redeviendrait vide hors ligne.
         const tables =
           qc.getQueryData<RestaurantTable[]>(['restaurant_tables']) ?? readSnapshot()?.tables ?? [];
-        writeSnapshot({ categories, products, tables });
+        const stationMap = qc.getQueryData<Record<string, DispatchStation[]>>(['station-map'])
+          ?? readSnapshot()?.stationMap;
+        writeSnapshot({ categories, products, tables, ...(stationMap !== undefined ? { stationMap } : {}) });
       }
     }
 
@@ -149,7 +156,7 @@ export function useTabletMenuCacheWriter(): void {
       const key: unknown = event.query.queryKey;
       if (
         Array.isArray(key) &&
-        (key[0] === 'products' || key[0] === 'categories' || key[0] === 'restaurant_tables')
+        (key[0] === 'products' || key[0] === 'categories' || key[0] === 'restaurant_tables' || key[0] === 'station-map')
       ) {
         maybePersist();
       }
