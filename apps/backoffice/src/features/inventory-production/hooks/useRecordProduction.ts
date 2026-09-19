@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordProduction.ts
 //
-// Calls `record_production_v5` atomic RPC. Server emits 1 + N stock_movements
+// Calls `record_production_v6` atomic RPC. Server emits 1 + N stock_movements
 // + N+1 journal_entries via the tr_20_je_emit trigger.
 //
 // ADR-008 D2 — le coût des ratés ne dort plus dans la valeur du stock : seule la
@@ -175,7 +175,7 @@ export function useRecordProduction() {
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v5', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v6', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;

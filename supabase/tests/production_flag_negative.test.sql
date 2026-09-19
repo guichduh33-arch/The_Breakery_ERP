@@ -46,7 +46,7 @@ BEGIN
 
   -- 1) sans forçage + flour short (10 < 100) → bloqué malgré le réglage global
   BEGIN
-    PERFORM record_production_v5(p_product_id:=v_bread, p_quantity_produced:=1, p_section_id:=v_sec);
+    PERFORM record_production_v6(p_product_id:=v_bread, p_quantity_produced:=1, p_section_id:=v_sec);
     v_blocked := false;
   EXCEPTION WHEN OTHERS THEN v_blocked := (SQLSTATE='P0002');
   END;
@@ -56,7 +56,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000004','role','authenticated')::text, true);
   BEGIN
-    PERFORM record_production_v5(p_product_id:=v_bread, p_quantity_produced:=1,
+    PERFORM record_production_v6(p_product_id:=v_bread, p_quantity_produced:=1,
                                  p_section_id:=v_sec, p_force_negative:=true);
     v_denied := false;
   EXCEPTION WHEN OTHERS THEN v_denied := (SQLSTATE='P0003');
@@ -66,7 +66,7 @@ BEGIN
   -- 3) forçage avec la permission (SUPER_ADMIN) → flour 10-100 = -90, bread 0+1 = 1
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);
-  PERFORM record_production_v5(p_product_id:=v_bread, p_quantity_produced:=1,
+  PERFORM record_production_v6(p_product_id:=v_bread, p_quantity_produced:=1,
                                p_section_id:=v_sec, p_force_negative:=true);
   INSERT INTO _r VALUES ('flour', (SELECT current_stock FROM products WHERE id=v_flour));
   INSERT INTO _r VALUES ('bread', (SELECT current_stock FROM products WHERE id=v_bread));

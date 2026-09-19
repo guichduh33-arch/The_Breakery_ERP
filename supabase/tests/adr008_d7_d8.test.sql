@@ -121,7 +121,7 @@ BEGIN
 
   -- 10 produits, 2 ratés : la charge de raté ADR-008 D2 est émise, donc le
   -- revert doit aussi la défaire.
-  v_res := record_production_v5(
+  v_res := record_production_v6(
     p_product_id := v_finA, p_quantity_produced := 10, p_section_id := v_section,
     p_quantity_waste := 2, p_waste_reason := 'mis_baked');
   v_pid := (v_res->>'production_id')::uuid;
@@ -194,7 +194,7 @@ DECLARE
   v_hint    TEXT := '';
   v_detail  TEXT := '';
 BEGIN
-  v_res := record_production_v5(
+  v_res := record_production_v6(
     p_product_id := v_finB, p_quantity_produced := 10, p_section_id := v_section);
   v_pid := (v_res->>'production_id')::uuid;
   PERFORM set_config('breakery.pid_consumed', v_pid::text, false);
@@ -245,12 +245,12 @@ DECLARE
   v_pid     UUID;
   v_errmsg  TEXT := 'REVERT ACCEPTE';
 BEGIN
-  v_res := record_production_v5(
+  v_res := record_production_v6(
     p_product_id := v_finC, p_quantity_produced := 10, p_section_id := v_section);
   v_pid := (v_res->>'production_id')::uuid;
 
   -- Deuxième fournée du même produit : c'est une entrée, pas une sortie.
-  PERFORM record_production_v5(
+  PERFORM record_production_v6(
     p_product_id := v_finC, p_quantity_produced := 7, p_section_id := v_section);
 
   BEGIN

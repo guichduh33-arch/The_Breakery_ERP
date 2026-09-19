@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordBatchProduction.ts
 //
-// Session 15 / Phase 4.A — Wraps `record_batch_production_v7` atomic RPC.
+// Session 15 / Phase 4.A — Wraps `record_batch_production_v8` atomic RPC.
 //
 // ADR-008 D2 — la part ratée de chaque ligne est reclassée en charge par la RPC
 // unitaire ; le montant remonte dans `waste_expense` de chaque enregistrement.
@@ -175,7 +175,7 @@ export function useRecordBatchProduction() {
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v7', {
+      const { data, error } = await supabase.rpc('record_batch_production_v8', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });

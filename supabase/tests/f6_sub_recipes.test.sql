@@ -508,7 +508,7 @@ BEGIN
   SELECT id INTO v_expected_version FROM recipe_versions
     WHERE product_id = v_fin ORDER BY version_number DESC LIMIT 1;
 
-  v_result := record_production_v5(
+  v_result := record_production_v6(
     p_product_id := v_fin,
     p_quantity_produced := 10,
     p_section_id := v_section,
@@ -530,7 +530,7 @@ BEGIN
 END $t14_seed$;
 
 SELECT ok(current_setting('breakery.t14_pass')::boolean,
-  'T14: record_production_v5 stores recipe_version_id = latest recipe_versions row');
+  'T14: record_production_v6 stores recipe_version_id = latest recipe_versions row');
 
 -- Flush temp tables before next record_production_v5 invocation (see header note).
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
@@ -562,7 +562,7 @@ BEGIN
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
     VALUES (v_fin, v_int, 1, 'pcs', TRUE);
 
-  v_result := record_production_v5(
+  v_result := record_production_v6(
     p_product_id := v_fin, p_quantity_produced := 5,
     p_section_id := v_section, p_batch_number := 'T15',
     p_quantity_waste := 0, p_notes := NULL,
@@ -606,7 +606,7 @@ DECLARE
 BEGIN
   UPDATE products SET current_stock = 100 WHERE id = v_int;
 
-  v_result := record_production_v5(
+  v_result := record_production_v6(
     p_product_id := v_fin, p_quantity_produced := 3,
     p_section_id := v_section, p_batch_number := 'T16',
     p_quantity_waste := 0, p_notes := NULL,
@@ -688,7 +688,7 @@ BEGIN
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
     VALUES (v_fin, v_iy, 1, 'pcs', TRUE);
 
-  v_result := record_production_v5(
+  v_result := record_production_v6(
     p_product_id := v_fin, p_quantity_produced := 4,
     p_section_id := v_section, p_batch_number := 'T18',
     p_quantity_waste := 0, p_notes := NULL,
@@ -729,7 +729,7 @@ BEGIN
   UPDATE products SET current_stock = 1000
     WHERE sku IN ('S15-T18-LEAF', 'S15-T18-IX', 'S15-T18-IY');
 
-  v_r1 := record_production_v5(
+  v_r1 := record_production_v6(
     p_product_id := v_fin, p_quantity_produced := 2,
     p_section_id := v_section, p_batch_number := 'T19',
     p_quantity_waste := 0, p_notes := NULL,
@@ -741,7 +741,7 @@ BEGIN
 
   -- Replay : the function returns the existing row early (idempotency branch)
   -- BEFORE it tries to CREATE TEMP TABLE, so no DROP needed here.
-  v_r2 := record_production_v5(
+  v_r2 := record_production_v6(
     p_product_id := v_fin, p_quantity_produced := 2,
     p_section_id := v_section, p_batch_number := 'T19',
     p_quantity_waste := 0, p_notes := NULL,
@@ -759,7 +759,7 @@ BEGIN
 END $t19$;
 
 SELECT ok(current_setting('breakery.t19_pass')::boolean,
-  'T19: record_production_v5 idempotency replay -> same production_id, no extra movements');
+  'T19: record_production_v6 idempotency replay -> same production_id, no extra movements');
 
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
 DROP TABLE IF EXISTS pg_temp._leaf_consumption;
@@ -818,7 +818,7 @@ BEGIN
   END LOOP;
 
   BEGIN
-    v_result := record_production_v5(
+    v_result := record_production_v6(
       p_product_id := ids[1], p_quantity_produced := 1,
       p_section_id := v_section, p_batch_number := 'T20',
       p_quantity_waste := 0, p_notes := NULL,
@@ -851,7 +851,7 @@ END $t20_seed$;
 
 SELECT ok(
   current_setting('breakery.t20_pass')::boolean,
-  'T20: 6-edge chain — record_production_v5 either raises recipe_depth_exceeded OR bounds cascade at depth 5 (1 movement, no leaf consumption). See D-S15-1A-DEPTH-01.'
+  'T20: 6-edge chain — record_production_v6 either raises recipe_depth_exceeded OR bounds cascade at depth 5 (1 movement, no leaf consumption). See D-S15-1A-DEPTH-01.'
 );
 
 SELECT * FROM finish();

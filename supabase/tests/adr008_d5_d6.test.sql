@@ -180,7 +180,7 @@ BEGIN
   SELECT COUNT(*) INTO v_prod_before FROM production_records;
 
   BEGIN
-    PERFORM record_production_v5(
+    PERFORM record_production_v6(
       p_product_id := v_nd, p_quantity_produced := 3,
       p_section_id := v_section, p_batch_number := 'ADR008-C1'
     );
@@ -198,7 +198,7 @@ BEGIN
 END $chk1$;
 
 SELECT is(current_setting('breakery.c1_err'), 'production_requires_deduct_stock|P0001',
-  'T1: ADR-008 D6 — record_production_v5 on a deduct_stock = false product raises production_requires_deduct_stock (P0001)');
+  'T1: ADR-008 D6 — record_production_v6 on a deduct_stock = false product raises production_requires_deduct_stock (P0001)');
 SELECT is(current_setting('breakery.c1_mv_delta')::int, 0,
   'T2: the refused production created zero stock_movements rows');
 SELECT is(current_setting('breakery.c1_prod_delta')::int, 0,
@@ -218,7 +218,7 @@ DECLARE
   v_detail  TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_batch_production_v7(
+    PERFORM record_batch_production_v8(
       jsonb_build_object('section_id', v_section::text, 'notes', 'ADR008-C2'),
       jsonb_build_array(
         jsonb_build_object('product_id', v_ok::text, 'quantity_produced', 1),
@@ -238,7 +238,7 @@ BEGIN
 END $chk2$;
 
 SELECT is(current_setting('breakery.c2_err'), 'production_requires_deduct_stock|P0001',
-  'T4: ADR-008 D6 — record_batch_production_v7 refuses the batch as soon as one item is deduct_stock = false');
+  'T4: ADR-008 D6 — record_batch_production_v8 refuses the batch as soon as one item is deduct_stock = false');
 SELECT is(current_setting('breakery.c2_detail_ok'), '1',
   'T5: the batch DETAIL names the faulty item verbatim (''Item #2 product=<uuid of ADR008-ND>'')');
 
@@ -258,7 +258,7 @@ DECLARE
   v_out_on_d5s INT := -1;
 BEGIN
   BEGIN
-    v_result := record_production_v5(
+    v_result := record_production_v6(
       p_product_id := v_d1, p_quantity_produced := 2,
       p_section_id := v_section, p_batch_number := 'ADR008-C3',
       p_recurse_subrecipes := TRUE
@@ -303,7 +303,7 @@ DECLARE
   v_out_on_mat INT := -1;
 BEGIN
   BEGIN
-    v_result := record_production_v5(
+    v_result := record_production_v6(
       p_product_id := v_e1, p_quantity_produced := 2,
       p_section_id := v_section, p_batch_number := 'ADR008-C4',
       p_recurse_subrecipes := TRUE
@@ -337,14 +337,14 @@ SELECT is(current_setting('breakery.c4_out_on_mat')::int, 1,
 -- ===========================================================================
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.record_production_v5(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)',
+    'public.record_production_v6(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)',
     'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.record_batch_production_v7(jsonb, jsonb)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.record_batch_production_v8(jsonb, jsonb)', 'EXECUTE')
   AND has_function_privilege('authenticated',
-    'public.record_production_v5(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)',
+    'public.record_production_v6(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)',
     'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.record_batch_production_v7(jsonb, jsonb)', 'EXECUTE'),
-  'T10: anon has EXECUTE revoked and authenticated retains it, on both record_production_v5 and record_batch_production_v7'
+  AND has_function_privilege('authenticated', 'public.record_batch_production_v8(jsonb, jsonb)', 'EXECUTE'),
+  'T10: anon has EXECUTE revoked and authenticated retains it, on both record_production_v6 and record_batch_production_v8'
 );
 
 SELECT ok(
