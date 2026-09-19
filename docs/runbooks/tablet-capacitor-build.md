@@ -9,8 +9,8 @@
 
 | Outil | Version | Où |
 |---|---|---|
-| JDK | 21 (Temurin) | `C:\Program Files\Eclipse Adoptium\jdk-21*` |
-| SDK Android | platform-tools + platforms;android-35 + build-tools;35.0.0 | `%LOCALAPPDATA%\Android\Sdk` |
+| JDK | 21 | Définir `JAVA_HOME` vers le JDK 21 installé ; fabrication du 19 septembre 2026 vérifiée avec Microsoft JDK 21.0.6.7 |
+| SDK Android | platform-tools + platforms;android-36 + build-tools;36.0.0 | `%LOCALAPPDATA%\Android\Sdk` ; vérifier `apps/pos/android/variables.gradle` lors d'une évolution |
 | Node + pnpm | ceux du dépôt (`packageManager` fait foi) | — |
 
 Le SDK s'installe sans Android Studio, par les command-line tools
@@ -30,7 +30,8 @@ cd apps/pos
 npx cap sync android
 
 # 3. Fabriquer l'APK.
-$env:JAVA_HOME = (Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory -Filter "jdk-21*")[0].FullName
+# Exemple du poste vérifié le 19 septembre 2026 ; adapter au JDK installé.
+$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.6.7-hotspot"
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 cd android
 .\gradlew.bat assembleDebug
@@ -40,11 +41,17 @@ Sortie : `apps/pos/android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Installer sur la tablette
 
+Avant diffusion, augmenter `versionCode` et `versionName` dans
+`apps/pos/android/app/build.gradle`. Conserver `com.thebreakery.pos` et le
+certificat déjà installé. Comparer les empreintes de certificat de l'ancienne
+et de la nouvelle APK avec `apksigner verify --print-certs`, puis calculer
+l'empreinte du fichier avec `Get-FileHash -Algorithm SHA256`.
+
 Activer le débogage USB sur la tablette (Options développeur), la brancher,
-puis :
+identifier son numéro avec `adb devices`, puis cibler ce numéro :
 
 ```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r apps/pos/android/app/build/outputs/apk/debug/app-debug.apk
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" -s NUMERO_APPAREIL install -r apps/pos/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Sans câble : copier l'APK sur la tablette (lien de partage, clé USB) et
@@ -52,6 +59,16 @@ l'ouvrir — Android demandera d'autoriser l'installation d'origine inconnue.
 L'application s'appelle **The Breakery POS** (`com.thebreakery.pos`,
 arbitrage du 2026-08-23 : identité du socle conservée) et démarre sur
 l'écran tablette de salle (`/tablet`).
+
+Ne pas désinstaller pour mettre à jour : une signature incompatible se corrige
+en retrouvant le certificat d'origine, pas en effaçant les données. Vérifier
+après installation les réglages du hub, l'identité appareil et les files en
+attente. Ressaisir le PIN si demandé, puis charger le catalogue en ligne avant
+le test hors ligne. La restauration de session après rechargement sans cloud
+reste bloquante au relevé du 19 septembre 2026.
+
+La livraison et les réserves de l'APK 1.2 sont consignées dans le
+[rapport du 19 septembre 2026](../audits/2026-09-19-audit-waiter-caisse.md).
 
 ## Les deux invariants à ne pas casser
 
@@ -68,8 +85,9 @@ l'écran tablette de salle (`/tablet`).
 
 ## Ce que ce runbook ne couvre pas (volontairement)
 
-- **APK signé de release** : la debug suffit pour l'installation manuelle en
-  boutique. La signature viendra si la distribution change.
+- **Signature de release** : les APK debug sont déjà signées. Toute transition
+  vers un certificat de release doit préserver la possibilité de mise à jour
+  des appareils existants ; ce runbook ne définit pas cette transition.
 - **Mode kiosque** : écarté de la v1 (arbitrage du 2026-08-23).
 - **Icône et écran de démarrage aux couleurs de la marque** : l'APK porte
   encore les visuels par défaut de Capacitor.

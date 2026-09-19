@@ -3,7 +3,7 @@
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Tablet
 > Ordering (`/tablet`) sert à faire au quotidien** pour The Breakery.
 >
-> **Révision** : 2026-08-01 · **Statut** : Livré
+> **Révision** : 2026-09-19 · **Statut** : parcours connecté vérifié sur Tab A8 ; validation hors ligne partielle
 > **ADR applicables** : ADR-010 (un item envoyé en cuisine ne se retire qu'avec
 > autorisation manager et déclaration de perte), ADR-015 (encaissement
 > hors-ligne), ADR-018 (un envoi refusé au rejeu part en quarantaine et ne
@@ -39,7 +39,7 @@ Le serveur **saisit** ; la cuisine **prépare** ; le caissier **encaisse**. Troi
 | Page | Job-to-be-done |
 |---|---|
 | **Prise de commande** (`/tablet/order`) | Composer une commande à la table, ou compléter celle d'une table déjà servie — plan de salle, sélection produits, envoi |
-| **Historique tablette** (`/tablet/orders`) | Voir les commandes envoyées depuis cette tablette + leur statut |
+| **Historique tablette** (`/tablet/orders`) | Voir les dernières commandes du serveur connecté et leur statut |
 
 Le tout est englobé par une coquille applicative qui gère l'authentification PIN, l'état de la liaison (cloud et hub boutique), et le suivi des commandes en cours.
 
@@ -181,7 +181,7 @@ Bénéfice métier : **la caisse maîtrise quand traiter une commande de salle**
 
 ## 9. Suivi des commandes
 
-La page historique liste les commandes envoyées depuis cette tablette : numéro, table, items, heure d'envoi et statut (en attente de caisse, payée, annulée).
+La page historique liste les commandes de salle du serveur connecté, indépendamment de l'appareil : numéro, table, items, heure d'envoi et statut (en attente de caisse, payée, annulée).
 
 L'onglet porte un badge qui ne compte que les commandes **encore en vol** — ni encaissées, ni closes, ni annulées. Un compteur qui grossit sans fin cesse d'être regardé ; celui-ci n'affiche que ce sur quoi le serveur peut encore agir.
 
@@ -236,6 +236,9 @@ En revanche, contrairement à ce que cette fiche a longtemps affirmé, la tablet
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
+| 🔴 | **Réconcilier le ticket cuisine local avec la commande cloud après rejeu** | Éviter une double préparation : le test du 19 septembre 2026 montre deux cartes KDS pour une seule commande en base. |
+| 🟠 | **Présenter correctement les commandes non encaissées dans le back-office** | Afficher un montant et une attribution serveur cohérents ; le test du 19 septembre 2026 montre une ligne à Rp35 000 mais un total nul et un serveur non affiché. |
+| 🟠 | **Définir la restauration de session sans cloud** | Permettre la reprise après rechargement pendant une coupure sans contourner l'authentification ; mécanisme à arbitrer séparément. |
 | 🟠 | **Notifier la salle quand un plat est prêt** | Le serveur reçoit « table 7 prête » sur sa tablette au lieu d'aller lire le KDS. |
 | 🟠 | **Compléter une commande en coupure** | Aujourd'hui l'ajout est en ligne seulement (§12) : une coupure force une seconde addition sur la table. |
 | 🟠 | **Transférer une commande de table** | Un groupe change de table en cours de service ; la bascule existe côté POS, pas depuis la salle. |
@@ -250,6 +253,27 @@ En revanche, contrairement à ce que cette fiche a longtemps affirmé, la tablet
 
 ---
 
-## 14. En une phrase
+## 14. État de preuve au 19 septembre 2026
+
+Le [rapport de test et suivi des corrections](../audits/2026-09-19-audit-waiter-caisse.md)
+conserve les preuves et les critères de clôture du backlog. Le parcours connecté
+sur Tab A8, caisse physique et back-office a été exécuté jusqu'au paiement,
+avec ajout après reprise et nouvelle tentative sans doublon après réponse perdue.
+Le KDS a été observé sur la caisse, pas sur un écran cuisine distinct.
+
+L'APK 1.2 corrige le routage hors ligne : le ticket atteint le KDS par le hub,
+puis rejoint la base une seule fois. La double carte KDS après rejeu et la
+restauration de session sans cloud restent des écarts ; les garanties métier
+ci-dessus restent des exigences, pas une déclaration de validation exhaustive.
+Le parcours complet CS30 et le redémarrage autonome de Windows restent à vérifier.
+
+Les mentions d'absence volontaire des combos et le backlog de notification de
+plat prêt restent à confronter aux intentions métier : le code comporte des
+parcours de configuration de combos et une écoute des changements cuisine.
+Cela ne justifie ni de supprimer ces objectifs, ni d'en déclarer tous les usages
+validés sur matériel. L'historique Ready a été observé ; la réception du toast
+n'a pas été capturée pendant ce test.
+
+## 15. En une phrase
 
 Le module Tablet Ordering est **l'extension salle du POS** de The Breakery : il transforme un serveur en noyau mobile de prise de commande en lui donnant une tablette PIN-authentifiée qui envoie une commande complète en quelques secondes — directement en cuisine, avec une table obligatoire, une confirmation adossée à une écriture réelle, et une continuité en coupure internet — puis qui laisse compléter la table au fil du service sans jamais fabriquer une seconde addition, sans toucher au cash, sans commande perdue, sans aller-retour au comptoir, pour que le service en salle gagne le tempo qu'il perd dans les boulangeries qui prennent encore les commandes au carnet papier.
