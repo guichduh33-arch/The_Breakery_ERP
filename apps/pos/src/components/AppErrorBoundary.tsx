@@ -11,7 +11,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, { faile
   }
   override render() {
     if (!this.state.failed) return this.props.children;
-    return <main className="theme-pos min-h-dvh bg-bg-base text-text-primary grid place-items-center p-6">
+    return <main className="theme-pos min-h-screen supports-[height:100dvh]:min-h-dvh bg-bg-base text-text-primary grid place-items-center p-6">
       <div className="max-w-md space-y-4" role="alert">
         <h1 className="text-2xl font-semibold">This screen could not be loaded</h1>
         <p className="text-text-secondary">Reload to recover your saved order. A payment awaiting confirmation will keep its original reference.</p>

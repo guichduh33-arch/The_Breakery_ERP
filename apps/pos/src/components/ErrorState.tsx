@@ -30,7 +30,7 @@ export function ErrorState({
       role="alert"
       className={
         fullScreen
-          ? 'h-[100dvh] grid place-items-center bg-bg-base p-8'
+          ? 'h-screen supports-[height:100dvh]:h-[100dvh] grid place-items-center bg-bg-base p-8'
           : 'grid place-items-center py-16 px-8'
       }
     >

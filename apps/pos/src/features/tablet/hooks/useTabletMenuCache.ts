@@ -98,6 +98,25 @@ export function useTabletMenuCacheRead(): TabletMenuCache {
   };
 }
 
+/** Restaure aussi la salle avant l'ouverture du menu, au démarrage hors ligne. */
+export function useRestoreTabletMenuCache(): void {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const snapshot = readSnapshot();
+    if (!snapshot) return;
+    const entries = [
+      ['products', snapshot.products],
+      ['categories', snapshot.categories],
+      ['restaurant_tables', snapshot.tables ?? []],
+    ] as const;
+    for (const [key, rows] of entries) {
+      if (qc.getQueryData([key]) === undefined && rows.length > 0) {
+        qc.setQueryData([key], rows, { updatedAt: new Date(snapshot.cachedAt).getTime() });
+      }
+    }
+  }, [qc]);
+}
+
 /**
  * Side-effect hook : watches the `['products']` and `['categories']` query
  * caches and persists the latest snapshot to localStorage. Mount once

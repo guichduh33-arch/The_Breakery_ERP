@@ -11,6 +11,8 @@ import { isInFlight } from '@breakery/domain';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
+import { useRestoreTabletMenuCache, useTabletMenuCacheWriter } from '@/features/tablet/hooks/useTabletMenuCache';
+import { useTabletOrderStatusListener } from '@/features/tablet/hooks/useTabletOrderStatusListener';
 
 function TabletAccessDenied(): JSX.Element {
   useEffect(() => {
@@ -24,6 +26,9 @@ function TabletAccessDenied(): JSX.Element {
 }
 
 export default function TabletLayout(): JSX.Element {
+  useRestoreTabletMenuCache();
+  useTabletMenuCacheWriter();
+  useTabletOrderStatusListener();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const permissions = useAuthStore((s) => s.permissions);
@@ -73,7 +78,7 @@ export default function TabletLayout(): JSX.Element {
   if (!canAccessTablet) return <TabletAccessDenied />;
 
   return (
-    <div className="h-[100dvh] overflow-hidden flex flex-col bg-bg-base">
+    <div className="h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden flex flex-col bg-bg-base">
       <header className="h-14 px-4 border-b border-border-subtle flex items-center justify-between gap-3 bg-bg-elevated shrink-0">
         {/* Critique 2026-08-24 (a11y) — le h1 nommait la serveuse : le titre le
             plus fort de l'écran désignait l'élément le moins actionnable, et

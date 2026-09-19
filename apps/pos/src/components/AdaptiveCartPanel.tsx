@@ -21,7 +21,7 @@ export function AdaptiveCartPanel({ children, count, total, summaryAction }: {
         {summaryAction && <div className="shrink-0">{summaryAction}</div>}
       </div>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="theme-pos h-[85dvh] gap-0 rounded-t-xl pb-safe-bottom">
+        <SheetContent side="bottom" className="theme-pos h-[85vh] supports-[height:100dvh]:h-[85dvh] gap-0 rounded-t-xl pb-safe-bottom">
           <div className="shrink-0 p-4 pr-14 border-b border-border-subtle">
             <SheetTitle>Your order</SheetTitle>
             <SheetDescription>{count} items — review before continuing.</SheetDescription>

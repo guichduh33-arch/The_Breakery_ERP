@@ -174,7 +174,9 @@ function idbTx<T>(
       new Promise<T>((resolve, reject) => {
         const tx = db.transaction(storeName, mode);
         const req = fn(tx.objectStore(storeName));
-        req.onsuccess = () => resolve(req.result);
+        tx.oncomplete = () => resolve(req.result);
+        tx.onabort = () => reject(tx.error ?? new Error('indexeddb_tx_aborted'));
+        tx.onerror = () => reject(tx.error ?? new Error('indexeddb_tx_failed'));
         req.onerror = () => reject(req.error ?? new Error('indexeddb_tx_failed'));
       }),
   );
@@ -198,6 +200,7 @@ function lsWrite(records: OfflineIntent[]): void {
     localStorage.setItem(LS_KEY, JSON.stringify(records));
   } catch (err) {
     logger.warn('offline_outbox.ls_write_failed', { err: String(err) });
+    throw err;
   }
 }
 

@@ -2,12 +2,20 @@
 // Spec 006x lot 4 — outbox durable des intentions offline. jsdom n'a pas
 // d'IndexedDB : c'est le backend localStorage (celui que la CI exerce) qui
 // est testé, même contrat async que la prod.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   enqueueIntent, getPendingIntents, removeIntents, removeIntentsByRoot,
   pendingIntentCount, nextIntentSeq,
   type OfflineFireIntent, type OfflineCashPaymentIntent, type OfflinePaymentIntent,
 } from '../offlineOutbox';
+
+it('refuse de confirmer une écriture locale lorsque le stockage est plein', async () => {
+  const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new DOMException('Full', 'QuotaExceededError');
+  });
+  try { await expect(enqueueIntent(fireIntent())).rejects.toThrow('Full'); }
+  finally { spy.mockRestore(); }
+});
 
 function fireIntent(overrides: Partial<OfflineFireIntent> = {}): OfflineFireIntent {
   return {

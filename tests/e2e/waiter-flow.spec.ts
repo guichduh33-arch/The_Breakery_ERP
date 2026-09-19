@@ -97,7 +97,8 @@ test.describe('Waiter tablet: the floor surface reaches a usable state', () => {
     }
 
     // ── La coquille ──────────────────────────────────────────────────────
-    await expect(page.getByTestId('tablet-order-page')).toBeVisible({ timeout: 30_000 });
+    // Panier vide : la prise de commande commence désormais par le plan.
+    await expect(page.getByTestId('tablet-floor-plan')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('tablet-active-table')).toHaveText(/no table/i);
 
     // ── L'état de connexion (lot D) ──────────────────────────────────────
@@ -113,6 +114,8 @@ test.describe('Waiter tablet: the floor surface reaches a usable state', () => {
     await expect(page.getByTestId('tablet-offline-banner')).toHaveCount(0);
 
     // ── Le plan de salle ─────────────────────────────────────────────────
+    await page.getByRole('button', { name: 'Back to menu' }).click();
+    await expect(page.getByTestId('tablet-order-page')).toBeVisible();
     await page.getByTestId('tablet-order-pick-table').click();
     await expect(page.getByTestId('tablet-floor-plan')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('tablet-floor-plan-canvas')).toBeVisible();
@@ -133,7 +136,7 @@ test.describe('Waiter tablet: the floor surface reaches a usable state', () => {
     // « My Orders » se rend, vide ou non : les deux sont un état valide, et
     // c'est bien ce qu'on veut savoir — l'écran ne blanchit pas.
     await expect(
-      page.getByRole('heading', { name: /my orders/i }).or(page.getByText(/no orders yet/i)),
+      page.getByRole('heading', { name: /my orders/i }),
     ).toBeVisible({ timeout: 30_000 });
 
     await expect(page.getByRole('link', { name: /order/i }).first()).toBeVisible();

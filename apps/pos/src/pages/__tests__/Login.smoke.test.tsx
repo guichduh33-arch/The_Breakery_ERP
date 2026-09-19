@@ -9,12 +9,14 @@
 // the PIN copy now reading "6-digit" (was "4-6 digit").
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type * as ReactRouterDom from 'react-router-dom';
 import LoginPage from '../Login';
 
 const navigateMock = vi.fn();
+const nativeMock = vi.hoisted(() => vi.fn(() => false));
+vi.mock('@/lib/nativeShell', () => ({ isNativeShell: nativeMock }));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => navigateMock };
@@ -76,6 +78,7 @@ function renderPage() {
 describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
   beforeEach(() => {
     localStorage.clear();
+    nativeMock.mockReturnValue(false);
     navigateMock.mockReset();
     loginMock.mockReset();
     loginMock.mockResolvedValue(undefined);
@@ -151,5 +154,13 @@ describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
       fireEvent.click(screen.getByRole('button', { name: d }));
     }
     expect(loginMock).toHaveBeenCalledWith('u1', '123456');
+  });
+
+  it('ouvre la salle après connexion dans l’APK, même avec un compte habilité non waiter', async () => {
+    nativeMock.mockReturnValue(true);
+    renderPage();
+    fireEvent.click(screen.getByText('Mamat (Owner)'));
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/tablet/order', { replace: true }));
   });
 });

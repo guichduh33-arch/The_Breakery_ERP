@@ -2,28 +2,12 @@
 //
 // Session 13 / Phase 4.D — Tablet polish.
 //
-// Composes the category sidebar + product grid with the offline cache
-// seam grafted in. Renders to fill its parent's flexbox; the offline
-// banner is rendered by the parent page so it can sit above the whole
-// shell (including the header toolbar).
-//
-// Strategy:
-//   - Mount the cache writer so any successful fetch of `['products']` /
-//     `['categories']` is persisted to localStorage.
-//   - On first render, if a cached snapshot exists and the live queries
-//     are not yet populated, seed React-Query with the cached arrays so
-//     the grid renders immediately even if the network is dead. The live
-//     query keeps trying in the background and will overwrite the seed.
-//
-// Visual behaviour is identical to the cashier flow. The seeding logic is
-// invisible to users.
+// Compose les catégories et la grille. Le cache hors ligne et le bandeau
+// de connexion sont portés par le layout, également monté sur le plan de salle.
 
-import { useEffect, type JSX, type ReactNode } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import type { Category, Product, RestaurantTable } from '@breakery/domain';
+import { type JSX, type ReactNode } from 'react';
 import { TabletCategorySidebar } from './TabletCategorySidebar';
 import { TabletProductGrid } from './TabletProductGrid';
-import { useTabletMenuCacheRead, useTabletMenuCacheWriter } from '../hooks/useTabletMenuCache';
 
 export interface TabletMenuViewProps {
   selectedSlug: string | null;
@@ -37,27 +21,8 @@ export interface TabletMenuViewProps {
 }
 
 export function TabletMenuView({ selectedSlug, onSelectCategory, toolbar }: TabletMenuViewProps): JSX.Element {
-  useTabletMenuCacheWriter();
-  const qc = useQueryClient();
-  const cache = useTabletMenuCacheRead();
-
-  useEffect(() => {
-    if (cache.cachedAt === null) return;
-    const existingProducts   = qc.getQueryData<Product[]>(['products']);
-    const existingCategories = qc.getQueryData<Category[]>(['categories']);
-    const existingTables     = qc.getQueryData<RestaurantTable[]>(['restaurant_tables']);
-    if (existingProducts === undefined && cache.cachedProducts.length > 0) {
-      qc.setQueryData<Product[]>(['products'], cache.cachedProducts);
-    }
-    if (existingCategories === undefined && cache.cachedCategories.length > 0) {
-      qc.setQueryData<Category[]>(['categories'], cache.cachedCategories);
-    }
-    // La salle est semée comme le menu : sans elle, le sélecteur de table est
-    // vide hors ligne et aucune commande dine-in n'est possible.
-    if (existingTables === undefined && cache.cachedTables.length > 0) {
-      qc.setQueryData<RestaurantTable[]>(['restaurant_tables'], cache.cachedTables);
-    }
-  }, [qc, cache.cachedAt, cache.cachedProducts, cache.cachedCategories, cache.cachedTables]);
+  // Le layout restaure et maintient le cache, y compris quand le plan de salle
+  // est affiché et que ce menu n'est pas monté.
 
   return (
     <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden max-[1099px]:flex-col">

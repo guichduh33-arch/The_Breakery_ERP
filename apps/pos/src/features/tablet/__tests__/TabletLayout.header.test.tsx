@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
@@ -16,7 +17,11 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: vi.fn(), rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown },
+  supabase: {
+    from: vi.fn(), rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown,
+    channel: vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() })),
+    removeChannel: vi.fn(),
+  },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -32,7 +37,7 @@ vi.mock('@/features/tablet/hooks/useMyTabletOrders', () => ({
 }));
 
 function wrap(node: ReactNode): ReactNode {
-  return <MemoryRouter initialEntries={['/tablet/order']}>{node}</MemoryRouter>;
+  return <QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/tablet/order']}>{node}</MemoryRouter></QueryClientProvider>;
 }
 
 describe('TabletLayout header (LOT 6)', () => {

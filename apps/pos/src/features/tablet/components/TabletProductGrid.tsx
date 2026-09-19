@@ -39,6 +39,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   const addItem = useTabletCartStore((s) => s.addItem);
   const addCombo = useTabletCartStore((s) => s.addCombo);
   const cartItems = useTabletCartStore((s) => s.items);
+  const pendingSend = useTabletCartStore((s) => s.pendingSend);
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
@@ -227,7 +228,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
               const lots = lotsByProduct?.get(p.id);
               const isLotTracked = lots !== undefined && lots.length > 0;
               const allExpired = isLotTracked && allLotsExpiredOrConsumed(lots, p.id);
-              const disabled = soldOut || allExpired;
+              const disabled = soldOut || allExpired || pendingSend !== null;
               const overlayLabel = soldOut ? 'Sold out' : allExpired ? 'Expired' : null;
               const lowStockLabel =
                 !disabled && p.current_stock > 0 && p.current_stock <= 3

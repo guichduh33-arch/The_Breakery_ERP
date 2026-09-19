@@ -93,7 +93,6 @@ export function TabletOrderPage({
   const setTableNumber = useTabletCartStore((s) => s.setTableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
   const setOrderType = useTabletCartStore((s) => s.setOrderType);
-  const notes = useTabletCartStore((s) => s.notes);
   const clearCart = useTabletCartStore((s) => s.clearCart);
   const appendToOrderId = useTabletCartStore((s) => s.appendToOrderId);
   const appendToOrderNumber = useTabletCartStore((s) => s.appendToOrderNumber);
@@ -118,7 +117,8 @@ export function TabletOrderPage({
 
   const connection = useTabletConnectionState();
   const mutation = useCreateTabletOrder();
-  const clientUuidRef = useRef<string>(crypto.randomUUID());
+  const sendingRef = useRef(false);
+  const pendingSend = useTabletCartStore((s) => s.pendingSend);
 
   // Critique 2026-08-25 (P1) — un envoi HORS-LIGNE ne laissait qu'un toast de 4 s ;
   // la preuve d'envoi disparaissait juste au moment où la serveuse doute le plus
@@ -130,6 +130,7 @@ export function TabletOrderPage({
     localNumber: string;
     tableNumber: string | null;
     orderType: 'dine_in' | 'take_out';
+    kitchenPublished: boolean;
   } | null>(null);
   useEffect(() => {
     if (items.length > 0) setOfflineSent(null);
@@ -157,6 +158,8 @@ export function TabletOrderPage({
       ? 'Cannot send — no network'
       : tableMissing
         ? 'Select a table first'
+        : pendingSend
+          ? 'Retry confirmation'
         : isAppendMode
           ? 'Add to order'
           : 'Send to Kitchen';
@@ -184,7 +187,8 @@ export function TabletOrderPage({
   );
 
   const handleSend = useCallback(async () => {
-    if (!userId || isEmpty) return;
+    if (!userId || isEmpty || sendingRef.current || !connection.canSendOrders) return;
+    const recovering = useTabletCartStore.getState().pendingSend !== null;
     // Un nouvel envoi remplace la confirmation hors-ligne précédente.
     setOfflineSent(null);
     // S72 audit P1: a dine-in order needs a table (owner rule 2026-07-07). The
@@ -198,30 +202,29 @@ export function TabletOrderPage({
       return;
     }
     try {
+      sendingRef.current = true;
       let justSentOrderId: string | null = null;
       let offlineLocalNumber: string | null = null;
+      let kitchenPublished = true;
       if (onSendOverride) {
         await onSendOverride(userId);
       } else {
-        const result = await mutation.mutateAsync({
-          cart: { items, tableNumber, orderType, notes },
-          waiterId: userId,
-          clientUuid: clientUuidRef.current,
-          ...(appendToOrderId !== null ? { appendToOrderId } : {}),
-        });
+        const attempt = useTabletCartStore.getState().beginSend(userId, connection.state === 'online');
+        const result = await mutation.mutateAsync({ ...attempt, forceOnline: attempt.online });
         justSentOrderId = result.orderId;
         offlineLocalNumber = result.localNumber;
+        kitchenPublished = result.kitchenPublished !== false;
       }
       const appendedTo = appendToOrderNumber;
       clearCart();
-      clientUuidRef.current = crypto.randomUUID();
       // Spec 006x lot 4 — envoi parti par le bus LAN : pas de commande cloud
       // à afficher dans la liste, on reste sur la prise de commande.
       if (offlineLocalNumber !== null) {
-        toast.success(`Order ${offlineLocalNumber} sent to kitchen (offline)`);
+        if (kitchenPublished) toast.success(`Order ${offlineLocalNumber} sent to kitchen (offline)`);
+        else toast.error(`Order ${offlineLocalNumber} saved on this device — kitchen delivery unconfirmed. Check with the cashier; do not re-enter it.`);
         // Le toast disparaît en 4 s ; la bande, elle, reste comme preuve d'envoi
         // jusqu'à la commande suivante — pas de doute, donc pas de doublon.
-        setOfflineSent({ localNumber: offlineLocalNumber, tableNumber, orderType });
+        setOfflineSent({ localNumber: offlineLocalNumber, tableNumber, orderType, kitchenPublished });
         return;
       }
       if (appendedTo !== null) {
@@ -239,6 +242,15 @@ export function TabletOrderPage({
       // réseau (abort/timeout du RPC compris) parlent en clair ; le reste est
       // préfixé d'une phrase lisible, le détail reste pour le diagnostic.
       const isNetworkError = /abort|timed?\s?out|failed to fetch|network/i.test(raw);
+      const details = err instanceof Error && 'details' in err ? err.details as { code?: string } : undefined;
+      // Un refus SQL explicite garantit le rollback. Une réponse réseau inconnue
+      // conserve au contraire le contenu et la clé de la tentative.
+      // Un refus au REJEU ne prouve pas que l'appel précédent a échoué :
+      // par exemple le premier commit est passé, puis la session a expiré.
+      if (!recovering && (/^(P\d{4}|22\w{3}|23\w{3}|42501)$/.test(details?.code ?? '') ||
+          raw === 'append_unavailable_offline' || raw === 'table_required_for_dine_in')) {
+        useTabletCartStore.getState().releaseSend();
+      }
       toast.error(
         raw === 'append_unavailable_offline'
           ? 'Append unavailable offline — start a new order'
@@ -248,23 +260,22 @@ export function TabletOrderPage({
               ? 'Confirmation unavailable — the order may have been sent. Retry to recover the same order.'
               : `Could not send the order (${raw})`,
       );
-    }
+    } finally { sendingRef.current = false; }
   }, [
     userId,
     isEmpty,
     isAppendMode,
     onSendOverride,
     mutation,
-    items,
     tableNumber,
     orderType,
-    notes,
-    appendToOrderId,
     appendToOrderNumber,
     clearCart,
     navigate,
     redirectAfterSend,
     setView,
+    connection.canSendOrders,
+    connection.state,
   ]);
 
   // ── Floor plan overlay ──────────────────────────────────────────────
@@ -313,6 +324,7 @@ export function TabletOrderPage({
             : 'min-h-11 gap-2'
         }
         onClick={() => setView('floor-plan')}
+        disabled={pendingSend !== null}
         data-testid="tablet-order-pick-table"
       >
         <MapPin className="h-5 w-5 shrink-0" aria-hidden />
@@ -321,7 +333,7 @@ export function TabletOrderPage({
 
       {/* En ajout, le type est celui de la commande visée — le proposer ici
           laisserait croire qu'on peut le changer pour la 2ᵉ tournée. */}
-      {!isAppendMode && <OrderTypeToggle value={orderType} onChange={setOrderType} />}
+      {!isAppendMode && !pendingSend && <OrderTypeToggle value={orderType} onChange={setOrderType} />}
 
       <div className="ml-auto flex items-center gap-3" aria-label="Cart total">
         <span className="text-xs uppercase tracking-widest text-text-muted">Total</span>
@@ -332,6 +344,9 @@ export function TabletOrderPage({
 
   return (
     <div className="flex flex-col h-full" data-testid="tablet-order-page">
+      {pendingSend && <div role="status" className="p-3 bg-warning-soft text-warning">
+        Confirmation pending. This order is preserved; retry confirmation before changing it.
+      </div>}
       {/* Critique 2026-08-25 (P1) — preuve d'envoi PERSISTANTE en coupure. Le
           ticket est parti à la cuisine par le réseau local ; il se synchronisera
           au retour du cloud. La bande reste jusqu'à la commande suivante. */}
@@ -345,9 +360,9 @@ export function TabletOrderPage({
           <span className="flex items-center gap-2 min-w-0 text-sm font-semibold">
             <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />
             <span className="min-w-0">
-              Order {offlineSent.localNumber} sent to the kitchen offline
+              Order {offlineSent.localNumber} {offlineSent.kitchenPublished ? 'sent to the kitchen offline' : 'saved on this device — kitchen delivery unconfirmed'}
               {offlineSent.tableNumber ? ` · Table ${offlineSent.tableNumber}` : ''} — syncs
-              when you are back online.
+              when you are back online. {!offlineSent.kitchenPublished && 'Check with the cashier; do not re-enter this order.'}
             </span>
           </span>
           <Button
@@ -378,6 +393,7 @@ export function TabletOrderPage({
             size="sm"
             className="min-h-11"
             onClick={() => setAppendTarget(null)}
+            disabled={pendingSend !== null}
             data-testid="tablet-append-cancel"
           >
             Cancel

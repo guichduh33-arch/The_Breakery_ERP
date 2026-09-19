@@ -31,6 +31,9 @@ export function useOfflineReplay(): void {
               : `${res.replayed} offline operations resynced`,
           );
           void queryClient.invalidateQueries({ queryKey: ['orders'] });
+          void queryClient.invalidateQueries({ queryKey: ['tablet-orders'] });
+          void queryClient.invalidateQueries({ queryKey: ['pending-tablet-orders'] });
+          void queryClient.invalidateQueries({ queryKey: ['table_orders'] });
           void queryClient.invalidateQueries({ queryKey: ['products'] });
           void queryClient.invalidateQueries({ queryKey: ['kds'] });
         }

@@ -6,9 +6,20 @@ import {
   removeItem as domainRemoveItem,
   updateQuantity as domainUpdateQuantity,
 } from '@breakery/domain';
-import type { CartItem, ComboComponent, Product, SelectedModifiers } from '@breakery/domain';
+import type { CartItem, ComboComponent, Product, SelectedModifiers, TabletCart } from '@breakery/domain';
+
+export interface TabletSendAttempt {
+  clientUuid: string;
+  waiterId: string;
+  cart: TabletCart;
+  appendToOrderId?: string;
+  online: boolean;
+}
 
 export interface TabletCartState {
+  pendingSend: TabletSendAttempt | null;
+  beginSend: (waiterId: string, online: boolean) => TabletSendAttempt;
+  releaseSend: () => void;
   items: CartItem[];
   tableNumber: string | null;
   orderType: 'dine_in' | 'take_out';
@@ -55,6 +66,23 @@ export interface TabletCartState {
 export const useTabletCartStore = create<TabletCartState>()(
   persist(
     (set, get) => ({
+      pendingSend: null,
+      beginSend: (waiterId, online) => {
+        const current = get();
+        if (current.pendingSend) {
+          if (current.pendingSend.waiterId !== waiterId) throw new Error('pending_order_other_waiter');
+          return current.pendingSend;
+        }
+        const attempt: TabletSendAttempt = {
+          clientUuid: crypto.randomUUID(), waiterId, online,
+          cart: JSON.parse(JSON.stringify({ items: current.items, tableNumber: current.tableNumber,
+            orderType: current.orderType, notes: current.notes })) as TabletCart,
+          ...(current.appendToOrderId ? { appendToOrderId: current.appendToOrderId } : {}),
+        };
+        set({ pendingSend: attempt });
+        return attempt;
+      },
+      releaseSend: () => set({ pendingSend: null }),
       items: [],
       tableNumber: null,
       orderType: 'dine_in',
@@ -63,6 +91,7 @@ export const useTabletCartStore = create<TabletCartState>()(
       appendToOrderNumber: null,
 
       addItem: (product, modifiers = []) => {
+        if (get().pendingSend) return;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainAddItem(fakeCart, product, modifiers);
         set({ items: updated.items });
@@ -71,33 +100,37 @@ export const useTabletCartStore = create<TabletCartState>()(
       // Lot D (2026-09-05) — même « fakeCart » que `addItem`. Ce store n'émet
       // aucun événement POS (contrairement au panier caisse) : rien à ajouter ici.
       addCombo: (product, modifiers, components, unitPrice) => {
+        if (get().pendingSend) return;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainAddComboItem(fakeCart, product, modifiers, components, 1, unitPrice);
         set({ items: updated.items });
       },
 
       updateQuantity: (itemId, qty) => {
+        if (get().pendingSend) return;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainUpdateQuantity(fakeCart, itemId, qty);
         set({ items: updated.items });
       },
 
       removeItem: (itemId) => {
+        if (get().pendingSend) return;
         const fakeCart = { items: get().items, order_type: get().orderType };
         const updated = domainRemoveItem(fakeCart, itemId);
         set({ items: updated.items });
       },
 
-      setTableNumber: (name) => set({ tableNumber: name }),
+      setTableNumber: (name) => { if (!get().pendingSend) set({ tableNumber: name }); },
 
-      setOrderType: (type) => set({ orderType: type }),
+      setOrderType: (type) => { if (!get().pendingSend) set({ orderType: type }); },
 
-      setNotes: (notes) => set({ notes }),
+      setNotes: (notes) => { if (!get().pendingSend) set({ notes }); },
 
       // Entrer en mode ajout REMET le panier à zéro : on compose la 2ᵉ tournée,
       // pas une copie de la première. La table vient de la commande visée pour
       // que l'en-tête et le KOT restent cohérents.
-      setAppendTarget: (target) =>
+      setAppendTarget: (target) => {
+        if (get().pendingSend) return;
         set(
           target === null
             ? { appendToOrderId: null, appendToOrderNumber: null }
@@ -109,10 +142,12 @@ export const useTabletCartStore = create<TabletCartState>()(
                 tableNumber: target.tableNumber,
                 orderType: 'dine_in',
               },
-        ),
+        );
+      },
 
       clearCart: () =>
         set({
+          pendingSend: null,
           items: [],
           tableNumber: null,
           orderType: 'dine_in',
@@ -127,6 +162,7 @@ export const useTabletCartStore = create<TabletCartState>()(
       // Tout l'état est de la saisie en cours : il n'y a rien de dérivé ni de
       // volatile à exclure ici.
       partialize: (state) => ({
+        pendingSend: state.pendingSend,
         items: state.items,
         tableNumber: state.tableNumber,
         orderType: state.orderType,

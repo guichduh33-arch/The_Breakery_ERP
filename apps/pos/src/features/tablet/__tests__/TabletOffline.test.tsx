@@ -18,6 +18,7 @@ import type { TabletConnection } from '../hooks/useTabletConnectionState';
 import {
   useTabletMenuCacheRead,
   useTabletMenuCacheWriter,
+  useRestoreTabletMenuCache,
 } from '../hooks/useTabletMenuCache';
 
 // Stub crypto.randomUUID for jsdom.
@@ -133,6 +134,18 @@ describe('useTabletOffline', () => {
 });
 
 describe('useTabletMenuCache', () => {
+  it('restaure les tables sans monter le menu et conserve leur ancienneté', () => {
+    const qc = new QueryClient();
+    const cachedAt = new Date(Date.now() - 60_000).toISOString();
+    localStorage.setItem('tablet-menu-cache-v1', JSON.stringify({
+      version: 2, cachedAt, categories: [], products: [], tables: [{ id: 't1', name: '1' }],
+    }));
+    renderHook(() => useRestoreTabletMenuCache(), {
+      wrapper: ({ children }) => withQuery(<>{children}</>, qc),
+    });
+    expect(qc.getQueryData(['restaurant_tables'])).toEqual([{ id: 't1', name: '1' }]);
+    expect(qc.getQueryState(['restaurant_tables'])?.dataUpdatedAt).toBe(new Date(cachedAt).getTime());
+  });
   it('returns empty cache when localStorage is empty', () => {
     const { result } = renderHook(() => useTabletMenuCacheRead());
     expect(result.current.cachedAt).toBeNull();

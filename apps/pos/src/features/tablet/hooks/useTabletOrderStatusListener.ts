@@ -25,6 +25,7 @@ export function useTabletOrderStatusListener() {
   useReconnectInvalidate(userId ? [['tablet-orders', userId]] : []);
 
   useEffect(() => {
+    seenRef.current.clear();
     if (!userId) return;
 
     // StrictMode double-invokes effects in dev; a static channel name would
@@ -63,7 +64,10 @@ export function useTabletOrderStatusListener() {
           // porte pas le serveur : on recoupe avec les commandes de CETTE
           // tablette, déjà en cache.
           const mine = queryClient.getQueryData<{ id: string }[]>(['tablet-orders', userId]);
-          if (mine !== undefined && !mine.some((o) => o.id === item.order_id)) return;
+          if (!item.id || !item.order_id || !mine?.some((o) => o.id === item.order_id)) {
+            void queryClient.invalidateQueries({ queryKey: ['tablet-orders', userId] });
+            return;
+          }
 
           const key = `${item.id ?? 'unknown'}:${item.kitchen_status ?? 'ready'}`;
 

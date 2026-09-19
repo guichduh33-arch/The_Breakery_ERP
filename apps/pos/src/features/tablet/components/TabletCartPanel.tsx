@@ -27,6 +27,7 @@ export interface TabletCartPanelProps {
 
 export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps = {}): JSX.Element {
   const items = useTabletCartStore((s) => s.items);
+  const pendingSend = useTabletCartStore((s) => s.pendingSend);
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
   const notes = useTabletCartStore((s) => s.notes);
@@ -116,6 +117,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
                     <button
                       className="h-12 w-12 shrink-0 grid place-items-center rounded-md bg-bg-input text-text-secondary hover:text-red-as-text text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
                       onClick={() => removeItem(item.id)}
+                      disabled={pendingSend !== null}
                       aria-label={`Remove ${item.name}`}
                     >
                       ×
@@ -129,6 +131,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
                       désormais l'article, comme le pouce s'y attend. */}
                   <div className="flex items-center gap-2">
                     <button
+                      disabled={pendingSend !== null}
                       className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
                       onClick={() =>
                         item.quantity <= 1
@@ -148,6 +151,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
                     <button
                       className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2"
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      disabled={pendingSend !== null}
                       aria-label={`Increase ${item.name}`}
                     >
                       +
@@ -188,6 +192,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
               </label>
               <textarea
                 id="tablet-order-note"
+                disabled={pendingSend !== null}
                 value={notes ?? ''}
                 onChange={(e) => setNotes(e.target.value.length > 0 ? e.target.value : null)}
                 placeholder="e.g. no gluten, nut allergy…"

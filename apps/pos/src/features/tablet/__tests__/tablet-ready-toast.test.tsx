@@ -62,6 +62,12 @@ beforeEach(() => {
 });
 
 describe('toast « item prêt » sur la tablette', () => {
+  it('ne notifie pas une commande sans preuve d’appartenance quand le cache manque', () => {
+    qc.removeQueries({ queryKey: ['tablet-orders', WAITER] });
+    renderHook(() => useTabletOrderStatusListener(), { wrapper });
+    emitReady({ order_id: 'another-waiter-order' });
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
   it('nomme le produit (name_snapshot, pas name)', () => {
     renderHook(() => useTabletOrderStatusListener(), { wrapper });
     emitReady();

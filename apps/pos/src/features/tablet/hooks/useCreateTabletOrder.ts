@@ -20,6 +20,8 @@ interface CreateTabletOrderArgs {
    * Absent = création. La RPC porte les deux gestes, comme au comptoir.
    */
   appendToOrderId?: string;
+  /** Une tentative cloud incertaine se confirme au cloud, jamais par un second ticket LAN. */
+  forceOnline?: boolean;
 }
 
 export interface CreateTabletOrderResult {
@@ -27,6 +29,7 @@ export interface CreateTabletOrderResult {
   orderId: string | null;
   /** Numéro local L-… quand offline (affichage toast), null sinon. */
   localNumber: string | null;
+  kitchenPublished?: boolean;
 }
 
 export function useCreateTabletOrder() {
@@ -34,7 +37,7 @@ export function useCreateTabletOrder() {
 
   return useMutation({
     retry: false,
-    mutationFn: async ({ cart, waiterId, clientUuid, appendToOrderId }: CreateTabletOrderArgs): Promise<CreateTabletOrderResult> => {
+    mutationFn: async ({ cart, waiterId, clientUuid, appendToOrderId, forceOnline }: CreateTabletOrderArgs): Promise<CreateTabletOrderResult> => {
       const payload = buildSubmitPayload(cart, waiterId);
       const isAppend = appendToOrderId !== undefined;
 
@@ -68,7 +71,7 @@ export function useCreateTabletOrder() {
       // order.fired sur le bus — le KDS affiche le ticket sans cloud. Pas de
       // KOT papier depuis la tablette (comportement online inchangé : c'est
       // la création DB qui alimente le KDS, l'impression reste côté caisse).
-      if (isOfflineMode()) {
+      if (isOfflineMode() && !forceOnline) {
         const stationByProductId = await getStationMap(queryClient).catch(
           (): Record<string, string[]> => ({}),
         );
@@ -106,9 +109,11 @@ export function useCreateTabletOrder() {
                 dispatch_stations: stationByProductId[i.product_id] ?? [],
           })),
         };
-        hubBus.publish('order.fired', firedPayload);
+        let kitchenPublished = false;
+        try { kitchenPublished = hubBus.publish('order.fired', firedPayload); }
+        catch { /* L'intention est déjà durable : ne pas inviter à ressaisir. */ }
 
-        return { orderId: null, localNumber };
+        return { orderId: null, localNumber, kitchenPublished };
       }
 
       // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
@@ -122,6 +127,7 @@ export function useCreateTabletOrder() {
       // TypeError synchrone casserait l'envoi à 100 % sur cet appareil.
       const timeoutController = new AbortController();
       const timeoutHandle = setTimeout(() => timeoutController.abort(), 15_000);
+      try {
       const { data, error } = await supabase.rpc('create_tablet_order_v10', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
@@ -140,9 +146,9 @@ export function useCreateTabletOrder() {
         // applique son défaut 'T1'. Inutile sur un append (numéro déjà posé).
         ...(!isAppend && tabletSourceCode !== null ? { p_source_code: tabletSourceCode } : {}),
       }).abortSignal(timeoutController.signal);
-      clearTimeout(timeoutHandle);
       if (error) throw Object.assign(new Error(error.message), { details: error });
       return { orderId: data, localNumber: null };
+      } finally { clearTimeout(timeoutHandle); }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tablet-orders'] });
