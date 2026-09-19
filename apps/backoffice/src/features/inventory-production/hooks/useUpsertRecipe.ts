@@ -10,6 +10,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { invalidateRecipeCosts } from './invalidateRecipeCosts.js';
 
 export type UpsertRecipeErrorCode =
   | 'forbidden'
@@ -81,7 +82,7 @@ export function useUpsertRecipe() {
       return data;
     },
     onSuccess: async (_id, vars) => {
-      await qc.invalidateQueries({ queryKey: ['inventory-production', 'recipes', vars.productId] });
+      await invalidateRecipeCosts(qc);
       await qc.invalidateQueries({ queryKey: ['inventory-production', 'baker-mode', vars.productId] });
       await qc.invalidateQueries({ queryKey: ['inventory-production', 'baker-convert', vars.productId] });
     },
