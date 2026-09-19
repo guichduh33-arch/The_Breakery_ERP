@@ -20,7 +20,7 @@ import { useAuthStore } from './stores/authStore';
 /** Full-viewport spinner shown while a persisted PIN session rehydrates. */
 function BootLoading() {
   return (
-    <div className="h-[100dvh] grid place-items-center bg-bg-base" aria-busy="true" aria-live="polite">
+    <div className="h-screen supports-[height:100dvh]:h-[100dvh] grid place-items-center bg-bg-base" aria-busy="true" aria-live="polite">
       <div className="flex flex-col items-center gap-4 text-text-secondary">
         <BrandMark size="md" />
         <div className="h-6 w-6 rounded-full border-2 border-border-subtle border-t-gold animate-spin" aria-hidden />

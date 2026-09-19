@@ -98,6 +98,7 @@ describe('confirmation d’envoi hors-ligne (persistante)', () => {
   beforeEach(() => {
   Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true, configurable: true });
     vi.clearAllMocks();
+    publishMock.mockReturnValue(true);
     mocks.rpc.mockReturnValue(rpcResult('unused-offline'));
     // Panier prêt : table + un article, donc la vue initiale est le menu.
     useTabletCartStore.setState({
@@ -107,6 +108,7 @@ describe('confirmation d’envoi hors-ligne (persistante)', () => {
       notes: null,
       appendToOrderId: null,
       appendToOrderNumber: null,
+      pendingSend: null,
     });
     useAuthStore.setState({
       user: { id: 'waiter-001', full_name: 'Made', role_code: 'waiter', employee_code: 'EMP002' },
@@ -153,5 +155,18 @@ describe('confirmation d’envoi hors-ligne (persistante)', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('tablet-offline-confirmation')).not.toBeInTheDocument();
     });
+  });
+
+  it('ne confirme pas la cuisine quand le hub disparaît après la mise en file', async () => {
+    publishMock.mockReturnValue(false);
+    renderPage();
+    fireEvent.click(screen.getByTestId('tablet-order-send'));
+    const banner = await screen.findByTestId('tablet-offline-confirmation');
+    expect(banner).toHaveTextContent('kitchen delivery unconfirmed');
+    expect(banner).toHaveTextContent('do not re-enter');
+    expect(enqueueIntentMock).toHaveBeenCalledTimes(1);
+    expect(useTabletCartStore.getState().items).toHaveLength(0);
+    const { toast } = await import('sonner');
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });

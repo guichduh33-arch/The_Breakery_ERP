@@ -127,7 +127,7 @@ describe('TabletOrderPage', () => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
     supaMocks.rpc.mockReturnValue(rpcResult('new-order-uuid'));
-    useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in' });
+    useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in', pendingSend: null });
     useAuthStore.setState({
       user: { id: 'waiter-001', full_name: 'Demo Waiter', role_code: 'waiter', employee_code: 'EMP002' },
       permissions: ['sales.create'],
@@ -281,5 +281,40 @@ describe('TabletOrderPage', () => {
     fireEvent.click(takeOut);
     expect(useTabletCartStore.getState().orderType).toBe('take_out');
     expect(takeOut).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('reprend le même envoi après réponse perdue et démontage de la page', async () => {
+    const { TabletOrderPage } = await import('../TabletOrderPage');
+    useTabletCartStore.setState({ tableNumber: 'T1', items: [
+      { id: 'l1', product_id: 'p1', name: 'Coffee', unit_price: 20000, quantity: 1, modifiers: [] },
+    ] });
+    supaMocks.rpc.mockReturnValueOnce(rpcResult(null, { message: 'Failed to fetch', code: '' }));
+    const first = render(wrap(<TabletOrderPage tablesOverride={TABLES} occupancyOverride={{}} />));
+    fireEvent.click(screen.getByTestId('tablet-order-send'));
+    await waitFor(() => expect(screen.getByTestId('tablet-order-send')).toHaveTextContent('Retry confirmation'));
+    const originalArgs: unknown = supaMocks.rpc.mock.calls[0]?.[1];
+    first.unmount();
+    await useTabletCartStore.persist.rehydrate();
+    render(wrap(<TabletOrderPage tablesOverride={TABLES} occupancyOverride={{}} />));
+    fireEvent.click(screen.getByTestId('tablet-order-send'));
+    await waitFor(() => expect(supaMocks.rpc).toHaveBeenCalledTimes(2));
+    expect(supaMocks.rpc.mock.calls[1]?.[1]).toEqual(originalArgs);
+    await waitFor(() => expect(useTabletCartStore.getState().pendingSend).toBeNull());
+  });
+
+  it('ne perd pas la référence initiale si la session est refusée lors du rejeu', async () => {
+    const { TabletOrderPage } = await import('../TabletOrderPage');
+    useTabletCartStore.setState({ tableNumber: 'T1', items: [
+      { id: 'l1', product_id: 'p1', name: 'Coffee', unit_price: 20000, quantity: 1, modifiers: [] },
+    ] });
+    const attempt = useTabletCartStore.getState().beginSend('waiter-001', true);
+    supaMocks.rpc.mockReturnValue(rpcResult(null, { message: 'Not authenticated', code: 'P0001' }));
+    render(wrap(<TabletOrderPage tablesOverride={TABLES} occupancyOverride={{}} />));
+    fireEvent.click(screen.getByTestId('tablet-order-send'));
+    await waitFor(() => expect(supaMocks.rpc).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId('tablet-order-send')).not.toBeDisabled());
+    expect(useTabletCartStore.getState().pendingSend?.clientUuid).toBe(attempt.clientUuid);
+    useTabletCartStore.getState().updateQuantity('l1', 3);
+    expect(useTabletCartStore.getState().items[0]?.quantity).toBe(1);
   });
 });

@@ -42,7 +42,7 @@ function Protected({ children }: { children: ReactNode }) {
 
 function RouteFallback() {
   return (
-    <div className="h-[100dvh] grid place-items-center bg-bg-base text-text-secondary text-sm">
+    <div className="h-screen supports-[height:100dvh]:h-[100dvh] grid place-items-center bg-bg-base text-text-secondary text-sm">
       Loading…
     </div>
   );

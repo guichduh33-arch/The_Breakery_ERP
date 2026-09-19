@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import { useLocation } from 'react-router-dom';
 import { TabletOrderCard } from '@breakery/ui';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
-import { useTabletOrderStatusListener } from '@/features/tablet/hooks/useTabletOrderStatusListener';
 import { TabletOrderConfirmation } from '@/features/tablet/components/TabletOrderConfirmation';
 import type { TabletOrderCardOrder } from '@breakery/ui';
 
@@ -24,7 +23,6 @@ function usePageNow(intervalMs = 1000): Date {
 
 export default function TabletOrdersPage(): JSX.Element {
   const { data: orders = [], isLoading } = useMyTabletOrders();
-  useTabletOrderStatusListener();
   const now = usePageNow();
 
   const location = useLocation();

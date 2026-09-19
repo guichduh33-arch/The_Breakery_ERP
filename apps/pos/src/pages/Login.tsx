@@ -37,6 +37,7 @@ import { Delete } from 'lucide-react';
 import { BrandLogo, Button, SectionLabel, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { useLoginUsers, type LoginUser } from '@/features/auth/hooks/useLoginUsers';
+import { isNativeShell } from '@/lib/nativeShell';
 
 const PIN_MAX = 6;
 /** Dernier utilisateur connecté avec succès sur CE terminal (localStorage). */
@@ -92,7 +93,7 @@ export default function LoginPage(): JSX.Element {
         .then(() => {
           try { localStorage.setItem(LAST_USER_KEY, selectedUser.id); } catch { /* storage unavailable */ }
           const { user } = useAuthStore.getState();
-          const dest = user?.role_code === 'waiter' ? '/tablet/order' : '/pos';
+          const dest = user?.role_code === 'waiter' || isNativeShell() ? '/tablet/order' : '/pos';
           void navigate(dest, { replace: true });
         })
         .catch(() => { /* error surfaced via authStore.error */ });
@@ -133,7 +134,7 @@ export default function LoginPage(): JSX.Element {
   const dots = useMemo(() => Array.from({ length: PIN_MAX }), []);
 
   return (
-    <div className="theme-pos min-h-dvh bg-bg-base grid min-[860px]:grid-cols-[45%_1fr]">
+    <div className="theme-pos min-h-screen supports-[height:100dvh]:min-h-dvh bg-bg-base grid min-[860px]:grid-cols-[45%_1fr]">
       {/* Panneau de marque — surface-0 (le cran le plus profond), filet or
           décoratif ; l'or MÈNE l'œil, il ne remplit pas (arbitrage 2026-08-24). */}
       <aside className="flex flex-col items-center justify-center gap-3 max-[859px]:max-h-28 max-[859px]:[&_img]:max-h-16 bg-surface-0 border-b border-border-subtle p-6 min-[860px]:border-b-0 min-[860px]:border-r min-[860px]:p-10">
