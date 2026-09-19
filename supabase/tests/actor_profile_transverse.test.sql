@@ -311,11 +311,11 @@ SELECT is(
   0::bigint,
   'T23: anon n''a EXECUTE sur aucune des 32 nouvelles versions');
 
--- T24 : cron.
+-- T24 : les recalculs globaux sont remplacés par les déclencheurs métier.
 SELECT is(
-  (SELECT command FROM cron.job WHERE jobname = 'recompute-recipe-costs-daily'),
-  'SELECT public.recompute_all_recipe_costs_v3();',
-  'T24: le cron recompute-recipe-costs-daily appelle recompute_all_recipe_costs_v3');
+  (SELECT count(*) FROM cron.job WHERE jobname IN ('recompute-recipe-costs-daily', 'recompute-recipe-margins-daily')),
+  0::bigint,
+  'T24: les recalculs globaux de coûts et marges ne sont plus planifiés');
 
 -- T25-T26 : chemin sans contexte auth (cron, service_role).
 SELECT set_config('request.jwt.claim.sub', '', TRUE);

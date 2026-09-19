@@ -48,7 +48,7 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('service_role',
     'public.recompute_all_recipe_costs_v3(numeric)', 'EXECUTE'),
-  'recompute_all_recipe_costs_v3 : le cron (service_role) reste servi');
+  'recompute_all_recipe_costs_v3 : le chemin machine reste autorisé');
 
 -- ------------------------------------------------- 2. bumps et anciens corps
 
@@ -59,14 +59,13 @@ SELECT hasnt_function('public', 'retry_sale_journal_entry_v4', ARRAY['uuid'],
 SELECT hasnt_function('public', 'upsert_combo_v2', ARRAY['jsonb','uuid'],
   'upsert_combo_v2 est droppee');
 
--- --------------------------------------------------- 3. le cron suit le bump
+-- --------------------------------------------------- 3. aucun recalcul global planifié
 
 SELECT is(
   (SELECT count(*)::int FROM cron.job
-    WHERE jobname = 'recompute-recipe-costs-daily'
-      AND command LIKE '%recompute_all_recipe_costs_v3%'),
-  1,
-  'le cron quotidien appelle bien la v3');
+    WHERE jobname IN ('recompute-recipe-costs-daily', 'recompute-recipe-margins-daily')),
+  0,
+  'les recalculs quotidiens sont supprimés');
 
 -- -------------------------------- 4. fail-closed : pas d acteur, pas d entree
 

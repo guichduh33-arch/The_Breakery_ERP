@@ -330,6 +330,9 @@ SELECT is(current_setting('breakery.c4_detail_has_name'), '1',
 -- CHECK 5 — recipe_bom_full_v2 : le semi-fini stocké est une ligne terminale
 -- valorisée à son propre cost_price.
 -- ===========================================================================
+-- La création de recette recalcule maintenant ce coût. Poser ici une valorisation
+-- différente pour continuer de prouver que la nomenclature s'arrête au stocké.
+UPDATE products SET cost_price = 8000 WHERE id = (SELECT id FROM _ids WHERE label='pate_a');
 DO $chk5$
 DECLARE
   v_croissant UUID := (SELECT id FROM _ids WHERE label='croissant');

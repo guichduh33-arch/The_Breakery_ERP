@@ -1,6 +1,6 @@
 -- Vérification transactionnelle : les fixtures et leurs écritures sont annulées.
 BEGIN;
-SELECT plan(16);
+SELECT plan(18);
 CREATE TEMP TABLE fixture AS SELECT gen_random_uuid() leaf, gen_random_uuid() sub, gen_random_uuid() top;
 CREATE TEMP TABLE results (seq serial, result text);
 INSERT INTO products(id,sku,name,category_id,retail_price,unit,product_type,is_active,cost_price,target_gross_margin_pct)
@@ -29,11 +29,13 @@ INSERT INTO results(result) SELECT is((SELECT count(*) FROM cron.job WHERE jobna
 UPDATE products SET unit='kg' FROM fixture WHERE id=leaf;
 UPDATE recipes SET is_active=true, unit='g', quantity=500 FROM fixture WHERE product_id=sub;
 INSERT INTO results(result) SELECT is((SELECT cost_price FROM products,fixture WHERE id=sub),100::numeric,'grams convert to ingredient stock kilograms');
-INSERT INTO results(result) SELECT throws_ok(
+INSERT INTO results(result) SELECT lives_ok(
  $$UPDATE recipes SET unit='kg', quantity=30000 FROM fixture WHERE product_id=sub$$,
- '22003', 'recipe_cost_out_of_range', 'invalid recipe cost rejects the entire edit');
-INSERT INTO results(result) SELECT is((SELECT cost_price FROM products,fixture WHERE id=sub),100::numeric,'rejected edit preserves cost');
-INSERT INTO results(result) SELECT is((SELECT quantity FROM recipes,fixture WHERE product_id=sub),500::numeric,'rejected edit preserves quantity');
+ 'large recipe remains editable without overwriting valuation');
+INSERT INTO results(result) SELECT is((SELECT cost_price FROM products,fixture WHERE id=sub),100::numeric,'implausible computed cost preserves valuation');
+INSERT INTO results(result) SELECT is((SELECT quantity FROM recipes,fixture WHERE product_id=sub),30000::numeric,'large quantity is saved');
+INSERT INTO results(result) SELECT is((SELECT (snapshot->>'product_cost_at_version')::numeric FROM recipe_versions,fixture WHERE product_id=sub ORDER BY version_number DESC LIMIT 1),6000000::numeric,'snapshot retains computed cost');
+INSERT INTO results(result) SELECT is((SELECT count(*) FROM audit_logs,fixture WHERE entity_id=sub AND action='product.cost_recompute_skipped'),1::bigint,'skipped valuation is audited');
 INSERT INTO results(result) SELECT * FROM finish();
 SELECT result FROM results ORDER BY seq;
 ROLLBACK;
