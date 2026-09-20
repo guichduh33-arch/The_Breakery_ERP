@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ProductsPage from '../Products.js';
 
 const { refetchSpy, productsRef } = vi.hoisted(() => ({
   refetchSpy: vi.fn(),
@@ -41,8 +42,7 @@ vi.mock('@/features/products/components/ProductsPageTabs.js', () => ({
   ProductsPageTabs: () => <div data-testid="products-tabs" />,
 }));
 
-async function renderPage() {
-  const { default: ProductsPage } = await import('../Products.js');
+function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -59,9 +59,9 @@ describe('ProductsPage — échec de chargement [lot E]', () => {
     productsRef.current = { data: [], isLoading: false, error: null };
   });
 
-  it('garde son titre, son fil d’Ariane, ses onglets et ses compteurs', async () => {
+  it('garde son titre, son fil d’Ariane, ses onglets et ses compteurs', () => {
     productsRef.current = { data: [], isLoading: false, error: new Error('catalog RPC failed') };
-    await renderPage();
+    renderPage();
 
     expect(screen.getByTestId('products-error')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Products' })).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe('ProductsPage — échec de chargement [lot E]', () => {
 
   it('relègue le message serveur et offre un « Try again » câblé sur refetch', async () => {
     productsRef.current = { data: [], isLoading: false, error: new Error('catalog RPC failed') };
-    await renderPage();
+    renderPage();
 
     const banner = screen.getByTestId('products-error');
     expect(banner).toHaveTextContent('catalog RPC failed');
@@ -85,17 +85,17 @@ describe('ProductsPage — échec de chargement [lot E]', () => {
     await waitFor(() => expect(refetchSpy).toHaveBeenCalledTimes(1));
   });
 
-  it('ne rend PAS la table vide sous l’erreur — son état vide mentirait', async () => {
+  it('ne rend PAS la table vide sous l’erreur — son état vide mentirait', () => {
     // « No products match these filters » à côté d'un bandeau d'erreur ferait
     // croire à un filtre trop étroit là où c'est la requête qui a échoué.
     productsRef.current = { data: [], isLoading: false, error: new Error('boom') };
-    await renderPage();
+    renderPage();
     expect(screen.queryByTestId('products-table')).not.toBeInTheDocument();
     expect(screen.queryByText(/no products match these filters/i)).not.toBeInTheDocument();
   });
 
-  it('sans erreur, la table est là et aucun bandeau ne s’affiche', async () => {
-    await renderPage();
+  it('sans erreur, la table est là et aucun bandeau ne s’affiche', () => {
+    renderPage();
     expect(screen.queryByTestId('products-error')).not.toBeInTheDocument();
     expect(screen.getByTestId('products-table')).toBeInTheDocument();
   });

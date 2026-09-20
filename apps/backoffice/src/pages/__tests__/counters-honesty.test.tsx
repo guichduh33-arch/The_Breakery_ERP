@@ -36,6 +36,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
+import CustomersListPage from '@/pages/customers/CustomersListPage.js';
 
 const stockCounters = vi.fn();
 const customerStats = vi.fn();
@@ -84,8 +85,7 @@ describe('counters never assert a zero they do not have', () => {
       totalCustomers: 0, activeThisMonth: 0, loyaltyMembers: 0,
       loyaltyPercent: 0, outstandingB2b: 0, outstandingCount: 0,
     }));
-    const { default: Page } = await import('@/pages/customers/CustomersListPage.js');
-    render(wrap(<Page />));
+    render(wrap(<CustomersListPage />));
 
     const strip = await screen.findByLabelText(/customer base overview/i);
     // Un zéro confirmé par le serveur est une information : il reste lisible.
@@ -101,8 +101,7 @@ describe('counters never assert a zero they do not have', () => {
       totalCustomers: 1240, activeThisMonth: 87, loyaltyMembers: 412,
       loyaltyPercent: 33, outstandingB2b: 4100000, outstandingCount: 6,
     }));
-    const { default: Page } = await import('@/pages/customers/CustomersListPage.js');
-    render(wrap(<Page />));
+    render(wrap(<CustomersListPage />));
 
     const strip = await screen.findByLabelText(/customer base overview/i);
     expect(within(strip).queryByText('1,240')).toBeNull();
@@ -116,8 +115,7 @@ describe('counters never assert a zero they do not have', () => {
 
   it('customers — while loading, the strip shows dashes and never a zero', async () => {
     customerStats.mockReturnValue(loading());
-    const { default: Page } = await import('@/pages/customers/CustomersListPage.js');
-    render(wrap(<Page />));
+    render(wrap(<CustomersListPage />));
 
     const strip = await screen.findByLabelText(/customer base overview/i);
     expect(within(strip).getAllByText(DASH).length).toBeGreaterThanOrEqual(4);

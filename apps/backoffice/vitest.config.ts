@@ -12,6 +12,9 @@ export default defineConfig({
     globals: true,
     passWithNoTests: true,
     setupFiles: ['./vitest.setup.ts'],
+    // Les pages jsdom chargent un graphe lourd : un worker par CPU sature la
+    // mémoire des postes 8 Go et fait expirer les imports pendant les tests.
+    maxWorkers: 2,
     // Aligné sur apps/pos et packages/ui : turbo lance les suites des packages
     // en parallèle, et la contention CPU du runner multiplie par ~8 le coût d'un
     // test jsdom lourd — Sidebar.test « 8 renames » (667 ms en local, 9 requêtes
