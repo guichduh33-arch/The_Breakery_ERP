@@ -1,46 +1,14 @@
 ---
 name: security-auth
 description: >-
-  Security & auth expert — RLS, REVOKE/anon defense-in-depth, permission gates, PIN JWT
-  fetch wrapper, durable rate-limit, per-role session timeout. Audits security posture AND
-  guides auth changes. Use this skill whenever the task mentions RLS, REVOKE, GRANT, anon,
-  permission / has_permission / role_permissions / RBAC / PermissionGate, PIN, lockout,
-  JWT, rate limit, session timeout, SECURITY DEFINER, login / connexion, role / rôle,
-  security / sécurité, auth / authentification — or touches apps auth/rbac features,
-  Settings Security pages, supabase functions auth-*, or migrations touching
-  rls/permission/rate_limit. Boundary vs security-fraud-guard: THIS skill owns the auth
-  MECHANICS (how to build a correct RLS policy / RPC gate / REVOKE pair, the PIN-JWT fetch
-  wrapper, rate-limit, session timeout); for the cross-cut FRAUD/MONEY/PII/audit-log
-  AUDIT ("qui peut faire quoi", refund/void/discount/cash abuse, data-leak surfaces) →
-  security-fraud-guard. Invoke it BEFORE creating any new RPC gate, granting anything
-  to anon/authenticated, or relaxing RLS — even for a one-line migration.
-pathPatterns:
-  - 'apps/*/src/features/auth/**'
-  - 'apps/backoffice/src/features/settings/roles/**'
-  - 'apps/backoffice/src/pages/settings/security/**'
-  - 'apps/backoffice/src/pages/settings/roles/**'
-  - 'packages/supabase/src/rls/**'
-  - 'supabase/migrations/*rls*.sql'
-  - 'supabase/migrations/*permission*.sql'
-  - 'supabase/migrations/*rate_limit*.sql'
-  - 'supabase/functions/auth-*/**'
-  - 'supabase/functions/kiosk-issue-jwt/**'
-promptSignals:
-  phrases:
-    - 'RLS'
-    - 'REVOKE'
-    - 'anon'
-    - 'permission'
-    - 'has_permission'
-    - 'role_permissions'
-    - 'PIN'
-    - 'JWT'
-    - 'rate limit'
-    - 'session timeout'
-    - 'RBAC'
-    - 'SECURITY DEFINER'
-    - 'defense in depth'
+  Authentification et permissions techniques The Breakery : login / connexion, RLS, gates
+  RPC, GRANT/REVOKE PUBLIC/anon, PIN-JWT, verrouillage, rate limit et timeout de session.
+  Consulter avant de modifier un contrôle d’accès ou d’authentification. Pour auditer
+  transversalement qui peut détourner de l’argent, accéder aux données personnelles ou
+  contourner la traçabilité : security-fraud-guard.
 ---
+
+Sélection : ce skill mène la mécanique d’authentification et des autorisations dans les apps, RPC et EF. Le charger avant un nouveau gate, un changement de GRANT ou un assouplissement de RLS. [security-fraud-guard](../security-fraud-guard/SKILL.md) mène l’audit transversal des possibilités d’abus et de fuite ; une correction technique isolée n’exige pas cet audit global.
 
 # Security & Auth — The Breakery ERP
 

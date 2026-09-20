@@ -1,41 +1,14 @@
 ---
 name: db-migrations
 description: >-
-  Migration & RPC hygiene expert for Supabase cloud V3 — RPC versioning
-  monotone, REVOKE/anon defense-in-depth pairs, monotonic migration numbering,
-  NO BEGIN/COMMIT in the body, mandatory types regen (the #1 cause of broken CI
-  on this repo), and the cloud-MCP-only workflow (Docker retired 2026-05-14).
-  Use this skill WHENEVER you create or edit a file in supabase/migrations/**,
-  add / bump / DROP an RPC, alter a table or column, seed permissions, or touch
-  SECURITY DEFINER / GRANT / REVOKE / packages/supabase/src/types.generated.ts —
-  even a one-line migration. Boundary: THIS skill owns migration MECHANICS
-  (sequencing, _vN→_vN+1 + DROP in the same migration, the 3-line REVOKE pair,
-  anon inherits EXECUTE via PUBLIC, types regen, apply via MCP not Docker); the
-  SECURITY SEMANTICS of a gate or RLS policy design → security-auth; whether a
-  money-path RPC is correct → the domain skill (orders / accounting /
-  stock-management / b2b-credit / expense-governance). Mirrors the db-engineer
-  agent as an always-on guardrail — invoke it BEFORE writing migration SQL.
-pathPatterns:
-  - 'supabase/migrations/**'
-  - 'packages/supabase/src/types.generated.ts'
-promptSignals:
-  phrases:
-    - 'migration'
-    - 'apply_migration'
-    - 'RPC versioning'
-    - 'DROP FUNCTION'
-    - 'REVOKE'
-    - 'GRANT EXECUTE'
-    - 'types regen'
-    - 'generate_typescript_types'
-    - 'types.generated'
-    - 'SECURITY DEFINER'
-    - 'schema_migrations'
-    - 'supabase cloud'
-    - 'bump the RPC'
-    - 'new migration'
-    - 'seed permission'
+  Migrations et RPC Postgres The Breakery : consulter avant un changement de schéma, un
+  ajout ou bump de RPC, un GRANT/REVOKE ou une régénération des types. Couvre
+  supabase/migrations, versions monotones, droits PUBLIC/anon, types et exécution sur
+  Supabase cloud V3. La sémantique des permissions relève de security-auth ; les règles
+  métier restent au skill du domaine concerné.
 ---
+
+Périmètre : supabase/migrations et packages/supabase/src/types.generated.ts, avant toute écriture SQL de schéma ou de RPC. Le choix de ce skill vient de la tâche ; les chemins sont des repères de lecture, pas un hook automatique. Associer [security-auth](../security-auth/SKILL.md) pour le sens des droits et le skill métier concerné pour les invariants.
 
 # DB Migrations & RPC Hygiene — The Breakery ERP
 

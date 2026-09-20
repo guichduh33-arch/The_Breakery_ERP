@@ -12,12 +12,12 @@ description: >-
 # Pilotage de navigateur — aiguillage
 
 Cette skill ne contient aucune procédure. Elle existe pour un seul motif : le CLI
-`playwright-cli` compare `.Codex/skills/playwright-cli/SKILL.md` **octet par octet**
+`playwright-cli` compare `.agents/skills/playwright-cli/SKILL.md` **octet par octet**
 avec sa copie embarquée et affiche un bandeau d'avertissement à chaque commande dès que
 le fichier diffère. On ne peut donc pas enrichir la `description` de cette skill-là sans
 polluer toutes les sorties. Les déclencheurs vivent ici, la procédure reste là-bas.
 
-**Marche à suivre : invoquer la skill `playwright-cli` et la suivre.**
+**Marche à suivre : lire la copie du dépôt de [playwright-cli](../playwright-cli/SKILL.md) et la suivre pour le pilotage depuis le terminal. Respecter un navigateur ou un outil explicitement choisi par Mamat ; ne pas lancer en parallèle un second workflow de navigateur.**
 
 Rappels propres au projet, à appliquer par-dessus :
 
@@ -26,5 +26,5 @@ Rappels propres au projet, à appliquer par-dessus :
 - **Ports E2E** : POS sur `5173`, back-office sur `5174` (voir `playwright.config.ts`).
 - **Artefacts** : `.playwright-cli/` est déjà ignoré par git — ne rien committer de là.
 - **Après une mise à jour du CLI**, `playwright-cli install --skills` réécrit
-  `.Codex/skills/playwright-cli/` : le diff se relit et se valide comme tout autre
+  `.agents/skills/playwright-cli/` : le diff se relit et se valide comme tout autre
   changement du repo.

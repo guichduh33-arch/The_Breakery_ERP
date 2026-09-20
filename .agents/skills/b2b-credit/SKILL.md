@@ -1,33 +1,14 @@
 ---
 name: b2b-credit
 description: >-
-  B2B credit & AR expert — AR aging, b2b_payments ledger + b2b_payment_allocations,
-  credit-limit gate, B2B orders/invoices, FIFO allocation, cancel & reconcile. Audits AR
-  integrity AND guides B2B changes. Use this skill whenever the task mentions B2B, client
-  compte / account customer, facture / invoice B2B, AR / accounts receivable / créances,
-  credit limit / plafond de crédit / encours, b2b_pending, record_b2b_payment,
-  create_b2b_order, allocation FIFO, balance B2B, règlement fournisseur de facture B2B — or
-  touches apps/backoffice features/btob, the POS B2B debts flow, or any supabase
-  migration/test with b2b in the name. Invoke it BEFORE editing any AR/credit RPC.
-pathPatterns:
-  - 'apps/backoffice/src/features/btob/**'
-  - 'apps/backoffice/src/pages/btob/**'
-  - 'apps/pos/src/features/customers/**'
-  - 'supabase/migrations/*b2b*.sql'
-  - 'supabase/tests/*b2b*.test.sql'
-promptSignals:
-  phrases:
-    - 'B2B'
-    - 'AR aging'
-    - 'accounts receivable'
-    - 'credit limit'
-    - 'b2b_payments'
-    - 'b2b_payment_allocations'
-    - 'b2b_current_balance'
-    - 'invoice'
-    - 'FIFO allocation'
-    - 'account customer'
+  Crédit et créances B2B The Breakery : commandes, factures / invoices, paiements /
+  payments, AR aging, limite de crédit, allocations FIFO, annulation et rapprochement.
+  Utiliser pour auditer ou modifier le cycle B2B et son ledger. Vérifier les invariants
+  avant une écriture B2B ; la mécanique des migrations relève de db-migrations et les
+  écritures comptables de accounting.
 ---
+
+Périmètre : parcours B2B du back-office et RPC/tests de commandes, crédit, paiements et allocations B2B. Un paiement fournisseur générique sans créance client B2B ne suffit pas à déclencher ce workflow.
 
 # B2B Credit & AR — The Breakery ERP
 

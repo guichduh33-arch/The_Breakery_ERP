@@ -1,45 +1,15 @@
 ---
 name: security-fraud-guard
-description: Cross-cutting security & anti-fraud authority for the ERP/POS — money flows (refund/void/discount/cash/manual JE), RBAC integrity, audit-log completeness, PII & information-leak surfaces, anon/PUBLIC hardening, and append-only ledger integrity. Two modes — AUDIT the system for fraud/manipulation/leak gaps (executable SQL checks) AND INTERVENE to add the controls (permissions, REVOKE pairs, audit_log writes, manager-PIN gates, pgTAP). Use this skill WHENEVER the user mentions security, fraud, manipulation by employees, "qui peut faire quoi", permissions/RBAC/roles, audit logs/traçabilité, refund/void/discount/cash-drawer/manual-journal-entry abuse, manager PIN, data leak / fuite d'information / PII, RLS / REVOKE / anon hardening, append-only ledgers, or "sécuriser / contrôler / enregistrer les actions" — even if they don't say the word "audit". Boundary vs security-auth: security-auth owns the AUTH MECHANICS (building an RLS policy or RPC gate, REVOKE/anon defense-in-depth, the PIN-JWT fetch wrapper, durable rate-limit, per-role session timeout); THIS skill owns the cross-cut FRAUD/MONEY/PII/traceability AUDIT and the addition of anti-fraud controls — reach here for "qui peut faire quoi", refund/void/discount/cash abuse, audit-log completeness, and data-leak surfaces. Defer inventory-specific security to stock-management and POS-flow technical correctness to pos-flow-audit; this skill owns the money, identity, traceability, and data-exposure cross-cut.
-pathPatterns:
-  # migrations touchant droits, argent, traçabilité, auth
-  - 'supabase/migrations/*permission*.sql'   # couvre aussi has_permission
-  - 'supabase/migrations/*rbac*.sql'
-  - 'supabase/migrations/*role*.sql'
-  - 'supabase/migrations/*audit*.sql'
-  - 'supabase/migrations/*revoke*.sql'
-  - 'supabase/migrations/*rate_limit*.sql'
-  - 'supabase/migrations/*pin_policy*.sql'
-  - 'supabase/migrations/*session_timeout*.sql'
-  - 'supabase/migrations/*refund*.sql'
-  - 'supabase/migrations/*void*.sql'
-  - 'supabase/migrations/*cash*.sql'
-  - 'supabase/migrations/*manual_je*.sql'
-  # edge functions d'auth et de money-path + helpers partagés
-  - 'supabase/functions/auth-verify-pin/**'
-  - 'supabase/functions/auth-change-pin/**'
-  - 'supabase/functions/verify-manager-pin/**'
-  - 'supabase/functions/refund-order/**'
-  - 'supabase/functions/void-order/**'
-  - 'supabase/functions/cancel-item/**'
-  - 'supabase/functions/_shared/**'
-  # tests de sécurité
-  - 'supabase/tests/security*.test.sql'
-  - 'supabase/tests/pin_policy.test.sql'
-  - 'supabase/tests/expense_governance.test.sql'
-  # surfaces applicatives
-  - 'packages/supabase/src/rls/**'
-  - 'packages/utils/src/pin-strength.ts'
-  - 'apps/backoffice/src/stores/authStore.ts'
-  - 'apps/backoffice/src/features/settings/**'
-  - 'apps/backoffice/src/pages/settings/roles/**'
-  - 'apps/backoffice/src/pages/reports/AuditPage.tsx'
-promptSignals:
-  phrases: ['security', 'securite', 'fraud', 'fraude', 'manipulation', 'qui peut faire quoi',
-    'permission', 'RBAC', 'role', 'audit log', 'tracabilite', 'manager PIN', 'refund abuse',
-    'void abuse', 'discount abuse', 'cash drawer', 'data leak', 'fuite information', 'PII',
-    'append-only', 'separation of duties', 'SOD']
+description: >-
+  Auditer la fraude et la traçabilité The Breakery : abus de remboursement, annulation,
+  remise ou caisse, séparation des tâches, qui peut faire quoi, audit logs, fuite de
+  données / PII et ledgers append-only. Proposer puis appliquer les contrôles autorisés
+  dans le périmètre demandé. La mécanique RLS, gates, PIN-JWT et sessions relève de
+  security-auth ; le parcours commande-paiement de pos-flow-audit ; le stock de
+  stock-management.
 ---
+
+Sélection : ce skill mène l’analyse transversale des abus d’argent, permissions, données personnelles et traçabilité, ainsi que les contrôles autorisés qui en découlent. [security-auth](../security-auth/SKILL.md) couvre la mécanique des gates/RLS/PIN-JWT/sessions ; [pos-flow-audit](../pos-flow-audit/SKILL.md) le parcours fonctionnel ; [stock-management](../stock-management/SKILL.md) les contrôles propres au stock. Ne pas transformer une correction technique isolée en audit global.
 
 # Security & Fraud Guard — The Breakery ERP/POS
 

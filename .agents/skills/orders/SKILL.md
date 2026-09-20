@@ -1,37 +1,14 @@
 ---
 name: orders
 description: >-
-  Orders domain expert — order lifecycle, liste serveur (filtres + tri + keyset), edit-items
-  RPCs, void/refund, held, realtime. Cross-app business logic (POS writes + BO management);
-  distinct from pos-specialist (POS UI surface) and backoffice-specialist (BO UI surface). Use
-  this skill whenever the task mentions order(s) / commande(s), statut de commande, void /
-  annulation, refund / remboursement, pending_payment, held order / commande en attente,
-  ardoise, complete_order_with_payment, pay_existing_order, fire_counter_order,
-  create_tablet_order, order items / lignes de commande, totaux de commande, orders
-  realtime — or touches apps/backoffice features/orders, POS order-history, or any supabase
-  migration/test with order in the name. Invoke it BEFORE editing any order lifecycle RPC
-  or status transition, even a small one.
-pathPatterns:
-  - 'apps/backoffice/src/features/orders/**'
-  - 'apps/backoffice/src/pages/**/Order*'
-  - 'apps/pos/src/features/order-history/**'
-  - 'supabase/migrations/*order*.sql'
-  - 'supabase/tests/*order*.test.sql'
-promptSignals:
-  phrases:
-    - 'order list'
-    - 'order status'
-    - 'edit order item'
-    - 'void order'
-    - 'order refund'
-    - 'pending_payment'
-    - 'get_orders_list'
-    - 'order totals'
-    - 'orders realtime'
-    - 'complete_order'
-    - 'add_order_item'
-    - 'remove_order_item'
+  Commandes / orders The Breakery : cycle de vie, liste serveur avec filtres/tri/keyset,
+  modification des lignes, void/refund, commandes en attente / held et realtime. Utiliser
+  pour auditer ou modifier les règles métier communes au POS et au back-office. Un
+  problème du parcours caisse, tablette ou cuisine relève aussi de pos-flow-audit ; les
+  variantes produit relèvent de products-catalog.
 ---
+
+Périmètre : commandes du back-office, historique POS, domaine et RPC/tests de commandes. Ce skill mène les invariants métier ; [pos-flow-audit](../pos-flow-audit/SKILL.md) mène le diagnostic d’un parcours caisse/tablette/cuisine. Une demande visuelle seule relève des skills de design.
 
 # Orders — The Breakery ERP
 

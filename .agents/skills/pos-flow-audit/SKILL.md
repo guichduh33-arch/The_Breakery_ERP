@@ -1,56 +1,15 @@
 ---
 name: pos-flow-audit
-description: Audits and improves the POS order-to-payment flow of a multi-device bakery-café (counter takeaway + table service) — POS terminal, waiter tablet, KDS kitchen screen, customer display, self-order kiosk, shift/Z-report. Finds product/UX gaps and silent failures, then proposes features ranked by impact, plus a technical-correctness pass (idempotency, RPC versioning, realtime races). DEFER, inventory/WAC/recipe-cost → stock-management; RBAC/permissions/"who can do what"/audit-log completeness → security-fraud-guard; report/PDF, CI, auth internals, generic back-office CRUD → not this skill. Use WHENEVER the user touches the live order-to-payment path, even via a symptom and without saying "audit", checkout / encaissement speed / counter queues, dividing a table bill ("diviser l'addition") or split tender, cashier or waiter workflow, KDS or kitchen↔floor coordination, a tablet order not reaching the kitchen, customer display, self-order kiosk, held/parked orders across terminals, receipt / change / cash-drawer bugs, promotions at point of sale, or shift-close cash-variance & Z-report review for control & fraud risk (the POS shift flow lives here; only pure RBAC/permission questions go to security-fraud-guard). Scope, apps/pos, packages/domain (cart/orders/payment), supabase order/payment/shift RPCs.
-pathPatterns:
-  - 'apps/pos/src/features/cart/**'
-  - 'apps/pos/src/features/payment/**'
-  - 'apps/pos/src/features/kds/**'
-  - 'apps/pos/src/features/tablet/**'
-  - 'apps/pos/src/features/display/**'
-  - 'apps/pos/src/features/inbox/**'
-  - 'apps/pos/src/features/promotions/**'
-  - 'apps/pos/src/features/discounts/**'
-  - 'apps/pos/src/features/shift/**'
-  - 'apps/pos/src/features/heldOrders/**'
-  - 'apps/pos/src/features/tables/**'
-  - 'apps/pos/src/features/floor-plan/**'
-  - 'apps/pos/src/features/order-history/**'
-  - 'packages/domain/src/orders/**'
-  - 'packages/domain/src/cart/**'
-  - 'packages/domain/src/payment/**'
-  - 'packages/domain/src/promotions/**'
-  - 'packages/domain/src/kitchen/**'
-  - 'packages/domain/src/tables/**'
-  - 'supabase/functions/process-payment/**'
-  - 'supabase/migrations/*order*.sql'
-  - 'supabase/migrations/*payment*.sql'
-  - 'supabase/migrations/*shift*.sql'
-  - 'supabase/migrations/*tablet*.sql'
-promptSignals:
-  phrases:
-    - 'POS flow'
-    - 'order to payment'
-    - 'checkout'
-    - 'prise de commande'
-    - 'encaissement'
-    - 'cashier workflow'
-    - 'waiter'
-    - 'tablet order'
-    - 'KDS'
-    - 'kitchen display'
-    - 'customer display'
-    - 'kiosk'
-    - 'shift close'
-    - 'close_shift'
-    - 'split payment'
-    - 'split bill'
-    - 'diviser l''addition'
-    - 'multi-device'
-    - 'queue'
-    - 'audit POS'
-    - 'improve the POS'
-    - 'POS feature'
+description: >-
+  Diagnostiquer ou améliorer le parcours commande-paiement The Breakery : encaissement /
+  checkout, addition divisée, caisse, tablette vers cuisine/KDS, held orders, ticket,
+  monnaie, promotions et clôture de shift. Utiliser aussi pour un symptôme fonctionnel
+  isolé, en restant limité au problème demandé. Aspect et ergonomie visuelle :
+  pos-frontend-design-audit ; audit transversal de fraude et traçabilité :
+  security-fraud-guard.
 ---
+
+Sélection : un symptôme fonctionnel du parcours commande-paiement suffit, sans demande d’audit globale. Limiter le diagnostic et les propositions au périmètre demandé. [orders](../orders/SKILL.md) couvre les invariants de commande, [pos-frontend-design-audit](../pos-frontend-design-audit/SKILL.md) l’aspect et l’ergonomie visuelle ; [security-fraud-guard](../security-fraud-guard/SKILL.md) couvre l’audit transversal de fraude et de traçabilité.
 
 # POS Flow Audit — The Breakery (bakery-café, multi-device)
 

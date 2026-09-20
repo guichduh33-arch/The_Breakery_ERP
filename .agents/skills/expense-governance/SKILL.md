@@ -1,33 +1,14 @@
 ---
 name: expense-governance
 description: >-
-  Expense approval workflow expert — thresholds, SOD, multi-step chain, snapshot-at-submit,
-  routage comptable du paiement. Audits approval integrity AND guides expense governance
-  changes. Use this skill whenever the task mentions expense / dépense / note de frais,
-  approval / approbation / validation de dépense, threshold / seuil d'approbation, SOD /
-  separation of duties / séparation des tâches, auto-approve, approval chain / chaîne
-  d'approbation, cash expense / dépense en espèces, receipt / justificatif — or touches
-  apps/backoffice features/expenses, the expense-thresholds settings, or any supabase
-  migration/test with expense in the name.
-  Invoke it BEFORE editing any expense RPC, trigger, or threshold logic.
-pathPatterns:
-  - 'apps/backoffice/src/features/expenses/**'
-  - 'apps/backoffice/src/features/settings/expense-thresholds/**'
-  - 'apps/backoffice/src/pages/expenses/**'
-  - 'supabase/migrations/*expense*.sql'
-  - 'supabase/tests/*expense*.test.sql'
-promptSignals:
-  phrases:
-    - 'expense'
-    - 'approval threshold'
-    - 'SOD'
-    - 'separation of duties'
-    - 'multi-step approval'
-    - 'expense approval'
-    - 'auto-approve'
-    - 'cash expense'
-    - 'approval chain'
+  Dépenses / expenses The Breakery : seuils, chaîne et niveaux d’approbation / approval,
+  séparation des tâches / SOD, snapshot à la soumission, justificatifs et paiement.
+  Utiliser pour auditer ou modifier ce workflow et son routage comptable. Vérifier les
+  invariants avant toute RPC de dépense ; accounting couvre les écritures et db-migrations
+  la mécanique SQL.
 ---
+
+Périmètre : dépenses du back-office et RPC/tests de soumission, approbation et paiement. Consulter ce skill avant de modifier une RPC de dépense ; conserver les contrôles de séparation des tâches et le routage comptable.
 
 # Expense Governance — The Breakery ERP
 

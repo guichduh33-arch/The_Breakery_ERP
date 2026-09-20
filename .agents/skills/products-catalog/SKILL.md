@@ -1,43 +1,14 @@
 ---
 name: products-catalog
 description: >-
-  Product catalog expert — products CRUD, variants (linked-products architecture),
-  categories, units/sections/modifiers, is_display_item flag. Knows the variant XOR +
-  anti-nesting invariants, SKU uniqueness rules, and display-stock isolation. Use this
-  skill whenever the task mentions product / produit, variant / variante / déclinaison,
-  parent product / produit parent, linked product, category / catégorie, SKU, modifier /
-  modificateur, unit / unité, section, vitrine / display item / is_display_item, import
-  catalogue / import_catalog, visible_on_pos — or touches apps/backoffice
-  features/products|categories, Product*/Categor* pages, POS variant code, or any supabase
-  migration/test with product/variant/categor in the name. Invoke it BEFORE any catalog
-  CRUD or variant-architecture change.
-pathPatterns:
-  - 'apps/backoffice/src/features/products/**'
-  - 'apps/backoffice/src/features/categories/**'
-  - 'apps/backoffice/src/pages/**/Product*'
-  - 'apps/backoffice/src/pages/**/Categor*'
-  - 'apps/pos/src/**/*variant*'
-  - 'supabase/migrations/*product*.sql'
-  - 'supabase/migrations/*variant*.sql'
-  - 'supabase/migrations/*categor*.sql'
-  - 'supabase/tests/*product*.test.sql'
-  - 'supabase/tests/*variant*.test.sql'
-promptSignals:
-  phrases:
-    - 'product'
-    - 'variant'
-    - 'parent product'
-    - 'linked product'
-    - 'category'
-    - 'SKU'
-    - 'modifier'
-    - 'product unit'
-    - 'product section'
-    - 'is_display_item'
-    - 'variant axis'
-    - 'convert to parent'
-    - 'dissolve parent'
+  Catalogue produits The Breakery : CRUD, variantes liées, catégories, unités, sections du
+  catalogue, modificateurs, SKU et is_display_item. Utiliser pour auditer ou modifier le
+  catalogue BO ou les variantes POS ; vérifier les invariants XOR et anti-imbrication
+  avant les écritures produit. Flux de stock et recettes : stock-management ; cycle des
+  commandes : orders.
 ---
+
+Périmètre : produits/catégories du back-office, variantes POS et SQL/tests du catalogue. Consulter ce skill avant de modifier les écritures produit ; distinguer les sections du catalogue de toute dimension de stockage, traitée par [stock-management](../stock-management/SKILL.md).
 
 # Products Catalog — The Breakery ERP
 

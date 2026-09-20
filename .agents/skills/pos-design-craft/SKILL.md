@@ -1,31 +1,15 @@
 ---
 name: pos-design-craft
-description: 'Spécialiste GÉNÉRATIF de la conception visuelle + ergonomique du POS The Breakery (apps/pos) — conçoit et produit écrans, composants, flux, tokens neufs en appliquant l''état de l''art 2025-2026 (Fitts, cibles rush 56-72px, OKLCH, tabular-nums, optimistic UI, View Transitions). Use when : design POS, refonte caisse, nouvel écran POS, maquette/composant caisse, écran de vente, grille produits, ticket/panier, customer display, KDS design, ergonomie POS, plein soleil, rush, thumb zone, design tokens POS, micro-interactions caisse, profils CAISSE/WAITER. Frontière (ce skill CRÉE du neuf, from scratch) : pour AUDITER le design POS existant et le comparer au marché → pos-frontend-design-audit (rend un rapport en conversation) ; pour CODER une reco issue d''un rapport d''audit → pos-frontend-design-implement ; DA/esthétique transverse non-POS (BO ivoire, dashboard) → breakery-design ; faits du design-system (primitifs existants, noms de tokens, fallbacks natifs) → breakery-ui-kit. NE PAS utiliser pour : bug isolé, migration DB, comptabilité.'
-pathPatterns:
-  - 'apps/pos/src/**'
-promptSignals:
-  phrases:
-    - 'design POS'
-    - 'refonte caisse'
-    - 'nouvel écran POS'
-    - 'nouveau écran POS'
-    - 'maquette POS'
-    - 'composant caisse'
-    - 'écran de vente'
-    - 'ticket POS'
-    - 'panier POS'
-    - 'customer display'
-    - 'KDS design'
-    - 'design KDS'
-    - 'ergonomie POS'
-    - 'plein soleil'
-    - 'rush'
-    - 'thumb zone'
-    - 'design tokens POS'
-    - 'micro-interactions caisse'
-    - 'profil WAITER'
-    - 'écran d''encaissement'
+description: >-
+  Créer ou refondre un écran, composant ou maquette POS The Breakery : caisse, tablette
+  serveur, KDS, customer display, grille produits ou panier. Couvre le design neuf et
+  l’ergonomie tactile en rush. Pour diagnostiquer un design existant :
+  pos-frontend-design-audit ; pour coder ses recommandations validées :
+  pos-frontend-design-implement ; pour un bug du parcours commande-paiement :
+  pos-flow-audit. Primitifs et tokens : breakery-ui-kit.
 ---
+
+Sélection : mener la création ou refonte explicitement demandée des surfaces POS, y compris tablette, KDS et customer display. Diagnostic visuel : [pos-frontend-design-audit](../pos-frontend-design-audit/SKILL.md) ; recommandations validées : [pos-frontend-design-implement](../pos-frontend-design-implement/SKILL.md) ; incident fonctionnel : [pos-flow-audit](../pos-flow-audit/SKILL.md). [breakery-design](../breakery-design/SKILL.md) et [breakery-ui-kit](../breakery-ui-kit/SKILL.md) donnent le cadre ; la copie du dépôt d’[Impeccable](../impeccable/SKILL.md) est un complément méthodologique.
 
 # POS Design Craft — conception visuelle + ergonomique du POS
 

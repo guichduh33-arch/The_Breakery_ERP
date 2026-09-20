@@ -1,57 +1,14 @@
 ---
 name: pos-frontend-design-audit
 description: >-
-  Auditeur du DESIGN FRONTEND (visuel, ergonomie tactile, hiérarchie, cohérence design-system,
-  couverture d'états, densité, lisibilité à distance) du module POS de The Breakery (apps/pos/),
-  utilisé en production par deux profils — la CAISSE (poste comptoir, web app Vite dans un
-  navigateur, encaissement rapide, rush) et les WAITER (tablette de salle, la même web app
-  empaquetée Capacitor Android, ADR-029). Le skill AUDITE l'état actuel
-  du code (source de vérité — il est plus avancé que les maquettes), COMPARE chaque écran à l'état de
-  l'art des leaders POS restaurant (Square for Restaurants, Toast, Lightspeed, TouchBistro, Clover,
-  Revel, SumUp, Storyous), et PROPOSE des améliorations critiques, créatives et pragmatiques classées
-  par impact/effort, en distinguant CAISSE et WAITER. Rend un rapport structuré EN FRANÇAIS
-  EN CONVERSATION, consommé dans la même session par pos-frontend-design-implement.
-  À utiliser DÈS QUE l'utilisateur parle de design/UI/UX/ergonomie de la caisse ou de l'app serveur,
-  même via un symptôme et sans dire "audit" : "audit design POS", "design POS", "UI POS", "UX caisse",
-  "ergonomie caisse", "redesign POS", "compare POS Square/Toast", "le design de la caisse",
-  "écran waiter", "design app serveur", "améliorer l'interface caisse", "POS design review",
-  "lacunes design POS", "les boutons sont trop petits", "la grille produits est moche/vide",
-  "c'est pas lisible pendant le rush". DÉFÉRER : la correction FONCTIONNELLE du parcours
-  commande→paiement (une commande qui n'atteint pas la cuisine, idempotence, versioning RPC,
-  silent failures, races realtime) → pos-flow-audit ; les faits du design-system (quels primitifs
-  existent, noms des tokens, fallbacks) → breakery-ui-kit ; RBAC/permissions/audit-log →
-  security-fraud-guard ; WAC/recette/stock → stock-management ; la CONCEPTION d'un écran ou
-  composant POS entièrement NEUF (from scratch, génératif, tokens neufs) → pos-design-craft.
-  Ce skill possède l'ASPECT (à quoi ça
-  ressemble et comment ça se manipule), pas la PLOMBERIE (est-ce que ça marche).
-pathPatterns:
-  - 'apps/pos/src/**/*.tsx'
-  - 'apps/pos/src/**/*.css'
-  - 'apps/pos/src/pages/**'
-promptSignals:
-  phrases:
-    - 'audit design POS'
-    - 'design POS'
-    - 'UI POS'
-    - 'UX caisse'
-    - 'ergonomie caisse'
-    - 'redesign POS'
-    - 'POS design review'
-    - 'lacunes design POS'
-    - 'le design de la caisse'
-    - 'améliorer l''interface caisse'
-    - 'interface caisse'
-    - 'écran waiter'
-    - 'design app serveur'
-    - 'compare POS Square'
-    - 'compare POS Toast'
-    - 'état de l''art POS'
-    - 'boutons trop petits'
-    - 'cible tactile'
-    - 'touch target'
-    - 'lisible pendant le rush'
-    - 'hiérarchie visuelle'
+  Auditer le design POS The Breakery existant : aspect, hiérarchie, lisibilité, ergonomie
+  tactile en rush, états et cohérence du design system. Livrer les constats et
+  recommandations dans la conversation. Une commande qui n’arrive pas ou un bug
+  d’encaissement relève de pos-flow-audit ; créer du neuf relève de pos-design-craft ;
+  appliquer une recommandation validée relève de pos-frontend-design-implement.
 ---
+
+Sélection : diagnostiquer l’aspect et la manipulation des surfaces POS existantes ; livrer le rapport dans la conversation. Pour une panne du parcours, utiliser [pos-flow-audit](../pos-flow-audit/SKILL.md). Créer du neuf : [pos-design-craft](../pos-design-craft/SKILL.md) ; coder les recommandations validées : [pos-frontend-design-implement](../pos-frontend-design-implement/SKILL.md). Les règles Breakery et [breakery-ui-kit](../breakery-ui-kit/SKILL.md) précèdent les méthodes de la copie du dépôt d’[Impeccable](../impeccable/SKILL.md).
 
 # POS Frontend Design Audit — The Breakery (caisse + tablette serveur)
 

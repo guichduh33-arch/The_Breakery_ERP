@@ -1,41 +1,14 @@
 ---
 name: edge-functions
 description: >-
-  Supabase Edge Functions (Deno) discipline for The Breakery — PIN & validation
-  secrets in a dedicated HTTP header NEVER in the JSON body, the two idempotency
-  flavors (HTTP x-idempotency-key for retry safety vs RPC p_client_uuid for
-  business idempotence), durable rate-limit, the custom PIN-JWT fetch wrapper
-  (HS256 JWT that GoTrue can't validate — never bypass with raw Authorization),
-  hard-cutover (no dual-mode fallback), the _shared helpers, CORS/x-app, and the
-  getSession()-null-under-PIN-auth trap. Use this skill WHENEVER you create or
-  edit supabase/functions/**, wire the POS/BO to an EF, or touch process-payment
-  / refund-order / void-order / cancel-item / auth-* / generate-pdf /
-  kiosk-issue-jwt, add an idempotency key, or add a rate-limit — invoke it BEFORE
-  editing any EF. Boundary: the SQL/RPC the EF calls (versioning, REVOKE, GRANT
-  authenticated) → db-migrations + the domain skill; RLS / permission-gate design
-  and PIN verification semantics → security-auth; the POS→EF client UX and
-  order-to-payment flow → pos-flow-audit. Mirrors the edge-functions-engineer
-  agent as an always-on guardrail.
-pathPatterns:
-  - 'supabase/functions/**'
-promptSignals:
-  phrases:
-    - 'edge function'
-    - 'deno'
-    - 'process-payment'
-    - 'refund-order'
-    - 'void-order'
-    - 'cancel-item'
-    - 'auth-verify-pin'
-    - 'x-manager-pin'
-    - 'x-idempotency-key'
-    - 'idempotency key'
-    - 'rate limit'
-    - 'PIN header'
-    - 'fetch wrapper'
-    - 'getSession'
-    - 'CORS'
+  Edge Functions Deno The Breakery : consulter avant de modifier supabase/functions ou
+  leur appel POS/BO. Couvre PIN et secrets en headers HTTP, idempotence, rate limit, fetch
+  wrapper PIN-JWT, CORS et déploiement des EF. Migrations/RPC : db-migrations ;
+  vérification des permissions et authentification : security-auth ; symptômes du parcours
+  commande-paiement : pos-flow-audit.
 ---
+
+Périmètre : supabase/functions et les appels EF du POS/BO, notamment paiement, annulation, authentification et PDF. Consulter ce skill avant l’édition ; [db-migrations](../db-migrations/SKILL.md) couvre les RPC appelées et [security-auth](../security-auth/SKILL.md) le sens des contrôles. Un symptôme utilisateur peut relever de [pos-flow-audit](../pos-flow-audit/SKILL.md) sans imposer un audit global.
 
 # Edge Functions (Deno) — The Breakery ERP
 

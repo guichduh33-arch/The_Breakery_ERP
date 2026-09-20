@@ -1,53 +1,14 @@
 ---
 name: reports-exports
 description: >-
-  Reports, exports & Z-reports expert — report RPCs, generate-pdf EF (registry de templates),
-  CSV via le helper domain buildCsv, Z-report 2-step sign flow, drill-down navigation
-  (buildDrilldownUrl). Guides new reports and export wiring. Use this skill whenever the
-  task mentions report / rapport, export, CSV, PDF, Z-report / zreport, drill-down, sales
-  report / rapport de ventes, gross margin / marge, wastage / pertes, payments by method,
-  compare period / comparaison de période, dashboard report, ExportMenu / ReportShell /
-  ExportButtons — or touches apps/backoffice reports|zreports features/pages, supabase
-  functions generate-pdf/generate-zreport-pdf/_shared/pdf-templates, packages/domain reports,
-  or any migration with report in the name. Boundary vs report-audit: THIS skill GUIDES
-  building and wiring reports/exports; to DIAGNOSE a broken or inaccurate existing report
-  (dead RPC/view binding, a chart that doesn't match the data, a decorative date filter) →
-  report-audit. Invoke it BEFORE adding or modifying any report RPC, PDF template, or export
-  button.
-pathPatterns:
-  - 'apps/backoffice/src/features/reports/**'
-  - 'apps/backoffice/src/pages/reports/**'
-  - 'apps/backoffice/src/features/zreports/**'
-  - 'apps/backoffice/src/pages/zreports/**'
-  - 'supabase/functions/generate-pdf/**'
-  - 'supabase/functions/generate-zreport-pdf/**'
-  - 'supabase/functions/_shared/pdf-templates/**'
-  - 'supabase/migrations/*report*.sql'
-  - 'supabase/migrations/*zreport*.sql'
-  - 'packages/domain/src/reports/**'
-promptSignals:
-  phrases:
-    - 'report'
-    - 'export'
-    - 'CSV'
-    - 'PDF'
-    - 'Z-report'
-    - 'zreport'
-    - 'drill-down'
-    - 'drilldown'
-    - 'generate-pdf'
-    - 'ExportMenu'
-    - 'ExportButtons'
-    - 'ReportShell'
-    - 'PeriodControl'
-    - 'buildCsv'
-    - 'compare period'
-    - 'wastage report'
-    - 'payment by method'
-    - 'perishable turnover'
-    - 'previousPeriod'
-    - 'DrilldownLink'
+  Implémenter rapports et exports The Breakery : RPC de rapport, hooks, PDF, CSV, Z-report
+  et drill-down. Consulter avant de modifier une RPC de rapport, un template PDF ou un
+  bouton d’export. Pour décider des KPIs et graphiques : report-designer ; pour
+  diagnostiquer un rapport cassé ou inexact : report-audit ; pour le parcours de clôture
+  de caisse : pos-flow-audit.
 ---
+
+Sélection : ce skill mène le câblage des rapports BO, Z-reports, PDF/CSV et drill-down (domaine et EF de génération inclus). Consulter avant toute modification d’une RPC de rapport, d’un template PDF ou d’un bouton d’export. [report-designer](../report-designer/SKILL.md) décide des métriques et graphiques ; [report-audit](../report-audit/SKILL.md) diagnostique les rapports incorrects ; [pos-flow-audit](../pos-flow-audit/SKILL.md) couvre le parcours de clôture de caisse.
 
 # Reports & Exports — The Breakery ERP
 

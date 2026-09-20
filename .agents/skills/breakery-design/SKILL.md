@@ -1,30 +1,15 @@
 ---
 name: breakery-design
-description: 'Direction artistique + ergonomie The Breakery — identité visuelle par surface (POS luxe-dark, BO « Instrument » clair, KDS, Customer Display, tablette serveur), trends UI applicables vs gadgets, méthodologie variantes-avant-implémentation, checklist audit esthétique/pratique (WCAG, touch 44px, états, motion). Use when designing, redesigning, polishing or auditing any screen/component look & feel. Frontière : ce skill porte la DA TRANSVERSE et les surfaces non-POS (back-office, KDS, Customer Display, dashboard). Pour le POS spécifiquement (apps/pos, CAISSE/WAITER), préférer pos-design-craft (créer un écran/composant neuf) ou pos-frontend-design-audit / pos-frontend-design-implement (auditer puis coder l''existant) ; pour les faits du design-system (primitifs, tokens) → breakery-ui-kit.'
-pathPatterns:
-  - 'apps/*/src/**/components/**'
-  - 'apps/*/src/**/pages/**'
-  - 'packages/ui/**'
-promptSignals:
-  phrases:
-    - 'design'
-    - 'esthétique'
-    - 'esthetique'
-    - 'redesign'
-    - 'mockup'
-    - 'maquette'
-    - 'polish'
-    - 'look and feel'
-    - 'apparence'
-    - 'moderniser'
-    - 'trend'
-    - 'micro-interaction'
-    - 'animation'
-    - 'audit visuel'
-    - 'glassmorphism'
-    - 'glass'
-    - 'moderne'
+description: >-
+  Direction artistique The Breakery : concevoir, revoir ou polir le back-office et la
+  cohérence visuelle entre surfaces. Définit identité, ergonomie et validation des
+  variantes. Pour créer un écran POS, utiliser pos-design-craft ; pour auditer son aspect,
+  pos-frontend-design-audit ; pour appliquer une recommandation validée,
+  pos-frontend-design-implement. Primitifs et tokens : breakery-ui-kit. Impeccable apporte
+  une méthode complémentaire.
 ---
+
+Sélection : ce skill mène la direction transverse et le back-office. Pour les surfaces d’apps/pos, [pos-design-craft](../pos-design-craft/SKILL.md) mène la création, [pos-frontend-design-audit](../pos-frontend-design-audit/SKILL.md) le diagnostic visuel et [pos-frontend-design-implement](../pos-frontend-design-implement/SKILL.md) les recommandations validées. Consulter [breakery-ui-kit](../breakery-ui-kit/SKILL.md) pour les moyens existants ; la copie du dépôt d’[Impeccable](../impeccable/SKILL.md) complète la méthode, sans remplacer les règles Breakery ni élargir la demande.
 
 # Breakery Design — direction artistique + ergonomie
 

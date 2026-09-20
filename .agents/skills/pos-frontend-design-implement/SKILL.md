@@ -1,40 +1,14 @@
 ---
 name: pos-frontend-design-implement
 description: >-
-  Développeur des propositions de design POS produites par le skill pos-frontend-design-audit.
-  Reçoit un rapport d'audit rendu en conversation par pos-frontend-design-audit, sélectionne
-  un (ou plusieurs) ticket(s) de proposition, et l'IMPLÉMENTE dans apps/pos/ — composants React/TypeScript + Tailwind + primitifs
-  @breakery/ui — en respectant le design-system (tokens, typo canonique, fallbacks natifs), les deux
-  profils CAISSE (desktop, web app Vite) et WAITER (tablette Android empaquetée Capacitor), et les patterns critiques du
-  projet (AGENTS.md). Vérifie le rendu, les cibles tactiles, les états (loading/empty/erreur/offline)
-  et lance les tests avant de conclure. À utiliser DÈS QUE l'utilisateur veut PASSER À L'ACTION sur le
-  design POS : "implémente la proposition", "développe le ticket d'audit", "code le redesign POS",
-  "applique les recos design POS", "agrandis les boutons de paiement", "refais la grille produits",
-  "rends l'écran waiter plus ergonomique", "applique le quick-win du rapport". Si aucune proposition
-  n'est présente dans la session ou si la demande est "trouve les problèmes de design", c'est l'autre skill
-  (pos-frontend-design-audit) qui s'exécute d'abord. DÉFÉRER : l'ajout d'un nouveau primitif PARTAGÉ
-  → packages/ui + breakery-ui-kit ; la logique du parcours commande→paiement et la correction
-  fonctionnelle (RPC, idempotence, realtime) → pos-flow-audit ; RBAC/permissions → security-fraud-guard ;
-  concevoir un écran/composant POS entièrement NEUF sans rapport d'audit préalable (from scratch) → pos-design-craft.
-  Ce skill TRANSFORME une proposition de design validée en code POS qui tient en production.
-pathPatterns:
-  - 'apps/pos/src/**/*.tsx'
-  - 'apps/pos/src/**/*.css'
-promptSignals:
-  phrases:
-    - 'implémente la proposition'
-    - 'développe le ticket'
-    - 'développe les propositions'
-    - 'code le redesign POS'
-    - 'applique les recos design'
-    - 'applique le quick-win'
-    - 'rapport d''audit POS'
-    - 'agrandis les boutons'
-    - 'refais la grille produits'
-    - 'rends l''écran waiter plus ergonomique'
-    - 'implémenter le design POS'
-    - 'développer le design POS'
+  Implémenter des recommandations de design POS The Breakery déjà validées, issues de
+  pos-frontend-design-audit : boutons, grille, panier, tablette, KDS ou customer display.
+  Partir des tickets choisis et respecter breakery-ui-kit. Pour diagnostiquer l’existant :
+  pos-frontend-design-audit ; pour concevoir un écran neuf : pos-design-craft ; pour
+  corriger le parcours métier : pos-flow-audit.
 ---
+
+Sélection : partir du rapport et des recommandations choisies par Mamat. En leur absence, demander les éléments manquants ; ne pas inventer leur validation. Diagnostic visuel : [pos-frontend-design-audit](../pos-frontend-design-audit/SKILL.md) ; création : [pos-design-craft](../pos-design-craft/SKILL.md). Suivre [breakery-ui-kit](../breakery-ui-kit/SKILL.md) et, si utile, la méthode de la copie du dépôt d’[Impeccable](../impeccable/SKILL.md).
 
 # POS Frontend Design Implement — The Breakery
 

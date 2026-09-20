@@ -1,58 +1,14 @@
 ---
 name: accounting
 description: >-
-  Senior master accountant — mécanique ET conseil du module accounting. Côté mécanique :
-  COA, journal entries, PB1/PBJT (NON-PKP, ADR-005), périodes fiscales & clôture annuelle,
-  grand livre, balance, P&L, bilan, cash flow, coffres. Côté conseil : concevoir/faire
-  évoluer le plan comptable (benchmark F&B même taille), auditer la couverture des
-  automatisations POS/BO→JE (zéro double saisie), revoir la qualité/lisibilité des pages,
-  générer et vérifier les rapports comptables, optimisation fiscale LÉGALE (cadre
-  NON-PKP/PBJT). Use this skill whenever the task mentions journal entry / écriture
-  comptable / JE, COA / plan comptable / chart of accounts, PB1, PPN, TVA, NON-PKP, PBJT,
-  fiscal period / période fiscale, clôture annuelle / year close, general ledger / grand
-  livre, trial balance / balance, bilan / balance sheet, P&L / compte de résultat,
-  cash flow / flux de trésorerie, cash wallet / coffre / petty cash, COGS, retained
-  earnings, mapping account, double saisie / double input, optimisation fiscale / impôts /
-  PPh / UMKM, rapport comptable, audit comptable, compta / comptabilité — or touches
-  apps/backoffice accounting features/pages, or supabase migrations/tests around
-  journal/fiscal/ledger/pb1/cash_flow. Invoke it BEFORE editing any JE-emitting RPC or
-  accounting report, even for a one-line fix.
-pathPatterns:
-  - 'apps/backoffice/src/features/accounting/**'
-  - 'apps/backoffice/src/pages/accounting/**'
-  - 'supabase/migrations/*journal*.sql'
-  - 'supabase/migrations/*fiscal*.sql'
-  - 'supabase/migrations/*ledger*.sql'
-  - 'supabase/migrations/*pb1*.sql'
-  - 'supabase/migrations/*cash_flow*.sql'
-  - 'supabase/migrations/*cash_wallet*.sql'
-  - 'supabase/migrations/*account*.sql'
-  - 'supabase/tests/*accounting*.test.sql'
-  - 'supabase/tests/*fiscal*.test.sql'
-  - 'supabase/tests/*pb1*.test.sql'
-  - 'supabase/tests/*cash*.test.sql'
-promptSignals:
-  phrases:
-    - 'journal entry'
-    - 'COA'
-    - 'chart of accounts'
-    - 'plan comptable'
-    - 'PB1'
-    - 'PPN'
-    - 'NON-PKP'
-    - 'fiscal period'
-    - 'year close'
-    - 'general ledger'
-    - 'trial balance'
-    - 'cash flow'
-    - 'cash wallet'
-    - 'COGS'
-    - 'retained earnings'
-    - 'mapping account'
-    - 'double saisie'
-    - 'optimisation fiscale'
-    - 'rapport comptable'
+  Comptabilité The Breakery : écritures / journal entries, COA / plan comptable, PBJT
+  NON-PKP, clôture fiscale, grand livre, bilan, P&L, cash flow et coffres. Utiliser pour
+  concevoir, auditer ou modifier la comptabilité, ses rapports, ses automatismes ou une
+  RPC émettant des écritures. Couvre aussi la lisibilité des pages comptables et le
+  conseil fiscal légal ; le câblage des exports relève de reports-exports.
 ---
+
+Périmètre : comptabilité du back-office et SQL de journal, fiscalité, ledger et coffres. Charger ce skill avant de modifier une RPC émettant des écritures ou un rapport comptable ; conserver la distinction entre conseil fiscal légal et mécanique des exports.
 
 # Accounting — senior master accountant, The Breakery ERP
 

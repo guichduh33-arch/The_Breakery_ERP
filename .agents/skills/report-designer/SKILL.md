@@ -1,43 +1,14 @@
 ---
 name: report-designer
 description: >-
-  Concepteur analytique de rapports — décide QUOI montrer et COMMENT le visualiser quand on
-  crée ou améliore un rapport du module reports (apps/backoffice). Choisit les métriques et
-  dimensions pertinentes depuis le schéma réel, valide contre les données de la base dev,
-  conçoit des graphiques de qualité avec la stack Recharts existante, et livre un prototype
-  HTML validé par Mamat AVANT toute implémentation. Use this skill whenever the task is to
-  design / concevoir / imaginer / proposer a NEW report, add analytics to an existing one,
-  choose KPIs / métriques / indicateurs, pick or improve a chart / graphique / visualisation,
-  do a gap analysis (« il manque un rapport sur… », « quels rapports manquent ? »), analyze
-  quantités achetées, évolution des prix, tendances, marges, top produits, saisonnalité — or
-  any « quel graphique pour… » question. Boundary: THIS skill owns analytical pertinence and
-  chart design; the wiring (RPC, hook, PDF, CSV, drill-down mechanics) → reports-exports;
-  diagnosing a BROKEN existing report → report-audit; generic chart craft rules (palettes,
-  accessibility) → dataviz, que ce skill applique. Invoke it BEFORE sketching any new report
-  or picking any chart type.
-pathPatterns:
-  - 'apps/backoffice/src/features/reports/components/charts/**'
-  - 'apps/backoffice/src/features/reports/utils/chartColors.ts'
-  - 'apps/backoffice/src/features/reports/components/KpiBand.tsx'
-  - 'apps/backoffice/src/features/reports/components/BreakdownCard.tsx'
-promptSignals:
-  phrases:
-    - 'concevoir un rapport'
-    - 'nouveau rapport'
-    - 'il manque un rapport'
-    - 'quel graphique'
-    - 'quels KPIs'
-    - 'métriques'
-    - 'visualisation'
-    - 'chart'
-    - 'graphique de qualité'
-    - 'évolution des prix'
-    - 'quantité achetée'
-    - 'gap analysis'
-    - 'top produits'
-    - 'tendance'
-    - 'saisonnalité'
+  Concevoir ou enrichir les rapports BO The Breakery : choisir KPIs, métriques, dimensions
+  et graphiques / charts, analyser les manques et proposer un prototype fondé sur les
+  données dev. Faire valider la maquette avant implémentation. Un rapport cassé ou inexact
+  relève de report-audit ; RPC, hooks, PDF/CSV et drill-down relèvent de reports-exports.
+  Réutiliser les composants graphiques existants.
 ---
+
+Sélection : ce skill mène la conception analytique et le prototype à faire valider. Diagnostic d’un rapport existant : [report-audit](../report-audit/SKILL.md) ; câblage, exports et drill-down : [reports-exports](../reports-exports/SKILL.md). Les consignes de choix des graphiques ci-dessous sont autonomes ; aucune skill externe de datavisualisation n’est requise.
 
 # Report Designer — The Breakery ERP
 
@@ -56,7 +27,7 @@ graphique du module.
 | QUOI montrer, COMMENT le visualiser, prototype | **report-designer** (ici) |
 | Câbler la RPC, le hook, PDF/CSV, drill-down | `reports-exports` |
 | Diagnostiquer un rapport existant cassé/inexact | `report-audit` |
-| Règles génériques de data-viz (palette, formes, a11y) | `dataviz` — **à charger avant tout graphique** |
+| Règles génériques de data-viz (palette, formes, a11y) | Consignes « Choisir le graphique — stack existante d’abord » ci-dessous |
 | Migration SQL de la RPC de rapport | `db-migrations` |
 
 Les deux skills reports se composent : report-designer produit la spec analytique
@@ -119,7 +90,7 @@ uniquement** — la base est partagée, aucune écriture, jamais. Lire
 Choisir KPIs et graphiques (voir les deux sections suivantes), puis produire un
 **prototype HTML alimenté par les vraies données dev** (Artifact ou fichier envoyé à
 Mamat) : KpiBand simulée, graphiques proposés avec les vrais chiffres, table d'exemple.
-Charger `dataviz` avant d'écrire le premier graphique du prototype, et reprendre le
+Appliquer les consignes de choix des graphiques ci-dessous, et reprendre le
 langage visuel du module (couleurs de `chartColors.ts`, comparaison en pointillé pâle).
 
 **Mamat valide la maquette avant toute implémentation** — c'est la méthodologie
@@ -175,7 +146,7 @@ Le module a déjà une bibliothèque cohérente (`features/reports/components/ch
 (reprendre les couleurs ne suffit pas — proposer de reconstruire une heatmap alors
 que `HeatmapGrid` existe est un échec de conception). Ne créer un nouveau composant
 que si aucune forme existante ne porte la donnée, et alors le concevoir réutilisable
-et conforme à `dataviz`.
+et conforme aux consignes graphiques de ce skill.
 
 | Forme de la donnée | Composant | Exemple |
 |---|---|---|

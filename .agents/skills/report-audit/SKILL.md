@@ -1,41 +1,14 @@
 ---
 name: report-audit
-description: >
-  Systematic AUDITOR of the V3 backoffice reports/analytics module (apps/backoffice) — scans every report
-  page under `apps/backoffice/src/pages/reports/` across the full V3 stack (report RPC → React Query hook →
-  page component → chart wrappers/tables → CSV/PDF export) to find broken data bindings, dead RPC/view
-  references, type-vs-payload mismatches, decorative date filters, misleading charts (dual-axis, missing
-  stackId, duplicate render), French leaking into the English UI, and coverage gaps. Produces a
-  prioritized audit report (P0–P3) then offers interactive fixes one by one. Complementary to the
-  `reports-exports` skill (which GUIDES building/wiring reports) — this skill FINDS bugs. Use whenever the
-  user reports a broken/inaccurate report, a chart that "doesn't match the data", missing reports, graph
-  errors, analytics inconsistencies, a date picker that doesn't filter, or wants a quality audit of reports.
-  DEFER: money/fraud/RBAC integrity → security-fraud-guard ; AGENTS.md pattern compliance of a diff →
-  pattern-guardian ; JE/COA/PB1 math correctness → accounting ; WAC/recipe-cost/inventory math →
-  stock-management ; building a NEW report or export wiring → reports-exports.
-pathPatterns:
-  - 'apps/backoffice/src/features/reports/**'
-  - 'apps/backoffice/src/pages/reports/**'
-  - 'packages/domain/src/reports/**'
-promptSignals:
-  phrases:
-    - 'report audit'
-    - 'audit reports'
-    - 'broken report'
-    - 'report bug'
-    - 'inaccurate report'
-    - 'chart issue'
-    - 'graph error'
-    - "chart doesn't match"
-    - 'bars don\'t match'
-    - 'missing report'
-    - 'report data inconsistency'
-    - 'analytics problem'
-    - 'date filter not working'
-    - 'report quality'
-    - 'verify reports'
-    - 'french in the reports UI'
+description: >-
+  Diagnostiquer les rapports et analytics BO The Breakery : chiffres inexacts, graphique
+  incohérent / chart mismatch, filtre de date inopérant, erreur RPC/vue ou page cassée.
+  Auditer la chaîne données vers affichage, dans le périmètre demandé, et présenter les
+  corrections à valider. Nouveau rapport ou choix des KPIs : report-designer ; câblage et
+  exports : reports-exports ; intégrité antifraude : security-fraud-guard.
 ---
+
+Sélection : ce skill mène le diagnostic d’un rapport BO existant cassé ou inexact, limité aux pages et symptômes demandés. Concevoir un rapport ou choisir les KPIs : [report-designer](../report-designer/SKILL.md) ; implémenter les corrections validées et les exports : [reports-exports](../reports-exports/SKILL.md). Les anomalies de fraude transversales relèvent de [security-fraud-guard](../security-fraud-guard/SKILL.md).
 
 # Report Audit — The Breakery V3 (apps/backoffice)
 
