@@ -1,14 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
 import { openPosSession, loginPOS } from './fixtures/auth';
 
-const sizes = [{ width: 390, height: 844 }, { width: 768, height: 1024 }, { width: 1024, height: 768 }, { width: 1280, height: 800 }];
+const sizes = [{ width: 360, height: 648 }, { width: 390, height: 844 }, { width: 768, height: 1024 }, { width: 1024, height: 768 }, { width: 1280, height: 800 }];
 async function fitsViewport(page: Page) {
   const bounds = await page.evaluate(() => ({ width: innerWidth, height: innerHeight, scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight }));
   expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width);
   expect(bounds.scrollHeight).toBeLessThanOrEqual(bounds.height);
 }
 
-test('POS, payment and local display remain usable at all four target sizes', async ({ page }, info) => {
+test('POS, payment and local display remain usable at all target sizes', async ({ page }, info) => {
   test.setTimeout(180_000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -20,7 +20,12 @@ test('POS, payment and local display remain usable at all four target sizes', as
     await expect(page.getByRole('button', { name: 'Hold', exact: true })).toBeInViewport();
     await fitsViewport(page);
     await page.screenshot({ path: info.outputPath(`pos-${size.width}.png`) });
-    if (size.width < 1100) await expect(page.getByRole('button', { name: /view order/i })).toBeInViewport();
+    if (size.width < 900) {
+      await expect(page.getByRole('button', { name: /view order/i })).toBeInViewport();
+    } else {
+      await expect(page.getByRole('complementary', { name: 'Active order' })).toBeInViewport();
+      await expect(page.getByRole('button', { name: /view order/i })).toHaveCount(0);
+    }
   }
   await page.getByRole('button', { name: 'Coffee', exact: true }).click();
   await page.getByRole('button', { name: /^Americano\b/ }).first().click();

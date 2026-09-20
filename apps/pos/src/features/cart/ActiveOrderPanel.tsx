@@ -141,7 +141,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   return (
     <aside
       aria-label="Active order"
-      className="w-full min-h-0 shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full max-[1099px]:border-l-0"
+      className="w-full min-h-0 shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full max-[899px]:border-l-0"
     >
       {/* Header ──────────────────────────────────────────────────────────── */}
       {/* Critique 2026-08-23 (P2) — shrink-0 : sans lui, sous contrainte de

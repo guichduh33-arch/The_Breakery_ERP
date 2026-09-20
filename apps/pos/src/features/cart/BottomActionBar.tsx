@@ -264,7 +264,7 @@ export function BottomActionBar({
       // son border-t, pas par une ombre portée — supprimée.
       // Audit 2026-08-24 (responsive P1) — safe-area : la barre porte Checkout,
       // qui passait sous la barre gestuelle Android en Capacitor.
-      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 pt-2.5 pb-safe-bottom-gutter flex items-center gap-2 max-[1099px]:flex-wrap z-50"
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 pt-2.5 pb-safe-bottom-gutter flex items-center gap-2 max-md:flex-wrap z-50"
       // Audit 2026-08-24 (a11y P2) — role=toolbar promettait la navigation aux
       // flèches (non câblée) ; group dit ce que le clavier sait faire, même
       // doctrine que le popover More et les onglets du panier.
@@ -275,7 +275,7 @@ export function BottomActionBar({
           Wraps to a second row before it can push the validation pair off the
           right edge — this is what fixes the Checkout/total truncation (#14):
           the group is `min-w-0 flex-wrap`, the validation pair is `shrink-0`. */}
-      <div className="flex flex-wrap items-center gap-2 min-w-0 max-[1099px]:w-full">
+      <div className="flex flex-wrap items-center gap-2 min-w-0 max-md:w-full">
         {/* Critique run 4 lot 5 — même contrat que Hold : indisponible ≠
             disabled. Un bouton mort au doigt n'explique rien ; celui-ci reste
             tapable et enseigne le parcours quand la liste est vide. */}
@@ -432,7 +432,7 @@ export function BottomActionBar({
       </div>
 
       {/* Spacer — collapses first; the left group wraps before Checkout clips. */}
-      <div className="flex-1 min-w-[24px] max-[1099px]:hidden" />
+      <div className="flex-1 min-w-[24px] max-md:hidden" />
 
       {/* ── Right group : validation ────────────────────────────────────── */}
       {/* LOT 7 (audit 2026-06-25) — visual hierarchy by touch size:
@@ -446,7 +446,7 @@ export function BottomActionBar({
           side can't fit 390px without horizontal scroll (measured 403px), and
           the total must never be truncated. Two stacked full-width rows give
           the waiter maximal one-thumb targets. */}
-      <div className="flex items-center gap-2 max-[1099px]:w-full">
+      <div className="flex items-center gap-2 max-md:w-full">
         <SendToKitchenButton
           variant="outlineGold"
           className="px-3 rounded-md text-sm font-bold uppercase tracking-wide max-[1099px]:flex-1"

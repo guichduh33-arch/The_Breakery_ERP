@@ -153,7 +153,7 @@ describe('TabletOrderPage', () => {
     // annonce le motif du refus (ambre) au lieu du neutre « Pick a table ».
     const pickTableBtn = screen.getByTestId('tablet-order-pick-table');
     expect(pickTableBtn).toHaveTextContent(/table required/i);
-    expect(pickTableBtn).toHaveClass('min-h-11', 'border-amber-warn', 'text-amber-warn');
+    expect(pickTableBtn).toHaveClass('min-h-12', 'border-amber-warn', 'text-amber-warn');
 
     const sendBtn = screen.getByTestId('tablet-order-send');
     expect(sendBtn).toBeDisabled(); // empty cart AND missing table
@@ -162,8 +162,8 @@ describe('TabletOrderPage', () => {
     // min-h-11 générique) — pas une erreur du diff, l'ancienne assertion
     // visait déjà la mauvaise classe.
     expect(sendBtn).toHaveClass('h-touch-comfy');
-    expect(screen.getByTestId('tablet-order-type-dine-in')).toHaveClass('min-h-11');
-    expect(screen.getByTestId('tablet-order-type-take-out')).toHaveClass('min-h-11');
+    expect(screen.getByTestId('tablet-order-type-dine-in')).toHaveClass('min-h-12');
+    expect(screen.getByTestId('tablet-order-type-take-out')).toHaveClass('min-h-12');
   });
 
   it('opens the floor plan view when the table chip is tapped, and selects a table', async () => {

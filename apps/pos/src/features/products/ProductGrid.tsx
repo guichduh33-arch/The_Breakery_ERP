@@ -97,8 +97,8 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
   }, [products, selectedSlug, selectedCat, query, searching]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle">
+    <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+      <div className="shrink-0 px-3 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle">
         {/* Functional title (not the decorative serif that duplicated the rail
             active state, #11): plain heading + live item count. */}
         <h1 className="flex items-baseline gap-2 min-w-0">
@@ -126,7 +126,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3">
         {isError ? (
           <ErrorState
             title="Cannot load products"
@@ -207,7 +207,7 @@ function ProductCardSkeleton(): JSX.Element {
       aria-hidden
       className="rounded-lg overflow-hidden border border-border-subtle bg-bg-elevated motion-safe:animate-pulse"
     >
-      <div className="aspect-[4/3] bg-bg-input" />
+      <div className="w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 bg-bg-input" />
       <div className="px-2.5 py-2 space-y-2">
         <div className="h-3.5 w-3/4 rounded bg-bg-input" />
         <div className="h-3.5 w-1/3 rounded bg-bg-input" />

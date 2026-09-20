@@ -161,12 +161,12 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   const modalOpen = Boolean(product) && modifiersQuery.isSuccess && groups.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="px-5 py-3 flex items-center justify-between gap-4 border-b border-border-subtle">
+    <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+      <div className="shrink-0 px-3 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle">
         {/* h2 — le h1 de la surface vit dans TabletLayout ; deux h1 simultanés
             cassaient la navigation par titres (a11y). */}
-        <h2 className="font-sans font-semibold text-xl text-text-primary capitalize">{title}</h2>
-        <div className="relative w-64">
+        <h2 className="max-sm:sr-only min-w-0 break-words font-sans font-semibold text-base text-text-primary capitalize">{title}</h2>
+        <div className="relative flex-1 min-w-[160px] max-w-sm">
           <Search
             aria-hidden
             className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted pointer-events-none"
@@ -183,7 +183,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3">
         {isError ? (
           <ErrorState
             title="Unable to load products"
@@ -191,7 +191,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-4" aria-busy="true" aria-label="Loading products">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3" aria-busy="true" aria-label="Loading products">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -200,7 +200,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
               >
                 {/* 4/3 comme la vraie carte (ProductCard) — un squelette carré
                     provoquait un saut de mise en page au chargement. */}
-                <div className="aspect-[4/3] bg-bg-input" />
+                <div className="w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 max-sm:h-14 max-sm:aspect-auto bg-bg-input" />
                 <div className="px-3 py-3 space-y-2">
                   <div className="h-4 w-3/4 rounded bg-bg-input" />
                   <div className="h-3 w-1/3 rounded bg-bg-input" />
@@ -222,7 +222,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             size="md"
           />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3">
             {filtered.map((p) => {
               const soldOut = p.is_sellable === false;
               const lots = lotsByProduct?.get(p.id);
@@ -237,6 +237,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
 
               return (
                 <ProductCard
+                  compactOnMobile
                   key={p.id}
                   product={p}
                   disabled={disabled}
