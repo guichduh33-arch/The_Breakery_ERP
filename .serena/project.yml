@@ -163,5 +163,5 @@ read_only_memory_patterns: []
 # and cannot be accessed via read_memory or write_memory.
 # To access ignored memory files, use the read_file tool on the raw file path.
 # Extends the list from the global configuration, merging the two lists.
-# Example: ["_archive/.*", "_episodes/.*"]
+# Patterns use regular-expression syntax.
 ignored_memory_patterns: []
