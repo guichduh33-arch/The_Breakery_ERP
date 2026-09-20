@@ -4,7 +4,7 @@
 > `packages/ui/src/primitives/Button.tsx`, `apps/pos/package.json`. Les valeurs L/C/H et les
 > directions de palette ci-dessous restent des propositions, pas des faits.
 
-> **Les valeurs ci-dessous illustrent la palette actuelle (charcoal/gold) — ce n'est PAS la seule direction permise.** Le skill propose des palettes alternatives (terracotta/crème, sauge/miel, solaire haute-luminance…) construites avec la même mécanique OKLCH : mêmes rapports de L entre surfaces, même dérivation d'états, contrastes mesurés au navigateur (protocole Playwright du SKILL.md).
+> **Les valeurs ci-dessous illustrent la palette actuelle (charcoal/gold) — ce n'est PAS la seule direction permise.** Le skill propose des palettes alternatives (terracotta/crème, sauge/miel, solaire haute-luminance…) construites avec la même mécanique OKLCH : mêmes rapports de L entre surfaces, même dérivation d'états, contrastes mesurés au navigateur ([protocole de vérification visuelle](verification.md)).
 
 > Prêt à adapter, pas à coller aveuglément : les valeurs L/C/H ci-dessous sont des points de départ calés sur l'identité luxe-dark (charcoal + gold). Toujours vérifier le contraste réel (AAA 7:1 sur chiffres) après ajustement. Les tokens neufs s'insèrent dans la cascade `packages/ui/src/tokens/` (couche `colors.css` — c'est l'arbre importé via `@breakery/ui/tokens.css`), pas dans un composant. `colors.css` est chargé **en dernier** et porte **deux couches de thème** : `:root, .dark, .theme-pos` (sombre — POS, KDS, Customer Display, tablette) et `.theme-backoffice` (clair). Un token POS se pose sous la couche POS, jamais dans un `:root` isolé qui déborderait sur le back-office.
 
