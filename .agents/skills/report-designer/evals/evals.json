@@ -5,11 +5,11 @@
       "id": 0,
       "name": "purchase-gap-analysis",
       "prompt": "il manque des reports importants concernant les achats : quantité achetée par article, l'évolution des prix d'achat, etc. regarde ce qui existe déjà dans le module reports du backoffice et propose ce qui manque, avec une maquette du rapport prioritaire alimentée par les vraies données de la base dev. ne code rien dans l'app, ne commite rien.",
-      "expected_output": "Gap analysis citant les rapports achats existants (purchase_by_date / purchase_by_supplier / purchase_items), identification du trou (évolution prix d'achat unitaire, quantités dans le temps), 1-3 rapports candidats priorisés avec question métier + KPIs + graphiques mappés sur la stack existante, et une maquette HTML avec vraies données dev.",
+      "expected_output": "Relevé de la couverture actuelle des rapports achats, puis propositions fondées sur un manque démontré. Aucun manque imposé par un ancien benchmark ; données, requêtes et maquette traçables.",
       "files": [],
       "assertions": [
         "Gap analysis: cite au moins deux des trois rapports achats existants (purchase_by_date, purchase_by_supplier, purchase_items) avant de proposer du neuf",
-        "Identifie explicitement l'évolution du prix d'achat unitaire (par article et/ou fournisseur) comme un manque à combler",
+        "Vérifie les rapports de prix d’achat déjà présents avant de qualifier un manque ; propose seulement un écart prouvé, ou conclut que le besoin est couvert.",
         "SQL cité: la spec contient le texte d'au moins une requête SQL SELECT exécutée sur la base dev",
         "Provenance des chiffres: les chiffres réels de la maquette sont traçables aux requêtes citées, et tout élément synthétique est explicitement marqué comme tel",
         "Mapping composants: chaque graphique proposé est mappé sur un composant existant nommé (TrendLineChart, ParetoChart, StackedBarsChart, PairedBarsChart, HeatmapGrid, BreakdownCard) quand une forme existante porte la donnée — reprendre seulement les couleurs ne suffit pas",

@@ -10,7 +10,7 @@
       "assertions": [
         "Names the real refund RPC family refund_order_rpc (not a guessed name), and does NOT pin a version number as the living pointer",
         "Resolves the live version from the highest-numbered migration and/or the refund-order edge function call-site rather than asserting one from memory",
-        "Identifies the PIN-location control: the manager PIN must travel in the x-manager-pin HTTP header, never in the JSON body, and flags create_manual_je which still takes it as a SQL argument",
+        "Distingue header PIN pour une EF et argument PIN pour une RPC ; ne signale pas create_manual_je comme défectueuse pour la seule présence de p_manager_pin. Vérifie validation serveur et verrouillage.",
         "States that reversals require a manager-PIN second factor beyond the cashier permission",
         "Notes that the EF is not the security boundary: the underlying reversal RPC must be REVOKEd from authenticated, and that this REVOKE has regressed on past version bumps",
         "Checks whether the audit actor_id records the approving manager vs the cashier",
@@ -21,12 +21,12 @@
     {
       "id": 2,
       "prompt": "Je veux ajouter une RPC apply_manual_discount_v1 qui applique une remise manuelle (montant ou %) sur une commande ouverte. Implémente-la de façon sécurisée.",
-      "expected_output": "A secure implementation following preventive checklist 5.A with definer+search_path, gate, header PIN, REVOKE pair, audit, idempotency, permission seed + PermissionCode, and pgTAP.",
+      "expected_output": "Implémentation sécurisée dans le contrat de remise actuel : permission, autorisation manager serveur, idempotence, audit, droits et pgTAP. Le véhicule du PIN dépend de la cible ; une RPC ne lit pas un header HTTP.",
       "files": [],
       "assertions": [
         "Function is SECURITY DEFINER with an explicit SET search_path",
         "Calls has_permission(...) and raises P0003 (or 42501) on denial",
-        "Requires a manager PIN sourced from the x-manager-pin HTTP header (not the JSON body)",
+        "Préserve l’autorisation manager serveur du chemin de remise existant ; ne propose pas qu’une RPC lise un header HTTP, ni de faire confiance à un UUID client.",
         "Includes the full REVOKE pair: REVOKE FROM PUBLIC + REVOKE FROM anon + ALTER DEFAULT PRIVILEGES",
         "Writes an audit_logs row with canonical cols (actor_id/action/entity_type/entity_id/metadata)",
         "Resolves actor_id to a user_profiles.id rather than passing auth.uid() straight in",
@@ -72,9 +72,9 @@
       "files": [],
       "assertions": [
         "Names the read path: the get_audit_logs RPC family consumed by apps/backoffice/src/pages/reports/AuditPage.tsx (family, not a pinned version number)",
-        "States that the read is governed by the audit_logs RLS policy admin_read (ADMIN / SUPER_ADMIN), and that the RPC itself carries no has_permission gate",
+        "Résout le corps courant de get_audit_logs et la policy de lecture réelle avant de décrire les gates ; ne transforme pas un ancien relevé en contrat actuel.",
         "Distinguishes audit-log WRITE completeness from READ completeness, and proposes comparing a direct count on audit_logs against what the RPC returns for the same filter",
-        "Notes that audit_logs.payload (the diff column) is not served by the read RPC — only metadata is displayed",
+        "Vérifie si la RPC courante sert payload et metadata, et distingue leur sens sans présumer la forme du payload retourné.",
         "Flags the actor_id integrity check (actor_id must be a user_profiles.id, not auth.uid()) as affecting who appears in the trail",
         "Does not assert an unverified filtering mechanism as fact: any claim that actor-less rows are hidden is presented as a dated observation to re-prove against the live function body"
       ]

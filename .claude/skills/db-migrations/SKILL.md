@@ -1,52 +1,19 @@
 ---
 name: db-migrations
 description: >-
-  Migration & RPC hygiene expert for Supabase cloud V3 — RPC versioning
-  monotone, REVOKE/anon defense-in-depth pairs, monotonic migration numbering,
-  NO BEGIN/COMMIT in the body, mandatory types regen (the #1 cause of broken CI
-  on this repo), and the cloud-MCP-only workflow (Docker retired 2026-05-14).
-  Use this skill WHENEVER you create or edit a file in supabase/migrations/**,
-  add / bump / DROP an RPC, alter a table or column, seed permissions, or touch
-  SECURITY DEFINER / GRANT / REVOKE / packages/supabase/src/types.generated.ts —
-  even a one-line migration. Boundary: THIS skill owns migration MECHANICS
-  (sequencing, _vN→_vN+1 + DROP in the same migration, the 3-line REVOKE pair,
-  anon inherits EXECUTE via PUBLIC, types regen, apply via MCP not Docker); the
-  SECURITY SEMANTICS of a gate or RLS policy design → security-auth; whether a
-  money-path RPC is correct → the domain skill (orders / accounting /
-  stock-management / b2b-credit / expense-governance). Mirrors the db-engineer
-  agent as an always-on guardrail — invoke it BEFORE writing migration SQL.
-pathPatterns:
-  - 'supabase/migrations/**'
-  - 'packages/supabase/src/types.generated.ts'
-promptSignals:
-  phrases:
-    - 'migration'
-    - 'apply_migration'
-    - 'RPC versioning'
-    - 'DROP FUNCTION'
-    - 'REVOKE'
-    - 'GRANT EXECUTE'
-    - 'types regen'
-    - 'generate_typescript_types'
-    - 'types.generated'
-    - 'SECURITY DEFINER'
-    - 'schema_migrations'
-    - 'supabase cloud'
-    - 'bump the RPC'
-    - 'new migration'
-    - 'seed permission'
+  Migrations/RPC Breakery : versionnement, corps live, numérotation, droits PUBLIC/anon, types et pgTAP sur Supabase cloud V3. Avant tout changement de schéma ou de signature ; invariants métier dans le skill du domaine.
 ---
 
 # DB Migrations & RPC Hygiene — The Breakery ERP
 
-**`CLAUDE.md` (Critical patterns) is the source of truth.** This skill is the always-on guardrail that fires when you touch `supabase/migrations/**`; the deep procedures live in the **`db-engineer`** agent. Verify the live schema (MCP `list_tables` / `pg_get_functiondef`) before asserting a fact — cloud drifts from the migration files.
+Appliquer AGENTS.md et les invariants du domaine concerné. Vérifier le schéma et le corps live avant toute affirmation sur une RPC ; la lecture du skill ne déclenche pas de sous-agent.
 
 ## The 8 rules you must not break
 
 1. **Cloud V3 only — Docker is retired.** Apply/query/regen via MCP against `ikcyvlovptebroadgtvd`:
-   - `mcp__claude_ai_Supabase__apply_migration` (name snake_case, body = SQL)
-   - `mcp__claude_ai_Supabase__execute_sql` (pgTAP inside a `BEGIN … ROLLBACK` envelope)
-   - `mcp__claude_ai_Supabase__generate_typescript_types`
+   - `apply_migration` du connecteur Supabase disponible (name snake_case, body = SQL)
+   - `execute_sql` (pgTAP inside a `BEGIN … ROLLBACK` envelope)
+   - `generate_typescript_types`
    - **NEVER** `pnpm db:reset`, `supabase start/db reset`, `bash supabase/tests/run_pgtap.sh` — they need Docker and fail.
 
 2. **Never edit a published `_vN` signature.** Create `_vN+1` **and** `DROP FUNCTION public.<name>_vN(<exact old args>)` in the **same** migration. Bump nearly every session — always check the highest live version + the call-site first.
@@ -59,7 +26,7 @@ promptSignals:
    REVOKE EXECUTE ON FUNCTION public.<rpc>(<sig>) FROM anon;
    ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
    ```
-   Money-path RPCs called by the EF via user JWT **must** `GRANT EXECUTE TO authenticated` (else the whole checkout breaks in `permission denied` — caveat S51/S55).
+   Vérifier le rôle effectivement utilisé par l’EF : une RPC appelée sous JWT utilisateur exige le grant correspondant ; une RPC de reversal réservée à service_role ne doit pas devenir appelable par authenticated. Ne pas recopier un GRANT générique.
 
 5. **No `BEGIN;` / `COMMIT;` in a migration body.** MCP `apply_migration` already wraps it in a transaction; an inner COMMIT ends it early and weakens atomicity (lesson S58).
 
@@ -72,8 +39,8 @@ promptSignals:
 ## Before you commit a migration — checklist
 - [ ] Highest migration number checked; new name monotonic.
 - [ ] If replacing an RPC: `_vN+1` created **and** old `_vN` dropped, body from live.
-- [ ] REVOKE trio present for any non-public RPC; `GRANT authenticated` if EF-called.
+- [ ] REVOKE trio present for any non-public RPC; grants adaptés au rôle réellement utilisé par l’appelant.
 - [ ] No `BEGIN/COMMIT` in the body.
 - [ ] Types regenerated + committed (or `[types-noop]`).
-- [ ] pgTAP added/updated and run live via `execute_sql` (BEGIN…ROLLBACK); money-path anchor `s44_money_gates` still 12/12 if you touched a sale RPC.
+- [ ] pgTAP added/updated and run live via `execute_sql` (BEGIN…ROLLBACK); contrôles money-path concernés localisés dans `supabase/tests/` si une vente est touchée.
 - [ ] Call-sites (hooks/EF) repointed to the new version.
