@@ -5,10 +5,10 @@
 //  · La journée n'a pas commencé (couvert par `hasNoSalesYetToday`).
 //  · La journée a vendu, mais la période COMPARÉE était vide. Le RPC répond
 //    alors `null` sur les six comparaisons du créneau et la bande alignait six
-//    tirets — indiscernables d'une panne. Une mention les remplace.
+//    tirets — indiscernables d'une panne. Ces comparaisons restent masquées.
 //
 // Le test porte sur ce que le lecteur VOIT : la présence ou l'absence des
-// libellés de période (« yest », « D-7 ») et la phrase qui les remplace.
+// libellés de période (« yest », « D-7 »), sans paragraphe explicatif ajouté.
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -54,21 +54,18 @@ describe('DashboardKpiStrip — comparisons with no baseline', () => {
     expect(screen.queryByTestId('no-baseline')).not.toBeInTheDocument();
   });
 
-  it('collapses the "yest" column into ONE note when yesterday was empty', () => {
+  it('hides yesterday comparisons without adding a paragraph when yesterday was empty', () => {
     wrap(<DashboardKpiStrip kpis={kpisWith(null, -1.8)} isLoading={false} />);
     expect(screen.queryByText('yest')).not.toBeInTheDocument();
     expect(screen.getAllByText('D-7')).toHaveLength(6);
-    expect(screen.getByTestId('no-baseline')).toHaveTextContent(/No sales yesterday/i);
+    expect(screen.queryByText(/No sales yesterday/i)).not.toBeInTheDocument();
   });
 
-  it('collapses BOTH columns into a single sentence when no baseline exists', () => {
+  it('hides both comparison periods without adding a paragraph when no baseline exists', () => {
     wrap(<DashboardKpiStrip kpis={kpisWith(null, null)} isLoading={false} />);
     expect(screen.queryByText('yest')).not.toBeInTheDocument();
     expect(screen.queryByText('D-7')).not.toBeInTheDocument();
-    const note = screen.getByTestId('no-baseline');
-    expect(note).toHaveTextContent(/yesterday or on the same weekday last week/i);
-    // Une mention, pas deux : c'est tout l'objet du repli.
-    expect(screen.getAllByTestId('no-baseline')).toHaveLength(1);
+    expect(screen.queryByText(/yesterday or on the same weekday last week/i)).not.toBeInTheDocument();
   });
 
   it('keeps the dash of a SINGLE measure without a baseline', () => {

@@ -5,13 +5,9 @@
 // Pas de pastille décorative devant la valeur : les comparaisons portent
 // l'information. Seule une flèche discrète indique les mesures cliquables.
 //
-// Deux tuiles portent une NOTE DE SOURCE au lieu d'une comparaison, parce que
-// leur mesure a une réserve gravée dans la migration 20260806000001 :
-//   · marge brute — calculée au coût COURANT, avec la part du CA effectivement
-//     couverte par un cost_price. Une marge à 61,8 % sur 40 % du CA couvert
-//     n'est pas une marge à 61,8 %.
-//   · cash on hand — le découpage tiroir/coffre est DÉRIVÉ, pas mesuré.
-// Taire ces réserves ferait passer une estimation pour un relevé.
+// La marge brute est calculée au coût courant. La trésorerie conserve le
+// détail tiroir/coffre dérivé dans sa tuile ; les paragraphes explicatifs
+// sous la bande sont retirés à la demande de Mamat.
 //
 // Deux propriétés ajoutées ensuite, chacune décrite là où elle vit :
 //   · un chiffre REMONTE À SON ORIGINE — la tuile est un lien vers la page qui
@@ -42,7 +38,7 @@ import {
 } from '../utils/format.js';
 import { buildKpiTargets, type KpiTarget, type KpiTargetKey } from '../utils/kpiTargets.js';
 import {
-  hasNoComparisonBase, hasNoSalesYetToday, noBaselineNote, NO_SALES_YET_NOTE,
+  hasNoComparisonBase, hasNoSalesYetToday, NO_SALES_YET_NOTE,
 } from '../utils/dayState.js';
 import type { DashboardKpis } from '../hooks/useDashboardOverview.js';
 
@@ -221,7 +217,6 @@ export function DashboardKpiStrip({
   // ne disent pas « période sans base » — ils se lisent comme une panne.
   const noYesterday = !noSalesYet && hasNoComparisonBase(kpis, 'yesterday');
   const noD7        = !noSalesYet && hasNoComparisonBase(kpis, 'd7');
-  const baselineNote = noBaselineNote(noYesterday, noD7);
 
   return (
     <div className={grid} data-testid={rowId}>
@@ -372,23 +367,6 @@ export function DashboardKpiStrip({
         </p>
       )}
 
-      {/* La colonne repliée se nomme, une fois, au même endroit et dans le même
-          registre que la mention d'ouverture. */}
-      {!secondary && baselineNote !== null && (
-        <p className={cn(NOTE, 'col-span-full -mt-0.5')} data-testid="no-baseline">
-          {baselineNote}
-        </p>
-      )}
-
-      {/* La réserve de la marge vit sous la bande, pas dans la tuile : elle
-          concerne la mesure elle-même et non sa variation du jour. */}
-      {!secondary && <p className={cn(NOTE, 'col-span-full -mt-0.5')} data-testid="gross-margin-basis">
-        Gross margin uses the current cost price
-        {margin.cost_coverage_pct !== null && (
-          <> · {formatPct(margin.cost_coverage_pct)} of revenue has a costed product</>
-        )}
-        {' '}— day-to-day changes reflect mix and prices, not cost drift.
-      </p>}
     </div>
   );
 }
