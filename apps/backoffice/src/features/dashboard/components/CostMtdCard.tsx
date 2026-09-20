@@ -39,16 +39,6 @@ export function CostMtdCard({
   const total = cost?.total ?? 0;
   const cogsShare = total > 0 ? ((cost?.cogs_total ?? 0) / total) * 100 : 0;
 
-  // Réserve de plausibilité. « OpEx · 1036,2% of sales » est arithmétiquement
-  // exact et se lit comme une erreur d'affichage : le dénominateur est le CA du
-  // MOIS EN COURS, qui vaut peu de chose un 2 du mois, et un loyer payé le 1er
-  // le dépasse à lui seul. On garde le chiffre — un mois réellement déficitaire
-  // doit rester visible — et on DIT à côté qu'il dépasse 100 % (DESIGN.md : « la
-  // réserve s'affiche à côté de la valeur »). Le seuil se lit sur les deux
-  // ratios ensemble, pas sur une famille : c'est le coût total qui mange le CA.
-  const costsExceedSales =
-    cost !== null && cost.sales_mtd > 0 && cost.total > cost.sales_mtd;
-
   // Index par famille : la rampe de couleur se compte à l'intérieur d'une
   // famille, alors que les lignes arrivent triées par montant, familles mêlées.
   const rank = new Map<string, number>();
@@ -94,14 +84,6 @@ export function CostMtdCard({
               </p>
             </div>
           </div>
-
-          {costsExceedSales && (
-            <p className="mt-2 text-xs text-text-muted" data-testid="cost-mtd-reserve">
-              Month-to-date cost ({formatIdrShort(cost.total)}) exceeds month-to-date sales
-              ({formatIdrShort(cost.sales_mtd)}) — ratios above 100% are expected early in the
-              month, when fixed costs are already booked.
-            </p>
-          )}
 
           <div
             className="mt-3 flex h-2 overflow-hidden rounded-[5px] bg-surface-4"

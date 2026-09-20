@@ -281,38 +281,11 @@ export default function DashboardPage({ data }: DashboardPageProps) {
 
           <DashboardKpiStrip group="primary" kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
 
+          {/* Deux colonnes indépendantes : la hauteur de la vitrine ne repousse
+              plus les analyses. Les opérations précèdent les analyses dans le
+              DOM et au clavier ; sous lg, cet ordre devient aussi vertical. */}
           <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-            <Card variant="default" padding="none" className="p-4 shadow-none">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <SectionLabel as="h2" className="font-body text-lg font-semibold normal-case tracking-normal text-text-primary">
-                  {revenueLink === null ? (
-                    'Revenue · 30 days'
-                  ) : (
-                    <Link
-                      to={revenueLink.href}
-                      data-testid="revenue-30d-link"
-                      className={cn('rounded-sm hover:text-gold', FOCUS_RING)}
-                    >
-                      Revenue · 30 days
-                      <span className="sr-only"> — {revenueLink.hint}</span>
-                    </Link>
-                  )}
-                </SectionLabel>
-                {summary !== null && (
-                  <span className="text-sm text-text-secondary">
-                    <span className="font-data tabular-nums" title={formatIdr(summary.total)}>{formatIdrShort(summary.total)}</span> total{' '}
-                    <Delta value={summary.delta_pct} period="vs previous 30 d" />
-                  </span>
-                )}
-              </div>
-              <div className="mt-3">
-                <Suspense fallback={<ChartSkeleton />}>
-                  <RevenueTrendChart data={overview?.revenue_30d ?? []} error={error} />
-                </Suspense>
-              </div>
-            </Card>
-
-            <section aria-label="On the floor" className="min-w-0 space-y-4 rounded-md border border-border-subtle bg-surface-2 p-4 [&>div]:border-0 [&>div]:p-0">
+            <section aria-label="On the floor" className="min-w-0 space-y-4 rounded-md border border-border-subtle bg-surface-2 p-4 lg:col-start-2 lg:row-start-1 [&>div]:border-0 [&>div]:p-0">
               <h2 className="text-lg font-semibold text-text-primary">On the floor</h2>
               <OpenOrdersCard
                 panel={openOrders.data ?? null}
@@ -334,46 +307,75 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 ))}
               </div>
             </section>
-          </div>
 
-          <DashboardKpiStrip group="secondary" kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
+            <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
+              <Card variant="default" padding="none" className="p-4 shadow-none">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <SectionLabel as="h2" className="font-body text-lg font-semibold normal-case tracking-normal text-text-primary">
+                    {revenueLink === null ? (
+                      'Revenue · 30 days'
+                    ) : (
+                      <Link
+                        to={revenueLink.href}
+                        data-testid="revenue-30d-link"
+                        className={cn('rounded-sm hover:text-gold', FOCUS_RING)}
+                      >
+                        Revenue · 30 days
+                        <span className="sr-only"> — {revenueLink.hint}</span>
+                      </Link>
+                    )}
+                  </SectionLabel>
+                  {summary !== null && (
+                    <span className="text-sm text-text-secondary">
+                      <span className="font-data tabular-nums" title={formatIdr(summary.total)}>{formatIdrShort(summary.total)}</span> total{' '}
+                      <Delta value={summary.delta_pct} period="vs previous 30 d" />
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3">
+                  <Suspense fallback={<ChartSkeleton />}>
+                    <RevenueTrendChart data={overview?.revenue_30d ?? []} error={error} />
+                  </Suspense>
+                </div>
+              </Card>
 
-          {/* `items-start` : chaque carte se dimensionne à son contenu. En
-              `stretch` avec des contenus inégaux, les courtes montrent un tiers
-              inférieur blanc et mort. */}
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-            <Card variant="default" padding="none" className="p-4 shadow-none">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <SectionLabel as="h2" className="font-body text-lg font-semibold normal-case tracking-normal text-text-primary">
-                  Sales by hour
-                </SectionLabel>
-                <span className="text-xs text-text-muted">today vs same weekday last week</span>
+              <DashboardKpiStrip group="secondary" kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
+
+              <Card variant="default" padding="none" className="p-4 shadow-none">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <SectionLabel as="h2" className="font-body text-lg font-semibold normal-case tracking-normal text-text-primary">
+                    Sales by hour
+                  </SectionLabel>
+                  <span className="text-xs text-text-muted">today vs same weekday last week</span>
+                </div>
+                <p className="mt-1 text-xs text-text-muted">
+                  {error !== null
+                    ? 'Peak unavailable'
+                    : peak === null
+                      ? 'No peak yet today'
+                      : `Peak ${formatHourRange(peak.from_hour, peak.to_hour)} · ${formatPct(peak.share_pct)} of the day`}
+                </p>
+                <div className="mt-2">
+                  <Suspense fallback={<ChartSkeleton />}>
+                    <HourlySalesChart data={overview?.hourly_sales ?? []} error={error} />
+                  </Suspense>
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+                <CostMtdCard
+                  cost={overview?.cost_mtd ?? null}
+                  isLoading={isLoading}
+                  error={error}
+                />
+                <RevenueShareCard
+                  share={overview?.revenue_share ?? []}
+                  payments={overview?.payments ?? null}
+                  isLoading={isLoading}
+                  error={error}
+                />
               </div>
-              <p className="mt-1 text-xs text-text-muted">
-                {error !== null
-                  ? 'Peak unavailable'
-                  : peak === null
-                    ? 'No peak yet today'
-                    : `Peak ${formatHourRange(peak.from_hour, peak.to_hour)} · ${formatPct(peak.share_pct)} of the day`}
-              </p>
-              <div className="mt-2">
-                <Suspense fallback={<ChartSkeleton />}>
-                  <HourlySalesChart data={overview?.hourly_sales ?? []} error={error} />
-                </Suspense>
-              </div>
-            </Card>
-            <CostMtdCard
-              cost={overview?.cost_mtd ?? null}
-              isLoading={isLoading}
-              error={error}
-            />
-
-            <RevenueShareCard
-              share={overview?.revenue_share ?? []}
-              payments={overview?.payments ?? null}
-              isLoading={isLoading}
-              error={error}
-            />
+            </div>
           </div>
         </>
       )}

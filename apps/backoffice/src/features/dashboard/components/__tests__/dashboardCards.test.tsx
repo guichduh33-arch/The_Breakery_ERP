@@ -112,10 +112,8 @@ describe('CostMtdCard', () => {
     expect(screen.queryByTestId('cost-mtd-reserve')).not.toBeInTheDocument();
   });
 
-  it('keeps a ratio above 100% and states the reserve beside it', () => {
-    // « OpEx · 1036,2% of MTD sales » est exact et se lit comme une panne. On
-    // garde le chiffre — un mois déficitaire doit rester visible — et on dit
-    // pourquoi il dépasse 100 %.
+  it('keeps a ratio above 100% without an explanatory paragraph', () => {
+    // Le retrait du commentaire ne doit pas plafonner les ratios affichés.
     const overrun: CostMtd = {
       ...cost,
       sales_mtd: 200_000, cogs_total: 223_700, opex_total: 2_072_400,
@@ -124,8 +122,6 @@ describe('CostMtdCard', () => {
     wrap(<CostMtdCard cost={overrun} isLoading={false} error={null} />);
     const card = screen.getByTestId('card-cost-mtd');
     expect(card).toHaveTextContent(/OpEx · 1.036,2% of MTD sales/);
-    expect(screen.getByTestId('cost-mtd-reserve')).toHaveTextContent(
-      /exceeds month-to-date sales/i,
-    );
+    expect(card).not.toHaveTextContent(/exceeds month-to-date sales/i);
   });
 });

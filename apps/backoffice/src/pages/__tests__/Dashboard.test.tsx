@@ -139,7 +139,7 @@ describe('DashboardPage — écran 1c', () => {
       expect(secondary.getByTestId(`kpi-${id}`)).toBeInTheDocument();
     }
     expect(secondary.getByTestId('kpi-avg-basket').tagName).toBe('A');
-    expect(screen.getAllByTestId('gross-margin-basis')).toHaveLength(1);
+    expect(screen.queryByTestId('gross-margin-basis')).not.toBeInTheDocument();
   });
 
   it('keeps operational panels together above the secondary figures', () => {
@@ -183,11 +183,10 @@ describe('DashboardPage — écran 1c', () => {
     expect(screen.getByTestId('kpi-gross-margin')).toHaveTextContent('1,4pt');
   });
 
-  it('states the gross-margin basis instead of passing an estimate off as a measure', () => {
+  it('keeps the gross-margin figure without the explanatory paragraph', () => {
     renderWith(overviewFixture());
-    const note = screen.getByTestId('gross-margin-basis');
-    expect(note).toHaveTextContent(/current cost price/i);
-    expect(note).toHaveTextContent('87,5%');
+    expect(screen.getByTestId('kpi-gross-margin')).toHaveTextContent('61,8%');
+    expect(screen.queryByText(/Gross margin uses the current cost price/i)).not.toBeInTheDocument();
   });
 
   it('renders a dash and says "restricted" when the cash block is gated', () => {
