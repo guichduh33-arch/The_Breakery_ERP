@@ -1,0 +1,98 @@
+---
+name: pos-frontend-design-implement
+description: >-
+  Implémenter des recommandations de design POS The Breakery déjà validées, issues de
+  pos-frontend-design-audit : boutons, grille, panier, tablette, KDS ou customer display.
+  Partir des tickets choisis et respecter breakery-ui-kit. Pour diagnostiquer l’existant :
+  pos-frontend-design-audit ; pour concevoir un écran neuf : pos-design-craft ; pour
+  corriger le parcours métier : pos-flow-audit.
+---
+
+Sélection : partir du rapport et des recommandations choisies par Mamat. En leur absence, demander les éléments manquants ; ne pas inventer leur validation. Diagnostic visuel : [pos-frontend-design-audit](../pos-frontend-design-audit/SKILL.md) ; création : [pos-design-craft](../pos-design-craft/SKILL.md). Suivre [breakery-ui-kit](../breakery-ui-kit/SKILL.md) et, si utile, la méthode de la copie du dépôt d’[Impeccable](../impeccable/SKILL.md).
+
+# POS Frontend Design Implement — The Breakery
+
+Bras armé de **`pos-frontend-design-audit`** : prend une proposition de design **déjà formulée** (rapport rendu en conversation par l'audit, ou donnée directement par l'utilisateur) et la **transforme en code POS qui tient en production**. L'audit décide *quoi* et *pourquoi* ; ce skill fait *comment*, proprement.
+
+**`AGENTS.md` est la source de vérité** des patterns du projet. **`breakery-ui-kit`** est la source de vérité des primitifs/tokens. Ce skill ajoute la méthode d'implémentation design et les garde-fous d'exécution.
+
+> **Re-vérifié contre le code le 2026-08-31** : inventaire des primitifs (`packages/ui/src/index.ts`), `Select` et `selectClassName` (`packages/ui/src/primitives/Select.tsx`), tokens et familles de classes (`packages/ui/tailwind-preset.ts`), noms de packages et scripts (`package.json` racine, `apps/pos`, `packages/ui`), coques natives (aucun Tauri au dépôt ; Capacitor Android côté WAITER, ADR-029). Les faits ci-dessous se re-vérifient à la source avant d'être cités — un « ça n'existe pas » se re-vérifie comme un « ça existe ».
+
+## Quand c'est ce skill (vs l'audit)
+
+- « Trouve les problèmes / audite / compare au marché » → **pas ici**, c'est `pos-frontend-design-audit`.
+- « Implémente / développe / applique / code / agrandis / refais » une proposition → **ici**.
+- Si on te demande d'implémenter mais qu'**aucune proposition n'est présente dans la session et que la demande n'est pas claire**, ne devine pas le design : lance d'abord l'audit (ou demande à l'utilisateur de pointer le ticket précis).
+
+## Méthode — 6 étapes
+
+### Étape 1 — Récupérer la proposition
+- **Cas conversation** (par défaut, et seul cas normal) : la proposition est dans la session — rapport rendu par `pos-frontend-design-audit`, ou demande directe de l'utilisateur. Identifie le(s) ticket(s) à développer : l'utilisateur en nomme un, sinon propose les P0/quick-wins et confirme avant de coder. Reformule en une phrase (« j'implémente : <X> pour <profil> sur <écran> ») et avance.
+- **Aucune proposition en session** : ne devine pas le design. Lance `pos-frontend-design-audit` sur la zone concernée, ou demande le ticket précis. **Il n'y a rien à rattraper sur disque** — un audit non consommé dans sa session se refait.
+
+### Étape 2 — Lire le code cible avant de toucher
+Va au composant via le `fichier:ligne` du ticket (ou via `pos-frontend-design-audit/references/screen-map.md`). **Lis-le en entier.** Repère : tokens et classes actuels, primitifs `@breakery/ui` déjà utilisés, gestion d'états existante, et si le composant est **partagé entre CAISSE et WAITER** (ex. `ProductGrid` réutilisé en tablette) — auquel cas un changement doit valoir pour les deux profils ou être conditionné.
+
+### Étape 3 — Vérifier les moyens dans le design-system
+Avant d'écrire un import ou une couleur :
+- Le primitif existe-t-il dans `@breakery/ui` ? L'inventaire fait foi (cf. `breakery-ui-kit`), pas la mémoire de session :
+  - **`Select` EXISTE** — un `<select>` **natif stylé** (même surface, hauteur et anneau de focus qu'`Input`) ; ses enfants sont des `<option>`, pas des `SelectItem`. `selectClassName` s'exporte seul pour un call-site qui garde son propre `<select>`. **Ne re-style jamais un `<select>` à la main** : c'est la dette de call-sites divergents que ce primitif a précisément résorbée.
+  - **`RadioGroup` / `Checkbox` / `Popover` / `Tooltip` n'existent PAS** → fallback natif (`<input type="radio">`, `<input type="checkbox">`, Radix direct, attribut `title`). Les importer casse le build.
+- Le token couleur/espacement existe-t-il ? **Jamais de `#hex` ni `bg-white` en dur** — utilise `text-text-*`, `bg-bg-*` (`base`/`elevated`/`overlay`/`input`), `text-gold`, `var(--success/warning/danger)`.
+- **Pas d'alpha sur un token de couleur `var()` nu** (`bg-danger/15`, `bg-gold/5`, `border-border-strong/40`) : Tailwind supprime la déclaration **EN SILENCE** — la couleur n'apparaît jamais, et rien ne le signale. Seule la famille `cat-*` est déclarée `rgb(var(--x) / <alpha-value>)` et accepte l'alpha. Même mort silencieux pour un nom hors famille (`bg-bg-card` n'existe pas). Le preset tranche, pas le sondage navigateur ; la garde CI `tailwind-dead-classes.mjs` attrape le reste.
+- Le besoin est-il **partagé POS+BO** ? Si oui et qu'il faut un nouveau primitif, **ne le crée pas ici** — `packages/ui` + PR dédiée (escalade, cf. `breakery-ui-kit`). Reste co-localisé dans `apps/pos/` tant que c'est POS-only.
+
+### Étape 4 — Implémenter
+- Applique le changement au plus petit périmètre qui capture la valeur du ticket. **Pas de redesign opportuniste** non demandé.
+- Respecte la **typo canonique** (`font-mono` pour prix/montants/timestamps, `font-display` pour titres) et l'**échelle de cibles tactiles** : action primaire WAITER ≥ `h-12` (48px), action fréquente CAISSE ≥ `h-11`/`h-12` (cf. `pos-frontend-design-audit/references/design-rubric.md`).
+- Préserve/complète les **états** : si tu touches une grille/liste, garde skeleton + empty + erreur ; sur tablette, garde le comportement offline.
+- Garde les **focus visibles** (`focus-visible:outline-gold`) et les `aria-*`/labels existants.
+- Fichiers **< 500 lignes** (règle projet) ; co-localise un nouveau composant POS dans `apps/pos/src/features/<domaine>/components/`.
+
+### Étape 5 — Vérifier le rendu et les invariants
+- **Typecheck + tests** ciblés (voir « Vérification »).
+- **Ne casse pas la plomberie** : si ton changement touche un handler de panier/paiement/cuisine/realtime, c'est le domaine de `pos-flow-audit` — ne modifie pas la logique de flux/RPC pour un changement purement visuel ; si c'est inévitable, **flag-le** et applique les patterns critiques (idempotence, versioning RPC, canal realtime unique, PIN en header) ou délègue.
+- Re-passe le ticket sur la **grille de critères** : la cible tactile est-elle au seuil ? l'info critique est-elle hors `muted` ? le CTA domine-t-il ? le profil ciblé est-il réellement servi ?
+
+### Étape 6 — Boucler
+- Coche le ticket comme fait (dans ta réponse ; et si pertinent, note l'état dans le rapport).
+- Si tu as développé une partie d'un lot, dis ce qui reste.
+- Propose une vérification visuelle réelle (deux profils : un écran caisse large + une tablette portrait) — un seul viewport ne prouve pas le responsive.
+
+## Garde-fous
+
+- **N'invente pas de design.** Tu exécutes une proposition validée. Si elle est ambiguë, demande/relis l'audit ; ne « complète » pas avec un parti pris non discuté.
+- **Tokens et primitifs only.** Toute couleur en dur ou tout primitif inexistant = build cassé ou dette — vérifie avant d'écrire.
+- **Deux profils, toujours.** Un changement sur un composant partagé doit être jugé pour CAISSE *et* WAITER. Un gain desktop ne doit pas dégrader la tablette debout. Les deux tournent le **même code web Vite** : la CAISSE dans un navigateur plein écran (aucune coque native), le WAITER dans une coque **Capacitor Android** (ADR-029). Aucune API native ne se suppose disponible sans l'avoir vérifiée.
+- **Aspect, pas plomberie.** Tu changes l'apparence/manipulation. Tu ne réécris pas la logique commande→paiement pour faire joli — ça appartient à `pos-flow-audit`.
+- **Pas de fichier hors structure** (règle AGENTS.md) : code dans `apps/pos/src/...`, tests co-localisés en `__tests__/`.
+
+## Vérification (avant de dire que c'est fait)
+
+```bash
+# Cheap d'abord
+pnpm typecheck
+
+# Smoke/unit POS de la feature touchée (adapter le filtre)
+pnpm --filter @breakery/app-pos test products
+pnpm --filter @breakery/app-pos test cart
+pnpm --filter @breakery/app-pos test payment
+pnpm --filter @breakery/app-pos test tablet
+
+# Si un primitif partagé a bougé
+pnpm --filter @breakery/ui test
+
+# Build de non-régression
+pnpm build
+```
+
+- Le typecheck passe, les tests de la feature touchée passent (distinguer une vraie régression du baseline env-gated connu — cf. AGENTS.md / `test-engineer`).
+- Le rendu a été vérifié pour le(s) profil(s) ciblé(s) ; idéalement un viewport caisse large ET une tablette portrait pour tout composant WAITER.
+- Aucune couleur en dur introduite, aucun import de primitif inexistant, **aucune classe morte** (alpha sur token `var()` nu hors famille `cat-*`, nom de classe absent du preset) — la garde CI `scripts/ci/tailwind-dead-classes.mjs` refuse toute référence neuve.
+
+## Quand escalader / flaguer
+
+- Le ticket exige un **nouveau primitif partagé** POS+BO → `packages/ui` + breakery-ui-kit + PR dédiée, pas un composant local dupliqué.
+- Le ticket implique de **modifier la logique commande/paiement/cuisine/realtime** → renvoie à `pos-flow-audit` ; ne mélange pas un changement visuel et une mutation de flux sans validation.
+- Le ticket touche **permissions/visibilité par rôle** → `security-fraud-guard`.
+- La proposition s'avère **infaisable proprement dans la stack** (oblige à casser le design-system) → ne force pas : remonte à l'audit pour ré-arbitrer l'effort/impact.
