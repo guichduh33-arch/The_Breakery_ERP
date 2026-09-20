@@ -6245,6 +6245,10 @@ export type Database = {
         Returns: undefined
       }
       _refine_vol: { Args: { "": string }; Returns: string }
+      _refresh_recipe_margin: {
+        Args: { p_cost: number; p_product_id: string }
+        Returns: undefined
+      }
       _resolve_b2b_line_price_v1: {
         Args: { p_customer_id: string; p_product_id: string }
         Returns: number
@@ -6314,6 +6318,10 @@ export type Database = {
       }
       _sale_payment_mapping_key_v1: {
         Args: { p_method: string }
+        Returns: string
+      }
+      _snapshot_recipe_and_refresh_cost: {
+        Args: { p_change_note: string; p_product_id: string; p_profile: string }
         Returns: string
       }
       _snapshot_recipe_version: {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import {
   IngredientPicker,
@@ -23,6 +24,29 @@ function row(
 }
 
 describe('IngredientPicker', () => {
+  it('affiche le choix avant validation, efface une sélection devenue ambiguë et se réinitialise après ajout', async () => {
+    const flour = row('1', 'Bread flour');
+    const searchFn = vi.fn().mockResolvedValue([flour]);
+    function Form() {
+      const [value, setValue] = useState<string | null>(null);
+      return <><IngredientPicker value={value} onChange={setValue} searchFn={searchFn} />
+        <button disabled={!value} onClick={() => setValue(null)}>Add ingredient</button></>;
+    }
+    render(<Form />);
+    const input = screen.getByRole('textbox', { name: 'Search ingredient' });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'fl' } });
+    fireEvent.mouseDown(await screen.findByRole('option', { name: /Bread flour/ }));
+    expect(input).toHaveValue('Bread flour');
+    expect(screen.getByRole('button', { name: 'Add ingredient' })).toBeEnabled();
+    fireEvent.change(input, { target: { value: 'su' } });
+    expect(input).toHaveValue('su');
+    expect(screen.getByRole('button', { name: 'Add ingredient' })).toBeDisabled();
+    fireEvent.mouseDown(await screen.findByRole('option', { name: /Bread flour/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add ingredient' }));
+    expect(input).toHaveValue('');
+  });
+
   it('renders the search input with the supplied placeholder', () => {
     render(
       <IngredientPicker

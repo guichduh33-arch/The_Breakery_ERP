@@ -196,6 +196,13 @@ export function IngredientPicker({
   const [hoverIdx, setHoverIdx] = useState<number>(-1);
   const [open, setOpen] = useState(false);
   const reqIdRef = useRef(0);
+  const previousValue = useRef(value);
+
+  // Le parent remet la sélection à zéro après validation de l'ajout.
+  useEffect(() => {
+    if (previousValue.current !== value && value === null) setQuery('');
+    previousValue.current = value;
+  }, [value]);
 
   const debouncedQuery = useDebouncedValue(query, DEBOUNCE_MS);
 
@@ -255,6 +262,7 @@ export function IngredientPicker({
   function commitSelection(idx: number): void {
     const row = results[idx];
     if (!row) return;
+    setQuery(row.name);
     onChange(row.product_id, row);
     setOpen(false);
   }
@@ -272,7 +280,7 @@ export function IngredientPicker({
       setOpen(true);
       setHighlightIdx((i) => (i <= 0 ? results.length - 1 : i - 1));
     } else if (e.key === 'Enter') {
-      if (highlightIdx >= 0 && highlightIdx < results.length) {
+      if (open && highlightIdx >= 0 && highlightIdx < results.length) {
         e.preventDefault();
         commitSelection(highlightIdx);
       }
@@ -281,6 +289,7 @@ export function IngredientPicker({
       if (query.length > 0) {
         setQuery('');
         setHighlightIdx(-1);
+        if (value !== null) onChange(null, null);
       } else {
         setOpen(false);
         if (value !== null) onChange(null, null);
@@ -325,7 +334,15 @@ export function IngredientPicker({
           autoComplete="off"
           aria-autocomplete="list"
           aria-label={inputAriaLabel}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            // Une nouvelle recherche ne doit pas valider l'ancien ingrédient.
+            if (value !== null) {
+              previousValue.current = null;
+              onChange(null, null);
+            }
+          }}
           onFocus={() => setOpen(true)}
           onBlur={() => {
             // Small delay so an option click can register before we close.

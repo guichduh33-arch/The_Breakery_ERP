@@ -4,6 +4,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { invalidateRecipeCosts } from './invalidateRecipeCosts.js';
 
 export interface DeactivateRecipeArgs {
   recipeId:  string;
@@ -18,10 +19,10 @@ export function useDeactivateRecipe() {
         p_recipe_id: recipeId,
       });
       if (error) throw new Error(error.message);
-      return data as string;
+      return data;
     },
-    onSuccess: async (_id, vars) => {
-      await qc.invalidateQueries({ queryKey: ['inventory-production', 'recipes', vars.productId] });
+    onSuccess: async () => {
+      await invalidateRecipeCosts(qc);
     },
   });
 }
