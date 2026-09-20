@@ -8,7 +8,7 @@ export function ResponsiveOrderPanel({ onDetachCustomer }: { onDetachCustomer: (
   const cart = useCartStore((s) => s.cart);
   const { taxRate, taxInclusive } = useTaxConfig();
   const totals = calculateTotals(cart, taxRate, taxInclusive);
-  return <AdaptiveCartPanel count={totals.item_count} total={totals.total}>
+  return <AdaptiveCartPanel count={totals.item_count} total={totals.total} desktopMinWidth={900}>
     <ActiveOrderPanel onDetachCustomer={onDetachCustomer} />
   </AdaptiveCartPanel>;
 }

@@ -77,7 +77,7 @@ export function TabletCartPanel({ footer, compactAction }: TabletCartPanelProps 
   );
 
   return (
-    <AdaptiveCartPanel count={itemCount} total={preview.total} summaryAction={compactAction}>
+    <AdaptiveCartPanel count={itemCount} total={preview.total} summaryAction={compactAction} cartLabel>
       <aside className="w-full flex-1 min-h-0 bg-bg-elevated border-l border-border-subtle flex flex-col" data-testid="tablet-cart-panel">
         <header className={cn('shrink-0 p-4 border-b border-border-subtle flex gap-2', flash && 'bg-gold-soft')}>
           <h2 className="text-sm font-semibold">Order</h2>{!isEmpty && countBadge}

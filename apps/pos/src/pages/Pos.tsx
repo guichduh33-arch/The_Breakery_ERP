@@ -175,7 +175,7 @@ export default function PosPage() {
           Offline mode — checkout disabled in settings, no sale possible until the cloud connection returns
         </div>
       )}
-      <header className="h-14 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
+      <header className="h-14 shrink-0 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -250,13 +250,13 @@ export default function PosPage() {
       {/* Below md (waiter phone, one-hand) the 3-column desktop layout stacks:
           category strip on top, grid, then the order panel — no horizontal
           scroll at 390px (pos-design-craft P0, 2026-07-06). */}
-      <div className="flex-1 min-h-0 flex overflow-hidden max-[1099px]:flex-col">
+      <div className="flex-1 min-h-0 flex overflow-hidden max-[899px]:flex-col">
         <CategoryNav
           selectedSlug={selectedSlug}
           onSelect={(slug) => setSelectedSlug(slug === 'all' ? null : slug)}
           onOpenSettings={() => { void navigate('/pos/settings'); }}
         />
-        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col overflow-hidden">
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
           <ProductTapHandler selectedSlug={selectedSlug} />
         </main>
         <CartEffects />
