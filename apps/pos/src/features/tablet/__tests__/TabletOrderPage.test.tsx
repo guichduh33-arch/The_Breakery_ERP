@@ -162,8 +162,8 @@ describe('TabletOrderPage', () => {
     // min-h-11 générique) — pas une erreur du diff, l'ancienne assertion
     // visait déjà la mauvaise classe.
     expect(sendBtn).toHaveClass('h-touch-comfy');
-    expect(screen.getByTestId('tablet-order-type-dine-in')).toHaveClass('min-h-11');
-    expect(screen.getByTestId('tablet-order-type-take-out')).toHaveClass('min-h-11');
+    expect(screen.getByTestId('tablet-order-type-dine-in')).toHaveClass('min-h-14');
+    expect(screen.getByTestId('tablet-order-type-take-out')).toHaveClass('min-h-14');
   });
 
   it('opens the floor plan view when the table chip is tapped, and selects a table', async () => {

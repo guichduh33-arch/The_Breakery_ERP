@@ -21,7 +21,7 @@ export function OrderTypeToggle({
     <div
       role="group"
       aria-label="Order type"
-      className="inline-flex rounded-md border border-border-subtle overflow-hidden"
+      className="inline-flex min-w-0 rounded-md border border-border-subtle overflow-hidden"
     >
       <ToggleTab
         active={value === 'dine_in'}
@@ -59,7 +59,7 @@ function ToggleTab({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        'min-h-11 px-5 text-sm font-semibold uppercase tracking-wide',
+        'min-h-14 flex-1 px-2 sm:px-5 text-sm font-semibold uppercase tracking-wide',
         'transition-colors duration-fast motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
         active

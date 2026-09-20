@@ -1,16 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Currency, Sheet, SheetContent, SheetTitle, SheetDescription } from '@breakery/ui';
 
-export function AdaptiveCartPanel({ children, count, total, summaryAction }: {
-  children: ReactNode; count: number; total: number; summaryAction?: ReactNode;
+export function AdaptiveCartPanel({ children, count, total, summaryAction, desktopMinWidth = 1100 }: {
+  children: ReactNode; count: number; total: number; summaryAction?: ReactNode; desktopMinWidth?: number;
 }) {
-  const [wide, setWide] = useState(() => window.innerWidth >= 1100);
+  const [wide, setWide] = useState(() => window.innerWidth >= desktopMinWidth);
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    const resize = () => setWide(window.innerWidth >= 1100);
+    const resize = () => setWide(window.innerWidth >= desktopMinWidth);
+    resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
-  }, []);
+  }, [desktopMinWidth]);
   if (wide) return <div className="w-[360px] shrink-0 min-h-0 flex flex-col">{children}</div>;
   return (
     <>

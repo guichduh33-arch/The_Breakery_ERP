@@ -30,7 +30,7 @@ export interface TabletCategorySidebarProps {
 // Classes structurelles partagées par toutes les tuiles du rail — la tuile
 // « All » ne porte pas de teinte cat-* mais doit rester le même objet à l'œil.
 const TILE_BASE = cn(
-  'relative w-full min-h-16 max-[1099px]:w-[92px] max-[1099px]:shrink-0 px-2 py-3 flex flex-col items-center justify-center gap-1.5 rounded-md border',
+  'relative w-full min-h-16 max-[1099px]:w-auto max-[1099px]:min-w-[100px] max-[1099px]:min-h-14 max-[1099px]:shrink-0 max-[1099px]:flex-row max-[1099px]:px-3 max-[1099px]:py-2 px-2 py-3 flex flex-col items-center justify-center gap-1.5 rounded-md border',
   'text-xs uppercase tracking-wide font-semibold text-center leading-tight',
   'transition-colors duration-fast ease-motion-out',
   // Critique 2026-08-24 (a11y) — le rail entier était sans focus visible.
@@ -79,16 +79,14 @@ function Tile({
           {categoryMonogram(label)}
         </span>
       )}
-      <span className="line-clamp-2">{label}</span>
+      <span className="line-clamp-2 max-w-[104px]">{label}</span>
     </button>
   );
 }
 
 export function TabletCategorySidebar({ selectedSlug, onSelect }: TabletCategorySidebarProps): JSX.Element {
   const { data: categories = [], isLoading, isError, refetch } = useCategories();
-  // Contract: iPad ≥ 768px only — no phone-width fallback is planned. The
-  // tablet surface is documented iPad-first (PRODUCT.md); this fixed rail
-  // width is intentional, not an oversight.
+  // Sur terminal portable, le bandeau horizontal garde la hauteur pour les produits.
   return (
     <aside
       aria-label="Product categories"

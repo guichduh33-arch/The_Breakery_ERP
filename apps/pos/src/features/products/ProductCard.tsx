@@ -107,7 +107,7 @@ function ProductCardImpl({
           : 'cursor-pointer [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:border-border-strong [@media(hover:hover)]:hover:bg-bg-overlay [@media(hover:hover)]:hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
       )}
     >
-      <div className="relative aspect-[4/3] bg-bg-input overflow-hidden">
+      <div className="relative w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 bg-bg-input overflow-hidden">
         {showImage ? (
           <img
             src={product.image_url ?? undefined}
@@ -182,7 +182,7 @@ function ProductCardImpl({
       <div className="px-2.5 py-2 space-y-0.5">
         <div
           id={`pc-name-${product.id}`}
-          className="text-sm leading-tight font-medium text-text-primary line-clamp-2 min-h-[2.4em]"
+          className="text-base leading-tight font-semibold text-text-primary line-clamp-3 min-h-[2.5em] break-words"
           title={product.name}
         >
           {product.name}
