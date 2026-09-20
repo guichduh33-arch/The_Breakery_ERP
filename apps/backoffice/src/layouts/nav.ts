@@ -106,6 +106,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/inventory', label: 'Stock & inventory', end: true, permission: 'inventory.read' },
           { to: '/backoffice/inventory/incoming', label: 'Incoming', permission: 'inventory.receive' },
           { to: '/backoffice/inventory/production', label: 'Production', permission: 'inventory.read' },
+          { to: '/kitchen', label: 'Kitchen', permission: 'inventory.production.kitchen' },
           { to: '/backoffice/inventory/opname', label: 'Opname', permission: 'inventory.read' },
           { to: '/backoffice/inventory/movements', label: 'Live movements', permission: 'inventory.read' },
         ],

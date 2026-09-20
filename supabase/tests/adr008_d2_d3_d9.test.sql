@@ -122,7 +122,7 @@ DECLARE
   v_errcode TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_production_v5(
+    PERFORM record_production_v6(
       p_product_id := v_fin, p_quantity_produced := 10,
       p_section_id := v_section, p_batch_number := 'D2D3-NOREASON',
       p_quantity_waste := 2
@@ -147,7 +147,7 @@ DECLARE
   v_result  JSONB;
   v_prod_id UUID;
 BEGIN
-  v_result := record_production_v5(
+  v_result := record_production_v6(
     p_product_id := v_fin, p_quantity_produced := 10,
     p_section_id := v_section, p_batch_number := 'D2D3-OK',
     p_quantity_waste := 2, p_waste_reason := 'mis_baked'
@@ -255,7 +255,7 @@ DECLARE
   v_errmsg2 TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_batch_production_v7(
+    PERFORM record_batch_production_v8(
       jsonb_build_object('section_id', v_section),
       jsonb_build_array(
         jsonb_build_object('product_id', v_nw,  'quantity_produced', 1),
@@ -270,7 +270,7 @@ BEGIN
   PERFORM set_config('breakery.batch_detail', v_detail, false);
 
   BEGIN
-    PERFORM record_batch_production_v7(
+    PERFORM record_batch_production_v8(
       jsonb_build_object('section_id', v_section),
       jsonb_build_array(
         jsonb_build_object('product_id', v_fin, 'quantity_produced', 1,
@@ -301,7 +301,7 @@ DECLARE
   v_nw      UUID := (SELECT id FROM _ids WHERE label='nw');
   v_result  JSONB;
 BEGIN
-  v_result := record_production_v5(
+  v_result := record_production_v6(
     p_product_id := v_nw, p_quantity_produced := 10,
     p_section_id := v_section, p_batch_number := 'D2D3-NOWASTE'
   );
@@ -331,11 +331,11 @@ DECLARE
   v_first   JSONB;
   v_replay  JSONB;
 BEGIN
-  v_first  := record_production_v5(
+  v_first  := record_production_v6(
     p_product_id := v_nw, p_quantity_produced := 1,
     p_section_id := v_section, p_idempotency_key := v_key
   );
-  v_replay := record_production_v5(
+  v_replay := record_production_v6(
     p_product_id := v_nw, p_quantity_produced := 1,
     p_section_id := v_section, p_idempotency_key := v_key
   );
@@ -358,8 +358,8 @@ DECLARE
   v_errmsg  TEXT := 'none';
 BEGIN
   BEGIN
-    PERFORM record_production_v5(p_product_id := v_nw, p_quantity_produced := 1, p_section_id := v_section);
-    PERFORM record_production_v5(p_product_id := v_nw, p_quantity_produced := 1, p_section_id := v_section);
+    PERFORM record_production_v6(p_product_id := v_nw, p_quantity_produced := 1, p_section_id := v_section);
+    PERFORM record_production_v6(p_product_id := v_nw, p_quantity_produced := 1, p_section_id := v_section);
   EXCEPTION WHEN OTHERS THEN
     v_errmsg := SQLERRM;
   END;
@@ -374,11 +374,11 @@ SELECT is(current_setting('breakery.temp_err'), 'none',
 -- ===========================================================================
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.record_production_v5(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)', 'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.record_batch_production_v7(jsonb, jsonb)', 'EXECUTE')
+    'public.record_production_v6(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.record_batch_production_v8(jsonb, jsonb)', 'EXECUTE')
   AND has_function_privilege('authenticated',
-    'public.record_production_v5(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)', 'EXECUTE')
-  AND has_function_privilege('authenticated', 'public.record_batch_production_v7(jsonb, jsonb)', 'EXECUTE')
+    'public.record_production_v6(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.record_batch_production_v8(jsonb, jsonb)', 'EXECUTE')
   AND to_regprocedure('public.record_production_v4(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean)') IS NULL
   AND to_regprocedure('public.record_batch_production_v6(jsonb, jsonb)') IS NULL,
   'T14: anon revoked / authenticated retained on _v5 and _v7, and the superseded _v4 and _v6 are gone from pg_proc'

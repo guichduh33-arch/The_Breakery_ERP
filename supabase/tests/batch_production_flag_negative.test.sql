@@ -40,7 +40,7 @@ BEGIN
 
   -- 1) sans forçage → bloqué malgré le réglage global
   BEGIN
-    PERFORM record_batch_production_v7(
+    PERFORM record_batch_production_v8(
       jsonb_build_object('section_id', v_sec::text, 'notes','t'),
       jsonb_build_array(jsonb_build_object('product_id', v_bread::text, 'quantity_produced', 1)));
     v_blocked := false;
@@ -52,7 +52,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000004','role','authenticated')::text, true);
   BEGIN
-    PERFORM record_batch_production_v7(
+    PERFORM record_batch_production_v8(
       jsonb_build_object('section_id', v_sec::text, 'notes','t', 'force_negative', true),
       jsonb_build_array(jsonb_build_object('product_id', v_bread::text, 'quantity_produced', 1)));
     v_denied := false;
@@ -63,7 +63,7 @@ BEGIN
   -- 3) forçage avec la permission (SUPER_ADMIN)
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);
-  PERFORM record_batch_production_v7(
+  PERFORM record_batch_production_v8(
     jsonb_build_object('section_id', v_sec::text, 'notes','t', 'force_negative', true),
     jsonb_build_array(jsonb_build_object('product_id', v_bread::text, 'quantity_produced', 1)));
   INSERT INTO _r VALUES ('flour', (SELECT current_stock FROM products WHERE id=v_flour));

@@ -57,7 +57,7 @@ const SHORTAGE_ERROR = {
  */
 function batchCalls(): [string, { p_batch: Record<string, unknown> }][] {
   return mockRpc.mock.calls.filter(
-    (c) => c[0] === 'record_batch_production_v7',
+    (c) => c[0] === 'record_batch_production_v8',
   ) as [string, { p_batch: Record<string, unknown> }][];
 }
 
@@ -147,9 +147,9 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     const calls = batchCalls();
     const lastCall = calls[calls.length - 1]!;
     // ADR-016 (20260729000001) fused the old _v3 impl + _v4 date wrapper into
-    // a single orchestrator, bumped again to record_batch_production_v7 by
+    // a single orchestrator, bumped again to record_batch_production_v8 by
     // ADR-008 D5/D6 (20260729000003) — the hook now calls _v6.
-    expect(lastCall[0]).toBe('record_batch_production_v7');
+    expect(lastCall[0]).toBe('record_batch_production_v8');
     expect(lastCall[1].p_batch.force_negative).toBe(true);
   });
 });

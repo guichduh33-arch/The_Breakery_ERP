@@ -2125,6 +2125,81 @@ export type Database = {
           },
         ]
       }
+      kitchen_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          request: Json
+          response: Json | null
+          section_id: string
+          transaction_id: number
+          user_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          request: Json
+          response?: Json | null
+          section_id: string
+          transaction_id?: number
+          user_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request?: Json
+          response?: Json | null
+          section_id?: string
+          transaction_id?: number
+          user_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_submissions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kitchen_submissions_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kitchen_user_sections: {
+        Row: {
+          section_id: string
+          user_profile_id: string
+        }
+        Insert: {
+          section_id: string
+          user_profile_id: string
+        }
+        Update: {
+          section_id?: string
+          user_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_user_sections_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kitchen_user_sections_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lan_devices: {
         Row: {
           capabilities: Json
@@ -6078,6 +6153,28 @@ export type Database = {
       _get_latest: { Args: { "": string }; Returns: number[] }
       _get_note: { Args: { "": string }; Returns: string }
       _is_verbose: { Args: never; Returns: boolean }
+      _kitchen_assert_section_v1: {
+        Args: { p_section_id: string }
+        Returns: string
+      }
+      _kitchen_context_v1: {
+        Args: { p_product_id?: string; p_section_id: string }
+        Returns: boolean
+      }
+      _kitchen_profile_v1: { Args: never; Returns: string }
+      _kitchen_stock_lot_v1: {
+        Args: {
+          p_batch_number?: string
+          p_expires_at?: string
+          p_idempotency_key?: string
+          p_location_id?: string
+          p_metadata?: Json
+          p_product_id: string
+          p_quantity: number
+          p_unit?: string
+        }
+        Returns: Json
+      }
       _next_b2b_invoice_number_v1: { Args: never; Returns: string }
       _notif_substitute: {
         Args: { p_source: string; p_vars: Json }
@@ -7066,6 +7163,21 @@ export type Database = {
         }
         Returns: Json
       }
+      get_kitchen_history_v1: {
+        Args: {
+          p_before_id?: string
+          p_before_time?: string
+          p_day: string
+          p_section_id: string
+        }
+        Returns: Json
+      }
+      get_kitchen_products_v1: { Args: { p_section_id: string }; Returns: Json }
+      get_kitchen_stations_v1: { Args: never; Returns: Json }
+      get_kitchen_submission_v1: {
+        Args: { p_idempotency_key: string }
+        Returns: Json
+      }
       get_low_stock_v2: {
         Args: never
         Returns: {
@@ -7518,6 +7630,10 @@ export type Database = {
       }
       get_trial_balance_v4: {
         Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_user_kitchen_access_v1: {
+        Args: { p_user_profile_id: string }
         Returns: Json
       }
       get_wastage_report_v2: {
@@ -7980,7 +8096,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v7: {
+      record_batch_production_v8: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8017,6 +8133,7 @@ export type Database = {
         }
         Returns: Json
       }
+      record_kitchen_production_v1: { Args: { p_request: Json }; Returns: Json }
       record_pin_failure_v1: {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
@@ -8035,7 +8152,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v5: {
+      record_production_v6: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
@@ -8338,6 +8455,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_user_kitchen_access_v1: {
+        Args: {
+          p_enabled: boolean
+          p_reason: string
+          p_section_ids: string[]
+          p_user_profile_id: string
+        }
+        Returns: boolean
       }
       set_user_permission_override_v1: {
         Args: {

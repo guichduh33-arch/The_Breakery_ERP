@@ -14,6 +14,7 @@ import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
 const DashboardPage = lazy(() => import('@/pages/Dashboard.js'));
+const KitchenPage = lazy(() => import('@/features/kitchen/KitchenPage.js'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage.js'));
 const ProductsPage = lazy(() => import('@/pages/Products.js'));
 const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage.js'));
@@ -270,6 +271,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/kitchen" element={<KitchenPage />} />
       <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
         <Route index element={<DashboardPage />} />
         <Route

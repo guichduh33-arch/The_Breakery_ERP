@@ -6,7 +6,7 @@
 // le geste de la caisse, pas celui du Backoffice, qui n'a pas de cible
 // tablette). Tout se fait au clavier.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
 
@@ -20,6 +20,8 @@ const BUSINESS_TZ = 'Asia/Makassar';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const kitchenLogin = searchParams.get('next') === 'kitchen';
   const login = useAuthStore((s) => s.login);
   const error = useAuthStore((s) => s.error);
   const setError = useAuthStore((s) => s.setError);
@@ -84,7 +86,9 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(selectedUserId, value);
-      void navigate('/backoffice', { replace: true });
+      const state = useAuthStore.getState();
+      const kitchenOnly = state.hasPermission('inventory.production.kitchen') && !state.hasPermission('inventory.read');
+      void navigate(kitchenLogin || kitchenOnly ? '/kitchen' : '/backoffice', { replace: true });
     } catch {
       // Message porté par le store. Les cellules se vident d'un coup et le focus
       // revient en tête — pas de secousse, ce monde est plat et sec.
@@ -122,7 +126,7 @@ export default function LoginPage() {
             alt="The Breakery"
             draggable={false}
           />
-          <div className="login-surface">BACK OFFICE</div>
+          <div className="login-surface">{kitchenLogin ? 'KITCHEN' : 'BACK OFFICE'}</div>
         </div>
         <dl className="login-markers">
           <div className="login-marker">
@@ -176,7 +180,7 @@ export default function LoginPage() {
                   <li key={u.id}>
                     <button
                       type="button"
-                      className="login-row"
+                      className={kitchenLogin ? 'login-row min-h-12' : 'login-row'}
                       aria-pressed={u.id === selectedUserId}
                       onClick={() => selectUser(u.id)}
                       data-testid={`user-picker-${u.id}`}

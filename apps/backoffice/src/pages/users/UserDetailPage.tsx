@@ -14,6 +14,7 @@ import { RoleChangeDialog } from '@/features/users/components/RoleChangeDialog.j
 import { DeleteUserDialog } from '@/features/users/components/DeleteUserDialog.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { KitchenAccessPanel } from '@/features/kitchen/KitchenAccessPanel.js';
 
 export default function UserDetailPage() {
   const navigate = useNavigate();
@@ -234,6 +235,8 @@ export default function UserDetailPage() {
           )}
         </div>
       )}
+
+      {isSuperAdmin && !isDeleted && u.role_code !== 'SUPER_ADMIN' && <KitchenAccessPanel userId={u.id} />}
 
       {showRole && (
         <RoleChangeDialog
