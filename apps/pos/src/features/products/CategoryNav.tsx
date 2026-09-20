@@ -35,10 +35,10 @@ export function CategoryNav({
   return (
     <aside
       aria-label="Product categories"
-      className="w-[116px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col max-[1099px]:w-full max-[1099px]:border-r-0 max-[1099px]:border-b max-[1099px]:flex-row"
+      className="w-[116px] min-h-0 shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col max-[899px]:w-full max-[899px]:border-r-0 max-[899px]:border-b max-[899px]:flex-row"
     >
       {/* Below md the vertical rail becomes a horizontal swipe strip. */}
-      <nav className="flex-1 overflow-y-auto scrollbar-none p-2 max-[1099px]:overflow-y-hidden max-[1099px]:overflow-x-auto max-[1099px]:flex max-[1099px]:items-stretch max-[1099px]:gap-1.5">
+      <nav className="flex-1 min-w-0 overflow-y-auto scrollbar-none p-2 max-[899px]:overflow-y-hidden max-[899px]:overflow-x-auto max-[899px]:flex max-[899px]:items-stretch max-[899px]:gap-2">
         <CategoryItem slug="all" label="All" active={selectedSlug === null} onSelect={onSelect} />
         <CategoryItem
           slug="favorites"
@@ -63,7 +63,7 @@ export function CategoryNav({
         ))}
       </nav>
       {onOpenSettings && (
-        <div className="border-t border-border-subtle py-3 flex justify-center max-[1099px]:hidden">
+        <div className="shrink-0 border-t border-border-subtle py-3 flex justify-center max-[899px]:hidden">
           <button
             type="button"
             onClick={onOpenSettings}
@@ -98,7 +98,7 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
       data-testid={`category-nav-item-${slug}`}
       className={cn(
         'relative w-full mb-1.5 py-2.5 px-1 rounded-lg border',
-        'max-[1099px]:w-[92px] max-[1099px]:shrink-0 max-[1099px]:mb-0',
+        'max-[899px]:w-auto max-[899px]:min-w-[100px] max-[899px]:min-h-14 max-[899px]:shrink-0 max-[899px]:mb-0 max-[899px]:px-3 max-[899px]:flex-row max-[899px]:gap-2',
         'flex flex-col items-center justify-center gap-1',
         'text-xs uppercase tracking-wide font-semibold leading-[1.15]',
         tone.text,

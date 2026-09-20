@@ -312,7 +312,7 @@ export function TabletOrderPage({
   // ── Menu view ───────────────────────────────────────────────────────
   const toolbar = (
     <div
-      className="px-4 py-3 flex flex-wrap items-center gap-3 border-b border-border-subtle bg-bg-elevated"
+      className="shrink-0 px-2 py-1 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:flex sm:flex-wrap items-center gap-2 border-b border-border-subtle bg-bg-elevated"
       data-testid="tablet-order-toolbar"
     >
       <Button
@@ -320,8 +320,8 @@ export function TabletOrderPage({
         size="md"
         className={
           tableMissing
-            ? 'min-h-11 gap-2 border-amber-warn text-amber-warn'
-            : 'min-h-11 gap-2'
+            ? 'h-12 min-h-12 min-w-0 gap-1 px-2 text-sm border-amber-warn text-amber-warn'
+            : 'h-12 min-h-12 min-w-0 gap-1 px-2 text-sm'
         }
         onClick={() => setView('floor-plan')}
         disabled={pendingSend !== null}
@@ -335,7 +335,7 @@ export function TabletOrderPage({
           laisserait croire qu'on peut le changer pour la 2ᵉ tournée. */}
       {!isAppendMode && !pendingSend && <OrderTypeToggle value={orderType} onChange={setOrderType} />}
 
-      <div className="ml-auto flex items-center gap-3" aria-label="Cart total">
+      <div className="ml-auto hidden sm:flex items-center gap-3" aria-label="Cart total">
         <span className="text-xs uppercase tracking-widest text-text-muted">Total</span>
         <Currency amount={preview.total} emphasis="gold" className="text-xl" />
       </div>

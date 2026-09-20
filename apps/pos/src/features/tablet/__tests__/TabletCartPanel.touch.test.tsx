@@ -44,6 +44,15 @@ describe('TabletCartPanel — touch targets (LOT 6)', () => {
     });
   });
 
+  it('ouvre le panier du CS30 en un tap et permet de corriger une quantité', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 360, writable: true, configurable: true });
+    render(wrap(<TabletCartPanel />));
+    fireEvent.click(screen.getByRole('button', { name: 'Open cart, 2 items' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Your cart');
+    fireEvent.click(screen.getByLabelText('Increase Latte'));
+    expect(useTabletCartStore.getState().items[0]?.quantity).toBe(3);
+  });
+
   it('renders quantity stepper and remove buttons at ≥48px (h-12/w-12)', () => {
     render(wrap(<TabletCartPanel />));
 

@@ -48,6 +48,8 @@ export interface ProductCardProps {
   onSelect: (product: Product) => void;
   /** Optional extra slot rendered top-left ABOVE the image (e.g. ComboBadge). */
   topLeftSlot?: ReactNode;
+  /** Densité du terminal portable, sans modifier les cartes de la caisse. */
+  compactOnMobile?: boolean;
 }
 
 function ProductCardImpl({
@@ -59,6 +61,7 @@ function ProductCardImpl({
   cartQty = 0,
   onSelect,
   topLeftSlot,
+  compactOnMobile = false,
 }: ProductCardProps): JSX.Element {
   const inCart = cartQty > 0 && !disabled;
   // P1 #6 — fall back to the BrandMark placeholder when image_url is absent OR
@@ -107,7 +110,7 @@ function ProductCardImpl({
           : 'cursor-pointer [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:border-border-strong [@media(hover:hover)]:hover:bg-bg-overlay [@media(hover:hover)]:hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
       )}
     >
-      <div className="relative aspect-[4/3] bg-bg-input overflow-hidden">
+      <div className={cn('relative w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 bg-bg-input overflow-hidden', compactOnMobile && 'max-sm:h-14 max-sm:aspect-auto')}>
         {showImage ? (
           <img
             src={product.image_url ?? undefined}
@@ -179,10 +182,10 @@ function ProductCardImpl({
         )}
       </div>
 
-      <div className="px-2.5 py-2 space-y-0.5">
+      <div className={cn('px-2.5 py-2 space-y-0.5', compactOnMobile && 'max-sm:px-2 max-sm:py-1.5')}>
         <div
           id={`pc-name-${product.id}`}
-          className="text-sm leading-tight font-medium text-text-primary line-clamp-2 min-h-[2.4em]"
+          className={cn('text-base leading-tight font-semibold text-text-primary line-clamp-3 min-h-[2.5em] break-words', compactOnMobile && 'max-sm:text-sm max-sm:line-clamp-2')}
           title={product.name}
         >
           {product.name}
