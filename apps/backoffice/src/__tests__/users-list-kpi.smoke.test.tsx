@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import UsersListPage from '@/pages/users/UsersListPage.js';
 
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
@@ -59,14 +60,12 @@ function renderPage(Component: React.ComponentType) {
 describe('UsersListPage (KPI rebuild)', () => {
   beforeEach(() => { cleanup(); });
 
-  it('renders the new "User Administration" title', { timeout: 30_000 }, async () => {
-    const UsersListPage = (await import('@/pages/users/UsersListPage.js')).default;
+  it('renders the new "User Administration" title', { timeout: 30_000 }, () => {
     renderPage(UsersListPage);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/User Administration/i);
   });
 
-  it('renders all 4 KPI tile labels', { timeout: 15_000 }, async () => {
-    const UsersListPage = (await import('@/pages/users/UsersListPage.js')).default;
+  it('renders all 4 KPI tile labels', { timeout: 15_000 }, () => {
     renderPage(UsersListPage);
     expect(screen.getByText(/Total users/i)).toBeInTheDocument();
     // "Active" / "Inactive" also appear in table rows as status — multiple matches expected.

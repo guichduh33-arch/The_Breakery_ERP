@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, cleanup, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import InventoryPage from '@/pages/Inventory.js';
 
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
@@ -95,14 +96,12 @@ describe('Inventory page shell (LIST archetype)', () => {
     ];
   });
 
-  it('renders the page title through the shared PageHeader', { timeout: 30_000 }, async () => {
-    const InventoryPage = (await import('@/pages/Inventory.js')).default;
+  it('renders the page title through the shared PageHeader', { timeout: 30_000 }, () => {
     const w = within(renderPage(InventoryPage).container);
     expect(w.getByRole('heading', { level: 1 })).toHaveTextContent(/Stock\s*&\s*Inventory/i);
   });
 
-  it('renders the five stock buckets as clickable counters', { timeout: 15_000 }, async () => {
-    const InventoryPage = (await import('@/pages/Inventory.js')).default;
+  it('renders the five stock buckets as clickable counters', { timeout: 15_000 }, () => {
     const w = within(renderPage(InventoryPage).container);
     for (const [id, label] of [
       ['all', 'All products'], ['low', 'Low stock'], ['zero', 'At zero'],
@@ -127,9 +126,8 @@ describe('Inventory page shell (LIST archetype)', () => {
   //   · le TOTAL du panier survit à une liste vide — compteur partagé ;
   //   · le compte RÉEL des lignes rendues ne se déduit pas de la tranche, qui
   //     en promet quinze — d'où la mention de page courte.
-  it('still counts when the list comes back empty', { timeout: 15_000 }, async () => {
+  it('still counts when the list comes back empty', { timeout: 15_000 }, () => {
     mockRows = [];
-    const InventoryPage = (await import('@/pages/Inventory.js')).default;
     const w = within(renderPage(InventoryPage).container);
     expect(w.getByTestId('list-page-range')).toHaveTextContent('of 318');
     expect(w.getByTestId('stock-levels-short-page')).toHaveTextContent('0 shown');

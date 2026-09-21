@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import LanDevicesPage from '@/pages/lan-devices/LanDevicesPage.js';
 
 vi.mock('@/features/lan-devices/hooks/useLanDevices.js', () => ({
   useLanDevices: () => ({
@@ -45,8 +46,7 @@ function renderPage(Component: React.ComponentType) {
 describe('LanDevicesPage (KPI rebuild)', () => {
   beforeEach(() => { cleanup(); });
 
-  it('renders all 4 KPI tile labels', { timeout: 30_000 }, async () => {
-    const LanDevicesPage = (await import('@/pages/lan-devices/LanDevicesPage.js')).default;
+  it('renders all 4 KPI tile labels', { timeout: 30_000 }, () => {
     renderPage(LanDevicesPage);
     expect(screen.getByText(/Total devices/i)).toBeInTheDocument();
     // "Online" / "Stale" also appear as row status badges — multiple matches expected.
@@ -55,8 +55,7 @@ describe('LanDevicesPage (KPI rebuild)', () => {
     expect(screen.getByText(/^Printers$/i)).toBeInTheDocument();
   });
 
-  it('renders the underlying device rows', { timeout: 30_000 }, async () => {
-    const LanDevicesPage = (await import('@/pages/lan-devices/LanDevicesPage.js')).default;
+  it('renders the underlying device rows', { timeout: 30_000 }, () => {
     renderPage(LanDevicesPage);
     expect(screen.getByText('POS-01')).toBeInTheDocument();
     expect(screen.getByText('PRN-01')).toBeInTheDocument();
