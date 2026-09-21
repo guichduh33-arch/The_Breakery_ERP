@@ -1,12 +1,15 @@
-# S78 — dispatch ciblé du seul job vitest live-RPC (itération rapide sans la
-# sérialisation pgtap du nightly). Manuel uniquement ; le verdict nightly
-# officiel reste pgtap-nightly.yml. Ne PAS dispatcher pendant les crons
-# (19:00/22:00 UTC) — même DB dev partagée.
+# Les tests live-RPC écrivent dans la base dev partagée : lancement manuel
+# uniquement, avec acceptation explicite des opérations et stocks modifiés.
 name: Vitest Live (targeted)
 
 on:
   workflow_dispatch:
     inputs:
+      allow_dev_mutations:
+        description: 'I accept that these tests create operations and change stocks on dev V3'
+        required: true
+        type: boolean
+        default: false
       filter:
         description: 'Fichiers/patterns vitest (espace-séparés), vide = suite complète'
         required: false
@@ -14,6 +17,7 @@ on:
 
 jobs:
   vitest:
+    if: github.event_name == 'workflow_dispatch' && inputs.allow_dev_mutations == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

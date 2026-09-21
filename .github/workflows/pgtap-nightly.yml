@@ -86,56 +86,6 @@ jobs:
         env:
           ISSUE_NUMBER: ${{ vars.PGTAP_TRACKING_ISSUE }}
 
-  # S50 — Live-RPC Vitest suite (supabase/tests/functions/*.test.ts, ~62 files).
-  # Requires SUPABASE_SERVICE_ROLE_KEY repository secret. Tests are env-gated
-  # (they skip gracefully when env vars are absent), but we fail fast here to
-  # ensure the secret is present and the suite actually runs.
-  #
-  # S58 fix (T4): the test files read VITE_SUPABASE_URL (~60 files) with a hard
-  # fallback to http://127.0.0.1:54321 (retired local Docker stack). Exporting
-  # only SUPABASE_URL left them dialing localhost — the real cause of the
-  # nightly "TypeError: fetch failed / ECONNREFUSED 127.0.0.1:54321".
-  # S77: the SUPABASE_ANON_KEY secret is now OPTIONAL — the shared test helper
-  # (supabase/tests/functions/_helpers/auth.ts) falls back to the project's
-  # real publishable key (public by design). Logins are minted via the GoTrue
-  # admin API with a run-level token cache instead of hammering the rate-limited
-  # auth-verify-pin EF (~3/min/IP — the cause of the nightly rate_limited storm).
-  live-rpc-vitest:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # S77: run AFTER the pgtap job, not in parallel with it — both hit the SAME
-    # shared dev DB, and the vitest flows contend with pgTAP suites on hot rows
-    # (invoice_sequences, order_sequences, business_config id=1 pins) → deadlocks.
-    # This was invisible before S77 only because the login rate-limit storm
-    # killed the vitest job within ~2 min, leaving pgtap alone on the DB.
-    needs: pgtap
-    if: ${{ always() }}
-    env:
-      SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
-      VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Run live-RPC Vitest suite
-        run: |
-          set -uo pipefail
-          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
-            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is not set — live-RPC tests cannot run." >&2
-            exit 1
-          fi
-          pnpm --filter @breakery/supabase-tests test
 
   # S50 — Drift checks (types.generated.ts + schema_migrations).
   # Both steps use V3_DEV_PG_POOLER_URL secret; they skip with a warning if

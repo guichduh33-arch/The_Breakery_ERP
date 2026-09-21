@@ -15,6 +15,7 @@
 // tombe, si bien qu'on peut aller ailleurs sans recharger.
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { captureException } from '@sentry/react';
 import { useLocation } from 'react-router-dom';
 import { ErrorState } from './ErrorState.js';
 
@@ -37,6 +38,7 @@ class ErrorBoundaryInner extends Component<Props, State> {
     // Le détail technique va à la console, jamais à l'écran : ErrorState
     // demande explicitement de garder la copie utilisateur non technique.
     console.error('[backoffice] page crashed', error, info.componentStack);
+    captureException(error);
   }
 
   override render(): ReactNode {

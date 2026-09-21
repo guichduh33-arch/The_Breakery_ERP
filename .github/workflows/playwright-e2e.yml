@@ -10,32 +10,15 @@ name: Playwright E2E
 #   E2E_PIN_CASHIER          — 6-digit PIN for E2E cashier (0e2e0000-…-002)
 #   V3_DEV_PG_POOLER_URL     — pooler connection string (already set 2026-05-16)
 #
-# Nightly cron armed S71 Plan 2 once all 12 specs proved green in a combined
-# run (26 passed / 2 intentional fixmes / 0 failed). 22:00 UTC daily. The
-# rate-limit-resilient login (fixtures/auth.ts) keeps the bunched-login run
-# green against the auth-verify-pin 3/min/IP limit. Still dispatchable on demand.
-# POS audit 2026-09-10: cash and QRIS checkout pass on dev again.
-# The PR gate covers the critical sales flow; scheduled runs include viewport checks.
+# Exécution manuelle uniquement : ces tests écrivent sur la base dev V3.
 on:
-  pull_request:
-    branches: [master, main]
-    paths:
-      - 'apps/pos/**'
-      - 'apps/print-bridge/**'
-      - 'packages/domain/**'
-      - 'packages/ui/**'
-      - 'packages/supabase/**'
-      - 'supabase/migrations/**'
-      - 'supabase/functions/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.ts'
-      - '.github/workflows/playwright-e2e.yml'
   workflow_dispatch:
-  schedule:
-    # Quota 2026-07 — 2×/semaine au lieu de quotidien (~-300 min/mois).
-    # 22:00 UTC lun/jeu = 05:00 Asia/Jakarta mar/ven. Dispatchable à la
-    # demande entre deux crons.
-    - cron: '0 22 * * 1,4'
+    inputs:
+      allow_dev_mutations:
+        description: 'I accept that these tests create operations and change stocks on dev V3'
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: e2e-${{ github.event.pull_request.number || github.ref }}
@@ -47,15 +30,9 @@ env:
 jobs:
   e2e:
     name: Playwright E2E (build + serve in-CI)
-    # Les secrets Dependabot sont un magasin séparé : E2E_PIN_* et le pooler y
-    # sont vides, le provisioning échouerait. Un bump de dépendance ne casse
-    # pas le money-path — on saute, comme le fait pgtap-pr.yml.
-    if: github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'workflow_dispatch' && inputs.allow_dev_mutations == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      # Sur PR : money-path seul, et pas de build back-office.
-      E2E_SKIP_BO_SERVER: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
     steps:
       - uses: actions/checkout@v7
@@ -90,18 +67,8 @@ jobs:
             -v adminpin="$E2E_PIN_ADMIN" -v cashpin="$E2E_PIN_CASHIER" \
             -f scripts/e2e/provision-pins.sql
 
-      # Sur PR : les 3 specs du chemin de l'argent (connexion caisse, commande
-      # complète, money-path S44). Sur cron / dispatch : les 12.
       - name: Run Playwright tests
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            pnpm exec playwright test --project=pos \
-              tests/e2e/pos-login-order.spec.ts \
-              tests/e2e/complete-order.spec.ts \
-              tests/e2e/s44-money-path.spec.ts
-          else
-            pnpm exec playwright test
-          fi
+        run: pnpm exec playwright test
         env:
           CI: 'true'
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
