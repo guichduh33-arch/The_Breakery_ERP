@@ -4,12 +4,12 @@ interface ErrorReport {
   timestamp?: number;
   environment?: string;
   exception?: {
-    values?: Array<{
+    values?: {
       type?: string;
       stacktrace?: {
-        frames?: Array<{ filename?: string; lineno?: number; colno?: number; in_app?: boolean }>;
+        frames?: { filename?: string; lineno?: number; colno?: number; in_app?: boolean }[];
       };
-    }>;
+    }[];
   };
 }
 
@@ -30,20 +30,23 @@ export function sanitizeSentryEvent(event: ErrorReport) {
     type: undefined,
     level: 'error' as const,
     platform: 'javascript',
-    ...(['development', 'production', 'staging', 'test'].includes(event.environment ?? '') ? { environment: event.environment } : {}),
+    ...(event.environment && ['development', 'production', 'staging', 'test'].includes(event.environment) ? { environment: event.environment } : {}),
     ...(event.event_id && /^[a-f0-9]{32}$/i.test(event.event_id) ? { event_id: event.event_id } : {}),
-    ...(Number.isFinite(event.timestamp) ? { timestamp: event.timestamp } : {}),
+    ...(typeof event.timestamp === 'number' && Number.isFinite(event.timestamp) ? { timestamp: event.timestamp } : {}),
     exception: {
       values: (event.exception?.values ?? [{}]).map((exception) => ({
-        type: nativeErrors.has(exception.type ?? '') ? exception.type : 'Error',
+        type: exception.type && nativeErrors.has(exception.type) ? exception.type : 'Error',
         value: 'Application error (details withheld)',
         stacktrace: {
-          frames: (exception.stacktrace?.frames ?? []).map((frame) => ({
-            ...(assetName(frame.filename) ? { filename: assetName(frame.filename) } : {}),
-            ...(Number.isSafeInteger(frame.lineno) ? { lineno: frame.lineno } : {}),
-            ...(Number.isSafeInteger(frame.colno) ? { colno: frame.colno } : {}),
-            ...(typeof frame.in_app === 'boolean' ? { in_app: frame.in_app } : {}),
-          })),
+          frames: (exception.stacktrace?.frames ?? []).map((frame) => {
+            const filename = assetName(frame.filename);
+            return {
+              ...(filename ? { filename } : {}),
+              ...(typeof frame.lineno === 'number' && Number.isSafeInteger(frame.lineno) ? { lineno: frame.lineno } : {}),
+              ...(typeof frame.colno === 'number' && Number.isSafeInteger(frame.colno) ? { colno: frame.colno } : {}),
+              ...(typeof frame.in_app === 'boolean' ? { in_app: frame.in_app } : {}),
+            };
+          }),
         },
       })),
     },
