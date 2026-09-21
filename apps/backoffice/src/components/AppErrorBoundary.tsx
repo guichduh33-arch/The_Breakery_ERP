@@ -12,6 +12,7 @@
 // par le bouton Retry ou par un rechargement complet.
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { captureException } from '@sentry/react';
 import { ErrorState } from './ErrorState.js';
 
 interface Props {
@@ -32,6 +33,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   override componentDidCatch(error: Error, info: ErrorInfo): void {
     // Le détail technique va à la console, jamais à l'écran (règle ErrorState).
     console.error('[backoffice] app crashed', error, info.componentStack);
+    captureException(error);
   }
 
   override render(): ReactNode {
