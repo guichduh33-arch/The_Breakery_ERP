@@ -1,46 +1,103 @@
 # @breakery/print-bridge
 
-Traducteur HTTP → ESC/POS (TCP 9100) pour The Breakery. Remplace le template
-print-server externe (spec 2026-07-06). Consommé par le POS (`printService.ts`)
-et le BO (page LAN Devices : scan réseau + tests d'impression).
+Service HTTP → ESC/POS (TCP 9100), bus LAN et serveur statique POS de Breakery.
+Consommé par le POS et le BO (LAN Devices). Procédure d'exploitation à valider
+par Mamat avant commit ; aucun service Windows n'est installé par ce document.
 
 ## Endpoints
-- `GET  /health` — sonde de vie
-- `POST /print/receipt` — reçu caisse (payload `ReceiptPayload`, rend `promotions[]`)
-- `POST /print/ticket` — KOT station / ticket waiter (`{printer} & StationTicketPayload`)
-- `POST /drawer/open` — pulse tiroir vers l'imprimante caisse (.env)
-- `GET  /scan/printers?prefix=192.168.1&timeout=500` — sweep TCP 9100 (plages privées only)
-- `GET  /status/probe?ip=&port=` — sonde une IP
-- `GET  /hub/status` — état du hub LAN (presence + ring-buffer) — spec 006x lot 1
-- `WS   /ws` — bus LAN du hub (hello `{type,device_code,device_type,token?}`,
-  enveloppes `{v,msg_id,device_code,ts,topic,payload}`, catchup). IP privées only.
 
-## Hub LAN (spec 006x)
-- `HUB_TOKEN` (.env) — secret partagé boutique, vérifié dans le hello WS.
-  Sans lui le bus accepte tout appareil du LAN (warning au boot). Le token
-  se saisit côté terminal dans POS → Settings → Devices → Hub token.
-- `HUB_BUFFER_FILE` (.env, défaut `hub-buffer.jsonl`) — journal JSONL du
-  ring-buffer (rattrapage des appareils qui rejoignent le bus).
-- **Heartbeat cloud agrégé (lot 2)** — le hub pousse toutes les 10 s les
-  device codes présents sur le bus vers l'EF `lan-heartbeat-batch` : un seul
-  écrivain cloud pour `lan_devices` (les terminaux se taisent tant qu'ils sont
-  sur le bus, et repassent en heartbeat direct si le hub tombe).
-  - `HUB_CLOUD_URL` (.env) — `https://<projet>.supabase.co/functions/v1/lan-heartbeat-batch`
-  - `HUB_CLOUD_SECRET` (.env) — même valeur que `LAN_HEARTBEAT_SECRET` côté EF
-    (header `x-hub-secret`, jamais en query/body).
-  Les deux absents = push désactivé (log au boot, `cloud_sync` dans `/hub/status`).
-- ⚠️ Le bridge ne charge PAS de dotenv : les variables viennent du lanceur
-  (shell `$env:` en dev, `nssm set ... AppEnvironmentExtra` en service).
+- `GET /health` : sonde de vie.
+- `POST /print/receipt` : reçu caisse (`ReceiptPayload`, promotions incluses).
+- `POST /print/ticket` : KOT station ou ticket waiter.
+- `POST /drawer/open` : pulse tiroir via l'imprimante caisse.
+- `GET /scan/printers?prefix=192.168.1&timeout=500` : scan TCP des plages privées.
+- `GET /status/probe?ip=&port=` : sonde d'une imprimante.
+- `GET /hub/status` : présence, ring-buffer et état du heartbeat cloud.
+- `WS /ws` : bus LAN, hello avec device code/type et token, catchup.
+- SPA POS : disponible lorsque `POS_DIST_DIR` désigne un bundle construit.
 
-## Installation (Windows, PC boutique)
-1. `pnpm install && pnpm --filter @breakery/print-bridge build` → `apps/print-bridge/dist/server.js`
-2. Copier `.env.example` → `.env` à côté de `dist/`, renseigner `RECEIPT_PRINTER_IP`.
-3. Service Windows (au choix) :
-   - **NSSM** : `nssm install BreakeryPrintBridge "C:\Program Files\nodejs\node.exe" "<repo>\apps\print-bridge\dist\server.js"` puis `nssm set BreakeryPrintBridge AppDirectory "<repo>\apps\print-bridge"` et `nssm start BreakeryPrintBridge`
-   - **pm2** : `pm2 start dist/server.js --name print-bridge && pm2 save && pm2 startup`
-4. Vérifier : `curl http://localhost:3001/health` puis POS → Settings → Devices → Test connection.
+## Configuration du processus
 
-## Notes
-- Tiroir-caisse : pulse standard via `openCashDrawer()` (pin non configurable — RJ11 sur l'imprimante caisse).
-- Le tiroir et les reçus sans cible explicite partent sur `RECEIPT_PRINTER_IP:RECEIPT_PRINTER_PORT`.
-- CORS ouvert : le bridge est un service LAN de confiance, sans credentials ni secrets.
+Le code lit `process.env`, il ne charge pas automatiquement un fichier `.env`.
+Copier `.env.example` seul ne configure donc pas le service.
+Le lanceur doit injecter les variables ou utiliser explicitement Node
+avec `--env-file=<chemin-absolu>` (runtime compatible avec le dépôt).
+
+| Variable | Usage |
+|---|---|
+| `PORT` | HTTP/WS, défaut 3001 |
+| `RECEIPT_PRINTER_IP`, `RECEIPT_PRINTER_PORT` | Reçus sans cible explicite et tiroir ; port par défaut 9100 |
+| `POS_DIST_DIR` | Chemin absolu du bundle POS, contenant `index.html` et ses assets |
+| `HUB_TOKEN` | Secret boutique, saisi aussi dans POS → Settings → Devices → Hub token |
+| `HUB_BUFFER_FILE` | Chemin absolu persistant, hors des répertoires de release |
+| `HUB_CLOUD_URL` | URL de `lan-heartbeat-batch` sur la cible confirmée |
+| `HUB_CLOUD_SECRET` | Même secret que `LAN_HEARTBEAT_SECRET` côté EF |
+
+Sans `HUB_TOKEN`, le bus accepte les appareils du LAN avec un avertissement au
+démarrage. Le heartbeat envoie périodiquement les appareils présents ;
+sans sa configuration, il reste désactivé mais le hub local fonctionne.
+Le secret cloud est transporté par `x-hub-secret`, jamais dans URL/body.
+
+Protéger le fichier de configuration par les droits Windows, hors du dépôt et
+des bundles. Le compte du service doit pouvoir lire le bundle et écrire le buffer.
+Le buffer LAN n'est **pas** une sauvegarde de l'outbox de ventes des navigateurs.
+
+## Préparer et lancer
+
+1. Depuis un checkout du SHA validé, construire le POS avec sa configuration
+   Supabase de production confirmée, puis le bridge :
+   `pnpm --filter @breakery/app-pos build` et
+   `pnpm --filter @breakery/print-bridge build`.
+2. Préparer une livraison versionnée du POS, du bridge et de ses dépendances
+   runtime. Vérifier sur une machine de répétition ; copier seulement
+   `dist/server.js` n'est pas une preuve que toutes les dépendances sont livrées.
+3. Configurer le lanceur existant pour exécuter Node avec un chemin absolu vers
+   `apps/print-bridge/dist/server.js`, les variables ci-dessus et un répertoire
+   de travail explicite. Exemple de forme, chemins à confirmer :
+   `node --env-file=C:/Breakery/config/bridge.env C:/Breakery/releases/<sha>/apps/print-bridge/dist/server.js`.
+4. Faire valider le mécanisme de démarrage automatique et de redémarrage déjà
+   utilisé sur le PC, le compte, les journaux et leur rotation.
+   Ne pas installer NSSM/PM2 ou un autre gestionnaire implicitement.
+5. Restreindre l'accès réseau au LAN boutique et au port prévu ; ne pas exposer
+   ce service à Internet. Les endpoints HTTP ne constituent pas une API publique
+   authentifiée. Le token du bus WS ne protège pas les commandes d'impression HTTP.
+6. Vérifier `http://localhost:3001/health`, le POS sur l'adresse LAN retenue,
+   la reconnexion WS, le heartbeat et une impression physique autorisée.
+   Adapter le port si nécessaire. Un HTTP 200 ne prouve pas l'impression.
+
+Conserver une origine LAN stable (protocole, hôte et port) : en changer peut rendre
+inaccessible le stockage navigateur contenant des ventes en attente.
+Le BO HTTPS publié sur Vercel ne doit pas être supposé capable d'appeler
+directement ce service HTTP LAN ; vérifier le parcours réellement utilisé.
+
+## Mise à jour et retour local
+
+Après construction dans un checkout propre du SHA retenu, la commande
+`node scripts/release/manifest.mjs print-bridge` inventorie `apps/print-bridge/dist` ;
+`node scripts/release/manifest.mjs pos` inventorie le bundle POS. Les variables
+`RELEASE_SHA` et `SUPABASE_PROJECT_REF_PRODUCTION` doivent être explicites.
+Conserver les manifestes avec la livraison et vérifier leur contenu avec
+`--verify` avant transfert. Ils ne prouvent pas qu'un poste a été mis à jour.
+Le manifeste du `dist` bridge **n'inclut pas les dépendances npm externes** :
+préparer et identifier séparément ces dépendances, le runtime Node et la
+configuration protégée avant de considérer la livraison boutique complète.
+
+- Avant mise à jour, identifier la version active, préserver le bundle précédent,
+  la configuration et le buffer, puis relever les files de chaque terminal.
+  Ne jamais effacer le stockage navigateur pour « repartir propre ».
+- Préparer les nouveaux fichiers dans un répertoire versionné distinct. Valider
+  compatibilité POS/bridge/EF/DB et lecture des anciens intents offline.
+- Dans une fenêtre approuvée, arrêter proprement le service existant, modifier
+  les chemins de lancement et `POS_DIST_DIR`, conserver le même buffer persistant,
+  puis redémarrer avec le même compte et la même origine LAN.
+- Contrôler santé, chargement des assets, reconnexion des terminaux, ticket,
+  reprise des files et absence de doublon. Répéter aussi après redémarrage du PC.
+- Si retour nécessaire et compatibilité démontrée : arrêter, restaurer les chemins
+  du bridge et du POS précédents ainsi que la configuration compatible, conserver
+  les données persistantes, redémarrer et refaire les contrôles.
+  Ne pas remplacer le buffer par une copie ancienne sans procédure validée.
+
+Le tiroir utilise le pulse standard de l'imprimante caisse (RJ11) ; sa cible
+est la même que celle des reçus sans imprimante explicite.
+Voir [la bascule V3](../../docs/runbooks/production-v3-cutover.md)
+pour la sauvegarde/restauration DB et le rapprochement des ventes.

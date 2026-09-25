@@ -9,6 +9,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Schema reality (re-vérifié 2026-08-31)
 - BO surface — `apps/backoffice/src/features/btob/`
 
+Périmètre : parcours B2B du back-office et RPC/tests de commandes, crédit, paiements et allocations B2B. Un paiement fournisseur générique sans créance client B2B ne suffit pas à déclencher ce workflow.
+
 # B2B Credit & AR — The Breakery ERP
 
 > **Re-vérifié le 2026-08-31** contre `supabase/migrations/` (migration au numéro le plus

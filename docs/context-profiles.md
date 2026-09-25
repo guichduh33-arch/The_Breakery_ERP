@@ -1,6 +1,10 @@
 # Profils de fenêtre de contexte par session
 
-Ce document définit comment charger le bon périmètre de code par session pour réduire le bruit de contexte.
+Les profils sont des inventaires de périmètre, pas des listes à charger intégralement.
+Commencer par `node scripts/agents/context.mjs <chemin-existant>` : la commande
+indique le package, les skills candidats et les tests proches, sans lire leur contenu.
+Vérifier ensuite les candidats et élargir si nécessaire ; le classement ne prouve
+ni l'absence de tests ni leur couverture. Voir [les outils agents](runbooks/agent-tooling.md).
 
 ## Objectif
 
@@ -10,7 +14,7 @@ Ne charger que les fichiers utiles à la tâche en cours, selon le profil métie
 
 - Sources de vérité (à lire si besoin de décision) :
   - `README.md`
-  - `CLAUDE.md`
+  - `AGENTS.md` (source commune ; `CLAUDE.md` est son miroir)
   - `package.json`
   - `pnpm-workspace.yaml`
   - `turbo.json`
@@ -78,7 +82,7 @@ Ne charger que les fichiers utiles à la tâche en cours, selon le profil métie
 
 ## Ordre d’ouverture recommandé
 
-1. Manifeste de périmètre (`README.md`, `CLAUDE.md`, `package.json`).
+1. Manifeste de périmètre (`README.md`, `AGENTS.md`, `package.json`).
 2. `package.json` des packages du profil.
 3. Fichiers de surface métier (routes, pages, features, stores/services).
 4. Tests liés au périmètre.

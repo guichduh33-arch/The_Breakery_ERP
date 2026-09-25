@@ -26,7 +26,7 @@ pnpm --filter @breakery/ui test
 pnpm build
 ```
 
-- Le typecheck passe, les tests de la feature touchée passent (distinguer une vraie régression du baseline env-gated connu — cf. AGENTS.md / `test-engineer`).
+- Le typecheck et les tests pertinents passent ; distinguer tests exécutés, ignorés et absents. Un échec d'environnement exige un diagnostic, pas une exemption fondée sur une ancienne baseline (voir AGENTS.md et `test-engineer`).
 - Le rendu a été vérifié pour le(s) profil(s) ciblé(s) ; idéalement un viewport caisse large ET une tablette portrait pour tout composant WAITER.
 - Aucune couleur en dur introduite, aucun import de primitif inexistant, **aucune classe morte** (alpha sur token `var()` nu hors famille `cat-*`, nom de classe absent du preset) — la garde CI `scripts/ci/tailwind-dead-classes.mjs` refuse toute référence neuve.
 

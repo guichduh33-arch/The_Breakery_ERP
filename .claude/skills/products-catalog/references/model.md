@@ -9,6 +9,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - is_display_item — pont display-stock
 - POS — variant picker
 
+Périmètre : produits/catégories du back-office, variantes POS et SQL/tests du catalogue. Consulter ce skill avant de modifier les écritures produit ; distinguer les sections du catalogue de toute dimension de stockage, traitée par [stock-management](../../stock-management/SKILL.md).
+
 # Products Catalog — The Breakery ERP
 
 Expert on product CRUD, variants (linked-products), categories, units/sections/modifiers, and the `is_display_item` display-stock flag.

@@ -9,6 +9,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Checklist audit esthétique + pratique
 - Anti-patterns
 
+Sélection : ce skill mène la direction transverse et le back-office. Pour les surfaces d’apps/pos, [pos-design-craft](../../pos-design-craft/SKILL.md) mène la création, [pos-frontend-design-audit](../../pos-frontend-design-audit/SKILL.md) le diagnostic visuel et [pos-frontend-design-implement](../../pos-frontend-design-implement/SKILL.md) les recommandations validées. Consulter [breakery-ui-kit](../../breakery-ui-kit/SKILL.md) pour les moyens existants ; la copie du dépôt d’[Impeccable](../../../../.agents/skills/impeccable/SKILL.md) complète la méthode, sans remplacer les règles Breakery ni élargir la demande.
+
 # Breakery Design — direction artistique + ergonomie
 
 > **Re-vérifié le 2026-08-31** contre le code et `docs/objectifs/` : job des 5 surfaces,

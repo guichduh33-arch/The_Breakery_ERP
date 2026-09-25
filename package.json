@@ -8,6 +8,11 @@
   },
   "packageManager": "pnpm@11.17.0",
   "scripts": {
+    "agents:check": "node scripts/agents/sync.mjs --check",
+    "agents:sync": "node scripts/agents/sync.mjs --write",
+    "agents:doctor": "node scripts/agents/doctor.mjs",
+    "context:focus": "node scripts/agents/context.mjs",
+    "test:target": "node scripts/agents/test.mjs",
     "context:snapshot": "node scripts/context-snapshot.mjs",
     "context:snapshot:pos": "node scripts/context-snapshot.mjs pos",
     "context:snapshot:bo": "node scripts/context-snapshot.mjs backoffice",

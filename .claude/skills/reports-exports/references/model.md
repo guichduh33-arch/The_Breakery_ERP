@@ -8,6 +8,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Mental model — Pipeline reports & exports
 - Surface map
 
+Sélection : ce skill mène le câblage des rapports BO, Z-reports, PDF/CSV et drill-down (domaine et EF de génération inclus). Consulter avant toute modification d’une RPC de rapport, d’un template PDF ou d’un bouton d’export. [report-designer](../../report-designer/SKILL.md) décide des métriques et graphiques ; [report-audit](../../report-audit/SKILL.md) diagnostique les rapports incorrects ; [pos-flow-audit](../../pos-flow-audit/SKILL.md) couvre le parcours de clôture de caisse.
+
 # Reports & Exports — The Breakery ERP
 
 > **Relevé re-vérifié contre le code le 2026-08-31.** Chaque fait ci-dessous a été

@@ -8,6 +8,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Mental model — The Breakery stock flow
 - Audit 2026-06-12 — fixes shipped + ledger conventions
 
+Périmètre : inventaire et recettes du back-office, stock POS, domaine inventory/production et RPC/tests de stock. Consulter ce skill avant toute écriture de stock ; les questions de péremption/FIFO ou de stock par section se traitent selon les décisions existantes, pas comme des fonctionnalités à recréer.
+
 # Stock Management — The Breakery ERP
 
 > **Skill re-vérifiée contre le code et le schéma live le 2026-08-31.** Les faits ci-dessous

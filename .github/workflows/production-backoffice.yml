@@ -1,0 +1,93 @@
+name: Publish Backoffice Production
+
+# La publication reste impossible avant configuration et approbation explicites.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Full SHA of tested master to publish'
+        required: true
+        type: string
+      approve_release:
+        description: 'I validated the V3 schema, cutover evidence and this BO release'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: backoffice-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: Production
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ inputs.sha }}
+      RELEASE_APPROVED: ${{ inputs.approve_release }}
+      RELEASE_ENABLED: ${{ vars.RELEASE_ENABLED }}
+      SUPABASE_PROJECT_REF_PRODUCTION: ${{ vars.SUPABASE_PROJECT_REF_PRODUCTION }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_BACKOFFICE }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_CLI_VERSION: ${{ vars.VERCEL_CLI_VERSION }}
+    steps:
+      - name: Require dispatch from master and explicit confirmation
+        run: |
+          test "$GITHUB_REF" = refs/heads/master
+          test "$RELEASE_APPROVED" = true
+          test "$RELEASE_ENABLED" = true
+          [[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$VERCEL_CLI_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require exact SHA CI, applicable pgTAP and protected publication
+        run: node scripts/release/preflight.mjs --save-proof
+
+      - uses: pnpm/action-setup@v6
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install explicitly pinned Vercel CLI
+        run: npm install --global "vercel@$VERCEL_CLI_VERSION"
+
+      - name: Build with production configuration
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          node scripts/release/verify-build.mjs
+
+      - name: Identify the exact deployment bundle
+        run: node scripts/release/manifest.mjs backoffice --with-proof
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backoffice-release-${{ inputs.sha }}-${{ github.run_attempt }}
+          path: .release-manifests/backoffice/release-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Recheck before publishing the production bundle
+        run: |
+          node scripts/release/preflight.mjs
+          node scripts/release/manifest.mjs backoffice --verify
+          vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN" --meta "githubCommitSha=$RELEASE_SHA"

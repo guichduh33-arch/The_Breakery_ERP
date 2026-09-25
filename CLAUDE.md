@@ -119,22 +119,25 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   NOM DE FICHIER, pas le describe — et beaucoup de tests du BO sont en
   **kebab-case** (`daily-sales-page.smoke.test.tsx`) : un filtre `DailySales` ne
   les matche pas et fait croire que tout passe. Localiser par glob, jamais par
-  nom de composant. La suite **BO** complète tourne en local (~5-6 min, 282
-  fichiers) et c'est le seul filet qui voit une régression inter-fichiers : la
-  lancer avant de conclure. Suite POS complète = timeout en local ;
+  nom de composant. Ajouter `--passWithNoTests=false` aux tests ciblés et vérifier
+  les nombres exécutés/ignorés ; une suite entièrement ignorée n'est pas validée.
+  La suite **BO** complète doit tourner avant livraison d'une modification BO
+  pour détecter les régressions inter-fichiers. Suite POS complète = timeout en local ;
   la CI est le seul filet full-suite. Le lint-ratchet CI bloque aussi sur les
   erreurs préexistantes des fichiers touchés par la PR.
 - pgTAP : via MCP `execute_sql` (BEGIN/ROLLBACK), pas de runner local. SQL
   >~12 KB : POST le fichier sur l'API `database/query` (troncature inline MCP).
 - E2E Playwright : specs dans `tests/e2e/`, `pnpm e2e` (config racine, apps
   buildées et servies en local contre la base dev V3). Le workflow
-  `playwright-e2e.yml` tourne en cron, mais son déclencheur `pull_request` est
-  DÉSARMÉ tant que `process-payment` répond 500 sur dev : une PR qui touche le
-  POS ou le money-path n'est PAS couverte par l'E2E.
+  `playwright-e2e.yml` est manuel, avec acceptation explicite des mutations dev :
+  une PR POS ou money-path n'est pas automatiquement couverte par l'E2E.
 - Filets CI : `ci.yml` (gardes gouvernance nues + lint-ratchet + build/tests) ;
-  `pgtap-pr.yml` ne se déclenche QUE si la PR touche
-  `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
-  DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
+  `pgtap-pr.yml` classe toutes les PR : pgTAP est requis pour
+  `supabase/{migrations,tests,functions}`, son workflow et son classificateur.
+  Le contrôle `db-gate` exige soit cette preuve réussie, soit une non-applicabilité
+  justifiée ; un test applicable ignoré ne suffit pas, même pour Dependabot.
+  Une PR front-only n'exécute pas de tests DB. Le lancement manuel exige toujours
+  pgTAP ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
   (`scripts/ci/`) rendent leur verdict en secondes, avant le build. Elles sont
   DIX, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
   `relative-links`, `hardcoded-theme-colors`, les quatre gardes design du
@@ -152,12 +155,31 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   préexistantes. Le rejouer en local se fait par lots — `xargs` sur ~170 fichiers
   dépasse la limite de ligne de commande Windows et **échoue en silence**, ce qui
   rend un « propre » qui ne vaut rien.
-  `vitest-live.yml` = dispatch MANUEL du seul job vitest live-RPC ; ne jamais le
-  dispatcher pendant les crons (19:00/22:00 UTC) — même base dev partagée.
-  `staging-deploy.yml` déploie le staging (setup décrit dans
-  `.github/workflows/STAGING_SETUP.md`).
+  `vitest-live.yml` = dispatch MANUEL des tests du package
+  `@breakery/supabase-tests` (pas `@breakery/supabase`). Ne pas le lancer pendant
+  une autre suite connectée ou le cron pgTAP : même base dev partagée.
+  `staging-deploy.yml` s'arrête volontairement avant déploiement tant qu'une
+  procédure DB ciblée n'est pas validée ; provisionner des secrets ne l'active pas.
 - Env : Vite lit `.env` à la RACINE du repo ; vitest lit `apps/<app>/.env.local`
   (copier les deux dans un worktree).
+- Hébergement (ADR-030/033) : BO sur Vercel ; POS/KDS/écran client en LAN,
+  servis par le PC boutique. `print-bridge` sait servir le bundle avec
+  `POS_DIST_DIR`. Ne pas publier le POS sur Vercel.
+
+## Sources communes des agents
+
+- Modifier les règles racines dans `AGENTS.md`, les skills métier dans
+  `.agents/skills`, les profils de rôle dans `.claude/agents/*.md`.
+  `CLAUDE.md`, les copies métier `.claude/skills` et les profils `.codex/agents`
+  sont générés par `node scripts/agents/sync.mjs --write` puis contrôlés par
+  `node scripts/agents/sync.mjs --check`. Les copies Playwright CLI et Impeccable
+  restent gérées par leurs outils. Ne pas éditer les miroirs à la main.
+- Diagnostic local sans installation ni nettoyage : `node scripts/agents/doctor.mjs`.
+  Repères ciblés par chemin : `node scripts/agents/context.mjs <chemin>`.
+  Les profils `context:snapshot` restent des inventaires, pas des listes à tout lire.
+- Preuve Vitest ciblée : `node scripts/agents/test.mjs <fichier-test>`.
+  Le lanceur refuse les tests absents ou tous ignorés. Les tests live exigent
+  une autorisation explicite et `--allow-dev-mutations`, sur dev uniquement.
 
 ## Critical patterns — don't break these
 

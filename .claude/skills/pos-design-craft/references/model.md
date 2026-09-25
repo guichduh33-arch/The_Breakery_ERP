@@ -11,6 +11,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Pilier 4 — Patterns POS métier
 - Redirections (anti-chevauchement)
 
+Sélection : mener la création ou refonte explicitement demandée des surfaces POS, y compris tablette, KDS et customer display. Diagnostic visuel : [pos-frontend-design-audit](../../pos-frontend-design-audit/SKILL.md) ; recommandations validées : [pos-frontend-design-implement](../../pos-frontend-design-implement/SKILL.md) ; incident fonctionnel : [pos-flow-audit](../../pos-flow-audit/SKILL.md). [breakery-design](../../breakery-design/SKILL.md) et [breakery-ui-kit](../../breakery-ui-kit/SKILL.md) donnent le cadre ; la copie du dépôt d’[Impeccable](../../../../.agents/skills/impeccable/SKILL.md) est un complément méthodologique.
+
 # POS Design Craft — conception visuelle + ergonomique du POS
 
 > **Faits re-vérifiés contre le code le 2026-08-31.** Les énoncés factuels de cette fiche

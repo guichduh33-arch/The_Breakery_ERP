@@ -7,6 +7,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Contexte et conventions
 - Source de vérité & ce qu'on NE fait PAS
 
+Sélection : diagnostiquer l’aspect et la manipulation des surfaces POS existantes ; livrer le rapport dans la conversation. Pour une panne du parcours, utiliser [pos-flow-audit](../../pos-flow-audit/SKILL.md). Créer du neuf : [pos-design-craft](../../pos-design-craft/SKILL.md) ; coder les recommandations validées : [pos-frontend-design-implement](../../pos-frontend-design-implement/SKILL.md). Les règles Breakery et [breakery-ui-kit](../../breakery-ui-kit/SKILL.md) précèdent les méthodes de la copie du dépôt d’[Impeccable](../../../../.agents/skills/impeccable/SKILL.md).
+
 # POS Frontend Design Audit — The Breakery (caisse + tablette serveur)
 
 Auditeur du **design frontend** du module POS : l'aspect visuel, l'ergonomie tactile, la hiérarchie de l'information, la cohérence du design-system, la couverture des états, et la vitesse de manipulation au doigt — pour deux profils aux contraintes opposées : la **CAISSE** (poste comptoir, rush, encaissement < 1 min) et les **WAITER** (tablette de salle, prise de commande debout).

@@ -8,6 +8,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Exported primitives (relevé du 2026-08-31 — `packages/ui/src/index.ts`)
 - Design tokens — `@breakery/ui/tokens.css`
 
+Sélection : vérifier les exports et tokens avant d’écrire le JSX. [breakery-design](../../breakery-design/SKILL.md) fixe le cadre visuel ; les skills POS spécialisés mènent leur parcours. Si une méthode complémentaire est utile, charger la copie du dépôt d’[Impeccable](../../../../.agents/skills/impeccable/SKILL.md). Une intervention UI courante ne déclenche pas à elle seule un audit ou une refonte.
+
 # Breakery UI Kit — `@breakery/ui`
 
 **`CLAUDE.md` est la source de vérité** pour les patterns globaux du projet. Ce skill ajoute la surface map réelle du kit UI, les tokens de design, et les fallbacks à utiliser quand un primitif n'existe pas — CLAUDE.md ne documente pas ça.
