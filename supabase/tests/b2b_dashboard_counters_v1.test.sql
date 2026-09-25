@@ -9,6 +9,7 @@
 -- authentifié (Authentication required) — les deux en 42501 (ADR-021 déc. 6).
 
 BEGIN;
+\ir helpers/catalog.sql
 SELECT plan(7);
 
 -- ===== T1 : gate négatif — CASHIER sans b2b.read, le BON 42501 =====

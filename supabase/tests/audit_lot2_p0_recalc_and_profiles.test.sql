@@ -10,6 +10,7 @@
 -- Exécution : via MCP `execute_sql`, encadré BEGIN/ROLLBACK (pas de runner local).
 
 BEGIN;
+\ir helpers/sales.sql
 SELECT plan(7);
 
 -- ---------------------------------------------------------------- P0-1

@@ -20,6 +20,7 @@
 -- ne s'exécute jamais sous ROLLBACK.
 
 BEGIN;
+\ir helpers/session.sql
 SELECT plan(9);
 
 -- ===== Seed =====

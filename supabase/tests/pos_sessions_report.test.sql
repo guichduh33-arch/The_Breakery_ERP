@@ -6,6 +6,7 @@
 -- metadata, and that an OPEN session exposes null reconciliation volets.
 
 BEGIN;
+\ir helpers/session.sql
 SELECT plan(10);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────

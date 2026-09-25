@@ -1,4 +1,5 @@
 BEGIN;
+\ir helpers/catalog.sql
 CREATE TEMP TABLE pickup_checks (name text, passed boolean);
 DO $test$
 DECLARE

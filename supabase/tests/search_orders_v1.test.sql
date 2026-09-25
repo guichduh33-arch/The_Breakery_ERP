@@ -5,6 +5,7 @@
 -- set_config, verdicts current_setting(..., true)).
 
 BEGIN;
+\ir helpers/session.sql
 SELECT plan(6);
 
 -- ===== Seed =====

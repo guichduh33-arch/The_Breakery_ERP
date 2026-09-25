@@ -26,6 +26,7 @@
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/session.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -106,7 +107,7 @@ SELECT ok(current_setting('breakery.t5')::boolean,
 CREATE TEMP TABLE _sbc_fix ON COMMIT DROP AS
 SELECT gen_random_uuid() AS ca, gen_random_uuid() AS cb, gen_random_uuid() AS cc,
        gen_random_uuid() AS cd,
-       (SELECT session_id FROM orders WHERE session_id IS NOT NULL LIMIT 1) AS sid;
+       'f5430000-0000-4000-a000-000000000001'::uuid AS sid;
 
 DO $$
 DECLARE f RECORD;

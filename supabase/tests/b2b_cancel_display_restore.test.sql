@@ -9,6 +9,7 @@
 -- bien le défaut ; un test vert qui ne peut pas rougir ne prouverait rien.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
+\ir helpers/catalog.sql
 SELECT plan(4);
 
 DO $$

@@ -16,6 +16,7 @@
 -- client-stream behaviour (filters, keyset, facets) is unchanged.
 
 BEGIN;
+\ir helpers/sales.sql
 SELECT plan(8);
 
 SELECT set_config('request.jwt.claims',

@@ -64,7 +64,7 @@ SELECT cmp_ok(
 
 -- T_OPN_04 — RLS auth_read on both tables
 SELECT is(
-  (SELECT relrowsecurity FROM pg_class WHERE relname = 'inventory_counts'),
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.inventory_counts'::regclass),
   true,
   'T_OPN_04a: RLS enabled on inventory_counts'
 );

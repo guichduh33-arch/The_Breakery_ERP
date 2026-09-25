@@ -14,6 +14,9 @@
 --     silence et la serveuse croyait le plat parti en cuisine.
 
 BEGIN;
+\ir helpers/session.sql
+UPDATE pos_sessions SET status = 'open', closed_at = NULL, closed_by = NULL
+WHERE id = 'f5430000-0000-4000-a000-000000000001';
 SELECT plan(9);
 
 DO $$
@@ -34,7 +37,7 @@ BEGIN
      AND NOT EXISTS (SELECT 1 FROM products c WHERE c.parent_product_id = p.id AND c.is_active AND c.deleted_at IS NULL)
    LIMIT 1;
   IF v_p1 IS NULL THEN RAISE EXCEPTION 'fixture: aucun produit vendable'; END IF;
-  SELECT id INTO v_sess FROM pos_sessions WHERE status = 'open' LIMIT 1;
+  v_sess := 'f5430000-0000-4000-a000-000000000001';
 
   INSERT INTO orders (order_number, order_type, status, created_via, table_number,
                       sent_to_kitchen_at, subtotal, tax_amount, total)

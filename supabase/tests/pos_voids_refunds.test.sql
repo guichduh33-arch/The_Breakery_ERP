@@ -6,6 +6,7 @@
 -- in-scope order — that the reversals aggregation counts and sums correctly.
 
 BEGIN;
+\ir helpers/sales.sql
 SELECT plan(10);
 
 -- ── Seed a full-void refund on an in-scope order (as owner, before role switch) ─

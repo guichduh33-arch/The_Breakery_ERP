@@ -10,6 +10,7 @@
 -- z_report de test inséré sur une pos_session libre (UNIQUE(shift_id)).
 
 BEGIN;
+\ir helpers/session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(4);
 
