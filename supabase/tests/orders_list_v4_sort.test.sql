@@ -3,6 +3,7 @@
 -- Exécution : MCP execute_sql, enveloppe BEGIN … ROLLBACK.
 
 BEGIN;
+\ir helpers/sales.sql
 SELECT plan(9);
 
 SELECT ok(has_function_privilege('authenticated','public.get_orders_list_v4(text,text,jsonb,integer,text,text,text,uuid)','EXECUTE'),

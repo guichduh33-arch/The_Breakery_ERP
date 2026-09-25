@@ -30,6 +30,7 @@
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/sales.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -147,7 +148,7 @@ BEGIN
 
   -- Un produit non-test, sinon la commande entière serait exclue du périmètre.
   SELECT id INTO v_pid FROM products WHERE is_test = false AND deleted_at IS NULL LIMIT 1;
-  SELECT session_id INTO v_sid FROM orders WHERE session_id IS NOT NULL LIMIT 1;
+  v_sid := 'f5430000-0000-4000-a000-000000000001';
   SELECT id INTO v_uid FROM user_profiles WHERE deleted_at IS NULL LIMIT 1;
 
   -- Base de comparaison : ce que le produit pèse AVANT la fixture.

@@ -72,11 +72,11 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 
 SELECT ok(
-  (SELECT relrowsecurity FROM pg_class WHERE relname = 'notification_templates'),
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.notification_templates'::regclass),
   'T_NOTIF_03a RLS enabled on notification_templates'
 );
 SELECT ok(
-  (SELECT relrowsecurity FROM pg_class WHERE relname = 'notification_outbox'),
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.notification_outbox'::regclass),
   'T_NOTIF_03b RLS enabled on notification_outbox'
 );
 

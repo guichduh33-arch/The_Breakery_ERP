@@ -6,6 +6,7 @@
 -- and category revenue is a positive composition over the same scope.
 
 BEGIN;
+\ir helpers/sales.sql
 SELECT plan(10);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────

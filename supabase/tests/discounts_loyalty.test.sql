@@ -26,6 +26,7 @@
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/session.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -94,7 +95,7 @@ SELECT gen_random_uuid() AS oid, gen_random_uuid() AS oid_void, gen_random_uuid(
        gen_random_uuid() AS promo_id, gen_random_uuid() AS cust_id,
        (SELECT id FROM products WHERE is_test = false AND deleted_at IS NULL LIMIT 1) AS pid,
        (SELECT id FROM user_profiles WHERE deleted_at IS NULL AND full_name IS NOT NULL LIMIT 1) AS uid,
-       (SELECT session_id FROM orders WHERE session_id IS NOT NULL LIMIT 1) AS sid;
+       'f5430000-0000-4000-a000-000000000001'::uuid AS sid;
 
 DO $$
 DECLARE f RECORD;

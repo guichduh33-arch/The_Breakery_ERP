@@ -9,6 +9,7 @@
 -- Run : execute_sql MCP sous BEGIN ... ROLLBACK (capture temp-table).
 
 BEGIN;
+\ir helpers/session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(19);
 
@@ -57,7 +58,7 @@ ALTER TABLE refunds DISABLE TRIGGER USER;
 INSERT INTO orders (id, order_number, order_type, status, session_id, subtotal, tax_amount, total, created_via,
   loyalty_points_earned, loyalty_points_redeemed, loyalty_redemption_amount, discount_amount,
   promotion_total, is_held, is_historical_import)
-VALUES ('cf960001-0000-0000-0000-00000000000a','CFY96-O1','take_out','draft','40991f2d-38cd-4886-9ac0-56b0cbbaede7',200,0,200,'pos',0,0,0,0,0,false,false);
+VALUES ('cf960001-0000-0000-0000-00000000000a','CFY96-O1','take_out','draft','f5430000-0000-4000-a000-000000000001',200,0,200,'pos',0,0,0,0,0,false,false);
 INSERT INTO journal_entries (id, entry_number, entry_date, status, total_debit, total_credit, reference_type, reference_id, created_by) VALUES
  ('cf960001-0000-0000-0000-000000000001','CFY96-JE1','2096-02-10','posted',500,500,'manual',NULL,(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
  ('cf960002-0000-0000-0000-000000000002','CFY96-JE2','2096-03-10','posted',200,200,'sale','cf960001-0000-0000-0000-00000000000a',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
@@ -82,7 +83,7 @@ INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, de
 -- scenario « une vente contre-passee DEUX fois » existe reellement, il faut un
 -- refund PARTIEL — le seul qui produise une JE. Id fixe pour que JE4 le vise.
 INSERT INTO refunds (id, refund_number, order_id, session_id, total, tax_refunded, reason, refunded_by, authorized_by, is_full_void) VALUES
- ('cf960009-0000-0000-0000-00000000000f','CFY96-RF1','cf960001-0000-0000-0000-00000000000a','40991f2d-38cd-4886-9ac0-56b0cbbaede7',200,0,'test',
+ ('cf960009-0000-0000-0000-00000000000f','CFY96-RF1','cf960001-0000-0000-0000-00000000000a','f5430000-0000-4000-a000-000000000001',200,0,'test',
   (SELECT id FROM user_profiles WHERE employee_code='EMP000'),(SELECT id FROM user_profiles WHERE employee_code='EMP000'),false);
 
 -- ==== T1 : profil sans permission → P0003 (jwt bascule le temps de l'appel) ====

@@ -10,6 +10,7 @@
 -- Run : execute_sql MCP sous BEGIN ... ROLLBACK.
 
 BEGIN;
+\ir helpers/session.sql
 SELECT plan(4);
 
 -- Lot D1 : calculate_pb1_payable_v3 exige has_permission(reports.financial.read) —
@@ -31,9 +32,9 @@ INSERT INTO orders (id, order_number, order_type, status, session_id, subtotal, 
   loyalty_points_earned, loyalty_points_redeemed, loyalty_redemption_amount, discount_amount,
   promotion_total, is_held, is_historical_import)
 VALUES
- ('aaaa0001-0000-0000-0000-000000000001','PB1T-O1','take_out','draft','40991f2d-38cd-4886-9ac0-56b0cbbaede7',7000,0,7000,'pos',0,0,0,0,0,false,false),
- ('aaaa0002-0000-0000-0000-000000000002','PB1T-O2','take_out','draft','40991f2d-38cd-4886-9ac0-56b0cbbaede7',5000,0,5000,'pos',0,0,0,0,0,false,false),
- ('aaaa0003-0000-0000-0000-000000000003','PB1T-O3','take_out','draft','40991f2d-38cd-4886-9ac0-56b0cbbaede7',3000,0,3000,'pos',0,0,0,0,0,false,false);
+ ('aaaa0001-0000-0000-0000-000000000001','PB1T-O1','take_out','draft','f5430000-0000-4000-a000-000000000001',7000,0,7000,'pos',0,0,0,0,0,false,false),
+ ('aaaa0002-0000-0000-0000-000000000002','PB1T-O2','take_out','draft','f5430000-0000-4000-a000-000000000001',5000,0,5000,'pos',0,0,0,0,0,false,false),
+ ('aaaa0003-0000-0000-0000-000000000003','PB1T-O3','take_out','draft','f5430000-0000-4000-a000-000000000001',3000,0,3000,'pos',0,0,0,0,0,false,false);
 
 -- O1 : vente, crédit 2110 = 7000 (fenêtre 2099-01)
 INSERT INTO journal_entries (id, entry_number, entry_date, status, total_debit, total_credit, metadata, reference_type, reference_id, created_by) VALUES
@@ -57,7 +58,7 @@ INSERT INTO journal_entry_lines (id, journal_entry_id, account_id, debit, credit
  (gen_random_uuid(),'bbbb0002-0000-0000-0000-000000000002','07d638db-baac-4cda-ab75-8515702c26d1',0,5000),
  (gen_random_uuid(),'bbbb0003-0000-0000-0000-000000000003','07d638db-baac-4cda-ab75-8515702c26d1',5000,0);
 INSERT INTO refunds (id, refund_number, order_id, session_id, total, tax_refunded, reason, refunded_by, authorized_by, is_full_void) VALUES
- (gen_random_uuid(),'PB1T-RF2','aaaa0002-0000-0000-0000-000000000002','40991f2d-38cd-4886-9ac0-56b0cbbaede7',5000,5000,'test full void','00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000004',true);
+ (gen_random_uuid(),'PB1T-RF2','aaaa0002-0000-0000-0000-000000000002','f5430000-0000-4000-a000-000000000001',5000,5000,'test full void','00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000004',true);
 
 -- O3 : vente 3000 + void 3000, AUCUN refund (fenêtre 2099-03) → void doit compter
 INSERT INTO journal_entries (id, entry_number, entry_date, status, total_debit, total_credit, metadata, reference_type, reference_id, created_by) VALUES
@@ -74,9 +75,9 @@ INSERT INTO journal_entry_lines (id, journal_entry_id, account_id, debit, credit
 INSERT INTO orders (id, order_number, order_type, status, session_id, subtotal, tax_amount, total, created_via,
   loyalty_points_earned, loyalty_points_redeemed, loyalty_redemption_amount, discount_amount,
   promotion_total, is_held, is_historical_import)
-VALUES ('aaaa0004-0000-0000-0000-000000000004','PB1T-O4','take_out','draft','40991f2d-38cd-4886-9ac0-56b0cbbaede7',4000,0,4000,'pos',0,0,0,0,0,false,false);
+VALUES ('aaaa0004-0000-0000-0000-000000000004','PB1T-O4','take_out','draft','f5430000-0000-4000-a000-000000000001',4000,0,4000,'pos',0,0,0,0,0,false,false);
 INSERT INTO refunds (id, refund_number, order_id, session_id, total, tax_refunded, reason, refunded_by, authorized_by, is_full_void) VALUES
- ('cccc0004-0000-0000-0000-000000000004','PB1T-RF4','aaaa0004-0000-0000-0000-000000000004','40991f2d-38cd-4886-9ac0-56b0cbbaede7',4000,4000,'test partial refund','00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000004',false);
+ ('cccc0004-0000-0000-0000-000000000004','PB1T-RF4','aaaa0004-0000-0000-0000-000000000004','f5430000-0000-4000-a000-000000000001',4000,4000,'test partial refund','00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000004',false);
 INSERT INTO journal_entries (id, entry_number, entry_date, status, total_debit, total_credit, metadata, reference_type, reference_id, created_by) VALUES
  ('bbbb0007-0000-0000-0000-000000000007','PB1T-JE7','2099-04-15','posted',4000,4000,'{}','sale',       'aaaa0004-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000004'),
  ('bbbb0008-0000-0000-0000-000000000008','PB1T-JE8','2099-04-16','posted',4000,4000,'{}','sale_void',  'aaaa0004-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000004'),

@@ -4,6 +4,7 @@
 -- Run via MCP execute_sql wrapped BEGIN/ROLLBACK.
 
 BEGIN;
+\ir helpers/catalog.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(12);
 

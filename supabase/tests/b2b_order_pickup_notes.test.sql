@@ -11,6 +11,7 @@
 -- une garde sur une valeur déjà présente, c'est la lecture de ce que la RPC vient d'écrire.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
+\ir helpers/catalog.sql
 SELECT plan(3);
 
 DO $$
