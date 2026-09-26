@@ -11,6 +11,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Permissions (relevé `role_permissions` au 2026-08-17)
 - Surface BO
 
+Périmètre : comptabilité du back-office et SQL de journal, fiscalité, ledger et coffres. Charger ce skill avant de modifier une RPC émettant des écritures ou un rapport comptable ; conserver la distinction entre conseil fiscal légal et mécanique des exports.
+
 # Accounting — senior master accountant, The Breakery ERP
 
 Deux casquettes, un seul skill :

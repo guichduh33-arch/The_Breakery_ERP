@@ -4,9 +4,11 @@ description: >-
   Migrations/RPC Breakery : versionnement, corps live, numérotation, droits PUBLIC/anon, types et pgTAP sur Supabase cloud V3. Avant tout changement de schéma ou de signature ; invariants métier dans le skill du domaine.
 ---
 
+Périmètre : supabase/migrations et packages/supabase/src/types.generated.ts, avant toute écriture SQL de schéma ou de RPC. Le choix de ce skill vient de la tâche ; les chemins sont des repères de lecture, pas un hook automatique. Associer [security-auth](../security-auth/SKILL.md) pour le sens des droits et le skill métier concerné pour les invariants.
+
 # DB Migrations & RPC Hygiene — The Breakery ERP
 
-Appliquer AGENTS.md et les invariants du domaine concerné. Vérifier le schéma et le corps live avant toute affirmation sur une RPC ; la lecture du skill ne déclenche pas de sous-agent.
+Appliquer CLAUDE.md et les invariants du domaine concerné. Vérifier le schéma et le corps live avant toute affirmation sur une RPC ; la lecture du skill ne déclenche pas de sous-agent.
 
 ## The 8 rules you must not break
 
@@ -30,9 +32,9 @@ Appliquer AGENTS.md et les invariants du domaine concerné. Vérifier le schéma
 
 5. **No `BEGIN;` / `COMMIT;` in a migration body.** MCP `apply_migration` already wraps it in a transaction; an inner COMMIT ends it early and weakens atomicity (lesson S58).
 
-6. **Monotonic numbering.** Check the highest NAME-block in `supabase/migrations/` before picking the next (`20260710000NNN`). Cloud `version`s are clock-assigned; local file names use the NAME-block.
+6. **Numérotation monotone.** Vérifier le plus haut NAME-block dans `supabase/migrations/` et l'unicité du nouveau préfixe. Les versions cloud sont assignées à l'application ; ne pas renuméroter rétroactivement les fichiers publiés ni réparer le bookkeeping historique.
 
-7. **Always regen types after any schema change** → write to `packages/supabase/src/types.generated.ts` and commit. A missing regen is the **#1 cause of broken CI** on this repo. If a bump is behaviour-only (no signature/column change), tag it `[types-noop]` in the migration name.
+7. **Régénérer les types après tout changement de schéma** vers `packages/supabase/src/types.generated.ts`. Si le résultat est identique après régénération, expliquer pourquoi et mettre `[types-noop]` dans le **message de commit**, jamais dans le nom de migration. Le marqueur ne dispense pas de la régénération ; les commits suivent les règles d'CLAUDE.md.
 
 8. **Append-only ledgers stay append-only.** `stock_movements`, `audit_logs`, `b2b_payment_allocations` — writes only through SECURITY DEFINER RPCs; never relax the RLS that revokes UPDATE/DELETE.
 
@@ -41,6 +43,6 @@ Appliquer AGENTS.md et les invariants du domaine concerné. Vérifier le schéma
 - [ ] If replacing an RPC: `_vN+1` created **and** old `_vN` dropped, body from live.
 - [ ] REVOKE trio present for any non-public RPC; grants adaptés au rôle réellement utilisé par l’appelant.
 - [ ] No `BEGIN/COMMIT` in the body.
-- [ ] Types regenerated + committed (or `[types-noop]`).
+- [ ] Types régénérés, diff relu ; si identiques, preuve expliquée et `[types-noop]` dans le message de commit.
 - [ ] pgTAP added/updated and run live via `execute_sql` (BEGIN…ROLLBACK); contrôles money-path concernés localisés dans `supabase/tests/` si une vente est touchée.
 - [ ] Call-sites (hooks/EF) repointed to the new version.

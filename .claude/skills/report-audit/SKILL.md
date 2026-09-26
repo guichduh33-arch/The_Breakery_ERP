@@ -10,7 +10,7 @@ Une plainte sur un rapport commence en mode rapport unique, pas par l’inventai
 
 ## Lecture proportionnée
 
-Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditionnels : ne pas charger tout le dossier ni tous les skills voisins. Réutiliser les lectures déjà faites dans la session ; rouvrir si le code ou le périmètre a changé.
+Les règles d’CLAUDE.md restent applicables. Les liens ci-dessous sont conditionnels : ne pas charger tout le dossier ni tous les skills voisins. Réutiliser les lectures déjà faites dans la session ; rouvrir si le code ou le périmètre a changé.
 
 | Quand lire | Ressource |
 |---|---|

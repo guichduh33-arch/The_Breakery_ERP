@@ -8,6 +8,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Ground claims in code — but don't build a ceremony out of it
 - Mental model — the multi-device journey
 
+Sélection : un symptôme fonctionnel du parcours commande-paiement suffit, sans demande d’audit globale. Limiter le diagnostic et les propositions au périmètre demandé. [orders](../../orders/SKILL.md) couvre les invariants de commande, [pos-frontend-design-audit](../../pos-frontend-design-audit/SKILL.md) l’aspect et l’ergonomie visuelle ; [security-fraud-guard](../../security-fraud-guard/SKILL.md) couvre l’audit transversal de fraude et de traçabilité.
+
 # POS Flow Audit — The Breakery (bakery-café, multi-device)
 
 > **ADR applicables : ADR-009** (cycle de vie : écritures via RPC uniquement ; transition

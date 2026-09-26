@@ -8,6 +8,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Mental model — Order lifecycle
 - Familles RPC — inventaire daté
 
+Périmètre : commandes du back-office, historique POS, domaine et RPC/tests de commandes. Ce skill mène les invariants métier ; [pos-flow-audit](../../pos-flow-audit/SKILL.md) mène le diagnostic d’un parcours caisse/tablette/cuisine. Une demande visuelle seule relève des skills de design.
+
 # Orders — The Breakery ERP
 
 > **ADR applicables : ADR-009** (cycle de vie : aucune écriture sur `orders`/`order_items`

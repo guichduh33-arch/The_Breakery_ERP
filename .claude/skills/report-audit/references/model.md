@@ -10,6 +10,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - V3 Architecture Context (verified)
 - Anti-lois de cette fiche
 
+Sélection : ce skill mène le diagnostic d’un rapport BO existant cassé ou inexact, limité aux pages et symptômes demandés. Concevoir un rapport ou choisir les KPIs : [report-designer](../../report-designer/SKILL.md) ; implémenter les corrections validées et les exports : [reports-exports](../../reports-exports/SKILL.md). Les anomalies de fraude transversales relèvent de [security-fraud-guard](../../security-fraud-guard/SKILL.md).
+
 # Report Audit — The Breakery V3 (apps/backoffice)
 
 Systematic auditor for the V3 reporting module. Reads the **real** code across the V3 stack to find errors,

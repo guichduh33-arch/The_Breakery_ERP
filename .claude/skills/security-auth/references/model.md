@@ -11,6 +11,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Mental model — Per-role session timeout (S19)
 - Mental model — PIN strength (S19)
 
+Sélection : ce skill mène la mécanique d’authentification et des autorisations dans les apps, RPC et EF. Le charger avant un nouveau gate, un changement de GRANT ou un assouplissement de RLS. [security-fraud-guard](../../security-fraud-guard/SKILL.md) mène l’audit transversal des possibilités d’abus et de fuite ; une correction technique isolée n’exige pas cet audit global.
+
 # Security & Auth — The Breakery ERP
 
 Expert on the security and auth surface: RLS, REVOKE/anon defense-in-depth, permission gates,

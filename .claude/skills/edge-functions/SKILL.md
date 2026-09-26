@@ -4,9 +4,11 @@ description: >-
   Edge Functions Deno Breakery et appels POS/BO : PIN en header, idempotence, fetch wrapper PIN-JWT, CORS, rate limit et déploiement. Avant de modifier une EF ou son appel ; SQL : db-migrations.
 ---
 
+Périmètre : supabase/functions et les appels EF du POS/BO, notamment paiement, annulation, authentification et PDF. Consulter ce skill avant l’édition ; [db-migrations](../db-migrations/SKILL.md) couvre les RPC appelées et [security-auth](../security-auth/SKILL.md) le sens des contrôles. Un symptôme utilisateur peut relever de [pos-flow-audit](../pos-flow-audit/SKILL.md) sans imposer un audit global.
+
 # Edge Functions (Deno) — The Breakery ERP
 
-Appliquer AGENTS.md. Suivre l’appel client, le helper partagé et la RPC concernée ; vérifier l’EF déployée avant d’affirmer son comportement live. Ne pas charger un inventaire complet pour un handler isolé.
+Appliquer CLAUDE.md. Suivre l’appel client, le helper partagé et la RPC concernée ; vérifier l’EF déployée avant d’affirmer son comportement live. Ne pas charger un inventaire complet pour un handler isolé.
 
 ## The rules you must not break
 

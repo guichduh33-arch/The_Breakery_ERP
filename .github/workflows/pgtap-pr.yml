@@ -12,28 +12,41 @@ name: pgTAP PR
 # types et la suite Vitest live-RPC. Les deux boucles psql sont volontairement
 # identiques — toute modification de l'une se reporte sur l'autre.
 #
-# Scope: only fires on PRs that touch DB surface (migrations, pgTAP tests,
-# Edge Functions) — front-only PRs skip it entirely (paths filter below).
+# Toutes les PR rendent db-gate ; seules les modifications DB lancent pgTAP.
 
 on:
   pull_request:
     branches: [master, main]
-    paths:
-      - 'supabase/migrations/**'
-      - 'supabase/tests/**'
-      - 'supabase/functions/**'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: pgtap-pr-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      applicable: ${{ steps.scope.outputs.applicable }}
+      reason: ${{ steps.scope.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - id: scope
+        run: node scripts/ci/db-gate.mjs classify
+
   pgtap:
-    # Dependabot-triggered runs read from the separate "Dependabot secrets"
-    # store, so V3_DEV_PG_POOLER_URL is empty there and the secret guard below
-    # hard-fails. Dependency bumps can't break the DB schema — skip instead.
-    if: github.actor != 'dependabot[bot]'
+    needs: classify
+    if: needs.classify.outputs.applicable == 'true'
     runs-on: ubuntu-latest
     # Lot 1.B — 25 min : le run complet mesuré ~15 min, la marge absorbe la
     # contention sur la base dev partagée (le nightly sérialise pgtap et
@@ -112,3 +125,23 @@ jobs:
             exit 1
           fi
           echo "All ${#files[@]} pgTAP files passed."
+
+  db-gate:
+    if: ${{ always() }}
+    needs: [classify, pgtap]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Require applicable DB evidence
+        env:
+          CLASSIFICATION_RESULT: ${{ needs.classify.result }}
+          DB_APPLICABLE: ${{ needs.classify.outputs.applicable }}
+          DB_REASON: ${{ needs.classify.outputs.reason }}
+          PGTAP_RESULT: ${{ needs.pgtap.result }}
+        run: node scripts/ci/db-gate.mjs check

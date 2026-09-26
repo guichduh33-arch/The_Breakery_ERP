@@ -40,6 +40,12 @@ jobs:
       - name: Test live skill link exceptions
         run: node --test scripts/ci/_live-skill-reference.test.mjs scripts/ci/_staging-safety.test.mjs
 
+      - name: Test agent and release tooling
+        run: node --test scripts/agents/tooling.test.mjs scripts/agents/scenarios.test.mjs scripts/ci/db-gate.test.mjs scripts/release/preflight.test.mjs scripts/release/manifest.test.mjs
+
+      - name: Check generated agent instructions
+        run: node scripts/agents/sync.mjs --check
+
       - name: Garde 1 — aucun chemin quarantainé dans un fichier tracké
         run: node scripts/ci/quarantined-paths.mjs
 

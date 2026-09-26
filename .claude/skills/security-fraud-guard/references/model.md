@@ -9,6 +9,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Mental model — defense in depth (5 couches)
 - Critical patterns (re-vérifier avant de livrer — les ancrages datent du 2026-08-31)
 
+Sélection : ce skill mène l’analyse transversale des abus d’argent, permissions, données personnelles et traçabilité, ainsi que les contrôles autorisés qui en découlent. [security-auth](../../security-auth/SKILL.md) couvre la mécanique des gates/RLS/PIN-JWT/sessions ; [pos-flow-audit](../../pos-flow-audit/SKILL.md) le parcours fonctionnel ; [stock-management](../../stock-management/SKILL.md) les contrôles propres au stock. Ne pas transformer une correction technique isolée en audit global.
+
 # Security & Fraud Guard — The Breakery ERP/POS
 
 > ⚠️ **RE-VÉRIFICATION DATÉE — ancrages relus contre le code le 2026-08-31.** Ce document

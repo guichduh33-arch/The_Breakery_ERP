@@ -12,7 +12,7 @@ avec sa copie embarquée et affiche un bandeau d'avertissement à chaque command
 le fichier diffère. On ne peut donc pas enrichir la `description` de cette skill-là sans
 polluer toutes les sorties. Les déclencheurs vivent ici, la procédure reste là-bas.
 
-**Marche à suivre : invoquer la skill `playwright-cli` et la suivre.**
+**Marche à suivre : lire la copie du dépôt de [playwright-cli](../playwright-cli/SKILL.md) et la suivre pour le pilotage depuis le terminal. Respecter un navigateur ou un outil explicitement choisi par Mamat ; ne pas lancer en parallèle un second workflow de navigateur.**
 
 Rappels propres au projet, à appliquer par-dessus :
 

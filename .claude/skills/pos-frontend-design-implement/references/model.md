@@ -7,6 +7,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Contexte et conventions
 - Quand c'est ce skill (vs l'audit)
 
+Sélection : partir du rapport et des recommandations choisies par Mamat. En leur absence, demander les éléments manquants ; ne pas inventer leur validation. Diagnostic visuel : [pos-frontend-design-audit](../../pos-frontend-design-audit/SKILL.md) ; création : [pos-design-craft](../../pos-design-craft/SKILL.md). Suivre [breakery-ui-kit](../../breakery-ui-kit/SKILL.md) et, si utile, la méthode de la copie du dépôt d’[Impeccable](../../../../.agents/skills/impeccable/SKILL.md).
+
 # POS Frontend Design Implement — The Breakery
 
 Bras armé de **`pos-frontend-design-audit`** : prend une proposition de design **déjà formulée** (rapport rendu en conversation par l'audit, ou donnée directement par l'utilisateur) et la **transforme en code POS qui tient en production**. L'audit décide *quoi* et *pourquoi* ; ce skill fait *comment*, proprement.

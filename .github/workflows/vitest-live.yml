@@ -24,8 +24,8 @@ jobs:
       SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
       VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v7
 
@@ -39,11 +39,25 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Run live-RPC Vitest suite (targeted)
+        env:
+          TEST_FILTER: ${{ inputs.filter }}
         run: |
           set -uo pipefail
           if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
             echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is not set." >&2
             exit 1
           fi
-          # shellcheck disable=SC2086 — filter est volontairement splitté
-          pnpm --filter @breakery/supabase-tests test ${{ github.event.inputs.filter }}
+          if [ -z "${VITE_SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::VITE_SUPABASE_ANON_KEY secret is not set." >&2
+            exit 1
+          fi
+          # L'entrée utilisateur n'est jamais interpolée comme du code shell.
+          read -r -a filters <<< "$TEST_FILTER"
+          for filter in "${filters[@]}"; do
+            if [[ "$filter" == -* ]]; then
+              echo "::error::Only file filters are accepted, not Vitest options." >&2
+              exit 1
+            fi
+          done
+          pnpm --filter @breakery/supabase-tests test "${filters[@]}" --passWithNoTests=false --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/live-tests.json"
+          node scripts/agents/check-evidence.mjs "$RUNNER_TEMP/live-tests.json"

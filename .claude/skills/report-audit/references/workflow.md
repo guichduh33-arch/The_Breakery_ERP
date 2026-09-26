@@ -185,6 +185,6 @@ jamais « 0,0 % »** — un zéro affirmerait que rien n'a bougé. `COMPARE_LIES
 
 ## Interactive Fix Phase
 
-Présenter les constats prouvés, leur impact et la correction proposée. Un audit seul n’autorise pas les changements ; une demande de correction déjà précise n’exige pas une nouvelle confirmation par finding. Appliquer les corrections autorisées dans leur périmètre, selon AGENTS.md.
+Présenter les constats prouvés, leur impact et la correction proposée. Un audit seul n’autorise pas les changements ; une demande de correction déjà précise n’exige pas une nouvelle confirmation par finding. Appliquer les corrections autorisées dans leur périmètre, selon CLAUDE.md.
 
-Pour les modifications : lire `reports-exports`, lancer les tests concernés (localisés par glob), les contrôles de types et la suite BO complète requise par AGENTS.md. Pour une RPC, lire `db-migrations`, préserver le bump/DROP et régénérer les types. Une review ne remplace pas ces tests ; une délégation suit les règles de la session. Rendre les résultats et limites constatés.
+Pour les modifications : lire `reports-exports`, lancer les tests concernés (localisés par glob), les contrôles de types et la suite BO complète requise par CLAUDE.md. Pour une RPC, lire `db-migrations`, préserver le bump/DROP et régénérer les types. Une review ne remplace pas ces tests ; une délégation suit les règles de la session. Rendre les résultats et limites constatés.

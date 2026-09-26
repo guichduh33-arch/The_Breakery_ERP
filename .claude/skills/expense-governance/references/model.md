@@ -9,6 +9,8 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - RPCs de la chaîne (familles)
 - BO — surface map (vérifiée le 2026-08-31)
 
+Périmètre : dépenses du back-office et RPC/tests de soumission, approbation et paiement. Consulter ce skill avant de modifier une RPC de dépense ; conserver les contrôles de séparation des tâches et le routage comptable.
+
 # Expense Governance — The Breakery ERP
 
 > **Re-vérifié le 2026-08-31 contre le code.** Les faits ci-dessous ont été relevés sur les
