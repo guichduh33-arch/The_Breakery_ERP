@@ -16,6 +16,7 @@ import { ShowcaseCurator } from '@/features/settings/components/ShowcaseCurator.
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { DisplayDevices } from '@/features/settings/components/DisplayDevices.js';
 
 const FIELDS = [
   { key: 'display_footer_message', label: 'Idle footer message', max: 120,
@@ -151,6 +152,7 @@ export default function SettingsCustomerDisplayPage() {
           )}
         </form>
       )}
+      <DisplayDevices />
     </div>
   );
 }

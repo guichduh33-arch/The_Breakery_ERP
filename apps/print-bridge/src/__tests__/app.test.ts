@@ -2,7 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import request from 'supertest';
+import supertest from 'supertest';
+import { testRegistry, TEST_SECRET } from './securityFixtures.js';
+import { loadConfig } from '../config.js';
+function request(app: Parameters<typeof supertest>[0]) {
+  const r = supertest(app);
+  return {
+    get: (p: string) => r.get(p).set('x-lan-device-code', 'POS-1').set('x-lan-secret', TEST_SECRET),
+    post: (p: string) =>
+      r.post(p).set('x-lan-device-code', 'POS-1').set('x-lan-secret', TEST_SECRET),
+  };
+}
 import type { PrinterTarget, ReceiptPayload, StationTicketPayload } from '@breakery/domain';
 import { createApp } from '../app.js';
 import type { sendToPrinter } from '../transport.js';
@@ -20,11 +30,20 @@ const scan = vi.fn().mockResolvedValue([{ ip: '192.168.1.60', port: 9100, latenc
 
 function app(receiptPrinter: PrinterTarget | null = { ip_address: '192.168.1.50', port: 9100 }) {
   return createApp({
+    registry: testRegistry(),
     config: {
-      port: 3001, receiptPrinter, hubToken: null, hubBufferFile: 'hub-buffer.jsonl',
-      hubCloudUrl: null, hubCloudSecret: null, posDistDir: null,
+      ...loadConfig({}),
+      port: 3001,
+      receiptPrinter,
+      hubBufferFile: 'hub-buffer.jsonl',
+      hubCloudUrl: null,
+      hubCloudSecret: null,
+      posDistDir: null,
     },
-    send, kick, probe, scan,
+    send,
+    kick,
+    probe,
+    scan,
   });
 }
 
@@ -36,18 +55,32 @@ function body(res: { body: unknown }): Record<string, unknown> {
 
 const RECEIPT: ReceiptPayload = {
   business: { name: 'B', address: 'A' },
-  order: { order_number: '1', created_at: '2026-07-06T00:00:00Z', cashier_name: 'C', order_type: 'take_out' },
+  order: {
+    order_number: '1',
+    created_at: '2026-07-06T00:00:00Z',
+    cashier_name: 'C',
+    order_type: 'take_out',
+  },
   items: [{ name: 'X', quantity: 1, unit_price: 1000, line_total: 1000 }],
   totals: { items_total: 1000, redemption_amount: 0, total: 1000, tax_amount: 100 },
   payment: { method: 'cash', amount: 1000 },
 };
 const TICKET: StationTicketPayload = {
-  kind: 'prep', role: 'kitchen', order_number: '1',
-  created_at: '2026-07-06T00:00:00Z', server_name: 'S',
+  kind: 'prep',
+  role: 'kitchen',
+  order_number: '1',
+  created_at: '2026-07-06T00:00:00Z',
+  server_name: 'S',
   items: [{ name: 'X', quantity: 1 }],
 };
 
-beforeEach(() => { send.mockClear(); kick.mockClear(); probe.mockClear(); scan.mockClear(); send.mockResolvedValue(); });
+beforeEach(() => {
+  send.mockClear();
+  kick.mockClear();
+  probe.mockClear();
+  scan.mockClear();
+  send.mockResolvedValue();
+});
 
 describe('GET /health', () => {
   it('200 ok', async () => {
@@ -66,20 +99,37 @@ describe('GET /hub/status', () => {
 
   it('reports presence and buffer stats from the hub', async () => {
     const hub = {
-      presence: () => [{
-        device_code: 'POS-1', device_type: 'pos', ip: '192.168.1.10',
-        connected_at: '2026-07-19T10:00:00Z', last_seen_at: '2026-07-19T10:00:05Z',
-      }],
+      presence: () => [
+        {
+          device_code: 'POS-1',
+          device_type: 'pos',
+          ip: '192.168.1.10',
+          connected_at: '2026-07-19T10:00:00Z',
+          last_seen_at: '2026-07-19T10:00:05Z',
+        },
+      ],
       bufferStats: () => ({ count: 3, oldest_ts: 'a', newest_ts: 'b' }),
       tokenRequired: true,
     };
-    const res = await request(createApp({
-      config: {
-        port: 3001, receiptPrinter: null, hubToken: 's', hubBufferFile: 'b.jsonl',
-        hubCloudUrl: null, hubCloudSecret: null, posDistDir: null,
-      },
-      send, kick, probe, scan, hub,
-    })).get('/hub/status');
+    const res = await request(
+      createApp({
+        registry: testRegistry(),
+        config: {
+          ...loadConfig({}),
+          port: 3001,
+          receiptPrinter: null,
+          hubBufferFile: 'b.jsonl',
+          hubCloudUrl: null,
+          hubCloudSecret: null,
+          posDistDir: null,
+        },
+        send,
+        kick,
+        probe,
+        scan,
+        hub,
+      }),
+    ).get('/hub/status');
     expect(res.status).toBe(200);
     const b = body(res);
     expect(b.enabled).toBe(true);
@@ -98,36 +148,63 @@ describe('GET /hub/status', () => {
     };
     const cloudSync = {
       status: () => ({
-        enabled: true, last_push_at: '2026-07-19T10:00:00Z', last_result: 'ok' as const,
-        last_error: null, last_pushed: ['POS-1'], last_unknown: [],
+        enabled: true,
+        last_push_at: '2026-07-19T10:00:00Z',
+        last_result: 'ok' as const,
+        last_error: null,
+        last_pushed: ['POS-1'],
+        last_unknown: [],
       }),
     };
-    const res = await request(createApp({
-      config: {
-        port: 3001, receiptPrinter: null, hubToken: null, hubBufferFile: 'b.jsonl',
-        hubCloudUrl: 'https://x.supabase.co/functions/v1/lan-heartbeat-batch', hubCloudSecret: 's',
-        posDistDir: null,
-      },
-      send, kick, probe, scan, hub, cloudSync,
-    })).get('/hub/status');
+    const res = await request(
+      createApp({
+        registry: testRegistry(),
+        config: {
+          ...loadConfig({}),
+          port: 3001,
+          receiptPrinter: null,
+          hubBufferFile: 'b.jsonl',
+          hubCloudUrl: 'https://x.supabase.co/functions/v1/lan-heartbeat-batch',
+          hubCloudSecret: 's',
+          posDistDir: null,
+        },
+        send,
+        kick,
+        probe,
+        scan,
+        hub,
+        cloudSync,
+      }),
+    ).get('/hub/status');
     expect(res.status).toBe(200);
     expect(body(res).cloud_sync).toEqual({
-      enabled: true, last_push_at: '2026-07-19T10:00:00Z', last_result: 'ok',
-      last_error: null, last_pushed: ['POS-1'], last_unknown: [],
+      enabled: true,
+      last_push_at: '2026-07-19T10:00:00Z',
+      last_result: 'ok',
+      last_error: null,
+      last_pushed: ['POS-1'],
+      last_unknown: [],
     });
   });
 });
 
 describe('POST /print/receipt', () => {
   it('routes to body.printer when provided', async () => {
-    const res = await request(app()).post('/print/receipt')
+    const res = await request(app())
+      .post('/print/receipt')
       .send({ ...RECEIPT, printer: { ip_address: '192.168.1.99', port: 9100 } });
     expect(res.status).toBe(200);
-    expect(send).toHaveBeenCalledWith({ ip_address: '192.168.1.99', port: 9100 }, expect.any(Function));
+    expect(send).toHaveBeenCalledWith(
+      { ip_address: '192.168.1.99', port: 9100 },
+      expect.any(Function),
+    );
   });
   it('falls back to env receipt printer', async () => {
     await request(app()).post('/print/receipt').send(RECEIPT);
-    expect(send).toHaveBeenCalledWith({ ip_address: '192.168.1.50', port: 9100 }, expect.any(Function));
+    expect(send).toHaveBeenCalledWith(
+      { ip_address: '192.168.1.50', port: 9100 },
+      expect.any(Function),
+    );
   });
   it('400 no_receipt_printer_configured when neither', async () => {
     const res = await request(app(null)).post('/print/receipt').send(RECEIPT);
@@ -145,20 +222,25 @@ describe('POST /print/receipt', () => {
     expect(body(res).success).toBe(false);
   });
   it('400 invalid_printer_target on a public IP', async () => {
-    const res = await request(app()).post('/print/receipt')
+    const res = await request(app())
+      .post('/print/receipt')
       .send({ ...RECEIPT, printer: { ip_address: '8.8.8.8', port: 9100 } });
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ success: false, error: 'invalid_printer_target' });
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'printer_forbidden' });
     expect(send).not.toHaveBeenCalled();
   });
 });
 
 describe('POST /print/ticket', () => {
   it('prints to the body printer', async () => {
-    const res = await request(app()).post('/print/ticket')
+    const res = await request(app())
+      .post('/print/ticket')
       .send({ printer: { ip_address: '192.168.1.60', port: 9100 }, ...TICKET });
     expect(res.status).toBe(200);
-    expect(send).toHaveBeenCalledWith({ ip_address: '192.168.1.60', port: 9100 }, expect.any(Function));
+    expect(send).toHaveBeenCalledWith(
+      { ip_address: '192.168.1.60', port: 9100 },
+      expect.any(Function),
+    );
   });
   it('400 missing_printer without printer', async () => {
     const res = await request(app()).post('/print/ticket').send(TICKET);
@@ -166,10 +248,11 @@ describe('POST /print/ticket', () => {
     expect(body(res).error).toBe('missing_printer');
   });
   it('400 invalid_printer_target on a public IP', async () => {
-    const res = await request(app()).post('/print/ticket')
+    const res = await request(app())
+      .post('/print/ticket')
       .send({ printer: { ip_address: '8.8.8.8', port: 9100 }, ...TICKET });
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ success: false, error: 'invalid_printer_target' });
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'printer_forbidden' });
     expect(send).not.toHaveBeenCalled();
   });
 });
@@ -247,15 +330,26 @@ describe('POS SPA serving (POS_DIST_DIR)', () => {
     fs.mkdirSync(path.join(distDir, 'assets'));
     fs.writeFileSync(path.join(distDir, 'assets', 'app.js'), 'console.log("pos")', 'utf8');
   });
-  afterEach(() => { fs.rmSync(distDir, { recursive: true, force: true }); });
+  afterEach(() => {
+    fs.rmSync(distDir, { recursive: true, force: true });
+  });
 
   function spaApp(dir: string | null = null) {
     return createApp({
+      registry: testRegistry(),
       config: {
-        port: 3001, receiptPrinter: null, hubToken: null, hubBufferFile: 'b.jsonl',
-        hubCloudUrl: null, hubCloudSecret: null, posDistDir: dir ?? distDir,
+        ...loadConfig({}),
+        port: 3001,
+        receiptPrinter: null,
+        hubBufferFile: 'b.jsonl',
+        hubCloudUrl: null,
+        hubCloudSecret: null,
+        posDistDir: dir ?? distDir,
       },
-      send, kick, probe, scan,
+      send,
+      kick,
+      probe,
+      scan,
     });
   }
 

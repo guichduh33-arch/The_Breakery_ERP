@@ -10,7 +10,11 @@ describe('loadConfig', () => {
   });
 
   it('reads receipt printer from env', () => {
-    const c = loadConfig({ PORT: '3005', RECEIPT_PRINTER_IP: '192.168.1.50', RECEIPT_PRINTER_PORT: '9101' });
+    const c = loadConfig({
+      PORT: '3005',
+      RECEIPT_PRINTER_IP: '192.168.1.50',
+      RECEIPT_PRINTER_PORT: '9101',
+    });
     expect(c.port).toBe(3005);
     expect(c.receiptPrinter).toEqual({ ip_address: '192.168.1.50', port: 9101 });
   });
@@ -22,19 +26,23 @@ describe('loadConfig', () => {
 
   it('hub defaults: no token, hub-buffer.jsonl', () => {
     const c = loadConfig({});
-    expect(c.hubToken).toBeNull();
+    expect(c.tlsCert).toBeNull();
     expect(c.hubBufferFile).toBe('hub-buffer.jsonl');
   });
 
-  it('reads HUB_TOKEN and HUB_BUFFER_FILE, trimming; blank token stays null', () => {
-    expect(loadConfig({ HUB_TOKEN: '  s3cret ' }).hubToken).toBe('s3cret');
-    expect(loadConfig({ HUB_TOKEN: '   ' }).hubToken).toBeNull();
-    expect(loadConfig({ HUB_BUFFER_FILE: 'C:/hub/buf.jsonl' }).hubBufferFile).toBe('C:/hub/buf.jsonl');
+  it('reads TLS certificate and buffer file', () => {
+    expect(loadConfig({ HUB_TLS_CERT: '  s3cret ' }).tlsCert).toBe('s3cret');
+    expect(loadConfig({ HUB_TLS_CERT: '   ' }).tlsCert).toBeNull();
+    expect(loadConfig({ HUB_BUFFER_FILE: 'C:/hub/buf.jsonl' }).hubBufferFile).toBe(
+      'C:/hub/buf.jsonl',
+    );
   });
 
   it('POS SPA dir defaults to null; reads POS_DIST_DIR, trimming (lot 5)', () => {
     expect(loadConfig({}).posDistDir).toBeNull();
-    expect(loadConfig({ POS_DIST_DIR: ' C:/breakery/pos-dist ' }).posDistDir).toBe('C:/breakery/pos-dist');
+    expect(loadConfig({ POS_DIST_DIR: ' C:/breakery/pos-dist ' }).posDistDir).toBe(
+      'C:/breakery/pos-dist',
+    );
     expect(loadConfig({ POS_DIST_DIR: '   ' }).posDistDir).toBeNull();
   });
 

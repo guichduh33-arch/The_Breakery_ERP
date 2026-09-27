@@ -388,6 +388,14 @@ verify_jwt = true
 [functions.verify-manager-pin]
 verify_jwt = true
 
+# Authentification LAN interne : session employé et permission de gestion,
+# secret individuel du terminal, ou secret du hub. Aucun accès anonyme utile.
+[functions.lan-device-access]
+verify_jwt = false
+
+[functions.lan-heartbeat-batch]
+verify_jwt = false
+
 [analytics]
 # Disabled on Windows: analytics container requires Docker TCP on localhost:2375
 # which is not available with Docker Desktop named-pipe context.

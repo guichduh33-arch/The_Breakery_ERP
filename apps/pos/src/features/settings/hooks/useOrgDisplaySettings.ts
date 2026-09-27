@@ -53,9 +53,10 @@ export function parseShowcaseProductIds(raw: Json | null | undefined): string[] 
   return [...seen];
 }
 
-export function useOrgDisplaySettings(): OrgDisplaySettings & { isLoading: boolean } {
+export function useOrgDisplaySettings(enabled = true): OrgDisplaySettings & { isLoading: boolean } {
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEY,
+    enabled,
     staleTime: 5 * 60_000,
     // Bound the offline wait: SuccessModal's fire-once effect is gated on
     // isLoading, so react-query's default 3-retry exponential backoff would

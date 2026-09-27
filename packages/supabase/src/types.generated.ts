@@ -2084,6 +2084,50 @@ export type Database = {
         }
         Relationships: []
       }
+      kiosk_devices: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          paired_at: string | null
+          pairing_expires_at: string
+          pairing_hash: string
+          revoked_at: string | null
+          secret_hash: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          label: string
+          paired_at?: string | null
+          pairing_expires_at: string
+          pairing_hash: string
+          revoked_at?: string | null
+          secret_hash?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          paired_at?: string | null
+          pairing_expires_at?: string
+          pairing_hash?: string
+          revoked_at?: string | null
+          secret_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_devices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kiosk_jwt_signing_keys: {
         Row: {
           created_by: string | null
@@ -2196,6 +2240,54 @@ export type Database = {
             columns: ["user_profile_id"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lan_device_credentials: {
+        Row: {
+          created_by: string
+          device_id: string
+          paired_at: string | null
+          pairing_expires_at: string | null
+          pairing_hash: string | null
+          permissions: string[]
+          revoked_at: string | null
+          secret_hash: string | null
+        }
+        Insert: {
+          created_by: string
+          device_id: string
+          paired_at?: string | null
+          pairing_expires_at?: string | null
+          pairing_hash?: string | null
+          permissions?: string[]
+          revoked_at?: string | null
+          secret_hash?: string | null
+        }
+        Update: {
+          created_by?: string
+          device_id?: string
+          paired_at?: string | null
+          pairing_expires_at?: string | null
+          pairing_hash?: string | null
+          permissions?: string[]
+          revoked_at?: string | null
+          secret_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lan_device_credentials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lan_device_credentials_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "lan_devices"
             referencedColumns: ["id"]
           },
         ]
@@ -6415,6 +6507,22 @@ export type Database = {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
+      authenticate_display_device_v1: {
+        Args: {
+          p_device_id?: string
+          p_pairing_hash?: string
+          p_secret_hash: string
+        }
+        Returns: Json
+      }
+      authenticate_lan_device_v1: {
+        Args: {
+          p_device_id?: string
+          p_pairing_hash?: string
+          p_secret_hash: string
+        }
+        Returns: Json
+      }
       calculate_pb1_payable_v3: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
@@ -7163,6 +7271,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_kiosk_display_v1: { Args: never; Returns: Json }
       get_kitchen_history_v1: {
         Args: {
           p_before_id?: string
@@ -7178,6 +7287,7 @@ export type Database = {
         Args: { p_idempotency_key: string }
         Returns: Json
       }
+      get_lan_registry_v1: { Args: never; Returns: Json }
       get_low_stock_v2: {
         Args: never
         Returns: {
@@ -7868,6 +7978,24 @@ export type Database = {
       }
       list_recipes_v1: { Args: { p_product_id: string }; Returns: Json[] }
       lives_ok: { Args: { "": string }; Returns: string }
+      manage_display_device_v1: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_device_id?: string
+          p_label?: string
+        }
+        Returns: Json
+      }
+      manage_lan_device_v1: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_device_id?: string
+          p_permissions?: string[]
+        }
+        Returns: Json
+      }
       mark_expired_lots_hourly: { Args: never; Returns: Json }
       mark_item_served: {
         Args: { p_item_id: string }
@@ -8594,7 +8722,7 @@ export type Database = {
         Args: { p_customer_id: string; p_patch: Json }
         Returns: Json
       }
-      update_lan_heartbeat_v2: {
+      update_lan_heartbeat_v3: {
         Args: { p_device_codes: string[] }
         Returns: {
           code: string

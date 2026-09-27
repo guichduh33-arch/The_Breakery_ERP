@@ -58,9 +58,9 @@ export function HubStatusPanel(): JSX.Element {
         <span>up {formatUptime(data.uptime_s)}</span>
         <span className="inline-flex items-center gap-1">
           {data.token_required ? (
-            <><ShieldCheck className="h-4 w-4 text-success" aria-hidden /> Token required</>
+            <><ShieldCheck className="h-4 w-4 text-success" aria-hidden /> Device authorization required</>
           ) : (
-            <><ShieldOff className="h-4 w-4 text-warning" aria-hidden /> No token (set HUB_TOKEN)</>
+            <><ShieldOff className="h-4 w-4 text-warning" aria-hidden /> Update the hub to require device authorization</>
           )}
         </span>
         <span>
@@ -89,7 +89,7 @@ export function HubStatusPanel(): JSX.Element {
       {data.devices.length === 0 ? (
         <p className="text-sm text-text-secondary">
           No device connected to the hub bus yet. Terminals join automatically
-          once their device code is set above.
+          once activated above and synchronized with the hub.
         </p>
       ) : (
         <div className="overflow-x-auto">

@@ -8,6 +8,7 @@
 // L'impression métier reste dans `printService` — ce module ne porte que le
 // diagnostic, et partage son URL de bridge via `getPrintServerUrl()`.
 import { getPrintServerUrl } from './printService';
+import { lanHeaders } from '@/features/lan/lanCredential';
 
 export interface ScanDeviceHit {
   ip: string;
@@ -61,7 +62,10 @@ export type HubStatusResponse =
 async function bridgeFetch(path: string, init?: RequestInit): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(`${getPrintServerUrl()}${path}`, init);
+    res = await fetch(`${getPrintServerUrl()}${path}`, {
+      ...init,
+      headers: { ...init?.headers, ...lanHeaders() },
+    });
   } catch {
     throw new Error('bridge_unreachable');
   }
@@ -88,9 +92,8 @@ export async function scanPrinters(prefix: string, signal?: AbortSignal): Promis
 }
 
 export async function probePrinter(ip: string, port: number): Promise<ProbeResponse> {
-  const res = await bridgeFetch(
-    `/status/probe?ip=${encodeURIComponent(ip)}&port=${port}`,
-    { method: 'GET' },
-  );
+  const res = await bridgeFetch(`/status/probe?ip=${encodeURIComponent(ip)}&port=${port}`, {
+    method: 'GET',
+  });
   return (await res.json()) as ProbeResponse;
 }

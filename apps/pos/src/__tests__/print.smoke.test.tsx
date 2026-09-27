@@ -106,7 +106,7 @@ describe('printService unit', () => {
     const result = await openCashDrawer();
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:3001/drawer/open',
+      'https://localhost:3001/drawer/open',
       expect.objectContaining({ method: 'POST' }),
     );
   });
@@ -242,3 +242,5 @@ describe('SuccessModal auto-print integration', () => {
     expect(capturedBody!.loyalty?.points_earned).toBe(35);
   });
 });
+
+vi.mock('@/features/lan/lanCredential', () => ({ lanHeaders: () => ({'x-lan-device-code':'TEST','x-lan-secret':'test-only'}) }));

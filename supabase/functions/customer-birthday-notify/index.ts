@@ -5,11 +5,10 @@
 // For each opted-in customer whose birth_date matches today (Asia/Jakarta),
 // enqueues one notification_outbox row via enqueue_notification_v2 RPC.
 //
-// Auth: verify_jwt=false. Requests must include header
-//   x-cron-secret: <BIRTHDAY_CRON_SECRET env var>
-// so that only the pg_cron job (or authorised callers) can trigger the run.
-// If BIRTHDAY_CRON_SECRET is unset, the function rejects all calls
-// (fail-closed). Direct POST with service_role Bearer also accepted.
+// Authentification interne réservée aux appels serveur : secret configuré
+// dans x-cron-secret, ou clé service_role configurée dans Bearer.
+// Une session utilisateur ne donne pas le droit de lancer ce traitement.
+// Sans aucun de ces secrets configurés, tous les appels sont refusés.
 //
 // Response: { ok: true, processed: N }
 //
@@ -46,11 +45,7 @@ async function authorize(req: Request): Promise<boolean> {
   if (auth.startsWith('Bearer ')) {
     const token = auth.slice('Bearer '.length).trim();
     if (token) {
-      const admin = getAdminClient();
-      const { data, error } = await admin.auth.getUser(token);
-      // Service role tokens don't resolve to a user but do have a valid payload
-      if (!error && data?.user) return true;
-      // Accept service_role key directly (it bypasses GoTrue user lookup)
+      // Seule la clé serveur exacte est autorisée, jamais une session utilisateur.
       const srKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
       if (srKey && token === srKey) return true;
     }

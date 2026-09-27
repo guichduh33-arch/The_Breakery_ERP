@@ -12,6 +12,7 @@
  * - `users.*`          - Manage user_profiles and audit log access.
  */
 export type PermissionCode =
+  | 'kiosk.issue'
   | 'pos.session.open'
   | 'pos.session.close_own'
   | 'pos.session.close_other'

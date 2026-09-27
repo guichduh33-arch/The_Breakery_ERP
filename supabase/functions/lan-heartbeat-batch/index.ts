@@ -11,7 +11,7 @@
 // l'EF est désactivée (503) : activation explicite.
 //
 // Body : { device_codes: string[] } (max 100). Appelle
-// update_lan_heartbeat_v2 (batch, service_role) ; les codes
+// update_lan_heartbeat_v3 (batch, service_role) ; les codes
 // inconnus/soft-deleted sont ignorés par la RPC et renvoyés dans
 // `unknown` pour l'observabilité côté hub.
 
@@ -48,7 +48,6 @@ serve(async (req: Request) => {
   const codes = (body as { device_codes?: unknown }).device_codes;
   if (
     !Array.isArray(codes) ||
-    codes.length === 0 ||
     codes.length > MAX_BATCH ||
     !codes.every((c) => typeof c === 'string' && c.length > 0 && c.length <= 64)
   ) {
@@ -57,7 +56,7 @@ serve(async (req: Request) => {
 
   const deduped = [...new Set(codes as string[])];
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('update_lan_heartbeat_v2', {
+  const { data, error } = await admin.rpc('update_lan_heartbeat_v3', {
     p_device_codes: deduped,
   });
   if (error) {
@@ -66,5 +65,7 @@ serve(async (req: Request) => {
 
   const touched = ((data ?? []) as { code: string }[]).map((r) => r.code);
   const unknown = deduped.filter((c) => !touched.includes(c));
-  return jsonResponse({ touched, unknown });
+  const registry = await admin.rpc('get_lan_registry_v1');
+  if (registry.error) return jsonResponse({ error: 'registry_unavailable' }, 503);
+  return jsonResponse({ touched, unknown, registry: registry.data });
 });

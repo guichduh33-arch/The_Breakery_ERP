@@ -1,3 +1,4 @@
+import { testRegistry, TEST_SECRET } from './securityFixtures.js';
 // Tests d'intégration du hub WS : vrai serveur HTTP sur port éphémère,
 // vrais clients `ws` — couvre hello-auth, token, relai, catchup, presence.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -15,9 +16,10 @@ let server: http.Server;
 let hub: HubHandle;
 let port: number;
 
-function startHub(token: string | null = null): Promise<void> {
+function startHub(): Promise<void> {
   hub = createHub({
-    token,
+    registry: testRegistry(),
+    allowedOrigins: [],
     buffer: new HubRingBuffer(path.join(dir, 'buf.jsonl')),
     helloTimeoutMs: 200,
     pingIntervalMs: 60_000,
@@ -32,7 +34,9 @@ function startHub(token: string | null = null): Promise<void> {
   });
 }
 
-beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hub-srv-')); });
+beforeEach(() => {
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hub-srv-'));
+});
 afterEach(async () => {
   hub.close();
   await new Promise((resolve) => server.close(resolve));
@@ -45,7 +49,9 @@ function connect(): WebSocket {
 
 function nextMessage(ws: WebSocket): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
-    ws.once('message', (d) => resolve(JSON.parse((d as Buffer).toString('utf8')) as Record<string, unknown>));
+    ws.once('message', (d) =>
+      resolve(JSON.parse((d as Buffer).toString('utf8')) as Record<string, unknown>),
+    );
     ws.once('close', (code) => reject(new Error(`closed_${code}`)));
     ws.once('error', reject);
   });
@@ -62,7 +68,7 @@ function open(ws: WebSocket): Promise<void> {
   });
 }
 
-async function authed(deviceCode: string, token?: string): Promise<WebSocket> {
+async function authed(deviceCode: string, token: string = TEST_SECRET): Promise<WebSocket> {
   const ws = connect();
   await open(ws);
   const welcome = nextMessage(ws);
@@ -78,7 +84,25 @@ function envelope(i: number, topic: HubEnvelope['topic'] = 'order.fired'): HubEn
     device_code: 'POS-1',
     ts: new Date(Date.UTC(2026, 6, 19, 10, 0, i)).toISOString(),
     topic,
-    payload: { i },
+    payload: {
+      client_uuid: 'order-' + i,
+      order_number: 'L-' + i,
+      order_type: 'take_out',
+      table_number: null,
+      notes: null,
+      fired_at: new Date().toISOString(),
+      items: [
+        {
+          id: 'i-' + i,
+          product_id: 'p',
+          product_name: 'Test',
+          quantity: 1,
+          unit_price: 10,
+          modifiers: [],
+          dispatch_stations: ['kitchen'],
+        },
+      ],
+    },
   };
 }
 
@@ -106,13 +130,15 @@ describe('hub hello-auth', () => {
   });
 
   it('closes 4003 on bad token, welcomes on good token', async () => {
-    await startHub('secret');
+    await startHub();
     const bad = connect();
     await open(bad);
-    bad.send(JSON.stringify({ type: 'hello', device_code: 'X', device_type: 'pos', token: 'wrong' }));
+    bad.send(
+      JSON.stringify({ type: 'hello', device_code: 'X', device_type: 'pos', token: 'wrong' }),
+    );
     expect(await nextClose(bad)).toBe(4003);
 
-    const good = await authed('POS-1', 'secret');
+    const good = await authed('POS-1', TEST_SECRET);
     expect(hub.tokenRequired).toBe(true);
     good.close();
   });
@@ -133,7 +159,8 @@ describe('hub relay + buffer + catchup', () => {
     a.send(JSON.stringify(envelope(1)));
     expect((await receivedByB).msg_id).toBe('m-1');
     expect(hub.bufferStats().count).toBe(1);
-    a.close(); b.close();
+    a.close();
+    b.close();
   });
 
   it('does not journal nor relay presence.heartbeat', async () => {
@@ -144,7 +171,10 @@ describe('hub relay + buffer + catchup', () => {
     // le 2e message force l'ordre : quand il est journalisé, le 1er est traité
     await new Promise<void>((resolve) => {
       const check = (): void => {
-        if (hub.bufferStats().count === 1) { resolve(); return; }
+        if (hub.bufferStats().count === 1) {
+          resolve();
+          return;
+        }
         setTimeout(check, 10);
       };
       check();
@@ -182,7 +212,10 @@ describe('hub relay + buffer + catchup', () => {
     a.close();
     await new Promise<void>((resolve) => {
       const check = (): void => {
-        if (hub.presence().length === 0) { resolve(); return; }
+        if (hub.presence().length === 0) {
+          resolve();
+          return;
+        }
         setTimeout(check, 10);
       };
       check();

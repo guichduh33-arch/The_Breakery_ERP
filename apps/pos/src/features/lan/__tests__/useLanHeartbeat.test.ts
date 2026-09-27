@@ -1,3 +1,4 @@
+import { useLanCredential } from '../lanCredential';
 // apps/pos/src/features/lan/__tests__/useLanHeartbeat.test.ts
 //
 // Session 59 (21 D1.1) — the hook existed since S13 but had no test and no
@@ -13,7 +14,11 @@ import { renderHook } from '@testing-library/react';
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown },
+  supabase: {
+    functions: {
+      invoke: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown,
+    },
+  },
 }));
 
 import { useLanHeartbeat } from '../hooks/useLanHeartbeat';
@@ -21,6 +26,9 @@ import { useHubConnectionStore } from '../hubConnectionStore';
 
 describe('useLanHeartbeat', () => {
   beforeEach(() => {
+    useLanCredential.setState({
+      credential: { id: 'device', code: 'POS-1', device_type: 'pos', secret: 'a'.repeat(64) },
+    });
     rpcMock.mockClear();
     useHubConnectionStore.setState({ connected: false });
     vi.useFakeTimers();
@@ -34,8 +42,9 @@ describe('useLanHeartbeat', () => {
     // The hook's tick() calls supabase.rpc(...) synchronously before its first
     // `await` — renderHook's act() flush is enough, no need to await anything.
     renderHook(() => useLanHeartbeat({ deviceCode: 'POS-FRONT-01', deviceType: 'pos' }));
-    expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
-      p_device_codes: ['POS-FRONT-01'],
+    expect(rpcMock).toHaveBeenCalledWith('lan-device-access', {
+      body: { action: 'heartbeat', device_id: 'device' },
+      headers: { 'x-lan-secret': 'a'.repeat(64) },
     });
     expect(rpcMock).toHaveBeenCalledTimes(1);
   });
@@ -65,13 +74,15 @@ describe('useLanHeartbeat', () => {
     // without remounting the interval.
     useHubConnectionStore.setState({ connected: false });
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
-      p_device_codes: ['POS-FRONT-01'],
+    expect(rpcMock).toHaveBeenCalledWith('lan-device-access', {
+      body: { action: 'heartbeat', device_id: 'device' },
+      headers: { 'x-lan-secret': 'a'.repeat(64) },
     });
     expect(rpcMock).toHaveBeenCalledTimes(1);
   });
 
   it('does not call the RPC when the device code is empty (unregistered terminal)', () => {
+    useLanCredential.setState({ credential: null });
     renderHook(() => useLanHeartbeat({ deviceCode: '', deviceType: 'tablet' }));
     expect(rpcMock).not.toHaveBeenCalled();
   });

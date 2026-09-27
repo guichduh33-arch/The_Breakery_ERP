@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { getPrintServerUrl } from '@/services/print/printService';
 import { hubBus } from '../hubBusClient';
+import { useLanCredential } from '../lanCredential';
 
 /** `http(s)://host:port[/]` → `ws(s)://host:port/ws`. */
 export function hubWsUrl(baseUrl: string): string {
@@ -26,23 +27,34 @@ interface UseHubPresenceOptions {
   enabled?: boolean;
 }
 
-export function useHubPresence({ deviceCode, deviceType, enabled = true }: UseHubPresenceOptions): void {
-  const hubToken = usePosSettingsStore((s) => s.hubToken);
+export function useHubPresence({
+  deviceCode,
+  deviceType,
+  enabled = true,
+}: UseHubPresenceOptions): void {
+  const credential = useLanCredential((s) => s.credential);
+  const printerUrl = usePosSettingsStore((s) => s.printerUrl);
 
   useEffect(() => {
     if (!enabled) return;
-    if (deviceCode === '') return;
+    if (!credential) return;
     // jsdom / anciens WebView : pas de WebSocket → hook inerte.
     if (typeof WebSocket === 'undefined') return;
+    let url: string;
+    try {
+      url = hubWsUrl(getPrintServerUrl());
+    } catch {
+      return;
+    }
 
     hubBus.start({
-      url: hubWsUrl(getPrintServerUrl()),
-      deviceCode,
-      deviceType,
-      token: hubToken,
+      url,
+      deviceCode: credential.code,
+      deviceType: credential.device_type,
+      token: credential.secret,
     });
     return () => {
       hubBus.stop();
     };
-  }, [deviceCode, deviceType, enabled, hubToken]);
+  }, [deviceCode, deviceType, enabled, credential, printerUrl]);
 }

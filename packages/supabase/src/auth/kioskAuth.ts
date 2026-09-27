@@ -3,12 +3,13 @@
 //
 // Session 13 / Phase 1.B — D18.
 
+import { getSupabaseClient } from '../client.js';
+
 export type KioskScope = 'kds' | 'display' | 'tablet';
 
 export interface KioskIssueRequest {
-  kiosk_id: string;
-  scope: KioskScope;
-  device_label?: string | undefined;
+  action: 'pair' | 'renew';
+  device_id?: string;
 }
 
 export interface KioskIssueResponse {
@@ -23,6 +24,7 @@ export interface KioskIssueResponse {
 }
 
 export type KioskIssueError =
+  | { error: 'kiosk_unauthorized' | 'kiosk_unavailable' | 'pairing_required' }
   | { error: 'missing_fields' }
   | { error: 'invalid_scope' }
   | { error: 'invalid_json' }
@@ -35,22 +37,6 @@ export type KioskIssueError =
 
 const FETCH_TIMEOUT_MS = 15_000;
 
-async function fetchWithTimeout(input: RequestInfo, init?: RequestInit): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    return await fetch(input, { ...init, signal: controller.signal });
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') {
-      const details: KioskIssueError = { error: 'network_timeout' };
-      throw Object.assign(new Error('network_timeout'), { isTimeout: true as const, details });
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 /**
  * Mint a fresh kiosk JWT via the `kiosk-issue-jwt` Edge Function.
  *
@@ -60,20 +46,22 @@ async function fetchWithTimeout(input: RequestInfo, init?: RequestInit): Promise
  * @throws {Error & { details: KioskIssueError; status: number }} on any non-2xx.
  */
 export async function issueKioskJwt(
-  supabaseUrl: string,
+  _supabaseUrl: string,
   body: KioskIssueRequest,
+  credentials: { secret: string; pairingCode?: string },
 ): Promise<KioskIssueResponse> {
-  const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/kiosk-issue-jwt`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  const headers: Record<string, string> = { 'x-kiosk-secret': credentials.secret };
+  if (credentials.pairingCode) headers['x-kiosk-pairing-code'] = credentials.pairingCode;
+  const result = await getSupabaseClient().functions.invoke<KioskIssueResponse>('kiosk-issue-jwt', {
+    body, headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
-  if (!res.ok) {
-    const errBody = (await res.json().catch(() => ({}))) as KioskIssueError;
-    throw Object.assign(new Error((errBody as { error?: string }).error ?? 'kiosk_issue_failed'), {
-      details: errBody,
-      status: res.status,
-    });
+  const data = result.data;
+  const error: unknown = result.error;
+  if (error || !data) {
+    const context: unknown = (error as { context?: unknown } | null)?.context;
+    const response = context instanceof Response ? context : null;
+    const details = response ? await response.json().catch(() => ({ error: 'kiosk_unavailable' })) as KioskIssueError : { error: 'kiosk_unavailable' };
+    throw Object.assign(new Error(details.error), { details, status: response?.status });
   }
-  return (await res.json()) as KioskIssueResponse;
+  return data;
 }

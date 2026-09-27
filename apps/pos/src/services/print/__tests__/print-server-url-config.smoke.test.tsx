@@ -3,7 +3,7 @@
 // fix/pos-print-bridge-config — printService reads VITE_PRINT_SERVER_URL.
 //
 // printService.ts reads `const SERVER_URL = import.meta.env.VITE_PRINT_SERVER_URL
-// ?? 'http://localhost:3001'` ONCE at module load. So each case must:
+// ?? 'https://localhost:3001'` ONCE at module load. So each case must:
 //   1. vi.stubEnv(...) the desired value (and turn VITE_PRINT_MOCK off — the
 //      mock branch short-circuits before fetch),
 //   2. vi.resetModules() so the const re-evaluates,
@@ -65,7 +65,7 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
   });
 
   it('printStationTicket POSTs to the configured VITE_PRINT_SERVER_URL', async () => {
-    vi.stubEnv('VITE_PRINT_SERVER_URL', 'http://10.0.0.9:4000');
+    vi.stubEnv('VITE_PRINT_SERVER_URL', 'https://10.0.0.9:4000');
     vi.resetModules();
     const fetchMock = mockFetchOk();
 
@@ -73,11 +73,11 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
     await printStationTicket(PRINTER, STATION_PAYLOAD);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]![0]).toBe('http://10.0.0.9:4000/print/ticket');
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://10.0.0.9:4000/print/ticket');
   });
 
   it('printReceipt POSTs to the configured VITE_PRINT_SERVER_URL', async () => {
-    vi.stubEnv('VITE_PRINT_SERVER_URL', 'http://10.0.0.9:4000');
+    vi.stubEnv('VITE_PRINT_SERVER_URL', 'https://10.0.0.9:4000');
     vi.resetModules();
     const fetchMock = mockFetchOk();
 
@@ -85,10 +85,10 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
     await printReceipt(RECEIPT_PAYLOAD);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]![0]).toBe('http://10.0.0.9:4000/print/receipt');
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://10.0.0.9:4000/print/receipt');
   });
 
-  it('falls back to http://localhost:3001 when VITE_PRINT_SERVER_URL is unset', async () => {
+  it('falls back to https://localhost:3001 when VITE_PRINT_SERVER_URL is unset', async () => {
     // No stubEnv for VITE_PRINT_SERVER_URL → undefined → fallback.
     vi.resetModules();
     const fetchMock = mockFetchOk();
@@ -97,14 +97,14 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
     await printStationTicket(PRINTER, STATION_PAYLOAD);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]![0]).toBe('http://localhost:3001/print/ticket');
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://localhost:3001/print/ticket');
   });
 
   it('prefers usePosSettingsStore.printerUrl over the env var', async () => {
     vi.resetModules();
-    vi.stubEnv('VITE_PRINT_SERVER_URL', 'http://env-host:3001');
+    vi.stubEnv('VITE_PRINT_SERVER_URL', 'https://env-host:3001');
     const { usePosSettingsStore } = await import('@/stores/posSettingsStore');
-    usePosSettingsStore.setState({ printerUrl: 'http://store-host:3001' });
+    usePosSettingsStore.setState({ printerUrl: 'https://store-host:3001' });
     const fetchSpy = mockFetchOk();
     const { openCashDrawer } = await import('../printService');
     await openCashDrawer();
@@ -113,3 +113,7 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
     expect(calledUrl).not.toContain('env-host');
   });
 });
+
+vi.mock('@/features/lan/lanCredential', () => ({
+  lanHeaders: () => ({ 'x-lan-device-code': 'TEST', 'x-lan-secret': 'test-only' }),
+}));

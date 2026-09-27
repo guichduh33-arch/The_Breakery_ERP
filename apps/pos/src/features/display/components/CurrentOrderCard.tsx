@@ -10,7 +10,7 @@ import { formatOrderNumberShort } from '@breakery/domain';
 import type { DisplayOrder } from '../hooks/useDisplayOrders';
 
 interface CurrentOrderCardProps {
-  order: DisplayOrder | null;
+  order: Omit<DisplayOrder, 'total' | 'created_at'> | null;
 }
 
 function elapsedLabel(paidAt: string | null): string {

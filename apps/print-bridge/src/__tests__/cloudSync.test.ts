@@ -12,7 +12,9 @@ function okResponse(bodyJson: unknown): Response {
 describe('startCloudSync', () => {
   let handle: CloudSyncHandle | null = null;
 
-  beforeEach(() => { vi.useFakeTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
   afterEach(() => {
     handle?.stop();
     handle = null;
@@ -20,10 +22,15 @@ describe('startCloudSync', () => {
   });
 
   it('POSTs deduped device codes with the secret in x-hub-secret', async () => {
-    const fetchFn = vi.fn().mockResolvedValue(okResponse({ touched: ['POS-1'], unknown: ['GHOST'] }));
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(okResponse({ touched: ['POS-1'], unknown: ['GHOST'] }));
     handle = startCloudSync({
+      onRegistry: vi.fn(),
       presentCodes: () => ['POS-1', 'POS-1', 'GHOST'],
-      url: URL_, secret: 's3cret', fetchFn,
+      url: URL_,
+      secret: 's3cret',
+      fetchFn,
     });
     await handle.tick();
 
@@ -40,18 +47,33 @@ describe('startCloudSync', () => {
     expect(status.last_push_at).not.toBeNull();
   });
 
-  it('skips the POST entirely when no device is on the bus', async () => {
-    const fetchFn = vi.fn();
-    handle = startCloudSync({ presentCodes: () => [], url: URL_, secret: 's', fetchFn });
+  it('synchronizes the registry even when no device is on the bus', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(okResponse({ touched: [], unknown: [], registry: {} }));
+    handle = startCloudSync({
+      onRegistry: vi.fn(),
+      presentCodes: () => [],
+      url: URL_,
+      secret: 's',
+      fetchFn,
+    });
     await handle.tick();
-    expect(fetchFn).not.toHaveBeenCalled();
+    expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
   it('records an http error without throwing, then recovers', async () => {
-    const fetchFn = vi.fn()
+    const fetchFn = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: () => Promise.resolve({}) })
       .mockResolvedValueOnce(okResponse({ touched: ['POS-1'], unknown: [] }));
-    handle = startCloudSync({ presentCodes: () => ['POS-1'], url: URL_, secret: 'bad', fetchFn });
+    handle = startCloudSync({
+      onRegistry: vi.fn(),
+      presentCodes: () => ['POS-1'],
+      url: URL_,
+      secret: 'bad',
+      fetchFn,
+    });
 
     await handle.tick();
     expect(handle.status().last_result).toBe('error');
@@ -64,7 +86,13 @@ describe('startCloudSync', () => {
 
   it('records a network error (internet down) without throwing', async () => {
     const fetchFn = vi.fn().mockRejectedValue(new Error('fetch failed'));
-    handle = startCloudSync({ presentCodes: () => ['POS-1'], url: URL_, secret: 's', fetchFn });
+    handle = startCloudSync({
+      onRegistry: vi.fn(),
+      presentCodes: () => ['POS-1'],
+      url: URL_,
+      secret: 's',
+      fetchFn,
+    });
     await handle.tick();
     expect(handle.status().last_result).toBe('error');
     expect(handle.status().last_error).toBe('fetch failed');
@@ -73,7 +101,12 @@ describe('startCloudSync', () => {
   it('ticks on its interval and stops after stop()', async () => {
     const fetchFn = vi.fn().mockResolvedValue(okResponse({ touched: [], unknown: [] }));
     handle = startCloudSync({
-      presentCodes: () => ['POS-1'], url: URL_, secret: 's', fetchFn, intervalMs: 10_000,
+      onRegistry: vi.fn(),
+      presentCodes: () => ['POS-1'],
+      url: URL_,
+      secret: 's',
+      fetchFn,
+      intervalMs: 10_000,
     });
     await vi.advanceTimersByTimeAsync(30_000);
     expect(fetchFn).toHaveBeenCalledTimes(3);

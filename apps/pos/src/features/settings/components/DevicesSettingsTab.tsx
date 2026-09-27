@@ -1,3 +1,4 @@
+import { LanDevicePairing } from './LanDevicePairing';
 // apps/pos/src/features/settings/components/DevicesSettingsTab.tsx
 //
 // POS Settings → Devices. The hardware hub for this terminal: the print-server
@@ -46,9 +47,6 @@ const TEST_RECEIPT: ReceiptPayload = {
 export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
   const printerUrl = usePosSettingsStore((s) => s.printerUrl);
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
-  const setDeviceCode = usePosSettingsStore((s) => s.setDeviceCode);
-  const hubToken = usePosSettingsStore((s) => s.hubToken);
-  const setHubToken = usePosSettingsStore((s) => s.setHubToken);
   const orderSourceCode = usePosSettingsStore((s) => s.orderSourceCode);
   const setOrderSourceCode = usePosSettingsStore((s) => s.setOrderSourceCode);
   const sourceCodeValid = ORDER_SOURCE_CODE_REGEX.test(orderSourceCode);
@@ -155,33 +153,13 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
               placeholder="e.g. POS-FRONT-01"
               value={deviceCode}
               disabled={readOnly}
-              onChange={(e) => setDeviceCode(e.target.value)}
+              readOnly
             />
             <p className="text-xs text-text-muted">
-              Must match a code registered in BO &raquo; LAN Devices. Leave blank to skip heartbeats
-              on this terminal.
+              Assigned by the activation code. Activate this terminal below.
             </p>
           </div>
-          <div className="space-y-2">
-            <label
-              htmlFor="devices-hub-token"
-              className="block font-bold uppercase tracking-widest text-text-muted text-xs"
-            >
-              Hub token
-            </label>
-            <Input
-              id="devices-hub-token"
-              aria-label="Hub token"
-              type="password"
-              placeholder="Shared LAN hub secret"
-              value={hubToken}
-              disabled={readOnly}
-              onChange={(e) => setHubToken(e.target.value)}
-            />
-            <p className="text-xs text-text-muted">
-              Must match the bridge&apos;s HUB_TOKEN. Leave blank if the hub runs without a token.
-            </p>
-          </div>
+          <LanDevicePairing readOnly={readOnly} />
         </Card>
 
         <Card variant="default" padding="md" className="space-y-3">

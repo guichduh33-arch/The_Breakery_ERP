@@ -1,3 +1,4 @@
+import { useLanCredential } from '../lanCredential';
 // apps/pos/src/features/lan/__tests__/useHubPresence.test.ts
 // jsdom n'implémente pas WebSocket : un mock global prouve le protocole
 // (hello, heartbeat, reconnexion) sans réseau. Sans mock, le hook doit être
@@ -23,7 +24,9 @@ class MockWebSocket {
     this.url = url;
     MockWebSocket.instances.push(this);
   }
-  send(data: string): void { this.sent.push(data); }
+  send(data: string): void {
+    this.sent.push(data);
+  }
   close(): void {
     this.readyState = 3;
     this.onclose?.();
@@ -38,10 +41,13 @@ class MockWebSocket {
 }
 
 beforeEach(() => {
+  useLanCredential.setState({
+    credential: { id: 'device', code: 'POS-1', device_type: 'pos', secret: 'a'.repeat(64) },
+  });
   vi.useFakeTimers();
   MockWebSocket.instances = [];
   vi.stubGlobal('WebSocket', MockWebSocket);
-  usePosSettingsStore.setState({ printerUrl: 'http://192.168.1.20:3001', hubToken: '' });
+  usePosSettingsStore.setState({ printerUrl: 'https://192.168.1.20:3001' });
   useHubConnectionStore.setState({ connected: false });
 });
 
@@ -54,13 +60,14 @@ afterEach(() => {
 
 describe('hubWsUrl', () => {
   it('maps http(s) origins to ws(s) + /ws', () => {
-    expect(hubWsUrl('http://192.168.1.20:3001')).toBe('ws://192.168.1.20:3001/ws');
+    expect(hubWsUrl('https://192.168.1.20:3001')).toBe('wss://192.168.1.20:3001/ws');
     expect(hubWsUrl('https://hub.local:3001/')).toBe('wss://hub.local:3001/ws');
   });
 });
 
 describe('useHubPresence', () => {
   it('no-ops without a device code', () => {
+    useLanCredential.setState({ credential: null });
     renderHook(() => useHubPresence({ deviceCode: '', deviceType: 'pos' }));
     expect(MockWebSocket.instances).toHaveLength(0);
   });
@@ -74,13 +81,20 @@ describe('useHubPresence', () => {
     renderHook(() => useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }));
     expect(MockWebSocket.instances).toHaveLength(1);
     const ws = MockWebSocket.instances[0]!;
-    expect(ws.url).toBe('ws://192.168.1.20:3001/ws');
+    expect(ws.url).toBe('wss://192.168.1.20:3001/ws');
     ws.simulateOpen();
-    expect(JSON.parse(ws.sent[0]!)).toEqual({ type: 'hello', device_code: 'POS-1', device_type: 'pos' });
+    expect(JSON.parse(ws.sent[0]!)).toEqual({
+      type: 'hello',
+      device_code: 'POS-1',
+      device_type: 'pos',
+      token: 'a'.repeat(64),
+    });
   });
 
   it('includes the per-terminal token in the hello when set', () => {
-    usePosSettingsStore.setState({ hubToken: 's3cret' });
+    useLanCredential.setState({
+      credential: { id: 'device', code: 'POS-1', device_type: 'pos', secret: 's3cret' },
+    });
     renderHook(() => useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }));
     const ws = MockWebSocket.instances[0]!;
     ws.simulateOpen();
@@ -94,8 +108,8 @@ describe('useHubPresence', () => {
     vi.advanceTimersByTime(10_000);
     const beat = JSON.parse(ws.sent[1]!) as Record<string, unknown>;
     expect(beat.topic).toBe('presence.heartbeat');
-    expect(beat.device_code).toBe('KDS-1');
-    expect(beat.payload).toEqual({ device_type: 'kds' });
+    expect(beat.device_code).toBe('POS-1');
+    expect(beat.payload).toEqual({ device_type: 'pos' });
     vi.advanceTimersByTime(10_000);
     expect(ws.sent).toHaveLength(3);
   });
@@ -123,7 +137,9 @@ describe('useHubPresence', () => {
   });
 
   it('resets the connection store on unmount', () => {
-    const { unmount } = renderHook(() => useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }));
+    const { unmount } = renderHook(() =>
+      useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }),
+    );
     const ws = MockWebSocket.instances[0]!;
     ws.simulateOpen();
     ws.simulateMessage({ type: 'welcome', buffer: { count: 0 } });
@@ -133,7 +149,9 @@ describe('useHubPresence', () => {
   });
 
   it('closes the socket and stops timers on unmount', () => {
-    const { unmount } = renderHook(() => useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }));
+    const { unmount } = renderHook(() =>
+      useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }),
+    );
     const ws = MockWebSocket.instances[0]!;
     ws.simulateOpen();
     unmount();

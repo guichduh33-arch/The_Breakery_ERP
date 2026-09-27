@@ -47,6 +47,9 @@ export async function getActingAuthUserId(req: Request): Promise<string | null> 
   try {
     const key = await getVerifyKey();
     const payload = await verify(token, key);
+    // Un jeton d'appareil signé avec la même clé ne représente pas un employé.
+    const metadata = payload.app_metadata as { provider?: unknown } | undefined;
+    if (payload.role !== 'authenticated' || metadata?.provider !== 'pin') return null;
     return typeof payload.sub === 'string' && payload.sub.length > 0 ? payload.sub : null;
   } catch {
     return null;

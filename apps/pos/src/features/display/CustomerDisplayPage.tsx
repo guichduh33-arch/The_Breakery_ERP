@@ -14,7 +14,7 @@ import { LocalCustomerDisplay } from './LocalCustomerDisplay';
 // card (right). The cart mirror reflects the active POS cart in real time via
 // the same-origin BroadcastChannel (F-007).
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { lineTotalOf } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
@@ -29,19 +29,9 @@ import { OrderQueueTicker } from './components/OrderQueueTicker';
 import { PairDevicePrompt } from './components/PairDevicePrompt';
 import { ShowcasePanel } from './components/ShowcasePanel';
 import { CustomerDisplayView, type CustomerDisplayLine } from './CustomerDisplayView';
-import { useDisplayOrders } from './hooks/useDisplayOrders';
-import { useDisplayRealtime } from './hooks/useDisplayRealtime';
-import { useReadyOrders } from './hooks/useReadyOrders';
-import { useShowcaseProducts } from './hooks/useShowcaseProducts';
 import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
-import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
-import { useSettingsRealtime } from '@/features/settings/hooks/useSettingsRealtime';
-import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
-import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
-import { useKdsOfflineBus } from '@/features/kds/hooks/useKdsOfflineBus';
-import { useKdsOfflineStore, selectOfflineReadyOrders } from '@/features/kds/kdsOfflineStore';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useKioskDisplayData } from './hooks/useKioskDisplayData';
 
 /** Built-in idle footer used when no custom message is configured. */
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
@@ -78,16 +68,6 @@ export default function CustomerDisplayPage() {
 
 function KioskCustomerDisplayPage() {
   const auth = useKioskAuth();
-  // Settings §6.C — push settings propagation for the kiosk surface. The App
-  // shell mount is gated on the PIN session, which the display doesn't have;
-  // this one re-arms once the kiosk JWT lands (realtime joins with that token).
-  useSettingsRealtime(auth.status === 'authenticated');
-  // Org-level customer-display copy (S73 Lot 2 — POS Settings → Customer Display)
-  // + l'état de repos (ADR-023) : la sélection de vitrine et l'interrupteur de
-  // la file de retrait, éteint par défaut.
-  const { displayFooterMessage, showcaseProductIds, showReadyOrders } =
-    useOrgDisplaySettings();
-  const idleFooter = displayFooterMessage || DEFAULT_DISPLAY_FOOTER;
   const [pairedCode, setPairedCode] = useState<string | null>(null);
   const [pairingChecked, setPairingChecked] = useState(false);
 
@@ -107,46 +87,13 @@ function KioskCustomerDisplayPage() {
     };
   }, [auth.status]);
 
-  // Stable screenId for realtime channel naming. When unpaired, we still
-  // mount the hook with a placeholder — but the query is disabled below.
-  const screenId = useMemo(() => pairedCode ?? 'unpaired', [pairedCode]);
-
-  // Wire realtime updates (mounted unconditionally so the channel-unique
-  // pattern is exercised on every load) and order fetch (disabled until
-  // auth + pairing succeed).
-  useDisplayRealtime(screenId);
-  const ordersEnabled = auth.status === 'authenticated' && pairedCode !== null;
-  // ADR-023 déc. 3 — interrupteur éteint : on ne va pas chercher les deux flux
-  // d'attente. Le code reste en place, mais un écran en vitrine n'interroge pas
-  // une file qu'il ne montrera pas.
-  const queueEnabled = ordersEnabled && showReadyOrders;
-  const { data: orders } = useDisplayOrders(queueEnabled);
-  // Session 59 (16 D1.2) — kitchen-ready feed, independent of payment status.
-  const { data: readyOrders } = useReadyOrders(queueEnabled);
-  // ADR-023 déc. 1 et 2 — la vitrine du repos : ids sélectionnés au back-office,
-  // prix et disponibilité résolus contre le catalogue à l'affichage.
-  const { data: showcaseProducts } = useShowcaseProducts(showcaseProductIds, ordersEnabled);
-
-  // Spec 006x lot 3 — le display rejoint le bus LAN : les commandes fired
-  // hors-ligne alimentent la file « ready » sans cloud. Device code = réglage
-  // terminal s'il existe, sinon le code kiosk (lan_devices kiosk_display ↔
-  // display_screens.code, migration _171).
-  const settingsDeviceCode = usePosSettingsStore((s) => s.deviceCode);
-  const busDeviceCode = settingsDeviceCode !== '' ? settingsDeviceCode : (pairedCode ?? '');
-  useHubPresence({ deviceCode: busDeviceCode, deviceType: 'kiosk_display' });
-  useCloudPing();
-  useKdsOfflineBus();
-  const offlineRows = useKdsOfflineStore((s) => s.rows);
-  const offlineOrderMeta = useKdsOfflineStore((s) => s.orders);
-  const offlineReady = useMemo(
-    () => selectOfflineReadyOrders(offlineRows, offlineOrderMeta),
-    [offlineRows, offlineOrderMeta],
-  );
-  const mergedReadyOrders = useMemo(() => {
-    const merged = [...(readyOrders ?? []), ...offlineReady];
-    merged.sort((a, b) => (a.ready_at ?? '').localeCompare(b.ready_at ?? ''));
-    return merged.slice(0, 5);
-  }, [readyOrders, offlineReady]);
+  const snapshot = useKioskDisplayData(pairedCode, auth.status === 'authenticated');
+  const showReadyOrders = snapshot.data?.show_ready_orders === true;
+  const footer = snapshot.data?.footer ?? '';
+  const idleFooter = footer.length > 0 ? footer : DEFAULT_DISPLAY_FOOTER;
+  const showcaseProducts = snapshot.data?.products ?? [];
+  const orders = snapshot.data?.orders ?? [];
+  const mergedReadyOrders = snapshot.data?.ready_orders ?? [];
 
   // Live cart mirror from the POS side (F-007). Safe to read on every render —
   // the view renders its own welcome empty-state when the message is null.
@@ -218,6 +165,15 @@ function KioskCustomerDisplayPage() {
     );
   }
 
+  // Ne jamais continuer à afficher un cache après refus ou panne du contrôle.
+  if (snapshot.isError) {
+    return <BrandedLayout><PairDevicePrompt onPaired={() => { void auth.retry(); }}
+      errorHint="Display access is unavailable. Check the connection or ask an administrator to pair this screen again." /></BrandedLayout>;
+  }
+  if (!snapshot.data) {
+    return <BrandedLayout><p role="status">Loading display…</p></BrandedLayout>;
+  }
+
   // 4a. Checkout takes the FULL screen (design audit 2026-07-07 B4) — while
   //     a sale is being rung up or just completed, the customer's attention
   //     stays on their own order/total, never on the pickup queue. Split-brand
@@ -227,7 +183,7 @@ function KioskCustomerDisplayPage() {
       <BrandedLayout footer={<span>{idleFooter}</span>}>
         <div className="h-full flex gap-10" data-testid="display-authenticated">
           <div className="flex-1 min-h-0 flex">
-            <CDBrandPanel />
+            <CDBrandPanel slogan={snapshot.data?.slogan ?? ''} />
           </div>
           <div className="flex-1 min-h-0 flex">
             <CDPaymentPanel message={cartMessage} />
@@ -285,7 +241,7 @@ function KioskCustomerDisplayPage() {
               vide (arbitrage du propriétaire, 2026-08-11 : pas de repli sur le
               message d'accueil, pas d'interdiction d'enregistrer vide). */}
           <div className="flex-1 min-h-0 flex">
-            <CDBrandPanel />
+            <CDBrandPanel slogan={snapshot.data?.slogan ?? ''} />
           </div>
           {showcase.length > 0 && (
             <div className="flex-1 min-h-0 flex">
@@ -319,7 +275,7 @@ function KioskCustomerDisplayPage() {
       >
         {/* Brand moment — logo + slogan (left). */}
         <div className="flex-1 min-h-0 flex">
-          <CDBrandPanel />
+          <CDBrandPanel slogan={snapshot.data?.slogan ?? ''} />
         </div>
         {/* Order queue + featured card (right). */}
         <div className="flex-1 min-h-0 flex flex-col gap-8">

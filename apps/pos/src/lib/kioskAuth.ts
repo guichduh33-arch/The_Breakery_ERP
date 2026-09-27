@@ -1,15 +1,6 @@
 // apps/pos/src/lib/kioskAuth.ts
-// Session 13 / Phase 1.B — D18 + K7 (degraded mode).
-//
-// Shared kiosk auth core used by the display/ useKioskAuth hook (kds/tablet
-// variants purged S76 — décision propriétaire 2026-07-13, re-spécifier si besoin).
-// Per K7 (lead decision): if `kiosk-issue-jwt` is down, kiosk surfaces fall
-// back to the staff PIN flow (existing useAuthStore.login). The hook surfaces
-// that state so the UI can prompt for a PIN as a degraded escape hatch.
-//
-// Storage: kiosk_id + device_label persist in localStorage (long-lived ; an
-// admin re-pairs when device is swapped). Kiosk JWT is held in memory + fed
-// into the supabase client via setSupabaseKioskAccessToken.
+// Identité d'appareil persistée ; aucun repli vers les droits d'un employé.
+// Les anciens noms d'écran sans secret exigent un nouvel appairage.
 
 import {
   issueKioskJwt,
@@ -23,11 +14,12 @@ import { safeStorage, logger } from '@breakery/utils';
 import { supabaseUrl } from './supabase.js';
 
 const KIOSK_PAIR_STORAGE_KEY = 'breakery-pos-kiosk-pair';
-// Refresh the kiosk JWT 10 minutes before expiry to absorb clock skew + jitter.
-const REFRESH_SAFETY_MARGIN_SEC = 10 * 60;
+// Renouvellement une minute avant expiration.
+const REFRESH_SAFETY_MARGIN_SEC = 60;
 
 export interface KioskPairing {
   kiosk_id: string;
+  secret: string;
   device_label?: string;
 }
 
@@ -43,7 +35,7 @@ export async function readKioskPairing(): Promise<KioskPairing | null> {
     const raw = await safeStorage.get(KIOSK_PAIR_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as KioskPairing;
-    if (!parsed.kiosk_id) return null;
+    if (!parsed.kiosk_id || typeof parsed.secret !== 'string' || !/^[0-9a-f]{64}$/.test(parsed.secret)) return null;
     return parsed;
   } catch {
     return null;
@@ -52,7 +44,23 @@ export async function readKioskPairing(): Promise<KioskPairing | null> {
 
 /** Persist the pairing locally. Admin-pair UI calls this. */
 export async function writeKioskPairing(pair: KioskPairing): Promise<void> {
-  await safeStorage.set(KIOSK_PAIR_STORAGE_KEY, JSON.stringify(pair));
+  const value = JSON.stringify(pair);
+  await safeStorage.set(KIOSK_PAIR_STORAGE_KEY, value);
+  if (await safeStorage.get(KIOSK_PAIR_STORAGE_KEY) !== value) throw new Error('Device storage unavailable');
+}
+
+/** Le secret est conservé avant l'échange pour permettre un retry réseau. */
+export async function pairKiosk(code: string): Promise<void> {
+  const key = `${KIOSK_PAIR_STORAGE_KEY}-pending-secret`;
+  let secret = await safeStorage.get(key);
+  if (!secret || !/^[0-9a-f]{64}$/.test(secret)) {
+    secret = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('');
+    await safeStorage.set(key, secret);
+    if (await safeStorage.get(key) !== secret) throw new Error('Device storage unavailable');
+  }
+  const result = await issueKioskJwt(supabaseUrl, { action: 'pair' }, { secret, pairingCode: code });
+  await writeKioskPairing({ kiosk_id: result.kiosk.kiosk_id, secret });
+  await safeStorage.remove(key);
 }
 
 /** Wipe the pairing (e.g. admin revoked the kiosk). */
@@ -73,9 +81,8 @@ export interface ObtainKioskJwtFailure {
 }
 
 /**
- * Try to obtain a kiosk JWT. On success, injects it into the supabase client
- * via setSupabaseKioskAccessToken and returns the response. On failure, returns
- * a typed error envelope so the caller can decide whether to fallback to PIN.
+ * Obtient un jeton limité. Le hook l'injecte seulement si la requête appartient
+ * encore au composant monté, pour ignorer les réponses tardives.
  */
 export async function obtainKioskJwt(scope: KioskScope): Promise<ObtainKioskJwtResult | ObtainKioskJwtFailure> {
   const pair = await readKioskPairing();
@@ -84,13 +91,8 @@ export async function obtainKioskJwt(scope: KioskScope): Promise<ObtainKioskJwtR
   }
 
   try {
-    const req: { kiosk_id: string; scope: KioskScope; device_label?: string } = {
-      kiosk_id: pair.kiosk_id,
-      scope,
-    };
-    if (pair.device_label !== undefined) req.device_label = pair.device_label;
-    const res = await issueKioskJwt(supabaseUrl, req);
-    setSupabaseKioskAccessToken(res.access_token);
+    if (scope !== 'display') return { ok: false, error: { error: 'invalid_scope' } };
+    const res = await issueKioskJwt(supabaseUrl, { action: 'renew', device_id: pair.kiosk_id }, { secret: pair.secret });
     logger.info('kiosk.jwt.issued', { scope, kiosk_id: pair.kiosk_id, expires_at: res.expires_at });
     return { ok: true, response: res };
   } catch (err: unknown) {

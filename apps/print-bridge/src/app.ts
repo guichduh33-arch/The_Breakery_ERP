@@ -1,6 +1,6 @@
 // apps/print-bridge/src/app.ts
-// Les 6 routes du contrat (spec §4). CORS ouvert (D7 — LAN de confiance, pas de
-// credentials) ; les transports sont injectés pour la testabilité.
+// Routes du hub : origines autorisées, identité et capacités par appareil.
+// Les transports sont injectés pour la testabilité.
 import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
@@ -13,6 +13,7 @@ import { renderStationTicket } from './render/stationTicket.js';
 import type { sendToPrinter, kickDrawer } from './transport.js';
 import type { HubHandle } from './hub/hubServer.js';
 import { DISABLED_CLOUD_SYNC_STATUS, type CloudSyncHandle } from './hub/cloudSync.js';
+import type { DeviceRegistry, LanPermission } from './security/deviceRegistry.js';
 
 /** Sous-ensemble de HubHandle consommé par /hub/status (testable sans WS). */
 export type HubStatusSource = Pick<HubHandle, 'presence' | 'bufferStats' | 'tokenRequired'>;
@@ -20,6 +21,7 @@ export type HubStatusSource = Pick<HubHandle, 'presence' | 'bufferStats' | 'toke
 export type CloudSyncStatusSource = Pick<CloudSyncHandle, 'status'>;
 
 export interface AppDeps {
+  registry: DeviceRegistry;
   config: BridgeConfig;
   send: typeof sendToPrinter;
   kick: typeof kickDrawer;
@@ -30,23 +32,109 @@ export interface AppDeps {
 }
 
 function isTarget(x: unknown): x is PrinterTarget {
-  return typeof x === 'object' && x !== null
-    && typeof (x as PrinterTarget).ip_address === 'string'
-    && typeof (x as PrinterTarget).port === 'number';
+  return (
+    typeof x === 'object' &&
+    x !== null &&
+    typeof (x as PrinterTarget).ip_address === 'string' &&
+    typeof (x as PrinterTarget).port === 'number'
+  );
+}
+
+// Le texte ESC/POS vient du réseau : un ESC/GS injecté dans un nom ou une
+// note pourrait commander le tiroir sans passer par sa route protégée.
+function safePrintContent(value: unknown, depth = 0): boolean {
+  if (depth > 12) return false;
+  if (typeof value === 'string') return !/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/u.test(value);
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (Array.isArray(value))
+    return value.length <= 500 && value.every((v) => safePrintContent(v, depth + 1));
+  if (value !== null && typeof value === 'object')
+    return Object.values(value).every((v) => safePrintContent(v, depth + 1));
+  return true;
 }
 
 // Anti-SSRF (spec D7) : un `printer` fourni dans le body doit pointer vers une
 // cible LAN privée, comme /scan/printers et /status/probe. Ne s'applique pas au
 // repli env `config.receiptPrinter` (déjà de confiance, config serveur).
 function isValidPrinterTarget(target: PrinterTarget): boolean {
-  return isPrivateIpv4(target.ip_address)
-    && Number.isInteger(target.port) && target.port > 0 && target.port <= 65535;
+  return (
+    isPrivateIpv4(target.ip_address) &&
+    Number.isInteger(target.port) &&
+    target.port > 0 &&
+    target.port <= 65535
+  );
 }
 
-export function createApp({ config, send, kick, probe = realProbe, scan = realScan, hub, cloudSync }: AppDeps): express.Express {
+export function createApp({
+  config,
+  send,
+  kick,
+  probe = realProbe,
+  scan = realScan,
+  hub,
+  cloudSync,
+  registry,
+}: AppDeps): express.Express {
   const app = express();
-  app.use(cors({ origin: true }));
+  app.set('case sensitive routing', true);
+  app.set('strict routing', true);
+  app.use((req, res, next) => {
+    if (req.headers.origin && !config.allowedOrigins.includes(req.headers.origin)) {
+      res.status(403).json({ error: 'origin_forbidden' });
+      return;
+    }
+    next();
+  });
+  app.use(
+    cors({
+      origin: config.allowedOrigins,
+      allowedHeaders: ['content-type', 'x-lan-device-code', 'x-lan-secret'],
+    }),
+  );
   app.use(express.json({ limit: '1mb' }));
+  const protectedRoutes: Record<string, LanPermission> = {
+    '/print/receipt': 'receipts.print',
+    '/print/ticket': 'tickets.print',
+    '/drawer/open': 'drawer.open',
+    '/hub/status': 'diagnostics',
+    '/scan/printers': 'diagnostics',
+    '/status/probe': 'diagnostics',
+  };
+  app.use((req, res, next) => {
+    const permission = protectedRoutes[req.path];
+    if (!permission) {
+      next();
+      return;
+    }
+    const device = registry?.authenticate(
+      req.get('x-lan-device-code') ?? '',
+      req.get('x-lan-secret') ?? '',
+    );
+    if (!device) {
+      res.status(401).json({ error: 'device_unauthorized' });
+      return;
+    }
+    if (!device.permissions.includes(permission)) {
+      res.status(403).json({ error: 'device_forbidden' });
+      return;
+    }
+    if (req.path.startsWith('/print/') || req.path === '/drawer/open') {
+      if (!safePrintContent(req.body)) {
+        res.status(400).json({ error: 'unsafe_print_content' });
+        return;
+      }
+      const body = req.body as { printer?: unknown } | null;
+      const target: unknown =
+        req.path === '/drawer/open'
+          ? config.receiptPrinter
+          : (body?.printer ?? config.receiptPrinter);
+      if (target && (!isTarget(target) || !registry?.permitsPrinter(target))) {
+        res.status(403).json({ error: 'printer_forbidden' });
+        return;
+      }
+    }
+    next();
+  });
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', version: process.env.npm_package_version ?? 'dev' });
@@ -100,7 +188,7 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
       res.status(400).json({ success: false, error: 'invalid_printer_target' });
       return;
     }
-    if (!body.order_number && body.order_number !== '' || !Array.isArray(body.items)) {
+    if ((!body.order_number && body.order_number !== '') || !Array.isArray(body.items)) {
       res.status(400).json({ success: false, error: 'invalid_payload' });
       return;
     }
@@ -129,7 +217,9 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
           return;
         }
         const timeoutRaw = Number(req.query.timeout);
-        const timeout = Number.isInteger(timeoutRaw) ? Math.min(Math.max(timeoutRaw, 100), 2000) : 500;
+        const timeout = Number.isInteger(timeoutRaw)
+          ? Math.min(Math.max(timeoutRaw, 100), 2000)
+          : 500;
         const portRaw = Number(req.query.port);
         const port = Number.isInteger(portRaw) && portRaw > 0 && portRaw <= 65535 ? portRaw : 9100;
         const hosts = hostsForPrefix(prefix);

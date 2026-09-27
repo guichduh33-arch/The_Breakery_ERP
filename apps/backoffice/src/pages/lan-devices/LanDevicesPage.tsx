@@ -1,3 +1,4 @@
+import { LanDeviceAccess } from '@/features/lan-devices/components/LanDeviceAccess.js';
 // apps/backoffice/src/pages/lan-devices/LanDevicesPage.tsx
 // S14 (read-only + KPIs) → 2026-07-06 : + CRUD (form modal). Route gated
 // lan.devices.read (inchangé) ; écritures gated lan.devices.manage.
@@ -32,9 +33,10 @@ export default function LanDevicesPage() {
     let stale = 0;
     let printers = 0;
     for (const d of rows) {
-      const isStale = d.last_heartbeat_at === null
-        ? true
-        : now - new Date(d.last_heartbeat_at).getTime() > 60_000;
+      const isStale =
+        d.last_heartbeat_at === null
+          ? true
+          : now - new Date(d.last_heartbeat_at).getTime() > 60_000;
       if (isStale) stale++;
       else online++;
       if (d.device_type === 'printer') printers++;
@@ -42,8 +44,14 @@ export default function LanDevicesPage() {
     return { total: rows.length, online, stale, printers };
   }, [rows]);
 
-  function openCreate(): void { setEditing(null); setModalOpen(true); }
-  function openEdit(device: LanDeviceRow): void { setEditing(device); setModalOpen(true); }
+  function openCreate(): void {
+    setEditing(null);
+    setModalOpen(true);
+  }
+  function openEdit(device: LanDeviceRow): void {
+    setEditing(device);
+    setModalOpen(true);
+  }
 
   return (
     <div className="space-y-6">
@@ -51,24 +59,48 @@ export default function LanDevicesPage() {
         className="items-start"
         title="LAN Devices"
         subtitle="Devices participating in the on-site LAN mesh. Status is computed from the last heartbeat — devices that haven't pinged in 60s are flagged as stale."
-        actions={canManage ? (
-          <Button variant="ink" onClick={openCreate}>
-            <Plus className="h-4 w-4" aria-hidden /> Add device
-          </Button>
-        ) : undefined}
+        actions={
+          canManage ? (
+            <Button variant="ink" onClick={openCreate}>
+              <Plus className="h-4 w-4" aria-hidden /> Add device
+            </Button>
+          ) : undefined
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile label="Total devices" value={kpis.total}    icon={Wifi}           footer="Registered in the mesh" />
-        <KpiTile label="Online"        value={kpis.online}   icon={CheckCircle2}   footer="Heartbeat within 60s" />
-        <KpiTile label="Stale"         value={kpis.stale}    icon={AlertTriangle}  footer="No recent heartbeat" />
-        <KpiTile label="Printers"      value={kpis.printers} icon={Printer}        footer="ESC/POS printers in mesh" />
+        <KpiTile
+          label="Total devices"
+          value={kpis.total}
+          icon={Wifi}
+          footer="Registered in the mesh"
+        />
+        <KpiTile
+          label="Online"
+          value={kpis.online}
+          icon={CheckCircle2}
+          footer="Heartbeat within 60s"
+        />
+        <KpiTile
+          label="Stale"
+          value={kpis.stale}
+          icon={AlertTriangle}
+          footer="No recent heartbeat"
+        />
+        <KpiTile
+          label="Printers"
+          value={kpis.printers}
+          icon={Printer}
+          footer="ESC/POS printers in mesh"
+        />
       </div>
 
       {/* ADR-015 — activation de l'encaissement hors-ligne (catégorie network,
           clé unique offline_payments_enabled : la fenêtre de durée est supprimée). */}
       <Card padding="md" className="space-y-3">
-        <SectionLabel size="sm" as="h2">Mode hors-ligne</SectionLabel>
+        <SectionLabel size="sm" as="h2">
+          Mode hors-ligne
+        </SectionLabel>
         <OfflineSettingsPanel />
       </Card>
 
@@ -79,14 +111,16 @@ export default function LanDevicesPage() {
       {/* ADR-030 — ces gestes touchent le réseau local, qu'une page HTTPS ne peut
           pas joindre. Ils vivent désormais sur le terminal, servi en local. */}
       <Card padding="md" className="space-y-2">
-        <SectionLabel size="sm" as="h2">Hub, network scan and printer tests</SectionLabel>
+        <SectionLabel size="sm" as="h2">
+          Hub, network scan and printer tests
+        </SectionLabel>
         <p className="text-sm text-text-secondary">
-          These live on the terminal, under POS &raquo; Settings &raquo; Devices.
-          They talk to the print-bridge over the shop network, which a page served
-          over HTTPS cannot reach.
+          These live on the terminal, under POS &raquo; Settings &raquo; Devices. They talk to the
+          print-bridge over the shop network, which a page served over HTTPS cannot reach.
         </p>
       </Card>
 
+      <LanDeviceAccess />
       <LanDeviceFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

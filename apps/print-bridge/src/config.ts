@@ -5,8 +5,10 @@ export interface BridgeConfig {
   port: number;
   /** Cible des reçus sans champ `printer` et du drawer kick (spec D6). null = non configurée. */
   receiptPrinter: PrinterTarget | null;
-  /** Token partagé du bus LAN (spec 006x §6). null = pas de vérification (warning au boot). */
-  hubToken: string | null;
+  tlsCert: string | null;
+  tlsKey: string | null;
+  allowedOrigins: string[];
+  registryFile: string;
   /** Fichier JSONL du ring-buffer du hub (spec 006x §4.2). */
   hubBufferFile: string;
   /** URL de l'EF lan-heartbeat-batch (spec 006x lot 2). null = pas de push cloud. */
@@ -29,9 +31,18 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   return {
     port: Number.isInteger(port) && port > 0 ? port : 3001,
     receiptPrinter: env.RECEIPT_PRINTER_IP
-      ? { ip_address: env.RECEIPT_PRINTER_IP, port: Number.isInteger(rpPort) && rpPort > 0 ? rpPort : 9100 }
+      ? {
+          ip_address: env.RECEIPT_PRINTER_IP,
+          port: Number.isInteger(rpPort) && rpPort > 0 ? rpPort : 9100,
+        }
       : null,
-    hubToken: trimmedOrNull(env.HUB_TOKEN),
+    tlsCert: trimmedOrNull(env.HUB_TLS_CERT),
+    tlsKey: trimmedOrNull(env.HUB_TLS_KEY),
+    allowedOrigins: (env.HUB_ALLOWED_ORIGINS ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    registryFile: trimmedOrNull(env.HUB_REGISTRY_FILE) ?? 'hub-registry.json',
     hubBufferFile: trimmedOrNull(env.HUB_BUFFER_FILE) ?? 'hub-buffer.jsonl',
     hubCloudUrl: trimmedOrNull(env.HUB_CLOUD_URL),
     hubCloudSecret: trimmedOrNull(env.HUB_CLOUD_SECRET),
