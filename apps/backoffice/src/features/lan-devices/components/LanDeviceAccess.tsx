@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Card } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 interface Device {
@@ -170,6 +171,7 @@ function Controls() {
               <label key={cap} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  className={FOCUS_RING}
                   checked={permissions.includes(cap)}
                   onChange={(e) =>
                     setPermissions((p) =>
