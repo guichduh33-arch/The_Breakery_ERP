@@ -1,3 +1,4 @@
+import { useLanCredential } from '../lanCredential';
 // apps/pos/src/features/lan/__tests__/HubPresenceMount.test.tsx
 //
 // Diagnostic 2026-08-25 — effet observateur : la présence bus LAN se monte au
@@ -17,7 +18,11 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown },
+  supabase: {
+    functions: {
+      invoke: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown,
+    },
+  },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -35,7 +40,9 @@ class MockWebSocket {
     this.url = url;
     MockWebSocket.instances.push(this);
   }
-  send(data: string): void { this.sent.push(data); }
+  send(data: string): void {
+    this.sent.push(data);
+  }
   close(): void {
     this.readyState = 3;
     this.onclose?.();
@@ -65,11 +72,15 @@ function mountAt(path: string, navigateTo: string | null = null) {
 }
 
 beforeEach(() => {
+  useLanCredential.setState({
+    credential: { id: 'device', code: 'POS-1', device_type: 'pos', secret: 'a'.repeat(64) },
+  });
   rpcMock.mockClear();
   MockWebSocket.instances = [];
   vi.stubGlobal('WebSocket', MockWebSocket);
   usePosSettingsStore.setState({
-    printerUrl: 'http://192.168.1.20:3001', deviceCode: 'POS-FRONT-01', hubToken: '',
+    printerUrl: 'https://192.168.1.20:3001',
+    deviceCode: 'POS-FRONT-01',
   });
   useHubConnectionStore.setState({ connected: false });
   useAuthStore.setState({
@@ -95,7 +106,10 @@ describe('HubPresenceMount', () => {
     const ws = MockWebSocket.instances[0]!;
     ws.simulateOpen();
     expect(JSON.parse(ws.sent[0]!)).toEqual({
-      type: 'hello', device_code: 'POS-FRONT-01', device_type: 'pos',
+      type: 'hello',
+      device_code: 'POS-1',
+      device_type: 'pos',
+      token: 'a'.repeat(64),
     });
   });
 
@@ -107,16 +121,16 @@ describe('HubPresenceMount', () => {
     expect(MockWebSocket.instances[0]!.readyState).not.toBe(3);
   });
 
-  it('declares kds on /kds and tablet on /tablet/order', () => {
+  it('keeps the paired identity when navigating to KDS or tablet screens', () => {
     mountAt('/kds');
     MockWebSocket.instances[0]!.simulateOpen();
-    expect(JSON.parse(MockWebSocket.instances[0]!.sent[0]!)).toMatchObject({ device_type: 'kds' });
+    expect(JSON.parse(MockWebSocket.instances[0]!.sent[0]!)).toMatchObject({ device_type: 'pos' });
     hubBus._resetForTests();
     MockWebSocket.instances = [];
 
     mountAt('/tablet/order');
     MockWebSocket.instances[0]!.simulateOpen();
-    expect(JSON.parse(MockWebSocket.instances[0]!.sent[0]!)).toMatchObject({ device_type: 'tablet' });
+    expect(JSON.parse(MockWebSocket.instances[0]!.sent[0]!)).toMatchObject({ device_type: 'pos' });
   });
 
   it('stays off the bus on /display (kiosk owns its presence)', () => {
@@ -131,7 +145,7 @@ describe('HubPresenceMount', () => {
   });
 
   it('stays off the bus without a device code', () => {
-    usePosSettingsStore.setState({ deviceCode: '' });
+    useLanCredential.setState({ credential: null });
     mountAt('/pos');
     expect(MockWebSocket.instances).toHaveLength(0);
   });
@@ -140,8 +154,9 @@ describe('HubPresenceMount', () => {
   it('emits the cloud heartbeat fallback when a device code is configured', async () => {
     mountAt('/pos');
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
-        p_device_codes: ['POS-FRONT-01'],
+      expect(rpcMock).toHaveBeenCalledWith('lan-device-access', {
+        body: { action: 'heartbeat', device_id: 'device' },
+        headers: { 'x-lan-secret': 'a'.repeat(64) },
       });
     });
   });

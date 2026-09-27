@@ -7,6 +7,7 @@
 // continue de vivre sans cloud (c'est tout l'objet du hub).
 
 export interface CloudSyncOptions {
+  onRegistry: (value: unknown) => void;
   /** Codes des appareils actuellement authentifiés sur le bus. */
   presentCodes: () => string[];
   /** URL complète de l'EF lan-heartbeat-batch. */
@@ -62,9 +63,11 @@ export function startCloudSync(opts: CloudSyncOptions): CloudSyncHandle {
     console.log(`[print-bridge] cloud-sync: ${line}`);
   }
 
+  let inFlight = false;
   async function tick(): Promise<void> {
+    if (inFlight) return;
+    inFlight = true;
     const codes = [...new Set(opts.presentCodes())];
-    if (codes.length === 0) return;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), PUSH_TIMEOUT_MS);
@@ -81,7 +84,12 @@ export function startCloudSync(opts: CloudSyncOptions): CloudSyncHandle {
         logTransition(`http_${res.status}`, `push failed (HTTP ${res.status})`);
         return;
       }
-      const body = (await res.json()) as { touched?: string[]; unknown?: string[] };
+      const body = (await res.json()) as {
+        touched?: string[];
+        unknown?: string[];
+        registry?: unknown;
+      };
+      opts.onRegistry(body.registry);
       status.last_push_at = new Date().toISOString();
       status.last_result = 'ok';
       status.last_error = null;
@@ -93,14 +101,21 @@ export function startCloudSync(opts: CloudSyncOptions): CloudSyncHandle {
       status.last_error = err instanceof Error ? err.message : 'unknown';
       logTransition('network_error', `push failed (${status.last_error}) — retrying every tick`);
     } finally {
+      inFlight = false;
       clearTimeout(timeout);
     }
   }
 
-  const timer = setInterval(() => { void tick(); }, opts.intervalMs ?? DEFAULT_INTERVAL_MS);
+  const timer = setInterval(() => {
+    void tick();
+  }, opts.intervalMs ?? DEFAULT_INTERVAL_MS);
 
   return {
-    status: () => ({ ...status, last_pushed: [...status.last_pushed], last_unknown: [...status.last_unknown] }),
+    status: () => ({
+      ...status,
+      last_pushed: [...status.last_pushed],
+      last_unknown: [...status.last_unknown],
+    }),
     tick,
     stop: () => clearInterval(timer),
   };

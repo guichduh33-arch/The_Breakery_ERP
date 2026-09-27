@@ -1,21 +1,16 @@
 // apps/print-bridge/src/hub/hubServer.ts
-// Serveur WebSocket du hub LAN (spec 006x §4, lot 1) : hello-auth, presence,
-// relai d'enveloppes + journal ring-buffer pour le rattrapage. Lot 1 = socle :
-// aucun flux métier ne passe encore par le bus.
-//
-// Sécurité (spec §6) : connexions restreintes aux IP privées/loopback
-// (ipGuard), token partagé optionnel vérifié dans le hello (déviation actée :
-// les navigateurs ne posent pas de header à l'upgrade WS — le token voyage
-// dans le premier message, jamais dans l'URL). Aucun secret métier sur le bus.
+// Hub WSS : identité individuelle obligatoire dans le premier message.
+// Le registre impose les capacités de publication, réception et rattrapage.
+// Les origines web et les IP privées/loopback sont contrôlées à l'upgrade.
 
 import type http from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, WebSocket, type RawData } from 'ws';
 import { isPrivateIpv4 } from '../ipGuard.js';
-import {
-  parseEnvelope, parseHello, parseCatchup, type HubEnvelope,
-} from './envelope.js';
+import { parseEnvelope, parseHello, parseCatchup, type HubEnvelope } from './envelope.js';
 import type { HubRingBuffer, HubBufferStats } from './ringBuffer.js';
+import type { DeviceRegistry } from '../security/deviceRegistry.js';
+import { mayPublish, mayReceive } from '../security/busPolicy.js';
 
 const HELLO_TIMEOUT_MS = 5_000;
 const PING_INTERVAL_MS = 15_000;
@@ -29,7 +24,8 @@ export interface HubDevicePresence {
 }
 
 export interface HubOptions {
-  token: string | null;
+  registry: DeviceRegistry;
+  allowedOrigins: string[];
   buffer: HubRingBuffer;
   /** Injectable pour les tests. */
   helloTimeoutMs?: number;
@@ -45,6 +41,7 @@ export interface HubHandle {
 }
 
 interface ClientState {
+  secretHash: string;
   authed: boolean;
   device_code: string;
   device_type: string;
@@ -71,7 +68,7 @@ function isAllowedIp(ip: string): boolean {
 }
 
 export function createHub(opts: HubOptions): HubHandle {
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
   const clients = new Map<WebSocket, ClientState>();
   const helloTimeout = opts.helloTimeoutMs ?? HELLO_TIMEOUT_MS;
   const pingInterval = opts.pingIntervalMs ?? PING_INTERVAL_MS;
@@ -83,7 +80,15 @@ export function createHub(opts: HubOptions): HubHandle {
   function relay(from: WebSocket, env: HubEnvelope): void {
     const line = JSON.stringify(env);
     for (const [ws, state] of clients) {
-      if (ws !== from && state.authed && ws.readyState === WebSocket.OPEN) ws.send(line);
+      const device = opts.registry.session(state.device_code, state.secretHash);
+      if (
+        ws !== from &&
+        state.authed &&
+        device &&
+        mayReceive(device, env.topic) &&
+        ws.readyState === WebSocket.OPEN
+      )
+        ws.send(line);
     }
   }
 
@@ -91,8 +96,14 @@ export function createHub(opts: HubOptions): HubHandle {
     const ip = normalizeIp(req.socket.remoteAddress);
     const now = new Date().toISOString();
     const state: ClientState = {
-      authed: false, device_code: '', device_type: '', ip,
-      connected_at: now, last_seen_at: now, isAlive: true,
+      authed: false,
+      secretHash: '',
+      device_code: '',
+      device_type: '',
+      ip,
+      connected_at: now,
+      last_seen_at: now,
+      isAlive: true,
     };
     clients.set(ws, state);
 
@@ -100,7 +111,9 @@ export function createHub(opts: HubOptions): HubHandle {
       if (!state.authed) ws.close(4001, 'hello_timeout');
     }, helloTimeout);
 
-    ws.on('pong', () => { state.isAlive = true; });
+    ws.on('pong', () => {
+      state.isAlive = true;
+    });
 
     ws.on('message', (data) => {
       state.last_seen_at = new Date().toISOString();
@@ -118,27 +131,43 @@ export function createHub(opts: HubOptions): HubHandle {
           ws.close(4002, 'hello_expected');
           return;
         }
-        if (opts.token !== null && hello.token !== opts.token) {
+        const device = opts.registry.authenticate(hello.device_code, hello.token ?? '');
+        if (!device) {
           ws.close(4003, 'bad_token');
           return;
         }
         state.authed = true;
         state.device_code = hello.device_code;
-        state.device_type = hello.device_type;
+        state.device_type = device.device_type;
+        state.secretHash = device.secret_hash;
         clearTimeout(helloTimer);
         sendJson(ws, { type: 'welcome', buffer: opts.buffer.stats() });
         return;
       }
 
+      const device = opts.registry.session(state.device_code, state.secretHash);
+      if (!device) {
+        ws.close(4003, 'device_revoked');
+        return;
+      }
       const catchup = parseCatchup(parsed);
       if (catchup !== null) {
-        sendJson(ws, { type: 'catchup_result', messages: opts.buffer.since(catchup.since_ts) });
+        sendJson(ws, {
+          type: 'catchup_result',
+          messages: opts.buffer
+            .since(catchup.since_ts)
+            .filter((env) => mayReceive(device, env.topic)),
+        });
         return;
       }
 
       const env = parseEnvelope(parsed);
       if (env === null) {
         sendJson(ws, { type: 'error', code: 'invalid_envelope' });
+        return;
+      }
+      if (!mayPublish(device, env)) {
+        sendJson(ws, { type: 'error', code: 'forbidden' });
         return;
       }
       // presence.heartbeat = éphémère : touche la présence (déjà fait via
@@ -152,35 +181,62 @@ export function createHub(opts: HubOptions): HubHandle {
       clearTimeout(helloTimer);
       clients.delete(ws);
     });
-    ws.on('error', () => { /* close suit toujours */ });
+    ws.on('error', () => {
+      /* close suit toujours */
+    });
   });
 
   const pingTimer = setInterval(() => {
     for (const [ws, state] of clients) {
-      if (!state.isAlive) { ws.terminate(); clients.delete(ws); continue; }
+      if (!state.isAlive) {
+        ws.terminate();
+        clients.delete(ws);
+        continue;
+      }
       state.isAlive = false;
       ws.ping();
     }
   }, pingInterval);
+  const revokeTimer = setInterval(() => {
+    for (const [ws, state] of clients) {
+      if (state.authed && !opts.registry.session(state.device_code, state.secretHash))
+        ws.close(4003, 'device_revoked');
+    }
+  }, 250);
 
   return {
     handleUpgrade(req, socket, head) {
       const url = new URL(req.url ?? '/', 'http://hub.local');
-      if (url.pathname !== '/ws') { socket.destroy(); return; }
-      if (!isAllowedIp(normalizeIp(req.socket.remoteAddress))) { socket.destroy(); return; }
+      if (url.pathname !== '/ws') {
+        socket.destroy();
+        return;
+      }
+      if (req.headers.origin && !opts.allowedOrigins.includes(req.headers.origin)) {
+        socket.destroy();
+        return;
+      }
+      if (!isAllowedIp(normalizeIp(req.socket.remoteAddress))) {
+        socket.destroy();
+        return;
+      }
       wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
     },
     presence() {
       return [...clients.values()]
         .filter((s) => s.authed)
         .map(({ device_code, device_type, ip, connected_at, last_seen_at }) => ({
-          device_code, device_type, ip, connected_at, last_seen_at,
+          device_code,
+          device_type,
+          ip,
+          connected_at,
+          last_seen_at,
         }));
     },
     bufferStats: () => opts.buffer.stats(),
-    tokenRequired: opts.token !== null,
+    tokenRequired: true,
     close() {
       clearInterval(pingTimer);
+      clearInterval(revokeTimer);
       for (const ws of clients.keys()) ws.terminate();
       wss.close();
     },

@@ -1,6 +1,12 @@
 // apps/pos/src/services/print/printService.ts
-import type { PrinterTarget, ReceiptPayload, StationTicketPayload, PrintKind } from '@breakery/domain';
+import type {
+  PrinterTarget,
+  ReceiptPayload,
+  StationTicketPayload,
+  PrintKind,
+} from '@breakery/domain';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { lanHeaders } from '@/features/lan/lanCredential';
 
 export type {
   PrinterTarget,
@@ -15,7 +21,10 @@ export type {
  * double échec silencieux (vu en boutique, 2026-07-19). On normalise.
  */
 function withHttpScheme(url: string): string {
-  return /^https?:\/\//i.test(url) ? url : `http://${url}`;
+  const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+  if (parsed.protocol !== 'https:' || parsed.username || parsed.password)
+    throw new Error('The print server must use HTTPS.');
+  return parsed.origin;
 }
 
 /**
@@ -29,7 +38,7 @@ export function getPrintServerUrl(): string {
   const override = usePosSettingsStore.getState().printerUrl;
   if (override) return withHttpScheme(override);
   const env = import.meta.env.VITE_PRINT_SERVER_URL as string | undefined;
-  return env !== undefined && env !== '' ? withHttpScheme(env) : 'http://localhost:3001';
+  return env !== undefined && env !== '' ? withHttpScheme(env) : 'https://localhost:3001';
 }
 
 // ---------------------------------------------------------------------------
@@ -92,12 +101,10 @@ export async function printReceipt(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const body = printer
-      ? JSON.stringify({ ...payload, printer })
-      : JSON.stringify(payload);
+    const body = printer ? JSON.stringify({ ...payload, printer }) : JSON.stringify(payload);
     const res = await fetch(`${getPrintServerUrl()}/print/receipt`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...lanHeaders() },
       body,
       signal: controller.signal,
     });
@@ -119,6 +126,7 @@ export async function openCashDrawer(): Promise<{ success: boolean; error?: stri
   try {
     const res = await fetch(`${getPrintServerUrl()}/drawer/open`, {
       method: 'POST',
+      headers: lanHeaders(),
       signal: controller.signal,
     });
     if (!res.ok) {
@@ -152,7 +160,7 @@ export async function printStationTicket(
   try {
     const res = await fetch(`${getPrintServerUrl()}/print/ticket`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...lanHeaders() },
       body: JSON.stringify({ printer, ...payload }),
       signal: controller.signal,
     });

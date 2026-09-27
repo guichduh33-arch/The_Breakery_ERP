@@ -21,7 +21,11 @@ import { SettingToggle } from './SettingToggle';
 import { ScopeBadge } from './ScopeBadge';
 
 // Copies du KOT papier par station prep (org-wide, [0,5] — set_setting_v13).
-const KOT_STATIONS: readonly { station: PrepStation; key: `kot_copies_${PrepStation}`; label: string }[] = [
+const KOT_STATIONS: readonly {
+  station: PrepStation;
+  key: `kot_copies_${PrepStation}`;
+  label: string;
+}[] = [
   { station: 'kitchen', key: 'kot_copies_kitchen', label: 'Kitchen' },
   { station: 'barista', key: 'kot_copies_barista', label: 'Barista' },
   { station: 'display', key: 'kot_copies_display', label: 'Display (vitrine)' },
@@ -57,7 +61,9 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
       <div>
         <div className="flex items-center gap-2">
           <ScopeBadge scope="org" />
-          <span className="text-xs text-text-muted">Shared setting — applies to every terminal.</span>
+          <span className="text-xs text-text-muted">
+            Shared setting — applies to every terminal.
+          </span>
         </div>
         <div className="mt-4">
           <SettingToggle
@@ -79,8 +85,8 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
           <div>
             <p className="text-sm font-medium text-text-primary">Kitchen ticket copies (KOT)</p>
             <p className="text-xs text-text-muted">
-              Paper copies per station on each kitchen send. 0 = no paper for
-              that station — the KDS screen still receives it.
+              Paper copies per station on each kitchen send. 0 = no paper for that station — the KDS
+              screen still receives it.
             </p>
           </div>
           {KOT_STATIONS.map(({ station, key, label }) => (
@@ -113,13 +119,14 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
         <Input
           id="print-server-url"
           aria-label="Print server URL"
-          placeholder="http://localhost:3001"
+          placeholder="https://localhost:3001"
           value={printerUrl}
           onChange={(e) => setPrinterUrl(e.target.value)}
           disabled={readOnly}
         />
         <p className="text-xs text-text-muted">
-          Leave blank to use the build default (VITE_PRINT_SERVER_URL → localhost:3001).
+          Use the HTTPS address of your authorized print server. Leave blank to use the configured
+          default.
         </p>
       </div>
     </div>

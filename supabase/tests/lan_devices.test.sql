@@ -40,15 +40,14 @@ SELECT ok(
 SELECT col_is_unique('lan_devices', 'code', 'T_LD_03 code is UNIQUE');
 
 -- ---------------------------------------------------------------------------
--- T_LD_04 : update_lan_heartbeat_v2 exists with correct signature (spec 006x
--- lot 2 — batch, v1 droppée par la migration _196)
+-- T_LD_04 : présence réservée au serveur, signature batch.
 -- ---------------------------------------------------------------------------
-SELECT has_function('public', 'update_lan_heartbeat_v2',
+SELECT has_function('public', 'update_lan_heartbeat_v3',
                     ARRAY['text[]'],
-                    'T_LD_04 update_lan_heartbeat_v2(text[]) exists');
+                    'T_LD_04 update_lan_heartbeat_v3(text[]) exists');
 
 -- ---------------------------------------------------------------------------
--- T_LD_05 : heartbeat batch touches last_heartbeat_at ; codes inconnus ignorés
+-- T_LD_05 : les appareils non appairés et codes inconnus sont ignorés.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -61,18 +60,18 @@ BEGIN
   RETURNING last_heartbeat_at INTO v_before;
 
   SELECT array_agg(code) INTO v_touched
-    FROM update_lan_heartbeat_v2(ARRAY['TEST-LAN-01', 'TEST-LAN-UNKNOWN']);
-  IF v_touched IS DISTINCT FROM ARRAY['TEST-LAN-01'] THEN
-    RAISE EXCEPTION 'expected only TEST-LAN-01 touched, got %', v_touched;
+    FROM update_lan_heartbeat_v3(ARRAY['TEST-LAN-01', 'TEST-LAN-UNKNOWN']);
+  IF v_touched IS NOT NULL THEN
+    RAISE EXCEPTION 'expected no unpaired device touched, got %', v_touched;
   END IF;
 
   SELECT last_heartbeat_at INTO v_after FROM lan_devices WHERE code = 'TEST-LAN-01';
-  IF v_after IS NULL OR v_after <= v_before THEN
-    RAISE EXCEPTION 'expected heartbeat to bump last_heartbeat_at from % to a recent time, got %', v_before, v_after;
+  IF v_after IS DISTINCT FROM v_before THEN
+    RAISE EXCEPTION 'unpaired heartbeat changed from % to %', v_before, v_after;
   END IF;
 END $$;
 
-SELECT ok(true, 'T_LD_05 update_lan_heartbeat_v2 bumps last_heartbeat_at, unknown codes ignored');
+SELECT ok(true, 'T_LD_05 unpaired devices and unknown codes ignored');
 
 -- ---------------------------------------------------------------------------
 -- T_LD_06 : permissions seeded

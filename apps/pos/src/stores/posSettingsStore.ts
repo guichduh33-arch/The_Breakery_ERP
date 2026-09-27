@@ -21,14 +21,11 @@ import type { OrderType } from '@breakery/domain';
 
 export interface PosSettingsState {
   // ── Printing / devices ──────────────────────────────────────────────
-  printerUrl: string;        // '' = fall back to VITE_PRINT_SERVER_URL then localhost:3001
+  printerUrl: string; // '' = fall back to VITE_PRINT_SERVER_URL then localhost:3001
   // Session 59 (21 D1.1) — this terminal's `lan_devices.code` (e.g.
   // "POS-FRONT-01"), pre-registered by an operator. '' = unregistered:
   // useLanHeartbeat no-ops rather than emit against an unknown code.
   deviceCode: string;
-  // Spec 006x lot 1 — shared secret of the LAN hub bus (bridge HUB_TOKEN).
-  // '' = hub without token check. Sent in the WS hello, never in the URL.
-  hubToken: string;
   // Numérotation par origine (2026-08-16) — code du poste dans le numéro de
   // commande (P = caisse, T1/T2 = tablettes, BO = back office). Envoyé aux
   // portes de création (`p_source_code` / `source_code`) ; le serveur valide
@@ -39,7 +36,6 @@ export interface PosSettingsState {
   // ── Setters ─────────────────────────────────────────────────────────
   setPrinterUrl: (url: string) => void;
   setDeviceCode: (code: string) => void;
-  setHubToken: (token: string) => void;
   setOrderSourceCode: (code: string) => void;
   setDefaultOrderType: (t: OrderType) => void;
   /** Restore every field to its factory default (Advanced → Reset). */
@@ -49,7 +45,6 @@ export interface PosSettingsState {
 const DEFAULTS = {
   printerUrl: '',
   deviceCode: '',
-  hubToken: '',
   orderSourceCode: 'P',
   defaultOrderType: 'take_out' as OrderType,
 } as const;
@@ -83,7 +78,6 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       ...DEFAULTS,
       setPrinterUrl: (url) => set({ printerUrl: url.trim() }),
       setDeviceCode: (code) => set({ deviceCode: code.trim() }),
-      setHubToken: (token) => set({ hubToken: token.trim() }),
       setOrderSourceCode: (code) => set({ orderSourceCode: code.trim().toUpperCase() }),
       setDefaultOrderType: (t) => set({ defaultOrderType: t }),
       resetToDefaults: () => set({ ...DEFAULTS }),
@@ -94,7 +88,6 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       partialize: (s) => ({
         printerUrl: s.printerUrl,
         deviceCode: s.deviceCode,
-        hubToken: s.hubToken,
         orderSourceCode: s.orderSourceCode,
         defaultOrderType: s.defaultOrderType,
       }),

@@ -18,9 +18,9 @@ import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySe
 /** Built-in slogan when no org-level override is configured. */
 export const DEFAULT_DISPLAY_SLOGAN = 'French Bakery & Pastry';
 
-export function CDBrandPanel(): JSX.Element {
-  const { displaySlogan } = useOrgDisplaySettings();
-  const slogan = displaySlogan || DEFAULT_DISPLAY_SLOGAN;
+export function CDBrandPanel({ slogan: suppliedSlogan }: { slogan?: string } = {}): JSX.Element {
+  const { displaySlogan } = useOrgDisplaySettings(suppliedSlogan === undefined);
+  const slogan = (suppliedSlogan ?? displaySlogan) || DEFAULT_DISPLAY_SLOGAN;
 
   return (
     <section

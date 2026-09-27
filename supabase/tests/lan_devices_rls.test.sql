@@ -105,14 +105,14 @@ END $$;
 
 RESET ROLE;
 
--- T6 : update_lan_heartbeat_v2 — un code soft-deleted est IGNORÉ (le fixture
+-- T6 : update_lan_heartbeat_v3 — un code soft-deleted est IGNORÉ (le fixture
 -- vient d'être soft-deleted en T5 : le batch ne doit plus le toucher — spec
 -- 006x lot 2, plus de P0002 : un code mort ne fait pas échouer le batch).
 DO $$ BEGIN
   INSERT INTO _r
   SELECT 't6_heartbeat_deleted_ignored',
          NOT EXISTS (
-           SELECT 1 FROM update_lan_heartbeat_v2(
+           SELECT 1 FROM update_lan_heartbeat_v3(
              ARRAY[current_setting('breakery.lanrls_code')])
          );
 EXCEPTION WHEN OTHERS THEN

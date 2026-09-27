@@ -14,18 +14,18 @@ beforeEach(() => {
 describe('getPrintServerUrl — scheme normalization', () => {
   it('prepends http:// to a scheme-less override', () => {
     usePosSettingsStore.setState({ printerUrl: '192.168.40.66:3001' });
-    expect(getPrintServerUrl()).toBe('http://192.168.40.66:3001');
+    expect(getPrintServerUrl()).toBe('https://192.168.40.66:3001');
   });
 
   it('keeps an explicit http/https scheme untouched', () => {
     usePosSettingsStore.setState({ printerUrl: 'http://192.168.40.66:3001' });
-    expect(getPrintServerUrl()).toBe('http://192.168.40.66:3001');
+    expect(() => getPrintServerUrl()).toThrow('HTTPS');
     usePosSettingsStore.setState({ printerUrl: 'HTTPS://hub.local:3001' });
-    expect(getPrintServerUrl()).toBe('HTTPS://hub.local:3001');
+    expect(getPrintServerUrl()).toBe('https://hub.local:3001');
   });
 
   it('feeds hubWsUrl a valid ws URL even from a scheme-less override', () => {
     usePosSettingsStore.setState({ printerUrl: '192.168.40.66:3001' });
-    expect(hubWsUrl(getPrintServerUrl())).toBe('ws://192.168.40.66:3001/ws');
+    expect(hubWsUrl(getPrintServerUrl())).toBe('wss://192.168.40.66:3001/ws');
   });
 });

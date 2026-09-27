@@ -28,7 +28,7 @@ import type { ReadyOrder } from '../hooks/useReadyOrders';
 import { READY_ORDERS_LIMIT } from '../hooks/useReadyOrders';
 
 interface OrderQueueTickerProps {
-  orders: DisplayOrder[];
+  orders: Omit<DisplayOrder, 'total' | 'created_at'>[];
   /** Orders with at least one order_item in kitchen_status='ready'. */
   readyOrders?: ReadyOrder[];
   emptyText?: string;
