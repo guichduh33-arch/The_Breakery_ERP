@@ -81,6 +81,14 @@ describe('classifyCheckoutError', () => {
       expect(classifyCheckoutError(err).userMessage).toMatch(/promotion/i);
     });
 
+    it.each([
+      ['fiscal_period_undefined', 'No fiscal period is configured for this date. Contact your accountant.'],
+      ['fiscal_period_closed', 'The current fiscal period is closed. Contact your accountant.'],
+    ])('classe %s sans évoquer un verrouillage PIN', (code, userMessage) => {
+      const err = Object.assign(new Error(code), { details: { error: code }, status: 409 });
+      expect(classifyCheckoutError(err)).toEqual({ kind: 'fatal', code, userMessage });
+    });
+
     it('maps account_locked to the lockout copy (S38 SEC-06)', () => {
       const err = Object.assign(new Error('account_locked'), {
         details: { error: 'account_locked' },

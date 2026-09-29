@@ -43,14 +43,14 @@ describe('callers — overrides indisponibles', () => {
     mocks.userRpc.mockResolvedValue({ data: { order_id: 'existing' }, error: null });
   });
   it.each([
-    ['auth-verify-pin', { user_id: 'profile', pin: '285741', device_type: 'pos' }],
+    ['auth-verify-pin', { user_id: 'profile', device_type: 'pos' }],
     ['verify-manager-pin', { mint_scope: 'discount' }],
     ['process-payment', { session_id: 'session', order_type: 'take_out', items: [{ product_id: 'product', quantity: 1, unit_price: 100 }], payment: { method: 'card', amount: 99 }, discount_amount: 1 }],
   ])('%s refuse avant session, JWT, nonce ou audit de succès', async (slug, body) => {
     await import(`../../functions/${slug}/index.ts`);
     const handler = mocks.serve.mock.calls[0]?.[0] as (req: Request) => Promise<Response>;
     const response = await handler(new Request('https://example.test', {
-      method: 'POST', headers: { authorization: 'Bearer test', 'x-manager-pin': '285741' },
+      method: 'POST', headers: { authorization: 'Bearer test', 'x-manager-pin': '285741', 'x-login-pin': '285741' },
       body: JSON.stringify(body),
     }));
     expect(response.status).toBe(503);
