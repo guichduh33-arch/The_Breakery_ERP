@@ -1,7 +1,7 @@
 // Appels typés des Edge Functions auth-*.
 
 /**
- * Body POSTed to the `auth-verify-pin` Edge Function.
+ * Paramètres de connexion ; le PIN est transporté uniquement par x-login-pin.
  *
  * @property user_id     - UUID of the user_profile row.
  * @property pin         - 6-digit PIN entered on the numpad.
@@ -91,10 +91,11 @@ async function fetchWithTimeout(input: RequestInfo, init?: RequestInit): Promise
  *         inspect `err.details.error` to discriminate the failure mode.
  */
 export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Promise<LoginResponse> {
+  const { user_id, pin, device_type } = body;
   const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-verify-pin`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json', 'x-login-pin': pin },
+    body: JSON.stringify({ user_id, device_type }),
   });
   if (!res.ok) {
     const errBody = (await res.json().catch(() => ({}))) as LoginError;

@@ -248,8 +248,8 @@ export async function loginAsViaPinEF(employeeCode: string, pin: string): Promis
   for (let attempt = 1; attempt <= PIN_EF_MAX_ATTEMPTS; attempt++) {
     const res = await fetch(PIN_EF_URL(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: ANON_KEY },
-      body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
+      headers: { 'Content-Type': 'application/json', apikey: ANON_KEY, 'x-login-pin': pin },
+      body: JSON.stringify({ user_id: profile.id, device_type: 'pos' }),
     });
     const body = (await res.json()) as {
       auth?: { access_token?: string };
