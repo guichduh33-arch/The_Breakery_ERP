@@ -4,7 +4,63 @@ Rédigée le 29 septembre 2026 à la demande explicite de Mamat.
 Note versionnée à la demande de Mamat ; aucune valeur secrète. Ce fichier n’est pas une mémoire
 automatiquement chargée par Codex : demander sa lecture dans un nouveau chat.
 Cette demande autorise la rédaction et la conservation du parcours, pas son exécution
-en production. Les validations mentionnées ci-dessous restent à obtenir.
+en production. Seules les validations explicitement consignées ci-dessous sont acquises.
+
+## Pourquoi les projets Supabase sont séparés
+
+Inventaire relu dans Supabase le 29 septembre 2026 : les trois projets suivants
+existent, en région `ap-southeast-1`, avec le statut `ACTIVE_HEALTHY`.
+Ce statut décrit la disponibilité du projet, pas la conformité de son schéma
+ni sa préparation à l'exploitation en boutique.
+
+| Projet et référence | Création observée | Rôle dans la préparation V3 |
+|---|---|---|
+| `the-breakery-v3-dev` — `ikcyvlovptebroadgtvd` | 13 mai 2026 | Développement et tests automatisés sur les données de test ; cible du pgTAP autorisé dans cette reprise. |
+| `the-breakery-v3-rehearsal` — `getctmbpjnrrjzncaqze` | 26 septembre 2026 | Répétition isolée de l'installation et des parcours V3 : authentification, vente simulée, clôture et hub. |
+| `the-breakery-v3-prod` — `yjhhhmjgsmyzyymvixot` | 26 septembre 2026 | Cible candidate destinée aux données réelles de la boutique après validation et initialisation approuvée. |
+
+Le raisonnement de préparation est le suivant : dev contient les évolutions et
+les données de test ; rehearsal sert à éprouver la procédure de livraison et
+les parcours sur une cible distincte ; prod permet de préparer un démarrage
+avec les seuls référentiels, comptes, soldes et stocks d'ouverture approuvés.
+Une réussite sur dev ne prouve pas l'installation sur une autre cible ; une
+répétition technique ne prouve pas le fonctionnement sur le matériel boutique.
+Les historiques de ventes de test ne sont pas destinés à la production.
+
+Ces projets séparent des environnements. Ils ne répartissent pas les fonctions
+BO, POS et KDS entre trois bases indispensables au fonctionnement de la boutique.
+La création de prod ne prouve ni son initialisation ni une bascule effective.
+L'inventaire établit les dates de création, pas l'auteur ni le détail de
+l'autorisation donnée à cette date.
+
+La durée de conservation de rehearsal reste à décider avec Mamat. Son utilité
+actuelle est la répétition encore incomplète ; aucun maintien permanent,
+arrêt ou suppression n'est décidé par cette note. Avant une éventuelle fin
+d'usage, identifier les essais et preuves encore nécessaires, notamment la
+restauration sur une cible isolée autorisée. Aucune restauration réussie
+n'est acquise ici. Dev et prod ont des rôles distincts après la bascule :
+préparer les évolutions d'une part, exploiter les données réelles d'autre part.
+
+## Validation et preuves de la reprise du 29 septembre 2026
+
+- Mamat a validé le candidat `0567b0e37feeaf91ff8da7369f191e08315b3a59`
+  et autorisé le lancement manuel pgTAP sur dev, sans suite connectée concurrente.
+  Cette validation ne vaut pas autorisation de déploiement production.
+- La PR [#546](https://github.com/guichduh33-arch/The_Breakery_ERP/pull/546)
+  est fusionnée depuis le 29 septembre à 05:52:35 UTC ; son commit de fusion
+  est le candidat ci-dessus. Master correspondait à ce SHA au lancement.
+- La [CI push du candidat](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/36528249581)
+  a réussi, avec `governance-guards` et `lint-typecheck-test-build` réussis.
+- Le [pgTAP manuel du candidat](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/36531263503)
+  a été lancé le 29 septembre à 06:28:44 UTC sur le SHA exact validé.
+  Au contrôle effectué pour cette mise à jour : `classify` réussi, `pgtap`
+  en cours, résultat `db-gate` non acquis. Relire le run avant de conclure.
+- Aucun workflow GitHub actif ou en attente n'a été observé avant le lancement.
+  Ce contrôle ne recense pas les éventuelles suites lancées hors GitHub Actions.
+- L'étape 1 reste ouverte : le lancement des tests ne valide pas leur résultat,
+  les empreintes des bundles ni leur concordance avec les corps SQL et les EF.
+  Le checkout documentaire est distinct du candidat de livraison : le SHA
+  validé ne désigne pas automatiquement les fichiers du répertoire de travail.
 
 ## Point de départ à préserver
 
@@ -17,7 +73,7 @@ en production. Les validations mentionnées ci-dessous restent à obtenir.
 - PR #547 fusionnée : correction du PIN en header et des erreurs de période fiscale.
   Commit testé : `1ca809c2e663335f3937d318c3ac41f2860875e1`.
   Commit de fusion : `ff97e8e7ce2efce9ef139bee2742c79355b4563c`.
-- Dernier état connu de #546 : ouverte, fusionnable, CI et pgTAP verts ; non fusionnée.
+- Preuves historiques de #546 avant fusion, distinctes des preuves du candidat :
   Tête : `c3f296404a0e6064d7087796219ccdb1ed3a2545`.
   CI : `36525950895` ; pgTAP : `36525950823`, 270 fichiers réussis.
   L’erreur venait de l’absence du secret SQL dans le contexte Dependabot.
@@ -40,9 +96,10 @@ en production. Les validations mentionnées ci-dessous restent à obtenir.
 
 ## 1. Arrêter le périmètre du candidat
 
-- Relire l’état GitHub de #546 et de master ; décider avec Mamat si #546 entre
-  dans cette release. Ne pas la fusionner au titre de cette note.
-- Fixer ensuite le SHA complet final de master et travailler depuis un checkout propre.
+- Le candidat incluant #546 est validé dans la section de reprise ci-dessus.
+  Recontrôler master avant toute publication ; un nouveau SHA exige de renouveler
+  les preuves nécessaires et de faire valider le candidat correspondant.
+- Travailler depuis un checkout propre du SHA validé pour produire les artefacts.
 - Rattacher les preuves et manifestes à ce SHA ; conserver les preuves historiques
   et distinguer le commit testé du commit de fusion.
 - Comparer sources, lockfile, bundles, corps SQL live, droits et configurations EF.
@@ -190,8 +247,9 @@ Sortie attendue : décision et publication tracées, fonctionnement réel confir
 - Preuves locales : .release-manifests/v3-bootstrap/manifest.json et local-rehearsal/.
 - Les résultats antérieurs de cette note reprennent la session ; les états distants
   doivent être relus avant exécution, ils ne sont pas rafraîchis par la rédaction.
-- Première action de reprise : vérifier #546 et master, puis faire arrêter le périmètre
-  exact du candidat avant de produire les preuves finales sur master.
+- Première action de reprise : relire le résultat du pgTAP manuel du candidat
+  validé, puis terminer les preuves et comparaisons de l'étape 1. Ne pas relancer
+  une suite déjà active ni assimiler les preuves PR aux preuves du SHA de master.
 
 Phrase de reprise : « Lis .release-manifests/v3-bootstrap/memoire-mise-en-production.md,
 vérifie l’état courant et reprends à la première étape non validée. »
