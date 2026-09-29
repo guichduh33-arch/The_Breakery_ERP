@@ -36,6 +36,7 @@ async function burstUntil429(
   ip: string,
   count: number,
   body: unknown,
+  headers: Record<string, string> = {},
 ): Promise<Response | undefined> {
   for (let i = 0; i < count; i++) {
     const res = await fetch(`${FN_BASE}/${fnSlug}`, {
@@ -47,6 +48,7 @@ async function burstUntil429(
         // doesn't authenticate the caller (the rate-limit gate fires first).
         apikey: ANON_KEY,
         authorization: `Bearer ${ANON_KEY}`,
+        ...headers,
       },
       body: JSON.stringify(body),
     });
@@ -75,7 +77,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S22 / 1.B.2 — Retry-A
       'auth-verify-pin',
       '203.0.113.211',
       6,
-      { user_id: '00000000-0000-0000-0000-000000000999', pin: '999999', device_type: 'pos' },
+      { user_id: '00000000-0000-0000-0000-000000000999', device_type: 'pos' },
+      { 'x-login-pin': '999999' },
     );
     assertRetryAfter(res, 'auth-verify-pin');
   });

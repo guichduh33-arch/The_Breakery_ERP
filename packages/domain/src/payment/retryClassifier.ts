@@ -148,6 +148,8 @@ function friendlyFatalMessage(code: string, message?: string): string {
       return 'Your shift is closed. Open a new shift before charging.';
     case 'fiscal_period_closed':
       return 'The current fiscal period is closed. Contact your accountant.';
+    case 'fiscal_period_undefined':
+      return 'No fiscal period is configured for this date. Contact your accountant.';
     case 'insufficient_stock':
       return 'One or more items are out of stock. Update the cart and try again.';
     case 'invalid_promotion':

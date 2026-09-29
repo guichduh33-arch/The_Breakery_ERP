@@ -159,10 +159,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       const res = await fetch(PIN_FN_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-login-pin': MANAGER_PIN_WRONG },
         body: JSON.stringify({
           user_id:     profile.id,
-          pin:         MANAGER_PIN_WRONG,
           device_type: 'pos',
         }),
       });

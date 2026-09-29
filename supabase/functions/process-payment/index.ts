@@ -354,8 +354,21 @@ serve(withPermissionErrors(async (req) => {
     if (error.code === 'P0001') return jsonResponse({ error: 'no_open_session' }, 409);
     if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock' }, 409);
     if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied' }, 403);
-    // S38 SEC-06 — manager account locked (5 failed PINs / 15 min).
-    if (error.code === 'P0004') return jsonResponse({ error: 'account_locked' }, 403);
+    // P0004 est partagé par les périodes comptables et le verrouillage PIN.
+    // Le message SQL sert uniquement au classement ; il ne sort pas de l’EF.
+    if (error.code === 'P0004') {
+      const message = String(error.message ?? '');
+      if (/^period_undefined(?::|$)/.test(message)) {
+        return jsonResponse({ error: 'fiscal_period_undefined' }, 409);
+      }
+      if (/^period_locked(?::|$)/.test(message)) {
+        return jsonResponse({ error: 'fiscal_period_closed' }, 409);
+      }
+      if (/^account_locked(?::|$)/.test(message)) {
+        return jsonResponse({ error: 'account_locked' }, 403);
+      }
+      return jsonResponse(logAndRedact('process-payment', error.message ?? error), 500);
+    }
     if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points' }, 409);
     // Fiche02-D2.5 — filet serveur v27 : dine-in sans table refusé à la création.
     // L'UI garde en amont (useDineInTableGuard) ; ce code ne sort qu'en cas de
