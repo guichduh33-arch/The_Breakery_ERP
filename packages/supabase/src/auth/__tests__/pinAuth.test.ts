@@ -4,7 +4,24 @@
 // x-current-pin/x-new-pin headers, never the JSON body (request bodies get
 // logged by default by PostgREST/pgaudit/proxies; headers are not).
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { changePin } from '../pinAuth.js';
+import { changePin, loginWithPin } from '../pinAuth.js';
+
+describe('loginWithPin — transport du PIN', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each(['pos', 'backoffice'] as const)('isole le PIN dans le header pour %s', async (device_type) => {
+    const response = { auth: { access_token: 'jwt' } };
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(response) });
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await loginWithPin('https://example.test', { user_id: 'profile', pin: '285741', device_type })).toBe(response);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://example.test/functions/v1/auth-verify-pin');
+    expect(init.headers).toMatchObject({ 'x-login-pin': '285741' });
+    expect(JSON.parse(init.body as string)).toEqual({ user_id: 'profile', device_type });
+    expect(init.body).not.toContain('285741');
+    expect(init.body).not.toContain('pin');
+  });
+});
 
 describe('changePin (S25 hard cutover)', () => {
   afterEach(() => {

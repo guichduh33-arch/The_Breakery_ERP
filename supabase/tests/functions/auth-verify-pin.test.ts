@@ -15,11 +15,11 @@ const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 // x-forwarded-for client (constaté S78 — tout spoof retombe dans le bucket du
 // runner). Chaque POST passe donc par postPin() qui, sur 429, attend
 // retry_after_sec et réessaie — même discipline que loginAsViaPinEF.
-async function postPin(body: unknown): Promise<Response> {
+async function postPin({ pin, ...body }: { pin: string; user_id: string; device_type: string }): Promise<Response> {
   for (let attempt = 1; attempt <= 4; attempt++) {
     const res = await fetch(FN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-login-pin': pin },
       body: JSON.stringify(body),
     });
     if (res.status !== 429) return res;

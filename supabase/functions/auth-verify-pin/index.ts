@@ -20,7 +20,6 @@ const RATE_LIMIT_PER_MIN = 3;
 
 interface VerifyPinPayload {
   user_id: string;
-  pin: string;
   device_type: 'pos' | 'backoffice';
   required_permission?: string;
 }
@@ -53,7 +52,11 @@ serve(withPermissionErrors(async (req) => {
     return jsonResponse(redactError('invalid_json'), 400);
   }
 
-  const { user_id, pin, device_type, required_permission } = body;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return jsonResponse(redactError('invalid_json'), 400);
+  }
+  const { user_id, device_type, required_permission } = body;
+  const pin = req.headers.get('x-login-pin');
   if (!user_id || !pin || !device_type) {
     return jsonResponse(redactError('missing_fields'), 400);
   }
