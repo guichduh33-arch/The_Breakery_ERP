@@ -3,8 +3,89 @@
 Rédigée le 29 septembre 2026 à la demande explicite de Mamat.
 Note versionnée à la demande de Mamat ; aucune valeur secrète. Ce fichier n’est pas une mémoire
 automatiquement chargée par Codex : demander sa lecture dans un nouveau chat.
-Cette demande autorise la rédaction et la conservation du parcours, pas son exécution
-en production. Seules les validations explicitement consignées ci-dessous sont acquises.
+La demande initiale portait sur la rédaction et la conservation du parcours.
+Les autorisations opérationnelles ultérieures sont consignées dans la reprise
+du 30 septembre 2026. Seules les validations explicitement consignées ci-dessous sont acquises.
+
+## État de reprise au 30 septembre 2026 — préparation boutique et Android
+
+Cette section actualise les statuts de la reprise du 29 septembre, conservés plus
+bas comme historique. Mamat a demandé la préparation autonome, confirmé
+l'émission du certificat, puis autorisé les remplacements Android et demandé
+le commit, le push, la PR, sa fusion et cette mise à jour de mémoire.
+L'ouverture et les stocks réels restent prévus le 1er octobre 2026.
+
+### Candidat et preuves
+
+- Base des bundles livrés : `1fc549787c0ae1b735553282747ce458c65b2815`, issue
+  de la PR #548. La [CI du candidat](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/36532506899)
+  et son [pgTAP manuel](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/36544100651)
+  ont été relus le 30 septembre : réussite sur ce SHA exact.
+- La livraison Android ajoute uniquement la version 1.5 / code 6 et le chemin
+  Gradle régénéré vers Capacitor 8.5.2, déjà dans les dépendances du candidat.
+  Ces preuves antérieures ne certifient pas le futur SHA de fusion.
+- Les preuves détaillées et APK restent dans les fichiers locaux ignorés
+  `.release-manifests/android-delivery-20260930/`. Les APK et les secrets ne
+  sont pas versionnés.
+
+### Poste caisse et HTTPS
+
+- Poste `POS`, adresse réelle `192.168.1.92` ; livraison préparée dans
+  `C:/BreakeryV3/releases/1fc54978`. Les fichiers ont été contrôlés contre
+  leur manifeste et les dépendances corrigées contre le lockfile.
+- Le DNS `pos.the-breakery.com` pointe vers cette adresse. Certificat de
+  production Let's Encrypt émis et vérifié le 30 septembre ; expiration
+  le 29 décembre 2026. Clé et jeton Vercel restent protégés sur le poste.
+- Tâche Windows `Breakery V3 TLS Renewal`, sous SYSTEM, quotidienne à 03:00
+  UTC+8 avec délai aléatoire de 30 minutes et rattrapage après indisponibilité.
+  Test exécuté : résultat 0 ; certificat encore valide, renouvellement ignoré
+  normalement. Le jeton dédié expire le 30 septembre 2027 selon Vercel.
+- Apache/XAMPP utilise 443 et sert encore une application : Mamat a demandé
+  explicitement de le conserver. Le service V3 a été testé temporairement sur
+  `https://pos.the-breakery.com:3443` avec le vrai certificat : santé et page
+  POS accessibles depuis la caisse et un autre poste ; statut du hub refusé
+  sans identité appareil (401). Ce test ne valide ni vente ni impression.
+- Le processus temporaire a été arrêté après les tests. Apache sur 443 et
+  l'ancien service caisse sur 3001 sont restés actifs. La caisse étant utilisée,
+  Mamat a demandé de préparer puis d'attendre pour la bascule.
+- Le démarrage V3 permanent sous le compte Windows intégré LocalService est
+  proposé mais NON installé. Les ACL correspondantes et le rechargement du
+  certificat restent à réaliser : le serveur lit actuellement les fichiers TLS
+  uniquement au démarrage. Aucun nouvel utilisateur Windows n'a été créé.
+
+### Appareils Android réellement mis à jour
+
+| Appareil | Ancienne version Android de l'application | Version installée | Vérifications |
+|---|---|---|---|
+| Galaxy Tab A8 SM-X205, Android 14 | 1.2 / code 3 | 1.4 / code 5, bundle V3 du candidat | Installation ADB réussie, version relue, démarrage réussi |
+| CS30, Android 11 | Ancienne 1.4 / code 5 | 1.5 / code 6, même bundle V3 | Installation ADB réussie, version relue, processus et activité principale observés |
+
+- Signature identique à celle des APK déjà installées ; remplacement par
+  `adb install -r`, sans désinstallation ni effacement des données. La date
+  d'installation initiale est restée inchangée sur les deux appareils.
+- Le numéro 1.4 seul ne distingue pas l'ancienne APK du CS30 de l'APK V3 de
+  la tablette. L'APK V3 1.5 a les mêmes assets applicatifs que l'APK V3 1.4 ;
+  les empreintes locales permettent de distinguer les artefacts.
+- Le contenu des files offline n'a pas été inspecté. Conservation des données
+  par le remplacement et réussite d'un rejeu offline sont deux preuves distinctes.
+- L'appairage V3, le rôle exact du CS30, les paramètres du hub et les parcours
+  matériels restent à vérifier. Le démarrage Android ne certifie pas le parcours
+  métier. Mamat a été informé que la validation LAN attend la bascule du hub.
+
+### Première étape à reprendre et limites de production
+
+Reprendre la préparation du service permanent et de son renouvellement TLS,
+puis organiser avec Mamat la fenêtre où la caisse n'est plus utilisée. Ne pas
+arrêter Apache ni l'ancien service pendant l'exploitation. Vérifier les files
+en attente avant toute bascule d'origine ou de configuration.
+
+Les derniers relevés de préparation décrivaient encore la base V3 de production
+non initialisée et la publication BO non activée. Ces états distants n'ont pas
+été relus pendant les installations Android : les contrôler avant d'agir, ne
+pas les présenter comme des validations acquises. Restent également la
+compatibilité DB/EF/clients, les comptes et droits, la synchronisation du hub,
+l'appairage, les essais physiques, le rejeu offline, la restauration et les
+stocks/soldes réels d'ouverture. La mise en production globale n'est pas achevée.
 
 ## Pourquoi les projets Supabase sont séparés
 
@@ -247,9 +328,9 @@ Sortie attendue : décision et publication tracées, fonctionnement réel confir
 - Preuves locales : .release-manifests/v3-bootstrap/manifest.json et local-rehearsal/.
 - Les résultats antérieurs de cette note reprennent la session ; les états distants
   doivent être relus avant exécution, ils ne sont pas rafraîchis par la rédaction.
-- Première action de reprise : relire le résultat du pgTAP manuel du candidat
-  validé, puis terminer les preuves et comparaisons de l'étape 1. Ne pas relancer
-  une suite déjà active ni assimiler les preuves PR aux preuves du SHA de master.
+- Première action de reprise : lire la section du 30 septembre 2026, vérifier
+  les changements survenus depuis, puis reprendre la préparation du service
+  permanent. La bascule caisse attend une fenêtre hors exploitation.
 
 Phrase de reprise : « Lis .release-manifests/v3-bootstrap/memoire-mise-en-production.md,
 vérifie l’état courant et reprends à la première étape non validée. »
