@@ -25,10 +25,10 @@ const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 const WINDOW_RESET_MS = 65_000;
 const freshWindow = () => new Promise((r) => setTimeout(r, WINDOW_RESET_MS));
 
-function postPinRaw(body: unknown): Promise<Response> {
+function postPinRaw({ pin, ...body }: { pin: string; user_id: string; device_type: string }): Promise<Response> {
   return fetch(FN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-login-pin': pin },
     body: JSON.stringify(body),
   });
 }
@@ -110,10 +110,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('auth-verify-pin rate-li
     const body = { user_id: adminUserId, pin: '999999', device_type: 'pos' };
 
     // Two attempts from each → 4 total, max=3.
-    const r1 = await client1.functions.invoke('auth-verify-pin', { body });
-    const r2 = await client2.functions.invoke('auth-verify-pin', { body });
-    const r3 = await client1.functions.invoke('auth-verify-pin', { body });
-    const r4 = await client2.functions.invoke('auth-verify-pin', { body });
+    const { pin, ...payload } = body;
+    const options = { body: payload, headers: { 'x-login-pin': pin } };
+    const r1 = await client1.functions.invoke('auth-verify-pin', options);
+    const r2 = await client2.functions.invoke('auth-verify-pin', options);
+    const r3 = await client1.functions.invoke('auth-verify-pin', options);
+    const r4 = await client2.functions.invoke('auth-verify-pin', options);
 
     // First 3 should NOT be 429 (they may be 401 invalid_credentials / 403
     // account_locked — that's fine, the durable RL allowed them through).

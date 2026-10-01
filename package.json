@@ -42,9 +42,9 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react": "^7.37.3",
     "eslint-plugin-react-hooks": "^5.1.0",
-    "prettier": "^3.9.7",
-    "turbo": "^2.10.13",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.3",
     "typescript": "^5.3.3",
-    "typescript-eslint": "^8.70.0"
+    "typescript-eslint": "^8.70.1"
   }
 }
