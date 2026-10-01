@@ -1,6 +1,6 @@
 -- supabase/tests/reopen_held_order_v1_behavior.test.sql
 -- Spec A, Bloc 2/3 — BEHAVIORAL round-trip for hold_fired_order_v2 +
--- reopen_held_order_v3 under a real authenticated CASHIER context.
+-- reopen_held_order_v4 under a real authenticated CASHIER context.
 --
 -- Controller-run only (MCP execute_sql against the V3 dev cloud) — it sets
 -- `role authenticated` + a request.jwt.claims sub, which the platform pooler
@@ -64,7 +64,6 @@ DECLARE
   v_pid  uuid;
   v_env  jsonb;
   v_held boolean;
-  v_threw boolean := false;
   v_item  jsonb;
   v_expected_type text;
   i int;
@@ -82,7 +81,7 @@ BEGIN
   IF v_held IS NOT TRUE THEN RAISE EXCEPTION 'FAIL: hold did not set is_held=true'; END IF;
 
   -- Reopen returns the full snapshot, including cancellation facts, and claims the order.
-  v_env := reopen_held_order_v3(v_oid);
+  v_env := reopen_held_order_v4(v_oid);
   IF jsonb_array_length(v_env->'items') <> 3 THEN
     RAISE EXCEPTION 'FAIL: reopen returned % items (incomplete snapshot)', jsonb_array_length(v_env->'items');
   END IF;
@@ -115,12 +114,13 @@ BEGIN
   IF v_held IS NOT FALSE THEN RAISE EXCEPTION 'FAIL: reopen did not claim is_held=false'; END IF;
   IF (SELECT count(*) FROM orders WHERE id = v_oid) <> 1 THEN RAISE EXCEPTION 'FAIL: reopen deleted the order'; END IF;
 
-  -- second reopen on an already-open order → P0002 (concurrency claim)
-  BEGIN
-    PERFORM reopen_held_order_v3(v_oid);
-  EXCEPTION WHEN SQLSTATE 'P0002' THEN v_threw := true;
-  END;
-  IF NOT v_threw THEN RAISE EXCEPTION 'FAIL: second reopen did not raise P0002'; END IF;
+  -- Une caisse peut reprendre la même commande après perte de réponse ou reload.
+  IF reopen_held_order_v4(v_oid) IS DISTINCT FROM v_env THEN
+    RAISE EXCEPTION 'FAIL: second reopen changed the snapshot';
+  END IF;
+  IF (SELECT count(*) FROM order_items WHERE order_id = v_oid) <> 3 THEN
+    RAISE EXCEPTION 'FAIL: second reopen duplicated order items';
+  END IF;
 
   RAISE NOTICE 'RPC behavior PASS';
 END $rpc$;
@@ -134,8 +134,8 @@ BEGIN
   SELECT count(*) INTO v_cnt FROM audit_logs
    WHERE entity_id = '11111111-1111-4111-8111-111111111111'
      AND action IN ('order.held','order.reopened');
-  IF v_cnt <> 2 THEN RAISE EXCEPTION 'FAIL: audit rows = % (expected 2)', v_cnt; END IF;
-  RAISE NOTICE 'AUDIT PASS: order.held + order.reopened';
+  IF v_cnt <> 3 THEN RAISE EXCEPTION 'FAIL: audit rows = % (expected 3)', v_cnt; END IF;
+  RAISE NOTICE 'AUDIT PASS: order.held + deux order.reopened';
 END $audit$;
 
 ROLLBACK;

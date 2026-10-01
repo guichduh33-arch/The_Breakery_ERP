@@ -12,6 +12,8 @@
 import { hubBus } from '@/features/lan/hubBusClient';
 import type { BusKitchenStatus, OrderItemStatusPayload } from '@/features/lan/busTopics';
 import { useKdsOfflineStore } from './kdsOfflineStore';
+import { useAuthStore } from '@/stores/authStore';
+import { saveKitchenStatus } from './offlineKitchenJournal';
 
 /**
  * Applique + publie un statut si `itemId` est une ligne locale.
@@ -20,12 +22,17 @@ import { useKdsOfflineStore } from './kdsOfflineStore';
  */
 export function tryLocalItemStatus(itemId: string, status: BusKitchenStatus): boolean {
   const state = useKdsOfflineStore.getState();
-  const row = state.rows[itemId];
+  const row = localKitchenRow(itemId);
   if (row === undefined) return false;
+  const auth = useAuthStore.getState();
+  if (!auth.isAuthenticated || auth.isLocked || !auth.user ||
+      !(auth.user.role_code === 'SUPER_ADMIN' || auth.permissions.includes('kds.operate'))) {
+    throw new Error('Sign in with kitchen access to save this operation.');
+  }
 
   const meta = state.orders[row.order_id];
   const payload: OrderItemStatusPayload = {
-    item_id: itemId,
+    item_id: row.id,
     order_id: row.order_id,
     kitchen_status: status,
     at: new Date().toISOString(),
@@ -33,9 +40,23 @@ export function tryLocalItemStatus(itemId: string, status: BusKitchenStatus): bo
     order_type: meta?.order_type ?? '',
     table_number: meta?.table_number ?? null,
   };
+  saveKitchenStatus(payload, auth.user.id);
   state.applyStatus(payload);
-  hubBus.publish('order.item_status', payload);
+  // L'échec du bus ne doit pas inviter à refaire un geste déjà durable.
+  try { hubBus.publish('order.item_status', payload); } catch { /* rejeu durable au retour cloud */ }
   return true;
+}
+
+/** Un alias serveur n'existe que pour une ligne de la racine attestée. */
+export function localKitchenRow(itemId: string) {
+  const state = useKdsOfflineStore.getState();
+  if (state.rows[itemId]) return state.rows[itemId];
+  for (const [root, resolution] of Object.entries(state.resolutions)) {
+    const canonical = resolution.items.find((item) => item.id === itemId);
+    const row = canonical?.client_line_id ? state.rows[canonical.client_line_id] : undefined;
+    if (row?.order_id === root) return row;
+  }
+  return undefined;
 }
 
 /**

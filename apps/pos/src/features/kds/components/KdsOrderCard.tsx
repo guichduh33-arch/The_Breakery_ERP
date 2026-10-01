@@ -200,7 +200,8 @@ function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow
 
   const handleClick = () => {
     bumpOrder.mutate(
-      { orderId },
+      { orderId, itemIds: items.filter((item) => !item.is_cancelled &&
+        (item.kitchen_status === 'pending' || item.kitchen_status === 'preparing')).map((item) => item.id) },
       {
         onSuccess: ({ bumpedCount }) => {
           toast.success(`${bumpedCount} item${bumpedCount === 1 ? '' : 's'} ready`);
@@ -297,7 +298,7 @@ function KdsOrderCardImpl({ items }: KdsOrderCardProps) {
           )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 w-full">
-          <AllReadyButton orderId={head.order_id} items={items} />
+          <AllReadyButton orderId={head.group_order_id ?? head.order_id} items={items} />
           {/* Non-colour urgency signal (colour-blind + 2-3 m glance): the age
               band is spelled out once past the warning threshold. */}
           {style.bandLabel !== 'fresh' && (

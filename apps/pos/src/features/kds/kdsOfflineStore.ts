@@ -9,6 +9,8 @@
 import { create } from 'zustand';
 import type { KdsItemRow } from './hooks/useKdsOrders';
 import type { OrderFiredPayload, OrderItemStatusPayload } from '@/features/lan/busTopics';
+import { saveKitchenFired, saveKitchenStatus, kitchenRank } from './offlineKitchenJournal';
+import type { KitchenResolution } from './offlineKitchenReconciliation';
 
 /** Méta d'ordre local — nécessaire aux payloads order.item_status (le
  *  customer display rend order_type/table sans avoir vu le fired). */
@@ -19,6 +21,11 @@ export interface OfflineOrderMeta {
 }
 
 interface KdsOfflineState {
+  resolutions: Record<string, KitchenResolution>;
+  issue: string | null;
+  setIssue: (issue: string | null) => void;
+  resolve: (root: string, resolution: KitchenResolution) => void;
+  retire: (root: string, verifiedIds: readonly string[]) => void;
   /** Lignes locales par item id (uuid client du fire). */
   rows: Record<string, KdsItemRow>;
   /** Méta par order id local (client_uuid du fire). */
@@ -67,13 +74,23 @@ function toKdsRow(payload: OrderFiredPayload, item: OrderFiredPayload['items'][n
 }
 
 export const useKdsOfflineStore = create<KdsOfflineState>((set) => ({
+  resolutions: {},
+  issue: null,
+  setIssue: (issue) => set({ issue }),
+  resolve: (root, resolution) => set((state) => ({ resolutions: { ...state.resolutions, [root]: resolution } })),
+  retire: (root, verifiedIds) => set((state) => ({ rows: Object.fromEntries(Object.entries(state.rows).filter(([, row]) =>
+    row.order_id !== root || !verifiedIds.includes(row.id))) })),
   rows: {},
   orders: {},
 
-  addFired: (payload) =>
+  addFired: (payload) => {
+    payload = saveKitchenFired(payload);
     set((state) => {
       const rows = { ...state.rows };
       for (const item of payload.items) {
+        if (rows[item.id] && rows[item.id]!.order_id !== payload.client_uuid) {
+          return { issue: 'Conflicting kitchen line identities. Keep this browser data and contact a manager.' };
+        }
         // Idempotent : un fired rejoué (catchup) n'écrase pas une ligne dont
         // le statut a déjà avancé localement.
         rows[item.id] ??= toKdsRow(payload, item);
@@ -87,12 +104,15 @@ export const useKdsOfflineStore = create<KdsOfflineState>((set) => ({
         },
       };
       return { rows, orders };
-    }),
+    });
+  },
 
-  applyStatus: (payload) =>
+  applyStatus: (payload) => {
+    saveKitchenStatus(payload);
     set((state) => {
       const existing = state.rows[payload.item_id];
-      if (existing === undefined) return state;
+        if (existing?.order_id !== payload.order_id) return state;
+      if (kitchenRank[existing.kitchen_status]! >= kitchenRank[payload.kitchen_status]!) return state;
       const next: KdsItemRow = {
         ...existing,
         kitchen_status: payload.kitchen_status,
@@ -102,9 +122,10 @@ export const useKdsOfflineStore = create<KdsOfflineState>((set) => ({
         ...(payload.kitchen_status === 'ready' ? { ready_at: payload.at } : {}),
       };
       return { rows: { ...state.rows, [payload.item_id]: next } };
-    }),
+    });
+  },
 
-  clear: () => set({ rows: {} }),
+  clear: () => set({ rows: {}, orders: {}, resolutions: {}, issue: null }),
 }));
 
 /** File « ready for pickup » locale pour le customer display (spec §1 —

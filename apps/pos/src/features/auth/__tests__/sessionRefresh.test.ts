@@ -18,6 +18,7 @@ vi.mock('@breakery/supabase', () => ({
   getSupabaseClient: vi.fn(() => ({})),
   setSupabaseAuthErrorHandler: vi.fn(),
   setSupabaseAccessToken: vi.fn(),
+  setSupabaseCloudEnabled: vi.fn(),
   getSession: (...args: unknown[]): unknown => getSessionMock(...args),
   loginWithPin: vi.fn(),
   logoutSession: vi.fn(),
@@ -51,6 +52,7 @@ describe('sessionRefresh', () => {
     getSessionMock.mockReset();
     useAuthStore.setState({
       isAuthenticated: true,
+      cloudValidated: true,
       sessionToken: 'tok-1',
       user: { id: 'u1', full_name: 'E2E Cashier', role_code: 'cashier', employee_code: 'C1' },
       isLocked: false,
@@ -90,18 +92,18 @@ describe('sessionRefresh', () => {
     expect(getSessionMock).not.toHaveBeenCalled();
   });
 
-  it('T3 — a transient failure retries on the 60 s floor', async () => {
+  it('T3 — échec réseau : le refresh attend la revalidation coordonnée', async () => {
     getSessionMock.mockRejectedValue(new Error('network'));
     initSessionRefresh();
 
     await vi.advanceTimersByTimeAsync(50 * 60 * 1000 + 50);
     expect(getSessionMock).toHaveBeenCalledTimes(1);
 
-    // authExpiresAt did not move — the clamp turns the reschedule into 60 s.
+    // Le coordinateur cloud prend la reprise ; aucun refresh parallèle.
     await vi.advanceTimersByTimeAsync(MIN + 50);
-    expect(getSessionMock).toHaveBeenCalledTimes(2);
+    expect(getSessionMock).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(MIN + 50);
-    expect(getSessionMock).toHaveBeenCalledTimes(3);
+    expect(getSessionMock).toHaveBeenCalledTimes(1);
   });
 
   it('T4 — session_expired lock stops the timer; a fresh login re-arms it', async () => {
@@ -123,6 +125,7 @@ describe('sessionRefresh', () => {
       isLocked: false,
       lockReason: null,
       authExpiresAt: nowSec() + 3600,
+      cloudValidated: true,
     });
     await vi.advanceTimersByTimeAsync(50 * 60 * 1000 + 50);
     expect(getSessionMock).toHaveBeenCalledTimes(2);

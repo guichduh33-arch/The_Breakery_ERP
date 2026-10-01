@@ -15,7 +15,7 @@ import { useCloudStatusStore } from '../cloudStatusStore';
 const PING_INTERVAL_MS = 15_000;
 const PING_TIMEOUT_MS = 5_000;
 
-async function pingCloud(supabaseUrl: string, anonKey: string): Promise<boolean> {
+export async function pingCloud(supabaseUrl: string, anonKey: string): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
   try {

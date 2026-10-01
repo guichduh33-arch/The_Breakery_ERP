@@ -82,8 +82,8 @@ const ROWS: ExpenseRow[] = [
 ];
 
 const CATS: ExpenseCategoryRow[] = [
-  { id: 'cat-1', code: 'OFFICE',  name: 'Office Supplies', is_active: true, account_id: 'acc-1', created_at: '', updated_at: '' },
-  { id: 'cat-2', code: 'UTILITIES', name: 'Utilities',     is_active: true, account_id: 'acc-2', created_at: '', updated_at: '' },
+  { id: 'cat-1', code: 'OFFICE',  name: 'Office Supplies', description: null, is_active: true, account_id: 'acc-1', created_at: '', updated_at: '' },
+  { id: 'cat-2', code: 'UTILITIES', name: 'Utilities',     description: null, is_active: true, account_id: 'acc-2', created_at: '', updated_at: '' },
 ];
 
 vi.mock('@/features/expenses/hooks/useExpensesList.js', async (importOriginal) => {

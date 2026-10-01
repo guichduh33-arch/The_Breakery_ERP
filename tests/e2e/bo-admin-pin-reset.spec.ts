@@ -1,8 +1,7 @@
 // tests/e2e/bo-admin-pin-reset.spec.ts
 //
-// Session 21 / Phase 1.B.1 — E2E: admin logs into Backoffice, navigates to the
-// Users list, opens the first non-self cashier user detail page, enters a new
-// 6-digit PIN in the Reset PIN field, submits, and asserts success.
+// Session 21 / Phase 1.B.1 — L'admin ouvre la fiche du caissier E2E dédié,
+// saisit un nouveau PIN à six chiffres et vérifie la confirmation.
 //
 // Project: backoffice (baseURL = E2E_BO_URL or localhost:5174).
 //
@@ -56,19 +55,11 @@ test.describe('BO: admin resets a cashier PIN', () => {
     await expect(page).toHaveURL(/\/backoffice\/users/, { timeout: 10_000 });
 
     // ---- Step 3: open a user detail page ----
-    // Click the "Open" link for the cashier seed user row.
-    // Falls back to the first available "Open" link if the specific row
-    // is not found (e.g., seed data differs in staging).
+    // Refuser toute autre cible : ce test modifie un PIN réel sur la base dev.
     const targetLink = page.getByTestId(`user-open-${SEED_USER_CASHIER}`);
-    const hasTargetLink = await targetLink.isVisible({ timeout: 5_000 }).catch(() => false);
-    if (hasTargetLink) {
-      await targetLink.click();
-    } else {
-      // Fallback: click first available "Open" link that isn't the admin user.
-      await page.getByText('Open').first().click();
-    }
-
-    await expect(page).toHaveURL(/\/backoffice\/users\//, { timeout: 10_000 });
+    await expect(targetLink, 'The dedicated E2E cashier must exist before resetting its PIN').toBeVisible({ timeout: 10_000 });
+    await targetLink.click();
+    await expect(page).toHaveURL(new RegExp(`/backoffice/users/${SEED_USER_CASHIER}$`), { timeout: 10_000 });
 
     // ---- Step 4: fill in new PIN and submit ----
     const pinInput = page.getByLabel('New PIN');

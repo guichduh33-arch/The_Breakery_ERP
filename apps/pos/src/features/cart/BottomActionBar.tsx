@@ -1,24 +1,6 @@
 import { PrintJobsPanel } from './PrintJobsPanel';
-// apps/pos/src/features/cart/BottomActionBar.tsx
-//
-// Global POS action bar (bottom of the shell, full width). It concentrates ALL
-// order actions that used to live inside the Active Order panel:
-//
-//   left  : Held Orders · Tablet inbox · Customer · Table · Print Bill · More(▾) · Void Order
-//   right : Send to Kitchen · Checkout (+ total)
-//   (Void lives LEFT of the spacer — destructive stays out of the rush reflex
-//   zone next to Send/Checkout. Below md the bar wraps and the validation pair
-//   becomes a full-width bottom row, Checkout stretched — waiter one-hand use.)
-//
-// It is a *connected* component — it reuses the existing hooks / self-contained
-// button components (no business logic is rewritten here):
-//   - SendToKitchenButton / PrintBillButton / TableSelectorButton
-//     are rendered restyled (className/variant overrides).
-//   - useApplyCartDiscount drives the cart-discount modal (+ manager PIN).
-//   - RedeemPointsModal / HeldOrdersModal are owned here.
-//   - Checkout opens the payment terminal (paymentStore.open).
-//   - Void Order maps to cartStore.clear (wipes unlocked items) — see the
-//     deviation note in the PR description (no dedicated POS "void order" flow).
+// Barre caisse : panier local et annulation atomique des commandes impayées
+// ont des confirmations distinctes. Les ventes payées restent dans l'historique.
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import {
@@ -52,7 +34,7 @@ import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQue
 import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
 import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManagerPin';
-import { useVoidServerOrder } from './hooks/useVoidServerOrder';
+import { CancelUnpaidOrderModal } from './CancelUnpaidOrderModal';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
 import { useDineInTableGuard } from '@/features/tables/hooks/useDineInTableGuard';
 import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
@@ -119,7 +101,6 @@ export function BottomActionBar({
   const discount = useApplyCartDiscount();
   const { presets: posPresets } = usePOSPresets();
   const verifyManagerPin = useVerifyManagerPin();
-  const voidServerOrder = useVoidServerOrder();
   const pendingTablet = usePendingTabletOrders().data?.length ?? 0;
 
   const [heldOpen, setHeldOpen] = useState(false);
@@ -219,17 +200,10 @@ export function BottomActionBar({
     if (checkoutTableGuard.ensureTable()) openPayment();
   }
 
-  // Void Order (owner decision 2026-07-10) — lives under "More" and ALWAYS
-  // requires a manager PIN + a mandatory reason, whether or not anything was
-  // fired. Accidental voids become impossible and every void is attributable.
-  //   - fired (server row exists) → void-order EF verifies the PIN + records the
-  //     reason server-side (useVoidServerOrder).
-  //   - never fired → verify the PIN client-side, then wipe the local cart.
-  // Throws propagate so VoidOrderModal keeps the modal open + clears the PIN.
+  // Cette confirmation ne concerne que le panier jamais persisté.
   async function handleVoidSubmit({
     reason,
     managerPin,
-    idempotencyKey,
   }: {
     reason: string;
     managerPin: string;
@@ -238,17 +212,10 @@ export function BottomActionBar({
     if (paymentLocked) { toast.error('Resume the saved payment before voiding this order'); return; }
     setVoidPending(true);
     try {
-      if (pickedUpOrderId) {
-        // Server row exists (tablet pickup OR fired counter order) → the
-        // void-order EF verifies the PIN + records the reason server-side.
-        await voidServerOrder(managerPin, reason, idempotencyKey);
-        toast.success('Order voided (manager approved)');
-      } else {
-        // No server row → verify the PIN client-side, then wipe locally.
-        await verifyManagerPin(managerPin); // throws on invalid PIN
-        voidOrder();
-        toast.info(`Order voided — ${reason}`);
-      }
+      if (useCartStore.getState().pickedUpOrderId) throw new Error('Use the unpaid order cancellation flow');
+      await verifyManagerPin(managerPin);
+      voidOrder();
+      toast.info(`Order voided — ${reason}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'void_failed';
       toast.error(`Void failed: ${msg}`);
@@ -417,14 +384,14 @@ export function BottomActionBar({
               <button
                 type="button"
                 className={cn(MENU_ITEM, 'text-red-as-text [@media(hover:hover)]:hover:bg-red-soft')}
-                disabled={!hasItems}
+                disabled={!hasItems && !pickedUpOrderId}
                 onClick={() => {
                   setMoreOpen(false);
                   setVoidOpen(true);
                 }}
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
-                <span>Void order</span>
+                <span>{pickedUpOrderId ? 'Cancel unpaid order' : 'Void order'}</span>
               </button>
             </div>
           )}
@@ -481,11 +448,10 @@ export function BottomActionBar({
       {checkoutTableGuard.modal}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />
 
-      {/* Void Order — single reason+PIN gate for BOTH paths (owner decision
-          2026-07-10). Fired → void-order EF (server-side PIN + reason). Never
-          fired → PIN verified client-side then local wipe. */}
+      {/* Une erreur garde la tentative de commande impayée dans sa modale. */}
+      <CancelUnpaidOrderModal open={voidOpen && Boolean(pickedUpOrderId)} orderId={pickedUpOrderId} onClose={() => setVoidOpen(false)} />
       <VoidOrderModal
-        open={voidOpen}
+        open={voidOpen && !pickedUpOrderId}
         onClose={() => setVoidOpen(false)}
         fired={hasSentItems}
         isPending={voidPending}

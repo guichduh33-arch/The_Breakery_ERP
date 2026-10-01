@@ -70,6 +70,8 @@ export interface KdsComponentModifierLine {
 export interface KdsItemRow {
   id: string;
   order_id: string;
+  /** Identité d'affichage attestée, distincte de l'identité de mutation. */
+  group_order_id?: string;
   product_id: string;
   product_name: string;
   quantity: number;

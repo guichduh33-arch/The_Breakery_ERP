@@ -6,12 +6,15 @@ import {
   getSession,
   logoutSession,
   setSupabaseAccessToken,
+  setSupabaseCloudEnabled,
   type LoginResponse,
   type PermissionCode,
   hasPermission as has,
 } from '@breakery/supabase';
 import { safeStorage, logger } from '@breakery/utils';
 import { supabaseUrl } from '../lib/supabase.js';
+import { isSameTabReload, localSessionFromServer, localSessionValid, type LocalSession } from '@/features/auth/localSession';
+import { useCloudStatusStore } from '@/features/lan/cloudStatusStore';
 
 export interface AuthUser {
   id: string;
@@ -33,13 +36,15 @@ export interface AuthUser {
 export type BootstrapStatus = 'pending' | 'loading' | 'ready' | 'error';
 
 interface AuthState {
+  localSession: LocalSession | null;
+  cloudValidated: boolean;
+  suspendCloud: () => void;
+  recordLocalActivity: () => void;
   user: AuthUser | null;
   sessionToken: string | null;
   permissions: string[];
   isAuthenticated: boolean;
-  // Session 35 / Task A1 — manual "Lock Terminal" gate. Pauses the POS behind
-  // an overlay without dropping the PIN-JWT session, cart or shift. NOT
-  // persisted (see partialize) so a page reload always starts unlocked.
+  // Le verrou survit au reload ; seul un PIN vérifié en ligne permet la reprise.
   isLocked: boolean;
   // Why the gate is up. 'manual' covers the Lock button and the idle timeout ;
   // 'session_expired' is raised by the 401-storm watchdog when the server no
@@ -71,6 +76,21 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'breakery-pos-auth';
+let authGeneration = 0;
+interface SessionFlight { token: string; generation: number; requestedAt: number; promise: ReturnType<typeof getSession> }
+let activeFlight: SessionFlight | null = null;
+/** Bootstrap, StrictMode et refresh partagent la même réponse réseau. */
+function sessionFlight(token: string): SessionFlight {
+  if (activeFlight?.token === token && activeFlight.generation === authGeneration) return activeFlight;
+  const flight: SessionFlight = { token, generation: authGeneration, requestedAt: Date.now(), promise: getSession(supabaseUrl, token) };
+  activeFlight = flight;
+  const finish = (): void => { if (activeFlight === flight) activeFlight = null; };
+  void flight.promise.then(finish, finish);
+  return flight;
+}
+// Le shell monte des observateurs avant BootGate : fermer avant leurs effets.
+// bootstrap sans session réouvre immédiatement les surfaces anonymes/kiosk.
+setSupabaseCloudEnabled(false);
 
 const asyncStorage = {
   getItem: (name: string) => safeStorage.get(name),
@@ -82,6 +102,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      localSession: null,
+      cloudValidated: false,
       sessionToken: null,
       permissions: [],
       isAuthenticated: false,
@@ -94,6 +116,9 @@ export const useAuthStore = create<AuthState>()(
       authExpiresAt: null,
 
       async login(userId, pin) {
+        authGeneration += 1;
+        const requestedAt = Date.now();
+        if (navigator.onLine === false) throw new Error('Connect to the server to sign in');
         set({ isLoading: true, error: null });
         try {
           const res: LoginResponse = await loginWithPin(supabaseUrl, {
@@ -107,7 +132,10 @@ export const useAuthStore = create<AuthState>()(
           // the bearer token directly via the custom-fetch wrapper. NO
           // `supabase.auth.setSession()` here, NO `signOut()` in logout.
           setSupabaseAccessToken(res.auth.access_token);
+          setSupabaseCloudEnabled(true);
           set({
+            cloudValidated: true,
+            localSession: localSessionFromServer(res.session_clock, res.session_timeout_minutes, res.session.token, res.user.id, res.permissions, requestedAt),
             user: res.user,
             sessionToken: res.session.token,
             permissions: res.permissions,
@@ -135,13 +163,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       async logout() {
+        authGeneration += 1;
         const token = get().sessionToken;
         if (token) {
           try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
         }
         // Drop the client-side bearer (counterpart to setSupabaseAccessToken on login).
         setSupabaseAccessToken(null);
+        setSupabaseCloudEnabled(true);
         set({
+          localSession: null,
+          cloudValidated: false,
           user: null,
           sessionToken: null,
           permissions: [],
@@ -167,19 +199,28 @@ export const useAuthStore = create<AuthState>()(
       async bootstrap() {
         const { sessionToken, isAuthenticated } = get();
         if (!sessionToken || !isAuthenticated) {
+          setSupabaseCloudEnabled(true);
           // No PIN session (fresh load, or kiosk/display/tablet surfaces that
           // use their own token) — nothing to restore.
           set({ bootstrapStatus: 'ready' });
           return;
         }
+        if (get().lockReason === 'session_expired') { set({ bootstrapStatus: 'ready' }); return; }
+        get().suspendCloud();
+        if (!isSameTabReload()) set({ localSession: null });
         set({ bootstrapStatus: 'loading', error: null });
+        const flight = sessionFlight(sessionToken);
         try {
-          const session = await getSession(supabaseUrl, sessionToken);
+          const session = await flight.promise;
+          if (get().sessionToken !== sessionToken || authGeneration !== flight.generation) return;
           if (session.auth) {
             // Restore the PIN bearer so RLS-protected queries stop 401-ing.
             setSupabaseAccessToken(session.auth.access_token);
           }
+          setSupabaseCloudEnabled(true);
           set({
+            cloudValidated: true,
+            localSession: localSessionFromServer(session.session_clock, session.session_timeout_minutes, sessionToken, session.id, session.permissions, flight.requestedAt),
             user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
             permissions: session.permissions,
             isAuthenticated: true,
@@ -190,10 +231,20 @@ export const useAuthStore = create<AuthState>()(
           logger.info('bootstrap.rehydrated', { user_id: session.id, perms: session.permissions.length });
         } catch (err: unknown) {
           const e = err as { status?: number };
-          if (e.status === 401) {
+          if (get().sessionToken !== sessionToken || authGeneration !== flight.generation) return;
+          if (e.status === 401 || e.status === 403 || e.status === 404) {
             get().lock('session_expired');
             set({ bootstrapStatus: 'ready' });
           } else {
+            const current = get();
+            const networkFailure = e.status === undefined || e.status >= 500;
+            if (networkFailure && isSameTabReload() && !current.isLocked
+              && localSessionValid(current.localSession, sessionToken, current.user?.id)) {
+              set({ permissions: current.localSession.permissions, bootstrapStatus: 'ready', error: null });
+              useCloudStatusStore.getState().setCloudOnline(false);
+              return;
+            }
+            if (current.isLocked) { set({ bootstrapStatus: 'ready' }); return; }
             // Backend unreachable — keep the session for retry, surface an error
             // screen instead of silently degrading to an empty/anon state.
             logger.error('bootstrap.failed', { status: e.status ?? 'network' });
@@ -202,19 +253,38 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      lock: (reason = 'manual') => set({ isLocked: true, lockReason: reason }),
+      suspendCloud: () => { setSupabaseCloudEnabled(false); set({ cloudValidated: false }); },
+      recordLocalActivity: () => {
+        const s = get();
+        if (s.isLocked || !s.isAuthenticated || !s.localSession) return;
+        if (!localSessionValid(s.localSession, s.sessionToken, s.user?.id)) { get().lock(); return; }
+        const now = Date.now();
+        set({ localSession: { ...s.localSession, lastActivityAt: now, observedAt: now } });
+      },
+      lock: (reason = 'manual') => {
+        authGeneration += 1;
+        if (reason === 'session_expired') get().suspendCloud();
+        set({ isLocked: true, lockReason: reason, bootstrapStatus: 'ready' });
+      },
       unlock: () => set({ isLocked: false, lockReason: null }),
 
       async validateSession() {
         const token = get().sessionToken;
-        if (!token) return;
+        if (!token || get().lockReason === 'session_expired') return;
+        get().suspendCloud();
+        const flight = sessionFlight(token);
         try {
-          const session = await getSession(supabaseUrl, token);
+          const session = await flight.promise;
+          if (get().sessionToken !== token || authGeneration !== flight.generation || !useCloudStatusStore.getState().cloudOnline) return;
           if (session.auth) {
             // Keep the bearer fresh (re-minted by the EF) on every re-probe.
             setSupabaseAccessToken(session.auth.access_token);
           }
+          setSupabaseCloudEnabled(true);
           set({
+            cloudValidated: true,
+            bootstrapStatus: 'ready',
+            localSession: localSessionFromServer(session.session_clock, session.session_timeout_minutes, token, session.id, session.permissions, flight.requestedAt),
             user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
             permissions: session.permissions,
             isAuthenticated: true,
@@ -224,14 +294,15 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (err: unknown) {
           const e = err as { status?: number };
-          if (e.status === 401) {
+          if (get().sessionToken !== token || authGeneration !== flight.generation) return;
+          if (e.status === 401 || e.status === 403 || e.status === 404) {
             // The server no longer honors this PIN session. Do NOT logout():
             // that would silently dump the cashier to /login and lose the
             // operating context. Lock the terminal with the session-expired
             // copy instead — cart and shift survive, and the overlay's re-PIN
             // mints a fresh session via login().
             logger.warn('session.expired', { via: 'validateSession' });
-            set({ isLocked: true, lockReason: 'session_expired' });
+            get().lock('session_expired');
           } else {
             // Network error : keep local session
             logger.warn('validateSession.transient_error');
@@ -258,6 +329,9 @@ export const useAuthStore = create<AuthState>()(
         sessionToken: state.sessionToken,
         isAuthenticated: state.isAuthenticated,
         sessionTimeoutMinutes: state.sessionTimeoutMinutes,
+        localSession: state.localSession,
+        isLocked: state.isLocked,
+        lockReason: state.lockReason,
       }),
     },
   ),

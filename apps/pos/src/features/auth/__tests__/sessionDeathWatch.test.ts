@@ -19,6 +19,7 @@ vi.mock('@breakery/supabase', () => ({
     capturedHandler = h;
   },
   setSupabaseAccessToken: vi.fn(),
+  setSupabaseCloudEnabled: vi.fn(),
   getSession: (...args: unknown[]): unknown => getSessionMock(...args),
   loginWithPin: vi.fn(),
   logoutSession: vi.fn(),

@@ -24,11 +24,17 @@ export function useKdsOfflineBus(enabled = true): void {
 
     const unsubFired = hubBus.subscribe('order.fired', (env) => {
       const payload = parseOrderFired(env.payload);
-      if (payload !== null) useKdsOfflineStore.getState().addFired(payload);
+      if (payload !== null) {
+        try { useKdsOfflineStore.getState().addFired(payload); }
+        catch { useKdsOfflineStore.getState().setIssue('Kitchen storage failed. Keep this browser data and contact a manager.'); }
+      }
     });
     const unsubStatus = hubBus.subscribe('order.item_status', (env) => {
       const payload = parseOrderItemStatus(env.payload);
-      if (payload !== null) useKdsOfflineStore.getState().applyStatus(payload);
+      if (payload !== null) {
+        try { useKdsOfflineStore.getState().applyStatus(payload); }
+        catch { useKdsOfflineStore.getState().setIssue('Kitchen storage failed. Keep this browser data and contact a manager.'); }
+      }
     });
 
     // Catchup à chaque bascule disconnected → connected (join initial inclus).

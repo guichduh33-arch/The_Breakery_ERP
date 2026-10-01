@@ -10,6 +10,8 @@ export interface SessionContext {
   sessionId: string;
   permissions: string[];
   sessionTimeoutMinutes: number;
+  createdAt: string;
+  lastActivityAt: string;
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -56,6 +58,8 @@ export async function requireSession(req: Request): Promise<SessionContext | Res
     sessionId: session.id,
     permissions: session.permissions_snapshot,
     sessionTimeoutMinutes: session.session_timeout_minutes,
+    createdAt: session.created_at,
+    lastActivityAt: session.last_activity_at,
   };
 }
 

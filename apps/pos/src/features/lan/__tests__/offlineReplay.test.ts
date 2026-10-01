@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 
 function seedAuth(): void {
-  useAuthStore.setState({ isAuthenticated: true });
+  useAuthStore.setState({ isAuthenticated: true, cloudValidated: true });
 }
 
 beforeEach(() => {
@@ -44,6 +44,13 @@ async function seedFireAndPay(): Promise<void> {
 }
 
 describe('replayOfflineOutbox', () => {
+  it('conserve les intents jusqu’à revalidation cloud', async () => {
+    useAuthStore.setState({ cloudValidated: false });
+    await seedFireAndPay();
+    expect(await replayOfflineOutbox()).toEqual({ replayed: 0, failed: 0 });
+    expect(rpcMock).not.toHaveBeenCalled();
+    expect(await getPendingIntents()).toHaveLength(2);
+  });
   it('replays fire then payment with the ORIGINAL keys, A4 flag on payment', async () => {
     rpcMock.mockImplementation((fn: string) => {
       if (fn === 'fire_counter_order_v9') {

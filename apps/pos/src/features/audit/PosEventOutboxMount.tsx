@@ -9,12 +9,16 @@
 
 import { useEffect } from 'react';
 import { flushPosEvents } from './emitPosEvent';
+import { useAuthStore } from '@/stores/authStore';
 
 const FLUSH_INTERVAL_MS = 30_000;
 
 export function PosEventOutboxMount(): null {
   useEffect(() => {
     void flushPosEvents();
+    const unsub = useAuthStore.subscribe((state, previous) => {
+      if (state.cloudValidated && !previous.cloudValidated) void flushPosEvents();
+    });
 
     const onOnline = (): void => {
       void flushPosEvents();
@@ -23,6 +27,7 @@ export function PosEventOutboxMount(): null {
     const timer = setInterval(() => void flushPosEvents(), FLUSH_INTERVAL_MS);
 
     return () => {
+      unsub();
       window.removeEventListener('online', onOnline);
       clearInterval(timer);
     };

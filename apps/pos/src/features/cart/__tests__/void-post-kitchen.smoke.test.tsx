@@ -32,6 +32,12 @@ import type { ReactNode } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { BottomActionBar } from '../BottomActionBar';
 
+// Le parcours impayé a sa propre modale ; le hook d'annulation payée reste séparé.
+vi.mock('../CancelUnpaidOrderModal', () => ({
+  CancelUnpaidOrderModal: ({ open, orderId }: { open: boolean; orderId: string | null }) =>
+    open ? <div>Unpaid cancellation {orderId}</div> : null,
+}));
+
 // Void now uses VoidOrderModal (reason + NumpadPin). Mock it so we can drive
 // onSubmit directly and assert the ROUTING, not the PIN UI.
 vi.mock('../VoidOrderModal', () => ({
@@ -133,7 +139,7 @@ describe('BottomActionBar — Void Order post-kitchen routing (POS-06)', () => {
 
   function openVoid(): void {
     fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
+    fireEvent.click(screen.getByRole('button', { name: /void order|cancel unpaid order/i }));
   }
 
   it('(b) counter cart with no server row: client-only void, no server call', async () => {
@@ -149,20 +155,15 @@ describe('BottomActionBar — Void Order post-kitchen routing (POS-06)', () => {
     expect(mockVoidMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('(a) tablet pickup / fired order: server void called with reason before local reset', async () => {
-    // pickedUpOrderId set → server order exists.
+  it('(a) commande envoyée : ouvre uniquement la modale impayée sans vider le panier', () => {
     useCartStore.setState({ pickedUpOrderId: 'order-123' });
 
     render(wrapper(<BottomActionBar />));
     openVoid();
-    fireEvent.click(screen.getByRole('button', { name: /mock void submit/i }));
-
-    // The server void runs with the order id AND the cashier's reason.
-    await waitFor(() => expect(mockVoidMutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ orderId: 'order-123', reason: 'test reason' }),
-    ));
-    // On success, local cart is reset.
-    await waitFor(() => expect(useCartStore.getState().cart.items).toHaveLength(0));
+    expect(screen.getByText('Unpaid cancellation order-123')).toBeVisible();
+    expect(screen.queryByText('Mock void submit')).not.toBeInTheDocument();
+    expect(mockVoidMutateAsync).not.toHaveBeenCalled();
+    expect(useCartStore.getState().cart.items).toHaveLength(1);
   });
 });
 

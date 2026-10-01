@@ -42,6 +42,6 @@ describe('requireSession — profil actif avant activité', () => {
     }, error: null });
     expect(await requireSession(new Request('https://example.test', { headers: { 'x-session-token': 'token' } })))
       .toEqual({ userId: 'profile', authUserId: 'auth', roleCode: 'CUSTOM', sessionId: 'session',
-        permissions: ['orders.read'], sessionTimeoutMinutes: 30 });
+        permissions: ['orders.read'], sessionTimeoutMinutes: 30, createdAt: now, lastActivityAt: now });
   });
 });

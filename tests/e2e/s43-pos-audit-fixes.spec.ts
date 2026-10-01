@@ -11,10 +11,9 @@
 //        the POS inbox badge on page A WITHOUT reload (JWT now propagated to
 //        the realtime WebSocket; the 30s refetch is only a safety net, so a
 //        <10s update proves the realtime path).
-//   T3 — Persistent counter fire (P0-3): Send to Kitchen persists the order
-//        via fire_counter_order_v4 (pending_payment), survives a POS reload,
-//        is visible on the KDS, and checkout then pays THAT SAME order via
-//        pay_existing_order_v11 (no second order, no process-payment call).
+//   T3 — Envoi caisse persistant : fire_counter_order crée la commande impayée.
+//        Après reload et restauration ciblée, elle apparaît au KDS puis
+//        pay_existing_order paie exactement cette commande.
 //
 // Project: pos (baseURL = E2E_POS_URL).
 //
@@ -35,17 +34,19 @@
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { loginPOS, openPosSession } from './fixtures/auth';
+import { formatOrderNumberShort } from '../../packages/domain/src/orders/formatOrderNumber';
 
 test.use({ baseURL: process.env.E2E_POS_URL ?? 'http://localhost:5173' });
 test.describe.configure({ mode: 'serial' });
 
-const PIN = process.env.E2E_PIN_CASHIER ?? '123456';
 // Seed owner (SUPER_ADMIN) PIN — has sales.discount. Same default as the
 // S39/S40 specs' E2E_PIN_ADMIN. NEVER retried on failure (shared fail bucket).
-const MANAGER_PIN = process.env.E2E_PIN_ADMIN ?? '123456';
+const MANAGER_PIN = process.env.E2E_PIN_ADMIN ?? '';
 
 let context: BrowserContext;
 let page: Page;
+let inboxSubscribed = false;
+const notifiedOrderIds = new Set<string>();
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -63,16 +64,16 @@ async function addAmericano(p: Page, surface: 'pos' | 'tablet' = 'pos'): Promise
   // category-scoped, so select the "Coffee" category first for Americano
   // (COF-011, Coffee) to render. Same ProductGrid on POS and tablet.
   await p.getByRole('button', { name: 'Coffee', exact: true }).click();
-  const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
+  const card = p.getByRole('button', { name: /^Americano\b/ }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
   // Confirm the ModifierModal via its testid if the category has modifier
   // groups (best-effort: only present when a modal mounts).
-  await p.getByTestId('modifier-add-to-cart').click({ timeout: 8_000 }).catch(() => {});
+  await p.getByTestId('modifier-add-to-cart').click({ timeout: 8_000 }).catch(() => { /* Modale facultative. */ });
   if (surface === 'pos') {
     await expect(p.getByTestId('cart-items')).toContainText('Americano', { timeout: 10_000 });
   } else {
-    await expect(p.getByRole('button', { name: /send to kitchen/i })).toBeVisible({ timeout: 10_000 });
+    await expect(p.getByRole('button', { name: /send (?:to )?kitchen/i })).toBeVisible({ timeout: 10_000 });
   }
 }
 
@@ -97,7 +98,7 @@ async function gotoPosReady(p: Page): Promise<void> {
 async function inboxCount(p: Page): Promise<number> {
   const btn = p.getByTestId('tablet-inbox-button');
   if (!(await btn.isEnabled().catch(() => false))) return 0;
-  const m = (await btn.innerText()).match(/(\d+)\s*$/);
+  const m = /(\d+)\s*$/.exec(await btn.innerText());
   return m ? Number(m[1]) : 0;
 }
 
@@ -130,8 +131,21 @@ async function startNewOrder(p: Page): Promise<void> {
 
 test.beforeAll(async ({ browser }) => {
   test.setTimeout(120_000);
+  if (!MANAGER_PIN || !process.env.E2E_PIN_CASHIER) throw new Error('Configure E2E_PIN_ADMIN and E2E_PIN_CASHIER before this mutating recipe');
   context = await browser.newContext();
   page = await context.newPage();
+  page.on('websocket', socket => socket.on('framereceived', ({ payload }) => {
+    try {
+      const frame: unknown = JSON.parse(String(payload));
+      const tuple = frame as unknown[];
+      const raw = Array.isArray(frame) ? { topic: tuple[2], event: tuple[3], payload: tuple[4] } : frame;
+      const message = raw as { topic?: string; event?: string; payload?: { status?: string; response?: { postgres_changes?: unknown[] }; data?: { record?: { id?: string } } } };
+      if (!message.topic?.includes('pending-tablet-orders-')) return;
+      if (message.event === 'phx_reply' && message.payload?.status === 'ok' && message.payload.response?.postgres_changes) inboxSubscribed = true;
+      const id = message.payload?.data?.record?.id;
+      if (message.event === 'postgres_changes' && typeof id === 'string') notifiedOrderIds.add(id);
+    } catch { /* Ne conserver ni trame brute, ni jeton d'authentification. */ }
+  }));
   await openPosSession(page);
   await expect(page).toHaveURL(/\/pos/, { timeout: 30_000 });
 });
@@ -148,8 +162,8 @@ test('T1: 10% discount → manager PIN modal → cash checkout → process-payme
   await addAmericano(page);
 
   // Open the cart-discount modal from the More menu (BottomActionBar).
-  await page.getByRole('button', { name: 'More' }).click();
-  await page.getByRole('menuitem', { name: /apply discount/i }).click();
+  await page.getByRole('button', { name: /^More/ }).click();
+  await page.getByRole('button', { name: 'Apply discount', exact: true }).click();
 
   const discountDialog = page.getByRole('dialog').filter({ hasText: 'Apply discount' });
   await expect(discountDialog).toBeVisible({ timeout: 10_000 });
@@ -169,9 +183,7 @@ test('T1: 10% discount → manager PIN modal → cash checkout → process-payme
 
   // S43 P0-1: confirming ANY discount must open the manager-PIN modal.
   await discountDialog.getByRole('button', { name: 'Confirm' }).click();
-  const pinDialog = page
-    .getByRole('dialog')
-    .filter({ hasText: 'Enter manager PIN to authorize discount' });
+  const pinDialog = page.getByRole('dialog', { name: 'Manager verification', exact: true });
   await expect(pinDialog).toBeVisible({ timeout: 10_000 });
 
   // Single PIN attempt — verify-manager-pin failures consume the shared
@@ -201,21 +213,8 @@ test('T1: 10% discount → manager PIN modal → cash checkout → process-payme
 
 // ── T2 — Realtime tablet → POS inbox (P0-2) ─────────────────────────────────
 
-// S71 Plan 2 — FIXME (app limitation, money-path/EF frozen = out of scope):
-// this test places a tablet order, which requires reaching /tablet/order.
-// TabletLayout gates access on `role_code === 'waiter'` OR a CLIENT-side
-// `permissions` list containing `sales.create`. The dedicated E2E seed has no
-// waiter, and the cashier (…002) lacks sales.create. Granting it per-user via
-// `user_permission_overrides` does NOT help: the `auth-verify-pin` EF's
-// `computePermissionsForRole` (supabase/functions/_shared/permissions.ts)
-// queries that table with the STALE columns `user_id` / `override_type`, while
-// the live schema is `user_profile_id` / `is_granted` — so the override query
-// errors and is silently dropped from the login permission list (the DB-side
-// has_permission() reads the correct columns, so the drift is EF-only). Fixing
-// the EF or adding a waiter seed is outside this test-only plan. Surface to the
-// owner: (1) auth-verify-pin permission-override schema drift; (2) no waiter in
-// the E2E seed for tablet-flow coverage.
-test.fixme('T2: tablet order on page B bumps the POS inbox badge on page A without reload', async ({ browser }) => {
+// Recette mutante : le compte Owner E2E possède sales.create pour la tablette.
+test('T2: tablet order on page B bumps the POS inbox badge on page A without reload', async ({ browser }) => {
   test.setTimeout(120_000);
 
   // Page A — POS, logged in (shared session). Wait for the initial
@@ -225,9 +224,12 @@ test.fixme('T2: tablet order on page B bumps the POS inbox badge on page A witho
       timeout: 20_000,
     })
     .catch(() => null);
+  inboxSubscribed = false;
   await page.goto('/pos');
+  await page.getByRole('button', { name: /^More/ }).click();
   await expect(page.getByTestId('tablet-inbox-button')).toBeVisible({ timeout: 20_000 });
   await inboxFetch;
+  await expect.poll(() => inboxSubscribed, { timeout: 15000 }).toBe(true);
   const before = await inboxCount(page);
 
   // Page B — independent context (2nd and last auth-verify-pin call of the suite).
@@ -235,21 +237,26 @@ test.fixme('T2: tablet order on page B bumps the POS inbox badge on page A witho
   const pageB = await contextB.newPage();
   try {
     await pageB.goto('/');
-    await loginPOS(pageB, PIN);
+    await loginPOS(pageB, MANAGER_PIN, 'E2E Owner');
     await expect(pageB).toHaveURL(/\/pos/, { timeout: 30_000 });
 
     await pageB.goto('/tablet/order');
+    await pageB.getByRole('button', { name: 'Back to menu', exact: true }).click();
     // Take-out avoids any table requirement. OrderTypeToggle renders role="tab"
     // buttons — target the stable testid, not a button role.
     await pageB.getByTestId('tablet-order-type-take-out').click();
     await addAmericano(pageB, 'tablet');
 
     const createResp = pageB.waitForResponse(
-      (r) => r.url().includes('create_tablet_order_v3'),
+      (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/create_tablet_order_v10',
       { timeout: 20_000 },
     );
-    await pageB.getByRole('button', { name: /send to kitchen/i }).click();
-    expect((await createResp).status(), 'create_tablet_order_v3 must succeed').toBe(200);
+    await pageB.getByRole('button', { name: /send (?:to )?kitchen/i }).click();
+    const response = await createResp;
+    expect(response.status(), 'create_tablet_order must succeed').toBe(200);
+    const createdOrderId: unknown = await response.json();
+    expect(createdOrderId).toMatch(/^[0-9a-f-]{36}$/i);
+    await expect.poll(() => typeof createdOrderId === 'string' && notifiedOrderIds.has(createdOrderId), { timeout: 10000 }).toBe(true);
 
     // Page A, NO reload: the badge must move via realtime well inside 10s
     // (the refetch safety net alone would need up to 30s).
@@ -275,27 +282,31 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   // Fire — the RPC is the source of truth (print failures are tolerated:
   // no print bridge in this environment, the toast says "saved to KDS").
   const fireResp = page.waitForResponse(
-    (r) => r.url().includes('/rest/v1/rpc/fire_counter_order_v4'),
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/fire_counter_order_v9',
     { timeout: 20_000 },
   );
   await page.getByRole('button', { name: /send to kitchen/i }).click();
   const fire = await fireResp;
-  expect(fire.status(), 'fire_counter_order_v4 must succeed').toBe(200);
+  expect(fire.status(), 'fire_counter_order must succeed').toBe(200);
   const fired = (await fire.json()) as {
     order_id: string;
     order_number: string;
     idempotent_replay: boolean;
   };
-  expect(fired.order_id).toBeTruthy();
-  expect(fired.order_number).toMatch(/#/);
+  expect(fired.order_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  expect(fired.order_number).toBeTruthy();
+  await expect(page.getByText('Order sent & parked in Held Orders')).toBeVisible({ timeout: 20_000 });
 
-  // Reload — the fired order must survive (persisted cart + DB row).
+  // Après reload, restaurer uniquement la commande créée par ce scénario.
   await page.reload();
   await expect(page.locator('main, [role="main"]').first()).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: /held orders/i }).click();
+  const heldOrder = page.locator(`[data-held-order-id="${fired.order_id}"]`);
+  await expect(heldOrder).toBeVisible({ timeout: 15_000 });
+  await heldOrder.getByRole('button', { name: /restore/i }).click();
   await expect(page.getByTestId('cart-items')).toContainText('Americano', { timeout: 15_000 });
-  // The Active Order header now shows the server order id (POS-<last4>).
   await expect(
-    page.getByText(`POS-${fired.order_id.slice(-4).toUpperCase()}`),
+    page.getByRole('complementary', { name: 'Active order' }).getByText(fired.order_number, { exact: true }),
   ).toBeVisible({ timeout: 10_000 });
 
   // KDS check — SAME TAB. POS auth + cart live in sessionStorage (per-tab by
@@ -305,18 +316,10 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   const baristaTab = page.getByRole('tab', { name: 'Barista' });
   await expect(baristaTab).toBeVisible({ timeout: 30_000 }); // lazy chunk cold-compile
   await baristaTab.click();
-  // order_number (e.g. "#0013") is a per-shift/day DISPLAY sequence, NOT a
-  // globally-unique id, and fired-unpaid tickets accumulate on the shared KDS
-  // across runs/days — so several <article>s can carry the same "#NNNN" (and a
-  // bare substring "#0007" would also hit "#00070".."#00079"). The KDS card
-  // exposes no order_id in the DOM (adding a testid = app change, frozen). So:
-  // escape + `(?!\d)` boundary on the number, AND narrow to a NON-paid Americano
-  // ticket, then take the first — this proves our fired unpaid order is on the
-  // KDS. Uniqueness of THIS order is asserted elsewhere: the reload check above
-  // matches the `POS-<order_id last4>` header, and the checkout below asserts
-  // pay_existing_order_v11 fires on fired.order_id (not a second order).
+  // Le numéro court KDS peut se répéter entre jours : ce contrôle est visuel.
+  // L'identité exacte est prouvée par la restauration et les échanges paiement.
   const orderNoRe = new RegExp(
-    fired.order_number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?!\\d)',
+    formatOrderNumberShort(fired.order_number).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?!\\d)',
   );
   const ticket = page
     .locator('article')
@@ -334,30 +337,33 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   await gotoPosReady(page);
   await expect(page.getByTestId('cart-items')).toContainText('Americano', { timeout: 15_000 });
 
-  // Checkout — must pay the EXISTING order via pay_existing_order_v11,
-  // never mint a second one via process-payment.
+  // Le paiement cible la commande existante via pay_existing_order.
+  // Aucun appel process-payment ne doit créer une seconde commande.
   let processPaymentCalls = 0;
   page.on('request', (r) => {
     if (r.url().includes('/functions/v1/process-payment')) processPaymentCalls += 1;
   });
   const payResp = page.waitForResponse(
-    (r) => r.url().includes('/rest/v1/rpc/pay_existing_order_v11'),
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/pay_existing_order_v20',
     { timeout: 30_000 },
   );
   await payCashExact(page);
   const pay = await payResp;
-  expect(pay.status(), 'pay_existing_order_v11 must succeed').toBe(200);
+  expect(pay.status(), 'pay_existing_order must succeed').toBe(200);
+  const paymentArgs = pay.request().postDataJSON() as { p_order_id?: string };
+  expect(paymentArgs.p_order_id, 'payment request must target the fired order').toBe(fired.order_id);
   const envelope = (await pay.json()) as { order_id?: string };
-  // Single paid order: the payment targets the exact order the fire created.
-  expect(envelope.order_id ?? fired.order_id).toBe(fired.order_id);
+  // Sans valeur de repli : une réponse sans UUID doit faire échouer la preuve.
+  expect(envelope.order_id, 'payment response must identify the fired order').toBe(fired.order_id);
   expect(processPaymentCalls, 'fired-order checkout must not call process-payment').toBe(0);
   await startNewOrder(page);
 
-  // KDS after payment: same ticket, now flagged PAID (single order, now paid).
+  // Contrôle visuel après paiement ; l'UUID a été vérifié dans la réponse RPC.
   await page.goto('/kds');
   await expect(baristaTab).toBeVisible({ timeout: 30_000 });
   await baristaTab.click();
-  const paidTicket = page.locator('article').filter({ hasText: fired.order_number });
+  const paidTicket = page.locator('article').filter({ hasText: orderNoRe })
+    .filter({ hasText: 'Americano' }).filter({ hasText: 'PAID' }).first();
   await expect(paidTicket).toBeVisible({ timeout: 20_000 });
   await expect(paidTicket.getByText('PAID', { exact: true })).toBeVisible({ timeout: 15_000 });
 });

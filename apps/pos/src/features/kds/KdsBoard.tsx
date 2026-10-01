@@ -42,7 +42,8 @@ import { SectionLabel } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
 import { useKdsStore, type KdsStation, type KdsStationFilter } from '@/stores/kdsStore';
 import { useOfflineMode } from '@/features/lan/offlineMode';
-import { useKdsOfflineStore, selectOfflineRowsForStation } from './kdsOfflineStore';
+import { useKdsOfflineStore } from './kdsOfflineStore';
+import { mergeKitchenRows } from './offlineKitchenReconciliation';
 import { useKdsOrders, type KdsItemRow } from './hooks/useKdsOrders';
 import { useKdsServedOrders } from './hooks/useKdsServedOrders';
 import { useAgeTimer } from './hooks/useAgeTimer';
@@ -75,9 +76,10 @@ function groupByOrder(items: KdsItemRow[]): KdsItemRow[][] {
   // (FIFO from the SQL query) determines the order of cards in the grid.
   const map = new Map<string, KdsItemRow[]>();
   for (const item of items) {
-    const bucket = map.get(item.order_id);
+    const groupId = item.group_order_id ?? item.order_id;
+    const bucket = map.get(groupId);
     if (bucket) bucket.push(item);
-    else map.set(item.order_id, [item]);
+    else map.set(groupId, [item]);
   }
   return Array.from(map.values());
 }
@@ -105,12 +107,9 @@ export function KdsBoard({
   // ils n'existent que là, online comme offline.
   const offlineMode = useOfflineMode();
   const offlineRowsMap = useKdsOfflineStore((s) => s.rows);
-  const offlineRows = useMemo(
-    () => selectOfflineRowsForStation(offlineRowsMap, station),
-    [offlineRowsMap, station],
-  );
+  const resolutions = useKdsOfflineStore((s) => s.resolutions);
 
-  const allItems = useMemo(() => [...items, ...offlineRows], [items, offlineRows]);
+  const allItems = useMemo(() => mergeKitchenRows(items, offlineRowsMap, resolutions, station), [items, offlineRowsMap, resolutions, station]);
 
   // Critique run 3 (distill) — les chips kds_station sont dérivées des données :
   // seules les stations réellement présentes dans les tickets chargés rendent
@@ -243,7 +242,7 @@ export function KdsBoard({
           visibleOrders.map((orderItems) => {
             const head = orderItems[0];
             if (!head) return null;
-            return <KdsOrderCard key={head.order_id} items={orderItems} />;
+            return <KdsOrderCard key={head.group_order_id ?? head.order_id} items={orderItems} />;
           })
         )}
       </main>

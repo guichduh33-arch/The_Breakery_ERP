@@ -1385,6 +1385,7 @@ export type Database = {
           account_id: string
           code: string
           created_at: string
+          description: string | null
           id: string
           is_active: boolean
           name: string
@@ -1394,6 +1395,7 @@ export type Database = {
           account_id: string
           code: string
           created_at?: string
+          description?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -1403,6 +1405,7 @@ export type Database = {
           account_id?: string
           code?: string
           created_at?: string
+          description?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -5717,6 +5720,52 @@ export type Database = {
         }
         Relationships: []
       }
+      unpaid_order_cancel_keys: {
+        Row: {
+          actor_id: string
+          created_at: string
+          key: string
+          order_id: string
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          key: string
+          order_id: string
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          key?: string
+          order_id?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unpaid_order_cancel_keys_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unpaid_order_cancel_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unpaid_order_cancel_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       user_permission_overrides: {
         Row: {
           expires_at: string | null
@@ -6558,6 +6607,19 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
+      cancel_unpaid_order_v1: {
+        Args: {
+          p_acting_auth_user_id: string
+          p_authorized_by: string
+          p_expected_items: Json
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_losses: Json
+          p_order_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       change_user_pin_v1: {
         Args: {
           p_actor_id: string
@@ -6795,6 +6857,16 @@ export type Database = {
           total_visits: number
           updated_at: string
         }[]
+      }
+      create_expense_category_v1: {
+        Args: {
+          p_account_id: string
+          p_code: string
+          p_description?: string
+          p_is_active?: boolean
+          p_name: string
+        }
+        Returns: string
       }
       create_expense_v2: {
         Args: {
@@ -7220,6 +7292,7 @@ export type Database = {
         Returns: Json
       }
       get_display_stock_activity_v1: { Args: never; Returns: Json }
+      get_expense_categories_admin_v1: { Args: never; Returns: Json }
       get_expenses_by_category_v1: {
         Args: {
           p_category_id?: string
@@ -7789,7 +7862,7 @@ export type Database = {
         }
         Returns: Json
       }
-      import_expenses_v2: {
+      import_expenses_v3: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -8358,7 +8431,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v3: { Args: { p_order_id: string }; Returns: Json }
+      reopen_held_order_v4: { Args: { p_order_id: string }; Returns: Json }
       reorder_categories_v2: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
@@ -8370,6 +8443,17 @@ export type Database = {
       reorder_variants_v2: {
         Args: { p_ordered_variant_ids: string[]; p_parent_id: string }
         Returns: number
+      }
+      replay_kds_offline_status_v1: {
+        Args: {
+          p_actor_id: string
+          p_client_line_id: string
+          p_client_uuid: string
+          p_idempotency_key: string
+          p_observed_at: string
+          p_status: string
+        }
+        Returns: Json
       }
       reservation_consume_v1: {
         Args: { p_reservation_id: string }
@@ -8395,6 +8479,10 @@ export type Database = {
       reset_user_pin_v2: {
         Args: { p_new_pin: string; p_user_id: string }
         Returns: undefined
+      }
+      resolve_kds_offline_order_v1: {
+        Args: { p_client_uuid: string }
+        Returns: Json
       }
       resolve_mapping_account: {
         Args: { p_mapping_key: string }
@@ -8721,6 +8809,16 @@ export type Database = {
       update_customer_v1: {
         Args: { p_customer_id: string; p_patch: Json }
         Returns: Json
+      }
+      update_expense_category_v1: {
+        Args: {
+          p_account_id: string
+          p_category_id: string
+          p_description: string
+          p_is_active: boolean
+          p_name: string
+        }
+        Returns: undefined
       }
       update_lan_heartbeat_v3: {
         Args: { p_device_codes: string[] }

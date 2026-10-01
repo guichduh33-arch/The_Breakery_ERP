@@ -7,21 +7,19 @@ import type { ReopenOrderPayload } from '@/stores/cartStore';
 import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
 
 /**
- * Spec A, Bloc 3 — reopen a held FIRED order (status='pending_payment') via
- * reopen_held_order_v3. Unlike useRestoreHeldOrder (draft, deletes server-side,
- * fresh ids), this preserves order_items.id + lock state so already-fired lines
- * stay non-editable / non-reprinted. The RPC claims the order (is_held=false).
- *
- * La v2 exclut les lignes annulées du payload et porte `product_type` /
- * `combo_components` par ligne, de quoi réhydrater une ligne combo au panier.
+ * Reprend une commande envoyée en attente ou une commande caisse déjà ouverte.
+ * Le snapshot conserve les identifiants, verrous et faits d'annulation ; aucune
+ * ligne déjà envoyée ne doit être recréée ou réimprimée.
  */
 export function useReopenHeldOrder() {
   const qc = useQueryClient();
   return useMutation({
+    // Un rejet de la garde panier ne doit jamais relancer la reprise avec un nouvel état.
+    retry: false,
     mutationFn: async (orderId: string): Promise<string> => {
       if (isCartPaymentLocked()) throw new Error('Resume the saved payment first');
       const before = useCartStore.getState();
-      const { data, error } = await supabase.rpc('reopen_held_order_v3', {
+      const { data, error } = await supabase.rpc('reopen_held_order_v4', {
         p_order_id: orderId,
       });
       if (error) throw error;

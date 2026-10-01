@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useHubConnectionStore } from '../hubConnectionStore';
 import { useLanCredential } from '../lanCredential';
+import { isSupabaseCloudEnabled } from '@breakery/supabase';
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
@@ -34,6 +35,7 @@ export function useLanHeartbeat({ deviceCode, enabled = true }: UseLanHeartbeatO
 
     async function tick(): Promise<void> {
       if (cancelled) return;
+      if (!isSupabaseCloudEnabled()) return;
       // Hub connecté = le hub porte le heartbeat cloud (un seul écrivain).
       // Lu à CHAQUE tick (pas en dep d'effet) : la bascule hub up/down ne
       // doit pas redémarrer l'intervalle.
