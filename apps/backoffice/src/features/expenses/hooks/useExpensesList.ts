@@ -14,7 +14,7 @@ export type ExpenseStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'p
 
 export interface ExpensesListFilters {
   status?: ExpenseStatus | 'all';
-  categoryId?: string | 'all';
+  categoryId?: string;
   paymentMethod?: 'cash' | 'transfer' | 'card' | 'credit' | 'all';
   dateFrom?: string;
   dateTo?: string;
@@ -62,15 +62,15 @@ export function useExpensesList(filters: ExpensesListFilters = {}) {
   });
 }
 
-export function useExpenseCategories() {
+export function useExpenseCategories(includeInactive = false) {
   return useQuery<ExpenseCategoryRow[]>({
-    queryKey: ['expense-categories'] as const,
+    queryKey: ['expense-categories', { includeInactive }] as const,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('expense_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('name', { ascending: true });
+        .select('*');
+      if (!includeInactive) query = query.eq('is_active', true);
+      const { data, error } = await query.order('name', { ascending: true });
       if (error) throw error;
       return data ?? [];
     },

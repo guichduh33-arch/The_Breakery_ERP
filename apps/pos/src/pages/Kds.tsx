@@ -18,8 +18,12 @@ import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useKdsOfflineBus } from '@/features/kds/hooks/useKdsOfflineBus';
 import { KdsBoard } from '@/features/kds/KdsBoard';
+import { useKitchenJournal } from '@/features/kds/hooks/useKitchenJournal';
+import { useKdsOfflineStore } from '@/features/kds/kdsOfflineStore';
 
 export default function KdsPage() {
+  useKitchenJournal();
+  const kitchenIssue = useKdsOfflineStore((s) => s.issue);
   const station = useKdsStore((s) => s.selectedStation);
   // Design Wave C — surface realtime channel health as a board banner. Starts
   // optimistic (true) so a healthy first subscribe never flashes the warning.
@@ -36,5 +40,8 @@ export default function KdsPage() {
   useCloudPing();
   useKdsOfflineBus();
 
-  return <KdsBoard station={station} isRealtimeConnected={realtimeConnected} />;
+  return <>
+    {kitchenIssue && <div role="alert" className="bg-bg-base text-text-primary p-3">{kitchenIssue}</div>}
+    <KdsBoard station={station} isRealtimeConnected={realtimeConnected} />
+  </>;
 }

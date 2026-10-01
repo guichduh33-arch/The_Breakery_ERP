@@ -21,7 +21,7 @@
 
 import { AlertTriangle, Clock, RotateCcw, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState, type JSX } from 'react';
+import { useRef, useState, type JSX } from 'react';
 import {
   Currency,
   Dialog,
@@ -54,10 +54,12 @@ function HeldOrderCard({
   row,
   onRestore,
   onDelete,
+  restoring,
 }: {
   row: HeldOrderRow;
   onRestore: () => void;
   onDelete: () => void;
+  restoring: boolean;
 }): JSX.Element {
   return (
     <article
@@ -116,6 +118,7 @@ function HeldOrderCard({
           <button
             type="button"
             onClick={onDelete}
+            disabled={restoring}
             aria-label={`Delete held order ${row.order_number}`}
             className={cn(
               'h-touch-min w-touch-min inline-flex items-center justify-center rounded-md',
@@ -129,6 +132,7 @@ function HeldOrderCard({
           <button
             type="button"
             onClick={onRestore}
+            disabled={restoring}
             className={cn(
               'h-touch-min px-4 inline-flex items-center justify-center gap-2 rounded-md',
               'bg-gold hover:bg-gold-hover text-gold-fg font-bold uppercase tracking-widest text-xs',
@@ -164,15 +168,29 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   const discard = useDiscardHeldOrder();
 
   const [confirmRow, setConfirmRow] = useState<HeldOrderRow | null>(null);
+  const restoringRef = useRef(false);
+  const [restoring, setRestoring] = useState(false);
 
   // ADR-022 déc. 4 — plus de branchement : toute ligne listée est une commande
   // envoyée en cuisine, donc une réouverture.
   async function doRestore(row: HeldOrderRow): Promise<void> {
-    await reopen.mutateAsync(row.id);
-    onClose();
+    if (restoringRef.current) return;
+    restoringRef.current = true;
+    setRestoring(true);
+    try {
+      await reopen.mutateAsync(row.id);
+      onClose();
+    } catch {
+      toast.error('Could not restore this order. Refresh the list and try again.');
+      void refetch();
+    } finally {
+      restoringRef.current = false;
+      setRestoring(false);
+    }
   }
 
   function handleRestoreTap(row: HeldOrderRow): void {
+    if (restoringRef.current) return;
     if (pickedUpOrderId) {
       toast.error('Finish or void the current fired order before restoring a held one.');
       return;
@@ -295,6 +313,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                   <HeldOrderCard
                     key={row.id}
                     row={row}
+                    restoring={restoring}
                     onRestore={() => handleRestoreTap(row)}
                     onDelete={() => handleDelete(row.id)}
                   />
@@ -326,6 +345,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
             <button
               type="button"
               onClick={handleConfirmReplace}
+              disabled={restoring}
               className="min-h-touch-min px-4 rounded-md bg-gold hover:bg-gold-hover text-gold-fg text-sm font-bold uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Replace

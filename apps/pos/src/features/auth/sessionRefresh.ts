@@ -45,7 +45,7 @@ function clearTimer(): void {
 function schedule(): void {
   clearTimer();
   const s = useAuthStore.getState();
-  if (!s.isAuthenticated || !s.sessionToken || s.authExpiresAt === null) return;
+  if (!s.isAuthenticated || !s.sessionToken || s.authExpiresAt === null || !s.cloudValidated) return;
   // Dead session already surfaced — probing again would only re-set the same
   // lock. The re-PIN path (login) refreshes authExpiresAt and reschedules.
   if (s.lockReason === 'session_expired') return;
@@ -60,7 +60,7 @@ function schedule(): void {
 async function fire(): Promise<void> {
   if (probing) return;
   const s = useAuthStore.getState();
-  if (!s.isAuthenticated || !s.sessionToken) return;
+  if (!s.isAuthenticated || !s.sessionToken || !s.cloudValidated) return;
   probing = true;
   try {
     // Re-mints the bearer on success ; locks the terminal on a server 401 ;
@@ -80,7 +80,7 @@ async function fire(): Promise<void> {
 export function initSessionRefresh(): void {
   unsubscribe ??= useAuthStore.subscribe((state, prev) => {
     if (
-      state.authExpiresAt !== prev.authExpiresAt ||
+      state.authExpiresAt !== prev.authExpiresAt || state.cloudValidated !== prev.cloudValidated ||
       state.isAuthenticated !== prev.isAuthenticated ||
       state.lockReason !== prev.lockReason
     ) {

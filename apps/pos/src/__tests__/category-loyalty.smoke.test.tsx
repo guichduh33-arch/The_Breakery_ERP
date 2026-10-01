@@ -27,6 +27,9 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
+// La session cloud est validée dans ce scénario ; son refus est testé dans accessToken.test.ts.
+vi.mock('@/lib/accessToken', () => ({ getAccessToken: vi.fn().mockResolvedValue('tok') }));
+
 const mockFetch = vi.fn();
 beforeEach(() => {
   mockFetch.mockReset();

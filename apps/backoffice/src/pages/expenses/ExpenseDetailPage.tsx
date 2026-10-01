@@ -88,7 +88,7 @@ export default function ExpenseDetailPage(): JSX.Element {
   const canCreate  = hasPermission('expenses.create');
 
   const { data: expense, isLoading, error } = useExpenseDetail(id);
-  const { data: cats } = useExpenseCategories();
+  const { data: cats } = useExpenseCategories(true);
   const { data: approvals = [] } = useExpenseApprovals(id || null);
   const submit = useSubmitExpense();
 

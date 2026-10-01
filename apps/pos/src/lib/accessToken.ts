@@ -6,9 +6,10 @@
 // `supabase.auth.getSession()` returns null in a real browser (the historical
 // `no_auth_session` checkout breakage). The GoTrue session is kept as a
 // fallback for email-login and test contexts.
-import { getSupabaseAccessToken } from '@breakery/supabase';
+import { getSupabaseAccessToken, isSupabaseCloudEnabled } from '@breakery/supabase';
 
 export async function getAccessToken(): Promise<string> {
+  if (!isSupabaseCloudEnabled()) throw new Error('cloud_session_not_validated');
   const pinToken = getSupabaseAccessToken();
   if (pinToken) return pinToken;
   const { supabase } = await import('@/lib/supabase');

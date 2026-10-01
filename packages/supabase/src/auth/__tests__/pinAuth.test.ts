@@ -4,7 +4,7 @@
 // x-current-pin/x-new-pin headers, never the JSON body (request bodies get
 // logged by default by PostgREST/pgaudit/proxies; headers are not).
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { changePin, loginWithPin } from '../pinAuth.js';
+import { changePin, getSession, loginWithPin } from '../pinAuth.js';
 
 describe('loginWithPin — transport du PIN', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -24,6 +24,14 @@ describe('loginWithPin — transport du PIN', () => {
 });
 
 describe('changePin (S25 hard cutover)', () => {
+  it('transporte les échéances serveur ; aucune valeur legacy inventée', async () => {
+    const clock = { created_at: '2026-09-30T01:00:00Z', last_activity_at: '2026-09-30T02:00:00Z', server_now: '2026-09-30T02:05:00Z' };
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ user: { id: 'u' }, permissions: [], session_clock: clock })));
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await getSession('https://example.invalid', 'token')).session_clock).toEqual(clock);
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ user: { id: 'u' }, permissions: [] })));
+    expect((await getSession('https://example.invalid', 'token')).session_clock).toBeUndefined();
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
   });

@@ -25,6 +25,7 @@ export interface LoginRequest {
  * @property permissions - Flat list of {@link PermissionCode} strings granted by the user's role.
  */
 export interface LoginResponse {
+  session_clock?: { created_at: string; last_activity_at: string; server_now: string };
   user: { id: string; full_name: string; role_code: string; employee_code: string };
   session: { token: string; session_id: string; created_at: string };
   auth: { access_token: string; refresh_token: string; expires_at: number };
@@ -128,6 +129,7 @@ export async function getSession(
   LoginResponse['user'] & {
     permissions: string[];
     session_timeout_minutes: number | null;
+    session_clock?: LoginResponse['session_clock'];
     /**
      * Fresh HS256 JWT bundle re-minted by the EF so the caller can restore the
      * PostgREST bearer after a hard reload (the clients run with
@@ -145,6 +147,7 @@ export async function getSession(
     user: LoginResponse['user'];
     permissions: string[];
     session_timeout_minutes?: number | null;
+    session_clock?: LoginResponse['session_clock'];
     auth?: LoginResponse['auth'] | null;
   };
   return {
@@ -152,6 +155,7 @@ export async function getSession(
     permissions: body.permissions,
     session_timeout_minutes: body.session_timeout_minutes ?? null,
     auth: body.auth ?? null,
+    session_clock: body.session_clock,
   };
 }
 

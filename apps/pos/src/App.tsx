@@ -16,6 +16,7 @@ import { HubPresenceMount } from './features/lan/HubPresenceMount';
 import { SettingsRealtimeMount } from './components/SettingsRealtimeMount';
 import { CatalogRealtimeMount } from './components/CatalogRealtimeMount';
 import { useAuthStore } from './stores/authStore';
+import { startCloudSession } from './features/auth/cloudSession';
 
 /** Full-viewport spinner shown while a persisted PIN session rehydrates. */
 function BootLoading() {
@@ -69,13 +70,16 @@ export default function App() {
   useEffect(() => {
     initSessionDeathWatch();
     initSessionRefresh();
+    const stopCloud = startCloudSession();
     const stopActivity = startSessionActivity({
       getSession: useAuthStore.getState,
       send: (token) => recordSessionActivity(supabaseUrl, token),
       onExpired: () => { useAuthStore.getState().lock('session_expired'); },
+      isOnline: () => navigator.onLine && useAuthStore.getState().cloudValidated,
     });
     return () => {
       stopActivity();
+      stopCloud();
       disposeSessionRefresh();
       disposeSessionDeathWatch();
     };

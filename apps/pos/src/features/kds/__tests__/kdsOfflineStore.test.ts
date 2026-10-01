@@ -1,7 +1,10 @@
 // apps/pos/src/features/kds/__tests__/kdsOfflineStore.test.ts
 // Spec 006x lot 3 — tickets KDS locaux (bus LAN) : ingestion idempotente,
 // transitions de statut, sélecteurs station + ready display.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+vi.mock('@/stores/authStore', () => ({ useAuthStore: { getState: () => ({
+  isAuthenticated: true, isLocked: false, user: { id: 'kitchen-employee' }, permissions: ['kds.operate'],
+}) } }));
 import {
   useKdsOfflineStore,
   selectOfflineRowsForStation,
@@ -32,6 +35,7 @@ const FIRED: OrderFiredPayload = {
 };
 
 beforeEach(() => {
+  localStorage.clear();
   useKdsOfflineStore.getState().clear();
 });
 

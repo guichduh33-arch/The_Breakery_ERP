@@ -66,6 +66,8 @@ serve(async (req) => {
     permissions: sessionResult.permissions,
     session_id: sessionResult.sessionId,
     session_timeout_minutes: sessionResult.sessionTimeoutMinutes,
+    session_clock: { created_at: sessionResult.createdAt, last_activity_at: sessionResult.lastActivityAt,
+      server_now: new Date().toISOString() },
     auth,
   });
 });

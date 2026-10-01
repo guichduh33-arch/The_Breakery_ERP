@@ -1,6 +1,6 @@
 // apps/pos/src/features/heldOrders/__tests__/reopen-held-order.smoke.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
@@ -29,6 +29,35 @@ beforeEach(() => {
 });
 
 describe('useReopenHeldOrder', () => {
+  it('calls the recoverable order RPC and propagates refusal without replacing the cart', async () => {
+    const before = useCartStore.getState().cart;
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0002', message: 'order_not_available_for_reopen' } });
+    const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
+    await expect(result.current.mutateAsync('closed-order')).rejects.toMatchObject({ code: 'P0002' });
+    expect(rpc).toHaveBeenCalledWith('reopen_held_order_v4', { p_order_id: 'closed-order' });
+    expect(useCartStore.getState().cart).toBe(before);
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+  });
+
+  it('never retries a concurrent cart rejection even when global mutation retries are enabled', async () => {
+    let complete!: (value: unknown) => void;
+    rpc.mockReturnValueOnce(new Promise((resolve) => { complete = resolve; }));
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: true, retryDelay: 0 } } });
+    const { result } = renderHook(() => useReopenHeldOrder(), {
+      wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
+    });
+    const pending = result.current.mutateAsync('open-order');
+    const rejection = expect(pending).rejects.toThrow('The current order changed');
+    await waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
+    const changed = { items: [], order_type: 'delivery' as const };
+    act(() => useCartStore.setState({ cart: changed }));
+    complete({ data: { order_id: 'open-order', customerId: null, items: [] }, error: null });
+    await rejection;
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(useCartStore.getState().cart).toBe(changed);
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+  });
+
   it('rehydrates the fired order with locked lines into the cart', async () => {
     rpc.mockResolvedValueOnce({
       data: {
@@ -122,7 +151,7 @@ describe('useReopenHeldOrder', () => {
 
   it('restores customer badge via get_customer_v3 when customerId present', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v3') {
+      if (name === 'reopen_held_order_v4') {
         return Promise.resolve({
           data: {
             order_id: 'order-6',
@@ -157,7 +186,7 @@ describe('useReopenHeldOrder', () => {
 
   it('keeps customerId even if customer lookup fails (best-effort badge)', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v3') {
+      if (name === 'reopen_held_order_v4') {
         return Promise.resolve({
           data: {
             order_id: 'order-7',

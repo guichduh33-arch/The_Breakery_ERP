@@ -4,6 +4,15 @@ import type { Database } from './types.generated.js';
 let _client: SupabaseClient<Database> | null = null;
 let _accessToken: string | null = null;
 let _onAuthError: ((status: number) => void) | null = null;
+let _cloudEnabled = true;
+
+/** Barrière POS uniquement ; le BO conserve le comportement par défaut. */
+export function setSupabaseCloudEnabled(enabled: boolean): void {
+  _cloudEnabled = enabled;
+  if (!enabled) void _client?.realtime.disconnect();
+  else if (_client?.realtime.getChannels().length) _client.realtime.connect();
+}
+export function isSupabaseCloudEnabled(): boolean { return _cloudEnabled; }
 
 /**
  * Configuration injected on first {@link getSupabaseClient} call.
@@ -106,6 +115,9 @@ export function getSupabaseClient(config?: BreakerySupabaseConfig): SupabaseClie
     global: {
       headers: { 'x-app': 'breakery' },
       fetch: (input, init) => {
+        // Réponse locale non-retryable par supabase-js : aucun paquet ne sort.
+        if (!_cloudEnabled) return Promise.resolve(new Response(JSON.stringify({ code: 'CLOUD_SESSION_NOT_VALIDATED', message: 'Cloud session awaits validation' }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } }));
         const headers = new Headers(init?.headers);
         const hadToken = _accessToken !== null;
         if (_accessToken) {
@@ -122,6 +134,18 @@ export function getSupabaseClient(config?: BreakerySupabaseConfig): SupabaseClie
       },
     },
   });
+  // Le SDK rafraîchit le token après chaque join et à la reconnexion.
+  // Son fournisseur GoTrue ignore les JWT PIN/kiosk et écraserait setAuth()
+  // avec anon. Préserver son repli, mais privilégier notre bearer courant.
+  const sdkRealtimeAccessToken = _client.realtime.accessToken;
+  _client.realtime.accessToken = async () => {
+    if (_accessToken) return _accessToken;
+    const fallback = await sdkRealtimeAccessToken?.();
+    return _accessToken ?? fallback ?? config.anonKey;
+  };
+  // Toute reconnexion, y compris depuis subscribe() ou un timer, passe ici.
+  const connect = _client.realtime.connect.bind(_client.realtime);
+  _client.realtime.connect = () => { if (_cloudEnabled) connect(); };
   // Reload flow : authStore réinjecte le token persisté AVANT le premier accès
   // au client — ré-applique-le au RealtimeClient fraîchement créé.
   if (_accessToken) _client.realtime.setAuth(_accessToken).catch(() => undefined);
@@ -136,4 +160,5 @@ export function resetSupabaseClient(): void {
   _client = null;
   _accessToken = null;
   _onAuthError = null;
+  _cloudEnabled = true;
 }

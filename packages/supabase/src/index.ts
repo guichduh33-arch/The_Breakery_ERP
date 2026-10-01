@@ -2,6 +2,8 @@ export {
   getSupabaseClient,
   resetSupabaseClient,
   setSupabaseAccessToken,
+  setSupabaseCloudEnabled,
+  isSupabaseCloudEnabled,
   setSupabaseKioskAccessToken,
   getSupabaseAccessToken,
   setSupabaseAuthErrorHandler,

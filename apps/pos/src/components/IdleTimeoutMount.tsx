@@ -14,15 +14,34 @@
 
 import { useIdleTimeout } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
+import { useEffect } from 'react';
+import { localSessionValid } from '@/features/auth/localSession';
 
 export function IdleTimeoutMount(): null {
+  const local = useAuthStore((s) => s.localSession);
+  const locked = useAuthStore((s) => s.isLocked);
   const timeoutMinutes = useAuthStore((s) => (s.isAuthenticated ? s.sessionTimeoutMinutes ?? 0 : 0));
   useIdleTimeout({
-    timeoutMinutes,
+    timeoutMinutes: local || locked ? 0 : timeoutMinutes,
     onTimeout: () => {
       // Guard against locking an unauthenticated store (e.g. the login screen).
       if (useAuthStore.getState().isAuthenticated) useAuthStore.getState().lock();
     },
   });
+  useEffect(() => {
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'idle:reset'];
+    const activity = (): void => useAuthStore.getState().recordLocalActivity();
+    for (const event of events) window.addEventListener(event, activity, { passive: true });
+    return () => { for (const event of events) window.removeEventListener(event, activity); };
+  }, []);
+  useEffect(() => {
+    if (!local || locked) return;
+    const state = useAuthStore.getState();
+    if (!localSessionValid(local, state.sessionToken, state.user?.id)) { state.lock(); return; }
+    const remaining = Math.min(local.expiresAt, local.lastActivityAt + local.idleMs) - Date.now();
+    const warning = setTimeout(() => window.dispatchEvent(new CustomEvent('idle:warning', { detail: { remainingMs: 30_000 } })), Math.max(0, remaining - 30_000));
+    const expired = setTimeout(() => { useAuthStore.getState().lock(); window.dispatchEvent(new CustomEvent('idle:fired')); }, remaining);
+    return () => { clearTimeout(warning); clearTimeout(expired); };
+  }, [local, locked]);
   return null;
 }

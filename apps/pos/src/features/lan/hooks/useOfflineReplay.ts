@@ -51,7 +51,7 @@ export function useOfflineReplay(): void {
       if (s.cloudOnline && !prev.cloudOnline) run();
     });
     const unsubAuth = useAuthStore.subscribe((s, prev) => {
-      if (s.isAuthenticated && !prev.isAuthenticated) run();
+      if (s.cloudValidated && !prev.cloudValidated) run();
     });
 
     return () => {

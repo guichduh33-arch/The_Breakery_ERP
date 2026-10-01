@@ -230,7 +230,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
  *  no-op si non authentifié (les intents attendent le prochain déclencheur). */
 export async function replayOfflineOutbox(): Promise<ReplayResult> {
   if (replaying) return { replayed: 0, failed: 0 };
-  if (!useAuthStore.getState().isAuthenticated) return { replayed: 0, failed: 0 };
+  if (!useAuthStore.getState().isAuthenticated || !useAuthStore.getState().cloudValidated) return { replayed: 0, failed: 0 };
 
   replaying = true;
   try {
@@ -248,6 +248,7 @@ export async function replayOfflineOutbox(): Promise<ReplayResult> {
     const skipped = new Set<string>();
 
     for (const intent of pending) {
+      if (!useAuthStore.getState().cloudValidated) return { replayed, failed: pending.length - replayed };
       if (skipped.has(intent.id)) continue;
 
       try {

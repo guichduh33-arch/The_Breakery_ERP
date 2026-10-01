@@ -12,7 +12,8 @@ vi.mock('../../functions/_shared/rate-limit.ts', () => ({
 describe('sessions — restauration et activité séparées', () => {
   beforeEach(() => {
     vi.clearAllMocks(); vi.resetModules();
-    mocks.session.mockResolvedValue({ userId: 'profile', sessionId: 'session', permissions: ['orders.read'], sessionTimeoutMinutes: 120 });
+    mocks.session.mockResolvedValue({ userId: 'profile', sessionId: 'session', permissions: ['orders.read'], sessionTimeoutMinutes: 120,
+      createdAt: '2026-09-30T01:00:00Z', lastActivityAt: '2026-09-30T02:00:00Z' });
     mocks.rpc.mockResolvedValue({ data: true, error: null });
     mocks.sign.mockResolvedValue('fresh-jwt');
     const query = { select: () => query, eq: () => query, is: () => query,
@@ -28,7 +29,8 @@ describe('sessions — restauration et activité séparées', () => {
   it('rafraîchit le JWT en conservant le snapshot sans écrire l’activité', async () => {
     const response = await invoke('auth-get-session');
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ permissions: ['orders.read'], session_timeout_minutes: 120, auth: { access_token: 'fresh-jwt' } });
+    expect(await response.json()).toMatchObject({ permissions: ['orders.read'], session_timeout_minutes: 120, auth: { access_token: 'fresh-jwt' },
+      session_clock: { created_at: '2026-09-30T01:00:00Z', last_activity_at: '2026-09-30T02:00:00Z', server_now: expect.any(String) } });
     expect(mocks.from).toHaveBeenCalledExactlyOnceWith('user_profiles');
     expect(mocks.rpc).not.toHaveBeenCalled();
   });

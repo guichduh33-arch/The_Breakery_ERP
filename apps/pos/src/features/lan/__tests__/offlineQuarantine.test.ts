@@ -54,7 +54,7 @@ beforeEach(() => {
   localStorage.clear();
   rpcMock.mockReset();
   emitPosEventMock.mockReset();
-  useAuthStore.setState({ isAuthenticated: true });
+  useAuthStore.setState({ isAuthenticated: true, cloudValidated: true });
   useCartStore.setState({ pickedUpOrderId: null, offlineOrder: null });
 });
 

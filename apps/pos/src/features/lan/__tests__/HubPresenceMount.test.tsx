@@ -15,6 +15,7 @@ import { hubBus } from '../hubBusClient';
 import { useHubConnectionStore } from '../hubConnectionStore';
 import { useAuthStore } from '@/stores/authStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { setSupabaseCloudEnabled } from '@breakery/supabase';
 
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 vi.mock('@/lib/supabase', () => ({
@@ -72,6 +73,7 @@ function mountAt(path: string, navigateTo: string | null = null) {
 }
 
 beforeEach(() => {
+  setSupabaseCloudEnabled(true);
   useLanCredential.setState({
     credential: { id: 'device', code: 'POS-1', device_type: 'pos', secret: 'a'.repeat(64) },
   });
@@ -88,6 +90,7 @@ beforeEach(() => {
     sessionToken: 'tok',
     permissions: [],
     isAuthenticated: true,
+    cloudValidated: true,
     isLoading: false,
     error: null,
     isLocked: false,
@@ -95,6 +98,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setSupabaseCloudEnabled(false);
   hubBus._resetForTests();
   vi.unstubAllGlobals();
 });

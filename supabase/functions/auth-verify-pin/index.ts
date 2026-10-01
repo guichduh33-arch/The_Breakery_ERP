@@ -176,7 +176,7 @@ serve(withPermissionErrors(async (req) => {
       ip_address: ip,
       user_agent: req.headers.get('user-agent') ?? null,
     })
-    .select('id, created_at')
+    .select('id, created_at, last_activity_at')
     .single();
 
   if (sessionErr) {
@@ -245,5 +245,7 @@ serve(withPermissionErrors(async (req) => {
     },
     permissions,
     session_timeout_minutes: sessionTimeoutMinutes,
+    session_clock: { created_at: session.created_at, last_activity_at: session.last_activity_at,
+      server_now: new Date().toISOString() },
   });
 }));

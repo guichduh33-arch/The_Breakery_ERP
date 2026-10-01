@@ -9,10 +9,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getSupabaseAccessToken: vi.fn(),
   getSession: vi.fn(),
+  cloud: vi.fn(() => true),
 }));
 
 vi.mock('@breakery/supabase', () => ({
   getSupabaseAccessToken: mocks.getSupabaseAccessToken,
+  isSupabaseCloudEnabled: mocks.cloud,
 }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -24,6 +26,14 @@ import { getAccessToken } from '@/lib/accessToken';
 describe('getAccessToken', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.cloud.mockReturnValue(true);
+  });
+
+  it('refuse le bearer avant revalidation cloud', async () => {
+    mocks.cloud.mockReturnValue(false);
+    mocks.getSupabaseAccessToken.mockReturnValue('saved-jwt');
+    await expect(getAccessToken()).rejects.toThrow('cloud_session_not_validated');
+    expect(mocks.getSession).not.toHaveBeenCalled();
   });
 
   it('returns the PIN-holder token even when GoTrue has no session (real-browser PIN auth)', async () => {

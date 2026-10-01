@@ -17,9 +17,7 @@
 //   · Le montant par statut passe en infobulle : la bande répond à « combien
 //     de lignes vais-je voir », l'argent s'y lit au survol.
 //
-// Categories reste une sous-vue en lecture seule — aucune RPC de CRUD de
-// catégorie de dépense n'existe. Les écritures passent toujours par
-// useCreateExpense / useExpenseActions.
+// La gestion des catégories utilise son droit dédié et ses RPC auditées.
 
 import { useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -31,11 +29,12 @@ import {
   Tag,
 } from 'lucide-react';
 import { Tabs, TabsContent, type DataTableColumn } from '@breakery/ui';
-import { DataTable, EmptyState, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
+import { DataTable, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
+import { ExpenseCategoriesTab } from '@/features/expenses/components/ExpenseCategoriesTab.js';
 import {
   useExpenseCategories,
   useExpensesList,
@@ -128,7 +127,7 @@ export default function ExpensesListPage(): JSX.Element {
 
   const list    = useExpensesList(filters);
   const allList = useExpensesList(counterFilters);
-  const cats    = useExpenseCategories();
+  const cats    = useExpenseCategories(true);
 
   const rows    = list.data ?? [];
   const buckets = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
@@ -360,61 +359,9 @@ export default function ExpensesListPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="categories" className="mt-4">
-          <CategoriesTab />
+          <ExpenseCategoriesTab />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function CategoriesTab(): JSX.Element {
-  const cats = useExpenseCategories();
-  const rows = cats.data ?? [];
-  if (cats.isLoading) {
-    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated motion-reduce:animate-none" />;
-  }
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        icon={Tag}
-        title="No expense categories"
-        description="Categories must be seeded by an administrator before expenses can be filed."
-        size="md"
-      />
-    );
-  }
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
-      <table className="w-full text-sm">
-        <caption className="sr-only">Code, name, mapped account and status per expense category</caption>
-        <thead className="border-b border-border-subtle bg-surface-inert">
-          <tr>
-            <th scope="col" className="font-data font-semibold px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Code</th>
-            <th scope="col" className="font-data font-semibold px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Name</th>
-            <th scope="col" className="font-data font-semibold px-4 py-3 text-left text-xs uppercase tracking-widest text-text-muted">Account</th>
-            <th scope="col" className="font-data font-semibold px-4 py-3 text-center text-xs uppercase tracking-widest text-text-muted">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((c) => (
-            <tr key={c.id} className="border-t border-border-subtle">
-              <td className="px-4 py-3 font-mono text-xs text-text-secondary">{c.code}</td>
-              <td className="px-4 py-3 text-text-primary">{c.name}</td>
-              <td className="px-4 py-3 font-mono text-xs text-text-muted">{c.account_id}</td>
-              <td className="px-4 py-3 text-center">
-                {c.is_active ? (
-                  <span className="text-xs text-success">Active</span>
-                ) : (
-                  <span className="text-xs text-text-muted">Inactive</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="border-t border-border-subtle px-4 py-2 text-xs text-text-muted">
-        Categories are read-only — no expense_category CRUD RPC ships in this session.
-      </div>
     </div>
   );
 }

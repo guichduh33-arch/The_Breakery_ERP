@@ -32,8 +32,8 @@
 --   T12 import_suppliers_v2     → audit suppliers.imported, actor = profil
 --   T13 import_sales_v2         → audit sales.imported, actor = profil
 --   T14 import_sales_v2         → orders.served_by = profil (colonne FK, pas seulement la trace)
---   T15 import_expenses_v2      → audit expenses.imported, actor = profil
---   T16 import_expenses_v2      → expenses.created_by/submitted_by/approved_by/paid_by = profil
+--   T15 import_expenses_v3      → audit expenses.imported, actor = profil
+--   T16 import_expenses_v3      → expenses.created_by/submitted_by/approved_by/paid_by = profil
 --   T17 record_cash_wallet_movement_v2 → audit cash.wallet_movement, actor = profil
 --   T18 record_cash_wallet_movement_v2 → journal_entries.created_by = profil (chemin d'argent)
 --   T19 convert_product_to_parent_v2 → audit products.variant.parent_created, actor = profil
@@ -110,13 +110,13 @@ BEGIN
     '[{"sale_reference":"ACT0906-S1","sale_date":"2026-01-15","product_sku":"ACTOR0906-P1","quantity":1,"unit_price":10000}]'::jsonb,
     FALSE, gen_random_uuid());
   IF NOT (v_rep->>'valid')::boolean THEN RAISE EXCEPTION 'fixture: import_sales_v2 invalid %', v_rep; END IF;
-  v_rep := import_expenses_v2(
+  v_rep := import_expenses_v3(
     jsonb_build_array(jsonb_build_object(
       'expense_date', '2026-01-15',
       'category', (SELECT code FROM expense_categories WHERE is_active ORDER BY code LIMIT 1),
       'description', 'Actor expense 0906', 'amount', 5000)),
     FALSE, gen_random_uuid());
-  IF NOT (v_rep->>'valid')::boolean THEN RAISE EXCEPTION 'fixture: import_expenses_v2 invalid %', v_rep; END IF;
+  IF NOT (v_rep->>'valid')::boolean THEN RAISE EXCEPTION 'fixture: import_expenses_v3 invalid %', v_rep; END IF;
 
   v_rep := import_purchases_v2(
     '[{"po_reference":"ACT0906-PO1","supplier_code":"SUPACT0906","order_date":"2026-01-15","product_sku":"ACTOR0906-P1","quantity":2,"unit_cost":4000,"unit":"pcs"}]'::jsonb,
@@ -227,7 +227,7 @@ SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'expenses.imported'
      AND actor_id = current_setting('apt.prof')::uuid ORDER BY created_at DESC LIMIT 1),
   current_setting('apt.prof')::uuid,
-  'T15: import_expenses_v2 — actor_id = profil');
+  'T15: import_expenses_v3 — actor_id = profil');
 
 SELECT ok(
   (SELECT created_by = current_setting('apt.prof')::uuid
@@ -235,7 +235,7 @@ SELECT ok(
       AND approved_by = current_setting('apt.prof')::uuid
       AND paid_by = current_setting('apt.prof')::uuid
      FROM expenses WHERE description = 'Actor expense 0906' AND is_historical_import),
-  'T16: import_expenses_v2 — created_by / submitted_by / approved_by / paid_by = profil');
+  'T16: import_expenses_v3 — created_by / submitted_by / approved_by / paid_by = profil');
 
 -- T17-T18 : coffre.
 SELECT is(
@@ -287,7 +287,7 @@ SELECT is(
     WHERE n.nspname = 'public' AND p.proname IN (
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
       'create_product_v3','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
-      'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v2','import_purchases_v2',
+  'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v3','import_purchases_v2',
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
@@ -301,7 +301,7 @@ SELECT is(
     WHERE n.nspname = 'public' AND p.proname IN (
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
       'create_product_v3','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
-      'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v2','import_purchases_v2',
+  'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v3','import_purchases_v2',
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',

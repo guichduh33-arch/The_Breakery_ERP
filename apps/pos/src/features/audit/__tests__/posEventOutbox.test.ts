@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const h = vi.hoisted(() => ({
   rpc: vi.fn(),
   authed: true,
+  cloudValidated: true,
   lockReason: null as 'manual' | 'session_expired' | null,
 }));
 const rpc = h.rpc;
@@ -17,6 +18,7 @@ vi.mock('@/stores/authStore', () => ({
     getState: () => ({
       user: { id: '00000000-0000-0000-0000-000000000001' },
       isAuthenticated: h.authed,
+      cloudValidated: h.cloudValidated,
       lockReason: h.lockReason,
     }),
   },
@@ -42,10 +44,18 @@ beforeEach(() => {
   localStorage.clear();
   rpc.mockReset();
   h.authed = true;
+  h.cloudValidated = true;
   h.lockReason = null;
 });
 
 describe('outbox (durable queue)', () => {
+  it('conserve le journal tant que le cloud attend la revalidation', async () => {
+    h.cloudValidated = false;
+    await enqueueEvent(envelope());
+    expect(await flushPosEvents()).toBe(0);
+    expect(await pendingCount()).toBe(1);
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it('enqueues and reads back pending records', async () => {
     await enqueueEvent(envelope({ event_type: 'item_added' }));
     expect(await pendingCount()).toBe(1);
