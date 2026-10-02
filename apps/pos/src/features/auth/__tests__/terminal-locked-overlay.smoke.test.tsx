@@ -17,6 +17,24 @@ beforeEach(() => {
 });
 
 describe('TerminalLockedOverlay', () => {
+  it.each([
+    new TypeError('Failed to fetch'),
+    Object.assign(new Error('network_timeout'), { isTimeout: true }),
+    new Error('Connect to the server to sign in'),
+  ])('keeps the terminal locked on a transport failure and permits a connected retry', async (failure) => {
+    loginMock.mockRejectedValueOnce(failure).mockResolvedValueOnce(undefined);
+    render(<TerminalLockedOverlay />);
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+    fireEvent.click(screen.getByRole('button', { name: /verify/i }));
+    await waitFor(() => expect(screen.getByText(/cannot reach the server/i)).toBeInTheDocument());
+    expect(screen.queryByText(/incorrect pin/i)).not.toBeInTheDocument();
+    expect(useAuthStore.getState().isLocked).toBe(true);
+    for (const digit of '654321') fireEvent.click(screen.getByRole('button', { name: digit }));
+    fireEvent.click(screen.getByRole('button', { name: /verify/i }));
+    await waitFor(() => expect(useAuthStore.getState().isLocked).toBe(false));
+    expect(loginMock).toHaveBeenLastCalledWith('u1', '654321');
+  });
+
   it('renders the locked state with the current user name', () => {
     render(<TerminalLockedOverlay />);
     expect(screen.getByText(/locked/i)).toBeInTheDocument();

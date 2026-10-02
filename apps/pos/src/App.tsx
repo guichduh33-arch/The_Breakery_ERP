@@ -17,6 +17,7 @@ import { SettingsRealtimeMount } from './components/SettingsRealtimeMount';
 import { CatalogRealtimeMount } from './components/CatalogRealtimeMount';
 import { useAuthStore } from './stores/authStore';
 import { startCloudSession } from './features/auth/cloudSession';
+import { OfflineSaleContext } from './features/lan/OfflineSaleContext';
 
 /** Full-viewport spinner shown while a persisted PIN session rehydrates. */
 function BootLoading() {
@@ -107,6 +108,7 @@ export default function App() {
         {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
         <IdleWarningToast />
         <BootGate>
+          <OfflineSaleContext />
           <AppRoutes />
         </BootGate>
         <Toaster theme="dark" position="top-right" />

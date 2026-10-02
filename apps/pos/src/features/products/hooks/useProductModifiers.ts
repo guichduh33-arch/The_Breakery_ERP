@@ -16,6 +16,7 @@ import {
   type ProductModifierRow,
 } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export interface UseProductModifiersArgs {
   productId: string;
@@ -52,9 +53,10 @@ export function useProductModifiers({
   categoryId,
   enabled = true,
 }: UseProductModifiersArgs) {
+  const queryEnabled = useSaleQueryEnabled(enabled);
   return useQuery<ModifierGroup[]>({
     queryKey: ['product-modifiers', productId, categoryId],
-    enabled,
+    enabled: queryEnabled,
     queryFn: async (): Promise<ModifierGroup[]> => {
       const orParts: string[] = [`product_id.eq.${productId}`];
       if (categoryId) orParts.push(`category_id.eq.${categoryId}`);

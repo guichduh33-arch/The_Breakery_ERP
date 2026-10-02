@@ -2,14 +2,14 @@
 //
 // Session 34 / W4 — smoke test for SendToKitchenButton → useFireToStations.
 // Updated (branch feat/bulk-import-purchases) to reflect park+clear-on-send:
-//   after a successful manual fire, hold_fired_order_v2 is called and the
+//   after a successful manual fire, hold_fired_order_v3 is called and the
 //   terminal is cleared (cart items emptied, pickedUpOrderId null, printedItemIds []).
 //
 // Scenario: cart with one barista item + one kitchen item.
 // Both stations have printers in the map.
 // After clicking "Send to Kitchen":
 //   • getMockPrintBuffer() has two 'prep' entries (one per station).
-//   • fire_counter_order_v9 is called first, then hold_fired_order_v2.
+//   • fire_counter_order_v10 is called first, then hold_fired_order_v3.
 //   • Terminal is cleared: cart.items=[], pickedUpOrderId=null, printedItemIds=[].
 
 /// <reference types="@testing-library/jest-dom" />
@@ -31,7 +31,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v9 first.
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v10 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -176,11 +176,11 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
     }
 
     // Session 43 / P0-3 — the order was persisted BEFORE printing.
-    // After fire+print, hold_fired_order_v2 parks the order and clears the terminal.
+    // After fire+print, hold_fired_order_v3 parks the order and clears the terminal.
     expect(rpcMock).toHaveBeenCalledTimes(2);
-    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v9');
-    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v2');
-    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1' });
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v10');
+    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v3');
+    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1', p_session_id: useShiftStore.getState().current?.id });
 
     // Terminal is cleared after park.
     expect(useCartStore.getState().printedItemIds).toEqual([]);

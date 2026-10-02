@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useShiftStore } from '@/stores/shiftStore';
 
 export interface HeldOrderRow {
   id: string;
@@ -27,13 +28,14 @@ export interface HeldOrderRow {
  * 20260710000097).
  */
 export function useHeldOrdersQuery() {
+  const sessionId = useShiftStore((s) => s.current?.id);
   return useQuery({
-    queryKey: ['held-orders'],
+    queryKey: ['held-orders', sessionId ?? null],
     queryFn: async (): Promise<HeldOrderRow[]> => {
       const { data, error } = await supabase
         .from('orders')
         .select('id, order_number, table_number, notes, total, created_at, status, sent_to_kitchen_at')
-        .or('is_held.eq.true,and(status.eq.pending_payment,created_via.eq.pos)')
+        .or(`and(status.eq.pending_payment,created_via.eq.pos)${sessionId ? `,and(status.eq.draft,created_via.eq.tablet,session_id.eq.${sessionId})` : ''}`)
         .order('created_at', { ascending: false })
         // Audit 2026-08-24 (perf P1) — sans borne, cette requête rapatriait
         // TOUTES les pending_payment jamais soldées depuis la mise en prod,

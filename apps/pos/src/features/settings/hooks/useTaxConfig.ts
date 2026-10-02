@@ -18,6 +18,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { DEFAULT_TAX_RATE } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 const QUERY_KEY = ['business-config', 'tax-config'] as const;
 
@@ -36,7 +37,9 @@ const FALLBACK: TaxConfig = { taxRate: DEFAULT_TAX_RATE, taxInclusive: true };
  * loading or on error so dependent surfaces always have a usable split.
  */
 export function useTaxConfig(): TaxConfig {
+  const enabled = useSaleQueryEnabled();
   const { data } = useQuery({
+    enabled,
     queryKey: QUERY_KEY,
     // The config changes rarely; a long stale window avoids re-reading on every
     // cart mutation while still picking up a change within the session.

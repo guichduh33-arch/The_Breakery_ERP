@@ -137,7 +137,7 @@ describe('SendToKitchenButton — dine-in table guard (fiche 02 D2.5)', () => {
 
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalledWith(
-        'fire_counter_order_v9',
+        'fire_counter_order_v10',
         expect.objectContaining({ p_table_number: 'T-01', p_order_type: 'dine_in' }),
       );
     });
@@ -150,7 +150,7 @@ describe('SendToKitchenButton — dine-in table guard (fiche 02 D2.5)', () => {
     fireEvent.click(screen.getByRole('button', { name: /send to kitchen/i }));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('fire_counter_order_v9', expect.anything());
+      expect(rpcMock).toHaveBeenCalledWith('fire_counter_order_v10', expect.anything());
     });
     expect(toast.warning).not.toHaveBeenCalledWith(
       expect.stringMatching(/dine-in orders need a table/i),

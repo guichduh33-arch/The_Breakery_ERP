@@ -2,6 +2,7 @@ import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
+import { useShiftStore } from '@/stores/shiftStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import type { ReopenOrderPayload } from '@/stores/cartStore';
 import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
@@ -19,8 +20,10 @@ export function useReopenHeldOrder() {
     mutationFn: async (orderId: string): Promise<string> => {
       if (isCartPaymentLocked()) throw new Error('Resume the saved payment first');
       const before = useCartStore.getState();
-      const { data, error } = await supabase.rpc('reopen_held_order_v4', {
+      const sessionId = useShiftStore.getState().current?.id;
+      const { data, error } = await supabase.rpc('reopen_held_order_v5', {
         p_order_id: orderId,
+        ...(sessionId ? { p_session_id: sessionId } : {}),
       });
       if (error) throw error;
       const payload = data as unknown as ReopenOrderPayload;

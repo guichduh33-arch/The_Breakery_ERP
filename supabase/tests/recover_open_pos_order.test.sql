@@ -45,13 +45,13 @@ BEGIN
   END LOOP;
 END;
 $fixture$;
-SELECT ok(NOT has_function_privilege('anon','public.reopen_held_order_v4(uuid)','EXECUTE'),'anon et PUBLIC refusés');
-SELECT ok(has_function_privilege('authenticated','public.reopen_held_order_v4(uuid)','EXECUTE'),'client authentifié autorisé');
-SELECT ok(has_function_privilege('service_role','public.reopen_held_order_v4(uuid)','EXECUTE'),'grant service_role conservé');
+SELECT ok(NOT has_function_privilege('anon','public.reopen_held_order_v5(uuid,uuid)','EXECUTE'),'anon et PUBLIC refusés');
+SELECT ok(has_function_privilege('authenticated','public.reopen_held_order_v5(uuid,uuid)','EXECUTE'),'client authentifié autorisé');
+SELECT ok(has_function_privilege('service_role','public.reopen_held_order_v5(uuid,uuid)','EXECUTE'),'grant service_role conservé');
 SELECT ok(to_regprocedure('public.reopen_held_order_v3(uuid)') IS NULL,'ancienne version supprimée');
-INSERT INTO reopen_snapshots SELECT public.reopen_held_order_v4(id) FROM reopen_cases WHERE label='pos_open';
+INSERT INTO reopen_snapshots SELECT public.reopen_held_order_v5(id) FROM reopen_cases WHERE label='pos_open';
 SELECT is(value->>'order_id',(SELECT id::text FROM reopen_cases WHERE label='pos_open'),'commande non held récupérée') FROM reopen_snapshots;
-SELECT is(public.reopen_held_order_v4(id),(SELECT value FROM reopen_snapshots),'reprise répétée : même snapshot') FROM reopen_cases WHERE label='pos_open';
+SELECT is(public.reopen_held_order_v5(id),(SELECT value FROM reopen_snapshots),'reprise répétée : même snapshot') FROM reopen_cases WHERE label='pos_open';
 SELECT is((SELECT count(*)::int FROM public.order_items WHERE order_id=c.id),1,'aucune ligne dupliquée') FROM reopen_cases c WHERE label='pos_open';
 SELECT ok(NOT o.is_held AND o.status='pending_payment','statut et ouverture préservés')
   FROM reopen_cases c JOIN public.orders o ON o.id=c.id WHERE c.label='pos_open';
@@ -61,22 +61,22 @@ SELECT ok(NOT EXISTS(SELECT 1 FROM public.audit_logs a JOIN reopen_cases c ON c.
   WHERE c.label='pos_open' AND a.action='order.reopened'
     AND (a.actor_id IS DISTINCT FROM (SELECT profile_id FROM reopen_actor)
       OR a.metadata->>'recovered_open_order' IS DISTINCT FROM 'true')),'profil et contexte audit corrects');
-SELECT lives_ok(format('SELECT public.reopen_held_order_v4(%L)',id),'voie held préservée : '||label)
-  FROM reopen_cases WHERE label IN ('pos_held','tablet_held');
+SELECT lives_ok(format('SELECT public.reopen_held_order_v5(%L)',id),'voie held préservée : '||label)
+  FROM reopen_cases WHERE label IN ('pos_held');
 SELECT ok(NOT o.is_held,'hold retiré : '||c.label) FROM reopen_cases c JOIN public.orders o ON o.id=c.id
-  WHERE c.label IN ('pos_held','tablet_held');
+  WHERE c.label IN ('pos_held');
 SELECT is(o.status::text,c.label,'fixture statut réel : '||c.label)
   FROM reopen_cases c JOIN public.orders o ON o.id=c.id WHERE c.label IN ('draft','paid','completed','voided');
-SELECT throws_ok(format('SELECT public.reopen_held_order_v4(%L)',id),'P0002','order_not_available_for_reopen','refus : '||label)
+SELECT throws_ok(format('SELECT public.reopen_held_order_v5(%L)',id),'P0002','order_not_available_for_reopen','refus : '||label)
   FROM reopen_cases WHERE label IN ('draft','paid','completed','voided','tablet_open','tablet_held');
 SELECT is((SELECT count(*)::int FROM public.audit_logs a JOIN reopen_cases c ON c.id=a.entity_id
   WHERE c.label IN ('draft','paid','completed','voided','tablet_open') AND a.action='order.reopened'),0,'aucun audit de reprise refusée');
 SELECT set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
 SELECT set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('request.jwt.claim.sub'))::text,true);
-SELECT throws_ok(format('SELECT public.reopen_held_order_v4(%L)',id),'P0003','Permission denied: pos.sale.create','identité sans permission refusée') FROM reopen_cases WHERE label='pos_open';
+SELECT throws_ok(format('SELECT public.reopen_held_order_v5(%L)',id),'P0003','Permission denied: pos.sale.create','identité sans permission refusée') FROM reopen_cases WHERE label='pos_open';
 SELECT set_config('request.jwt.claim.sub','',true);
 SELECT set_config('request.jwt.claims','{}',true);
-SELECT throws_ok(format('SELECT public.reopen_held_order_v4(%L)',id),'P0001','Not authenticated','absence identité refusée')
+SELECT throws_ok(format('SELECT public.reopen_held_order_v5(%L)',id),'P0001','Not authenticated','absence identité refusée')
   FROM reopen_cases WHERE label='pos_open';
 SELECT * FROM finish();
 ROLLBACK;

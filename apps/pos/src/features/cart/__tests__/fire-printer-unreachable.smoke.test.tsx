@@ -2,16 +2,16 @@
 //
 // Session 34 / W4 — kitchen printer absent from map.
 // Session 43 / P0-3 — semantics updated: the fire persists the order via
-// fire_counter_order_v9 BEFORE printing.
+// fire_counter_order_v10 BEFORE printing.
 // Updated (branch feat/bulk-import-purchases) to reflect park+clear-on-send:
 //   kitchen printer unreachable still toasts the error, the order is persisted
-//   and held via hold_fired_order_v2, and the terminal is cleared.
+//   and held via hold_fired_order_v3, and the terminal is cleared.
 //   DB/KDS is the source of truth; the order is recoverable from Held Orders.
 //
 // Scenario: barista printer present, kitchen printer ABSENT.
 // After clicking "Send to Kitchen":
 //   • toast.error is called mentioning kitchen ("saved to KDS, not printed").
-//   • fire_counter_order_v9 called first, then hold_fired_order_v2.
+//   • fire_counter_order_v10 called first, then hold_fired_order_v3.
 //   • Terminal is cleared: cart.items=[], pickedUpOrderId=null, printedItemIds=[], lockedItemIds=[].
 
 /// <reference types="@testing-library/jest-dom" />
@@ -32,7 +32,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v9 first.
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v10 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -162,12 +162,12 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     );
     expect(errorCall).toBeDefined();
 
-    // After fire+print (with kitchen unreachable), hold_fired_order_v2 parks
+    // After fire+print (with kitchen unreachable), hold_fired_order_v3 parks
     // the order and clears the terminal.
     expect(rpcMock).toHaveBeenCalledTimes(2);
-    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v9');
-    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v2');
-    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1' });
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v10');
+    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v3');
+    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1', p_session_id: useShiftStore.getState().current?.id });
 
     // Terminal is cleared after park.
     expect(useCartStore.getState().printedItemIds).toEqual([]);

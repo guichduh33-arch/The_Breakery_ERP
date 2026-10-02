@@ -34,7 +34,7 @@ describe('useReopenHeldOrder', () => {
     rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0002', message: 'order_not_available_for_reopen' } });
     const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
     await expect(result.current.mutateAsync('closed-order')).rejects.toMatchObject({ code: 'P0002' });
-    expect(rpc).toHaveBeenCalledWith('reopen_held_order_v4', { p_order_id: 'closed-order' });
+    expect(rpc).toHaveBeenCalledWith('reopen_held_order_v5', { p_order_id: 'closed-order' });
     expect(useCartStore.getState().cart).toBe(before);
     expect(useCartStore.getState().pickedUpOrderId).toBeNull();
   });
@@ -151,7 +151,7 @@ describe('useReopenHeldOrder', () => {
 
   it('restores customer badge via get_customer_v3 when customerId present', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v4') {
+      if (name === 'reopen_held_order_v5') {
         return Promise.resolve({
           data: {
             order_id: 'order-6',
@@ -186,7 +186,7 @@ describe('useReopenHeldOrder', () => {
 
   it('keeps customerId even if customer lookup fails (best-effort badge)', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v4') {
+      if (name === 'reopen_held_order_v5') {
         return Promise.resolve({
           data: {
             order_id: 'order-7',

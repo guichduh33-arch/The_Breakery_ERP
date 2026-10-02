@@ -1,5 +1,5 @@
 -- supabase/tests/counter_fire.test.sql
--- S43 Wave C (P0-3) — fire_counter_order_v9 : create / replay / append / P0002 / anon revoke.
+-- S43 Wave C (P0-3) — fire_counter_order_v10 : create / replay / append / P0002 / anon revoke.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). Pattern jwt-claims S37 (order_discount_gate) :
 -- caller = un VRAI user_profiles avec pos.sale.create, auth.uid() simulé via request.jwt.claims.
 BEGIN;
@@ -65,7 +65,7 @@ END $$;
 
 -- T1 : create — un fire crée un ordre pending_payment created_via='pos' avec items locked.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v9(
+  SELECT fire_counter_order_v10(
     '11111111-1111-1111-1111-111111111111'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -92,7 +92,7 @@ SELECT is(
 
 -- T4 : replay même client_uuid → même ordre, flag idempotent_replay, pas de doublon.
 SELECT is(
-  ((SELECT fire_counter_order_v9(
+  ((SELECT fire_counter_order_v10(
     '11111111-1111-1111-1111-111111111111'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -102,7 +102,7 @@ SELECT is(
 
 -- T5 : append (nouveau client_uuid, p_order_id du fire T1) ajoute un item au même ordre.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v9(
+  SELECT fire_counter_order_v10(
     '22222222-2222-2222-2222-222222222222'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -118,7 +118,7 @@ SELECT is(
 
 -- T6 : produit inconnu = erreur franche P0002 (pas de silent skip, DEV-S25-1.A-03).
 SELECT throws_ok($$
-  SELECT fire_counter_order_v9(
+  SELECT fire_counter_order_v10(
     '33333333-3333-3333-3333-333333333333'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -127,13 +127,13 @@ $$, 'P0002', NULL, 'T6: unknown product raises P0002');
 
 -- T7 : anon n'a pas EXECUTE (REVOKE pair canonique S25).
 SELECT is(
-  has_function_privilege('anon', 'public.fire_counter_order_v9(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text,uuid,uuid,boolean)', 'EXECUTE'),
+  has_function_privilege('anon', 'public.fire_counter_order_v10(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text,uuid,uuid,boolean)', 'EXECUTE'),
   false, 'T7: anon revoked');
 
 -- T8 : clamp money-path (corrective _013) — discount > brut est clampé au brut,
 -- line_total ne devient jamais négatif (pay_existing_order_v7 encaisse SUM(line_total)).
 SELECT lives_ok($$
-  SELECT fire_counter_order_v9(
+  SELECT fire_counter_order_v10(
     '44444444-4444-4444-4444-444444444444'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -178,7 +178,7 @@ SELECT ok(
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM fire_counter_order_v9(
+    PERFORM fire_counter_order_v10(
       '60000000-0000-0000-0000-000000000010'::uuid, (SELECT session_id FROM _fx),
       jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
         'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb, 'discount_amount', 5000)),
@@ -195,7 +195,7 @@ BEGIN
     PERFORM set_config('breakery.t11', 'true', true);  -- pas de profil sans perm dans le seed : skip-as-pass
   ELSE
     BEGIN
-      PERFORM fire_counter_order_v9(
+      PERFORM fire_counter_order_v10(
         '60000000-0000-0000-0000-000000000011'::uuid, (SELECT session_id FROM _fx),
         jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
           'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb, 'discount_amount', 5000)),
@@ -209,7 +209,7 @@ SELECT ok(current_setting('breakery.t11')::boolean, 'T11: unauthorized authorize
 -- T12 : autorisateur MANAGER ⇒ succès, discount_amount=5000 + audit order.discount_applied fire_v2.
 DO $$ DECLARE v_oid UUID; v_disc INT; v_au INT;
 BEGIN
-  PERFORM fire_counter_order_v9(
+  PERFORM fire_counter_order_v10(
     '60000000-0000-0000-0000-000000000012'::uuid, (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
       'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb, 'discount_amount', 5000)),
@@ -227,7 +227,7 @@ SELECT ok(current_setting('breakery.t12')::boolean, 'T12: authorized line discou
 
 -- T13 : chemin nominal sans remise, autorisateur NULL ⇒ succès.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v9(
+  SELECT fire_counter_order_v10(
     '60000000-0000-0000-0000-000000000013'::uuid, (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
       'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),

@@ -204,7 +204,9 @@ function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow
         (item.kitchen_status === 'pending' || item.kitchen_status === 'preparing')).map((item) => item.id) },
       {
         onSuccess: ({ bumpedCount }) => {
-          toast.success(`${bumpedCount} item${bumpedCount === 1 ? '' : 's'} ready`);
+          toast.success(`${bumpedCount} item${bumpedCount === 1 ? '' : 's'} ready`, {
+            style: { pointerEvents: 'none' },
+          });
         },
         onError: (err: Error & { code?: string }) => {
           toast.error(err.message || 'Could not bump order');

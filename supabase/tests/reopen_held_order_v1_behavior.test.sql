@@ -1,6 +1,6 @@
 -- supabase/tests/reopen_held_order_v1_behavior.test.sql
--- Spec A, Bloc 2/3 — BEHAVIORAL round-trip for hold_fired_order_v2 +
--- reopen_held_order_v4 under a real authenticated CASHIER context.
+-- Spec A, Bloc 2/3 — BEHAVIORAL round-trip for hold_fired_order_v3 +
+-- reopen_held_order_v5 under a real authenticated CASHIER context.
 --
 -- Controller-run only (MCP execute_sql against the V3 dev cloud) — it sets
 -- `role authenticated` + a request.jwt.claims sub, which the platform pooler
@@ -76,12 +76,12 @@ BEGIN
    WHERE oi.order_id = v_oid LIMIT 1;
 
   -- hold → is_held=true
-  PERFORM hold_fired_order_v2(v_oid);
+  PERFORM hold_fired_order_v3(v_oid);
   SELECT is_held INTO v_held FROM orders WHERE id = v_oid;
   IF v_held IS NOT TRUE THEN RAISE EXCEPTION 'FAIL: hold did not set is_held=true'; END IF;
 
   -- Reopen returns the full snapshot, including cancellation facts, and claims the order.
-  v_env := reopen_held_order_v4(v_oid);
+  v_env := reopen_held_order_v5(v_oid);
   IF jsonb_array_length(v_env->'items') <> 3 THEN
     RAISE EXCEPTION 'FAIL: reopen returned % items (incomplete snapshot)', jsonb_array_length(v_env->'items');
   END IF;
@@ -115,7 +115,7 @@ BEGIN
   IF (SELECT count(*) FROM orders WHERE id = v_oid) <> 1 THEN RAISE EXCEPTION 'FAIL: reopen deleted the order'; END IF;
 
   -- Une caisse peut reprendre la même commande après perte de réponse ou reload.
-  IF reopen_held_order_v4(v_oid) IS DISTINCT FROM v_env THEN
+  IF reopen_held_order_v5(v_oid) IS DISTINCT FROM v_env THEN
     RAISE EXCEPTION 'FAIL: second reopen changed the snapshot';
   END IF;
   IF (SELECT count(*) FROM order_items WHERE order_id = v_oid) <> 3 THEN

@@ -267,7 +267,7 @@ export function useFireToStations(): UseFireToStationsResult {
             const sourceCode = getOrderSourceCode();
             const authorizationId = fireAuthorizer ? await mintDiscountAuthorization() : undefined;
             const customerId = useCartStore.getState().cart.customerId;
-            const { data, error } = await supabase.rpc('fire_counter_order_v9', {
+            const { data, error } = await supabase.rpc('fire_counter_order_v10', {
               p_client_uuid: fireClientUuidRef.current,
               ...(customerId ? { p_customer_id: customerId } : {}),
               ...(authorizationId ? { p_discount_auth_id: authorizationId } : {}),

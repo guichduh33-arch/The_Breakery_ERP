@@ -33,8 +33,19 @@ export function TerminalLockedOverlay() {
     try {
       await login(user.id, pin);
       unlock();
-    } catch {
-      setError('Incorrect PIN');
+    } catch (cause: unknown) {
+      const failure = cause as { status?: number; isTimeout?: boolean; details?: { error?: string }; message?: string } | null;
+      const reason = failure?.details?.error ?? failure?.message;
+      if (navigator.onLine === false || failure?.isTimeout || cause instanceof TypeError
+        || reason === 'network_timeout' || reason === 'Connect to the server to sign in') {
+        setError('Cannot reach the server. Reconnect to unlock this terminal.');
+      } else if (reason === 'rate_limited' || reason === 'account_locked') {
+        setError('Too many attempts. Please wait before trying again.');
+      } else if (failure?.status && failure.status >= 500) {
+        setError('The server is unavailable. Please try again.');
+      } else {
+        setError('Incorrect PIN');
+      }
       setAttempt((n) => n + 1);
     } finally {
       setIsVerifying(false);

@@ -97,15 +97,9 @@ export function useCheckout() {
       }));
 
       if (pickedUpOrderId) {
-        // S43 P0-3 — fired COUNTER order: items added to the cart after the
-        // last fire exist only locally; pay_existing_order_v7 pays the
-        // PERSISTED order_items, not the local cart. Append them to the DB
-        // order first, or the customer pays a partial total.
-        //
-        // Counter-only guard: a fired counter order always has non-empty
-        // printedItemIds (the fire seals every persisted line locked+printed);
-        // a tablet pickup has ALL its items in DB already and printedItemIds
-        // empty — appending there would duplicate the whole cart.
+        // Toute commande reprise peut recevoir de nouvelles lignes locales.
+        // Le paiement ne lit que les lignes persistées : envoyer les nouvelles
+        // avant d'encaisser, sans renvoyer les identifiants serveur existants.
         //
         // Locked lines are excluded too: a line locked-but-unprinted was
         // already appended by a previous checkout attempt (markLocked on
@@ -114,13 +108,12 @@ export function useCheckout() {
         // idempotencyKey → new p_client_uuid, so the uuid replay alone
         // cannot protect us there).
         const printedIds = cartState.printedItemIds;
-        const isCounterFired = cartState.orderOrigin === 'pos' || (cartState.orderOrigin === null && printedIds.length > 0);
         const unsynced = cartState.cart.items.filter(
           (i) => !i.is_cancelled && !i.server_id
             && !printedIds.includes(i.id)
             && !cartState.lockedItemIds.includes(i.id),
         );
-        if (isCounterFired && unsynced.length > 0) {
+        if (unsynced.length > 0) {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
             appendUuidRef.current = { attempt: idempotencyKey, uuid: input.context?.appendUuid ?? crypto.randomUUID() };
           }
@@ -129,7 +122,7 @@ export function useCheckout() {
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
           const authorizationId = unsynced.some((i) => i.discount) ? await savedDiscountAuthorization(input.context, 'appendDiscountAuthId') : undefined;
-          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v9', {
+          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v10', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({

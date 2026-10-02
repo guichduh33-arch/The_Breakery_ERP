@@ -7,6 +7,8 @@ import type { PaymentMethod } from '@breakery/domain';
 // S64 — PaymentMethodGrid now reads useEnabledPaymentMethods (React Query),
 // so every render needs a QueryClientProvider ancestor.
 const enabledMock = vi.hoisted(() => ({ current: new Set<PaymentMethod>() }));
+const network = vi.hoisted(() => ({ offline: false }));
+vi.mock('@/features/lan/offlineMode', () => ({ useOfflineMode: () => network.offline }));
 
 vi.mock('@/features/settings/hooks/useEnabledPaymentMethods', () => ({
   useEnabledPaymentMethods: () => enabledMock.current,
@@ -40,7 +42,31 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe('PaymentMethodGrid', () => {
   beforeEach(() => {
+    network.offline = false;
     useCartStore.setState({ attachedCustomer: null });
+  });
+
+  it('offers every enabled offline method except store credit, preserving order and selection', () => {
+    network.offline = true;
+    const methods: PaymentMethod[] = ['qris', 'cash', 'store_credit', 'card', 'edc', 'transfer', 'gopay', 'ovo', 'dana'];
+    enabledMock.current = new Set(methods);
+    useCartStore.setState({ attachedCustomer: FAKE_CUSTOMER });
+    const onSelect = vi.fn();
+    render(<PaymentMethodGrid selectedMethod={null} onSelect={onSelect} />, { wrapper });
+    expect(screen.getAllByTestId(/^pay-method-/).map((tile) => tile.getAttribute('data-testid')))
+      .toEqual(methods.filter((method) => method !== 'store_credit').map((method) => `pay-method-${method}`));
+    expect(screen.queryByTestId('pay-method-store_credit')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('pay-method-qris'));
+    expect(onSelect).toHaveBeenCalledWith('qris');
+  });
+
+  it('keeps disabled methods hidden offline', () => {
+    network.offline = true;
+    enabledMock.current = new Set<PaymentMethod>(['qris']);
+    render(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} />, { wrapper });
+    expect(screen.getByTestId('pay-method-qris')).toBeInTheDocument();
+    expect(screen.queryByTestId('pay-method-cash')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pay-method-card')).not.toBeInTheDocument();
   });
 
   it('renders all 6 method tiles with their testids (all enabled, customer attached)', () => {

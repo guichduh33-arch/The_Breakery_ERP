@@ -9,8 +9,9 @@
 // A variant hidden from the counter in BO must not remain tappable inside
 // the VariantSelectModal, mirroring the parent-grid filter in useProducts.ts.
 
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export interface POSVariantRow {
   id: string;
@@ -24,8 +25,8 @@ export interface POSVariantRow {
   deduct_stock: boolean;
 }
 
-export function useProductVariants(parentId: string | null | undefined) {
-  return useQuery({
+export function productVariantsOptions(parentId: string | null | undefined) {
+  return queryOptions({
     queryKey: ['pos-product-variants', parentId],
     enabled: !!parentId,
     queryFn: async (): Promise<POSVariantRow[]> => {
@@ -44,4 +45,9 @@ export function useProductVariants(parentId: string | null | undefined) {
       return (data ?? []) as POSVariantRow[];
     },
   });
+}
+
+export function useProductVariants(parentId: string | null | undefined) {
+  const enabled = useSaleQueryEnabled(!!parentId);
+  return useQuery({ ...productVariantsOptions(parentId), enabled });
 }
