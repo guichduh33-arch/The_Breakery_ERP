@@ -206,7 +206,7 @@ BEGIN
 END $$;
 SELECT ok(current_setting('breakery.t11')::boolean, 'T11: unauthorized authorizer rejected');
 
--- T12 : autorisateur MANAGER ⇒ succès, discount_amount=5000 + audit order.discount_applied fire_v2.
+-- T12 : autorisateur MANAGER ⇒ succès, discount_amount=5000 + audit order.discount_applied.
 DO $$ DECLARE v_oid UUID; v_disc INT; v_au INT;
 BEGIN
   PERFORM fire_counter_order_v10(
@@ -219,8 +219,8 @@ BEGIN
   SELECT oi.discount_amount::int INTO v_disc FROM order_items oi WHERE oi.order_id=v_oid;
   -- ADR-022 : v5 écrivait encore 'fire_v4' dans la métadonnée d'audit, résidu
   -- figé d'un bump antérieur. Depuis v6 la RPC y écrit sa propre version ;
-  -- l'assertion suit (fire_v9 depuis le pricing combo serveur du 2026-09-06).
-  SELECT count(*) INTO v_au FROM audit_logs WHERE entity_id=v_oid AND action='order.discount_applied' AND metadata->>'rpc_version'='fire_v9';
+  -- l'assertion suit la version appelee par ce test.
+  SELECT count(*) INTO v_au FROM audit_logs WHERE entity_id=v_oid AND action='order.discount_applied' AND metadata->>'rpc_version'='fire_v10';
   PERFORM set_config('breakery.t12', (v_disc=5000 AND v_au=1)::text, true);
 END $$;
 SELECT ok(current_setting('breakery.t12')::boolean, 'T12: authorized line discount applied + audited');

@@ -322,11 +322,11 @@ SELECT ok(
              AND entity_id = current_setting('ccsp.order8')::uuid
              AND (metadata->>'product_id') = '00000000-0000-0000-0000-0000000e5001'
              AND (metadata->>'client_uuid') = '00000000-0000-0000-0000-0000000e5c08'
-             AND (metadata->>'rpc_version') = 'fire_v9'
+             AND (metadata->>'rpc_version') = 'fire_v10'
              AND (metadata->>'client_unit_price')::numeric = 40000
              AND (metadata->>'tolerated_unit_price')::numeric = 50000
              AND (metadata->>'sqlstate') = '23514'),
-  'T8c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version fire_v9, prix client et tolere, sqlstate)');
+  'T8c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version fire_v10, prix client et tolere, sqlstate)');
 
 -- ===========================================================================
 -- T9 — ligne simple : prix et supplément canoniques du catalogue serveur.
