@@ -282,7 +282,7 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   // Fire — the RPC is the source of truth (print failures are tolerated:
   // no print bridge in this environment, the toast says "saved to KDS").
   const fireResp = page.waitForResponse(
-    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/fire_counter_order_v9',
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/fire_counter_order_v10',
     { timeout: 20_000 },
   );
   await page.getByRole('button', { name: /send to kitchen/i }).click();

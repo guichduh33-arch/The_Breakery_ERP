@@ -23,9 +23,12 @@ import { useQuery } from '@tanstack/react-query';
 import type { Product, DispatchStation } from '@breakery/domain';
 import { isSellable } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export function useProducts() {
+  const enabled = useSaleQueryEnabled();
   return useQuery({
+    enabled,
     queryKey: ['products'],
     queryFn: async (): Promise<Product[]> => {
       // Step 1 : fetch parent + standalone products (parent_product_id IS NULL).

@@ -7134,7 +7134,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v9: {
+      fire_counter_order_v10: {
         Args: {
           p_client_uuid: string
           p_customer_id?: string
@@ -7845,7 +7845,10 @@ export type Database = {
       }
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
-      hold_fired_order_v2: { Args: { p_order_id: string }; Returns: undefined }
+      hold_fired_order_v3: {
+        Args: { p_order_id: string; p_session_id?: string }
+        Returns: undefined
+      }
       import_catalog_v2: {
         Args: {
           p_dry_run?: boolean
@@ -8431,7 +8434,10 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v4: { Args: { p_order_id: string }; Returns: Json }
+      reopen_held_order_v5: {
+        Args: { p_order_id: string; p_session_id?: string }
+        Returns: Json
+      }
       reorder_categories_v2: {
         Args: { p_ordered_ids: string[] }
         Returns: Json

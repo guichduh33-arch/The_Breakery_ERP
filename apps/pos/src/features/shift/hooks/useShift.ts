@@ -4,14 +4,16 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { useShiftStore, type ActiveShift } from '@/stores/shiftStore';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export function useCurrentShift() {
   const userId = useAuthStore((s) => s.user?.id);
   const setCurrent = useShiftStore((s) => s.setCurrent);
+  const enabled = useSaleQueryEnabled(!!userId);
 
   return useQuery({
     queryKey: ['pos_sessions', 'current', userId],
-    enabled: !!userId,
+    enabled,
     queryFn: async (): Promise<ActiveShift | null> => {
       if (!userId) return null;
       const { data, error } = await supabase

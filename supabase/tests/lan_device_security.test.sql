@@ -26,12 +26,12 @@ INSERT INTO lan_results SELECT is((SELECT count(*)::integer FROM update_lan_hear
 UPDATE lan_devices SET is_active=false WHERE id=(SELECT device FROM lan_fixture);
 INSERT INTO lan_results SELECT is((SELECT count(*)::integer FROM update_lan_heartbeat_v3(ARRAY[(SELECT result->>'code' FROM paired)])),0,'inactive device ignored');
 INSERT INTO lan_results SELECT is((SELECT is_active FROM lan_devices WHERE id=(SELECT device FROM lan_fixture)),false,'heartbeat never reactivates device');
-INSERT INTO lan_results SELECT is(jsonb_array_length(get_lan_registry_v1()->'devices'),0,'inactive device omitted from registry');
+INSERT INTO lan_results SELECT is((SELECT count(*)::integer FROM jsonb_array_elements(get_lan_registry_v1()->'devices') d WHERE d->>'id'=(SELECT device::text FROM lan_fixture)),0,'inactive device omitted from registry');
 UPDATE lan_devices SET is_active=true WHERE id=(SELECT device FROM lan_fixture);
-INSERT INTO lan_results SELECT is(jsonb_array_length(get_lan_registry_v1()->'devices'),1,'active paired device in registry');
+INSERT INTO lan_results SELECT is((SELECT count(*)::integer FROM jsonb_array_elements(get_lan_registry_v1()->'devices') d WHERE d->>'id'=(SELECT device::text FROM lan_fixture)),1,'active paired device in registry');
 SELECT manage_lan_device_v1(actor,'revoke',device) FROM lan_fixture;
 INSERT INTO lan_results SELECT throws_ok($t$SELECT authenticate_lan_device_v1(repeat('a',64),NULL,(SELECT device FROM lan_fixture))$t$,'42501','device_unauthorized','revocation refuses device');
-INSERT INTO lan_results SELECT is(jsonb_array_length(get_lan_registry_v1()->'devices'),0,'revoked device removed from registry');
+INSERT INTO lan_results SELECT is((SELECT count(*)::integer FROM jsonb_array_elements(get_lan_registry_v1()->'devices') d WHERE d->>'id'=(SELECT device::text FROM lan_fixture)),0,'revoked device removed from registry');
 CREATE TEMP TABLE expired AS SELECT manage_lan_device_v1(actor,'issue',other) AS result FROM lan_fixture;
 UPDATE lan_device_credentials SET pairing_expires_at=now()-interval '1 second' WHERE device_id=(SELECT other FROM lan_fixture);
 INSERT INTO lan_results SELECT throws_ok($t$SELECT authenticate_lan_device_v1(repeat('d',64),encode(extensions.digest((SELECT result->>'pairing_code' FROM expired),'sha256'),'hex'))$t$,'42501','device_unauthorized','expired code refused');

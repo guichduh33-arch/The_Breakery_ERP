@@ -4,7 +4,7 @@
 // Session 37 — B4: void routing after kitchen send.
 //
 // S43 P0-3 update: "send to kitchen" now PERSISTS counter orders via
-// fire_counter_order_v9 and sets cartStore.pickedUpOrderId — a fired counter
+// fire_counter_order_v10 and sets cartStore.pickedUpOrderId — a fired counter
 // order therefore has a server orders row, exactly like a tablet pickup
 // (create_tablet_order_v2). Void routing keys solely on pickedUpOrderId.
 //
@@ -17,7 +17,7 @@
 //       cartStore.voidOrder() runs; no server call.
 //   (c) Spec A — Hold gating on a fired order (pickedUpOrderId set): the draft
 //       hold path would orphan the live DB row, so "Hold" instead re-parks the
-//       fired order via hold_fired_order_v2. It is ENABLED when nothing changed
+//       fired order via hold_fired_order_v3. It is ENABLED when nothing changed
 //       (no unfired lines) and DISABLED while new unfired lines await firing.
 //
 // PinVerificationModal is mocked so we can directly trigger onVerified without

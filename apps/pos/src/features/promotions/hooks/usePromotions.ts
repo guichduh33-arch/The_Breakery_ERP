@@ -8,6 +8,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Promotion } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export const PROMOTIONS_QUERY_KEY = ['promotions', 'active'] as const;
 
@@ -25,7 +26,9 @@ const PROMOTIONS_SELECT =
   'is_active, created_at';
 
 export function usePromotions() {
+  const enabled = useSaleQueryEnabled();
   return useQuery({
+    enabled,
     queryKey: PROMOTIONS_QUERY_KEY,
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<Promotion[]> => {

@@ -12,7 +12,7 @@
 --      le défaut ;
 --   3. la tolérance laisse une trace : `audit_logs` / `order.sellability_tolerated`.
 --
--- Les deux portes qui portent le drapeau sont couvertes (`fire_counter_order_v9`,
+-- Les deux portes qui portent le drapeau sont couvertes (`fire_counter_order_v10`,
 -- `create_tablet_order_v10`). `add_order_item_v6` n'en a pas : elle n'est ni
 -- rejouée hors-ligne ni appelée en finalisation.
 --
@@ -75,13 +75,13 @@ LANGUAGE sql STABLE AS $$
 $$;
 
 -- ===========================================================================
--- PORTE COMPTOIR — fire_counter_order_v9
+-- PORTE COMPTOIR — fire_counter_order_v10
 -- ===========================================================================
 DO $t1$ DECLARE v_env JSONB; v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22t.fire_auth'), true);
   BEGIN
-    v_env := fire_counter_order_v9(
+    v_env := fire_counter_order_v10(
       p_client_uuid := gen_random_uuid(),
       p_session_id  := current_setting('a22t.sess')::uuid,
       p_items       := pg_temp.a22t_item(),
@@ -114,7 +114,7 @@ DO $t4$ DECLARE v_msg TEXT := '';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('a22t.fire_auth'), true);
   BEGIN
-    PERFORM fire_counter_order_v9(
+    PERFORM fire_counter_order_v10(
       p_client_uuid := gen_random_uuid(),
       p_session_id  := current_setting('a22t.sess')::uuid,
       p_items       := pg_temp.a22t_item(),

@@ -2,9 +2,12 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Category } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export function useCategories() {
+  const enabled = useSaleQueryEnabled();
   return useQuery({
+    enabled,
     queryKey: ['categories'],
     queryFn: async (): Promise<Category[]> => {
       const { data, error } = await supabase

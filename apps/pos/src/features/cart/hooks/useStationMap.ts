@@ -12,6 +12,7 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { DispatchStation } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export const STATION_MAP_KEY = ['station-map'] as const;
 
@@ -49,7 +50,8 @@ async function fetchStationMap(): Promise<Record<string, DispatchStation[]>> {
 }
 
 export function useStationMap() {
-  return useQuery({ queryKey: STATION_MAP_KEY, queryFn: fetchStationMap, staleTime: 60_000 });
+  const enabled = useSaleQueryEnabled();
+  return useQuery({ enabled, queryKey: STATION_MAP_KEY, queryFn: fetchStationMap, staleTime: 60_000 });
 }
 
 /** Lecture cache au moment du fire (mutation) — même filet que S43 (cache live, pas closure). */

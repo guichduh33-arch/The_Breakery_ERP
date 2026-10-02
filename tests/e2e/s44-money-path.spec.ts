@@ -122,7 +122,7 @@ test('T3 — void of a fired order does not poison the next sale', async () => {
   test.setTimeout(120_000);
   await addAmericano(page);
   const fireResponse = page.waitForResponse(
-    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/fire_counter_order_v9',
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/rest/v1/rpc/fire_counter_order_v10',
     { timeout: 20_000 },
   );
   await page.getByRole('button', { name: /send to kitchen/i }).click();

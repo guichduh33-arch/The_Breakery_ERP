@@ -17,8 +17,7 @@ export interface PaymentMethodGridProps {
 export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGridProps) {
   // S64 — only methods enabled in BO Settings render (fail-open = all 6).
   const enabled = useEnabledPaymentMethods();
-  // Spec 006x lot 4 (A1) — hors-ligne, seul le CASH est encaissable ; les
-  // flux non-cash sont online-only et disparaissent proprement de la grille.
+  // ADR-015 — tous les moyens activés restent disponibles hors ligne, sauf l'avoir.
   const offline = useOfflineMode();
   // ADR-013 Lot 4 (D8) — le tender store_credit exige un client rattaché
   // (gate serveur P0015) : sans client, la tuile disparaît (même pattern
@@ -36,7 +35,7 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
         {/* ADR-006 déc. 9 lot A — iterate the enabled set (BO-configured
             order, Set preserves insertion order) instead of the constant. */}
         {[...enabled]
-          .filter((v) => !offline || v === 'cash')
+          .filter((v) => !offline || v !== 'store_credit')
           .filter((v) => v !== 'store_credit' || attachedCustomer !== null)
           .map((v) => METHODS_BY_VALUE.get(v))
           .filter((m): m is MethodMeta => m !== undefined)

@@ -5,12 +5,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
+import { useShiftStore } from '@/stores/shiftStore';
 
 export function useHoldFiredOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orderId: string): Promise<void> => {
-      const { error } = await supabase.rpc('hold_fired_order_v2', { p_order_id: orderId });
+      const sessionId = useShiftStore.getState().current?.id;
+      const { error } = await supabase.rpc('hold_fired_order_v3', {
+        p_order_id: orderId,
+        ...(sessionId ? { p_session_id: sessionId } : {}),
+      });
       if (error) throw error;
       // ADR-022 déc. 4 — c'est désormais la SEULE mise en attente. L'émission de
       // `order_held` vivait sur le parcage du panier, qui disparaît : sans ce

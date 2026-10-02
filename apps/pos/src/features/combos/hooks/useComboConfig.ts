@@ -18,6 +18,7 @@ import {
   type ProductModifierRow,
 } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 // PostgREST may return an object or a singleton array for foreign-key embeds —
 // the one() helper normalises both shapes to a nullable scalar.
@@ -125,10 +126,11 @@ async function fetchComponentModifierGroups(
 }
 
 export function useComboConfig(comboProductId: string): UseQueryResult<ComboDefinition> {
+  const enabled = useSaleQueryEnabled(Boolean(comboProductId));
   return useQuery<ComboDefinition>({
     queryKey: ['combo-config', comboProductId],
     staleTime: 5 * 60_000,
-    enabled: Boolean(comboProductId),
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')

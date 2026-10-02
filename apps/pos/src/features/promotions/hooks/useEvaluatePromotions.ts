@@ -24,6 +24,7 @@
 // converted to the existing `gift_to_add` shape so gift lines auto-add
 // without further code paths.
 import { useCallback, useMemo } from 'react';
+import { useQueries, type UseQueryResult } from '@tanstack/react-query';
 import {
   evaluatePromotionsFallback,
   type AppliedFreeProduct,
@@ -35,6 +36,8 @@ import {
   type PromotionType,
 } from '@breakery/domain';
 import { useProducts } from '@/features/products/hooks/useProducts';
+import { productVariantsOptions, type POSVariantRow } from '@/features/products/hooks/useProductVariants';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 import { supabase } from '@/lib/supabase';
 import { usePromotions } from './usePromotions';
 
@@ -156,16 +159,31 @@ export function cartToRpcPayload(cart: Cart): {
 export function useEvaluatePromotions(): UseEvaluatePromotionsResult {
   const promotionsQuery = usePromotions();
   const productsQuery = useProducts();
+  const variantsEnabled = useSaleQueryEnabled();
+  const parents = useMemo(() => (productsQuery.data ?? []).filter((product) => product.has_variants), [productsQuery.data]);
 
-  const catalog: PromotionCatalog = useMemo(() => {
+  const combineCatalog = useCallback((results: UseQueryResult<POSVariantRow[]>[]): PromotionCatalog => {
     const productCategory: Record<string, string> = {};
     const productPrice: Record<string, number> = {};
     for (const p of productsQuery.data ?? []) {
       if (p.category_id) productCategory[p.id] = p.category_id;
       productPrice[p.id] = p.retail_price;
     }
+    for (const [index, result] of results.entries()) {
+      const parent = parents[index];
+      if (!parent) continue;
+      for (const variant of result.data ?? []) {
+        // Même héritage que ProductTapHandler : catégorie parent, prix variante.
+        if (parent.category_id) productCategory[variant.id] = parent.category_id;
+        productPrice[variant.id] = variant.retail_price;
+      }
+    }
     return { productCategory, productPrice };
-  }, [productsQuery.data]);
+  }, [productsQuery.data, parents]);
+  const catalog = useQueries({
+    queries: parents.map((parent) => ({ ...productVariantsOptions(parent.id), enabled: variantsEnabled })),
+    combine: combineCatalog,
+  });
 
   const promotions = useMemo(
     () => promotionsQuery.data ?? [],

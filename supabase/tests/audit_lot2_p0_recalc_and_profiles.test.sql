@@ -32,6 +32,7 @@ BEGIN
   SELECT oi.order_id INTO v_order_id
   FROM order_items oi JOIN orders o ON o.id = oi.order_id
   WHERE oi.is_cancelled = false AND o.total > 0
+    AND o.order_number = 'PGTAP-543-SALE-1'
   LIMIT 1;
 
   SELECT * INTO v_src FROM order_items WHERE order_id = v_order_id LIMIT 1;
@@ -39,6 +40,7 @@ BEGIN
   -- Clone d'une ligne vivante, marquee annulee. Le CHECK
   -- chk_order_items_cancel_consistency impose les 3 colonnes d'annulation.
   v_src.id               := gen_random_uuid();
+  v_src.client_line_id   := gen_random_uuid()::text;
   v_src.is_cancelled     := true;
   v_src.line_total       := 50000;
   v_src.cancelled_at     := now();

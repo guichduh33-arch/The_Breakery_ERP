@@ -25,13 +25,13 @@ BEGIN
   payload := jsonb_build_array(jsonb_build_object('client_line_id','local-coffee','product_id',product,
     'quantity',2,'unit_price',1,'modifiers', jsonb_build_array(jsonb_build_object(
       'group_name','Milk','option_label','Oat','price_adjustment',1))));
-  envelope := fire_counter_order_v9(key,session,payload);
+  envelope := fire_counter_order_v10(key,session,payload);
   v_order_id := (envelope->>'order_id')::uuid;
   INSERT INTO pos_audit_results VALUES
     ('counter prices simple products and modifiers on server', (SELECT line_total=46000 FROM order_items WHERE order_items.order_id=v_order_id)),
     ('response maps local and server identities', envelope->'items'->0->>'client_line_id'='local-coffee' AND envelope->'items'->0->>'id' IS NOT NULL),
     ('response contains business order number', envelope->>'order_number' IS NOT NULL);
-  envelope := fire_counter_order_v9(key,session,payload);
+  envelope := fire_counter_order_v10(key,session,payload);
   INSERT INTO pos_audit_results VALUES('replay preserves a single line', (SELECT count(*)=1 FROM order_items WHERE order_items.order_id=v_order_id));
   UPDATE order_items SET is_cancelled=true, cancelled_at=now(), cancelled_by=profile,
     cancelled_reason='Audit cancellation' WHERE order_items.order_id=v_order_id;
@@ -39,19 +39,19 @@ BEGIN
   INSERT INTO pos_audit_results VALUES('snapshot retains cancellation facts', (envelope->'items'->0->>'is_cancelled')::boolean);
   payload := jsonb_set(payload, '{0,discount_amount}', '1000');
   BEGIN
-    PERFORM fire_counter_order_v9(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile);
+    PERFORM fire_counter_order_v10(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile);
   EXCEPTION WHEN SQLSTATE '42501' THEN refused := true; END;
   INSERT INTO pos_audit_results VALUES('manager identity alone cannot authorize a discount',refused);
   INSERT INTO discount_authorizations(id,manager_profile_id,scope,expires_at) VALUES(nonce,profile,'discount',now()+interval '5 minutes');
-  envelope := fire_counter_order_v9(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_discount_auth_id:=nonce);
+  envelope := fire_counter_order_v10(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_discount_auth_id:=nonce);
   INSERT INTO pos_audit_results VALUES('valid nonce is consumed and bound to order',
     (SELECT consumed_at IS NOT NULL AND consumed_order_id=(envelope->>'order_id')::uuid FROM discount_authorizations WHERE id=nonce));
   refused := false;
   BEGIN
-    PERFORM fire_counter_order_v9(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_discount_auth_id:=nonce);
+    PERFORM fire_counter_order_v10(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_discount_auth_id:=nonce);
   EXCEPTION WHEN SQLSTATE '42501' THEN refused := true; END;
   INSERT INTO pos_audit_results VALUES('a nonce cannot authorize another fire', refused);
-  envelope := fire_counter_order_v9(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_tolerate_unsellable:=true,p_offline_replay:=true);
+  envelope := fire_counter_order_v10(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_tolerate_unsellable:=true,p_offline_replay:=true);
   INSERT INTO pos_audit_results VALUES('legacy offline discounted sale remains replayable', envelope->>'order_id' IS NOT NULL);
   tablet_id := create_tablet_order_v10(gen_random_uuid(),profile,'','take_out',payload);
   INSERT INTO pos_audit_results VALUES('tablet resolves the same canonical simple price',

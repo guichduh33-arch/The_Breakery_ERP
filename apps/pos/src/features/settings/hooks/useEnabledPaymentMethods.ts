@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { PaymentMethod } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 // Lot B (ADR-006 déc. 9) : les e-wallets sont des valeurs VALIDES mais restent
 // HORS du fail-open — en panne de config on ne propose jamais un tender que la
@@ -30,7 +31,9 @@ const FAIL_OPEN_SET: ReadonlySet<PaymentMethod> = new Set(FAIL_OPEN_PAYMENT_METH
 const QUERY_KEY = ['business-config', 'enabled-payment-methods'] as const;
 
 export function useEnabledPaymentMethods(): ReadonlySet<PaymentMethod> {
+  const enabled = useSaleQueryEnabled();
   const { data } = useQuery({
+    enabled,
     queryKey: QUERY_KEY,
     staleTime: 30_000,
     refetchInterval: 60_000,

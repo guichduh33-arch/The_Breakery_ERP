@@ -14,6 +14,7 @@
 
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export interface OfflineNetworkConfig {
   offlinePaymentsEnabled: boolean;
@@ -36,7 +37,9 @@ async function fetchConfig(): Promise<OfflineNetworkConfig> {
 }
 
 export function useOfflineNetworkConfig(): OfflineNetworkConfig {
+  const enabled = useSaleQueryEnabled();
   const { data } = useQuery({
+    enabled,
     queryKey: QUERY_KEY,
     staleTime: 30_000,
     refetchInterval: 60_000,
