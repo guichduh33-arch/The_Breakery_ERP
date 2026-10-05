@@ -57,7 +57,7 @@ vi.mock('@/features/lan/offlineOutbox', () => ({
 const publishMock = vi.hoisted(() => vi.fn());
 vi.mock('@/features/lan/hubBusClient', () => ({ hubBus: { publish: publishMock } }));
 vi.mock('@/features/lan/localOrderNumber', () => ({ nextLocalOrderNumber: () => 'L-1' }));
-vi.mock('@/features/cart/hooks/useStationMap', () => ({ getStationMap: () => Promise.resolve({}) }));
+vi.mock('@/features/cart/hooks/useStationMap', () => ({ getStationMap: () => Promise.resolve({ p1: [] }) }));
 
 // En coupure, le bus LAN est up : l'envoi tablette est autorisé (offline_bus).
 vi.mock('../hooks/useTabletConnectionState', () => ({

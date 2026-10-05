@@ -32,14 +32,15 @@ import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 export const DISPLAY_ORDERS_QUERY_KEY = ['display', 'orders'] as const;
 export const READY_ORDERS_QUERY_KEY = ['display', 'ready-orders'] as const;
 
-export function useDisplayRealtime(screenId: string): void {
+export function useDisplayRealtime(screenId: string, enabled = true): void {
   const qc = useQueryClient();
 
   // LOT 5 — recover a missed event on reconnect (this hook holds no query of
   // its own, so it can't rely on a refetchInterval).
-  useReconnectInvalidate([DISPLAY_ORDERS_QUERY_KEY, READY_ORDERS_QUERY_KEY]);
+  useReconnectInvalidate(enabled ? [DISPLAY_ORDERS_QUERY_KEY, READY_ORDERS_QUERY_KEY] : []);
 
   useEffect(() => {
+    if (!enabled) return undefined;
     const channelName = `display-${screenId}-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
@@ -62,5 +63,5 @@ export function useDisplayRealtime(screenId: string): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [screenId, qc]);
+  }, [screenId, qc, enabled]);
 }

@@ -20,8 +20,30 @@ import { replayOfflineOutbox } from '../offlineReplay';
 export function useOfflineReplay(): void {
   useEffect(() => {
     let cancelled = false;
+    let running = false;
+    let rerunRequested = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let delay = 15_000;
+    const allowed = (): boolean => {
+      const auth = useAuthStore.getState();
+      return !cancelled && useCloudStatusStore.getState().cloudOnline
+        && auth.isAuthenticated && auth.cloudValidated && !auth.isLocked;
+    };
+    const clearTimer = (): void => {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+    };
+    const retry = (): void => {
+      if (!allowed() || timer !== null) return;
+      timer = setTimeout(() => { timer = null; run(); }, delay);
+      delay = Math.min(delay * 2, 60_000);
+    };
 
     const run = (): void => {
+      if (!allowed()) return;
+      if (running) { rerunRequested = true; return; }
+      clearTimer();
+      running = true;
       void replayOfflineOutbox().then((res) => {
         if (cancelled) return;
         if (res.replayed > 0) {
@@ -39,23 +61,39 @@ export function useOfflineReplay(): void {
         }
         if (res.failed > 0) {
           toast.error(
-            `Offline resync interrupted (${res.failed} still queued) — will retry when the network returns`,
+            `Offline resync interrupted (${res.failed} still queued) — will retry automatically`,
           );
+          retry();
+        } else {
+          delay = 15_000;
+        }
+      }).catch(() => {
+        if (cancelled) return;
+        toast.error('Offline resync interrupted — queued operations will retry automatically');
+        retry();
+      }).finally(() => {
+        running = false;
+        if (rerunRequested) {
+          rerunRequested = false;
+          run();
         }
       });
     };
 
-    if (useCloudStatusStore.getState().cloudOnline) run();
-
-    const unsubCloud = useCloudStatusStore.subscribe((s, prev) => {
-      if (s.cloudOnline && !prev.cloudOnline) run();
-    });
-    const unsubAuth = useAuthStore.subscribe((s, prev) => {
-      if (s.cloudValidated && !prev.cloudValidated) run();
-    });
+    let wasAllowed = allowed();
+    const changed = (): void => {
+      const nowAllowed = allowed();
+      if (!nowAllowed) clearTimer();
+      else if (!wasAllowed) { delay = 15_000; run(); }
+      wasAllowed = nowAllowed;
+    };
+    const unsubCloud = useCloudStatusStore.subscribe(changed);
+    const unsubAuth = useAuthStore.subscribe(changed);
+    run();
 
     return () => {
       cancelled = true;
+      clearTimer();
       unsubCloud();
       unsubAuth();
     };

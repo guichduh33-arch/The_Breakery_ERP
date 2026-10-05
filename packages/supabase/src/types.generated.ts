@@ -7073,7 +7073,7 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
       diag_test_name: { Args: { "": string }; Returns: string }
-      discard_held_order_v2: {
+      discard_held_order_v3: {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined
       }

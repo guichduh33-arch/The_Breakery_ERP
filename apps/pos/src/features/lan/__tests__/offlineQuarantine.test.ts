@@ -22,6 +22,7 @@ import {
   getPendingIntents,
   getQuarantinedIntents,
   quarantinedIntentCount,
+  quarantineIntents,
   type OfflineIntent,
 } from '../offlineOutbox';
 import { useAuthStore } from '@/stores/authStore';
@@ -59,6 +60,30 @@ beforeEach(() => {
 });
 
 describe('ADR-018 — quarantaine des intents définitivement rejetés', () => {
+  it('conserve la création et son règlement si la quarantaine ne peut pas être sauvegardée', async () => {
+    const order = tabletIntent();
+    const payment = cashIntent('pay-0', 2, 40000);
+    await enqueueIntent(order);
+    await enqueueIntent(payment);
+    const setItem = localStorage.setItem.bind(localStorage);
+    const storageFailure = new DOMException('Quota exceeded', 'QuotaExceededError');
+    const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+      if (key === 'pos:offline_quarantine') throw storageFailure;
+      setItem(key, value);
+    });
+
+    try {
+      await expect(quarantineIntents([
+        { intent: order, code: 'P0011', reason: 'table_required_for_dine_in' },
+        { intent: payment, code: 'P0011', reason: 'cascade' },
+      ])).rejects.toBe(storageFailure);
+      expect((await getPendingIntents()).map((intent) => intent.id)).toEqual(['tab-1', 'pay-0']);
+      expect(await getQuarantinedIntents()).toEqual([]);
+    } finally {
+      write.mockRestore();
+    }
+  });
+
   it("la commande de salle refusée part en quarantaine et les encaissements derrière remontent", async () => {
     rpcMock.mockImplementation((fn: string) => {
       if (fn === 'create_tablet_order_v10') {

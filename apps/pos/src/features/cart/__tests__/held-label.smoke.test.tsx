@@ -38,9 +38,6 @@ const ROWS = [
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
   useHeldOrdersQuery: () => ({ data: ROWS, isLoading: false }),
 }));
-vi.mock('@/features/heldOrders/hooks/useDiscardHeldOrder', () => ({
-  useDiscardHeldOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
-}));
 vi.mock('@/features/heldOrders/hooks/useReopenHeldOrder', () => ({
   useReopenHeldOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));

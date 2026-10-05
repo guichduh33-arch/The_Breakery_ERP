@@ -5,6 +5,7 @@
 // items "unsent" (re-firing them would duplicate the DB lines).
 import { beginOrderSend, finishOrderSend } from '@/stores/orderSendGuard';
 import { useRef } from 'react';
+import { clearCounterFire, counterFireScope, isDefiniteFireRefusal, resumeCounterFire, saveCounterFire, type CounterFireAttempt, type CounterFireArgs } from './counterFireRecovery';
 import type { OrderSnapshot } from '@/stores/orderSnapshot';
 import { mintDiscountAuthorization } from '@/features/discounts/mintDiscountAuthorization';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -140,17 +141,25 @@ export function useFireToStations(): UseFireToStationsResult {
       if (!printOnly) beginOrderSend();
       try {
 
+      const sessionId = useShiftStore.getState().current?.id;
+      const auth = useAuthStore.getState();
+      const saved = !printOnly && sessionId
+        ? resumeCounterFire(await counterFireScope(auth.user?.id ?? '', auth.sessionToken ?? null, sessionId)) : null;
+      if (saved && (ctx?.forceOffline || isOfflineMode())) {
+        throw new Error('Cloud order send is unconfirmed — reconnect and resume it before sending offline');
+      }
+
       // Spec A Bloc 4 — this fire is an "additional order" (2nd phase) when the
       // order already exists on the terminal (reopened ⇒ pickedUpOrderId set)
       // and we are not in the post-payment printOnly path.
-      const isAdditional = !printOnly && useCartStore.getState().pickedUpOrderId !== null;
+      const isAdditional = saved?.additional ?? (!printOnly && useCartStore.getState().pickedUpOrderId !== null);
 
       // 1. Grab unprinted items from the cart store (excludes cancelled lines).
-      const unprinted = useCartStore.getState().unprintedItems();
+      let unprinted = saved?.items ?? useCartStore.getState().unprintedItems();
       if (unprinted.length === 0) return [];
 
       const tableNo =
-        tableNumber ?? useCartStore.getState().cart.tableNumber ?? undefined;
+        saved?.tableNumber ?? tableNumber ?? useCartStore.getState().cart.tableNumber ?? undefined;
 
       // 2. P0-3 — persist FIRST via fire_counter_order_v1. ALL unprinted
       //    non-cancelled items go to the RPC, including station-'none' ones:
@@ -168,10 +177,9 @@ export function useFireToStations(): UseFireToStationsResult {
       let persistedOrderNumber: string | undefined;
       if (!printOnly) {
         const lockedIds = useCartStore.getState().lockedItemIds;
-        const toPersist = unprinted.filter((i) => !i.server_id && !lockedIds.includes(i.id));
+        const toPersist = saved?.items ?? unprinted.filter((i) => !i.server_id && !lockedIds.includes(i.id));
 
         if (toPersist.length > 0) {
-          const sessionId = useShiftStore.getState().current?.id;
           if (!sessionId) throw new Error('no_open_shift');
 
           fireClientUuidRef.current ??= ctx?.clientUuid ?? crypto.randomUUID();
@@ -265,9 +273,9 @@ export function useFireToStations(): UseFireToStationsResult {
             // (check_violation), à l'envoi — pas au paiement.
             const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
             const sourceCode = getOrderSourceCode();
-            const authorizationId = fireAuthorizer ? await mintDiscountAuthorization() : undefined;
+            const authorizationId = !saved && fireAuthorizer ? await mintDiscountAuthorization() : undefined;
             const customerId = useCartStore.getState().cart.customerId;
-            const { data, error } = await supabase.rpc('fire_counter_order_v10', {
+            const args: CounterFireArgs = saved?.args ?? {
               p_client_uuid: fireClientUuidRef.current,
               ...(customerId ? { p_customer_id: customerId } : {}),
               ...(authorizationId ? { p_discount_auth_id: authorizationId } : {}),
@@ -291,19 +299,37 @@ export function useFireToStations(): UseFireToStationsResult {
               // CRÉATION ; sur un append le numéro existe déjà. Omis si invalide
               // (défaut serveur 'P').
               ...(!existingOrderId && sourceCode !== null ? { p_source_code: sourceCode } : {}),
+            };
+            const attempt: CounterFireAttempt = saved ?? saveCounterFire({ version: 1,
+              scope: await counterFireScope(auth.user?.id ?? '', auth.sessionToken ?? null, sessionId),
+              args, items: toPersist, additional: isAdditional,
+              ...(tableNo !== undefined ? { tableNumber: tableNo } : {}),
             });
-            if (error) throw Object.assign(new Error(error.message), { details: error });
+            const { data, error } = await supabase.rpc('fire_counter_order_v10', attempt.args);
+            if (error) {
+              if (isDefiniteFireRefusal(error)) clearCounterFire();
+              throw Object.assign(new Error(error.message), { details: error });
+            }
             const env = data as unknown as {
               order_id: string;
               order_number: string;
               idempotent_replay: boolean;
             };
+            if (!env?.order_id || !env.order_number) throw new Error('Order send confirmation unavailable — retry this same send');
             persistedOrderNumber = env.order_number;
             if (data && typeof data === 'object' && 'items' in data) {
-              useCartStore.getState().applyOrderSnapshot(data as unknown as OrderSnapshot);
+              const snapshot = data as unknown as OrderSnapshot;
+              const confirmed = new Set(snapshot.items.filter((item) => !item.is_cancelled && item.is_locked)
+                .map((item) => item.client_line_id ?? item.id));
+              unprinted = unprinted.filter((item) => confirmed.has(item.id) || confirmed.has(item.server_id ?? ''));
+              useCartStore.getState().applyOrderSnapshot(snapshot);
+            } else if (env.idempotent_replay) {
+              throw new Error('Order send confirmation unavailable — retry this same send');
             } else {
               useCartStore.setState({ orderNumber: env.order_number, orderOrigin: 'pos' });
             }
+
+            clearCounterFire();
 
             // Success → next fire gets a fresh uuid.
             fireClientUuidRef.current = null;

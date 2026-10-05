@@ -1,18 +1,15 @@
 // apps/pos/src/features/cart/HeldOrdersModal.tsx
 //
 // Session 14 / Phase 2.B — POS-specific held-orders chooser (visual).
-// Session 35 (F-003) — rewired DB-backed: the list is now multi-terminal,
-// served by `useHeldOrdersQuery` (orders flagged `is_held`) and discarded via
-// `discard_held_order_v2`. The old localStorage `heldOrdersStore` is retired.
-// `useHeldOrdersRealtime` keeps the list live across terminals.
+// Liste partagée entre terminaux, alimentée par les commandes ouvertes.
+// L'annulation reprend la commande et utilise le flux PIN/perte existant.
 //
 // ADR-022 déc. 4 — la liste ne présente plus QUE des commandes envoyées en
 // cuisine. La voie « brouillon » (draft `HELD-<uuid>` fabriqué par hold_order,
 // restauré par restore_held_order) est supprimée : ce qui est saisi sans avoir
 // franchi l'envoi en cuisine ni le paiement est un brouillon, pas une commande,
 // et n'a pas à exister côté serveur. Reste la réouverture d'une commande
-// envoyée (reopen_held_order_v2) et le rejet (discard_held_order_v2), qui sert
-// aussi les commandes caisse non payées.
+// envoyée (famille reopen_held_order) puis son annulation protégée.
 //
 // Ref: docs/Design/caissapp/51-held-orders-takeaway-list.jpg
 //
@@ -34,7 +31,7 @@ import {
 import { useCartStore } from '@/stores/cartStore';
 import { useHeldOrdersQuery, type HeldOrderRow } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { useReopenHeldOrder } from '@/features/heldOrders/hooks/useReopenHeldOrder';
-import { useDiscardHeldOrder } from '@/features/heldOrders/hooks/useDiscardHeldOrder';
+import { CancelUnpaidOrderModal } from './CancelUnpaidOrderModal';
 import { useHeldOrdersRealtime } from '@/features/heldOrders/hooks/useHeldOrdersRealtime';
 import { AttachTabCustomerButton } from '@/features/heldOrders/components/AttachTabCustomerButton';
 
@@ -119,7 +116,7 @@ function HeldOrderCard({
             type="button"
             onClick={onDelete}
             disabled={restoring}
-            aria-label={`Delete held order ${row.order_number}`}
+            aria-label={`Cancel held order ${row.order_number}`}
             className={cn(
               'h-touch-min w-touch-min inline-flex items-center justify-center rounded-md',
               'text-red-as-text border border-red bg-red-soft hover:bg-red hover:text-red-on-fill',
@@ -151,7 +148,7 @@ function HeldOrderCard({
 }
 
 export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.Element {
-  useHeldOrdersRealtime();
+  useHeldOrdersRealtime(open);
 
   const { data, isLoading, isError, refetch } = useHeldOrdersQuery();
   const allRows = data ?? [];
@@ -165,7 +162,9 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   // cart itself — don't also list it here as restorable/discardable.
   const rows = allRows.filter((r) => r.id !== pickedUpOrderId);
   const reopen = useReopenHeldOrder();
-  const discard = useDiscardHeldOrder();
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const cancelAfterRestore = useRef(false);
 
   const [confirmRow, setConfirmRow] = useState<HeldOrderRow | null>(null);
   const restoringRef = useRef(false);
@@ -178,27 +177,37 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
     restoringRef.current = true;
     setRestoring(true);
     try {
-      await reopen.mutateAsync(row.id);
-      onClose();
+      const orderId = await reopen.mutateAsync(row.id);
+      if (cancelAfterRestore.current) {
+        setCancelOrderId(orderId);
+        setCancelOpen(true);
+      } else onClose();
     } catch {
       toast.error('Could not restore this order. Refresh the list and try again.');
       void refetch();
     } finally {
       restoringRef.current = false;
+      cancelAfterRestore.current = false;
       setRestoring(false);
     }
   }
 
-  function handleRestoreTap(row: HeldOrderRow): void {
+  function handleRestoreTap(row: HeldOrderRow, cancel = false): void {
     if (restoringRef.current) return;
+    if (cancel && cancelOrderId !== null && cancelOrderId !== row.id) {
+      toast.error('Resume the previous cancellation before cancelling another order.');
+      return;
+    }
     if (pickedUpOrderId) {
       toast.error('Finish or void the current fired order before restoring a held one.');
       return;
     }
     if (cartHasItems) {
+      cancelAfterRestore.current = cancel;
       setConfirmRow(row);
       return;
     }
+    cancelAfterRestore.current = cancel;
     void doRestore(row);
   }
 
@@ -209,17 +218,9 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
     }
   }
 
-  function handleDelete(id: string): void {
-    const reason = window.prompt('Reason for discarding this held order (min 10 chars):');
-    if (!reason || reason.trim().length < 10) {
-      return;
-    }
-    void discard.mutateAsync({ orderId: id, reason: reason.trim() });
-  }
-
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <Dialog open={open && !cancelOpen} onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-w-2xl p-0 gap-0 bg-bg-elevated">
           <DialogTitle asChild>
             <span className={SR_ONLY}>Active held orders</span>
@@ -257,6 +258,12 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
           </header>
 
           <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
+            {cancelOrderId && pickedUpOrderId === cancelOrderId && (
+              <button type="button" onClick={() => setCancelOpen(true)}
+                className="min-h-touch-min px-4 rounded-md border border-border-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+                Resume cancellation
+              </button>
+            )}
             {isError ? (
               /* Audit esthétique 2026-07-08 (batch 3) — without this branch a
                  failed fetch fell through to the empty state ("No orders held"),
@@ -315,7 +322,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                     row={row}
                     restoring={restoring}
                     onRestore={() => handleRestoreTap(row)}
-                    onDelete={() => handleDelete(row.id)}
+                    onDelete={() => handleRestoreTap(row, true)}
                   />
                 ))}
               </div>
@@ -323,6 +330,12 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
           </div>
         </DialogContent>
       </Dialog>
+      <CancelUnpaidOrderModal open={cancelOpen} orderId={cancelOrderId}
+        onClose={() => {
+          setCancelOpen(false);
+          if (useCartStore.getState().pickedUpOrderId === null) setCancelOrderId(null);
+          onClose();
+        }} />
 
       {/* Replace-cart confirmation */}
       <Dialog open={confirmRow !== null} onOpenChange={(o) => !o && setConfirmRow(null)}>

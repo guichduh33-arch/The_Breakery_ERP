@@ -72,9 +72,13 @@ export function useCreateTabletOrder() {
       // KOT papier depuis la tablette (comportement online inchangé : c'est
       // la création DB qui alimente le KDS, l'impression reste côté caisse).
       if (isOfflineMode() && !forceOnline) {
-        const stationByProductId = await getStationMap(queryClient).catch(
-          (): Record<string, string[]> => ({}),
-        );
+        const stationByProductId = await getStationMap(queryClient).catch(() => {
+          throw new Error('Kitchen routing is unavailable. Reconnect before sending this order.');
+        });
+        if (cart.items.some((item) => !Object.prototype.hasOwnProperty.call(stationByProductId, item.product_id)
+          || !Array.isArray(stationByProductId[item.product_id]))) {
+          throw new Error('Kitchen routing is incomplete. Reconnect before sending this order.');
+        }
         const localNumber = nextLocalOrderNumber();
         const firedAt = new Date().toISOString();
 
@@ -106,7 +110,7 @@ export function useCreateTabletOrder() {
             unit_price: i.unit_price,
             modifiers: i.modifiers,
             component_modifiers: (i.combo_components ?? []).flatMap((component) => (component.modifiers ?? []).map((modifier) => ({ ...modifier, component_name: component.name ?? 'Component' }))),
-                dispatch_stations: stationByProductId[i.product_id] ?? [],
+            dispatch_stations: stationByProductId[i.product_id] ?? [],
           })),
         };
         let kitchenPublished = false;

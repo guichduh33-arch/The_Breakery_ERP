@@ -15,6 +15,13 @@
 
 BEGIN;
 \ir helpers/session.sql
+-- Libère uniquement dans cette transaction la caisse du propriétaire fixture.
+-- Le ROLLBACK final restaure toute session existante, sans clôture durable.
+UPDATE pos_sessions
+SET status = 'closed', closed_at = now(),
+    closed_by = opened_by, closing_cash = 0
+WHERE opened_by = '00000000-0000-0000-0000-000000000001'
+  AND status = 'open';
 UPDATE pos_sessions SET status = 'open', closed_at = NULL, closed_by = NULL
 WHERE id = 'f5430000-0000-4000-a000-000000000001';
 SELECT plan(9);

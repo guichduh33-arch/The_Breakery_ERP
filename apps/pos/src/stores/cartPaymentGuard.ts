@@ -1,4 +1,5 @@
 import { isOrderSending } from './orderSendGuard';
+import { hasPendingCounterFire } from '@/features/cart/hooks/counterFireRecovery';
 import type { CartState } from './cartTypes';
 import { usePaymentStore } from './paymentStore';
 import { toast } from 'sonner';
@@ -13,7 +14,9 @@ export function guardCartActions(actions: CartState): CartState {
   const names: (keyof CartState)[] = ['add', 'addCombo', 'update', 'remove', 'restoreLine', 'clear', 'voidOrder', 'setOrderType', 'setTableNumber', 'attachCustomer', 'detachCustomer', 'setRedeemPoints', 'restoreCart', 'reopenOrder', 'setCartDiscount', 'setLineDiscount', 'setAppliedPromotions', 'dismissPromotion'];
   const guarded = Object.fromEntries(names.map((name) => [name, (...args: unknown[]) => {
     if (isCartPaymentLocked()) {
-      if (name !== 'setAppliedPromotions') toast.error(isOrderSending() ? 'Sending order — wait for confirmation before changing it' : 'Resume the saved payment before changing this order');
+      if (name !== 'setAppliedPromotions') toast.error(hasPendingCounterFire()
+        ? 'Resume the saved order send before changing this order'
+        : isOrderSending() ? 'Sending order — wait for confirmation before changing it' : 'Resume the saved payment before changing this order');
       return name === 'setAppliedPromotions' ? { addedGifts: [], removedGifts: [] } : undefined;
     }
     return Reflect.apply(actions[name] as (...values: unknown[]) => unknown, actions, args);

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Button, Card, Input, SectionLabel } from '@breakery/ui';
 import { useOrgDisplaySettings, useSetOrgDisplaySetting } from '../hooks/useOrgDisplaySettings';
 import { ScopeBadge } from './ScopeBadge';
+import { openCustomerDisplay } from '@/features/display/displaySource';
 
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
 const DEFAULT_DISPLAY_SLOGAN = 'French Bakery & Pastry';
@@ -113,7 +114,7 @@ export function DisplaySettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => window.open('/display', '_blank', 'noopener')}
+            onClick={openCustomerDisplay}
           >
             <Monitor className="h-4 w-4" aria-hidden />
             Open customer display
