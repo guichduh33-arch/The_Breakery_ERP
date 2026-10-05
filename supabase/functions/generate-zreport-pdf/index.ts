@@ -17,6 +17,7 @@ import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { getIdempotencyKey, MissingIdempotencyKeyError, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getPublishableApiKey } from '../_shared/api-keys.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { initLayout, type BusinessInfo } from '../_shared/pdf-layout.ts';
 import { render as renderZReport, type ZReportEnvelope } from '../_shared/pdf-templates/zreport.ts';
@@ -61,7 +62,7 @@ serve(async (req) => {
 
   const userClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
+    getPublishableApiKey()!,
     { global: { headers: { Authorization: authHeader } } },
   );
 

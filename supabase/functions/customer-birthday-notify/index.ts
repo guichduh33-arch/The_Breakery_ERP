@@ -6,7 +6,8 @@
 // enqueues one notification_outbox row via enqueue_notification_v2 RPC.
 //
 // Authentification interne réservée aux appels serveur : secret configuré
-// dans x-cron-secret, ou clé service_role configurée dans Bearer.
+// dans x-cron-secret, ou clé API serveur configurée dans apikey.
+// Bearer legacy reste accepté uniquement sans configuration de nouvelles clés.
 // Une session utilisateur ne donne pas le droit de lancer ce traitement.
 // Sans aucun de ces secrets configurés, tous les appels sont refusés.
 //
@@ -18,6 +19,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getServerApiKey } from '../_shared/api-keys.ts';
 
 const JAKARTA_TZ = 'Asia/Jakarta';
 
@@ -40,14 +42,19 @@ async function authorize(req: Request): Promise<boolean> {
     return true;
   }
 
-  // Path 2: service_role Bearer JWT
+  // Une clé moderne n'est pas un JWT : transport uniquement dans apikey.
+  const serverKey = getServerApiKey();
+  if (serverKey?.startsWith('sb_secret_')) {
+    return req.headers.get('apikey') === serverKey;
+  }
+
+  // Compatibilité des environnements non migrés : clé legacy exacte.
   const auth = req.headers.get('authorization') ?? '';
   if (auth.startsWith('Bearer ')) {
     const token = auth.slice('Bearer '.length).trim();
     if (token) {
       // Seule la clé serveur exacte est autorisée, jamais une session utilisateur.
-      const srKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      if (srKey && token === srKey) return true;
+      if (serverKey && token === serverKey) return true;
     }
   }
 

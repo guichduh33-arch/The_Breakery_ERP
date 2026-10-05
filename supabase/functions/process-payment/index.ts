@@ -67,6 +67,7 @@ import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
 import { checkPermissionForRole, withPermissionErrors } from '../_shared/permissions.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getPublishableApiKey } from '../_shared/api-keys.ts';
 import { logAndRedact } from '../_shared/error-redact.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -242,7 +243,7 @@ serve(withPermissionErrors(async (req) => {
 
   // Use a per-request client carrying the user JWT so the RPC sees auth.uid()
   const url = Deno.env.get('SUPABASE_URL');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const anonKey = getPublishableApiKey();
   if (!url || !anonKey) {
     return jsonResponse({ error: 'server_misconfigured' }, 500);
   }

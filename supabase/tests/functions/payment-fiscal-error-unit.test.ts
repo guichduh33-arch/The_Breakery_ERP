@@ -17,7 +17,9 @@ vi.mock('../../functions/_shared/permissions.ts', () => ({
 describe('paiement — erreurs comptables distinctes du verrouillage PIN', () => {
   beforeEach(() => {
     vi.clearAllMocks(); vi.resetModules();
-    vi.stubGlobal('Deno', { env: { get: () => 'test-only' } });
+    vi.stubGlobal('Deno', { env: { get: (name: string) => ({
+      SUPABASE_URL: 'https://example.test', SUPABASE_ANON_KEY: 'test-only',
+    })[name] } });
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });

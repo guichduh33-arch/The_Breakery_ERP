@@ -39,7 +39,9 @@ vi.mock('../../functions/_shared/supabase-admin.ts', () => ({
 describe('callers — overrides indisponibles', () => {
   beforeEach(() => {
     vi.clearAllMocks(); vi.resetModules(); mocks.replay = false;
-    vi.stubGlobal('Deno', { env: { get: () => 'test-only' } });
+    vi.stubGlobal('Deno', { env: { get: (name: string) => ({
+      SUPABASE_URL: 'https://example.test', SUPABASE_ANON_KEY: 'test-only',
+    })[name] } });
     mocks.userRpc.mockResolvedValue({ data: { order_id: 'existing' }, error: null });
   });
   it.each([
