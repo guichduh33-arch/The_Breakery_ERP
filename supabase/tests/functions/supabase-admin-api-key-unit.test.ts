@@ -6,7 +6,7 @@ vi.mock('https://esm.sh/@supabase/supabase-js@2.47.10', () => ({ createClient })
 let env: Record<string, string>;
 beforeEach(() => {
   vi.resetModules(); vi.clearAllMocks();
-  env = { SUPABASE_URL: 'https://example.test', SUPABASE_API_KEY_NAME: 'default',
+  env = { SUPABASE_URL: 'https://example.test', API_KEY_NAME: 'default',
     SUPABASE_SECRET_KEYS: '{"default":"sb_secret_test-only"}', SUPABASE_SERVICE_ROLE_KEY: 'legacy-server' };
   vi.stubGlobal('Deno', { env: { get: (name: string) => env[name] } });
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}')));
@@ -36,7 +36,7 @@ describe('client serveur avec nouvelle clé API', () => {
     expect(headers.get('authorization')).toBe('Bearer acting-user-jwt');
   });
   it('conserve le transport legacy sans activation', async () => {
-    delete env.SUPABASE_API_KEY_NAME;
+    delete env.API_KEY_NAME;
     const { getAdminClient } = await import('../../functions/_shared/supabase-admin');
     getAdminClient();
     await createClient.mock.calls[0][2].global.fetch('https://example.test', {

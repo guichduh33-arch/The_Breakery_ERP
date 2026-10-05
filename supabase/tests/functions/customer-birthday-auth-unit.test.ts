@@ -74,7 +74,7 @@ describe('anniversaires — accès réservé aux appels serveur', () => {
 
   it('accepte la nouvelle clé serveur dans apikey', async () => {
     env.mockImplementation((name: string) => ({
-      SUPABASE_API_KEY_NAME: 'default',
+      API_KEY_NAME: 'default',
       SUPABASE_SECRET_KEYS: '{"default":"sb_secret_test-only"}',
     })[name]);
     const response = await handler(new Request('https://example.test/birthday', {
@@ -87,7 +87,7 @@ describe('anniversaires — accès réservé aux appels serveur', () => {
   it.each(['test-service-key', 'sb_secret_test-only', 'ordinary-valid-user-token'])
     ('refuse Bearer après migration des clés : %s', async token => {
       env.mockImplementation((name: string) => ({
-        SUPABASE_API_KEY_NAME: 'default',
+        API_KEY_NAME: 'default',
         SUPABASE_SECRET_KEYS: '{"default":"sb_secret_test-only"}',
         SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
       })[name]);

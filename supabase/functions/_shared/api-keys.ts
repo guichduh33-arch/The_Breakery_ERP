@@ -2,7 +2,7 @@
 // Une configuration moderne invalide ne doit jamais utiliser une clé legacy.
 function resolveApiKey(variable: string, legacyVariable: string, prefix: string): string | null {
   // Activation explicite par environnement pour préserver les appelants dev.
-  const name = Deno.env.get('SUPABASE_API_KEY_NAME');
+  const name = Deno.env.get('API_KEY_NAME');
   if (name === undefined) return Deno.env.get(legacyVariable) || null;
   const configured = Deno.env.get(variable);
   if (!name || configured === undefined) throw new Error(`Missing ${variable} configuration`);
