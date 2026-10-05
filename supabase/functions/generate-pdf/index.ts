@@ -22,6 +22,7 @@ import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getPublishableApiKey } from '../_shared/api-keys.ts';
 import { initLayout, type BusinessInfo } from '../_shared/pdf-layout.ts';
 import { TEMPLATES, type TemplateName } from '../_shared/pdf-templates/index.ts';
 
@@ -65,7 +66,7 @@ serve(async (req) => {
 
   const userClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
+    getPublishableApiKey()!,
     { global: { headers: { Authorization: authHeader } } },
   );
   const { data: userData, error: userErr } = await userClient.auth.getUser();

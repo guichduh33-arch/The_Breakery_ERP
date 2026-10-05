@@ -7,6 +7,7 @@ vi.mock('../../functions/_shared/rate-limit.ts', () => ({
   checkRateLimitDurable: () => Promise.resolve({ allowed: true }), getClientIp: () => '127.0.0.1',
 }));
 vi.mock('../../functions/_shared/supabase-admin.ts', () => ({ getAdminClient: vi.fn() }));
+vi.mock('../../functions/_shared/acting-user.ts', () => ({ getActingAuthUserId: () => Promise.resolve('employee') }));
 vi.mock('../../functions/_shared/manager-pin.ts', () => ({
   verifyManagerPin: vi.fn(), isManagerPinBlocked: vi.fn(), recordManagerPinFailure: vi.fn(), MANAGER_PIN_FAIL_WINDOW_SEC: 900,
 }));
@@ -17,7 +18,9 @@ vi.mock('../../functions/_shared/permissions.ts', () => ({
 describe('paiement — erreurs comptables distinctes du verrouillage PIN', () => {
   beforeEach(() => {
     vi.clearAllMocks(); vi.resetModules();
-    vi.stubGlobal('Deno', { env: { get: () => 'test-only' } });
+    vi.stubGlobal('Deno', { env: { get: (name: string) => ({
+      SUPABASE_URL: 'https://example.test', SUPABASE_ANON_KEY: 'test-only',
+    })[name] } });
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });

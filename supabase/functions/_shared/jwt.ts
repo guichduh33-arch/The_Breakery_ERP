@@ -16,9 +16,10 @@
 // invocations ; importKey() is ~1-3ms per call, caching removes that cost
 // from every invocation after the first.
 let _hmacKey: CryptoKey | null = null;
+let _hmacSecret: string | null = null;
 
 export async function getHmacKey(secret: string): Promise<CryptoKey> {
-  if (_hmacKey) return _hmacKey;
+  if (_hmacKey && _hmacSecret === secret) return _hmacKey;
   _hmacKey = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
@@ -26,6 +27,7 @@ export async function getHmacKey(secret: string): Promise<CryptoKey> {
     false,
     ['sign'],
   );
+  _hmacSecret = secret;
   return _hmacKey;
 }
 
@@ -37,7 +39,11 @@ export async function getHmacKey(secret: string): Promise<CryptoKey> {
  * @returns Signed JWT string in `header.payload.signature` format.
  */
 export async function signJwt(payload: Record<string, unknown>, secret: string): Promise<string> {
-  const header = { alg: 'HS256', typ: 'JWT' };
+  const kid = Deno.env.get('JWT_SIGNING_KEY_ID');
+  if (kid !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(kid)) {
+    throw new Error('Invalid JWT_SIGNING_KEY_ID configuration');
+  }
+  const header = { alg: 'HS256', typ: 'JWT', ...(kid === undefined ? {} : { kid }) };
   const enc = (obj: unknown) =>
     btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   const data = `${enc(header)}.${enc(payload)}`;
