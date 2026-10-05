@@ -7,7 +7,8 @@
 //
 // Returns ISO range strings so React Query keys are stable across renders.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { TIMEZONE } from '@breakery/utils';
 
 export type ReportsPeriodPreset =
@@ -179,18 +180,78 @@ export function resolvePeriod(preset: ReportsPeriodPreset, now = new Date()): Re
   };
 }
 
+const PRESETS: ReportsPeriodPreset[] = ['today', 'yesterday', 'last_7_days', 'this_week', 'this_month', 'custom'];
+
+function validDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 export function useReportsPeriod(initial: ReportsPeriodPreset = 'today'): {
   period: ReportsPeriod;
   setPreset: (p: ReportsPeriodPreset) => void;
   presets: ReportsPeriodPreset[];
   labelOf: (p: ReportsPeriodPreset) => string;
+  customStart: string;
+  customEnd: string;
+  setCustomDate: (side: 'start' | 'end', value: string) => void;
+  error: string | null;
 } {
-  const [preset, setPreset] = useState<ReportsPeriodPreset>(initial);
-  const period = useMemo(() => resolvePeriod(preset), [preset]);
+  const [params, setParams] = useSearchParams();
+  const [clock, setClock] = useState(() => new Date());
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = (): void => {
+      clearTimeout(timer);
+      const now = new Date();
+      setClock(now);
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE,
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+      const part = (type: string): number => Number(parts.find((item) => item.type === type)?.value ?? 0);
+      const seconds = part('hour') * 3600 + part('minute') * 60 + part('second');
+      timer = setTimeout(refresh, (86_400 - seconds) * 1000 - now.getMilliseconds());
+    };
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', refresh); window.removeEventListener('focus', refresh); };
+  }, []);
+  const rawPreset = params.get('period');
+  const preset = PRESETS.includes(rawPreset as ReportsPeriodPreset) ? rawPreset as ReportsPeriodPreset : initial;
+  const defaults = useMemo(() => resolvePeriod('custom', clock), [clock]);
+  const customStart = params.get('from') ?? defaults.startDate;
+  const customEnd = params.get('to') ?? defaults.endDate;
+  const error = preset !== 'custom' ? null : !validDate(customStart) || !validDate(customEnd)
+    ? 'Choose valid start and end dates.' : customStart > customEnd ? 'Start date must be on or before end date.' : null;
+  const period = useMemo(() => {
+    const resolved = resolvePeriod(preset, clock);
+    if (preset !== 'custom' || error) return resolved;
+    const start = new Date(`${customStart}T00:00:00`);
+    const end = addDays(new Date(`${customEnd}T00:00:00`), 1);
+    return { ...resolved, startDate: customStart, endDate: customEnd,
+      start: start.toISOString(), end: end.toISOString(), label: `${customStart} – ${customEnd}` };
+  }, [preset, clock, customStart, customEnd, error]);
+  const setPreset = (next: ReportsPeriodPreset): void => {
+    setParams((previous) => {
+      const nextParams = new URLSearchParams(previous);
+      nextParams.set('period', next);
+      if (next === 'custom') { nextParams.set('from', customStart); nextParams.set('to', customEnd); }
+      return nextParams;
+    }, { replace: true });
+  };
+  const setCustomDate = (side: 'start' | 'end', value: string): void => {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set('period', 'custom'); next.set(side === 'start' ? 'from' : 'to', value);
+      return next;
+    }, { replace: true });
+  };
   return {
     period,
     setPreset,
-    presets: ['today', 'yesterday', 'last_7_days', 'this_week', 'this_month', 'custom'],
+    presets: PRESETS,
     labelOf: (p) => PRESET_LABELS[p],
+    customStart, customEnd, setCustomDate, error,
   };
 }

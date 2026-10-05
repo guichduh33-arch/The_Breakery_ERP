@@ -4,7 +4,7 @@
 -- `restore_held_order_v1`, qui fabriquaient une commande `draft` à partir du
 -- panier local, n'existent plus. Ce fichier couvre désormais le SEUL hold
 -- restant, celui de la commande déjà tirée en cuisine —
--- `hold_fired_order_v3` → `reopen_held_order_v5` → `discard_held_order_v2`.
+-- hold_fired_order → reopen_held_order ; abandon réservé aux lignes non verrouillées.
 --
 -- Le fixture monte la commande par la vraie porte (`fire_counter_order_v10`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
@@ -17,7 +17,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(12);
+SELECT plan(18);
 
 -- ===========================================================================
 -- Fixture : acteur réel, session ouverte, commande comptoir tirée.
@@ -26,7 +26,7 @@ DO $fixture$
 DECLARE
   v_auth UUID; v_prof UUID; v_sess UUID; v_prod UUID; v_env JSONB;
 BEGIN
-  -- `discard_held_order_v2` résout le profil acteur via `_current_profile_id()`
+  -- discard_held_order résout le profil acteur via `_current_profile_id()`
   -- (lot actor_id transverse du 2026-09-06 ; la v1 écrivait `auth.uid()` dans
   -- `audit_logs.actor_id` et exigeait un compte seed). Le fixture garde un compte
   -- seed (id = auth_user_id) par simplicité, la contrainte n'existe plus ; la preuve
@@ -127,7 +127,7 @@ SELECT lives_ok(
 -- DISCARD — rejeter l'addition, sous condition de motif
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT discard_held_order_v2(current_setting('ho.order')::uuid, 'court') $q$,
+  $q$ SELECT discard_held_order_v3(current_setting('ho.order')::uuid, 'court') $q$,
   'P0001', NULL,
   'T7: un motif de moins de 10 caracteres est refuse (reason_too_short)');
 
@@ -135,23 +135,49 @@ SELECT ok(
   EXISTS (SELECT 1 FROM orders WHERE id = current_setting('ho.order')::uuid),
   'T8: le refus de motif ne supprime rien');
 
-DO $discard$
-BEGIN
-  PERFORM discard_held_order_v2(current_setting('ho.order')::uuid,
-                                'client parti sans commander');
-END $discard$;
+SELECT throws_ok(
+  $q$ SELECT discard_held_order_v3(current_setting('ho.order')::uuid, 'client parti sans commander') $q$,
+  '23514', 'locked_order_requires_cancellation',
+  'une commande envoyee exige le flux annulation protege');
 
 SELECT ok(
-  NOT EXISTS (SELECT 1 FROM orders WHERE id = current_setting('ho.order')::uuid)
-  AND NOT EXISTS (SELECT 1 FROM order_items WHERE order_id = current_setting('ho.order')::uuid),
-  'T9: un motif valide supprime la commande et ses lignes');
+  EXISTS (SELECT 1 FROM orders WHERE id = current_setting('ho.order')::uuid)
+  AND EXISTS (SELECT 1 FROM order_items WHERE order_id = current_setting('ho.order')::uuid),
+  'T9: le refus conserve la commande et ses lignes');
 
 SELECT ok(
-  EXISTS (SELECT 1 FROM audit_logs
+  NOT EXISTS (SELECT 1 FROM audit_logs
            WHERE action = 'order.held_discarded'
              AND entity_id = current_setting('ho.order')::uuid
              AND metadata->>'reason' = 'client parti sans commander'),
-  'T10: le rejet laisse une trace audit_logs avec le motif');
+  'T10: le refus ne declare aucun abandon reussi');
+
+UPDATE order_items SET is_cancelled = true, cancelled_at = now(),
+  cancelled_reason = 'fixture already cancelled', cancelled_by = current_setting('ho.prof')::uuid
+WHERE order_id = current_setting('ho.order')::uuid;
+SELECT throws_ok(
+  $q$ SELECT discard_held_order_v3(current_setting('ho.order')::uuid, 'ligne deja annulee') $q$,
+  '23514', 'locked_order_requires_cancellation',
+  'une ligne verrouillee deja annulee reste protegee');
+
+DO $unlocked$
+DECLARE v_id uuid;
+BEGIN
+  INSERT INTO orders (order_number, session_id, order_type, status, subtotal, tax_amount, total, served_by, created_via)
+  SELECT 'T-UNLOCKED-' || gen_random_uuid()::text, session_id, order_type, 'draft', 0, 0, 0, served_by, 'pos'
+  FROM orders WHERE id = current_setting('ho.order')::uuid
+  RETURNING id INTO v_id;
+  PERFORM set_config('ho.unlocked', v_id::text, true);
+END $unlocked$;
+SELECT lives_ok(
+  $q$ SELECT discard_held_order_v3(current_setting('ho.unlocked')::uuid, 'brouillon non envoye') $q$,
+  'une commande sans ligne verrouillee reste abandonnable');
+SELECT ok(NOT EXISTS (SELECT 1 FROM orders WHERE id = current_setting('ho.unlocked')::uuid),
+  'la commande non verrouillee est supprimee');
+SELECT ok(EXISTS (SELECT 1 FROM audit_logs WHERE action = 'order.held_discarded'
+  AND entity_id = current_setting('ho.unlocked')::uuid AND actor_id = current_setting('ho.prof')::uuid),
+  'abandon non verrouille audite avec le profil acteur');
+SELECT ok(to_regprocedure('public.discard_held_order_v2(uuid,text)') IS NULL, 'ancienne porte supprimee');
 
 -- ===========================================================================
 -- Defense in depth — anon sur aucune des trois portes
@@ -162,8 +188,8 @@ SELECT ok(
 
 SELECT ok(
   NOT has_function_privilege('anon', 'public.reopen_held_order_v5(uuid,uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.discard_held_order_v2(uuid, text)', 'EXECUTE'),
-  'T12: anon n''a pas EXECUTE sur reopen_held_order_v5 ni discard_held_order_v2');
+  AND NOT has_function_privilege('anon', 'public.discard_held_order_v3(uuid, text)', 'EXECUTE'),
+  'T12: anon n''a pas EXECUTE sur les portes reprise et abandon');
 
 SELECT * FROM finish();
 ROLLBACK;

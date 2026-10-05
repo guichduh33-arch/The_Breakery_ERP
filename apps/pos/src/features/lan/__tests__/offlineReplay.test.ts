@@ -16,9 +16,11 @@ import { replayOfflineOutbox } from '../offlineReplay';
 import { enqueueIntent, getPendingIntents } from '../offlineOutbox';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
+import { useCloudStatusStore } from '../cloudStatusStore';
 
 function seedAuth(): void {
-  useAuthStore.setState({ isAuthenticated: true, cloudValidated: true });
+  useAuthStore.setState({ isAuthenticated: true, cloudValidated: true, isLocked: false });
+  useCloudStatusStore.setState({ cloudOnline: true });
 }
 
 beforeEach(() => {
@@ -44,6 +46,31 @@ async function seedFireAndPay(): Promise<void> {
 }
 
 describe('replayOfflineOutbox', () => {
+  it.each(['locked', 'cloud', 'auth', 'validated'])('preserves intents when %s blocks before replay', async (gate) => {
+    await seedFireAndPay();
+    if (gate === 'cloud') useCloudStatusStore.setState({ cloudOnline: false });
+    else if (gate === 'locked') useAuthStore.setState({ isLocked: true });
+    else if (gate === 'auth') useAuthStore.setState({ isAuthenticated: false });
+    else useAuthStore.setState({ cloudValidated: false });
+    expect(await replayOfflineOutbox()).toEqual({ replayed: 0, failed: 0 });
+    expect(rpcMock).not.toHaveBeenCalled();
+    expect(await getPendingIntents()).toHaveLength(2);
+  });
+
+  it.each(['locked', 'cloud', 'auth', 'validated'])('preserves the next intent when %s blocks during an acknowledged fire', async (gate) => {
+    await seedFireAndPay();
+    rpcMock.mockImplementationOnce(() => {
+      if (gate === 'cloud') useCloudStatusStore.setState({ cloudOnline: false });
+      else if (gate === 'locked') useAuthStore.setState({ isLocked: true });
+      else if (gate === 'auth') useAuthStore.setState({ isAuthenticated: false });
+      else useAuthStore.setState({ cloudValidated: false });
+      return Promise.resolve({ data: { order_id: 'db-1', order_number: '#1' }, error: null });
+    });
+    expect(await replayOfflineOutbox()).toEqual({ replayed: 1, failed: 1 });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect((await getPendingIntents()).map((intent) => intent.id)).toEqual(['idem-1']);
+  });
+
   it('conserve les intents jusqu’à revalidation cloud', async () => {
     useAuthStore.setState({ cloudValidated: false });
     await seedFireAndPay();

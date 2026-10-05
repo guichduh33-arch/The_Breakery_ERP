@@ -144,7 +144,7 @@ describe('SendToKitchenButton — KOT copies per station', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /send to kitchen/i })).toBeInTheDocument();
+      expect(getMockPrintBuffer().filter((entry) => entry.kind === 'prep')).toHaveLength(2);
     });
 
     const buf = getMockPrintBuffer();

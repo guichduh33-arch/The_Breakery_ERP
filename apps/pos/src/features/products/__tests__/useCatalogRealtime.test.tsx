@@ -119,6 +119,7 @@ describe('useCatalogRealtime — query invalidation', () => {
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['display', 'showcase-products'] });
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['categories'] });
   });
 
@@ -141,6 +142,7 @@ describe('useCatalogRealtime — query invalidation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['categories'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['display', 'showcase-products'] });
   });
 
   it('a non-SUBSCRIBED status invalidates nothing', () => {

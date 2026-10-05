@@ -20,12 +20,9 @@ export interface HeldOrderRow {
  *
  * BUGFIX (held-order lifecycle gap) — also surfaces FIRED-but-unpaid POS orders
  * (`status = 'pending_payment'`, `created_via = 'pos'`) that were never held
- * (`is_held = false`) — e.g. a counter order fired then abandoned, or reopened
- * then left. Without this they had no POS surface at all: not payable from the
- * cart, not voidable (void needs 'paid'), not discardable (discard needed
- * is_held). Now they appear here as "Sent" tabs and can be reopened→paid or
- * discarded via discard_held_order_v2 (widened to cover them in migration
- * 20260710000097).
+ * (`is_held = false`) — par exemple après réouverture puis abandon du terminal.
+ * Ces commandes se reprennent au panier pour paiement ou annulation protégée
+ * par PIN manager et déclaration de perte ; aucune suppression directe.
  */
 export function useHeldOrdersQuery() {
   const sessionId = useShiftStore((s) => s.current?.id);

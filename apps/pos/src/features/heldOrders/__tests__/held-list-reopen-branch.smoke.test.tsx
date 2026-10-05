@@ -25,9 +25,12 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
   }),
 }));
 vi.mock('@/features/heldOrders/hooks/useReopenHeldOrder', () => ({ useReopenHeldOrder: () => ({ mutateAsync: reopenMutate }) }));
-vi.mock('@/features/heldOrders/hooks/useDiscardHeldOrder', () => ({ useDiscardHeldOrder: () => ({ mutateAsync: vi.fn() }) }));
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersRealtime', () => ({ useHeldOrdersRealtime: () => undefined }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: toastError } }));
+vi.mock('@/features/cart/CancelUnpaidOrderModal', () => ({
+  CancelUnpaidOrderModal: ({ open, orderId, onClose }: { open: boolean; orderId: string | null; onClose: () => void }) =>
+    open ? <div role="dialog" aria-label="Protected cancellation">{orderId}<button onClick={onClose}>Close cancellation</button></div> : null,
+}));
 
 import { HeldOrdersModal } from '@/features/cart/HeldOrdersModal';
 import { useCartStore } from '@/stores/cartStore';
@@ -47,6 +50,50 @@ beforeEach(() => {
 });
 
 describe('HeldOrdersModal — toute commande en attente est une commande envoyée', () => {
+  it('reprend avant annulation protegee, sans prompt ni suppression directe', async () => {
+    const prompt = vi.spyOn(window, 'prompt');
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /cancel held order #0005/i }));
+    await screen.findByRole('dialog', { name: 'Protected cancellation' });
+    expect(reopenMutate).toHaveBeenCalledWith('order-5');
+    expect(prompt).not.toHaveBeenCalled();
+    prompt.mockRestore();
+  });
+
+  it('refuse annulation d une autre commande lorsqu une commande est active', () => {
+    useCartStore.setState({ pickedUpOrderId: 'active-order' });
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /cancel held order #0005/i }));
+    expect(reopenMutate).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Protected cancellation' })).not.toBeInTheDocument();
+  });
+
+  it('exige confirmation du remplacement du panier avant annulation', async () => {
+    useCartStore.setState({ cart: { items: [{ id: 'draft' }], order_type: 'take_out' } } as never);
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /cancel held order #0005/i }));
+    expect(reopenMutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
+    await screen.findByRole('dialog', { name: 'Protected cancellation' });
+    expect(reopenMutate).toHaveBeenCalledWith('order-5');
+  });
+
+  it('garde la cible non confirmee et permet la reprise apres fermeture de la liste', async () => {
+    reopenMutate.mockImplementationOnce(() => {
+      useCartStore.setState({ pickedUpOrderId: 'order-5' });
+      return Promise.resolve('order-5');
+    });
+    const view = render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /cancel held order #0005/i }));
+    await screen.findByRole('dialog', { name: 'Protected cancellation' });
+    fireEvent.click(screen.getByRole('button', { name: 'Close cancellation' }));
+    view.rerender(wrap(<HeldOrdersModal open={false} onClose={vi.fn()} />));
+    view.rerender(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: 'Resume cancellation' }));
+    expect(screen.getByRole('dialog', { name: 'Protected cancellation' })).toHaveTextContent('order-5');
+    expect(reopenMutate).toHaveBeenCalledTimes(1);
+  });
+
   it('ne lance qu’une restauration et ne ferme qu’après succès', async () => {
     let resolve!: (id: string) => void;
     reopenMutate.mockImplementationOnce(() => new Promise<string>((done) => { resolve = done; }));

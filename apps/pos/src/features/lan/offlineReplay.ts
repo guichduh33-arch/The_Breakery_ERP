@@ -23,6 +23,7 @@ import type { Database, Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
+import { useCloudStatusStore } from './cloudStatusStore';
 import { getOrderSourceCode, getTabletSourceCode } from '@/stores/posSettingsStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import {
@@ -102,6 +103,12 @@ export interface ReplayResult {
 }
 
 let replaying = false;
+
+function replayAllowed(): boolean {
+  const auth = useAuthStore.getState();
+  return useCloudStatusStore.getState().cloudOnline && auth.isAuthenticated
+    && auth.cloudValidated && !auth.isLocked;
+}
 
 async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, string>): Promise<void> {
   if (intent.kind === 'fire') {
@@ -230,7 +237,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
  *  no-op si non authentifié (les intents attendent le prochain déclencheur). */
 export async function replayOfflineOutbox(): Promise<ReplayResult> {
   if (replaying) return { replayed: 0, failed: 0 };
-  if (!useAuthStore.getState().isAuthenticated || !useAuthStore.getState().cloudValidated) return { replayed: 0, failed: 0 };
+  if (!replayAllowed()) return { replayed: 0, failed: 0 };
 
   replaying = true;
   try {
@@ -248,7 +255,7 @@ export async function replayOfflineOutbox(): Promise<ReplayResult> {
     const skipped = new Set<string>();
 
     for (const intent of pending) {
-      if (!useAuthStore.getState().cloudValidated) return { replayed, failed: pending.length - replayed };
+      if (!replayAllowed()) return { replayed, failed: pending.length - replayed - quarantined };
       if (skipped.has(intent.id)) continue;
 
       try {

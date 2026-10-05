@@ -74,4 +74,14 @@ describe('useDisplayRealtime — D19 channel uniqueness', () => {
     const name = channelSpy.mock.calls[0]?.[0] as string;
     expect(name).toMatch(/^display-screen-front-2-/);
   });
+  it('disabled opens no channel and does not invalidate on reconnect', () => {
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    renderHook(() => useDisplayRealtime('local', false), {
+      wrapper: ({ children }) => createElement(QueryClientProvider, { client: qc }, children),
+    });
+    window.dispatchEvent(new Event('online'));
+    expect(channelSpy).not.toHaveBeenCalled();
+    expect(invalidate).not.toHaveBeenCalled();
+  });
 });

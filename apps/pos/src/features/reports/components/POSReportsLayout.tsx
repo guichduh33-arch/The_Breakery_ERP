@@ -14,7 +14,7 @@
 import { type JSX, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, BarChart3, Activity, Package, Wallet, Ban, Layers, PieChart, TrendingUp, type LucideIcon } from 'lucide-react';
-import { Button, cn } from '@breakery/ui';
+import { Button, Input, cn } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useReportsPeriod, type ReportsPeriod } from '../hooks/useReportsPeriod';
@@ -45,7 +45,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
   const navigate = useNavigate();
   const location = useLocation();
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const { period, setPreset, presets, labelOf } = useReportsPeriod('today');
+  const { period, setPreset, presets, labelOf, customStart, customEnd, setCustomDate, error } = useReportsPeriod('today');
   const visibleTabs = TABS.filter((t) => !t.permission || hasPermission(t.permission));
 
   return (
@@ -85,6 +85,18 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
         ))}
       </div>
 
+      {period.preset === 'custom' && <div className="px-6 py-3 flex flex-wrap items-end gap-3 border-b border-border-subtle">
+        <label className="text-sm space-y-1">Start date
+          <Input type="date" value={customStart} onChange={(event) => setCustomDate('start', event.target.value)}
+            aria-invalid={Boolean(error)} aria-describedby={error ? 'reports-period-error' : undefined} />
+        </label>
+        <label className="text-sm space-y-1">End date
+          <Input type="date" value={customEnd} onChange={(event) => setCustomDate('end', event.target.value)}
+            aria-invalid={Boolean(error)} aria-describedby={error ? 'reports-period-error' : undefined} />
+        </label>
+        {error && <p id="reports-period-error" role="alert" className="text-sm text-red-as-text">{error}</p>}
+      </div>}
+
       {/* Audit 2026-08-24 (responsive P1) — 8 onglets ≈ 880 px sans wrap ni
           scroll : la PAGE défilait horizontalement. Même traitement que la
           rangée de chips juste au-dessus. */}
@@ -99,7 +111,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
             <button
               key={t.id}
               type="button"
-              onClick={() => { void navigate(t.path); }}
+              onClick={() => { void navigate({ pathname: t.path, search: location.search }); }}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'inline-flex shrink-0 items-center gap-2 px-4 h-12 -mb-px',
@@ -117,7 +129,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
         })}
       </nav>
 
-      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">{children(period)}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">{!error && children(period)}</main>
     </div>
   );
 }

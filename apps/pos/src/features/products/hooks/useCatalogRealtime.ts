@@ -38,6 +38,7 @@ import { supabase } from '@/lib/supabase';
 const PRODUCTS_KEYS: readonly (readonly string[])[] = [
   ['products'],
   ['pos-product-variants'],
+  ['display', 'showcase-products'],
 ];
 
 // A categories event touches the category nav AND the product grid: rows
@@ -51,6 +52,7 @@ const ALL_CATALOG_KEYS: readonly (readonly string[])[] = [
   ['products'],
   ['pos-product-variants'],
   ['categories'],
+  ['display', 'showcase-products'],
 ];
 
 function invalidateAll(
