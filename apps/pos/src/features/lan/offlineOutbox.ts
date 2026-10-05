@@ -220,6 +220,7 @@ function lsWriteQuarantine(records: QuarantinedIntent[]): void {
     localStorage.setItem(LS_QUARANTINE_KEY, JSON.stringify(records));
   } catch (err) {
     logger.warn('offline_quarantine.ls_write_failed', { err: String(err) });
+    throw err;
   }
 }
 

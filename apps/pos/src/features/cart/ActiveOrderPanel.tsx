@@ -247,7 +247,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
       {/* Totals footer — no buttons ──────────────────────────────────────── */}
       {!isEmpty && (
         <footer className="shrink-0 px-4 py-3 border-t border-border-subtle space-y-1 bg-bg-elevated">
-          {attachedCustomer && (
+          {attachedCustomer?.customer_type === 'retail' && (attachedCustomer.category?.loyalty_enabled ?? true) && (
             <LoyaltyPointsLine
               total={total}
               multiplier={resolveLoyaltyMultiplier(

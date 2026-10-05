@@ -9,13 +9,14 @@ import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
  * carries a fresh UUID minted INSIDE the effect so StrictMode's double-mount
  * doesn't collide on a shared channel name (project Critical pattern).
  */
-export function useHeldOrdersRealtime(): void {
+export function useHeldOrdersRealtime(enabled = true): void {
   const qc = useQueryClient();
 
   // LOT 5 — reconnect safety net for this realtime-only hook.
   useReconnectInvalidate([['held-orders']]);
 
   useEffect(() => {
+    if (!enabled) return;
     const channelName = `held-orders-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
@@ -26,5 +27,5 @@ export function useHeldOrdersRealtime(): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [qc, enabled]);
 }

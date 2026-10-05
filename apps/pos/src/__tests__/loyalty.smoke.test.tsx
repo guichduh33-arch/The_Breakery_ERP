@@ -8,7 +8,8 @@ import type { ReactNode } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { BottomActionBar } from '@/features/cart/BottomActionBar';
-import type { Customer } from '@breakery/domain';
+import type { Customer, CustomerCategory } from '@breakery/domain';
+import type { CustomerWithCategory } from '@/stores/cartTypes';
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
@@ -102,6 +103,23 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     // matching the payment screen — floor(35000 × 1.1 / 1000) = 38 (was a
     // bronze-rate 35 while a Gold customer was attached).
     expect(screen.getByText('38 pts')).toBeInTheDocument();
+  });
+
+  it.each([
+    { type: 'retail', enabled: false, visible: false },
+    { type: 'b2b', enabled: true, visible: false },
+    { type: 'retail', enabled: true, visible: true },
+  ])('only promises points to eligible customers ($type, enabled=$enabled)', ({ type, enabled, visible }) => {
+    const category: CustomerCategory = { id: 'category-1', name: 'Regular', slug: 'regular', color: null,
+      icon: null, price_modifier_type: 'retail', discount_percentage: 0,
+      loyalty_enabled: enabled, points_multiplier: 1, is_default: false };
+    // La projection de recherche peut contenir B2B malgré le type retail du domaine.
+    const customer = { ...GOLD_CUSTOMER, customer_type: type, category } as unknown as CustomerWithCategory;
+    useCartStore.setState({ cart: { items: [{ id: 'l1', product_id: 'p1', name: 'Americano',
+      unit_price: 35000, quantity: 1, modifiers: [] }], order_type: 'dine_in' }, attachedCustomer: customer });
+    render(wrapper(<ActiveOrderPanel />));
+    if (visible) expect(screen.getByText('38 pts')).toBeInTheDocument();
+    else expect(screen.queryByText(/points to earn/i)).not.toBeInTheDocument();
   });
 
   it('shows redemption discount line when points redeemed', () => {

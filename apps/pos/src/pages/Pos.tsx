@@ -351,11 +351,8 @@ export default function PosPage() {
       <PaymentTerminal
         onOpenShift={() => setOpenShiftOpen(true)}
       />
-      {/* Montage conditionnel : la modale s'abonne au realtime dès le mount —
-          la monter fermée en permanence doublerait la souscription de la barre. */}
-      {heldFromMenuOpen && (
-        <HeldOrdersModal open onClose={() => setHeldFromMenuOpen(false)} />
-      )}
+      {/* La tentative d'annulation survit à la fermeture ; le realtime suit l'ouverture. */}
+      <HeldOrdersModal open={heldFromMenuOpen} onClose={() => setHeldFromMenuOpen(false)} />
       {historyOpen && <OrderHistoryPanel open onClose={() => setHistoryOpen(false)} />}
       {customerSearchOpen && <CustomerAttachModal
         open={customerSearchOpen}

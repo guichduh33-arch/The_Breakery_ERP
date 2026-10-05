@@ -155,9 +155,9 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
       await Promise.resolve();
     });
 
-    // Wait for mutation to complete (button returns to non-pending).
+    // Attendre le résultat observable, pas le bouton déjà présent pendant l'envoi.
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /send to kitchen/i })).toBeInTheDocument();
+      expect(getMockPrintBuffer().filter((entry) => entry.kind === 'prep')).toHaveLength(2);
     });
 
     const buf = getMockPrintBuffer();

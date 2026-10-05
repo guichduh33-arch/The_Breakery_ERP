@@ -28,7 +28,7 @@
 --   T8  delete_section_v2       → audit section.delete, actor = profil
 --   T9  add_order_item_v6       → audit order.item.add, actor = profil
 --   T10 remove_order_item_v4    → audit order.item.remove, actor = profil
---   T11 discard_held_order_v2   → audit order.held_discarded, actor = profil
+--   T11 discard_held_order      → audit order.held_discarded, actor = profil
 --   T12 import_suppliers_v2     → audit suppliers.imported, actor = profil
 --   T13 import_sales_v2         → audit sales.imported, actor = profil
 --   T14 import_sales_v2         → orders.served_by = profil (colonne FK, pas seulement la trace)
@@ -101,7 +101,7 @@ BEGIN
   INSERT INTO orders (order_number, session_id, order_type, status, subtotal, tax_amount, total, served_by, created_via)
     VALUES ('T-ACT0906-' || gen_random_uuid()::text, v_sess, 'dine_in', 'draft', 0, 0, 0, v_prof, 'pos')
     RETURNING id INTO v_order2;
-  PERFORM discard_held_order_v2(v_order2, 'actor transverse fixture cleanup');
+  PERFORM discard_held_order_v3(v_order2, 'actor transverse fixture cleanup');
 
   -- Imports (commit, pas dry-run).
   v_rep := import_suppliers_v2('[{"code":"SUPACT0906","name":"Actor supplier"}]'::jsonb, FALSE, gen_random_uuid());
@@ -203,7 +203,7 @@ SELECT is(
   (SELECT actor_id FROM audit_logs WHERE action = 'order.held_discarded'
      AND entity_id = current_setting('apt.order2')::uuid ORDER BY created_at DESC LIMIT 1),
   current_setting('apt.prof')::uuid,
-  'T11: discard_held_order_v2 — actor_id = profil');
+  'T11: discard_held_order — actor_id = profil');
 
 -- T12-T16 : imports.
 SELECT is(
@@ -287,7 +287,7 @@ SELECT is(
     WHERE n.nspname = 'public' AND p.proname IN (
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
       'create_product_v3','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
-  'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v3','import_purchases_v2',
+  'delete_variant_v2','discard_held_order_v3','import_catalog_v2','import_expenses_v3','import_purchases_v2',
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
@@ -301,7 +301,7 @@ SELECT is(
     WHERE n.nspname = 'public' AND p.proname IN (
       'add_order_item_v6','convert_parent_to_standalone_v2','convert_product_to_parent_v2','create_category_v2',
       'create_product_v3','create_variant_v2','delete_category_v2','delete_product_v2','delete_section_v2',
-  'delete_variant_v2','discard_held_order_v2','import_catalog_v2','import_expenses_v3','import_purchases_v2',
+  'delete_variant_v2','discard_held_order_v3','import_catalog_v2','import_expenses_v3','import_purchases_v2',
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',

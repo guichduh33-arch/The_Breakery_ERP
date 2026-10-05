@@ -6,6 +6,9 @@ import { Button, Currency, Numpad, FullScreenModal, Select } from '@breakery/ui'
 import { formatIdr } from '@breakery/utils';
 import { toast } from 'sonner';
 import { useCashMovement, type CashMovementReasonCode } from '../hooks/useCashMovement';
+import { useAuthStore } from '@/stores/authStore';
+import { counterFireScope, isDefiniteFireRefusal } from '@/features/cart/hooks/counterFireRecovery';
+import { clearCashMovement, readCashMovement, resumeCashMovement, saveCashMovement, type CashMovementAttempt } from '../hooks/cashMovementRecovery';
 
 export interface CashInOutModalProps {
   open:       boolean;
@@ -31,24 +34,29 @@ export function CashInOutModal({
   onClose,
   onRecorded,
 }: CashInOutModalProps): JSX.Element {
-  const [amountStr, setAmountStr] = useState('');
-  const [reason, setReason] = useState('');
-  const [reasonCode, setReasonCode] = useState<CashMovementReasonCode>('misc');
+  const [recovery, setRecovery] = useState<{ attempt: CashMovementAttempt | null; error: string | null }>(() => {
+    try { return { attempt: readCashMovement(), error: null }; }
+    catch (error) { return { attempt: null, error: error instanceof Error ? error.message : 'Cash movement recovery unavailable' }; }
+  });
+  const [amountStr, setAmountStr] = useState(recovery.attempt ? String(recovery.attempt.input.amount) : '');
+  const [reason, setReason] = useState(recovery.attempt?.input.reason ?? '');
+  const [reasonCode, setReasonCode] = useState<CashMovementReasonCode>(recovery.attempt?.input.reason_code ?? 'misc');
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const mut = useCashMovement();
-  // S25/S55 idempotency pattern: stable across retries of the same modal,
-  // rotated only after a successful record or when the modal is closed.
-  const idemRef = useRef(crypto.randomUUID());
+  const frozen = recovery.attempt !== null || recovery.error !== null || submitting;
 
   const amount = Number(amountStr || '0');
-  const title = direction === 'in' ? 'Cash In' : 'Cash Out';
+  const effectiveDirection = recovery.attempt?.input.direction ?? direction;
+  const title = effectiveDirection === 'in' ? 'Cash In' : 'Cash Out';
 
   function resetAndClose(): void {
-    idemRef.current = crypto.randomUUID();
-    setReasonCode('misc');
+    // Une fermeture ne solde jamais un résultat inconnu ; le prochain mount le reprend.
     onClose();
   }
 
   async function handleSubmit(): Promise<void> {
+    if (submittingRef.current || recovery.error) return;
     if (amount <= 0) {
       toast.error('Amount must be greater than zero.');
       return;
@@ -57,22 +65,40 @@ export function CashInOutModal({
       toast.error('Reason is required (min 3 characters).');
       return;
     }
+    submittingRef.current = true;
+    setSubmitting(true);
+    let resumingUncertain = false;
     try {
-      const result = await mut.mutateAsync({
-        session_id: sessionId,
-        direction,
-        amount,
-        reason: reason.trim(),
-        reason_code: reasonCode,
-        idempotency_key: idemRef.current,
+      const auth = useAuthStore.getState();
+      const saved = await resumeCashMovement(auth.user?.id ?? '', auth.sessionToken, sessionId);
+      resumingUncertain = saved !== null;
+      const attempt = saved ?? saveCashMovement({ version: 1,
+        scope: await counterFireScope(auth.user?.id ?? '', auth.sessionToken, sessionId),
+        input: { session_id: sessionId, direction, amount, reason: reason.trim(), reason_code: reasonCode,
+          idempotency_key: crypto.randomUUID() },
       });
-      toast.success(`${title} recorded (${formatIdr(amount)}).`);
+      setRecovery({ attempt, error: null });
+      const result = await mut.mutateAsync(attempt.input);
+      clearCashMovement();
+      setRecovery({ attempt: null, error: null });
+      toast.success(`${attempt.input.direction === 'in' ? 'Cash In' : 'Cash Out'} recorded (${formatIdr(attempt.input.amount)}).`);
       onRecorded?.(result.cash_in_total, result.cash_out_total);
       setAmountStr('');
       setReason('');
+      setReasonCode('misc');
       resetAndClose();
     } catch (err) {
+      const details = (err as { details?: { code?: string } } | null)?.details;
+      // Un refus de reprise (droits retirés, session fermée…) ne prouve pas
+      // l'absence du premier mouvement dont l'accusé a été perdu.
+      if (!resumingUncertain && details && isDefiniteFireRefusal(details)) {
+        clearCashMovement();
+        setRecovery({ attempt: null, error: null });
+      }
       toast.error(err instanceof Error ? err.message : 'Failed to record');
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   }
 
@@ -82,10 +108,13 @@ export function CashInOutModal({
         <header className="flex items-center justify-between">
           <h2 className="font-semibold text-2xl">{title}</h2>
           <span className="text-xs uppercase tracking-wide text-text-secondary">
-            {direction === 'in' ? 'Add to drawer' : 'Remove from drawer'}
+            {effectiveDirection === 'in' ? 'Add to drawer' : 'Remove from drawer'}
           </span>
         </header>
 
+        {recovery.error && <p role="alert" className="text-red-as-text">{recovery.error}</p>}
+        {recovery.attempt && <p role="status" className="text-text-secondary">Cash movement unconfirmed — resume this saved movement before recording another.</p>}
+        <fieldset disabled={frozen} className="space-y-6 min-w-0">
         <section className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-text-secondary">Amount</label>
           {/* Critique run 3 (polish) — saisie formatée dès la frappe, une seule graphie. */}
@@ -109,7 +138,7 @@ export function CashInOutModal({
             className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold placeholder:text-text-secondary"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder={direction === 'in' ? 'Float top-up from safe' : 'Petty cash purchase'}
+            placeholder={effectiveDirection === 'in' ? 'Float top-up from safe' : 'Petty cash purchase'}
           />
         </section>
 
@@ -132,17 +161,18 @@ export function CashInOutModal({
           )}
         </section>
 
+        </fieldset>
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="secondary" size="lg" onClick={resetAndClose} disabled={mut.isPending}>
+          <Button variant="secondary" size="lg" onClick={resetAndClose} disabled={submitting || mut.isPending}>
             Cancel
           </Button>
           <Button
             variant="gold"
             size="lg"
-            disabled={mut.isPending || amount <= 0 || reason.trim().length < 3}
+            disabled={submitting || mut.isPending || recovery.error !== null || amount <= 0 || reason.trim().length < 3}
             onClick={() => { void handleSubmit(); }}
           >
-            {mut.isPending ? 'Recording…' : `Record ${title}`}
+            {submitting || mut.isPending ? 'Recording…' : recovery.attempt ? `Resume ${title}` : `Record ${title}`}
           </Button>
         </div>
       </div>

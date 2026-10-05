@@ -33,6 +33,7 @@ export interface CashMovementResult {
 export function useCashMovement() {
   const qc = useQueryClient();
   return useMutation({
+    retry: false,
     mutationFn: async (input: CashMovementInput): Promise<CashMovementResult> => {
       const args: {
         p_session_id:       string;
@@ -50,8 +51,13 @@ export function useCashMovement() {
       if (input.idempotency_key !== undefined) args.p_idempotency_key = input.idempotency_key;
       if (input.reason_code !== undefined)     args.p_reason_code     = input.reason_code;
       const { data, error } = await supabase.rpc('record_cash_movement_v2', args);
-      if (error) throw new Error(error.message);
-      return data as unknown as CashMovementResult;
+      if (error) throw Object.assign(new Error(error.message), { details: error });
+      const result = data as unknown as CashMovementResult | null;
+      if (typeof result?.movement_id !== 'string' || !result.movement_id || result.session_id !== input.session_id
+        || !Number.isFinite(result.cash_in_total) || !Number.isFinite(result.cash_out_total)) {
+        throw new Error('Cash movement confirmation unavailable — retry the saved movement');
+      }
+      return result;
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['pos_sessions'] });
