@@ -80,6 +80,27 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   choisir entre deux versions existantes ; toute transformation se fait dans un commit
   suivant, relisable seul.
 
+## Mémoire entre sessions
+
+- **La mémoire est un aide-mémoire, jamais une autorité.** Elle ne remplace
+  ni ce fichier, ni le code, ni les ADR. Revalider tout fait susceptible
+  d'avoir changé avant d'agir ; un souvenir ne vaut pas preuve de test,
+  de déploiement ou d'autorisation pour un nouveau lot.
+- **Au début d'une session**, consulter les souvenirs pertinents si la
+  mémoire du client est activée et accessible. Retrouver les sources citées,
+  vérifier la branche et l'état réel du chantier avant de reprendre.
+- **À la clôture d'un lot**, restituer dans la conversation les décisions
+  validées, commits/PR, environnement, tests exécutés, limites et travail
+  restant. Ce bilan fournit du contexte à la génération automatique de
+  mémoire lorsque le client l'autorise ; il n'est pas un plan en fichier.
+- **Ne jamais annoncer une mémorisation non vérifiée.** La génération native
+  peut être différée ou désactivée. Si aucun outil ne permet de confirmer
+  l'écriture, le préciser ; ne pas modifier les bases internes du client
+  ni ses fichiers de mémoire générés pour contourner cette limite.
+- **Aucun secret en mémoire** : ni PIN, mot de passe, jeton, clé API ou URL
+  contenant des identifiants. Les décisions durables et règles obligatoires
+  restent dans les sources du dépôt, selon les validations documentaires.
+
 ## Règles générales
 
 - Do what has been asked; nothing more, nothing less.
