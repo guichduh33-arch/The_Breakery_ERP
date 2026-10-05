@@ -1,0 +1,66 @@
+/* Même identité Breakery, adaptée aux parcours personnels sur téléphone. */
+.theme-pos .hr-staff { max-width: 680px; padding: 28px 22px 44px; }
+.theme-pos .hr-stack, .theme-pos .hr-form { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.theme-pos .hr-stack > *, .theme-pos .hr-columns > * { min-width: 0; }
+.theme-pos .hr-title { font-size: 26px; letter-spacing: -.025em; }
+.theme-pos .hr-staff nav { gap: 6px; padding: 12px 0 18px; border-bottom: 1px solid var(--border-subtle); }
+.theme-pos .hr-staff nav a { padding: 10px 12px; font-size: 14px; border-radius: 4px; text-decoration: none; }
+.theme-pos .hr-staff nav a.active { background: var(--bg-overlay); color: var(--gold-base); box-shadow: inset 0 -1px 0 var(--gold-base); }
+.theme-pos .hr-card { padding: 22px; border-radius: 5px; }
+.theme-pos .hr-card h2 { font-size: 21px; font-weight: 600; letter-spacing: -.015em; }
+.theme-pos .hr-card p { font-size: 14px; line-height: 1.6; }
+.theme-pos .hr-toolbar { gap: 14px; }
+.theme-pos .hr-toolbar label, .theme-pos .hr-form label { font-size: 13px; }
+.theme-pos input, .theme-pos select { font-size: 16px; min-width: 0; width: 100%; }
+.theme-pos .hr-summary-strip { gap: 18px; padding: 20px 0; }
+.theme-pos .hr-summary-strip > div { flex: 1 1 150px; min-width: 0; }
+.theme-pos .hr-summary-strip dd { font-size: 22px; white-space: nowrap; }
+.theme-pos .hr-status-label { display: inline-block; font-size: 12px; padding: 5px 8px; }
+.theme-pos .hr-scroll { min-width: 0; }
+.theme-pos .hr-table th, .theme-pos .hr-table td { font-size: 13px; padding: 14px 12px; vertical-align: top; }
+.theme-pos .hr-table thead { background: var(--bg-overlay); }
+.theme-pos .hr-agenda-row { padding: 18px 0; }
+.theme-pos .hr-agenda-row p { overflow-wrap: anywhere; }
+.theme-pos .hr-calendar-shell { padding: 0; }
+.theme-pos .hr-notice { font-size: 14px; line-height: 1.5; }
+.theme-pos .hr-data { font-variant-numeric: tabular-nums; }
+.theme-pos ::selection { background: var(--gold-base); color: var(--bg-base); }
+@media (max-width: 760px) {
+ .theme-pos .hr-columns, .theme-pos .hr-calendar-layout, .theme-pos .hr-profile-fields { grid-template-columns: minmax(0, 1fr); }
+ .theme-pos .hr-staff { padding: 24px 18px 44px; }
+ .theme-pos .hr-toolbar > label { flex: 1 1 140px; min-width: 0; }
+ .theme-pos .hr-card .hr-data.text-3xl { font-size: 26px; }
+}
+
+.theme-pos .hr-staff-preview { padding-bottom: 88px; } .theme-pos .hr-preview-bottom { position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 12px 0; background: var(--bg-base); z-index: 10; } .theme-pos .hr-preview-bottom button { font-size: 11px; padding: 8px 3px; min-width: 0; } .theme-pos .hr-staff-preview input[type=checkbox] { width: 20px; min-height: 20px; vertical-align: middle; }
+
+/* Composition téléphone : une tâche prioritaire et navigation à portée du pouce. */
+.theme-pos .hr-staff:has(.hr-staff-preview) { max-width: 520px; padding: 22px 18px 110px; }
+.theme-pos .hr-staff:has(.hr-staff-preview) > h1, .theme-pos .hr-staff:has(.hr-staff-preview) > nav { display: none; }
+.theme-pos .hr-staff-preview { gap: 20px; padding-bottom: 0; }
+.theme-pos .hr-phone-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
+.theme-pos .hr-phone-header h1 { font-size: 23px; font-weight: 650; letter-spacing: -.025em; }
+.theme-pos .hr-phone-header p { font-size: 13px; color: var(--text-secondary); margin-top: 5px; }
+.theme-pos .hr-phone-avatar { display: grid; place-items: center; width: 44px; height: 44px; background: var(--bg-overlay); border: 1px solid var(--border-subtle); border-radius: 5px; color: var(--gold-base); font-size: 14px; font-weight: 600; }
+.theme-pos .hr-phone-demo { font-size: 12px; color: var(--text-secondary); padding: 10px 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+.theme-pos .hr-phone-demo summary { cursor: pointer; }
+.theme-pos .hr-phone-demo p { margin-top: 10px; line-height: 1.6; }
+.theme-pos .hr-staff-preview .hr-card { padding: 20px; }
+.theme-pos .hr-phone-shift { gap: 14px; }
+.theme-pos .hr-phone-shift h2 { font-size: 22px; }
+.theme-pos .hr-phone-shift h3 { font-size: 13px; color: var(--text-secondary); }
+.theme-pos .hr-phone-hours { font-size: 29px; line-height: 1.25; letter-spacing: -.025em; }
+.theme-pos .hr-staff-preview .hr-phone-primary { min-height: 56px; width: 100%; font-size: 15px; }
+.theme-pos .hr-staff-preview .hr-agenda-row { padding: 16px 0; }
+.theme-pos .hr-staff-preview .hr-agenda-row strong { font-size: 15px; line-height: 1.4; }
+.theme-pos .hr-staff-preview .hr-agenda-row p { margin-top: 6px; color: var(--text-secondary); }
+.theme-pos .hr-staff-preview .hr-preview-bottom { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 520px; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 2px; padding: 10px 8px max(12px,env(safe-area-inset-bottom)); background: var(--bg-elevated); border-top: 1px solid var(--border-subtle); z-index: 20; }
+.theme-pos .hr-preview-bottom button { display: flex; flex-direction: column; gap: 6px; min-height: 58px; padding: 7px 2px; border: 0; background: transparent; color: var(--text-secondary); font-size: 10px; font-weight: 500; box-shadow: none; }
+.theme-pos .hr-preview-bottom button[aria-current=page] { color: var(--gold-base); background: var(--bg-overlay); }
+.theme-pos .hr-staff-preview input[type=checkbox] { width: 20px; }
+.theme-pos .hr-staff-preview .hr-definition-rows > div { gap: 8px; }
+.theme-pos .hr-staff-preview .hr-definition-rows dd { overflow-wrap: anywhere; }
+
+.theme-pos .hr-phone-shift p.hr-phone-hours { font-size: 29px; margin: 0; }
+.theme-pos .hr-staff-preview .hr-phone-primary { background: var(--text-primary); color: var(--bg-base); }
+.theme-pos .hr-staff-preview > div[role=status]:empty { display: none; }

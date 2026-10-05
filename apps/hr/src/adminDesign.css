@@ -1,0 +1,76 @@
+/* Raffinement réservé au BO HR ; les surfaces staff restent indépendantes. */
+.theme-backoffice .hr-grid { grid-template-columns: 242px minmax(0, 1fr); }
+.theme-backoffice .hr-nav { background: var(--bg-elevated); padding: 26px 18px; min-width: 0; }
+.theme-backoffice .hr-nav > p { padding: 0 12px 22px; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); font-size: 17px; letter-spacing: -.02em; }
+.theme-backoffice .hr-nav nav { display: grid; gap: 20px; }
+.theme-backoffice .hr-nav .hr-section-title { margin: 0 12px 8px; font-size: 11px; letter-spacing: .06em; }
+.theme-backoffice .hr-nav a { margin: 3px 0; padding: 10px 12px; font-size: 14px; border: 1px solid transparent; border-radius: 4px; transition: background-color 150ms ease-out; }
+.theme-backoffice .hr-nav a.active { background: var(--text-primary); color: var(--bg-elevated); border-color: var(--text-primary); text-decoration: none; }
+.theme-backoffice .hr-nav a:hover:not(.active) { background: var(--bg-overlay); }
+.theme-backoffice .hr-main { padding: 33px 44px 66px; max-width: 1500px; }
+.theme-backoffice .hr-title { font-size: 30px; letter-spacing: -.025em; line-height: 1.2; }
+.theme-backoffice .hr-subtitle { font-size: 13px; margin: 8px 0 30px; }
+.theme-backoffice .hr-main > .hr-stack, .theme-backoffice .hr-stack, .theme-backoffice .hr-form { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.theme-backoffice .hr-stack > *, .theme-backoffice .hr-columns > *, .theme-backoffice .hr-dashboard-grid > * { min-width: 0; }
+.theme-backoffice .hr-main h2 { letter-spacing: -.015em; line-height: 1.35; }
+.theme-backoffice .hr-main p { line-height: 1.55; }
+.theme-backoffice .hr-card { border-radius: 5px; padding: 22px; }
+.theme-backoffice .hr-card .hr-card { background: transparent; }
+.theme-backoffice .hr-main > .hr-stack > .hr-toolbar:first-child { align-items: flex-start; gap: 18px; }
+.theme-backoffice .hr-main > .hr-stack > .hr-toolbar:first-child h2 { font-size: 20px; margin-bottom: 8px; }
+.theme-backoffice .hr-main > .hr-stack > .hr-toolbar:first-child p { font-size: 14px; }
+.theme-backoffice .hr-toolbar { justify-content: flex-start; gap: 14px 22px; }
+.theme-backoffice .hr-toolbar label, .theme-backoffice .hr-form label { font-size: 13px; font-weight: 500; }
+.theme-backoffice .hr-toolbar input, .theme-backoffice .hr-toolbar select { min-width: 150px; }
+.theme-backoffice input, .theme-backoffice select { border-radius: 4px; font-size: 14px; }
+.theme-backoffice .hr-summary-strip { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 20px 22px; gap: 18px 36px; }
+.theme-backoffice .hr-summary-strip > div { flex: 1 1 140px; min-width: 0; }
+.theme-backoffice .hr-summary-strip dt { font-size: 12px; line-height: 1.4; }
+.theme-backoffice .hr-summary-strip dd { font-size: 23px; letter-spacing: -.02em; margin-top: 8px; overflow-wrap: normal; white-space: nowrap; }
+.theme-backoffice .hr-scroll:has(> .hr-table) { padding: 0; }
+.theme-backoffice .hr-table thead { background: var(--bg-overlay); }
+.theme-backoffice .hr-table thead th { padding: 14px 18px; font-size: 12px; white-space: nowrap; color: var(--text-secondary); }
+.theme-backoffice .hr-table tbody td, .theme-backoffice .hr-table tbody th { padding: 17px 18px; font-size: 14px; vertical-align: top; }
+.theme-backoffice .hr-table tbody tr:last-child > * { border-bottom: 0; }
+.theme-backoffice .hr-table .hr-data { font-size: 12px; }
+.theme-backoffice .hr-table .hr-muted { font-size: 12px; margin-top: 5px; }
+.theme-backoffice .hr-status-label { font-size: 11px; line-height: 1.4; padding: 5px 8px; white-space: nowrap; }
+.theme-backoffice .hr-table button { margin-top: 8px; }
+.theme-backoffice .hr-notice { font-size: 13px; line-height: 1.5; }
+.theme-backoffice summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.theme-backoffice details[open] summary { padding-bottom: 16px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle); }
+.theme-backoffice .hr-agenda-row { padding: 18px 0; }
+.theme-backoffice .hr-definition-rows dt { font-size: 13px; }
+.theme-backoffice .hr-definition-rows dd { font-size: 14px; }
+.theme-backoffice .hr-eyebrow { display: none; }
+.theme-backoffice ::selection { color: var(--bg-elevated); background: var(--text-primary); }
+@media (min-width: 761px) { .theme-backoffice .hr-nav { position: sticky; top: 0; height: 100vh; overflow-y: auto; } }
+@media (max-width: 1100px) { .theme-backoffice .hr-main { padding: 28px; } .theme-backoffice .hr-grid { grid-template-columns: 216px minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .theme-backoffice .hr-grid { grid-template-columns: minmax(0, 1fr); }
+  .theme-backoffice .hr-nav { padding: 16px 22px; }
+  .theme-backoffice .hr-nav > p { padding: 0; border: 0; margin: 0 0 12px; }
+  .theme-backoffice .hr-nav nav { display: flex; gap: 22px; overflow-x: auto; }
+  .theme-backoffice .hr-nav .hr-section-title { margin: 0 0 4px; }
+  .theme-backoffice .hr-nav a { display: inline-flex; }
+  .theme-backoffice .hr-main { padding: 26px 18px 44px; }
+  .theme-backoffice .hr-title { font-size: 26px; }
+  .theme-backoffice .hr-columns { grid-template-columns: minmax(0, 1fr); }
+  .theme-backoffice .hr-toolbar label { flex: 1 1 140px; min-width: 0; }
+  .theme-backoffice .hr-toolbar input, .theme-backoffice .hr-toolbar select { width: 100%; min-width: 0; }
+  .theme-backoffice .hr-summary-strip { padding: 18px; gap: 18px; }
+  .theme-backoffice .hr-summary-strip > div { flex-basis: 190px; }
+}
+@media (prefers-reduced-motion: reduce) { .theme-backoffice .hr-nav a { transition: none; } }
+
+/* Cohérence des surfaces spécialisées : calendrier, profil et paramètres. */
+.theme-backoffice .hr-calendar-shell { padding: 0; }
+.theme-backoffice .hr-calendar-day { min-height: 118px; }
+.theme-backoffice .hr-profile-fields label { font-size: 13px; }
+.theme-backoffice .hr-profile-fields input, .theme-backoffice .hr-profile-fields select { width: 100%; min-width: 0; }
+.theme-backoffice .hr-profile-fields > *, .theme-backoffice .hr-settings-layout > * { min-width: 0; }
+.theme-backoffice .hr-tabs { gap: 8px; }
+.theme-backoffice .hr-tabs button { font-size: 13px; }
+.theme-backoffice .hr-settings-nav { padding: 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 5px; }
+.theme-backoffice .hr-measure { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .theme-backoffice .hr-calendar-day { min-height: 90px; } .theme-backoffice .hr-calendar-layout, .theme-backoffice .hr-settings-layout { grid-template-columns: minmax(0, 1fr); } }

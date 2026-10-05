@@ -1,0 +1,317 @@
+@import '@breakery/ui/tokens.css';
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource-variable/jetbrains-mono';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body {
+  margin: 0;
+  font-family: 'Instrument Sans Variable', sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+button,
+a,
+input,
+select {
+  min-height: 44px;
+}
+a:focus-visible {
+  outline: 2px solid var(--gold-base);
+  outline-offset: 3px;
+}
+.hr-grid {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+}
+.hr-nav {
+  padding: 22px;
+  border-right: 1px solid var(--border-subtle);
+}
+.hr-nav a {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 3px;
+  text-decoration: none;
+  color: inherit;
+}
+.hr-nav a.active {
+  background: var(--bg-overlay);
+  font-weight: 700;
+}
+.hr-main {
+  padding: 33px;
+  max-width: 1300px;
+  width: 100%;
+  min-width: 0;
+}
+.hr-card {
+  padding: 22px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+}
+.hr-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.hr-table th,
+.hr-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.hr-scroll {
+  overflow: auto;
+}
+.hr-form {
+  display: grid;
+  gap: 16px;
+  max-width: 550px;
+}
+.hr-form label {
+  display: grid;
+  gap: 6px;
+}
+.hr-banner {
+  padding: 11px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--type-sm);
+}
+.hr-stack {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+.hr-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.hr-data {
+  font-family: 'JetBrains Mono Variable', monospace;
+}
+.hr-staff {
+  max-width: 620px;
+  margin: auto;
+  padding: 22px;
+}
+.hr-staff button {
+  min-height: 48px;
+}
+.hr-staff nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.hr-staff nav a {
+  padding: 10px;
+}
+.hr-title {
+  font-size: var(--type-2xl);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.hr-subtitle {
+  color: var(--text-secondary);
+  margin: 0 0 22px;
+}
+@media (max-width: 760px) {
+  .hr-grid {
+    grid-template-columns: 1fr;
+  }
+  .hr-nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .hr-nav nav {
+    display: flex;
+    overflow: auto;
+    gap: 8px;
+  }
+  .hr-nav a {
+    white-space: nowrap;
+  }
+  .hr-main {
+    padding: 22px;
+  }
+  .hr-kpis {
+    grid-template-columns: 1fr;
+  }
+  .hr-title {
+    font-size: var(--type-xl);
+  }
+}
+
+.hr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hr-toolbar label {
+  display: grid;
+  gap: 6px;
+}
+.hr-tabs {
+  display: flex;
+  gap: 11px;
+  flex-wrap: wrap;
+}
+.hr-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.hr-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+.hr-section-title {
+  font-size: var(--type-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin: 16px 0 8px;
+  color: var(--text-secondary);
+}
+.hr-staff nav a.active {
+  color: var(--gold-base);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.hr-card h2 {
+  margin-bottom: 11px;
+}
+.hr-card p {
+  margin-bottom: 11px;
+}
+.hr-nav nav > div {
+  min-width: 0;
+}
+.hr-table select {
+  min-width: 120px;
+}
+@media (max-width: 760px) {
+  .hr-columns {
+    grid-template-columns: 1fr;
+  }
+  .hr-toolbar > * {
+    max-width: 100%;
+  }
+  .hr-nav nav > div {
+    flex-shrink: 0;
+  }
+  .hr-nav nav > div a {
+    display: inline-flex;
+  }
+  .hr-staff .hr-shortcuts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tableau de bord opérationnel : couleurs sémantiques du kit existant. */
+.hr-muted { color: var(--text-secondary); }
+.hr-eyebrow { color: var(--gold-base); font-size: var(--type-xs); font-weight: 600; letter-spacing: .08em; margin-bottom: 8px; }
+.hr-overview-heading { display: flex; justify-content: space-between; gap: 22px; align-items: center; }
+.hr-overview-link { color: var(--text-primary); text-decoration-color: var(--gold-base); text-underline-offset: 5px; }
+.hr-operational-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.hr-kpi { border-top: 3px solid var(--hr-status); text-decoration: none; color: var(--text-primary); }
+.hr-kpi strong { display: block; color: var(--hr-status); font-size: var(--type-2xl); margin: 11px 0; }
+.hr-kpi strong.hr-kpi-word { font-size: var(--type-xl); }
+.hr-kpi span { font-size: var(--type-sm); color: var(--text-secondary); }
+.hr-tone-success { --hr-status: var(--success); --hr-soft: var(--success-soft); }
+.hr-tone-warning { --hr-status: var(--warning); --hr-soft: var(--warning-soft); }
+.hr-tone-danger { --hr-status: var(--danger); --hr-soft: var(--danger-soft); }
+.hr-tone-gold { --hr-status: var(--gold-base); --hr-soft: var(--bg-overlay); }
+.hr-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 22px; }
+.hr-chart-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: var(--type-sm); }
+.hr-chart-legend span { display: flex; align-items: center; gap: 6px; }
+.hr-chart-legend i { width: 10px; height: 10px; border-radius: 3px; }
+.hr-chart-present { background: var(--success); color: var(--green-fg); }
+.hr-chart-leave { background: var(--warning); color: var(--amber-fg); }
+.hr-chart-absent { background: var(--danger); color: var(--red-on-fill); }
+.hr-attendance-chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; padding-top: 11px; }
+.hr-chart-day { display: grid; gap: 11px; text-align: center; font-size: var(--type-xs); }
+.hr-chart-column { height: 176px; display: flex; flex-direction: column; gap: 3px; }
+.hr-chart-column > div { display: grid; place-items: center; border-radius: 3px; font-family: 'JetBrains Mono Variable', monospace; }
+.hr-action-row { display: grid; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); text-decoration: none; color: var(--text-primary); }
+.hr-status-label { justify-self: start; padding: 4px 8px; border-radius: 3px; background: var(--hr-soft); color: var(--hr-status); font-size: var(--type-xs); font-weight: 600; }
+@media (max-width: 1100px) { .hr-operational-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hr-dashboard-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .hr-overview-heading { align-items: start; flex-direction: column; } .hr-attendance-chart { gap: 6px; } }
+@media (max-width: 420px) { .hr-operational-kpis { grid-template-columns: 1fr; } }
+
+.hr-tone-neutral { --hr-status: var(--text-secondary); --hr-soft: var(--bg-overlay); }
+.hr-presence-counts { display: flex; gap: 11px; flex-wrap: wrap; }
+.hr-presence-counts strong { margin-left: 6px; }
+.hr-sync-pending { color: var(--warning); font-size: var(--type-sm); }
+
+.hr-profile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.hr-profile-fields label { display: grid; align-content: start; gap: 6px; }
+.hr-profile-fields dd { margin: 6px 0 0; overflow-wrap: anywhere; }
+.hr-profile-history { padding: 11px 0; border-bottom: 1px solid var(--border-subtle); }
+@media (max-width: 760px) { .hr-profile-fields { grid-template-columns: 1fr; } }
+
+/* Densité, lisibilité et états partagés du module HR. */
+.hr-summary-strip { display: flex; flex-wrap: wrap; gap: 22px 44px; padding: 16px 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+.hr-summary-strip dt { color: var(--text-secondary); font-size: var(--type-sm); }
+.hr-summary-strip dd { margin: 6px 0 0; font-weight: 600; font-size: var(--type-xl); font-variant-numeric: tabular-nums; }
+.hr-summary-value { color: var(--hr-status); }
+.hr-measure { max-width: 70ch; }
+.hr-notice { padding: 14px 16px; border: 1px solid var(--border-subtle); border-radius: 3px; background: var(--bg-overlay); color: var(--text-primary); }
+.hr-agenda-row { padding: 14px 0; border-bottom: 1px solid var(--border-subtle); }
+.hr-checklist { padding-left: 22px; margin: 16px 0; }
+.hr-checklist li { margin: 11px 0; }
+.hr-definition-rows > div { display: grid; grid-template-columns: 100px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border-subtle); }
+.hr-definition-rows dd { margin: 0; color: var(--text-secondary); }
+.hr-calendar-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; }
+.hr-calendar-shell { padding: 0; overflow: hidden; }
+.hr-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.hr-calendar-weekday { padding: 11px 6px; text-align: center; color: var(--text-secondary); font-size: var(--type-sm); background: var(--bg-overlay); }
+.hr-calendar-day, .hr-calendar-blank { min-height: 112px; padding: 8px; border: 0; border-top: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle); }
+.hr-calendar-day { cursor: pointer; background: var(--bg-elevated); color: var(--text-primary); text-align: left; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.hr-calendar-day:hover { background: var(--bg-overlay); }
+.hr-calendar-day.is-selected { outline: 2px solid var(--gold-base); outline-offset: -2px; }
+.hr-calendar-events { display: grid; gap: 3px; width: 100%; font-size: var(--type-xs); }
+.hr-calendar-event { color: var(--hr-status); background: var(--hr-soft); border-radius: 3px; padding: 3px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hr-calendar-blank { background: var(--bg-base); }
+.hr-settings-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+.hr-settings-nav { display: grid; gap: 6px; }
+.hr-settings-nav button { justify-content: flex-start; }
+.hr-run-steps { display: flex; gap: 11px; flex-wrap: wrap; }
+.hr-notice-list { display: grid; gap: 22px; }
+.hr-nav { background: var(--bg-overlay); }
+.hr-nav a:hover { background: var(--bg-elevated); }
+.hr-nav a.active { background: var(--bg-elevated); text-decoration: underline; text-decoration-color: var(--gold-base); text-underline-offset: 5px; }
+input { caret-color: var(--text-primary); }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold-base); outline-offset: 3px; }
+.hr-table th { font-weight: 600; }
+.hr-table tbody tr:hover { background: var(--bg-overlay); }
+.hr-table td, .hr-table th { font-variant-numeric: tabular-nums; }
+.hr-table .hr-status-label { display: inline-block; }
+.hr-skip-link { position: absolute; left: 22px; top: -100px; z-index: 30; padding: 11px 16px; background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 3px; }
+.hr-skip-link:focus { top: 11px; }
+@media (max-width: 1100px) { .hr-calendar-layout { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .hr-settings-layout { grid-template-columns: 1fr; }
+  .hr-settings-nav { display: flex; gap: 8px; overflow-x: auto; }
+  .hr-settings-nav button { flex-shrink: 0; }
+  .hr-calendar-day, .hr-calendar-blank { min-height: 90px; padding: 4px; }
+  .hr-calendar-event { max-width: 100%; }
+  .hr-summary-strip { gap: 16px 22px; }
+  .hr-summary-strip > div { min-width: 120px; }
+  .hr-definition-rows > div { grid-template-columns: 1fr; gap: 6px; }
+}
+
+.hr-payroll, .hr-payroll > *, .hr-payroll .hr-columns > * { min-width: 0; }
+@media (max-width: 760px) { .hr-payroll .hr-columns { grid-template-columns: minmax(0, 1fr); } .hr-payroll .hr-form { min-width: 0; } .hr-payroll .hr-data { overflow-wrap: anywhere; } }
+
+.hr-payroll.hr-stack, .hr-payroll .hr-stack, .hr-payroll .hr-form { grid-template-columns: minmax(0, 1fr); }
+.hr-payroll, .hr-payroll > *, .hr-payroll .hr-columns > * { min-width: 0; }
+@media (max-width: 760px) { .hr-payroll .hr-columns { grid-template-columns: minmax(0, 1fr); } .hr-payroll .hr-form { min-width: 0; } .hr-payroll .hr-data { overflow-wrap: anywhere; } }
+
+@media (max-width: 760px) { .hr-grid:has(.hr-attendance) { grid-template-columns: minmax(0, 1fr); } .hr-grid:has(.hr-attendance) .hr-nav { min-width: 0; } }
