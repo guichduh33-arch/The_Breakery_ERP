@@ -68,6 +68,7 @@ import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER
 import { checkPermissionForRole, withPermissionErrors } from '../_shared/permissions.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { getPublishableApiKey } from '../_shared/api-keys.ts';
+import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { logAndRedact } from '../_shared/error-redact.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -176,6 +177,10 @@ serve(withPermissionErrors(async (req) => {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return jsonResponse({ error: 'authorization_required' }, 401);
+  }
+  // Vérifier l'employé avant tout accès métier, même sans gate JWT de passerelle.
+  if (!await getActingAuthUserId(req)) {
+    return jsonResponse({ error: 'not_authenticated' }, 401);
   }
 
   let body: ProcessPaymentPayload;

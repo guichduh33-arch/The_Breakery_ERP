@@ -7,6 +7,7 @@ vi.mock('../../functions/_shared/rate-limit.ts', () => ({
   checkRateLimitDurable: () => Promise.resolve({ allowed: true }), getClientIp: () => '127.0.0.1',
 }));
 vi.mock('../../functions/_shared/supabase-admin.ts', () => ({ getAdminClient: vi.fn() }));
+vi.mock('../../functions/_shared/acting-user.ts', () => ({ getActingAuthUserId: () => Promise.resolve('employee') }));
 vi.mock('../../functions/_shared/manager-pin.ts', () => ({
   verifyManagerPin: vi.fn(), isManagerPinBlocked: vi.fn(), recordManagerPinFailure: vi.fn(), MANAGER_PIN_FAIL_WINDOW_SEC: 900,
 }));
