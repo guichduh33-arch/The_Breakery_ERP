@@ -2,6 +2,8 @@
 
 > Ce fichier est la loi. En cas de conflit avec tout autre document, wiki,
 > session précédente ou résumé : **ce fichier gagne**.
+> Il régit le travail des agents ; le code et le schéma établissent les faits.
+> Un écart entre une décision et son implémentation se signale, sans effacer la décision.
 
 ## Hiérarchie de vérité
 
@@ -17,7 +19,9 @@
                                      référence neuve (baseline = plafond, jamais plancher).
 ```
 
-Si un document contredit le code, le document a tort : **signale-le, ne corrige rien**.
+Si une affirmation **factuelle** d'un document contredit le code ou le schéma,
+**signale l'écart avant toute correction**. Une décision ou une intention non
+implémentée reste valable : l'écart est du backlog, pas une erreur documentaire.
 
 ## Règles documentaires — non négociables
 
@@ -32,13 +36,23 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
    explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Rédigée par
    l'agent, relue et validée par Mamat (création/commit selon règle 1). Une
    spec meurt à la livraison du chantier : supprimée, son
-   résiduel éventuel noté dans l'ADR. Jamais plus de 3 specs vivantes.
-4. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
-   supersede l'ancien (`Statut: remplacé par ADR-00XX`).
-5. **Information manquante → tu t'arrêtes et tu demandes.** Tu n'inventes pas,
+   résiduel éventuel noté dans le bilan factuel de l'ADR après validation de Mamat.
+   Jamais plus de 3 specs vivantes.
+4. **Le texte de décision d'un ADR est immuable.** Changement d'avis = nouvel ADR
+   numéroté qui supersede l'ancien. Le statut (`Statut: remplacé par ADR-00XX`)
+   et le bilan factuel peuvent être mis à jour après validation explicite de Mamat,
+   sans réécrire la décision ni transformer une intention en fait livré.
+5. **Information nécessaire manquante → tu demandes avant l'action qui en dépend.**
+   Tu peux poursuivre les vérifications indépendantes. Tu n'inventes pas,
    tu ne déduis pas « ce qui semble logique », tu ne vas pas fouiller la quarantaine.
-6. **Aucune décision autonome** : architecture, renommage, suppression, choix de
-   librairie, changement de comportement → accord explicite de Mamat AVANT l'action.
+6. **Initiative de proposition, validation avant exécution.** L'agent peut analyser,
+   vérifier et proposer spontanément des améliorations ou des alternatives, y compris
+   l'évolution d'une règle. Il expose les preuves, bénéfices, risques et fichiers
+   concernés, puis recommande une option. Toute proposition à son initiative attend
+   l'accord explicite de Mamat avant exécution ; une absence de réponse ne vaut pas accord.
+   Architecture, renommage, suppression, choix de librairie et changement de comportement
+   exigent cet accord AVANT l'action. L'accord vaut pour le périmètre approuvé ;
+   toute nouvelle décision revient à Mamat.
 7. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
 
 ## Règles d'écriture des documents de gouvernance
@@ -115,9 +129,10 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   (`pages/<x>/__tests__` ET `features/<x>/__tests__`) : chercher par glob, jamais
   conclure « pas de test » depuis un seul répertoire.
 - **Sous-agents (outil `Agent`, ex-`Task`) : autorisés dans une session, sous régime strict.**
-  Le plan est approuvé par Mamat AVANT tout dispatch ; les sous-agents exécutent
-  ce plan, toute déviation remonte à Mamat (jamais arbitrée en interne).
-  Sous-agents lecture-seule : libres. Écrivain : UN à la fois, périmètre de
+  Sous-agents lecture-seule : libres dans le périmètre de la tâche.
+  Tout dispatch impliquant une écriture exige un plan approuvé par Mamat AVANT
+  le dispatch ; les sous-agents exécutent ce plan, toute déviation remonte à Mamat
+  (jamais arbitrée en interne). Écrivain : UN à la fois, périmètre de
   fichiers déclaré. Reviewer : contexte vierge, reçoit le diff + la spec + les
   invariants (jamais le résumé de l'implémenteur), findings montrés à Mamat ;
   boucle implémentation↔review plafonnée à 1 correction, au-delà on s'arrête.
@@ -159,18 +174,12 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   justifiée ; un test applicable ignoré ne suffit pas, même pour Dependabot.
   Une PR front-only n'exécute pas de tests DB. Le lancement manuel exige toujours
   pgTAP ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
-  (`scripts/ci/`) rendent leur verdict en secondes, avant le build. Elles sont
-  DIX, pas deux : aux deux nommées ailleurs dans ce fichier s'ajoutent
-  `relative-links`, `hardcoded-theme-colors`, les quatre gardes design du
-  2026-08-18 (`focus-ring-controls`, `gold-fills`, `lying-font-classes`,
-  `toolbar-button-scope`), `tight-corner` (2026-08-21, `rounded-full` — la
-  seule des quatre dettes de direction qu'aucune garde ne voyait, donc la seule
-  qui pouvait regrandir en silence) et `line-total-formula` (2026-08-29 — le
-  prix d'une ligne se demande à `lineTotalOf`/`lineUnitEach` du domaine, jamais
-  recomposé `unit_price + price_adjustment` : le bug de sous-facturation des
-  combos est ressuscité trois fois en un mois avant la garde). Toutes partagent
-  `_guard-lib.mjs` : baseline = plafond, jamais plancher. Une PR frontend BO
-  les croise toutes.
+  (`scripts/ci/`) passent avant le build ; leur liste courante est dans le job
+  `governance-guards` de `ci.yml`, sans compteur dupliqué ici. Plusieurs utilisent
+  `_guard-lib.mjs` ; les gardes à baseline appliquent la règle : plafond, jamais
+  plancher. Une PR frontend BO les croise toutes. La garde `line-total-formula`
+  impose `lineTotalOf`/`lineUnitEach` du domaine pour le prix d'une ligne : jamais
+  de recomposition `unit_price + price_adjustment`.
   **Le lint-ratchet ne lint que les fichiers CHANGÉS par la PR** : toucher une
   seule ligne d'un vieux fichier l'y fait entrer et réveille ses erreurs
   préexistantes. Le rejouer en local se fait par lots — `xargs` sur ~170 fichiers
@@ -220,12 +229,12 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `process-payment`, qui appelle côté serveur la RPC money-path courante. Le POS
   n'appelle jamais la RPC directement. PIN discount vérifié in-EF, transporté par
   nonce `discount_authorizations`. Combos validés ET pricés serveur
-  (`_resolve_combo_price_v1`) — y compris les modificateurs des composants :
+  (famille `_resolve_combo_price`) — y compris les modificateurs des composants :
   ajustements résolus contre le composant, groupes requis exigés serveur,
   ingrédients déduits/restitués (ADR-017). Plafonds promo hard-gatés sous
   advisory lock.
   Prix B2B résolu serveur (négocié > catégorie > retail), `unit_price` client ignoré.
-  Déduction stock de vente via l'unique helper `_record_sale_stock_v1`.
+  Déduction stock de vente via le helper de la famille `_record_sale_stock`.
   **Les versions de RPC bumpent souvent — TOUJOURS vérifier la version live dans
   `supabase/migrations/` + le call-site avant de te fier à un numéro.**
 - **Audit-trail = table `audit_logs` UNIQUEMENT** (la vue `audit_log` singulier est
@@ -236,7 +245,7 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   (`WHERE auth_user_id = auth.uid() AND deleted_at IS NULL`) avant d'écrire.
 - **`stock_movements` = ledger append-only.** RLS révoque UPDATE/DELETE. Écritures
   via RPCs SECURITY DEFINER seulement. `unit` NOT NULL (auto-résolu par
-  `record_stock_movement_v1` si NULL). `unit_cost` en unité de BASE (qty ×factor,
+  la famille `record_stock_movement` si NULL). `unit_cost` en unité de BASE (qty ×factor,
   cost ÷factor à la réception). Contrainte section movement-type-aware.
 - **Idempotence, 2 saveurs** : (1) header HTTP `x-idempotency-key` pour le retry
   EF (UUID en `useRef`, helper `_shared/idempotency.ts`) ; (2) arg RPC
@@ -247,9 +256,15 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   (`offlineOutbox.ts`) ne se supprime JAMAIS sans purge prouvée des terminaux :
   un poste mis à jour avec des ventes en file rejouerait dans le vide, et ces
   enregistrements sont de l'argent déjà encaissé. On ajoute un kind, on garde
-  l'ancien en LECTURE (`offlineReplay.ts`). Corollaire : ne mettre en file que
-  ce dont le replay ne peut pas être refusé serveur — un intent rejeté bloque
-  tout le drain derrière lui (ADR-015, exclusion de `store_credit`).
+  l'ancien en LECTURE (`offlineReplay.ts`). Ne mettre en file que les opérations
+  autorisées hors ligne (ADR-015, exclusion de `store_credit`). Au rejeu, un échec
+  transitoire conserve la file et arrête le drain ; un rejet définitif classé
+  explicitement met l'intent et ses dépendances en quarantaine durable, puis le
+  drain continue sur les opérations indépendantes (ADR-018). Un code inconnu
+  reste transitoire. Cette quarantaine opérationnelle n'est pas la quarantaine
+  documentaire : elle conserve des faits à régulariser, sans purge automatique,
+  avec une trace et une alerte pour les règlements concernés. Elle n'autorise
+  jamais un moyen de paiement exclu hors ligne.
 - **RPC versioning monotone** — jamais éditer une `_vN` publiée. Créer `_vN+1` et
   DROP l'ancienne dans la même migration.
 - **Tout bump/copie de RPC part du corps live `pg_get_functiondef`, jamais du
@@ -304,7 +319,19 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 
 ## Git
 
-- Branches : `feat/<scope>`, `fix/<scope>`, `chore/<scope>`. Une branche = un sujet.
+- **Avant chaque création de PR, y compris une draft : audit agents obligatoire.**
+  L'agent charge `.agents/skills/agents-maintenance/SKILL.md`, vérifie le worktree
+  et le diff avec la branche cible, puis confronte les passages concernés
+  d'`AGENTS.md` au code, aux workflows et à la documentation vivante. Il présente
+  les écarts, améliorations et alternatives avec leurs preuves avant l'ouverture.
+  Toute correction proposée attend la validation explicite de Mamat avant
+  exécution ; un arbitrage bloquant doit être résolu ou son report validé avant
+  l'ouverture. Après les corrections autorisées, vérifier les miroirs et les
+  gardes documentaires applicables. Restituer dans la PR le périmètre audité,
+  les corrections validées, les contrôles et les limites. Une modification
+  ultérieure du diff impose de revalider les conclusions qu'elle affecte.
+- Branches : `feat/<scope>`, `fix/<scope>`, `chore/<scope>` ; `docs/<scope>` pour
+  un sujet documentaire. Une branche = un sujet.
   (Le préfixe `swarm/` est aboli avec le mode multi-session.)
 - Commits conventionnels (`feat(scope): …`). Co-author Claude si assisté.
 - **Un commit `docs(...)` par un agent sans validation préalable de Mamat =
