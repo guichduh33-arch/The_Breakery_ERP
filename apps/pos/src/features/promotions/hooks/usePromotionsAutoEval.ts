@@ -10,6 +10,7 @@
 // (`<ActiveOrderPanel>`) so that we have a single source of truth for
 // promotion sync. Mounting twice would race `setAppliedPromotions` calls.
 import { useEffect, useRef } from 'react';
+import type { Cart } from '@breakery/domain';
 import { toast } from 'sonner';
 import { useCartStore } from '@/stores/cartStore';
 import { useProducts } from '@/features/products/hooks/useProducts';
@@ -17,6 +18,10 @@ import { useEvaluatePromotions } from './useEvaluatePromotions';
 
 /** Debounce window applied to the cart-mutation eval (spec §4.4 step 1). */
 const DEBOUNCE_MS = 200;
+
+export function promotionInputKey(cart: Cart): string {
+  return JSON.stringify({ ...cart, items: cart.items.filter((item) => !item.is_promo_gift && !item.is_cancelled), promotionTotal: undefined });
+}
 
 export function usePromotionsAutoEval(): void {
   const cart = useCartStore((s) => s.cart);
@@ -26,11 +31,18 @@ export function usePromotionsAutoEval(): void {
 
   const productsQuery = useProducts();
   const { promotions, runEvaluation } = useEvaluatePromotions();
+  const inputKey = promotionInputKey(cart);
+  const inputRef = useRef({ key: inputKey, cart });
+  if (inputRef.current.key !== inputKey) inputRef.current = { key: inputKey, cart };
+  const inputCart = inputRef.current.cart;
+  const customerKey = JSON.stringify([attachedCustomer?.id, attachedCustomer?.category?.id]);
+  const dismissedKey = JSON.stringify([...dismissedPromotionIds].sort());
 
   // Stable timer ref — debounced trigger across cart mutations.
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    let active = true;
     if (timerRef.current !== null) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(() => {
@@ -56,7 +68,11 @@ export function usePromotionsAutoEval(): void {
       // `runEvaluation` is now async (RPC-first, TS fallback).
       // We fire-and-await inside the setTimeout callback; any RPC
       // error is already logged inside the hook.
-      void runEvaluation(cart, customer, dismissedPromotionIds).then((next) => {
+      void runEvaluation(inputCart, customer, dismissedPromotionIds).then((next) => {
+        const current = useCartStore.getState();
+        if (!active || promotionInputKey(current.cart) !== inputKey
+          || JSON.stringify([current.attachedCustomer?.id, current.attachedCustomer?.category?.id]) !== customerKey
+          || JSON.stringify([...current.dismissedPromotionIds].sort()) !== dismissedKey) return;
         const productLookup: Record<string, { name: string }> = {};
         for (const p of productsQuery.data ?? []) {
           productLookup[p.id] = { name: p.name };
@@ -70,10 +86,14 @@ export function usePromotionsAutoEval(): void {
     }, DEBOUNCE_MS);
 
     return () => {
+      active = false;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
   }, [
-    cart,
+    inputCart,
+    inputKey,
+    customerKey,
+    dismissedKey,
     attachedCustomer,
     dismissedPromotionIds,
     promotions,

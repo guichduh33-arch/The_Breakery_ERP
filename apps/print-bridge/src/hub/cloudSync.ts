@@ -9,7 +9,7 @@
 export interface CloudSyncOptions {
   onRegistry: (value: unknown) => void;
   /** Codes des appareils actuellement authentifiés sur le bus. */
-  presentCodes: () => string[];
+  presentCodes: () => string[] | Promise<string[]>;
   /** URL complète de l'EF lan-heartbeat-batch. */
   url: string;
   /** Secret partagé (== LAN_HEARTBEAT_SECRET côté EF). */
@@ -67,11 +67,10 @@ export function startCloudSync(opts: CloudSyncOptions): CloudSyncHandle {
   async function tick(): Promise<void> {
     if (inFlight) return;
     inFlight = true;
-    const codes = [...new Set(opts.presentCodes())];
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), PUSH_TIMEOUT_MS);
     try {
+      const codes = [...new Set(await opts.presentCodes())];
       const res = await fetchFn(opts.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-hub-secret': opts.secret },

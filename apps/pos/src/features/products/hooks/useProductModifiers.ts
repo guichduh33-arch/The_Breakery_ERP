@@ -9,7 +9,7 @@
 // and will regenerate types after applying the new migrations). Until then we
 // describe the row shape locally and treat the supabase client as untyped for
 // this single call.
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import {
   mergeGroups,
   type ModifierGroup,
@@ -48,15 +48,12 @@ interface ModifierQueryBuilder {
   };
 }
 
-export function useProductModifiers({
+export function productModifiersOptions({
   productId,
   categoryId,
-  enabled = true,
 }: UseProductModifiersArgs) {
-  const queryEnabled = useSaleQueryEnabled(enabled);
-  return useQuery<ModifierGroup[]>({
+  return queryOptions({
     queryKey: ['product-modifiers', productId, categoryId],
-    enabled: queryEnabled,
     queryFn: async (): Promise<ModifierGroup[]> => {
       const orParts: string[] = [`product_id.eq.${productId}`];
       if (categoryId) orParts.push(`category_id.eq.${categoryId}`);
@@ -75,4 +72,9 @@ export function useProductModifiers({
       return mergeGroups(rows);
     },
   });
+}
+
+export function useProductModifiers(args: UseProductModifiersArgs) {
+  const enabled = useSaleQueryEnabled(args.enabled ?? true);
+  return useQuery({ ...productModifiersOptions(args), enabled });
 }

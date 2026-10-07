@@ -29,7 +29,7 @@ export interface LanRegistry {
   version: 1;
   generated_at: string;
   devices: LanDevice[];
-  printers: PrinterTarget[];
+  printers: (PrinterTarget & { code?: string })[];
 }
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -66,6 +66,7 @@ export function parseRegistry(value: unknown): LanRegistry | null {
       (p) =>
         record(p) &&
         typeof p.ip_address === 'string' &&
+        (p.code === undefined || text(p.code)) &&
         typeof p.port === 'number' &&
         Number.isInteger(p.port) &&
         p.port > 0 &&
@@ -135,5 +136,8 @@ export class DeviceRegistry {
         (p) => p.ip_address === target.ip_address && p.port === target.port,
       ) ?? false
     );
+  }
+  printers(): (PrinterTarget & { code?: string })[] {
+    return this.registry?.printers.map((printer) => ({ ...printer })) ?? [];
   }
 }

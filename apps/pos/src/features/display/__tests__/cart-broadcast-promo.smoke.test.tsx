@@ -22,6 +22,7 @@ class FakeBC {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers();
   posted = [];
   (globalThis as { BroadcastChannel: unknown }).BroadcastChannel = FakeBC;
   useCartStore.setState({
@@ -35,7 +36,7 @@ beforeEach(() => {
     isOffline: false,
   } as never);
 });
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 const ITEM = { id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30000, quantity: 2, modifiers: [] };
 
@@ -56,6 +57,7 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
       ]);
     });
 
+    act(() => { vi.advanceTimersByTime(20); });
     const last = posted.at(-1) as CartUpdateMessage;
     expect(last.type).toBe('cart_update');
 
@@ -83,6 +85,7 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
       ]);
     });
 
+    act(() => { vi.advanceTimersByTime(20); });
     const last = posted.at(-1) as CartUpdateMessage;
     // 60 000 − 5 000 promo − 3 000 cart discount = 52 000
     expect(last.totals.total).toBe(52000);
@@ -105,6 +108,7 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
       ]);
     });
 
+    act(() => { vi.advanceTimersByTime(20); });
     const last = posted.at(-1) as CartUpdateMessage;
     expect(last.totals.total).toBeGreaterThanOrEqual(0);
   });
