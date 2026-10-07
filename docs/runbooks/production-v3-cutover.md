@@ -1,6 +1,74 @@
 # Publication BO et bascule V3
 
-Procédure préparatoire à valider par Mamat avant commit.
+Procédure de bascule et bilan daté des opérations exécutées.
+
+## Bilan du 6 octobre 2026 — catalogue et recettes
+
+Le BO est publié sur https://backoffice.the-breakery.com depuis le SHA
+`23fbbf0903c3ec136f0e63d9e6d3f6521c567c08` (workflow de publication
+`37391497089`, réussi). La connexion du compte administrateur MAMAT a été
+confirmée par Mamat. Ce lot de données ne nécessite pas de nouvelle publication.
+
+Le référentiel V3 dev validé a été chargé sur la cible V3 production, sans
+historiques de test : 363 produits, 34 catégories, 22 unités et 4 stations.
+L'import comprend 769 lignes de recette sur 174 produits, ainsi que 66 options
+de modificateurs sur 19 produits. Les écritures de recettes et de modificateurs
+ont utilisé leurs familles de RPC live, avec l'acteur MAMAT et leurs audits.
+Aucun schéma, droit ou comportement applicatif n'a été modifié.
+
+La comparaison intégrale des quantités, unités et options ne présente aucun
+écart. Les 104 changements de représentation métrique conservent exactement
+les doses source ; la précision des recettes est conservée. Les 132 cas en
+lecture seule du résolveur de modificateurs ne présentent aucun écart. Aucun
+lait ou sauce choisi par modificateur n'est également déduit par la recette
+de base. Les contrôles de doublons et de références orphelines sont réussis.
+
+Les 64 transactions ont été exécutées séquentiellement. Le contrôle final du
+lot relève zéro commande, mouvement de stock et écriture comptable, ainsi que
+zéro produit avec stock non nul. Les essais préalables sous rollback n'ont
+conservé aucune recette, version ou audit.
+
+Douze groupes source étaient exclus au terme de ce lot : Coffee Bean Pack
+1kg, Fresh Juice PINNEAPPLE et WATERMELON, et neuf variantes de Milk shake.
+Leur résolution et leur livraison sont décrites dans le bilan du 7 octobre.
+Les stocks physiques, coûts validés et soldes réels d'ouverture ne sont pas
+importés par ce lot. Les valeurs par défaut du
+catalogue ne constituent pas une valorisation réelle d'ouverture.
+
+Les preuves locales datées se trouvent dans le dossier technique ignoré
+`.release-manifests/production-candidate-20261005/`, notamment
+`production-recipe-import-verification-20261006.json` et
+`production-recipe-resolver-verification-20261006.json`. Les jeux de données
+et les justificatifs privés ne sont pas inclus dans le dépôt. Ces preuves
+portent sur le lot recettes, sans certifier les autres étapes de bascule.
+
+## Complément du 7 octobre 2026 — jus, Milk shakes et café
+
+Après validation de Mamat, Fresh Juice propose sept fruits obligatoires à
+30 000 IDR, et Milk shake neuf parfums obligatoires à 40 000 IDR, sans
+supplément ni sélection par défaut. Les doses suivent le classeur utilisateur
+validé. Le lait commun aux Milk shakes est porté une seule fois par leur
+recette de base, à raison de 200 ml de Fresh Milk par verre ; les options
+portent uniquement l'ingrédient du parfum choisi.
+
+Les six anciennes variantes liées de jus sont désactivées et retirées de la
+vente. Leurs identifiants et recettes sont conservés. Coffee Bean Pack 1kg a
+été créé à 400 000 IDR, avec une recette de 1 kg de Coffee bean. Les formats
+500 g et 250 g conservent leurs prix validés de 250 000 et 150 000 IDR.
+
+L'essai sous rollback puis l'application définitive ont vérifié 32 cas du
+résolveur de consommation, ainsi que les prix, les choix obligatoires,
+l'absence de double déduction et les conversions du lait. Les contrôles sont
+réussis. Le rollback a restauré les comptes initiaux de produits, recettes
+et audits. La relecture après commit SQL relève 364 produits, 771 lignes de
+recette et 82 options de modificateurs actives, avec zéro commande, mouvement
+de stock, écriture comptable ou produit au stock non nul.
+
+La preuve locale est
+`.release-manifests/production-candidate-20261005/remaining-beverages-coffee-observed-20261007.json`.
+Aucun schéma, droit ou code applicatif n'a changé. Les stocks, coûts et soldes
+d'ouverture restent à intégrer ; ce lot ne certifie pas un parcours de vente
+réel ni la préparation complète de la bascule.
 Aucune commande de ce document ne vaut autorisation de déploiement.
 
 ## Conditions de départ
@@ -10,7 +78,7 @@ via [print-bridge](../../apps/print-bridge/README.md).
 Mamat a confirmé que la V3 actuelle ne contient que des données de test.
 Cela n'autorise pas leur suppression et ne fixe pas la cible production.
 
-La référence du projet V3 production reste à confirmer. Ne jamais utiliser
+La cible V3 production confirmée est `yjhhhmjgsmyzyymvixot`. Ne jamais utiliser
 le projet dev `ikcyvlovptebroadgtvd` ou la V2 `abjabuniwkqpfsenxljp`
 comme cible implicite. Ne pas rejouer globalement les migrations, renuméroter
 l'historique ou réparer le bookkeeping cloud. Le staging conserve son arrêt.
@@ -150,7 +218,8 @@ chaque étape : version, opérateur, heure, attendu, résultat et preuve :
    outbox drainée ou chaque rejet expliqué sans supprimer l'intent.
 6. Restauration isolée puis contrôle des soldes, stocks, paiements et accès.
 
-La présente implémentation n'a exécuté ni cette répétition ni une restauration.
+Le lot catalogue et recettes du 6 octobre 2026 ne constitue pas une preuve de
+répétition de bascule ou de restauration.
 
 ## Arrêt et retour arrière
 
