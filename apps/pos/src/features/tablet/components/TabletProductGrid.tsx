@@ -9,8 +9,8 @@
 // unchanged.
 //
 // Lot D (2026-09-05) — la grille trie désormais le tap comme le comptoir
-// (`ProductTapHandler`) : un produit désactivé ou un groupe de variantes est
-// refusé avec un toast, un combo ouvre `ComboConfigModal` (et n'entre jamais
+// (`ProductTapHandler`) : un produit désactivé est refusé avec un toast,
+// un combo ouvre `ComboConfigModal` (et n'entre jamais
 // dans le pipeline modificateurs ni dans l'auto-ajout), le reste garde le
 // chemin existant. Jusqu'ici un combo tapé tombait dans l'auto-ajout nu et
 // partait au serveur sans sa composition.
@@ -24,6 +24,8 @@ import type { Product, SelectedModifiers } from '@breakery/domain';
 import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
 import { ComboConfigModal } from '@/features/combos/components/ComboConfigModal';
+import { VariantSelectModal } from '@/features/cart/VariantSelectModal';
+import type { POSVariantRow } from '@/features/products/hooks/useProductVariants';
 import { ProductCard } from '@/features/products/ProductCard';
 import { useProducts } from '@/features/products/hooks/useProducts';
 import { useCategories } from '@/features/products/hooks/useCategories';
@@ -45,6 +47,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   const { data: lotsByProduct } = useActiveLotsByProduct();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState<Product | null>(null);
+  const [variantParent, setVariantParent] = useState<Product | null>(null);
   // Lot D — combo en cours de configuration. Un combo ne passe jamais par
   // `pending` : il n'a pas de groupe de modificateurs propre à résoudre.
   const [comboPending, setComboPending] = useState<Product | null>(null);
@@ -108,10 +111,9 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
       toast.error(`${product.name} is disabled — it cannot be sold`);
       return;
     }
-    // La tablette n'a pas de sélecteur de variante (suivi séparé) : un groupe
-    // de variantes se traite au comptoir plutôt que d'entrer au panier tel quel.
+    // Le parent ne se vend pas : choisir son enfant avant les modificateurs.
     if (product.has_variants) {
-      toast.error(`${product.name} is a variant group — pick a variant at the counter`);
+      setVariantParent(product);
       return;
     }
     // Lot D — un combo ouvre son configurateur, jamais le pipeline modificateurs.
@@ -121,6 +123,29 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
     }
     setPending(product);
   }, []);
+
+  function handleVariantPick(variant: POSVariantRow) {
+    if (!variantParent) return;
+    // Même héritage que le comptoir : prix/identité enfant, catégorie parent
+    // pour résoudre les options ; jamais d'ajout du groupe logique au panier.
+    const selected: Product = {
+      id: variant.id,
+      sku: variantParent.sku,
+      name: variant.name,
+      category_id: variantParent.category_id,
+      retail_price: variant.retail_price,
+      wholesale_price: variantParent.wholesale_price,
+      product_type: 'finished',
+      image_url: variantParent.image_url,
+      current_stock: variant.current_stock ?? 0,
+      is_active: variant.is_active,
+      is_favorite: false,
+      parent_product_id: variantParent.id,
+      has_variants: false,
+    };
+    setVariantParent(null);
+    setPending(selected);
+  }
 
   function handleConfirm(selections: SelectedModifiers) {
     if (pending) addItem(pending, selections);
@@ -253,6 +278,14 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
         )}
       </div>
 
+      {variantParent && (
+        <VariantSelectModal
+          open
+          parent={{ id: variantParent.id, name: variantParent.name }}
+          onOpenChange={(open) => { if (!open) setVariantParent(null); }}
+          onPick={handleVariantPick}
+        />
+      )}
       {product && (
         <ModifierModal
           open={modalOpen}

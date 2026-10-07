@@ -77,6 +77,10 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
 
   async function addWithPrice(product: Product, modifiers: SelectedModifiers) {
     if (!assertSellable(product)) return;
+    if (!attachedCustomer) {
+      add(product, modifiers, product.retail_price);
+      return;
+    }
     try {
       const price = await fetchPrice(product.id, attachedCustomer?.id ?? null);
       add(product, modifiers, price);

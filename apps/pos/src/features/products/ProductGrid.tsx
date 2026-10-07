@@ -32,6 +32,7 @@ import { ProductCard } from './ProductCard';
 import { useProducts } from './hooks/useProducts';
 import { useCategories } from './hooks/useCategories';
 import { useActiveLotsByProduct } from './hooks/useActiveLotsByProduct';
+import { usePrefetchProductModifiers } from './hooks/usePrefetchProductModifiers';
 
 export interface ProductGridProps {
   selectedSlug: string | null;
@@ -95,6 +96,8 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
       return true;
     });
   }, [products, selectedSlug, selectedCat, query, searching]);
+
+  usePrefetchProductModifiers(filtered, !isLoading && !isError);
 
   return (
     <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">

@@ -33,6 +33,7 @@ const CROISSANT: Product = {
 // Stable module-level spy so every `useCartStore(selector)` call returns the
 // same `add`, letting us count invocations across renders.
 const addSpy = vi.fn();
+const priceSpy = vi.fn(() => Promise.resolve(undefined));
 
 vi.mock('@/features/products/hooks/useProducts', () => ({
   useProducts: () => ({ data: [CROISSANT], isLoading: false, isSuccess: true }),
@@ -51,9 +52,10 @@ vi.mock('@/stores/cartStore', () => ({
     selector({ add: addSpy, attachedCustomer: null }),
 }));
 vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
-  useCustomerProductPrice: () => () => Promise.resolve(undefined),
+  useCustomerProductPrice: () => priceSpy,
 }));
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({
+  productModifiersOptions: ({ productId, categoryId }: { productId: string; categoryId: string | null }) => ({ queryKey: ['product-modifiers', productId, categoryId], queryFn: () => Promise.resolve([]) }),
   useProductModifiers: () => ({ data: [], isLoading: false, isSuccess: true }),
 }));
 vi.mock('sonner', () => ({
@@ -69,7 +71,7 @@ function wrapper(children: React.ReactNode) {
 }
 
 describe('ProductTapHandler — no double-add under StrictMode (Bug 2)', () => {
-  beforeEach(() => addSpy.mockClear());
+  beforeEach(() => { addSpy.mockClear(); priceSpy.mockClear(); });
 
   it('a single tap on a no-modifier product calls add() exactly once', async () => {
     const { ProductTapHandler } = await import('../ProductTapHandler');
@@ -89,6 +91,7 @@ describe('ProductTapHandler — no double-add under StrictMode (Bug 2)', () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(addSpy).toHaveBeenCalledTimes(1);
-    expect(addSpy).toHaveBeenCalledWith(CROISSANT, [], undefined);
+    expect(priceSpy).not.toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalledWith(CROISSANT, [], CROISSANT.retail_price);
   });
 });

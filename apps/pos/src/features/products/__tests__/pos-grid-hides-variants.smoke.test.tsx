@@ -102,6 +102,7 @@ vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
 }));
 
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({
+  productModifiersOptions: ({ productId, categoryId }: { productId: string; categoryId: string | null }) => ({ queryKey: ['product-modifiers', productId, categoryId], queryFn: () => Promise.resolve([]) }),
   useProductModifiers: () => ({ data: [], isLoading: false, isSuccess: true }),
 }));
 

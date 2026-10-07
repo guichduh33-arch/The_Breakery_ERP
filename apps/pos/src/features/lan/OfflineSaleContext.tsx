@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import type { Product } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { supabaseUrl } from '@/lib/supabase';
@@ -10,7 +9,7 @@ import { useProducts } from '@/features/products/hooks/useProducts';
 import { useStationMap } from '@/features/cart/hooks/useStationMap';
 import { useCategories } from '@/features/products/hooks/useCategories';
 import { useProductModifiers } from '@/features/products/hooks/useProductModifiers';
-import { useProductVariants } from '@/features/products/hooks/useProductVariants';
+import { usePromotionVariants } from '@/features/products/hooks/usePromotionVariants';
 import { useComboConfig } from '@/features/combos/hooks/useComboConfig';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useOfflineNetworkConfig } from '@/features/settings/hooks/useOfflineNetworkConfig';
@@ -20,6 +19,7 @@ import { usePromotions } from '@/features/promotions/hooks/usePromotions';
 import { useLanCredential } from './lanCredential';
 import { clearSaleSnapshot, restoreSaleSnapshot, saveSaleSnapshot, saleKeys, type SaleIdentity } from './offlineSaleSnapshot';
 import { useCloudStatusStore } from './cloudStatusStore';
+import { TabletOptionsPreload } from './TabletOptionsPreload';
 
 function Modifiers({ id, category }: { id: string; category: string | null }) {
   useProductModifiers({ productId: id, categoryId: category });
@@ -30,12 +30,9 @@ function Combo({ id }: { id: string }) {
   useComboConfig(id);
   return null;
 }
-function Variants({ product }: { product: Product }) {
-  const { data = [] } = useProductVariants(product.id);
-  return <>{data.map((variant) => <Modifiers key={variant.id} id={variant.id} category={product.category_id} />)}</>;
-}
 function PreloadSale() {
   const { data = [] } = useProducts();
+  const variants = usePromotionVariants(data.filter((product) => product.has_variants).map((product) => product.id));
   useStationMap();
   useCategories();
   useTaxConfig();
@@ -45,7 +42,7 @@ function PreloadSale() {
   usePromotions();
   return <>{data.map((product) => <div key={product.id} hidden>
     <Modifiers id={product.id} category={product.category_id} />
-    {product.has_variants && <Variants product={product} />}
+    {(variants.get(product.id) ?? []).map((variant) => <Modifiers key={variant.id} id={variant.id} category={product.category_id} />)}
     {product.product_type === 'combo' && <Combo id={product.id} />}
   </div>)}</>;
 }
@@ -120,6 +117,7 @@ export function OfflineSaleContext() {
   }), []);
 
   return auth.isAuthenticated && !auth.isLocked && localSessionValid(auth.localSession, auth.sessionToken, auth.user?.id)
-    && pathname.startsWith('/pos')
-    ? <PreloadSale /> : null;
+    ? pathname.startsWith('/pos') ? <PreloadSale />
+      : pathname.startsWith('/tablet') ? <TabletOptionsPreload /> : null
+    : null;
 }

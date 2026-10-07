@@ -103,9 +103,32 @@ export function useCartBroadcast(
     };
     const heartbeat = setInterval(() => bc.postMessage({ type: 'presence' }), 2000);
     publish(); // initial snapshot
-    const unsub = useCartStore.subscribe(publish);
+    const displayed = () => {
+      const state = useCartStore.getState();
+      const attempt = usePaymentStore.getState().attempt;
+      return {
+        cart: attempt && attempt.state !== 'refused' ? attempt.cart : state.cart,
+        name: (attempt && attempt.state !== 'refused' ? attempt.customer : state.attachedCustomer)?.name ?? null,
+      };
+    };
+    let last = displayed();
+    let frame: number | null = null;
+    const schedule = () => {
+      const next = displayed();
+      if (next.cart === last.cart && next.name === last.name) return;
+      last = next;
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        publish();
+      });
+    };
+    const unsub = useCartStore.subscribe(schedule);
+    const unsubPayment = usePaymentStore.subscribe(schedule);
     return () => {
       unsub();
+      unsubPayment();
+      if (frame !== null) cancelAnimationFrame(frame);
       clearInterval(heartbeat);
       bc.close();
     };

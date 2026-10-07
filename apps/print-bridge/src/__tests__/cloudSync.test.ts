@@ -62,6 +62,18 @@ describe('startCloudSync', () => {
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for asynchronous printer probes before pushing codes', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(okResponse({ touched: ['PRN-1'], unknown: [] }));
+    handle = startCloudSync({
+      onRegistry: vi.fn(),
+      presentCodes: () => Promise.resolve(['PRN-1']),
+      url: URL_, secret: 's', fetchFn,
+    });
+    await handle.tick();
+    expect(JSON.parse((fetchFn.mock.calls[0]?.[1] as RequestInit).body as string))
+      .toEqual({ device_codes: ['PRN-1'] });
+  });
+
   it('records an http error without throwing, then recovers', async () => {
     const fetchFn = vi
       .fn()

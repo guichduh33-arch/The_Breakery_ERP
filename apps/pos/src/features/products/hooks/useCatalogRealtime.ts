@@ -38,6 +38,7 @@ import { supabase } from '@/lib/supabase';
 const PRODUCTS_KEYS: readonly (readonly string[])[] = [
   ['products'],
   ['pos-product-variants'],
+  ['pos-product-variants-batch'],
   ['display', 'showcase-products'],
 ];
 
@@ -51,6 +52,7 @@ const CATEGORIES_KEYS: readonly (readonly string[])[] = [
 const ALL_CATALOG_KEYS: readonly (readonly string[])[] = [
   ['products'],
   ['pos-product-variants'],
+  ['pos-product-variants-batch'],
   ['categories'],
   ['display', 'showcase-products'],
 ];

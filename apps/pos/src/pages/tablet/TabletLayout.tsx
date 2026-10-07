@@ -14,6 +14,7 @@ import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useRestoreTabletMenuCache, useTabletMenuCacheWriter } from '@/features/tablet/hooks/useTabletMenuCache';
 import { useTabletOrderStatusListener } from '@/features/tablet/hooks/useTabletOrderStatusListener';
 import { useStationMap } from '@/features/cart/hooks/useStationMap';
+import { TabletUserMenu } from '@/features/tablet/components/TabletUserMenu';
 
 function TabletAccessDenied(): JSX.Element {
   useEffect(() => {
@@ -88,7 +89,7 @@ export default function TabletLayout(): JSX.Element {
             chaque vue en ajoutait un second. Le h1 de la surface est masqué
             visuellement ; le nom reste affiché, en simple texte. */}
         <h1 className="sr-only">Tablet ordering</h1>
-        <span className="min-w-0 font-semibold text-base sm:text-xl truncate">{user?.full_name ?? 'Waiter'}</span>
+        <TabletUserMenu />
 
         <div className="shrink-0 flex items-center gap-2">
           {/* Active table */}

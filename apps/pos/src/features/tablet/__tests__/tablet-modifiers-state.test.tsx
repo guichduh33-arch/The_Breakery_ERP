@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { Product } from '@breakery/domain';
+vi.mock('@/features/products/hooks/usePrefetchProductModifiers', () => ({ usePrefetchProductModifiers: () => undefined }));
 const mocks = vi.hoisted(() => ({
   add: vi.fn(), refetch: vi.fn(), query: { isSuccess: false, isError: false, data: [] },
   product: { id: 'coffee', name: 'Coffee', sku: 'C', retail_price: 10000, is_active: true, current_stock: 10 } as Product,

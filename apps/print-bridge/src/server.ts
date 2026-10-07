@@ -11,6 +11,7 @@ import { sendToPrinter, kickDrawer } from './transport.js';
 import { createHub } from './hub/hubServer.js';
 import { HubRingBuffer } from './hub/ringBuffer.js';
 import { startCloudSync } from './hub/cloudSync.js';
+import { reachablePrinterCodes } from './hub/printerPresence.js';
 
 const config = loadConfig();
 if (!config.tlsCert || !config.tlsKey || config.allowedOrigins.length === 0)
@@ -26,7 +27,10 @@ const hub = createHub({
 const cloudSync =
   config.hubCloudUrl !== null && config.hubCloudSecret !== null
     ? startCloudSync({
-        presentCodes: () => hub.presence().map((d) => d.device_code),
+        presentCodes: async () => [
+          ...hub.presence().map((d) => d.device_code),
+          ...await reachablePrinterCodes(registry.printers()),
+        ],
         url: config.hubCloudUrl,
         secret: config.hubCloudSecret,
         onRegistry: (value) => registry.update(value),

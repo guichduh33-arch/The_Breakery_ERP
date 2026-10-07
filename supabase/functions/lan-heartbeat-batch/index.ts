@@ -21,7 +21,7 @@ import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 const MAX_BATCH = 100;
 
-serve(async (req: Request) => {
+export async function handleLanHeartbeat(req: Request): Promise<Response> {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -64,8 +64,43 @@ serve(async (req: Request) => {
   }
 
   const touched = ((data ?? []) as { code: string }[]).map((r) => r.code);
-  const unknown = deduped.filter((c) => !touched.includes(c));
   const registry = await admin.rpc('get_lan_registry_v1');
   if (registry.error) return jsonResponse({ error: 'registry_unavailable' }, 503);
-  return jsonResponse({ touched, unknown, registry: registry.data });
-});
+  const printers = await admin.from('lan_devices').select('code, ip_address, port')
+    .eq('device_type', 'printer').eq('is_active', true).is('deleted_at', null);
+  if (printers.error) return jsonResponse({ error: 'registry_unavailable' }, 503);
+  const requestedPrinterCodes = (printers.data ?? [])
+    .map((printer) => printer.code)
+    .filter((code) => deduped.includes(code));
+  if (requestedPrinterCodes.length > 0) {
+    const printerHeartbeat = await admin.from('lan_devices')
+      .update({ last_heartbeat_at: new Date().toISOString() })
+      .in('code', requestedPrinterCodes)
+      .eq('device_type', 'printer')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .select('code');
+    if (printerHeartbeat.error) {
+      return jsonResponse({ error: 'printer_heartbeat_error', detail: printerHeartbeat.error.message }, 500);
+    }
+    for (const printer of printerHeartbeat.data ?? []) {
+      if (!touched.includes(printer.code)) touched.push(printer.code);
+    }
+  }
+  const unknown = deduped.filter((c) => !touched.includes(c));
+  const value = registry.data as { printers?: { ip_address: string; port: number }[] };
+  const printerCodes = new Map((printers.data ?? []).map((printer) => [
+    `${printer.ip_address}:${printer.port}`,
+    printer.code,
+  ]));
+  const enriched = {
+    ...value,
+    printers: (value.printers ?? []).map((printer) => ({
+      ...printer,
+      code: printerCodes.get(`${printer.ip_address}:${printer.port}`),
+    })),
+  };
+  return jsonResponse({ touched, unknown, registry: enriched });
+}
+
+serve(handleLanHeartbeat);
