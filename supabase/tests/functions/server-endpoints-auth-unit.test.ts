@@ -29,6 +29,12 @@ beforeEach(() => {
   })[name]);
   getUser.mockResolvedValue({ data: { user: null }, error: { message: 'Invalid token' } });
   rpc.mockResolvedValue({ data: [], error: null });
+  const printerQuery = {
+    eq: vi.fn(),
+    is: vi.fn().mockResolvedValue({ data: [], error: null }),
+  };
+  printerQuery.eq.mockReturnValue(printerQuery);
+  from.mockReturnValue({ select: vi.fn(() => printerQuery) });
 });
 afterEach(() => vi.unstubAllGlobals());
 
