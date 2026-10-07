@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { contextFor, routeSkills } from './context.mjs';
 import { syncMirrors, roleToToml } from './sync.mjs';
 import { liveAllowed, testEvidence } from './test.mjs';
+import { doctor } from './doctor.mjs';
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'breakery-agents-test-'));
@@ -102,4 +103,25 @@ test('live : consentement et cible dev exigés avant exécution', () => {
     { VITE_SUPABASE_URL: 'https://production.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fake' }), /cible dev/);
   assert.doesNotThrow(() => liveAllowed('@breakery/supabase-tests', true,
     { VITE_SUPABASE_URL: 'https://ikcyvlovptebroadgtvd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fake' }));
+});
+test('doctor : sortie bornée, détail volontaire et inspection inaccessible explicite', (t) => {
+  const { root, put } = fixture(t);
+  put('package.json', JSON.stringify({ engines: { node: '>=22' }, packageManager: 'pnpm@11' }));
+  put('node_modules/.modules.yaml', 'packageManager: pnpm@11');
+  const changes = Array.from({ length: 12 }, (_, i) => `?? file-${i}`).join('\n');
+  const runGit = (args, cwd) => args[0] === 'worktree'
+    ? 'worktree accessible\nHEAD abc\n\nworktree inaccessible\nHEAD def'
+    : args[0] === 'status' ? (() => { if (cwd === 'inaccessible') throw new Error('missing'); return changes; })()
+      : 'fixture';
+  const result = doctor(root, { runGit });
+  assert.equal(result.inspectionComplete, false);
+  assert.equal(result.worktrees[0].status.length, 10);
+  assert.equal(result.worktrees[0].statusTotal, 12);
+  assert.equal(result.worktrees[0].statusTruncated, true);
+  assert.match(result.worktrees[1].error, /inaccessible/);
+  const verbose = doctor(root, { runGit, verbose: true });
+  assert.equal(verbose.worktrees[0].status.length, 12);
+  assert.equal(verbose.worktrees[0].statusTruncated, false);
+  const complete = doctor(root, { runGit: (args) => args[0] === 'worktree' ? 'worktree accessible\nHEAD abc' : 'fixture' });
+  assert.equal(complete.inspectionComplete, true);
 });

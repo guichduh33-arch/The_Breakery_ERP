@@ -68,3 +68,12 @@ test('recherche vide : aucun candidat ne constitue une réussite ou une commande
   assert.deepEqual(result.tests, []); assert.equal(result.testCommand, null);
   assert.equal(testEvidence({ success: true, numPassedTests: 0 }).valid, false);
 });
+test('scénario outillage : suites transverses proposées sans perdre le classement heuristique', (t) => {
+  const files = ['scripts/agents/tooling.test.mjs', 'scripts/agents/scenarios.test.mjs',
+    'scripts/agents/sync-extra.test.mjs', 'scripts/release/unrelated.test.mjs'];
+  const result = fixture(t, 'scripts/agents/sync.mjs', files);
+  assert.deepEqual(new Set(result.tests.slice(0, 2)), new Set(files.slice(0, 2)));
+  assert.ok(result.tests.includes(files[2]));
+  assert.equal(result.tests.includes(files[3]), false);
+  assert.match(result.note, /aucun skill ni test exécuté/);
+});
