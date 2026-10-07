@@ -1,5 +1,156 @@
 # Mémoire locale de reprise — prochaine étape jusqu’à la production V3
 
+## Reprise vérifiée le 8 octobre 2026 — POS, tablettes et imprimantes
+
+Cette section décrit l'état effectivement observé pendant les essais physiques du
+7 au 8 octobre. Elle complète les reprises précédentes et doit être relue avant de
+réinstaller une application, réappairer un terminal ou rediagnostiquer les
+imprimantes. Les secrets, PIN et valeurs d'authentification ne sont pas consignés.
+
+### Environnement et versions utilisés
+
+- La production V3 utilisée par le BO, le POS et les tablettes est le projet
+  Supabase `yjhhhmjgsmyzyymvixot`. La V2 `abjabuniwkqpfsenxljp` n'est pas la cible
+  de ces essais et ne doit pas recevoir les migrations V3.
+- La branche de travail locale est `fix/pos-responsiveness`. Le worktree contient
+  encore des changements non commités ; ne pas repartir de `master`, écraser le
+  worktree ou présenter ces changements comme livrés par une PR.
+- Le PC caisse sert le POS et le print-bridge en LAN. Mesh a uniquement servi de
+  télécommande pour ce PC ; ce n'est ni un composant du runtime ni le lien entre
+  Supabase et la boutique.
+- La Samsung Galaxy Tab A8 et le MiniPOS CS30 utilisent l'application Breakery
+  version 1.5. Le CS30 est configuré comme tablette serveur, pas comme caisse.
+
+### Travaux réalisés et vérifiés
+
+- Le lot de réactivité POS a été implémenté localement : ajout anonyme avec prix
+  retail déjà chargé, préchargement borné des modificateurs sur caisse et
+  tablettes, chargement groupé et paginé des variantes de promotions, protection
+  contre les évaluations promotionnelles dépassées et regroupement des diffusions
+  vers l'écran client.
+- Les variantes de produits sont masquées de la grille principale et restent
+  sélectionnables par les serveurs depuis les tablettes. Le menu tablette permet
+  aussi de changer d'utilisateur depuis l'écran principal.
+- Le correctif de préchargement des options hors connexion a été installé sur la
+  Samsung et le CS30. Un premier ajout sans cloud a réussi sur les deux appareils ;
+  `Fresh Juice` avec l'option `Orange` a été validé sur la Samsung. Les paniers ont
+  été vidés et aucune commande ni aucun paiement n'a été créé pendant ces essais.
+- POS1, la Samsung et le CS30 ont été appairés dans le BO avec leurs rôles. Leur
+  appairage est conservé même si le BO les affiche ensuite `stale` lorsque
+  l'application n'émet plus de heartbeat.
+- Les imprimantes configurées et leur rôle observé sont : caisse
+  `192.168.1.8:9100`, cuisine `192.168.1.13:9100`, waiter
+  `192.168.1.14:9100`, display `192.168.1.15:9100` et barista
+  `192.168.1.32:9100`.
+- Le print-bridge sonde maintenant le port TCP 9100 sans envoyer d'octet
+  d'impression, puis transmet uniquement les codes des imprimantes joignables au
+  heartbeat cloud. Le registre cloud enrichit les cibles d'impression avec leurs
+  codes BO.
+- La fonction `lan-heartbeat-batch` a été déployée sur la production V3. Elle met
+  à jour les imprimantes actives reçues du bridge même si elles n'ont pas de
+  credential de terminal, tout en conservant le contrôle existant pour les autres
+  appareils.
+- Le bridge corrigé tourne sur le PC caisse depuis la release locale
+  `C:/BreakeryV3/releases/bridge-prod-printer-presence-20261008`. Le premier paquet
+  dépendait de modules npm absents sur le poste ; l'ancienne release a été remise
+  en service immédiatement, puis un bundle autonome CommonJS a été installé.
+  Après installation : un seul processus bridge, endpoint `/health` OK et journal
+  d'erreur vide.
+- Le BO a finalement affiché les cinq imprimantes `online` avec un heartbeat du
+  8 octobre à 01:36. Aucun ticket, tiroir, paiement ou commande n'a été déclenché
+  pour cette validation de présence.
+
+### Preuves exécutées pendant ce lot
+
+- Print-bridge : 17 tests réussis, aucun ignoré ; typecheck, lint et build réussis.
+- Fonction de heartbeat : 2 tests unitaires réussis, aucun ignoré. Le second couvre
+  explicitement une imprimante active sans credential de terminal.
+- Les cinq adresses d'imprimantes ont répondu à une connexion TCP 9100 depuis le
+  PC caisse. Cette preuve établit la joignabilité, pas la qualité d'une impression.
+- La fonction production et le bridge ont été contrôlés après déploiement ; le BO
+  comptait six appareils en ligne, dont les cinq imprimantes et POS1.
+
+### Travail restant avant livraison du lot
+
+- Rejouer et consigner les suites ciblées du lot POS, le typecheck, le build, le
+  lint des fichiers touchés et l'analyse des bundles sur l'état final du worktree.
+  La suite POS complète reste le filet CI.
+- Mesurer sur build de production, avec le même catalogue et le même réseau :
+  chargement à froid, premier tap, taps répétés et rafale de vingt ajouts. Vérifier
+  sur PC et Android la cible p95 inférieure à 100 ms pour un produit simple sans
+  client ; restituer les mesures et le goulot si elle n'est pas atteinte.
+- Vérifier encore le prix avec client attaché, les résultats promotionnels arrivant
+  dans le désordre, le changement de client, la reconnexion et l'écran client après
+  paiement. Aucun essai de paiement ou de commande réelle n'est autorisé par les
+  essais déjà effectués.
+- Pour valider le statut négatif d'une imprimante, demander une action physique à
+  Mamat afin d'éteindre ou isoler un appareil ; aucune imprimante n'a été coupée
+  pendant ce lot.
+- La Samsung et le CS30 étaient `stale` lors du dernier contrôle BO parce que leurs
+  applications ne publiaient plus de heartbeat. Rouvrir les applications sur les
+  appareils, puis vérifier leur retour `online` si une preuve de présence actuelle
+  est requise.
+- Le paiement hors connexion reste désactivé dans le BO. Son activation et tout
+  essai créant une commande ou un paiement de production exigent une autorisation
+  explicite distincte.
+- Avant toute PR, exécuter l'audit agents obligatoire, présenter les écarts à Mamat,
+  obtenir la validation de cette mise à jour documentaire, puis seulement commiter.
+  Aucun commit ni PR de ce lot n'est encore acquis.
+
+Cette note reste un aide-mémoire versionné. Aucun outil disponible dans cette
+session ne permet de confirmer l'écriture de la mémoire native Codex ; dans une
+nouvelle session, demander la lecture de ce fichier et revalider les faits distants
+avant toute action.
+
+## Reprise vérifiée le 5 octobre 2026 — travaux déjà réalisés
+
+Cette section complète les relevés historiques ci-dessous. Lire les bilans récents
+avant de présenter une étape ancienne comme restant à faire. Elle ne certifie pas
+l'état distant actuel ni les versions installées après les essais.
+
+- Les trois projets Supabase sont déjà créés : dev `ikcyvlovptebroadgtvd`,
+  rehearsal `getctmbpjnrrjzncaqze`, prod `yjhhhmjgsmyzyymvixot`.
+  Leur création ne doit plus être demandée. Le statut et le contenu actuels de prod
+  doivent être vérifiés avant une écriture ; la création ne prouve pas la bascule.
+- Le 4 octobre, POS-FRONT-01 a été réappairé dans Chrome et le hub HTTPS déclaré
+  joignable. Les commandes de ticket et de tiroir ont répondu HTTP 200 ; Mamat a
+  confirmé « Les deux fonctionnent ». Preuve locale :
+  `.playwright-cli/recipe/pos-front-repaired-20261004.jpg`.
+- Le 4 octobre, la tablette `tab` et POS-FRONT-01 ont été observés en ligne dans le BO.
+  Ce relevé confirme la connexion à cette date, pas le parcours complet de commande.
+- Le 4 octobre, le correctif d'écran client a été installé sur le poste boutique :
+  Americano à 35 000 IDR sur les deux écrans, puis retour de l'écran client à l'accueil
+  après vidage du panier. Aucun paiement ni nouvelle vente dans cet essai.
+  Ancien bundle sauvegardé, Olsera et Apache préservés. Preuve locale :
+  `.playwright-cli/customer-display-fixed-cart-20261004.png`.
+- Les installations Android du 30 septembre décrites plus bas restent des travaux
+  accomplis : tablette V3 1.4 et CS30 V3 1.5, sans désinstallation.
+- Les PR #552 et #553 ont ensuite été fusionnées selon le bilan de la conversation
+  « Vérifier le reste côté apps dev (2) ». Ce bilan distingue les corrections
+  livrées sur dev de leur installation boutique : ne pas supposer le dernier
+  bundle installé sur les appareils.
+- Le 5 octobre, 24 tests locaux des contrôles de release ont réussi, sans échec
+  ni test ignoré. CI master réussie sur `aa7b34edd009906244873d140ef9bc019525b555`,
+  run `37298868853`, jobs `governance-guards` et `lint-typecheck-test-build` réussis.
+  Ce relevé n'est pas une preuve pgTAP du même SHA ni une publication production.
+
+Sources conversationnelles relues : « Préciser l'étape suivante »
+(`01a0ebb9-3198-75c3-967e-800dfb47dbe0`), « Préparer l'initialisation V3 prod »
+(`01a0dd3d-002c-79a3-9b48-f4e1a3bf30c9`), « Vérifier le reste côté apps dev »
+(`01a0f1b9-fbe7-7b42-8a8d-d0fd5a8479d5`) et sa suite
+(`01a106c9-382e-7c43-8ce1-da79b95165ee`).
+
+Limites : les passages relus ne suffisent pas à certifier la recette complète du
+KDS physique, la coupure WAN avec LAN maintenu, le rejeu après redémarrage du PC
+ou une restauration complète des données métier. Chercher les autres preuves
+avant de déclarer ces essais absents ou de les recommencer. Les demandes du
+5 octobre visant à redonner la référence prod ou à reprendre tous les essais
+matériels provenaient d'une reprise incomplète et sont retirées.
+
+Cette note est un aide-mémoire local, pas une mémoire native Codex confirmée.
+Sa mise à jour a été demandée par Mamat le 5 octobre ; aucun commit documentaire
+ni écriture dans les bases internes de mémoire du client n'est réalisé ici.
+
 Rédigée le 29 septembre 2026 à la demande explicite de Mamat.
 Note versionnée à la demande de Mamat ; aucune valeur secrète. Ce fichier n’est pas une mémoire
 automatiquement chargée par Codex : demander sa lecture dans un nouveau chat.
