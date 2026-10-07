@@ -67,8 +67,52 @@ de stock, écriture comptable ou produit au stock non nul.
 La preuve locale est
 `.release-manifests/production-candidate-20261005/remaining-beverages-coffee-observed-20261007.json`.
 Aucun schéma, droit ou code applicatif n'a changé. Les stocks, coûts et soldes
-d'ouverture restent à intégrer ; ce lot ne certifie pas un parcours de vente
-réel ni la préparation complète de la bascule.
+d'ouverture restent à intégrer au terme de ce lot ; il ne certifie pas un
+parcours de vente réel ni la préparation complète de la bascule. Le lot de
+références de coûts exécuté ensuite est décrit ci-dessous.
+
+## Lot de références de coûts du 7 octobre 2026
+
+Mamat a désigné le classeur `average price product.xlsx` comme référence des
+prix d'achat, puis validé les correspondances, unités, conditionnements et
+exclusions avant l'application du lot concret en production V3.
+
+Le rapprochement des 189 lignes source aboutit à 168 coûts appliqués, 20
+lignes exclues ou doublonnées, et une ligne de produit fabriqué sur place,
+Strawberry Jam, dont le coût reste calculé par sa recette. Les exclusions ne
+créent aucun coût de remplacement et ne suppriment pas les produits existants.
+
+Paper Sandwich est désormais suivi en pièces. Ice Cream Chocolate est suivi
+en kg, avec une unité de vente cup correspondant à 200 g et une alternative
+en grammes. Les deux corrections ont utilisé les familles de RPC live de
+gestion des unités, avant les écritures de coût.
+
+Les corrections de coût ont utilisé la famille de RPC live dédiée, avec
+l'acteur MAMAT et une clé d'idempotence par référence. Elles ont conservé 168
+traces de correction à quantité zéro. Le trigger existant a actualisé les
+coûts des recettes dépendantes et leurs versions ; Strawberry Jam a été
+recalculé à partir de ses ingrédients. Aucune réception d'achat, quantité
+de stock, vente ou écriture comptable n'a été créée par ce lot.
+
+Les corrections d'unité et les quatre lots de 42 coûts ont été testés sous
+rollback. Les comptes de produits, recettes, versions, audits et mouvements
+ont retrouvé leur état initial. L'application séquentielle et la relecture
+intégrale des 168 coûts et unités ne présentent aucun écart. Le rejeu du
+premier lot de 42 références n'ajoute aucun mouvement, audit ou version.
+
+À la demande de Mamat, Breakery Sauce a été retirée du catalogue et ses huit
+lignes de recette désactivées par leurs RPC live. Le produit n'avait aucun
+stock, mouvement ou consommateur dans les recettes et modificateurs. Ses
+identifiants, lignes et audits sont conservés ; l'essai sous rollback et la
+relecture après application sont réussis.
+
+Les preuves locales datées sont
+`.release-manifests/production-candidate-20261005/purchase-cost-import-verification-20261007.json`
+et `breakery-sauce-removal-observed-20261007.json` dans le même dossier ignoré.
+Le classeur utilisateur et les coûts détaillés restent hors Git. Aucun code,
+schéma ou droit n'a changé. Ce lot de références ne constitue pas une ouverture
+réelle : stocks physiques et soldes restent à intégrer, et les coûts absents
+ou exclus ne sont pas réputés validés.
 Aucune commande de ce document ne vaut autorisation de déploiement.
 
 ## Conditions de départ
