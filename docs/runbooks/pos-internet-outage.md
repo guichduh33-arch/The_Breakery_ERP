@@ -129,7 +129,8 @@ le poste boutique pendant cette livraison. Le cas C2 de
   d'envoi lorsque le routage cuisine manque.
 - `apps/pos/vite.config.ts` : configuration de l'application web.
 
-Le scénario de perte de connexion du guide `disaster-recovery.md` contient
-encore des consignes anciennes, notamment l'impossibilité générale d'encaisser
-et la limitation aux espèces. Ces consignes ne décrivent pas le mode hors
-ligne exposé ici ; leur révision globale reste à traiter séparément.
+Le scénario de perte de connexion du [guide d'incident](disaster-recovery.md)
+renvoie à cette conduite de caisse. Ses autres scénarios restent historiques
+et exigent une vérification avant action. Les installations et essais datés
+se trouvent dans l'[état des environnements](etat-environnements.md) ; aucune
+de ces procédures ne certifie une recette physique actuelle.

@@ -1,87 +1,47 @@
-# Disaster Recovery Runbook — The Breakery ERP
+# Reprise après incident — The Breakery ERP
 
-**Owner:** Platform / on-call
-**Last reviewed:** 2026-05-14 (Session 13 / Phase 6.C)
-**Scope:** V3 production cutover prep. Procedures below are for the
-**staging** project `ikcyvlovptebroadgtvd` ; production project `<ref>`
-to be substituted at cutover.
+Révision ciblée : 8 octobre 2026 — connexion, cibles et limites des procédures.
 
-This runbook documents the most-likely incident classes the
-operations team needs to drill before the V3 cutover. Each scenario
-follows the standard layout: **symptoms → impact → mitigation →
-recovery → post-mortem template**.
+## Portée et autorisation
 
-> ⚠️ **Fraîcheur partielle (revu 2026-07-09).** Deux évolutions S62/S65 rendent des passages obsolètes, corrigés ci-dessous :
-> - **`print_queue` a été DROPPÉE (S62, migration `20260710000110`)** et la PWA purgée — le **Scénario 6** est neutralisé (l'impression passe désormais par `apps/print-bridge`, S65).
-> - Les scénarios mentionnant la **persistance PWA / IndexedDB** (Scénario 5 « Hardening ») sont caducs (PWA retirée S62).
-> - La money-path RPC courante est **`complete_order_with_payment_v19`** (revu 2026-07-23 — v19 refuse inactifs/parents, ADR-011 déc. 2 ; pas `complete_order_v9`) — cf. Appendix A. **Rappel : toujours vérifier la version live (`pg_get_functiondef`) avant toute manœuvre, les bumps sont fréquents.**
+Les scénarios suivants proviennent du relevé du 14 mai 2026, partiellement
+révisé en juillet. Leurs délais, réglages, fonctions et effets ne sont pas
+des garanties actuelles. Confronter les procédures au code, au schéma live
+et aux accès avant toute action ; aucune commande ne vaut autorisation.
 
-> Quick links
-> - Supabase dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>
-> - Edge Functions logs: dashboard → Functions → <fn-name> → Logs
-> - PITR backups: dashboard → Database → Backups
-> - PostgREST status: dashboard → API → Health
-> - Sentry projects: `the-breakery-pos`, `the-breakery-backoffice`
+Identifier la cible et le bundle réellement chargé avant une intervention.
+Consulter l'[état des environnements](etat-environnements.md) et le
+[runbook V3](production-v3-cutover.md) pour les preuves et limites du retour
+arrière. Ne pas assimiler dev à staging ou prod.
 
----
+## Scénario 1 — Perte de connexion au cloud
 
-## Scenario 1 — Lost connectivity to Supabase (POS / BO)
+La conduite de caisse est décrite dans le
+[guide de coupure Internet](pos-internet-outage.md). Distinguer panne WAN,
+panne LAN et panne du hub ou du PC boutique.
 
-### Symptoms
+- Le mode hors ligne exige l'application chargée, une session ouverte,
+  un catalogue disponible et le hub joignable. Les paiements exigent leur
+  activation explicite, désactivée par défaut.
+- Les moyens autorisés excluent l'avoir client ; un règlement externe doit
+  réellement aboutir avant son enregistrement dans la caisse.
+- Ne pas effacer les données, désinstaller ou recharger aveuglément le POS.
+  Les assets Android ne prouvent pas une restauration de session.
+- Au retour du cloud, laisser le rejeu se faire et vérifier les opérations
+  restantes. Une réponse perdue n'autorise pas une ressaisie sous un nouvel
+  identifiant. Conserver les files et les constats de rejet.
+- Ne pas créer une vente fictive en production pour vérifier la reprise.
+  La recette métier exige une cible et une autorisation explicites.
 
-- POS shows toast `Network error` on every API call.
-- KDS realtime channel stops updating.
-- Sentry: spike of `TypeError: Failed to fetch` and `WebSocket closed (1006)`.
-- BO `/login` returns `connection refused`.
-- Healthcheck `/__health` returns 503 from CDN (if WAF involved).
+Le code prévoit ces capacités ; la recette physique et l'état courant des
+terminaux se vérifient séparément. Les décisions de paiement et de rejeu
+restent dans les ADR correspondants, dont le texte n'est pas modifié ici.
 
-### Impact
+## Procédures historiques restant à vérifier
 
-- POS can still **render** the active cart from local Zustand state.
-- POS **cannot** send-to-kitchen, pay, or print receipts.
-- Tablet self-order: queued orders accumulate locally; sync resumes once
-  the network is restored (Phase 4.D offline graceful path).
-- KDS shows stale tickets — items already on screen remain bumpable
-  optimistically but the bump is queued.
-- New BO sessions cannot be opened (read cache is per-tab only).
-
-### Mitigation (immediate)
-
-1. **Verify origin** — is it Supabase or the local network?
-   - From a POS device: `ping ikcyvlovptebroadgtvd.supabase.co` and curl
-     `https://ikcyvlovptebroadgtvd.supabase.co/rest/v1/`.
-   - If LAN-only failure → check router / switch / ISP.
-   - If WAN failure → check <https://status.supabase.com>.
-2. **Notify staff** — announce "we are offline; cash-only, no card,
-   no loyalty" via the floor manager radio.
-3. **Switch tablet inbox to cash-only manual mode** — guests still order
-   on tablets; runners hand-write tickets until sync resumes (Phase 4.D).
-4. **Do NOT clear browser data** — POS keeps local cart state; clearing
-   would lose the active orders.
-
-### Recovery
-
-1. Once `https://ikcyvlovptebroadgtvd.supabase.co/rest/v1/` returns 200
-   from a POS device, reload the POS tab (Ctrl+R). The realtime channel
-   reconnects automatically (`useKdsRealtime` etc.).
-2. Tablet pickup inbox replays any queued tablet orders.
-3. KDS bump retries (queued via React Query) succeed on next reconnect.
-4. Verify Sentry no longer shows `WebSocket closed` for >5 min.
-5. Confirm `complete_order` succeeds with a $0.01 test order.
-
-### Post-mortem template
-
-```
-Incident date / start / end :
-Detection : Sentry / staff / customer report
-Root cause :
-Customer impact (orders affected, refunds issued) :
-Data loss : Yes/No
-Action items :
-  - [ ] (e.g. add LAN fallback for catalog reads)
-```
-
----
+La présence des scénarios ci-dessous ne prouve pas que les réglages, RPC
+ou outils cités existent encore. Résoudre les familles et corps live avant
+toute opération autorisée.
 
 ## Scenario 2 — DB restore from Supabase Point-In-Time Restore (PITR)
 
