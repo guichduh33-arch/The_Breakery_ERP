@@ -8,6 +8,11 @@ ni l'absence de tests ni leur couverture. Voir [les outils agents](runbooks/agen
 
 ## Objectif
 
+Pour reprendre un lot, consulter les [bilans et observations](runbooks/etat-environnements.md).
+Le proxy, le MCP et les caches sont distingués dans le
+[guide des outils de contexte](runbooks/context-tools.md) ; aucun inventaire
+ne remplace les sources ou une preuve d'installation.
+
 Ne charger que les fichiers utiles à la tâche en cours, selon le profil métier, puis élargir explicitement si le besoin le nécessite.
 
 ## Règles globales

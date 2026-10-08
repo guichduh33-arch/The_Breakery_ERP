@@ -82,31 +82,21 @@ Quand une session porte uniquement sur un sous-domaine (POS, BO, domaine, Supaba
 
 Le détail des profils et des dépendances est dans [`docs/context-profiles.md`](docs/context-profiles.md).
 
-## MCP Headroom (Cloud/remote sessions)
+## Contexte, reprise et outils optionnels
 
-Le projet inclut désormais la configuration Headroom dans [`.mcp.json`](.mcp.json) :
+Les [règles agents](AGENTS.md), [décisions](docs/adr/) et
+[observations datées](docs/runbooks/etat-environnements.md) restent les sources
+de reprise. Les profils de contexte ne sont que des inventaires.
 
-- `headroom` est déclaré dans `mcpServers` avec `headroom mcp serve`.
-- La config est versionnée, donc disponible pour toutes les sessions cloud associées au dépôt.
-- `autoStart` est sur `true` pour démarrer automatiquement le plugin Headroom dans les sessions qui chargent `.mcp.json`.
+Headroom distingue un proxy local, un MCP de compression/récupération et un
+cache temporaire. Le MCP projet fixe la version validée 0.37.0 ; la présence
+d'une configuration ne prouve ni son chargement par le client ni son lancement.
+Le proxy et ses réglages globaux ne sont pas provisionnés par le dépôt.
 
-Lancement local recommandé (premier usage) :
-
-```bash
-uvx --from "headroom-ai[mcp]" headroom mcp install
-```
-
-Le serveur MCP dans ce repo démarre ensuite via la config partagée (`.mcp.json`) quand le host le charge.
-
-Test rapide du démarrage :
-
-```bash
-# Vérifie que Headroom est installé et enregistré
-uvx --from "headroom-ai[mcp]" headroom mcp status
-
-# Test de lancement direct (doit afficher le log de démarrage sans erreur)
-uvx --from "headroom-ai[mcp]" headroom mcp serve --debug
-```
+Le [guide des outils de contexte](docs/runbooks/context-tools.md) détaille les
+preuves, limites de récupération, dépendances locales et rôles de Serena/Ruflo.
+Aucun nouvel outil n'est à installer pour lire le dépôt ; aucune commande
+d'installation ne vaut autorisation de modifier les réglages du client.
 
 ## Testing
 

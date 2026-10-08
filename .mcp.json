@@ -21,12 +21,10 @@
       "autoStart": false
     },
     "headroom": {
-      "command": "cmd",
+      "command": "uvx",
       "args": [
-        "/c",
-        "uvx",
         "--from",
-        "headroom-ai[mcp]",
+        "headroom-ai[mcp]==0.37.0",
         "headroom",
         "mcp",
         "serve"
