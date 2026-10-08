@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { execSync } from "node:child_process";
 import { extname } from "node:path";
+import { ROOT, git } from './agents/lib.mjs';
 
 const usage = `
 Usage:
@@ -98,21 +98,11 @@ if (!Object.hasOwn(gitCmd, profile)) {
   process.exit(1);
 }
 
-const excludes = [
-  "\\.impeccable/",
-  "\\.turbo/",
-  "\\.claude-flow/",
-  "\\.swarm/",
-  "\\.playwright-cli/",
-  "\\.playwright-mcp/",
-  "\\.ds-sync/",
-  "\\.design-sync/",
-  "node_modules/",
-  "android/",
-  "coverage/",
-  "dist/",
-  "build/",
-];
+// Zones vivantes : sources, assets publics et configuration immédiate des packages.
+const paths = gitCmd[profile].flatMap((path) => /^(apps|packages)\//.test(path)
+  ? [`${path}/src`, `${path}/public`, `${path}/.env.example`,
+    ...['json', 'ts', 'js', 'md', 'html'].map((ext) => `:(glob)${path}/*.${ext}`)]
+  : [path]);
 
 const binaryExtensions = new Set([
   ".png",
@@ -130,21 +120,11 @@ const binaryExtensions = new Set([
   ".eot",
 ]);
 
-const quotedPaths = gitCmd[profile].map((path) => `"${path}"`);
-const rawFiles = execSync(`git ls-files ${quotedPaths.join(" ")}`, {
-  encoding: "utf8",
-})
-  .split("\n")
-  .map((line) => line.trim())
+const rawFiles = git(['ls-files', '-z', '--', ...paths], ROOT)
+  .split("\0")
   .filter(Boolean);
 
-const excludedFile = (path) =>
-  excludes.some((pattern) => new RegExp(pattern).test(path));
-
 const files = rawFiles.filter((file) => {
-  if (excludedFile(file)) {
-    return false;
-  }
   if (!includeBinary) {
     const ext = extname(file).toLowerCase();
     if (binaryExtensions.has(ext)) {

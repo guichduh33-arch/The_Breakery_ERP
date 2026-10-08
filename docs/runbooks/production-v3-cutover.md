@@ -2,6 +2,11 @@
 
 Procédure de bascule et bilan daté des opérations exécutées.
 
+Pour reprendre, lire d'abord l'[état des environnements](etat-environnements.md) :
+il distingue les dernières observations, installations rapportées et inconnues.
+Les bilans ci-dessous restent historiques ; ils ne sont pas une inspection
+actuelle du schéma, des applications chargées ou des appareils boutique.
+
 ## Bilan du 6 octobre 2026 — catalogue et recettes
 
 Le BO est publié sur https://backoffice.the-breakery.com depuis le SHA

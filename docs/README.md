@@ -1,79 +1,69 @@
-# 📚 The Breakery ERP — Documentation
+# Documentation de The Breakery ERP
 
-> **Resynchronisé le 2026-07-28.** L'ancienne carte (remise à plat du 2026-07-04,
-> arbre `workplan/` / `reference/` / `superpowers/`) est obsolète. Ces zones ont
-> été mises en quarantaine, puis **sorties du dépôt le 2026-07-28** — elles
-> restent résolubles, voir la **note de résolution** en bas de page.
+Révision ciblée : 8 octobre 2026 — hiérarchie, découverte et reprise.
 
-## ⚖️ Hiérarchie de vérité
+## Sources et registres
 
-La loi est **[`../CLAUDE.md`](../CLAUDE.md)** ; en cas de conflit avec tout autre
-document, CLAUDE.md gagne. Résumé de la hiérarchie qu'il fixe :
+Les règles des agents vivent dans [AGENTS.md](../AGENTS.md). [CLAUDE.md](../CLAUDE.md)
+est un miroir généré, pas une seconde source à modifier.
 
-1. **Le code et le schéma DB** — ce qui EST. Vérité factuelle.
-2. **[`adr/`](adr/)** — ce qui DOIT ÊTRE. Décisions de Mamat, immuables : un
-   changement d'avis = un nouvel ADR numéroté qui supersede l'ancien.
-3. **[`objectifs/`](objectifs/)** — ce qui est VOULU. Écrit par Mamat, une fiche
-   par module.
-4. **[`product/`](product/), [`runbooks/`](runbooks/)** — opérationnel.
-5. **Zones sorties du dépôt** (ancien `_quarantine/`) — MORTES. N'existent plus.
-   Interdiction de lire/citer/grep. Un chemin cité par un document immuable se
-   résout par le tag git — voir la note de résolution en bas de page.
+- Le code et le schéma DB réel établissent les faits. Les migrations décrivent
+  l'histoire dans Git ; elles ne prouvent pas seules l'application sur une cible.
+- Les [ADR](adr/) portent les décisions validées. Une décision non implémentée
+  reste valable : son écart avec le code est du backlog.
+- Les [objectifs](objectifs/) portent les intentions de Mamat.
+- La [référence produit](product/DESCRIPTION.md) et les [runbooks](runbooks/)
+  décrivent le fonctionnement et les procédures, sous contrôle des sources.
+- Les [audits](audits/) sont des constats datés. Un audit, une mémoire ou un
+  résumé ne certifie pas l'état actuel ni une autorisation d'action.
 
-Si un document contredit le code, le document a tort : on le signale, on ne
-« corrige » ni le code ni silencieusement le document.
+Un écart factuel se signale avant correction. Une intention ne se réécrit pas
+pour coller à l'implémentation. La génération de contexte aide à retrouver les
+sources ; elle n'en remplace ni la lecture ni la vérification.
 
-## 🗂️ Structure
+## Entrées de lecture
 
-```
-docs/
-├── README.md            ← tu es ici (carte + hiérarchie de vérité)
-├── context-profiles.md   ← profils de chargement de contexte (POS/BO/domain/Supabase)
-├── adr/                 ← décisions numérotées, append-only, immuables
-├── objectifs/           ← fiches module « objectif métier » (une par module)
-├── specs/               ← specs d'exécution exigées par un ADR (≤ 3 vivantes,
-│                          nom <ADR>x-<sujet>.md ; une spec meurt à la livraison)
-├── product/             ← référence produit (DESCRIPTION.md)
-└── runbooks/            ← procédures opérationnelles (disaster-recovery)
-```
+| Besoin | Source |
+|---|---|
+| Reprendre un chantier | [Consignes agents et bilans](runbooks/agent-tooling.md) |
+| Retrouver les observations d'environnement | [État des environnements](runbooks/etat-environnements.md) |
+| Préparer une bascule V3 | [Procédure et bilans de bascule](runbooks/production-v3-cutover.md) |
+| Comprendre une coupure Internet | [Guide de caisse](runbooks/pos-internet-outage.md) |
+| Fabriquer ou installer Android | [Guide tablette](runbooks/tablet-capacitor-build.md) |
+| Charger un contexte ciblé | [Profils de contexte](context-profiles.md) |
 
-## 📐 Règles documentaires (rappel — détail dans CLAUDE.md)
+## Catégories documentaires
 
-- **Par défaut un agent ne crée ni ne commite un fichier de `docs/`** : il propose le
-  contenu en conversation. **Exception, sur validation explicite de Mamat en séance** :
-  il crée le fichier, et peut le commiter sur une branche dédiée (`docs/…`, `feat/…`,
-  `fix/…`, **jamais `master`**), sans push sans demander. Détail : `CLAUDE.md` règles 1-2.
-- Un ADR ne se modifie jamais ; les plans de session vivent en conversation.
-- Documents évergreen (fiches objectifs, README) : date de dernière révision en
-  tête, mise à jour en place. Langue : français pour la doc, anglais pour les
-  noms de code/UI. Références code au format `chemin/fichier.ts:42`.
+| Zone | Rôle et durée de vie |
+|---|---|
+| `adr/` | Décisions ; texte immuable, nouvelle décision dans un nouvel ADR |
+| `objectifs/` | Intentions métier evergreen écrites par Mamat |
+| `product/` | Description factuelle et intentions identifiées séparément |
+| `runbooks/` | Procédures et bilans factuels datés, avec leurs limites |
+| `specs/` | Exécution exigée par un ADR ; supprimée à livraison après validation |
+| `audits/` | Relevés historiques ; revalider les constats avant réemploi |
 
----
+Un statut de projet d'ADR n'est pas une décision actée. Lire le corps et le
+statut avant de déclarer son périmètre applicable.
 
-## 🔖 Note de résolution — les chemins des zones sorties du dépôt
+## Rédaction et validation
 
-Le contenu de l'ancien `docs/_quarantine/` (597 fichiers) est **sorti du dépôt le
-2026-07-28**. Il n'est pas perdu : un **tag git annoté** le conserve à vie.
+L'agent rédige dans le périmètre autorisé, Mamat valide explicitement le contenu,
+puis l'agent commite sur une branche dédiée. Aucun commit documentaire sans
+validation ; aucun push implicite. Les plans de session restent en conversation.
 
-Tout chemin de l'une de ces **huit entrées** — `_archive/`, `audit/`,
-`design-audits/`, `reference/`, `superpowers/`, `workplan/`, `CLAUDE-old.md`,
-`DESIGN_POS_AND_BACKOFFICE.md` — cité par un document immuable (un ADR, une
-migration appliquée) se résout ainsi :
+Le texte de décision d'un ADR est immuable. Son statut et son bilan factuel
+peuvent être actualisés après validation, sans transformer une intention en
+livraison acquise. Les documents evergreen utilisent des ancres stables,
+sans numéros de ligne ni compteurs vivants non datés.
 
-```
-git show quarantine/2026-07-27:docs/_quarantine/<chemin>
-```
+## Documents historiques sortis de l'arbre
 
-Exemple, pour la conséquence 4 d'ADR-004 :
+Les zones documentaires retirées du dépôt restent conservées dans l'histoire
+Git. Les références historiques d'artefacts immuables ne sont pas réécrites
+pour les faire disparaître. Cela n'autorise aucune lecture de ces contenus.
 
-```
-git show quarantine/2026-07-27:docs/_quarantine/workplan/remise-a-plat/00-AMENDEMENTS-V13.md
-```
-
-**Un tag n'archive pas, il CONSERVE.** C'est pourquoi aucun ADR n'a été modifié
-pour retirer ces chemins : ils ne sont pas morts, ils sont résolubles autrement.
-`docs/adr/**` et `supabase/migrations/**` ont donc le droit permanent de les
-citer — un document immuable a le droit de citer un chemin historique.
-
-Ce fichier-ci est le seul document vivant autorisé à nommer ces zones : c'est
-lui qui porte la carte et sa résolution.
+Pour travailler aujourd'hui, utiliser les zones vivantes ci-dessus et les
+preuves actuelles. Ne pas réintroduire une ancienne architecture depuis un
+document historique. La garde de références interdites conserve son plafond
+de baseline ; une correction ne l'augmente jamais.

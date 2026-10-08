@@ -1,6 +1,6 @@
 # Consignes agents et preuves de validation
 
-Procédure à valider par Mamat avant commit.
+Procédure validée par Mamat le 8 octobre 2026.
 
 ## Sources et miroirs
 
@@ -24,6 +24,11 @@ Aucune adaptation métier implicite n'est permise.
 ## Boucle de travail
 
 Depuis la racine, avec Node installé :
+
+Pour une reprise de livraison ou d'environnement, commencer aussi par
+l'[état des environnements](etat-environnements.md) et ses preuves datées.
+Le document désigne des observations ; il ne dispense pas de vérifier la
+cible et l'artefact réellement chargé avant une action qui en dépend.
 
 1. `node scripts/agents/doctor.mjs` : relever branche, SHA, worktrees,
    modifications, runtime, métadonnées pnpm, miroirs et fichiers d'environnement.
@@ -49,6 +54,14 @@ sur toute divergence. Les profils de contexte restent des inventaires :
 [recherche ciblée et profils](../context-profiles.md).
 
 ## Preuves de test
+
+Le diagnostic worktree affiche au plus dix exemples de changement par défaut,
+avec `statusTotal` et `statusTruncated`. `doctor.mjs --verbose` affiche le détail.
+`inspectionComplete: false` signale au moins un worktree inaccessible. Un
+succès mesure les miroirs et la version pnpm installée, pas la propreté ni
+l'accessibilité complète des checkouts. Les tests transverses de l'outillage
+agents sont proposés explicitement par `context`, puis complétés par ses
+heuristiques ; une liste vide ne prouve jamais l'absence de couverture.
 
 `node scripts/agents/test.mjs packages/utils/src/__tests__/idr.test.ts`
 exécute un fichier existant avec le Vitest déjà installé, sans installation.
@@ -76,3 +89,23 @@ comparer les candidats aux fichiers existants et relever les commandes erronées
 les lectures inutiles et les preuves manquantes. SQL n'est pas Vitest ; une
 recherche vide n'est pas une preuve d'absence de tests. Les fichiers non suivis
 non ignorés doivent rester visibles. Ne lancer aucun test cloud pour cette revue.
+
+## Reprise et clôture d'un lot
+
+Le bilan conversationnel indique le résultat, les décisions validées,
+commits/PR, environnement, tests exécutés et ignorés, installations observées,
+limites et travail restant. Rattacher chaque preuve à une date, une cible et
+un SHA ou artefact. Distinguer commit, bundle construit, publication et
+installation ; une étape réussie ne certifie pas la suivante.
+
+Si le bilan mérite une conservation Git, proposer son texte factuel dans
+le document opérationnel concerné, puis obtenir la validation de Mamat avant
+commit. Ne pas enregistrer un plan de session. Les décisions durables passent
+par un ADR validé. Aucun hook n'écrit automatiquement un bilan ou une mémoire.
+
+Une nouvelle session vérifie Git et les sources citées, puis les résultats
+distants avant reprise. Une ancienne mémoire contraire à un fait actuel est
+un indice à revalider ; une décision ADR non implémentée reste du backlog.
+Sans source durable d'une décision verbale, annoncer la limite et demander
+l'information avant l'action dépendante. Un clone ne récupère pas les preuves
+privées, les accès, les artefacts ignorés ou l'historique local du client.

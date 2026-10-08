@@ -1,8 +1,12 @@
 # The Breakery — Description du produit (v1.3.2)
 
-> **Révision** : 2026-07-28 · **Version** : v1.3.2
+> **Révision ciblée** : 2026-10-08 — réseau local, exploitation et hiérarchie.
+> Les autres constats restent ceux de la révision du 2026-07-28 ; ils ne sont
+> pas une recette actuelle des environnements ou appareils.
 
-> **LA référence produit.** Ce document décrit, pour un lecteur non technique (propriétaire, investisseurs, nouveaux employés), ce que fait aujourd'hui le logiciel de The Breakery et ce qui reste à venir. Il fait foi sur le périmètre fonctionnel.
+> Cette référence décrit les capacités du logiciel et les intentions métier.
+> Les ADR fixent les décisions ; le code et le schéma réel établissent les faits.
+> Les installations et observations datées sont dans l'[état des environnements](../runbooks/etat-environnements.md).
 
 ## Historique des versions
 
@@ -26,20 +30,16 @@ Autour de la caisse gravitent trois écrans secondaires :
 - **La tablette de salle** — permet au serveur de prendre la commande directement à table.
 - **L'écran client** — face au client au comptoir, il montre le panier en direct et remercie après paiement.
 
-**Le logiciel fonctionne via internet, avec un filet local.** En temps normal, tous les échanges entre appareils (tablette → caisse, caisse → cuisine, caisse → écran client) passent par la connexion internet du magasin. Quand elle tombe, un **hub local** installé en boutique prend le relais : les appareils continuent de se parler sur le Wi-Fi du magasin, la caisse continue de prendre les commandes **et d'encaisser** — espèces, carte, QRIS, EDC, virement et e-wallets —, et tout se resynchronise au retour d'internet, sans limite de durée de coupure. Le terminal de carte a sa propre connexion mobile et ne dépend pas du Wi-Fi de la boutique ; la caisse ne fait qu'enregistrer le règlement. Seul le paiement par **avoir client** reste impossible hors connexion, son solde ne pouvant être vérifié que par le serveur. Ce mode se **désactive par défaut** et doit être activé volontairement dans les réglages.
+**La caisse utilise le réseau local, avec une base centrale dans le cloud.** Le PC boutique sert les écrans de vente et le relais local ; le back-office est hébergé séparément. Le mode hors ligne exige une application chargée, une session ouverte, un catalogue disponible et le hub joignable. Les paiements hors ligne sont désactivés par défaut ; lorsqu'ils sont autorisés, tous les moyens sauf l'avoir client sont pris en charge, sans limite de durée. Un règlement externe doit réellement aboutir avant son enregistrement. Les opérations attendent ensuite leur transmission au cloud. Les limites de redémarrage, de reprise et de rejeu sont décrites dans le [guide de coupure Internet](../runbooks/pos-internet-outage.md). Le code ne prouve pas une installation ni un essai physique actuel.
 
 **Modèle de stock retenu.** Le stock est suivi en **quantité globale par produit**. La péremption et les pertes se gèrent par **déclaration de perte** (produit périmé, cassé, abîmé). C'est le modèle choisi et assumé, pas une limite temporaire : la gestion fine des lots et des dates de péremption (sortir le plus ancien d'abord, alertes avant péremption) n'est pas au programme.
 
----
-
 ## Module 1 — Connexion & droits d'accès
-
-Chaque employé se connecte avec un code secret personnel et n'accède qu'aux fonctions autorisées par son rôle.
 
 **Aujourd'hui :**
 - Connexion à la caisse et au back-office par un **code secret à 6 chiffres**, personnel à chaque employé.
 - Après **5 erreurs de code, le compte se bloque 15 minutes** ; les tentatives répétées depuis un même point du réseau sont aussi freinées ; chaque tentative (réussie ou non) est enregistrée avec l'heure et l'origine.
-- **5 rôles prédéfinis** : super-administrateur, administrateur, manager, caissier, serveur. Plus de 140 droits répartis en une trentaine de domaines déterminent ce que chaque rôle peut faire.
+- Les rôles et leurs droits déterminent les fonctions accessibles à chaque employé ; leur référentiel courant se vérifie dans la gestion des droits.
 - Les droits sont **recalculés côté serveur à chaque action** : retirer un droit à un rôle prend effet immédiatement sur les opérations sensibles.
 - Un manager (selon ses droits) peut **réinitialiser le code oublié** d'un employé, avec trace écrite.
 - **Désactivation immédiate d'un compte sans perte d'historique** ; un compte désactivé ne peut plus se connecter, et ses sessions en cours sont coupées.
@@ -53,11 +53,7 @@ Chaque employé se connecte avec un code secret personnel et n'accède qu'aux fo
 - Prise d'effet **totalement** immédiate d'un retrait de droits : les contrôles côté serveur sont déjà immédiats, mais l'affichage de l'employé connecté et son jeton d'accès peuvent rester à jour avec un décalage pouvant aller jusqu'à une heure.
 - Blocage (et non simple avertissement) des codes secrets trop faibles.
 
----
-
 ## Module 2 — Caisse : panier & commandes
-
-Le cœur de la vente au comptoir : composer un panier, l'envoyer en cuisine, encaisser.
 
 **Aujourd'hui :**
 - **Aucune vente possible sans session de caisse ouverte** (comptage du fond de caisse à l'ouverture).
@@ -84,8 +80,6 @@ Le cœur de la vente au comptoir : composer un panier, l'envoyer en cuisine, enc
 
 ### Module 2 bis — Suivi des commandes au back-office (page Orders)
 
-Une page du back-office permet au gérant de suivre et gérer toutes les commandes, au-delà de la caisse. *(Cette page n'était pas décrite dans la version précédente ; elle est ajoutée ici.)*
-
 **Aujourd'hui :**
 - Liste de toutes les commandes avec **mise à jour en temps réel** (badge « Live » qui s'éteint si la connexion tombe) et bouton d'actualisation manuelle.
 - **Filtres** par statut, type de service, moyen de paiement, client et plage de dates ; **recherche** par numéro de commande ou nom de client ; chargement progressif par lots (« Charger plus »).
@@ -101,11 +95,7 @@ Une page du back-office permet au gérant de suivre et gérer toutes les command
 - Notification sonore « commande prête » côté back-office.
 - Filtre par vendeur exposé à l'écran, recherche portant sur tout le périmètre.
 
----
-
 ## Module 3 — Encaissement & paiements
-
-La mécanique du paiement : moyens, paiement mixte, partage d'addition.
 
 **Aujourd'hui :**
 - Plusieurs **moyens de paiement** au comptoir (espèces, carte, QRIS, terminal bancaire, virement, avoir client) ; le gérant choisit lesquels sont proposés.
@@ -121,11 +111,7 @@ La mécanique du paiement : moyens, paiement mixte, partage d'addition.
 - Un reçu séparé par convive après une addition partagée.
 - Champ pourboire.
 
----
-
 ## Module 4 — Écran cuisine
-
-Chaque poste de préparation voit ses commandes sur un écran dédié.
 
 **Aujourd'hui :**
 - Chaque **poste** (cuisine, bar, vitrine…) a **son propre écran** et ne voit que ses articles, affectés automatiquement selon la famille du produit ; des filtres permettent d'afficher plusieurs postes sur un même écran.
@@ -143,11 +129,7 @@ Chaque poste de préparation voit ses commandes sur un écran dédié.
 - Affichage des notes et allergies sur le ticket cuisine.
 - Réglages **par poste** (police, disposition, coupure du son).
 
----
-
 ## Module 5 — Catalogue produits & catégories
-
-Le référentiel de tout ce qui se vend et se fabrique.
 
 **Aujourd'hui :**
 - **Fiche produit complète** : prix de vente, prix de gros, coût de revient, photo, unité, seuil d'alerte de stock, suivi de stock ou fabrication à la demande.
@@ -168,11 +150,7 @@ Le référentiel de tout ce qui se vend et se fabrique.
 - Modification de plusieurs prix en une seule opération.
 - Simulateur affichant le prix final avant de valider.
 
----
-
 ## Module 6 — Stock & inventaire
-
-Le suivi des matières premières, des semi-finis et des produits finis.
 
 **Aujourd'hui :**
 - **Consultation du stock** de tous les produits, avec **alerte visuelle sous le seuil** (seuil réglable produit par produit).
@@ -189,11 +167,7 @@ Le suivi des matières premières, des semi-finis et des produits finis.
 - Alertes automatiques de stock bas envoyées sans avoir à ouvrir l'écran.
 - Alerte de stock sur deux niveaux (orange / rouge) au back-office comme il en existe déjà en vitrine.
 
----
-
 ## Module 7 — Achats & fournisseurs
-
-La chaîne d'approvisionnement : fournisseurs, bons de commande, réceptions.
 
 **Aujourd'hui :**
 - **Répertoire des fournisseurs** avec recherche, coordonnées et conditions de paiement personnalisables (comptant, 7 / 14 / 30 / 60 jours).
@@ -211,11 +185,7 @@ La chaîne d'approvisionnement : fournisseurs, bons de commande, réceptions.
 - Bon de commande officiel en PDF et envoi automatique au fournisseur.
 - Réapprovisionnement pré-rempli automatiquement à partir des alertes de stock.
 
----
-
 ## Module 8 — Clients & fidélité
-
-Le fichier client et le programme de points.
 
 **Aujourd'hui :**
 - **Création rapide d'une fiche client** en caisse (nom + téléphone), recherche instantanée et clients favoris épinglés.
@@ -232,11 +202,7 @@ Le fichier client et le programme de points.
 - Envoi d'alertes / promotions par WhatsApp ou SMS (aujourd'hui seul l'e-mail fonctionne).
 - Fusion assistée des fiches clients en doublon.
 
----
-
 ## Module 9 — Clients professionnels (B2B)
-
-La vente aux professionnels : commandes, facturation, encours.
 
 **Aujourd'hui :**
 - **Commandes professionnelles** avec application automatique du **prix négocié** du client (le prix saisi manuellement n'est jamais celui facturé — seul le prix validé par le système compte).
@@ -254,11 +220,7 @@ La vente aux professionnels : commandes, facturation, encours.
 - Étape de devis avant la commande ferme.
 - Garde-fou empêchant un commercial de valider lui-même sa propre grosse commande.
 
----
-
 ## Module 10 — Comptabilité en partie double
-
-La comptabilité complète, alimentée automatiquement par l'activité.
 
 **Aujourd'hui :**
 - **Plan de comptes** (comptes activables / désactivables) et **journal de toutes les écritures** consultable.
@@ -276,11 +238,7 @@ La comptabilité complète, alimentée automatiquement par l'activité.
 - Un vrai bouton « PB1 déclarée » qui gèle automatiquement la période.
 - Check-list guidée de clôture mensuelle.
 
----
-
 ## Module 11 — Dépenses
-
-La saisie et la validation des dépenses de l'entreprise.
 
 **Aujourd'hui :**
 - **Saisie rapide** d'une dépense en moins d'une minute (montant, catégorie, fournisseur, mode de paiement, date) avec **photo du justificatif** et statut brouillon.
@@ -297,11 +255,7 @@ La saisie et la validation des dépenses de l'entreprise.
 - Budget par catégorie avec alerte de dépassement.
 - Lecture automatique des factures photographiées.
 
----
-
 ## Module 12 — Caisse physique & sessions
-
-L'ouverture, la tenue et la clôture du tiroir-caisse.
 
 **Aujourd'hui :**
 - **Ouverture de session** par code, avec saisie du fond de caisse.
@@ -320,11 +274,7 @@ L'ouverture, la tenue et la clôture du tiroir-caisse.
 - Suivi intégré du dépôt en banque (tiroir → coffre → banque).
 - Archivage garantissant l'immutabilité sur les **dix ans** exigés par la loi indonésienne (le PDF est archivé aujourd'hui ; le mécanisme d'immutabilité longue durée reste à outiller).
 
----
-
 ## Module 13 — Promotions & remises
-
-La création et l'application des offres commerciales.
 
 **Aujourd'hui :**
 - **Création de promotions** : pourcentage, montant fixe, « 2 achetés = 1 offert », produit offert — avec conditions (seuil d'achat, **jours et horaires**, dates de validité).
@@ -341,11 +291,7 @@ La création et l'application des offres commerciales.
 - Promotions ciblées par segment de clientèle (VIP, nouveaux clients).
 - Suggestion au vendeur pour déclencher une offre (« ajoutez un article pour l'obtenir »).
 
----
-
 ## Module 14 — Rapports & analyses
-
-Le pilotage chiffré de l'activité.
 
 **Aujourd'hui :**
 - **Plus de 30 rapports** classés par thème (ventes, stock, achats, finance, opérations, marketing, audit), accessibles depuis un tableau centralisé.
@@ -362,11 +308,7 @@ Le pilotage chiffré de l'activité.
 - Comparaison avec la période précédente généralisée à tous les rapports (limitée aujourd'hui à trois pages).
 - Envoi automatique par e-mail des rapports clés.
 
----
-
 ## Module 15 — Production & recettes
-
-La fabrication maison : recettes, fournées, rendement.
 
 **Aujourd'hui :**
 - **Fiche technique par produit** (ingrédients, quantités, pourcentages) avec **coût matière et marge calculés en direct**.
@@ -388,11 +330,7 @@ La fabrication maison : recettes, fournées, rendement.
 - Coût figé au moment de la vente (plutôt que le coût moyen courant).
 - Prévision de production selon les tendances.
 
----
-
 ## Module 16 — Écran côté client
-
-L'écran tourné vers le client au comptoir.
 
 **Aujourd'hui :**
 - Écran dédié face au client, mis en service par un **code d'appairage** (pas besoin d'un code employé).
@@ -407,11 +345,7 @@ L'écran tourné vers le client au comptoir.
 - Miroir du panier fonctionnant même quand l'écran client est un appareil **séparé** de la caisse.
 - Rotation de visuels ou de promotions en mode veille.
 
----
-
 ## Module 17 — Commande sur tablette
-
-La prise de commande en salle par le personnel.
 
 **Aujourd'hui :**
 - Le serveur **s'identifie avec son propre code**, choisit la **table sur un plan de salle en temps réel**, et compose la commande sur une interface tactile.
@@ -429,8 +363,6 @@ La prise de commande en salle par le personnel.
 - Prise de commande **sans connexion**, avec rattrapage automatique au retour du réseau.
 - Menus / formules composés directement sur tablette.
 
----
-
 ## Module 18 — Application mobile
 
 **Statut : ce module entier est reporté à un chantier futur — rien de dédié n'existe encore.**
@@ -444,8 +376,6 @@ La prise de commande en salle par le personnel.
 - Une véritable application téléphone dédiée, installable (Android d'abord, iPhone envisagé ensuite).
 - Indicateur honnête de qualité réseau et retour tactile (vibrations).
 - Notifications reçues même application fermée (« commande prête », « stock bas ») et scan de codes-barres par l'appareil photo pour les réceptions de stock.
-
----
 
 ## Module 19 — Réglages & configuration
 
@@ -466,14 +396,10 @@ comme actif a un **effet réel vérifié** dans l'application.
 - **Propagation en temps réel des réglages** (décision ADR-006) : un changement s'appliquera aux caisses et écrans en quelques secondes, sans attendre leur prochain rafraîchissement.
 - **Option globale « taxe incluse » rendue effective** (décision ADR-006) : un réglage boutique définira le comportement par défaut, articulé avec le réglage existant produit par produit — précaution particulière car le calcul des ventes est concerné.
 - **Réglages réorganisés par fonctionnalité en sous-menus** (décision ADR-006) : chaque module (caisse, cuisine, paiements, impression…) aura son groupe de réglages clairement identifié dans le menu.
-- **Pages « réseau local » et « appareils réseau »** (décision ADR-006) : enregistrement de chaque appareil (caisse, écran cuisine, écran client, tablette, imprimante) avec signe de vie, et un **système hub local** pour que les appareils continuent de communiquer entre eux même si internet tombe — chantier d'architecture majeur, à spécifier avant développement.
+- **Pages « réseau local » et « appareils réseau »** : achever les intentions d'ADR-006 sur la gestion des appareils et leur signe de vie. Le hub existe dans le code ; les gestes restant à livrer et la recette physique se vérifient séparément, sans présenter ce socle comme un développement encore à commencer.
 - **Six réglages retenus** (décision ADR-006) : horaires d'ouverture (pour repérer les ventes hors horaire dans les rapports), politique des codes PIN réglable (blocage/expiration déjà actifs, à exposer dans les réglages), moyens de paiement enrichis (ordre, portefeuilles électroniques individuels, frais), comportement cuisine réglable (envoi automatique à l'écran cuisine, impression du ticket cuisine, verrouillage des articles envoyés), écran dédié à l'historique des modifications de réglages, et plan de salle visuel (glisser-déposer des tables).
 
----
-
 ## Module 20 — Gestion des employés & droits
-
-L'administration des comptes et la lecture des droits.
 
 **Aujourd'hui :**
 - **Gestion complète des comptes** : création, modification, désactivation, changement de rôle, réinitialisation de code.
@@ -491,16 +417,12 @@ L'administration des comptes et la lecture des droits.
 - Bouton autonome pour couper immédiatement une session en cours.
 - Réactivation d'un compte supprimé (aujourd'hui la suppression est définitive à l'écran).
 
----
-
 ## Module 21 — Réseau local (postes & imprimantes)
 
-La façon dont les appareils communiquent et impriment.
-
 **Aujourd'hui :**
-- **Toutes les communications** entre appareils (tablette → caisse, caisse → cuisine, commandes → écran client) passent par la **connexion internet** du magasin.
-- L'**impression des tickets** se fait **directement** de la caisse vers le boîtier d'impression de chaque poste, sans file d'attente intermédiaire.
-- Si une imprimante ne répond pas, **la commande n'est jamais perdue** : elle reste visible en caisse et à l'écran cuisine, avec un message d'avertissement honnête — le ticket papier, lui, ne repart pas tout seul.
+- Le PC boutique sert les écrans de vente et le relais local ; Supabase reste la base centrale quand le cloud est disponible.
+- Le print-bridge porte les échanges LAN et les imprimantes. Une panne WAN ne signifie pas une panne du LAN ou du hub ; une panne du PC serveur reste bloquante.
+- Un défaut d'impression ne prouve pas un échec de commande. Conserver les opérations et vérifier leur état avant de les ressaisir ; les conditions de continuité sont dans le [guide de coupure](../runbooks/pos-internet-outage.md).
 - Les **appareils enregistrés** (caisses, tablettes, imprimantes) restent connus du système après un redémarrage.
 - Une **page de gestion au back-office** montre les appareils connectés et depuis quand ils ont **donné signe de vie**.
 - L'**adresse de l'imprimante** utilisée peut être changée poste par poste, sans redémarrage.
@@ -509,13 +431,9 @@ La façon dont les appareils communiquent et impriment.
 - Bouton pour **relancer manuellement** un ticket qui n'a pas pu s'imprimer.
 - Tableau de bord de diagnostic réseau et test d'impression par imprimante.
 - Correction d'une fausse alerte « appareil hors ligne ».
-- **Système hub + réseau local** (décision ADR-006) : les appareils du magasin continueront de **communiquer entre eux même sans internet** (aujourd'hui, sans internet, seule l'impression directe continue), avec resynchronisation vers le cloud au retour de la connexion. Les pages de gestion correspondantes (appareils enregistrés, signe de vie, diagnostic) vivront dans les réglages (voir Module 19).
-
----
+- Achever les intentions de gestion réseau des réglages (voir Module 19) et éprouver les parcours sur le matériel réel. Le hub et le mode hors ligne existent ; leur présence dans le code ne certifie pas la recette boutique.
 
 ## Module 22 — Charte graphique & cohérence visuelle
-
-L'identité visuelle et la qualité d'affichage.
 
 **Aujourd'hui :**
 - Une **bibliothèque unique de composants** (boutons, cartes, fenêtres, tableaux…) garantit un rendu cohérent sur toute la caisse et tout le back-office.
@@ -532,11 +450,7 @@ L'identité visuelle et la qualité d'affichage.
 - Annonces vocales pour les lecteurs d'écran lors des mises à jour en direct.
 - Illustrations de marque pour les écrans vides ou d'erreur.
 
----
-
 ## Module 23 — Qualité & tests
-
-Les garde-fous automatiques qui protègent le logiciel.
 
 **Aujourd'hui :**
 - **Chaque modification est vérifiée automatiquement** (style, tests, compilation) avant d'être acceptée ; une modification cassée est bloquée.
@@ -551,30 +465,22 @@ Les garde-fous automatiques qui protègent le logiciel.
 - Tests visuels par comparaison de captures d'écran.
 - Jeux de données de test mutualisés et suivi de performance avec alertes.
 
----
-
 ## Module 24 — Mises à jour & exploitation
 
-La mise en ligne, la surveillance et la reprise après incident.
-
 **Aujourd'hui :**
-- Un **manuel écrit de reprise après incident** couvre six scénarios (perte de connexion, restauration de la base, panne d'un service clé, annulation d'une mauvaise mise à jour, panne d'une caisse, bourrage imprimante) avec des délais cibles.
+- Les [runbooks](../runbooks/) décrivent les procédures et leurs réserves. Une procédure historique ne prouve ni sa conformité actuelle ni une restauration réussie.
 - Un **outil de remontée automatique des erreurs** est **déjà intégré** à la caisse et au back-office, **prêt à s'activer** dès qu'un compte de surveillance sera branché (pas encore activé).
-- Un **contrôle qualité automatique** empêche fiablement une version cassée d'être mise en ligne.
-- Une **chaîne de livraison automatisée** vers un environnement d'essai est écrite ; l'environnement d'essai officiel est **l'environnement de développement actuel**, et les mises en ligne se font aujourd'hui par l'équipe. Il **n'existe pas encore d'environnement de production dédié** : tout tourne sur l'environnement de développement / test.
+- La CI contrôle le code et la gouvernance sur un SHA identifié ; ses résultats ne prouvent pas une installation ni l'absence de tout défaut.
+- La publication BO dispose d'un workflow manuel avec précontrôle et manifeste. Le staging reste arrêté avant déploiement. Les cibles et publications observées sont dans l'[état des environnements](../runbooks/etat-environnements.md) et le [bilan V3](../runbooks/production-v3-cutover.md).
 
 **À venir :**
 - Provisionner l'environnement d'essai hébergé (comptes, accès) pour une chaîne automatisée de bout en bout.
-- Définir et construire le **véritable environnement de production** du magasin, avec le plan de bascule.
+- Terminer la préparation et la recette de bascule selon le [runbook V3](../runbooks/production-v3-cutover.md), sans confondre publication BO et ouverture réelle de la boutique.
 - Réaliser et chronométrer un vrai **exercice de restauration** de sauvegarde, puis le répéter chaque trimestre.
 - Activer la surveillance des erreurs et l'étendre côté serveur.
 - Notes de version automatiques.
 
----
-
 ## Module 25 — Sécurité
-
-La protection des données et des opérations sensibles.
 
 **Aujourd'hui :**
 - L'accès aux données clients et de vente **sans être connecté est totalement bloqué** ; toute nouvelle donnée ajoutée au système est **fermée par défaut**.

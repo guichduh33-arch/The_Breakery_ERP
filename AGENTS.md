@@ -103,9 +103,17 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 - **Au début d'une session**, consulter les souvenirs pertinents si la
   mémoire du client est activée et accessible. Retrouver les sources citées,
   vérifier la branche et l'état réel du chantier avant de reprendre.
-- **À la clôture d'un lot**, restituer dans la conversation les décisions
-  validées, commits/PR, environnement, tests exécutés, limites et travail
-  restant. Ce bilan fournit du contexte à la génération automatique de
+- **Pour reprendre une livraison ou intervenir sur un environnement**, lire
+  `docs/runbooks/etat-environnements.md` et les preuves qu'il référence.
+  Une observation datée ne prouve pas l'état courant : recontrôler la cible
+  et l'artefact chargé avant l'action qui en dépend. Les bilans factuels peuvent
+  vivre dans Git après validation documentaire ; les plans restent en conversation.
+- **À la clôture d'un lot**, restituer dans la conversation le résultat,
+  les décisions validées, commits/PR, environnement, tests exécutés et ignorés,
+  installations observées, limites et travail restant. Les preuves se rattachent
+  à leur date, cible et SHA ou artefact ; une fusion n'est pas une installation.
+  La conservation documentaire suit la validation de Mamat, sans écriture
+  automatique par un hook. Ce bilan fournit du contexte à la génération automatique de
   mémoire lorsque le client l'autorise ; il n'est pas un plan en fichier.
 - **Ne jamais annoncer une mémorisation non vérifiée.** La génération native
   peut être différée ou désactivée. Si aucun outil ne permet de confirmer
@@ -217,7 +225,20 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   `ikcyvlovptebroadgtvd` (`the-breakery-v3-dev`, ap-southeast-1). Migrations via
   MCP `apply_migration`, SQL via `execute_sql`, types via `generate_typescript_types`.
   NE JAMAIS lancer `pnpm db:reset`, `supabase start`, `supabase db reset` (Docker requis,
-  échouera). Prod `abjabuniwkqpfsenxljp` = V2 monolith, lignée de migrations incompatible.
+  échouera). Production V3 : `yjhhhmjgsmyzyymvixot` (`the-breakery-v3-prod`,
+  Singapour). Ancienne production V2 : `abjabuniwkqpfsenxljp`, monolithe dont la
+  lignée de migrations est incompatible avec V3. Ces identités ne prouvent ni
+  une bascule des applications ni l'autorisation d'écrire en production.
+- **Avant une installation ou un essai POS sur appareil, prouver la cible.**
+  Identifier l'environnement demandé et vérifier la référence Supabase dans le
+  bundle exact à installer, puis dans l'application réellement chargée. Restituer
+  la cible et l'identifiant du bundle avant les interactions de test. Si les
+  cibles diffèrent, arrêter l'installation ou les essais qui en dépendent et
+  signaler l'écart. Une configuration locale, un souvenir ou un catalogue aux
+  mêmes identifiants ne prouve pas la cible du terminal. Une demande concernant
+  le catalogue de production se vérifie en lecture seule sur la production V3 ;
+  les constats dev ne s'y transposent pas. Aucun test créant une commande ou un
+  paiement, aucune migration ni écriture de production sans autorisation explicite.
 - **PIN auth fetch wrapper** — l'EF `auth-verify-pin` émet des JWT HS256 que GoTrue
   (ES256) ne valide pas par le header par défaut. Le client Supabase utilise un fetch
   wrapper qui injecte le PIN JWT via `setSupabaseAccessToken` (`packages/supabase`).

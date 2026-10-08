@@ -6,12 +6,10 @@ ANTHROPIC_BASE_URL = "http://127.0.0.1:8787"
 ENABLE_TOOL_SEARCH = "true"
 
 [mcp_servers.headroom]
-command = "cmd"
+command = "uvx"
 args = [
-    "/c",
-    "uvx",
     "--from",
-    "headroom-ai[mcp]",
+    "headroom-ai[mcp]==0.37.0",
     "headroom",
     "mcp",
     "serve",
