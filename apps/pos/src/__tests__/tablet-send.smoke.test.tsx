@@ -9,6 +9,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { TabletOrderPage } from '@/features/tablet/TabletOrderPage';
 
 const mockNavigate = vi.fn();
+// Ce smoke couvre l'envoi RPC ; le papier est vérifié par les tests thermiques.
+vi.mock('@/features/tablet/hooks/printTabletTickets', () => ({
+  printTabletTickets: vi.fn().mockResolvedValue(true),
+}));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
