@@ -1,6 +1,9 @@
 # État des environnements et reprise factuelle
 
-Relevé du 8 octobre 2026 (UTC+8), validé par Mamat.
+Relevé initial du 8 octobre 2026 (UTC+8), validé par Mamat.
+Le [complément du lot 1](#complément-du-8-octobre-2026--lot-1-de-préparation-production)
+est validé par Mamat le 9 octobre 2026 ; les sections hors complément conservent
+les limites du relevé initial et ne sont pas réécrites en état actuel.
 
 ## Usage et sources
 
@@ -21,6 +24,91 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Rapporté par une preuve datée | Constat d'un autre relevé ; non relu sur la surface réelle |
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
+
+## Complément du 8 octobre 2026 — lot 1 de préparation production
+
+Statut documentaire : validé par Mamat le 9 octobre 2026.
+Le lot termine un inventaire en lecture seule, pas une recette de production.
+Les inconnues ci-dessous restent des conditions de départ non satisfaites.
+Aucun démarrage applicatif, reboot, déploiement, installation sur appareil,
+restauration ou essai créant une vente ou un paiement n'a été effectué.
+
+### Sauvegardes et conservation
+
+Observé directement dans le dashboard du projet `yjhhhmjgsmyzyymvixot` :
+sept sauvegardes physiques quotidiennes du 1er au 7 octobre UTC, la dernière
+au 8 octobre à 00:04:42 UTC+8. Le PITR est désactivé. Le dashboard précise que
+les objets Storage sont exclus ; aucune sauvegarde n'a été téléchargée.
+La liste visible ne prouve ni une restauration, ni la conservation contractuelle.
+
+La restauration métier sur cible isolée, la copie externe des objets Storage,
+des secrets, des configurations boutique et des files offline restent inconnues.
+Les fichiers présents sur le PC ne prouvent pas une sauvegarde indépendante.
+Le responsable et l'emplacement de conservation externe ne sont pas établis.
+
+### Installations et exécution observées
+
+| Composant | Observation directe datée du 8 octobre | Limite |
+|---|---|---|
+| POS conservé sur PC | `C:/BreakeryV3/releases/1fc54978/pos` : 122 fichiers conformes au manifeste, aucun fichier supplémentaire ; cible compilée production | SHA `1fc549787c0ae1b735553282747ce458c65b2815` déclaré par le manifeste ; provenance de compilation et application chargée non certifiées |
+| Bridge corrigé conservé | Release `bridge-prod-printer-presence-20261008`, empreinte du `server.cjs` relevée | SHA source et intégrité complète des dépendances inconnus ; processus non observé |
+| PC `Pos`, `192.168.1.92` | À 21:35:49 UTC+8, aucun processus Node ni écoute sur 3001/3443 ; runtime Node installé 24.13.1 | Observation ponctuelle ; pas de preuve TLS servi, de service actif ou de reprise après reboot |
+| Démarrage Cashier | Raccourci vers `Desktop/breakery-caisse/demarrer-caisse.cmd`, port 3001 et dossier `pos-dist` de ce répertoire | Autre bundle que la release vérifiée ; asset d'entrée production, anciens assets dev présents ; leur présence ne prouve pas leur chargement |
+| Samsung SM-X205 | ADB USB : POS 1.5/code 6, mise à jour rapportée 00:45:14 ; APK exact lu et ciblant production | Aucun processus POS détecté ; WebView/cache chargé et SHA source inconnus |
+| CS30 Android 11 | ADB USB : POS 1.5/code 6, mise à jour rapportée 00:50:40 ; même APK que la Samsung | Aucun processus POS détecté ; WebView/cache chargé et SHA source inconnus |
+| KDS et écran client | Aucune identité de bundle chargé établie sur les surfaces accessibles | Recette physique et versions chargées inconnues |
+
+SHA-256 commun aux deux APK installés :
+`e0814960e7d0ad856231aa3001671793c7b49738a358f11c3db73b81c73f6ca0`.
+Les copies privées sont conservées sous `.release-manifests/android-delivery-20260930/`,
+dans `installed-samsung-observed-20261008.apk` et `installed-cs30-observed-20261008.apk`.
+Elles diffèrent des APK historiques du 30 septembre ; aucun SHA source ne leur
+est attribué par déduction. L'ADB local a été démarré pour la lecture USB.
+
+Certificat public sur disque pour `pos.the-breakery.com` : expiration le
+29 décembre 2026 à 10:48:45 UTC+8. La tâche `Breakery V3 TLS Renewal` rapporte
+un résultat 0 le 8 octobre à 03:08:46, selon l'horloge du PC distant.
+Cela ne certifie ni le certificat servi, ni le prochain renouvellement.
+
+### Écarts cloud et limites de livraison
+
+Relecture directe à 21:38:33 UTC+8 sur production : `business_config` ne contient
+aucune ligne, commandes et paiements sont à zéro. Les réglages métier ne sont
+donc pas réputés initialisés ; l'ancien constat de paiements offline désactivés
+ne vaut pas preuve d'une configuration métier effective.
+L'inventaire des Edge Functions expose sept fonctions actives, dont le heartbeat,
+mais pas `process-payment`, `refund-order`, `void-order` ou `cancel-unpaid-order`.
+
+Rapporté par la conversation du 8 octobre : comparaison de 380 signatures SQL
+applicatives sur dev, production et répétition, avec égalité des corps après
+normalisation des seuls retours à la ligne. Ce résultat ne certifie pas les
+données, les Edge Functions ou un parcours métier. Les sorties intégrales de
+cette comparaison ne sont pas disponibles dans le justificatif local de reprise.
+Le BO relevé sur `23fbbf0903c3ec136f0e63d9e6d3f6521c567c08` et le candidat Git
+`17b2ea37112b277bcb69f521efff9e76dd27aaa8` restent des identités distinctes.
+La preuve pgTAP du candidat n'est pas établie par ce lot ; aucune suite cloud
+n'a été déclenchée pour compléter ce contrôle.
+
+### Références de preuve et clôture
+
+Les observations boutique, ADB et dashboard sont transcrites dans le justificatif
+privé `.release-manifests/production-candidate-20261005/lot1-backups-installation-observed-20261008.json`.
+La relecture cloud finale est conservée dans `lot1-production-final-observed-20261008.json`
+du même dossier. Leurs empreintes sont restituées dans le bilan conversationnel.
+Ces fichiers ignorés ne sont ni une sauvegarde DB, ni un export des captures,
+ni un contenu transporté par un clone propre. Les observations brutes de l'UI
+et de l'ADB restent dans la conversation ; les secrets et données clients ne
+sont pas recopiés dans ce document.
+
+L'inventaire est terminé avec réserves explicites. Les corrections de configuration,
+le déploiement des fonctions manquantes et la répétition physique restent des
+travaux ultérieurs exigeant leur propre périmètre et autorisation.
+Les contrôles locaux du 8 octobre ont réussi : liens relatifs, miroirs agents,
+garde des références documentaires interdites et `git diff --check`.
+La garde signale une baseline préexistante trop permissive dans `kiosk-issue-jwt`,
+laissée hors périmètre. Aucun test applicatif, pgTAP ou E2E n'a été exécuté.
+La conservation du complément sur `docs/production-lot1-observations` est validée,
+sans PR ni push ; la validation documentaire reste distincte d'une permission de bascule.
 
 ## Développement et livraison POS
 
