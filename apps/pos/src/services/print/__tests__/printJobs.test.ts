@@ -6,6 +6,23 @@ vi.mock('../printService', () => ({ printStationTicket: send }));
 const ticket: StationTicketPayload = { kind: 'prep', role: 'kitchen', order_number: 'P-001', created_at: '2026-09-10T00:00:00Z', server_name: 'Cashier', items: [{ name: 'Coffee', quantity: 1 }] };
 beforeEach(() => { usePrintJobs.setState({ jobs: [] }); send.mockReset(); });
 describe('print acknowledgement and duplicates', () => {
+  it('never automatically repeats a pending, unknown or acknowledged tablet job', async () => {
+    const target = { ip_address: '192.168.1.13', port: 9100 };
+    let resolve!: (value: { success: boolean }) => void;
+    send.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    const first = runPrintJob(ticket, target, 1, undefined, 'tablet:uuid:kitchen');
+    expect((await runPrintJob(ticket, target, 1, undefined, 'tablet:uuid:kitchen')).success).toBe(false);
+    resolve({ success: false });
+    await first;
+    await runPrintJob(ticket, target, 1, undefined, 'tablet:uuid:kitchen');
+    expect(send).toHaveBeenCalledTimes(1);
+    const unknown = usePrintJobs.getState().jobs[0]!;
+    send.mockResolvedValue({ success: true });
+    await runPrintJob(ticket, target, 1, unknown);
+    await runPrintJob(ticket, target, 1, undefined, 'tablet:uuid:kitchen');
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1]?.[1]).toMatchObject({ duplicate: true });
+  });
   it('keeps a failed print and replays only its saved paper payload as a duplicate', async () => {
     const failed = await runPrintJob(ticket, undefined);
     expect(failed.success).toBe(false);

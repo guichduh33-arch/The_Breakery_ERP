@@ -89,6 +89,7 @@ export function TabletOrderPage({
     items.length === 0 && tableNumber === null ? 'floor-plan' : 'menu',
   );
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [printingWarning, setPrintingWarning] = useState<string | null>(null);
 
   const setTableNumber = useTabletCartStore((s) => s.setTableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
@@ -131,6 +132,7 @@ export function TabletOrderPage({
     tableNumber: string | null;
     orderType: 'dine_in' | 'take_out';
     kitchenPublished: boolean;
+    printingConfirmed: boolean;
   } | null>(null);
   useEffect(() => {
     if (items.length > 0) setOfflineSent(null);
@@ -206,6 +208,8 @@ export function TabletOrderPage({
       let justSentOrderId: string | null = null;
       let offlineLocalNumber: string | null = null;
       let kitchenPublished = true;
+      let printingConfirmed = true;
+      let printingError: string | undefined;
       if (onSendOverride) {
         await onSendOverride(userId);
       } else {
@@ -214,27 +218,35 @@ export function TabletOrderPage({
         justSentOrderId = result.orderId;
         offlineLocalNumber = result.localNumber;
         kitchenPublished = result.kitchenPublished !== false;
+        printingConfirmed = result.printingConfirmed !== false;
+        printingError = result.printingError;
       }
       const appendedTo = appendToOrderNumber;
       clearCart();
+      if (!printingConfirmed) {
+        const warning = `${printingError ?? 'Kitchen printing unconfirmed'}. Order saved; do not re-enter this order. Open Printing to check available jobs.`;
+        setPrintingWarning(warning);
+        toast.error(warning, { duration: 10000 });
+      }
       // Spec 006x lot 4 — envoi parti par le bus LAN : pas de commande cloud
       // à afficher dans la liste, on reste sur la prise de commande.
       if (offlineLocalNumber !== null) {
-        if (kitchenPublished) toast.success(`Order ${offlineLocalNumber} sent to kitchen (offline)`);
+        if (kitchenPublished && printingConfirmed) toast.success(`Order ${offlineLocalNumber} sent to kitchen (offline)`);
+        else if (kitchenPublished) toast.info(`Order ${offlineLocalNumber} saved offline — kitchen printing unconfirmed`);
         else toast.error(`Order ${offlineLocalNumber} saved on this device — kitchen delivery unconfirmed. Check with the cashier; do not re-enter it.`);
         // Le toast disparaît en 4 s ; la bande, elle, reste comme preuve d'envoi
         // jusqu'à la commande suivante — pas de doute, donc pas de doublon.
-        setOfflineSent({ localNumber: offlineLocalNumber, tableNumber, orderType, kitchenPublished });
+        setOfflineSent({ localNumber: offlineLocalNumber, tableNumber, orderType, kitchenPublished, printingConfirmed });
         return;
       }
       if (appendedTo !== null) {
         // On reste sur la prise de commande : la serveuse enchaîne souvent une
         // autre table, et la commande complétée vit déjà dans son historique.
-        toast.success(`Added to order ${appendedTo}`);
+        if (printingConfirmed) toast.success(`Added to order ${appendedTo}`);
         return;
       }
-      toast.success('Order sent to kitchen');
-      void navigate(redirectAfterSend, { state: { justSentOrderId } });
+      if (printingConfirmed) toast.success('Order sent to kitchen');
+      if (printingConfirmed) void navigate(redirectAfterSend, { state: { justSentOrderId } });
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Failed to send order';
       // Critique 2026-08-24 (heuristique 9) — le message serveur brut était
@@ -344,6 +356,10 @@ export function TabletOrderPage({
 
   return (
     <div className="flex flex-col h-full" data-testid="tablet-order-page">
+      {printingWarning && <div role="alert" className="p-3 bg-warning-soft text-warning flex items-center justify-between gap-3">
+        <span>{printingWarning}</span>
+        <Button variant="ghost" size="sm" onClick={() => setPrintingWarning(null)}>Dismiss</Button>
+      </div>}
       {pendingSend && <div role="status" className="p-3 bg-warning-soft text-warning">
         Confirmation pending. This order is preserved; retry confirmation before changing it.
       </div>}
@@ -360,7 +376,7 @@ export function TabletOrderPage({
           <span className="flex items-center gap-2 min-w-0 text-sm font-semibold">
             <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />
             <span className="min-w-0">
-              Order {offlineSent.localNumber} {offlineSent.kitchenPublished ? 'sent to the kitchen offline' : 'saved on this device — kitchen delivery unconfirmed'}
+              Order {offlineSent.localNumber} {offlineSent.kitchenPublished && offlineSent.printingConfirmed ? 'sent to the kitchen offline' : 'saved on this device — kitchen delivery unconfirmed'}
               {offlineSent.tableNumber ? ` · Table ${offlineSent.tableNumber}` : ''} — syncs
               when you are back online. {!offlineSent.kitchenPublished && 'Check with the cashier; do not re-enter this order.'}
             </span>

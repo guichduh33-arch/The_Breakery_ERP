@@ -35,12 +35,13 @@ function resolveStations(row: Row): DispatchStation[] {
   return single === 'none' ? [] : [single];
 }
 
-async function fetchStationMap(): Promise<Record<string, DispatchStation[]>> {
-  const res = await supabase
+async function fetchStationMap({ signal }: { signal?: AbortSignal } = {}): Promise<Record<string, DispatchStation[]>> {
+  const query = supabase
     .from('products')
     .select('id, dispatch_stations, categories(dispatch_station)')
     .eq('is_active', true)
     .is('deleted_at', null);
+  const res = await (signal ? query.abortSignal(signal) : query);
   if (res.error) throw res.error;
   const map: Record<string, DispatchStation[]> = {};
   for (const row of (res.data ?? []) as Row[]) {
@@ -51,10 +52,18 @@ async function fetchStationMap(): Promise<Record<string, DispatchStation[]>> {
 
 export function useStationMap() {
   const enabled = useSaleQueryEnabled();
-  return useQuery({ enabled, queryKey: STATION_MAP_KEY, queryFn: fetchStationMap, staleTime: 60_000 });
+  return useQuery({ enabled, queryKey: STATION_MAP_KEY, queryFn: () => fetchStationMap(), staleTime: 60_000 });
 }
 
 /** Lecture cache au moment du fire (mutation) — même filet que S43 (cache live, pas closure). */
-export async function getStationMap(qc: QueryClient): Promise<Record<string, DispatchStation[]>> {
-  return qc.ensureQueryData({ queryKey: STATION_MAP_KEY, queryFn: fetchStationMap, staleTime: 60_000 });
+export async function getStationMap(qc: QueryClient, refresh = false): Promise<Record<string, DispatchStation[]>> {
+  if (refresh) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      return await qc.fetchQuery({ queryKey: STATION_MAP_KEY,
+        queryFn: () => fetchStationMap({ signal: controller.signal }), staleTime: 0, retry: false, networkMode: 'always' });
+    } finally { clearTimeout(timer); }
+  }
+  return qc.ensureQueryData({ queryKey: STATION_MAP_KEY, queryFn: () => fetchStationMap(), staleTime: 60_000 });
 }

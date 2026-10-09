@@ -27,6 +27,8 @@ import { useAuthStore } from '@/stores/authStore';
 
 // ── Hoisted mocks ────────────────────────────────────────────────────
 const mockNavigate = vi.fn();
+const printMock = vi.hoisted(() => vi.fn());
+vi.mock('../hooks/printTabletTickets', () => ({ printTabletTickets: printMock }));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
@@ -125,6 +127,7 @@ const TABLES: RestaurantTable[] = [
 describe('TabletOrderPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    printMock.mockResolvedValue(true);
     mockNavigate.mockReset();
     supaMocks.rpc.mockReturnValue(rpcResult('new-order-uuid'));
     useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in', pendingSend: null });

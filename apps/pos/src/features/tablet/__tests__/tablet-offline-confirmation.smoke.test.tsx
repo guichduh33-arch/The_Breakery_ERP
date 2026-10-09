@@ -52,6 +52,7 @@ vi.mock('@/features/lan/offlineMode', () => ({
 const enqueueIntentMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock('@/features/lan/offlineOutbox', () => ({
   enqueueIntent: enqueueIntentMock,
+  getPendingIntents: () => Promise.resolve([]),
   nextIntentSeq: () => 1,
 }));
 const publishMock = vi.hoisted(() => vi.fn());
@@ -138,7 +139,9 @@ describe('confirmation d’envoi hors-ligne (persistante)', () => {
 
     // Le toast immédiat reste (feedback instantané).
     const { toast } = await import('sonner');
-    expect(toast.success).toHaveBeenCalledWith('Order L-1 sent to kitchen (offline)');
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.info).toHaveBeenCalledWith('Order L-1 saved offline — kitchen printing unconfirmed');
+    expect(screen.getByRole('alert')).toHaveTextContent('do not re-enter this order');
 
     // Le panier a bien été vidé — mais la bande, elle, reste affichée.
     expect(useTabletCartStore.getState().items).toHaveLength(0);

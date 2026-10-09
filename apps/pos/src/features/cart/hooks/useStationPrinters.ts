@@ -11,7 +11,7 @@
 //   const printers = useStationPrinters();
 //   const kitchen = printers.data?.get('kitchen');
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { PrinterRole } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 
@@ -22,6 +22,7 @@ export interface StationPrinterInfo {
 }
 
 export type StationPrintersMap = Map<PrinterRole, StationPrinterInfo>;
+export const STATION_PRINTERS_KEY = ['station-printers'] as const;
 
 // lan_devices row shape for the columns we need.
 // Using a local interface so we don't depend on the generated types having `capabilities`.
@@ -34,11 +35,7 @@ interface PrinterDeviceRow {
   capabilities: Record<string, unknown> | null;
 }
 
-export function useStationPrinters() {
-  return useQuery<StationPrintersMap, Error>({
-    queryKey: ['station-printers'],
-    staleTime: 1000 * 60 * 5, // 5 min — printer config is semi-static
-    queryFn: async () => {
+export async function fetchStationPrinters(): Promise<StationPrintersMap> {
       const { data, error } = await supabase
         .from('lan_devices')
         .select('id, name, ip_address, port, capabilities')
@@ -69,6 +66,13 @@ export function useStationPrinters() {
       }
 
       return map;
-    },
-  });
+}
+
+export function useStationPrinters() {
+  return useQuery<StationPrintersMap, Error>({ queryKey: STATION_PRINTERS_KEY,
+    staleTime: 1000 * 60 * 5, queryFn: fetchStationPrinters });
+}
+
+export async function getStationPrinters(qc: QueryClient) {
+  return qc.ensureQueryData({ queryKey: STATION_PRINTERS_KEY, queryFn: fetchStationPrinters });
 }

@@ -21,6 +21,7 @@ vi.mock('@/features/lan/offlineMode', () => ({ isOfflineMode: isOfflineModeMock 
 const enqueueIntentMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock('@/features/lan/offlineOutbox', () => ({
   enqueueIntent: enqueueIntentMock,
+  getPendingIntents: () => Promise.resolve([]),
   nextIntentSeq: () => 1,
 }));
 
