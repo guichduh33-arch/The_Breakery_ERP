@@ -1,10 +1,9 @@
 // apps/pos/src/features/shift/hooks/useShiftCloseSummary.ts
 //
 // POS audit 2026-06-12, lot 3 — preview data for CloseShiftModal.
-// Mirrors the close_shift_v2 formula (20260606000015):
-//   expected = opening_cash + cash_sales + cash_in_total - cash_out_total
-//   cash_sales = SUM(order_payments.amount) for paid orders of the session
-//                with method = 'cash'
+// Miroir de close_shift : ouverture + ventes cash - remboursements cash
+// + entrées - sorties. Les commandes paid et completed comptent ; les miroirs
+// de void sont exclus, leur paiement étant déjà retiré des ventes.
 // The server recomputes everything at close time — this hook only feeds the
 // on-screen preview, so a small drift (e.g. a sale landing mid-count) is
 // harmless: the persisted variance comes from the RPC.
@@ -44,7 +43,7 @@ export function useShiftCloseSummary(sessionId: string | null) {
         .from('order_payments')
         .select('amount, orders!inner(session_id, status)')
         .eq('orders.session_id', sessionId!)
-        // ADR-009 déc. 4 : miroir de close_shift_v8 — une commande servie passe
+        // ADR-009 déc. 4 : une commande servie passe
         // paid→completed, ses paiements comptent toujours dans le tiroir.
         .in('orders.status', ['paid', 'completed'])
         .eq('method', 'cash');
@@ -52,6 +51,19 @@ export function useShiftCloseSummary(sessionId: string | null) {
       const cashSales = (payments ?? []).reduce(
         (sum, p) => sum + Number(p.amount ?? 0),
         0,
+      );
+
+      // Un void est déjà exclu des ventes ; son miroir n'est pas un second retrait.
+      const { data: refunds, error: refundErr } = await supabase
+        .from('refund_payments')
+        .select('amount, refunds!inner(session_id, is_full_void, orders!inner(status))')
+        .eq('refunds.session_id', sessionId!)
+        .eq('refunds.is_full_void', false)
+        .in('refunds.orders.status', ['paid', 'completed'])
+        .eq('method', 'cash');
+      if (refundErr) throw new Error(refundErr.message);
+      const cashRefunds = (refunds ?? []).reduce(
+        (sum, refund) => sum + Number(refund.amount ?? 0), 0,
       );
 
       // Thresholds are display-only — fall back to defaults if the config row
@@ -75,6 +87,7 @@ export function useShiftCloseSummary(sessionId: string | null) {
       const expectedCash =
         Number(session.opening_cash ?? 0)
         + cashSales
+        - cashRefunds
         + Number(session.cash_in_total ?? 0)
         - Number(session.cash_out_total ?? 0);
 

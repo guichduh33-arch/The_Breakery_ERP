@@ -6686,7 +6686,7 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v8: {
+      close_shift_v9: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number

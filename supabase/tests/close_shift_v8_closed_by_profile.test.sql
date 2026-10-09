@@ -40,7 +40,7 @@ BEGIN
 END $fixture$;
 
 SELECT lives_ok(
-  $$SELECT close_shift_v8('c5720000-0000-0000-0000-0000000000c1'::uuid, 500000)$$,
+  $$SELECT close_shift_v9('c5720000-0000-0000-0000-0000000000c1'::uuid, 500000)$$,
   'T1: user with profile.id <> auth_user_id can close shift (P0 regression)'
 );
 
