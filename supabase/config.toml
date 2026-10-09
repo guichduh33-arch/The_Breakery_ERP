@@ -386,7 +386,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.verify-manager-pin]
-verify_jwt = true
+verify_jwt = false
 
 # Authentification LAN interne : session employé et permission de gestion,
 # secret individuel du terminal, ou secret du hub. Aucun accès anonyme utile.
@@ -416,3 +416,30 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+[functions.refund-order]
+verify_jwt = false
+
+[functions.void-order]
+verify_jwt = false
+
+[functions.cancel-item]
+verify_jwt = false
+
+[functions.cancel-unpaid-order]
+verify_jwt = false
+
+[functions.kiosk-issue-jwt]
+verify_jwt = false
+
+[functions.generate-pdf]
+verify_jwt = true
+
+[functions.generate-zreport-pdf]
+verify_jwt = true
+
+[functions.notification-dispatch]
+verify_jwt = false
+
+[functions.customer-birthday-notify]
+verify_jwt = false
