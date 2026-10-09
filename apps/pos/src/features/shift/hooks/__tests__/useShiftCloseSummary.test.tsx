@@ -1,8 +1,7 @@
 // apps/pos/src/features/shift/hooks/__tests__/useShiftCloseSummary.test.tsx
 //
 // POS audit 2026-06-12 lot 3 — locks the expected-cash preview formula to the
-// close_shift server formula (v7 depuis ADR-009 déc. 4) :
-//   expected = opening_cash + cash_sales(paid|completed, method=cash) + cash_in - cash_out
+// close_shift : ouverture + ventes cash - remboursements cash + entrées - sorties.
 // and the threshold fallback when business_config is unreadable.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -33,6 +32,8 @@ function wrapper({ children }: { children: ReactNode }) {
 function mockTables(opts: {
   session: { opening_cash: number; cash_in_total: number; cash_out_total: number };
   cashPayments: { amount: number }[];
+  cashRefunds?: { amount: number }[];
+  refundError?: { message: string };
   config: {
     shift_variance_threshold_abs: number;
     shift_variance_threshold_pct: number;
@@ -71,6 +72,16 @@ function mockTables(opts: {
         }),
       };
     }
+    if (table === 'refund_payments') {
+      const chain = {
+        eq: vi.fn(() => chain),
+        in: vi.fn(() => chain),
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve({
+          data: opts.cashRefunds ?? [], error: opts.refundError ?? null,
+        }).then(resolve),
+      };
+      return { select: () => chain };
+    }
     throw new Error(`unexpected table ${table}`);
   });
 }
@@ -80,7 +91,23 @@ describe('useShiftCloseSummary', () => {
     vi.clearAllMocks();
   });
 
-  it('computes expected cash with the close_shift_v2 formula', async () => {
+  it('subtracts partial cash refunds from the expected drawer amount', async () => {
+    mockTables({ session: { opening_cash: 0, cash_in_total: 0, cash_out_total: 0 },
+      cashPayments: [{ amount: 22000 }], cashRefunds: [{ amount: 11000 }], config: null });
+    const { result } = renderHook(() => useShiftCloseSummary('session-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.expectedCash).toBe(11000);
+  });
+
+  it('fails closed when refund totals cannot be read', async () => {
+    mockTables({ session: { opening_cash: 0, cash_in_total: 0, cash_out_total: 0 },
+      cashPayments: [{ amount: 22000 }], refundError: { message: 'Refund read denied' }, config: null });
+    const { result } = renderHook(() => useShiftCloseSummary('session-1'), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe('Refund read denied');
+  });
+
+  it('computes expected cash including opening and cash movements', async () => {
     mockTables({
       session: { opening_cash: 200_000, cash_in_total: 50_000, cash_out_total: 30_000 },
       cashPayments: [{ amount: 95_000 }, { amount: 25_000 }],

@@ -277,7 +277,7 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     // ADR-009 déc. 4 — close_shift bumped to v7 (paid|completed readers).
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v8', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v9', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));
@@ -440,7 +440,7 @@ describe('CloseShiftModal', () => {
   });
 
   // Lot B (ADR-006 déc. 9) — the QRIS volet aggregates the e-wallets server-side
-  // (close_shift_v8 bucket), so an e-wallet alone must surface the count field.
+  // (close_shift_v9 bucket), so an e-wallet alone must surface the count field.
   it('shows the QRIS volet when only an e-wallet is enabled', () => {
     mockEnabledMethods.mockReturnValueOnce(new Set(['cash', 'gopay']));
     renderModal();
