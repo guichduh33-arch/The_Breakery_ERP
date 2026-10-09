@@ -7,9 +7,11 @@ import { getTabletSourceCode } from '@/stores/posSettingsStore';
 import { isOfflineMode } from '@/features/lan/offlineMode';
 import { hubBus } from '@/features/lan/hubBusClient';
 import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
-import { enqueueIntent, nextIntentSeq } from '@/features/lan/offlineOutbox';
+import { enqueueIntent, getPendingIntents, nextIntentSeq } from '@/features/lan/offlineOutbox';
 import type { OrderFiredPayload } from '@/features/lan/busTopics';
 import { getStationMap } from '@/features/cart/hooks/useStationMap';
+import { printTabletTickets } from './printTabletTickets';
+import { useAuthStore } from '@/stores/authStore';
 
 interface CreateTabletOrderArgs {
   cart: TabletCart;
@@ -30,6 +32,7 @@ export interface CreateTabletOrderResult {
   /** Numéro local L-… quand offline (affichage toast), null sinon. */
   localNumber: string | null;
   kitchenPublished?: boolean;
+  printingConfirmed?: boolean;
 }
 
 export function useCreateTabletOrder() {
@@ -66,11 +69,7 @@ export function useCreateTabletOrder() {
         throw new Error('append_unavailable_offline');
       }
 
-      // Spec 006x lot 4 — envoi tablette en mode OFFLINE : intention durable
-      // (rejouée vers create_tablet_order, MÊME client_uuid) PUIS publish
-      // order.fired sur le bus — le KDS affiche le ticket sans cloud. Pas de
-      // KOT papier depuis la tablette (comportement online inchangé : c'est
-      // la création DB qui alimente le KDS, l'impression reste côté caisse).
+      // Intention durable avant bus et papier. Le rejeu cloud n'imprime pas.
       if (isOfflineMode() && !forceOnline) {
         const stationByProductId = await getStationMap(queryClient).catch(() => {
           throw new Error('Kitchen routing is unavailable. Reconnect before sending this order.');
@@ -79,10 +78,11 @@ export function useCreateTabletOrder() {
           || !Array.isArray(stationByProductId[item.product_id]))) {
           throw new Error('Kitchen routing is incomplete. Reconnect before sending this order.');
         }
-        const localNumber = nextLocalOrderNumber();
+        const existingIntent = (await getPendingIntents()).find((intent) => intent.kind === 'tablet_order' && intent.id === clientUuid);
+        const localNumber = existingIntent?.local_number ?? nextLocalOrderNumber();
         const firedAt = new Date().toISOString();
 
-        await enqueueIntent({
+        if (!existingIntent) await enqueueIntent({
           kind: 'tablet_order',
           id: clientUuid,
           seq: nextIntentSeq(),
@@ -117,7 +117,9 @@ export function useCreateTabletOrder() {
         try { kitchenPublished = hubBus.publish('order.fired', firedPayload); }
         catch { /* L'intention est déjà durable : ne pas inviter à ressaisir. */ }
 
-        return { orderId: null, localNumber, kitchenPublished };
+        const printingConfirmed = await printTabletTickets(queryClient, cart, clientUuid, localNumber,
+          useAuthStore.getState().user?.full_name ?? 'Staff', false, true);
+        return { orderId: null, localNumber, kitchenPublished, printingConfirmed };
       }
 
       // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
@@ -151,7 +153,16 @@ export function useCreateTabletOrder() {
         ...(!isAppend && tabletSourceCode !== null ? { p_source_code: tabletSourceCode } : {}),
       }).abortSignal(timeoutController.signal);
       if (error) throw Object.assign(new Error(error.message), { details: error });
-      return { orderId: data, localNumber: null };
+      // La commande est confirmée : une panne de lecture ou de papier ne la
+      // transforme jamais en échec d'envoi invitant à créer une autre commande.
+      let orderNumber = data;
+      try {
+        const order = await supabase.from('orders').select('order_number').eq('id', data).abortSignal(timeoutController.signal).single();
+        if (!order.error && order.data?.order_number) orderNumber = order.data.order_number;
+      } catch { /* L'identité cloud reste un identifiant traçable sur le ticket. */ }
+      const printingConfirmed = await printTabletTickets(queryClient, cart, clientUuid, orderNumber,
+        useAuthStore.getState().user?.full_name ?? 'Staff', isAppend);
+      return { orderId: data, localNumber: null, printingConfirmed };
       } finally { clearTimeout(timeoutHandle); }
     },
     onSuccess: () => {

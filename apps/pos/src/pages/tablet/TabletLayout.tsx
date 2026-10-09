@@ -14,6 +14,9 @@ import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useRestoreTabletMenuCache, useTabletMenuCacheWriter } from '@/features/tablet/hooks/useTabletMenuCache';
 import { useTabletOrderStatusListener } from '@/features/tablet/hooks/useTabletOrderStatusListener';
 import { useStationMap } from '@/features/cart/hooks/useStationMap';
+import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
+import { useKotCopies } from '@/features/settings/hooks/useKotCopies';
+import { PrintJobsPanel } from '@/features/cart/PrintJobsPanel';
 import { TabletUserMenu } from '@/features/tablet/components/TabletUserMenu';
 
 function TabletAccessDenied(): JSX.Element {
@@ -32,6 +35,8 @@ export default function TabletLayout(): JSX.Element {
   useTabletMenuCacheWriter();
   // Charger les destinations avant la coupure, comme le catalogue.
   useStationMap();
+  useStationPrinters();
+  useKotCopies();
   useTabletOrderStatusListener();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -123,6 +128,7 @@ export default function TabletLayout(): JSX.Element {
       </header>
 
       <OfflineBanner connection={connection} />
+      <div className="shrink-0"><PrintJobsPanel /></div>
 
       {/* main : landmark manquant — la navigation par landmarks était
           impossible sur /tablet (a11y P2). */}

@@ -25,6 +25,9 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Category, Product, RestaurantTable, DispatchStation } from '@breakery/domain';
+import type { PrinterRole } from '@breakery/domain';
+import type { StationPrinterInfo, StationPrintersMap } from '@/features/cart/hooks/useStationPrinters';
+import type { KotCopies } from '@/features/settings/hooks/useKotCopies';
 
 const STORAGE_KEY = 'tablet-menu-cache-v1';
 const MAX_AGE_MS  = 24 * 60 * 60 * 1000; // 24h
@@ -40,6 +43,8 @@ interface MenuSnapshot {
   products:    Product[];
   tables?:     RestaurantTable[];
   stationMap?: Record<string, DispatchStation[]>;
+  printers?: [PrinterRole, StationPrinterInfo][];
+  kotCopies?: KotCopies;
 }
 
 function readSnapshot(): MenuSnapshot | null {
@@ -67,6 +72,8 @@ function writeSnapshot(snap: Omit<MenuSnapshot, 'version' | 'cachedAt'>): void {
       products:   snap.products,
       tables:     snap.tables ?? [],
       ...(snap.stationMap !== undefined ? { stationMap: snap.stationMap } : {}),
+      ...(snap.printers !== undefined ? { printers: snap.printers } : {}),
+      ...(snap.kotCopies !== undefined ? { kotCopies: snap.kotCopies } : {}),
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
@@ -119,6 +126,12 @@ export function useRestoreTabletMenuCache(): void {
     if (snapshot.stationMap && qc.getQueryData(['station-map']) === undefined) {
       qc.setQueryData(['station-map'], snapshot.stationMap, { updatedAt: new Date(snapshot.cachedAt).getTime() });
     }
+    if (snapshot.printers && qc.getQueryData(['station-printers']) === undefined) {
+      qc.setQueryData(['station-printers'], new Map(snapshot.printers));
+    }
+    if (snapshot.kotCopies && qc.getQueryData(['business-config', 'kot-copies']) === undefined) {
+      qc.setQueryData(['business-config', 'kot-copies'], snapshot.kotCopies);
+    }
   }, [qc]);
 }
 
@@ -144,7 +157,13 @@ export function useTabletMenuCacheWriter(): void {
           qc.getQueryData<RestaurantTable[]>(['restaurant_tables']) ?? readSnapshot()?.tables ?? [];
         const stationMap = qc.getQueryData<Record<string, DispatchStation[]>>(['station-map'])
           ?? readSnapshot()?.stationMap;
-        writeSnapshot({ categories, products, tables, ...(stationMap !== undefined ? { stationMap } : {}) });
+        const printers = qc.getQueryData<StationPrintersMap>(['station-printers']);
+        const previous = readSnapshot();
+        const printerEntries = printers ? [...printers.entries()] : previous?.printers;
+        const kotCopies = qc.getQueryData<KotCopies>(['business-config', 'kot-copies']) ?? previous?.kotCopies;
+        writeSnapshot({ categories, products, tables, ...(stationMap !== undefined ? { stationMap } : {}),
+          ...(printerEntries !== undefined ? { printers: printerEntries } : {}),
+          ...(kotCopies !== undefined ? { kotCopies } : {}) });
       }
     }
 
@@ -156,7 +175,8 @@ export function useTabletMenuCacheWriter(): void {
       const key: unknown = event.query.queryKey;
       if (
         Array.isArray(key) &&
-        (key[0] === 'products' || key[0] === 'categories' || key[0] === 'restaurant_tables' || key[0] === 'station-map')
+        (key[0] === 'products' || key[0] === 'categories' || key[0] === 'restaurant_tables' || key[0] === 'station-map'
+          || key[0] === 'station-printers' || (key[0] === 'business-config' && key[1] === 'kot-copies'))
       ) {
         maybePersist();
       }

@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({ map: vi.fn(), enqueue: vi.fn(), publish: vi.fn
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: vi.fn() } }));
 vi.mock('@/features/lan/offlineMode', () => ({ isOfflineMode: () => true }));
 vi.mock('@/features/cart/hooks/useStationMap', () => ({ getStationMap: mocks.map }));
-vi.mock('@/features/lan/offlineOutbox', () => ({ enqueueIntent: mocks.enqueue, nextIntentSeq: () => 1 }));
+vi.mock('@/features/lan/offlineOutbox', () => ({ enqueueIntent: mocks.enqueue, getPendingIntents: () => Promise.resolve([]), nextIntentSeq: () => 1 }));
 vi.mock('@/features/lan/hubBusClient', () => ({ hubBus: { publish: mocks.publish } }));
 vi.mock('@/features/lan/localOrderNumber', () => ({ nextLocalOrderNumber: mocks.number }));
 import { useCreateTabletOrder } from '../hooks/useCreateTabletOrder';
