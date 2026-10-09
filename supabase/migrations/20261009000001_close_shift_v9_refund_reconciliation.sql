@@ -489,4 +489,3 @@ REVOKE ALL ON FUNCTION public.close_shift_v9(uuid,numeric,text,uuid,uuid,text,nu
 GRANT EXECUTE ON FUNCTION public.close_shift_v9(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb) TO authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 DROP FUNCTION public.close_shift_v8(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb);
-
