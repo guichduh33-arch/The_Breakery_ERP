@@ -63,6 +63,6 @@ describe('tablet order durability before paper', () => {
     await act(async () => { expect(await result.current.mutateAsync(input)).toMatchObject({ localNumber: 'L-original' }); });
     expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.number).not.toHaveBeenCalled();
-    expect(mocks.print).toHaveBeenCalledWith(expect.anything(), cart, 'send-1', 'L-original', expect.any(String), false, true);
+    expect(mocks.print).toHaveBeenCalledWith(expect.anything(), cart, 'send-1', 'L-original', expect.any(String), false, true, expect.any(Function));
   });
 });

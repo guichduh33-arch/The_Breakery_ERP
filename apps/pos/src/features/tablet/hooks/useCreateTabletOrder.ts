@@ -33,6 +33,7 @@ export interface CreateTabletOrderResult {
   localNumber: string | null;
   kitchenPublished?: boolean;
   printingConfirmed?: boolean;
+  printingError?: string;
 }
 
 export function useCreateTabletOrder() {
@@ -117,9 +118,10 @@ export function useCreateTabletOrder() {
         try { kitchenPublished = hubBus.publish('order.fired', firedPayload); }
         catch { /* L'intention est déjà durable : ne pas inviter à ressaisir. */ }
 
+        let printingError: string | undefined;
         const printingConfirmed = await printTabletTickets(queryClient, cart, clientUuid, localNumber,
-          useAuthStore.getState().user?.full_name ?? 'Staff', false, true);
-        return { orderId: null, localNumber, kitchenPublished, printingConfirmed };
+          useAuthStore.getState().user?.full_name ?? 'Staff', false, true, (reason) => { printingError = reason; });
+        return { orderId: null, localNumber, kitchenPublished, printingConfirmed, ...(printingError ? { printingError } : {}) };
       }
 
       // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
@@ -160,9 +162,10 @@ export function useCreateTabletOrder() {
         const order = await supabase.from('orders').select('order_number').eq('id', data).abortSignal(timeoutController.signal).single();
         if (!order.error && order.data?.order_number) orderNumber = order.data.order_number;
       } catch { /* L'identité cloud reste un identifiant traçable sur le ticket. */ }
+      let printingError: string | undefined;
       const printingConfirmed = await printTabletTickets(queryClient, cart, clientUuid, orderNumber,
-        useAuthStore.getState().user?.full_name ?? 'Staff', isAppend);
-      return { orderId: data, localNumber: null, printingConfirmed };
+        useAuthStore.getState().user?.full_name ?? 'Staff', isAppend, false, (reason) => { printingError = reason; });
+      return { orderId: data, localNumber: null, printingConfirmed, ...(printingError ? { printingError } : {}) };
       } finally { clearTimeout(timeoutHandle); }
     },
     onSuccess: () => {

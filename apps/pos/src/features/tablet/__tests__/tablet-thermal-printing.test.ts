@@ -58,8 +58,19 @@ describe('tablet thermal tickets', () => {
   });
   it('reports unrouted items instead of claiming kitchen delivery', async () => {
     mocks.stations.mockResolvedValue({ coffee: [] });
-    expect(await printTabletTickets(new QueryClient(), cart, 'send-3', 'L-3', 'Waiter', false)).toBe(false);
+    const failure = vi.fn();
+    const qc = new QueryClient();
+    expect(await printTabletTickets(qc, cart, 'send-3', 'L-3', 'Waiter', false, false, failure)).toBe(false);
+    expect(mocks.stations).toHaveBeenCalledWith(qc, true);
+    expect(failure).toHaveBeenCalledWith('Kitchen routing missing for saved order items');
     expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it('identifies a preparation failure without claiming a printer job exists', async () => {
+    mocks.stations.mockRejectedValue(new Error('unavailable'));
+    const failure = vi.fn();
+    expect(await printTabletTickets(new QueryClient(), cart, 'send-failed', 'T-9', 'Waiter', false, false, failure)).toBe(false);
+    expect(failure).toHaveBeenCalledWith('Kitchen routing unavailable');
+    expect(usePrintJobs.getState().jobs).toHaveLength(0);
   });
   it('respects stations deliberately configured without paper', async () => {
     mocks.copies.mockResolvedValue({ kitchen: 0, barista: 2, display: 1 });

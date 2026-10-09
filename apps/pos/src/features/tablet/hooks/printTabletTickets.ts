@@ -8,19 +8,24 @@ import { runPrintJob } from '@/services/print/printJobs';
 
 /** La commande est déjà durable. Un échec papier ne demande jamais sa ressaisie. */
 export async function printTabletTickets(qc: QueryClient, cart: TabletCart, clientUuid: string,
-  orderNumber: string, serverName: string, additional: boolean, offline = false): Promise<boolean> {
+  orderNumber: string, serverName: string, additional: boolean, offline = false,
+  onFailure?: (reason: string) => void): Promise<boolean> {
+  let stage = 'Kitchen routing unavailable';
+  const failed = (reason: string) => { onFailure?.(reason); return false; };
   try {
-    const stations = offline ? qc.getQueryData<Record<string, DispatchStation[]>>(STATION_MAP_KEY) : await getStationMap(qc);
-    if (!stations) return false;
+    const stations = offline ? qc.getQueryData<Record<string, DispatchStation[]>>(STATION_MAP_KEY) : await getStationMap(qc, true);
+    if (!stations) return failed(stage);
     const grouped = groupItemsByStation(cart.items, stations);
     const entries = Object.entries(grouped) as [PrepStation, typeof cart.items][];
     // Pas de fausse confirmation quand le routage est absent.
     if (!entries.length || cart.items.some((item) => !item.is_cancelled &&
-      !entries.some(([, items]) => items.some((candidate) => candidate.id === item.id)))) return false;
+      !entries.some(([, items]) => items.some((candidate) => candidate.id === item.id)))) return failed('Kitchen routing missing for saved order items');
+    stage = 'Kitchen print configuration unavailable';
     const printers: StationPrintersMap = offline ? qc.getQueryData<StationPrintersMap>(STATION_PRINTERS_KEY) ?? new Map<PrinterRole, StationPrinterInfo>()
       : await getStationPrinters(qc).catch(() => new Map<PrinterRole, StationPrinterInfo>());
     const copies = offline ? qc.getQueryData<KotCopies>(KOT_COPIES_KEY) : await getKotCopies(qc);
-    if (!copies) return false;
+    if (!copies) return failed(stage);
+    stage = 'Kitchen ticket preparation failed';
     const results = await Promise.all(entries.map(async ([role, items]) => {
       if (copies[role] === 0) return true;
       const result = await runPrintJob({ kind: 'prep', role, order_number: orderNumber,
@@ -35,6 +40,6 @@ export async function printTabletTickets(qc: QueryClient, cart: TabletCart, clie
       }, printers.get(role), copies[role], undefined, `tablet:${clientUuid}:${role}`);
       return result.success;
     }));
-    return results.every(Boolean);
-  } catch { return false; }
+    return results.every(Boolean) || failed('Check the saved print job in Printing');
+  } catch { return failed(stage); }
 }

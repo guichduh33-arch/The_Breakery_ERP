@@ -209,6 +209,7 @@ export function TabletOrderPage({
       let offlineLocalNumber: string | null = null;
       let kitchenPublished = true;
       let printingConfirmed = true;
+      let printingError: string | undefined;
       if (onSendOverride) {
         await onSendOverride(userId);
       } else {
@@ -218,11 +219,12 @@ export function TabletOrderPage({
         offlineLocalNumber = result.localNumber;
         kitchenPublished = result.kitchenPublished !== false;
         printingConfirmed = result.printingConfirmed !== false;
+        printingError = result.printingError;
       }
       const appendedTo = appendToOrderNumber;
       clearCart();
       if (!printingConfirmed) {
-        const warning = 'Order saved — kitchen printing unconfirmed. Open Printing to check; do not re-enter this order.';
+        const warning = `${printingError ?? 'Kitchen printing unconfirmed'}. Order saved; do not re-enter this order. Open Printing to check available jobs.`;
         setPrintingWarning(warning);
         toast.error(warning, { duration: 10000 });
       }
