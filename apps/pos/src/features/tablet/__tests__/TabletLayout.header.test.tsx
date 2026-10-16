@@ -7,7 +7,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
@@ -40,6 +40,11 @@ function wrap(node: ReactNode): ReactNode {
   return <QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/tablet/order']}>{node}</MemoryRouter></QueryClientProvider>;
 }
 
+function LoginDestination() {
+  const location = useLocation();
+  return <p>Login return: {(location.state as { returnTo: string }).returnTo}</p>;
+}
+
 describe('TabletLayout header (LOT 6)', () => {
   beforeEach(() => {
     rpcMock.mockClear();
@@ -59,6 +64,20 @@ describe('TabletLayout header (LOT 6)', () => {
       lockReason: null,
     });
     useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in' });
+  });
+
+  it('transmet la destination tablette à la connexion lorsque la session manque', async () => {
+    useAuthStore.setState({ isAuthenticated: false, user: null, sessionToken: null });
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(<QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/tablet/orders']}>
+        <Routes>
+          <Route path="/tablet/*" element={<TabletLayout />} />
+          <Route path="/login" element={<LoginDestination />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>);
+    expect(await screen.findByText('Login return: /tablet/orders')).toBeInTheDocument();
   });
 
   it('shows "No table" when none picked and the active table when set', async () => {

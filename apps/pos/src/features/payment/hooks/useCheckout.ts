@@ -23,6 +23,7 @@ import { useShiftStore } from '@/stores/shiftStore';
 import { getOrderSourceCode } from '@/stores/posSettingsStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { clearManagerPin, getManagerPin } from '@/features/discounts/managerPinHolder';
+import { assertTerminalPaymentAllowed } from '@/features/lan/terminalPaymentAccess';
 
 interface CheckoutInput {
   context?: CheckoutContext;
@@ -68,6 +69,7 @@ export function useCheckout() {
   return useMutation({
     retry: false,
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
+      assertTerminalPaymentAllowed();
       const sessionId = input.context?.sessionId ?? currentSessionId;
       const idempotencyKey = input.context?.idempotencyKey ?? currentIdempotencyKey;
       // Critique run 4 lot 2 — details.error porte le code jusqu'au

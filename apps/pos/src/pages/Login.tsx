@@ -32,7 +32,7 @@
 //    force a Cancel button we don't want here.
 
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Delete } from 'lucide-react';
 import { BrandLogo, Button, SectionLabel, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
@@ -63,6 +63,12 @@ function friendlyError(err: string): string {
 
 export default function LoginPage(): JSX.Element {
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedRoute = (location.state as { returnTo?: unknown } | null)?.returnTo;
+  // Liste fermée : une destination de connexion ne crée ni redirection externe
+  // ni accès supplémentaire ; TabletLayout conserve son contrôle de droits.
+  const tabletReturn = requestedRoute === '/tablet/order' || requestedRoute === '/tablet/orders'
+    ? requestedRoute : null;
   const login = useAuthStore((s) => s.login);
   const error = useAuthStore((s) => s.error);
   const setError = useAuthStore((s) => s.setError);
@@ -93,12 +99,12 @@ export default function LoginPage(): JSX.Element {
         .then(() => {
           try { localStorage.setItem(LAST_USER_KEY, selectedUser.id); } catch { /* storage unavailable */ }
           const { user } = useAuthStore.getState();
-          const dest = user?.role_code === 'waiter' || isNativeShell() ? '/tablet/order' : '/pos';
+          const dest = tabletReturn ?? (user?.role_code === 'waiter' || isNativeShell() ? '/tablet/order' : '/pos');
           void navigate(dest, { replace: true });
         })
         .catch(() => { /* error surfaced via authStore.error */ });
     },
-    [selectedUser, setError, login, navigate],
+    [selectedUser, setError, login, navigate, tabletReturn],
   );
 
   const handleDigit = useCallback((d: string) => {

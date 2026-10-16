@@ -1,5 +1,5 @@
 import { useEffect, type JSX } from 'react';
-import { Navigate, Outlet, NavLink } from 'react-router-dom';
+import { Navigate, Outlet, NavLink, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { MapPin, Wifi, ClipboardList, History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
@@ -31,6 +31,7 @@ function TabletAccessDenied(): JSX.Element {
 }
 
 export default function TabletLayout(): JSX.Element {
+  const location = useLocation();
   useRestoreTabletMenuCache();
   useTabletMenuCacheWriter();
   // Charger les destinations avant la coupure, comme le catalogue.
@@ -77,7 +78,7 @@ export default function TabletLayout(): JSX.Element {
     .filter((o) => isInFlight(o.status))
     .reduce((n, o) => n + o.items.filter((i) => i.kitchen_status === 'ready').length, 0);
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/login" state={{ returnTo: location.pathname }} replace />;
 
   const canAccessTablet =
     user?.role_code === 'waiter' || permissions.includes('sales.create');
