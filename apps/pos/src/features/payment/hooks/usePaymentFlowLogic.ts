@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import type { PaymentSuccessState } from './paymentSuccess';
 import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
 import { getOrderSourceCode } from '@/stores/posSettingsStore';
+import { assertTerminalPaymentAllowed } from '@/features/lan/terminalPaymentAccess';
 export type { PaymentSuccessState } from './paymentSuccess';
 
 let dispatching = false;
@@ -314,6 +315,9 @@ export function usePaymentFlowLogic() {
     setDispatchPending(true);
     let dispatched = false;
     try {
+      // Avant tout fire, tentative durable ou encaissement offline. Le drain
+      // d'anciens intents déjà encaissés reste indépendant dans offlineReplay.
+      assertTerminalPaymentAllowed();
       const stored = usePaymentStore.getState().attempt;
       const saved = stored?.state !== 'refused' ? stored : null;
       const state = useCartStore.getState();

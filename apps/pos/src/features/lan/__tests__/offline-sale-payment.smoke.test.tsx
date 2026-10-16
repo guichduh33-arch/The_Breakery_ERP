@@ -76,6 +76,27 @@ beforeEach(() => {
 afterEach(() => { useHubConnectionStore.setState({ connected: false }); });
 
 describe('payment after same-tab offline reload', () => {
+  it('refuse une nouvelle tentative tablette avant de créer un intent ou imprimer', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const context = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/pos']}>
+      <OfflineSaleContext />
+    </MemoryRouter></QueryClientProvider>);
+    useLanCredential.setState({ credential: { id: identity.terminal, code: 'TABLET', secret: 'test', device_type: 'tablet' } });
+    useCartStore.setState({ cart: { items: [{ id: 'line', product_id: 'coffee', name: 'Americano',
+      unit_price: 35000, quantity: 1, modifiers: [] }], order_type: 'take_out' } });
+    usePaymentStore.setState({ selectedMethod: 'qris', cashReceivedStr: '35000' });
+    const flow = renderHook(() => usePaymentFlowLogic(), {
+      wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+    });
+    await act(async () => { await flow.result.current.handleProcess(); });
+    expect(flow.result.current.lastError).toEqual(expect.objectContaining({ kind: 'fatal', code: 'terminal_payment_forbidden' }));
+    expect(await getPendingIntents()).toHaveLength(0);
+    expect(usePaymentStore.getState().attempt).toBeNull();
+    expect(print).not.toHaveBeenCalled();
+    expect(cloud).not.toHaveBeenCalled();
+    flow.unmount(); context.unmount(); client.clear();
+  });
+
   it.each(['coffee', 'iced'])('persists fire then QRIS payment for %s with the real routing getter and no cloud', async (productId) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     const context = render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/pos']}>

@@ -8,6 +8,7 @@ import PosPage from '@/pages/Pos';
 import { useAuthStore } from '@/stores/authStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { isNativeShell } from '@/lib/nativeShell';
+import { useOrderingOnlyTerminal } from '@/features/lan/terminalPaymentAccess';
 
 const KdsPage = lazy(() => import('@/pages/Kds'));
 const TabletLayout = lazy(() => import('@/pages/tablet/TabletLayout'));
@@ -42,6 +43,12 @@ function Protected({ children }: { children: ReactNode }) {
   return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+function CashierSurface({ children, allowSetup = false }: { children: ReactNode; allowSetup?: boolean }) {
+  const orderingOnly = useOrderingOnlyTerminal();
+  // Les réglages restent accessibles pour appairer et dépanner l'appareil.
+  return orderingOnly && !allowSetup ? <Navigate to="/tablet/order" replace /> : <>{children}</>;
+}
+
 function RouteFallback() {
   return (
     <div className="h-screen supports-[height:100dvh]:h-[100dvh] grid place-items-center bg-bg-base text-text-secondary text-sm">
@@ -57,14 +64,16 @@ function RouteFallback() {
 // se rend aussi sur les satellites : avant, isLocked passait à true et l'écran
 // /pos/reports restait pilotable sans overlay. /kds est volontairement exclu
 // (écran cuisine, jamais verrouillé).
-function ProtectedLazy({ children }: { children: ReactNode }) {
+function ProtectedLazy({ children, allowSetup = false }: { children: ReactNode; allowSetup?: boolean }) {
   const isLocked = useAuthStore((s) => s.isLocked);
   return (
     <Protected>
-      <VirtualKeypadProvider>
-        <Suspense fallback={<RouteFallback />}>{children}</Suspense>
-        {isLocked && <TerminalLockedOverlay />}
-      </VirtualKeypadProvider>
+      <CashierSurface allowSetup={allowSetup}>
+        <VirtualKeypadProvider>
+          <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+          {isLocked && <TerminalLockedOverlay />}
+        </VirtualKeypadProvider>
+      </CashierSurface>
     </Protected>
   );
 }
@@ -77,9 +86,11 @@ export function AppRoutes() {
         path="/pos"
         element={
           <Protected>
-            <VirtualKeypadProvider>
-              <Suspense fallback={<RouteFallback />}><PosPage /></Suspense>
-            </VirtualKeypadProvider>
+            <CashierSurface>
+              <VirtualKeypadProvider>
+                <Suspense fallback={<RouteFallback />}><PosPage /></Suspense>
+              </VirtualKeypadProvider>
+            </CashierSurface>
           </Protected>
         }
       />
@@ -94,7 +105,7 @@ export function AppRoutes() {
       <Route path="/pos/reports/products" element={<ProtectedLazy><POSProductsReportPage /></ProtectedLazy>} />
       <Route path="/pos/reports/margin" element={<ProtectedLazy><POSMarginReportPage /></ProtectedLazy>} />
       <Route path="/pos/reports/activity" element={<ProtectedLazy><POSActivityReportPage /></ProtectedLazy>} />
-      <Route path="/pos/settings" element={<ProtectedLazy><POSSettingsPage /></ProtectedLazy>} />
+      <Route path="/pos/settings" element={<ProtectedLazy allowSetup><POSSettingsPage /></ProtectedLazy>} />
       <Route path="/pos/debts" element={<ProtectedLazy><CustomerDebtsPanel /></ProtectedLazy>} />
 
       <Route
