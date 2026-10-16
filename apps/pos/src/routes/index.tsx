@@ -2,7 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, type ReactNode } from 'react';
 import { VirtualKeypadProvider } from '@breakery/ui';
 import LoginPage from '@/pages/Login';
-const PosPage = lazy(() => import('@/pages/Pos'));
+// La caisse principale est disponible dès la restauration de session : ne pas
+// la laisser dépendre d'une résolution lazy qui a bloqué les postes en Loading.
+import PosPage from '@/pages/Pos';
 import { useAuthStore } from '@/stores/authStore';
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { isNativeShell } from '@/lib/nativeShell';

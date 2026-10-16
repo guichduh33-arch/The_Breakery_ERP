@@ -67,9 +67,9 @@ vi.mock('@/features/auth/hooks/useLoginUsers', () => ({
   }),
 }));
 
-function renderPage() {
+function renderPage(returnTo?: unknown) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[{ pathname: '/login', state: { returnTo } }]}>
       <LoginPage />
     </MemoryRouter>,
   );
@@ -162,5 +162,19 @@ describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
     fireEvent.click(screen.getByText('Mamat (Owner)'));
     for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/tablet/order', { replace: true }));
+  });
+
+  it.each(['/tablet/order', '/tablet/orders'])('conserve la destination tablette %s après le PIN sur le web', async (route) => {
+    renderPage(route);
+    fireEvent.click(screen.getByText('Mamat (Owner)'));
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith(route, { replace: true }));
+  });
+
+  it.each([undefined, 'https://example.com/tablet/order', '//example.com', '/pos/settings'])('ignore une destination de retour non autorisée %s', async (route) => {
+    renderPage(route);
+    fireEvent.click(screen.getByText('Mamat (Owner)'));
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/pos', { replace: true }));
   });
 });
