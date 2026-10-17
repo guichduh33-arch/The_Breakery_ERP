@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Button, Card, SectionLabel } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { ScopeBadge } from './ScopeBadge';
+import { TerminalBackupPanel } from './TerminalBackupPanel';
 
 function DiagRow({ label, value }: { label: string; value: string }): JSX.Element {
   return (
@@ -55,6 +56,7 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
         </div>
       </Card>
 
+      <TerminalBackupPanel readOnly={readOnly} />
       <Card variant="default" padding="md" className="space-y-3">
         <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-semibold text-base">
           Maintenance
