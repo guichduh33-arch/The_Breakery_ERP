@@ -13,6 +13,8 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
+import { usePrintJobs } from '@/services/print/printJobs';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -113,6 +115,8 @@ vi.mock('@/features/cart/hooks/useStationMap', () => {
 
 describe('useFireToStations persists before printing (P0-3)', () => {
   beforeEach(() => {
+    usePrintJobs.setState({ jobs: [] });
+    installPrintLocks();
     rpcMock.mockReset();
     printStationTicketMock.mockReset();
     rpcMock.mockResolvedValue({

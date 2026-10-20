@@ -14,6 +14,8 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
+import { usePrintJobs } from '@/services/print/printJobs';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
@@ -97,6 +99,8 @@ vi.mock('@/features/cart/hooks/useStationMap', () => {
 
 describe('SendToKitchenButton — fire to stations smoke', () => {
   beforeEach(() => {
+    usePrintJobs.setState({ jobs: [] });
+    installPrintLocks();
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
 

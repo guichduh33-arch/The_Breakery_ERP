@@ -63,7 +63,7 @@ describe('POS refund durable recovery', () => {
     expect(screen.getByLabelText('Reason')).toBeDisabled();
     fireEvent.click(screen.getByLabelText('Close')); mounted.unmount();
     useAuthStore.setState({ sessionToken: 'token-b' }); token.mockResolvedValue('token-b');
-    fetch.mockResolvedValueOnce(new Response(JSON.stringify(response), { status: 200 }));
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({ ...response, idempotent_replay: true }), { status: 200 }));
     render(<Modal full />, { wrapper });
     fireEvent.click(screen.getByText('Verify PIN'));
     await waitFor(() => expect(readFinancialSlot(scope)?.status).toBe('resolved'));
@@ -82,7 +82,7 @@ describe('POS refund durable recovery', () => {
     await waitFor(() => expect(confirmed).toHaveBeenCalledWith(response));
     expect(readFinancialSlot(scope)?.status).toBe('resolved');
   });
-  it.each([{}, { ...response, order_id: 'another-order' }, { ...response, total_refunded: NaN }, { ...response, error: 'invalid_envelope' }])('retains pending for invalid 2xx confirmation %#', async (data) => {
+  it.each([{}, { ...response, order_number: undefined }, { ...response, order_number: null }, { ...response, order_id: 'another-order' }, { ...response, total_refunded: NaN }, { ...response, error: 'invalid_envelope' }])('retains pending for invalid 2xx confirmation %#', async (data) => {
     await expect(runFinancialAttempt({ scope, payload, expectedRevision: null, current: () => true, send: () => Promise.reject(new Error('lost')) })).rejects.toThrow('lost');
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(data), { status: 200 }));
     render(<PendingRefundRecovery onConfirmed={vi.fn()} />, { wrapper });

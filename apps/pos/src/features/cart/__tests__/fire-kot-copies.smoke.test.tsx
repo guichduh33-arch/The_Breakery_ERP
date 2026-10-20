@@ -10,6 +10,8 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
+import { usePrintJobs } from '@/services/print/printJobs';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -86,6 +88,8 @@ function withQuery(node: React.ReactElement) {
 
 describe('SendToKitchenButton — KOT copies per station', () => {
   beforeEach(() => {
+    usePrintJobs.setState({ jobs: [] });
+    installPrintLocks();
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
     vi.mocked(toast.success).mockClear();

@@ -4,6 +4,8 @@
 // consolidé est émis avec TOUS les items non annulés (y compris dispatch 'none').
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
+import { usePrintJobs } from '@/services/print/printJobs';
 
 vi.stubEnv('VITE_PRINT_MOCK', '1');
 
@@ -59,6 +61,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
+  usePrintJobs.setState({ jobs: [] });
+  installPrintLocks();
   vi.clearAllMocks();
   clearMockPrintBuffer();
   rpc.mockResolvedValue({

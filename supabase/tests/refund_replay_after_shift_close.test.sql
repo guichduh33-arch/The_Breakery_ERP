@@ -3,12 +3,12 @@ BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='60s';
 CREATE TEMP TABLE rrc_tap (n bigserial,line text);
-INSERT INTO rrc_tap(line) SELECT plan(30);
+INSERT INTO rrc_tap(line) SELECT plan(32);
 CREATE TEMP TABLE rr_ctx (
 auth_id uuid,profile uuid,shift_id uuid,product_id uuid,order_id uuid,
 item_id uuid,refund_id uuid,key uuid,new_key uuid,amount numeric,
 sale_total numeric,cash numeric,first jsonb,
-closed jsonb,replay jsonb,reject_code text,reject_message text
+closed jsonb,replay jsonb,mismatched jsonb,reject_code text,reject_message text
 );
 CREATE TEMP TABLE rr_snap (stage text PRIMARY KEY,state jsonb);
 CREATE FUNCTION pg_temp.rrc_state(p_order uuid,p_product uuid,p_shift uuid,p_actor uuid)
@@ -94,7 +94,7 @@ SELECT total INTO c.sale_total FROM orders WHERE id=c.order_id;
 SELECT s.total INTO c.amount FROM order_items i
 CROSS JOIN LATERAL _pb1_split_v1(round_idr(i.line_total/i.quantity)) s
 WHERE i.id=c.item_id;
-c.first:=refund_order_rpc_v11(c.order_id,
+c.first:=refund_order_rpc_v12(c.order_id,
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay test',c.profile,c.key,c.auth_id);
@@ -125,15 +125,21 @@ DO $replay$
 DECLARE c rr_ctx%ROWTYPE; result jsonb; code text; message text;
 BEGIN
 SELECT * INTO STRICT c FROM rr_ctx;
-result:=refund_order_rpc_v11(c.order_id,
+result:=refund_order_rpc_v12(c.order_id,
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay test',c.profile,c.key,c.auth_id);
 UPDATE rr_ctx SET replay=result;
+-- La clé persistée fait foi même si la requête présente une autre commande.
+result:=refund_order_rpc_v12(gen_random_uuid(),
+jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
+jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
+'Replay different order',c.profile,c.key,c.auth_id);
+UPDATE rr_ctx SET mismatched=result;
 INSERT INTO rr_snap VALUES('replay',
 pg_temp.rrc_state(c.order_id,c.product_id,c.shift_id,c.profile));
 BEGIN
-PERFORM refund_order_rpc_v11(c.order_id,
+PERFORM refund_order_rpc_v12(c.order_id,
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay test',c.profile,c.new_key,c.auth_id);
@@ -147,16 +153,19 @@ pg_temp.rrc_state(c.order_id,c.product_id,c.shift_id,c.profile));
 END $replay$;
 DO $checks$
 DECLARE c rr_ctx%ROWTYPE; b jsonb; a jsonb; rejected jsonb; expected jsonb;
-signature text:='public.refund_order_rpc_v11(uuid,jsonb,jsonb,text,uuid,uuid,uuid)';
+signature text:='public.refund_order_rpc_v12(uuid,jsonb,jsonb,text,uuid,uuid,uuid)';
 BEGIN
 SELECT * INTO STRICT c FROM rr_ctx;
 SELECT state INTO STRICT b FROM rr_snap WHERE stage='closed';
 SELECT state INTO STRICT a FROM rr_snap WHERE stage='replay';
 SELECT state INTO STRICT rejected FROM rr_snap WHERE stage='rejected';
 SELECT jsonb_build_object('refund_id',r->'id','refund_number',r->'refund_number',
-'order_id',r->'order_id','total_refunded',r->'total','tax_refunded',r->'tax_refunded')
+'order_id',r->'order_id','order_number',b#>'{order,order_number}',
+ 'total_refunded',r->'total','tax_refunded',r->'tax_refunded')
 INTO expected FROM (SELECT b->'refunds'->0 AS r) persisted;
 INSERT INTO rrc_tap(line) VALUES
+(ok(to_regprocedure('public.refund_order_rpc_v11(uuid,jsonb,jsonb,text,uuid,uuid,uuid)') IS NULL,
+'Previous refund signature dropped')),
 (ok(has_function_privilege('service_role',signature,'EXECUTE'),'Service EXECUTE')),
 (ok(NOT has_function_privilege('authenticated',signature,'EXECUTE'),'User denied')),
 (ok(NOT has_function_privilege('anon',signature,'EXECUTE'),'Anon denied')),
@@ -199,7 +208,11 @@ FROM z_reports WHERE shift_id=c.shift_id)=c.sale_total-c.amount,'Z-report cash')
 (ok((c.replay->>'idempotent_replay')::boolean,'Replay after close')),
 (ok(jsonb_typeof(c.first)='object' AND jsonb_typeof(c.replay)='object'
 AND NOT EXISTS(SELECT 1 FROM jsonb_each(expected) e WHERE e.value='null'::jsonb)
-AND c.first@>expected AND c.replay@>expected,'Stored identity/amounts')),
+AND jsonb_typeof(expected->'order_number')='string'
+AND length(expected->>'order_number')>0
+AND c.first@>expected AND c.replay@>expected,'Stored identity/order number/amounts')),
+(ok(c.mismatched@>expected AND (c.mismatched->>'idempotent_replay')::boolean,
+'Replay uses persisted order identity and number')),
 (is(a->'refunds',b->'refunds','Replay refunds')),
 (is(a->'lines',b->'lines','Replay lines')),
 (is(a->'tenders',b->'tenders','Replay: tenders')),
