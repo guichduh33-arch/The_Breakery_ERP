@@ -43,21 +43,22 @@ function inside(root, path) {
   return rel === '' || (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`));
 }
 
-function validateConfig(config) {
+function validateConfig(config, nativeDatabase = false) {
   if (config?.version !== 1 || !/^[a-z0-9]{20}$/.test(config.projectRef ?? '') ||
-      config.retentionDays !== 30 || !Array.isArray(config.sources) || !config.sources.length ||
+      config.retentionDays !== 30 || !Array.isArray(config.sources) || (!nativeDatabase && !config.sources.length) ||
       !config.coverage || areas.some((area) => !['provided', 'missing', 'not-applicable'].includes(config.coverage[area]))) {
     fail('Invalid config: explicit target, sources, coverage and 30-day retention required.');
   }
   const names = new Set();
   for (const source of config.sources) {
     if (!/^[a-z0-9-]{1,48}$/.test(source.name ?? '') || names.has(source.name) ||
-        !areas.includes(source.area) || config.coverage[source.area] !== 'provided' ||
+        !areas.includes(source.area) || (nativeDatabase && source.area === 'database') ||
+        config.coverage[source.area] !== 'provided' ||
         typeof source.path !== 'string' || !isAbsolute(source.path)) fail('Invalid source.');
     names.add(source.name);
   }
   for (const area of areas) {
-    if (config.coverage[area] === 'provided' && !config.sources.some((s) => s.area === area)) {
+    if (config.coverage[area] === 'provided' && !(nativeDatabase && area === 'database') && !config.sources.some((s) => s.area === area)) {
       fail('Provided coverage requires a source.');
     }
   }
@@ -77,7 +78,13 @@ export function generateRecoveryKeys(directory) {
 }
 
 export function createBackup(config, publicKey, output) {
-  validateConfig(config);
+  const files = collectBackupFiles(config, publicKey, output);
+  return createMemoryBackup({ projectRef: config.projectRef, coverage: config.coverage, files }, publicKey, output);
+}
+
+// Le quotidien réserve la zone database à l'export natif acquis dans cette exécution.
+export function collectBackupFiles(config, publicKey, output, nativeDatabase = false) {
+  validateConfig(config, nativeDatabase);
   if (existsSync(output)) fail('Backup destination already exists.');
   const recipient = createPublicKey(publicKey);
   if (recipient.asymmetricKeyType !== 'rsa' || recipient.asymmetricKeyDetails.modulusLength < 3072) {
@@ -119,7 +126,7 @@ export function createBackup(config, publicKey, output) {
     visit(source.path, stat.isDirectory() ? source.name : `${source.name}/snapshot`);
     if (!count) fail('Empty sources cannot establish coverage.');
   }
-  return createMemoryBackup({ projectRef: config.projectRef, coverage: config.coverage, files }, publicKey, output);
+  return files;
 }
 
 // Exporteurs natifs : chiffrement direct en mémoire, sans dump clair intermédiaire.

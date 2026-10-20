@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { prepareDatabaseBackup, exportDatabaseBackup } from './database-backup.mjs';
 import { generateRecoveryKeys, restoreBackup } from './encrypted-backup.mjs';
+import { syntheticListing } from './backup-fixture.mjs';
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'breakery-db-preparation-'));
@@ -43,7 +44,7 @@ test('dump synthétique : chiffrement sans fichier clair, restitution exacte et 
     assert.equal(env.PGSSLMODE, 'verify-full');
     assert.match(env.PGOPTIONS, /default_transaction_read_only=on/);
     assert.equal(env.PGPASSWORD, undefined);
-    if (args.includes('--list')) { assert.deepEqual(input, dump); return Buffer.from('synthetic listing'); }
+    if (args.includes('--list')) { assert.deepEqual(input, dump); return syntheticListing; }
     return dump;
   };
   const result = await exportDatabaseBackup(f.config, readFileSync(join(f.root, 'keys/backup-public.pem')),

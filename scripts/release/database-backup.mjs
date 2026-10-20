@@ -66,10 +66,13 @@ function capture(executable, args, env, input) {
   });
 }
 
-export async function exportDatabaseBackup(config, publicKey, output, execution = {}) {
+export async function acquireDatabaseSnapshot(config, execution = {}) {
+  try { return await acquire(config, execution); }
+  catch { fail(); }
+}
+
+async function acquire(config, execution) {
   const plan = prepareDatabaseBackup(config);
-  if (execution.execute !== true) return plan;
-  if (existsSync(output)) fail();
   pinned(config.pgDump); pinned(config.pgRestore);
   for (const file of [config.passwordFile, config.rootCertificate]) {
     if (!lstatSync(file).isFile() || lstatSync(file).isSymbolicLink()) fail();
@@ -81,13 +84,30 @@ export async function exportDatabaseBackup(config, publicKey, output, execution 
     PGCONNECT_TIMEOUT: '15', PGOPTIONS: '-c default_transaction_read_only=on -c statement_timeout=240000' +
       (plan.temporaryAccess && plan.connectionMode === 'session' ? ' -c jit=true' : '') });
   const run = execution.capture ?? capture;
+  const clock = execution.clock ?? (() => new Date());
+  const startedAt = clock().toISOString();
   const dump = await run(config.pgDump.path, plan.commands.dump, env);
   if (!Buffer.isBuffer(dump) || dump.length > 96 * 1024 * 1024 || dump.subarray(0, 5).toString() !== 'PGDMP') fail();
-  await run(config.pgRestore.path, plan.commands.inspect, env, dump);
-  const evidence = Buffer.from(JSON.stringify({ ...plan, createdAt: new Date().toISOString(),
-    archiveListingVerified: true, logicalDumpSha256: sha(dump) }));
-  const files = [['database/database.dump', dump], ['database/export-evidence.json', evidence]]
+  const listing = await run(config.pgRestore.path, plan.commands.inspect, env, dump);
+  if (!Buffer.isBuffer(listing) || !/^\d+;\s+\d+\s+\d+\s+\S+/m.test(listing.toString('utf8'))) fail();
+  const completedAt = clock().toISOString();
+  if (Date.parse(completedAt) < Date.parse(startedAt)) fail();
+  // Aucune configuration de connexion ni chemin d'identifiant ne sort dans les preuves.
+  const evidence = { version: 1, projectRef: plan.projectRef, startedAt, completedAt,
+    format: 'custom', archiveListingVerified: true, logicalDumpSha256: sha(dump),
+    logicalDumpBytes: dump.length, listingSha256: sha(listing), pgDumpSha256: config.pgDump.sha256,
+    pgRestoreSha256: config.pgRestore.sha256, applicationRecoveryVerified: false };
+  const evidenceBytes = Buffer.from(JSON.stringify(evidence));
+  const files = [['database/database.dump', dump], ['database/export-evidence.json', evidenceBytes]]
     .map(([path, data]) => ({ path, data: data.toString('base64'), sha256: sha(data) }));
+  return { files, evidence };
+}
+
+export async function exportDatabaseBackup(config, publicKey, output, execution = {}) {
+  const plan = prepareDatabaseBackup(config);
+  if (execution.execute !== true) return plan;
+  if (existsSync(output)) fail();
+  const { files } = await acquireDatabaseSnapshot(config, execution);
   return createMemoryBackup({ projectRef: config.projectRef, files,
     coverage: { database: 'provided', storage: 'missing', 'shop-config': 'missing',
       bundles: 'missing', 'terminal-outboxes': 'missing' } }, publicKey, output);
