@@ -34,3 +34,11 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/** Frontière de session : annuler puis retirer immédiatement les caches.
+ * Aucun `await` entre les deux : une connexion suivante pourrait sinon être
+ * purgée par la continuation de la déconnexion précédente. */
+export function clearSessionCache(): void {
+  void queryClient.cancelQueries();
+  queryClient.clear();
+}
