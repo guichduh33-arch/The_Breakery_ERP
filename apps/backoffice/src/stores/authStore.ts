@@ -12,6 +12,7 @@ import {
 } from '@breakery/supabase';
 import { safeStorage, logger } from '@breakery/utils';
 import { supabaseUrl } from '../lib/supabase.js';
+import { clearSessionCache } from '../lib/queryClient.js';
 
 interface AuthUser {
   id: string;
@@ -68,7 +69,8 @@ interface AuthState {
   // "no idle logout".
   sessionTimeoutMinutes: number | null;
   authSnapshot: AuthSnapshot | null;
-  login: (userId: string, pin: string) => Promise<void>;
+  /** False = tentative remplacée par une opération plus récente. */
+  login: (userId: string, pin: string) => Promise<boolean>;
   logout: () => Promise<void>;
   bootstrap: () => Promise<void>;
   validateSession: () => Promise<void>;
@@ -86,7 +88,12 @@ const asyncStorage = {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      // Identité locale d'opération, jamais persistée. Le token seul ne suffit
+      // pas : un login peut être remplacé avant même d'en avoir obtenu un.
+      let generation = 0;
+      let validation: { generation: number; token: string; promise: Promise<void> } | null = null;
+      return ({
       user: null,
       sessionToken: null,
       permissions: [],
@@ -98,6 +105,7 @@ export const useAuthStore = create<AuthState>()(
       authSnapshot: null,
 
       async login(userId, pin) {
+        const operation = ++generation;
         set({ isLoading: true, error: null });
         try {
           const res: LoginResponse = await loginWithPin(supabaseUrl, {
@@ -105,6 +113,8 @@ export const useAuthStore = create<AuthState>()(
             pin,
             device_type: 'backoffice',
           });
+          if (operation !== generation) return false;
+          if (get().sessionToken !== res.session.token) clearSessionCache();
           setSupabaseAccessToken(res.auth.access_token);
           set({
             user: res.user,
@@ -117,24 +127,25 @@ export const useAuthStore = create<AuthState>()(
             authSnapshot: res.auth,
           });
           logger.info('login.success', { user_id: res.user.id, app: 'backoffice' });
+          return true;
         } catch (err: unknown) {
+          if (operation !== generation) return false;
           const e = err as { details?: { error?: string }; message?: string };
           set({ error: e.details?.error ?? e.message ?? 'login_failed', isLoading: false });
           throw err;
         }
       },
 
-      async logout() {
+      logout() {
         const token = get().sessionToken;
-        if (token) {
-          try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
-        }
+        ++generation;
         setSupabaseAccessToken(null);
         set({
           user: null,
           sessionToken: null,
           permissions: [],
           isAuthenticated: false,
+          isLoading: false,
           error: null,
           // A logout is a terminal, known state — bootstrap is "done" (the router
           // will route to /login). Never leave it 'loading'/'error' or the shell
@@ -143,6 +154,15 @@ export const useAuthStore = create<AuthState>()(
           sessionTimeoutMinutes: null,
           authSnapshot: null,
         });
+        clearSessionCache();
+        // La révocation distante ne possède plus aucun effet local : une
+        // nouvelle connexion peut aboutir pendant cet aller-retour.
+        if (token) {
+          // Résoudre aussi l'appel local sans attendre : les appelants qui
+          // naviguent après logout ne doivent pas rediriger B à son retour.
+          void logoutSession(supabaseUrl, token).catch(() => { /* best-effort */ });
+        }
+        return Promise.resolve();
       },
 
       /**
@@ -154,6 +174,7 @@ export const useAuthStore = create<AuthState>()(
        * empty permission list (the reload bug).
        */
       async bootstrap() {
+        if (get().isLoading) return;
         const { sessionToken, isAuthenticated, authSnapshot, permissions } = get();
         if (!sessionToken || !isAuthenticated) {
           // Nothing to restore — the router will bounce to /login on its own.
@@ -183,57 +204,48 @@ export const useAuthStore = create<AuthState>()(
         }
 
         set({ bootstrapStatus: 'loading', error: null });
-        try {
-          const session = await getSession(supabaseUrl, sessionToken);
-          if (session.auth) {
-            // Restore the PostgREST bearer so RLS-protected queries stop 401-ing
-            // ("permission denied for table products"). Mirrors login().
-            setSupabaseAccessToken(session.auth.access_token);
-          }
-          set({
-            user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
-            permissions: session.permissions,
-            isAuthenticated: true,
-            sessionTimeoutMinutes: session.session_timeout_minutes,
-            bootstrapStatus: 'ready',
-            authSnapshot: session.auth,
-          });
-          logger.info('bootstrap.rehydrated', { user_id: session.id, perms: session.permissions.length });
-        } catch (err: unknown) {
-          const e = err as { status?: number };
-          if (e.status === 401) {
-            // Session genuinely revoked/expired — clear it; router → /login.
-            await get().logout();
-          } else {
-            // Backend unreachable / 5xx / network. Keep the persisted session so
-            // a retry can recover, and surface an explicit error screen instead
-            // of degrading the nav to an empty-permissions state.
-            logger.error('bootstrap.failed', { status: e.status ?? 'network' });
-            set({ bootstrapStatus: 'error', error: 'backend_unreachable' });
-          }
-        }
+        await get().validateSession();
       },
 
       async validateSession() {
         const token = get().sessionToken;
-        if (!token) return;
-        try {
-          const session = await getSession(supabaseUrl, token);
-          if (session.auth) {
-            setSupabaseAccessToken(session.auth.access_token);
+        if (!token || get().isLoading) return;
+        const operation = generation;
+        if (validation?.generation === operation && validation.token === token) {
+          return validation.promise;
+        }
+        const current = () => operation === generation && get().sessionToken === token;
+        // Bootstrap et refresh partagent la lecture en vol d'une même session.
+        // Un 401 ancien ne doit jamais déconnecter le nouvel opérateur.
+        const promise = (async () => {
+          try {
+            const session = await getSession(supabaseUrl, token);
+            if (!current()) return;
+            if (session.auth) setSupabaseAccessToken(session.auth.access_token);
+            set({
+              user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
+              permissions: session.permissions,
+              isAuthenticated: true,
+              sessionTimeoutMinutes: session.session_timeout_minutes,
+              authSnapshot: session.auth,
+              bootstrapStatus: 'ready',
+              error: null,
+            });
+          } catch (err: unknown) {
+            if (!current()) return;
+            const e = err as { status?: number };
+            if (e.status === 401) await get().logout();
+            else if (get().bootstrapStatus === 'loading') {
+              logger.error('bootstrap.failed', { status: e.status ?? 'network' });
+              set({ bootstrapStatus: 'error', error: 'backend_unreachable' });
+            }
+            // En arrière-plan, une panne transitoire conserve la session.
           }
-          set({
-            user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
-            permissions: session.permissions,
-            isAuthenticated: true,
-            // Session 19 / Phase 3.A — refreshed per `auth-get-session` round-trip.
-            sessionTimeoutMinutes: session.session_timeout_minutes,
-            authSnapshot: session.auth,
-          });
-        } catch (err: unknown) {
-          const e = err as { status?: number };
-          if (e.status === 401) await get().logout();
-          // else: transient — keep local session, do not degrade nav.
+        })();
+        validation = { generation: operation, token, promise };
+        try { await promise; }
+        finally {
+          if (validation?.promise === promise) validation = null;
         }
       },
 
@@ -247,7 +259,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setError(msg) { set({ error: msg }); },
-    }),
+      });
+    },
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => asyncStorage),

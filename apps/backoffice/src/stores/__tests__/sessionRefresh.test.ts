@@ -43,4 +43,21 @@ describe('refresh JWT du back-office', () => {
     stop();
     expect(vi.getTimerCount()).toBe(0);
   });
+  it('programme B après la fin de la validation A devenue obsolète', async () => {
+    let finishOld!: () => void;
+    mock.validate.mockReturnValueOnce(new Promise<void>((resolve) => { finishOld = resolve; }));
+    stop = startSessionRefresh();
+    await vi.advanceTimersByTimeAsync(50 * 60_000);
+    expect(mock.validate).toHaveBeenCalledOnce();
+    const previous = { ...state };
+    state = { ...state, sessionToken: 'token-B', authSnapshot: { expires_at: Date.now() / 1000 + 3600 } };
+    const listener = mock.subscribe.mock.calls[0]?.[0] as (next: typeof state, previous: typeof state) => void;
+    listener(state, previous);
+    finishOld();
+    await vi.advanceTimersByTimeAsync(49 * 60_000);
+    expect(mock.validate).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(mock.validate).toHaveBeenCalledTimes(2);
+    expect(state.sessionToken).toBe('token-B');
+  });
 });
