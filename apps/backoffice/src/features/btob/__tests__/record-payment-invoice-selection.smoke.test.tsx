@@ -91,9 +91,9 @@ function newClient(): QueryClient {
   return new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 }
 
-function renderModal(): void {
+function renderModal(client: QueryClient = newClient()): void {
   render(
-    <QueryClientProvider client={newClient()}>
+    <QueryClientProvider client={client}>
       <RecordB2bPaymentModal open={true} onClose={() => undefined} />
     </QueryClientProvider>,
   );
@@ -127,7 +127,7 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({
         p_customer_id:  'b1',
         p_invoice_ids:  ['inv-b', 'inv-a'],
       }));
@@ -152,13 +152,48 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));
     });
     const [, callArgs] = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
     expect(callArgs).not.toHaveProperty('p_invoice_ids');
+  });
+
+  it('sends a store-credit settlement through the current RPC', async () => {
+    const client = newClient();
+    client.setQueryData(['customer-detail', 'b1'], { store_credit_balance: 100000 });
+    client.setQueryData(['store-credit-history', 'b1'], []);
+    client.setQueryData(['customer-detail', 'b2'], { store_credit_balance: 50000 });
+    client.setQueryData(['store-credit-history', 'b2'], []);
+    renderModal(client);
+    await selectCustomer();
+    fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '100000' } });
+    fireEvent.change(screen.getByLabelText(/^method$/i), { target: { value: 'store_credit' } });
+    fireEvent.click(screen.getByRole('button', { name: /record payment/i }));
+
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4',
+      expect.objectContaining({ p_customer_id: 'b1', p_amount: 100000, p_method: 'store_credit' })));
+    expect(await screen.findByTestId('rp-success')).toBeInTheDocument();
+    expect(client.getQueryState(['customer-detail', 'b1'])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(['store-credit-history', 'b1'])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(['customer-detail', 'b2'])?.isInvalidated).toBe(false);
+    expect(client.getQueryState(['store-credit-history', 'b2'])?.isInvalidated).toBe(false);
+  });
+
+  it('shows insufficient credit without presenting a successful settlement', async () => {
+    mockRpc.mockReturnValue({ data: null, error: {
+      message: 'Insufficient store credit balance (available: 0, requested: 100000)',
+    } });
+    renderModal();
+    await selectCustomer();
+    fireEvent.change(screen.getByLabelText(/^amount$/i), { target: { value: '100000' } });
+    fireEvent.change(screen.getByLabelText(/^method$/i), { target: { value: 'store_credit' } });
+    fireEvent.click(screen.getByRole('button', { name: /record payment/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Insufficient store credit balance');
+    expect(screen.queryByTestId('rp-success')).not.toBeInTheDocument();
   });
 });
 
@@ -167,5 +202,10 @@ describe('useRecordB2bPayment.classify', () => {
     expect(
       classify('payment_not_fully_allocated (unallocated: 50000, amount: 150000)'),
     ).toBe('payment_not_fully_allocated');
+  });
+
+  it('reconnaît un solde d’avoir insuffisant (P0016)', () => {
+    expect(classify('Insufficient store credit balance (available: 0, requested: 100000)'))
+      .toBe('insufficient_store_credit');
   });
 });
