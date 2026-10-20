@@ -9,12 +9,16 @@ beforeEach(async () => {
       reason_code: 'misc', idempotency_key: 'uuid' } };
 });
 describe('reprise cash dans le même onglet', () => {
+  it('resumes the original amount/key after re-PIN and accepts the historical hash', async () => {
+    attempt.scope.session = 'historical-token-hash'; saveCashMovement(attempt);
+    expect(await resumeCashMovement('cashier', 'new-token', 'shift')).toEqual(attempt);
+  });
   it('conserve la requête exacte et la clé après modification de l’objet original', async () => {
     const original = structuredClone(attempt);
     saveCashMovement(original); original.input.amount = 200000;
     expect(await resumeCashMovement('cashier', 'token', 'shift')).toEqual(attempt);
   });
-  it.each(['project', 'userId', 'session', 'shiftId'] as const)('refuse une portée différente %s sans effacer', async (key) => {
+  it.each(['project', 'userId', 'shiftId'] as const)('refuse une portée différente %s sans effacer', async (key) => {
     const other = structuredClone(attempt); other.scope[key] = 'other';
     if (key === 'shiftId') other.input.session_id = 'other';
     saveCashMovement(other);

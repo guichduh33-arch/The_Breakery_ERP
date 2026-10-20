@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FinancialAttemptError, financialStorageKey, readFinancialSlot, runFinancialAttempt } from '../pendingFinancialAttempts.js';
 import { deferred, installFinancialBrowser } from './financialAttemptTestUtils.js';
 import type { PaymentSnapshot } from '../pendingFinancialAttemptSchema.js';
+import { FinancialAttemptError as SharedFinancialAttemptError } from '@breakery/utils';
 
 const scope = { environment: 'https://dev.supabase.co', profileId: 'profile-a', operation: 'payment' as const, target: 'customer-a' };
 const payload = { customerId: 'customer-a', amount: 50, method: 'store_credit' as const, invoiceIds: ['invoice-b', 'invoice-a'] };
@@ -10,6 +11,21 @@ const options = { scope, payload, expectedRevision: null, current };
 
 describe('durable financial attempts', () => {
   beforeEach(() => { vi.restoreAllMocks(); installFinancialBrowser(); });
+  it('reads existing v1 strings and preserves the shared error identity', async () => {
+    expect(FinancialAttemptError).toBe(SharedFinancialAttemptError);
+    const key = 'breakery:financial-attempt:v1:https%3A%2F%2Fdev.supabase.co:profile-a:payment:customer-a';
+    expect(financialStorageKey(scope)).toBe(key);
+    const revision = '11111111-2222-4333-8444-555555555555';
+    const idempotencyKey = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+    localStorage.setItem(key, JSON.stringify({ version: 1, revision, operation: 'payment', target: 'customer-a', status: 'pending', idempotencyKey, payload }));
+    const send = vi.fn(() => Promise.resolve('ok'));
+    await runFinancialAttempt({ ...options, expectedRevision: revision, send });
+    expect(send).toHaveBeenCalledWith(payload, idempotencyKey);
+    const tombstone = localStorage.getItem(key)!;
+    expect(JSON.parse(tombstone)).toMatchObject({ version: 1, status: 'resolved', operation: 'payment', target: 'customer-a' });
+    localStorage.setItem(key, tombstone);
+    expect(readFinancialSlot(scope)?.status).toBe('resolved');
+  });
 
   it('writes before sending, survives a lost committed response, and replays the identical key and snapshot', async () => {
     const ledger = new Map<string, unknown>();

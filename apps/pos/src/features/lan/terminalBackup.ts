@@ -1,10 +1,14 @@
 // Export conservatoire : aucune mutation, aucun rejeu et aucune restauration.
+import { FINANCIAL_ATTEMPT_PREFIX, financialStorageKey } from '@breakery/utils';
+import { validRefundSlot } from '@/features/order-history/hooks/refundRecovery';
 const LOCAL_KEYS = [
   'pos:offline_outbox', 'pos:offline_quarantine', 'pos:event_outbox',
   'breakery-offline-intent-seq', 'breakery-local-order-seq',
   'pos:device_token', 'pos:device_seq', 'breakery.payment-attempt.v1',
+  'breakery.print-jobs.v1', 'breakery.receipt-jobs.v1', 'breakery.kitchen-journal.v1',
 ] as const;
-const SESSION_KEYS = ['breakery.cart.v2', 'breakery.tablet-cart.v1', 'breakery.sale-snapshot.v1'] as const;
+const SESSION_KEYS = ['breakery.cart.v2', 'breakery.tablet-cart.v1', 'breakery.sale-snapshot.v1',
+  'breakery.counter-fire-attempt.v1', 'breakery.cash-movement-attempt.v1'] as const;
 const DATABASES = [
   { name: 'breakery-pos-offline', stores: ['outbox', 'quarantine'] },
   { name: 'breakery-pos-audit', stores: ['outbox'] },
@@ -12,6 +16,25 @@ const DATABASES = [
 
 function storageValues(storage: Pick<Storage, 'getItem'>, keys: readonly string[]) {
   return Object.fromEntries(keys.map((key) => [key, storage.getItem(key)]));
+}
+
+function financialValues(storage: Pick<Storage, 'getItem' | 'key' | 'length'>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (let index = 0; index < storage.length; index++) {
+    const key = storage.key(index);
+    if (!key?.startsWith(FINANCIAL_ATTEMPT_PREFIX)) continue;
+    const parts = key.slice(FINANCIAL_ATTEMPT_PREFIX.length).split(':').map(decodeURIComponent);
+    const [environment, profileId, operation, target] = parts;
+    if (operation !== 'refund') continue;
+    const raw = storage.getItem(key);
+    const scope = { environment: environment ?? '', profileId: profileId ?? '', operation: 'refund' as const, target: target ?? '' };
+    if (parts.length !== 4 || !environment || !profileId || !target || financialStorageKey(scope) !== key
+      || raw === null || !validRefundSlot(JSON.parse(raw) as unknown, scope)) {
+      throw new Error('Refund recovery data is invalid — preserve this terminal for recovery');
+    }
+    result[key] = raw;
+  }
+  return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 async function readDatabase(factory: IDBFactory, name: string, stores: string[]) {
@@ -52,7 +75,7 @@ async function readDatabase(factory: IDBFactory, name: string, stores: string[])
 
 export async function captureTerminalBackup(input: {
   projectRef: string; origin: string; terminalCode: string;
-  local: Pick<Storage, 'getItem'>; session: Pick<Storage, 'getItem'>;
+  local: Pick<Storage, 'getItem' | 'key' | 'length'>; session: Pick<Storage, 'getItem'>;
   factory?: IDBFactory | undefined; now?: Date;
 }) {
   if (!/^[a-z0-9]{20}$/.test(input.projectRef) || !input.terminalCode.trim() ||
@@ -63,12 +86,12 @@ export async function captureTerminalBackup(input: {
     throw new Error('This browser cannot safely enumerate terminal storage');
   }
   const read = async () => {
-    const local = storageValues(input.local, LOCAL_KEYS);
+    const local = { ...storageValues(input.local, LOCAL_KEYS), ...financialValues(input.local) };
     const session = storageValues(input.session, SESSION_KEYS);
     const databases = await Promise.all(DATABASES.map(async (db) => ({ name: db.name,
       ...(input.factory ? await readDatabase(input.factory, db.name, db.stores) : { present: false, stores: {} }),
     })));
-    if (JSON.stringify(local) !== JSON.stringify(storageValues(input.local, LOCAL_KEYS)) ||
+    if (JSON.stringify(local) !== JSON.stringify({ ...storageValues(input.local, LOCAL_KEYS), ...financialValues(input.local) }) ||
         JSON.stringify(session) !== JSON.stringify(storageValues(input.session, SESSION_KEYS))) {
       throw new Error('Terminal data changed. Stop activity and retry the export');
     }

@@ -6,7 +6,9 @@
 //   3. Reason + manager PIN
 // Submit hits refund-order EF.
 
-import { useMemo, useRef, useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
+import { PENDING_MESSAGE } from '@breakery/utils';
+import { useRefundAttempt } from '../hooks/useRefundAttempt';
 import { X } from 'lucide-react';
 import {
   Button, NumpadPin, FullScreenModal, cn, Input, Currency,
@@ -29,11 +31,13 @@ export interface RefundOrderModalProps {
   onClose: () => void;
   order: OrderDetail;
   onSubmit: (args: {
+    orderId: string;
     lines: { order_item_id: string; qty: number }[];
     tenders: { method: PaymentMethod; amount: number }[];
     reason: string;
     managerPin: string;
     idempotencyKey: string;
+    sessionGuard?: () => boolean;
   }) => Promise<void> | void;
   isPending?: boolean;
 }
@@ -41,17 +45,19 @@ export interface RefundOrderModalProps {
 export function RefundOrderModal({
   open, onClose, order, onSubmit, isPending = false,
 }: RefundOrderModalProps): JSX.Element {
+  const attempt = useRefundAttempt(order.id, open);
   // qty selected per order_item_id (0 = not selected)
-  const [selectedQty, setSelectedQty] = useState<Map<string, number>>(new Map());
-  const [tenderValues, setTenderValues] = useState<RefundTenderSplitterEntry[]>([]);
-  const [reason, setReason] = useState('');
+  const [draftSelectedQty, setSelectedQty] = useState<Map<string, number>>(new Map());
+  const [draftTenderValues, setTenderValues] = useState<RefundTenderSplitterEntry[]>([]);
+  const [draftReason, setReason] = useState('');
+  const selectedQty = useMemo(() => attempt.pending ? new Map(attempt.pending.payload.lines.map((line) => [line.order_item_id, line.qty])) : draftSelectedQty, [attempt.pending, draftSelectedQty]);
+  const tenderValues = attempt.pending?.payload.tenders ?? draftTenderValues;
+  const reason = attempt.pending?.payload.reason ?? draftReason;
   const [pinKey, setPinKey] = useState(0);
   // Lot 2 harden — le brouillon incomplet ne sortait qu'en toast au submit
   // PIN : l'erreur vit désormais aussi inline, au pavé (WCAG 3.3.1).
   const [pinError, setPinError] = useState<string | null>(null);
-  // One UUID per "modal open session" — sticky across re-renders and retries.
-  // Reset on close (dismiss or post-success) so the next open gets a fresh key.
-  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  const frozen = attempt.pending !== null || attempt.storageError !== null || attempt.busy || isPending;
 
   const refundableItems: RefundableItem[] = useMemo(() => order.items.map((it) => ({
     order_item_id: it.id,
@@ -67,6 +73,7 @@ export function RefundOrderModal({
   );
 
   const refundTotal = useMemo(() => {
+    if (attempt.pending) return attempt.pending.payload.tenders.reduce((sum, tender) => sum + tender.amount, 0);
     let s = 0;
     for (const [oiId, qty] of selectedQty.entries()) {
       if (qty <= 0) continue;
@@ -74,7 +81,7 @@ export function RefundOrderModal({
       if (it) s += computeRefundLineAmount(it, qty);
     }
     return s;
-  }, [selectedQty, itemsById]);
+  }, [selectedQty, itemsById, attempt.pending]);
 
   const methodLedger: MethodLedgerEntry[] = useMemo(() => {
     const paidByMethod = new Map<PaymentMethod, number>();
@@ -121,18 +128,21 @@ export function RefundOrderModal({
     && validation.ok === true;
 
   function handleClose(): void {
+    if (attempt.pending || attempt.busy) { onClose(); return; }
+    clearDraftAndClose();
+  }
+
+  function clearDraftAndClose(): void {
     setSelectedQty(new Map());
     setTenderValues([]);
     setReason('');
     setPinError(null);
     setPinKey((k) => k + 1);
-    // Fresh UUID for the next open session (covers both dismiss-without-success and post-success close).
-    idempotencyKeyRef.current = crypto.randomUUID();
     onClose();
   }
 
   async function handlePinSubmit(pin: string): Promise<void> {
-    if (!canSubmit) {
+    if (!attempt.pending && !canSubmit) {
       const msg = validation && !validation.ok
         ? `${validation.error}${validation.detail ? ` — ${validation.detail}` : ''}`
         : 'Refund draft incomplete — pick lines, split tenders and give a reason.';
@@ -142,16 +152,13 @@ export function RefundOrderModal({
       return;
     }
     setPinError(null);
+    let current = () => false;
     try {
-      await onSubmit({
-        lines: draftLines,
-        tenders: draftTenders.map((t) => ({ method: t.method, amount: t.amount })),
-        reason: reason.trim(),
-        managerPin: pin,
-        idempotencyKey: idempotencyKeyRef.current,
-      });
-      handleClose();
-    } catch {
+      await attempt.submit({ orderId: order.id, lines: draftLines, tenders: draftTenders, reason: reason.trim() },
+        async (value, key, isCurrent) => { current = isCurrent; await onSubmit({ ...value, managerPin: pin, idempotencyKey: key, sessionGuard: isCurrent }); });
+      if (current()) clearDraftAndClose();
+    } catch (error) {
+      setPinError(error instanceof Error ? error.message : 'Refund confirmation unavailable');
       setPinKey((k) => k + 1);
     }
   }
@@ -190,6 +197,10 @@ export function RefundOrderModal({
         </header>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {attempt.pending && <p role="status">{PENDING_MESSAGE}</p>}
+          {attempt.storageError && <p role="alert">{attempt.storageError}</p>}
+          <fieldset disabled={frozen} className="space-y-6 min-w-0">
+          <legend className="sr-only">Refund details</legend>
           <section>
             <div className="text-xs uppercase tracking-widest text-text-secondary mb-3">
               Lines to refund
@@ -230,7 +241,7 @@ export function RefundOrderModal({
               values={tenderValues}
               onChange={setTenderValues}
             />
-            {validation && !validation.ok && draftLines.length > 0 && draftTenders.length > 0 && (
+            {!attempt.pending && validation && !validation.ok && draftLines.length > 0 && draftTenders.length > 0 && (
               <div role="alert" className="mt-2 text-xs text-red-as-text">
                 {validation.error}{validation.detail ? ` — ${validation.detail}` : ''}
               </div>
@@ -261,6 +272,7 @@ export function RefundOrderModal({
             )}
           </section>
 
+          </fieldset>
           <section>
             <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">
               Manager PIN
@@ -269,7 +281,7 @@ export function RefundOrderModal({
               key={pinKey}
               maxLength={6}
               onSubmit={(pin) => { void handlePinSubmit(pin); }}
-              isLoading={isPending || !canSubmit}
+              isLoading={attempt.busy || isPending || Boolean(attempt.storageError) || !attempt.allowed || (!attempt.pending && !canSubmit)}
               error={pinError}
             />
           </section>
