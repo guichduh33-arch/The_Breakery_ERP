@@ -12,6 +12,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
+import { runFinancialAttempt } from '@/lib/pendingFinancialAttempts.js';
 
 // ── fixture mutable ────────────────────────────────────────────────────────
 const BASE_ORDER = {
@@ -70,10 +72,7 @@ vi.mock('@/features/orders/hooks/useOrderDetail.js', () => ({
 
 // Gates : accordées par défaut, restreintes cas par cas.
 let grantedPerms = new Set(['orders.edit_open', 'orders.void']);
-vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (selector: (s: { hasPermission: (c: string) => boolean }) => unknown) =>
-    selector({ hasPermission: (c: string) => grantedPerms.has(c) }),
-}));
+vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 
 // Lot 6c — ces deux hooks transitent par @/lib/supabase (env-gated en test).
 // On les stub pour garder le tiroir hors de la chaîne d'import Supabase.
@@ -101,6 +100,8 @@ function renderDrawer(props: Partial<React.ComponentProps<typeof OrderDetailDraw
 
 describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
   beforeEach(() => {
+    installFinancialBrowser(); resetFinancialSession();
+    financialTestAuth.setState({ hasPermission: (code) => grantedPerms.has(code) });
     orderOverrides = {};
     grantedPerms = new Set(['orders.edit_open', 'orders.void']);
   });
@@ -247,5 +248,19 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     renderDrawer();
     await screen.findByTestId('order-detail-drawer');
     expect(screen.queryByTestId('drawer-reprint')).toBeNull();
+  });
+
+  it('keeps a pending refund entry after full refund, under the current permission', async () => {
+    await runFinancialAttempt({ scope: { environment: import.meta.env.VITE_SUPABASE_URL as string,
+      profileId: 'profile-a', operation: 'refund', target: 'o-1' }, expectedRevision: null,
+      payload: { orderId: 'o-1', lines: [{ order_item_id: 'i-1', qty: 2 }],
+        tenders: [{ method: 'card', amount: 100000 }], reason: 'Returned items' },
+      current: () => true, send: () => Promise.reject(new Error('Lost response')) }).catch(() => undefined);
+    grantedPerms = new Set(['orders.refund']); orderOverrides = { total_refunded: 100000 };
+    const view = renderDrawer();
+    fireEvent.click(await screen.findByRole('button', { name: 'Check pending refund' }));
+    expect(await screen.findByTestId('refund-modal-bo')).toBeInTheDocument();
+    view.unmount(); grantedPerms = new Set(); renderDrawer();
+    expect(screen.queryByRole('button', { name: 'Check pending refund' })).not.toBeInTheDocument();
   });
 });

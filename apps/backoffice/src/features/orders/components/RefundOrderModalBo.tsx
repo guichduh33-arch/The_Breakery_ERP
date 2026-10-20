@@ -12,7 +12,7 @@
 // et, en échappatoire, le store credit (si un client est rattaché). Le cash est
 // masqué avec une note explicite ; le serveur reste l'autorité (P0015/P0016).
 
-import { useMemo, useRef, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogDescription } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
@@ -29,6 +29,9 @@ import { PAYMENT_METHOD_LABEL } from '@/features/orders/statusMeta.js';
 import { useRefundOrder } from '@/features/orders/hooks/useRefundOrder.js';
 import type { OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { useAuthStore } from '@/stores/authStore.js';
+import { useFinancialAttempt } from '@/lib/useFinancialAttempt.js';
+import { PENDING_MESSAGE } from '@/lib/pendingFinancialAttempts.js';
 
 interface Props {
   open: boolean;
@@ -41,16 +44,23 @@ function methodLabel(method: string): string {
 }
 
 export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element {
-  const [selectedQty, setSelectedQty] = useState<Map<string, number>>(new Map());
+  const [draftQty, setSelectedQty] = useState<Map<string, number>>(new Map());
   const [method, setMethod] = useState<string>('');
   const [reason, setReason] = useState('');
   const [pin, setPin] = useState('');
-  // Une clé par ouverture de modale — stable aux re-renders et aux retries.
-  const idem = useRef(crypto.randomUUID());
   const m = useRefundOrder();
+  const attempt = useFinancialAttempt('refund', order.id, open);
+  const snapshot = attempt.pending?.payload;
+  const selectedQty = useMemo(() => snapshot ? new Map(snapshot.lines.map((line) => [line.order_item_id, line.qty])) : draftQty, [snapshot, draftQty]);
+  const [formError, setFormError] = useState<string | null>(null);
+  const sessionToken = useAuthStore((s) => s.sessionToken);
+  useEffect(() => {
+    setSelectedQty(new Map()); setMethod(''); setReason(''); setPin(''); setFormError(null);
+  }, [open, order.id, sessionToken]);
+  const frozen = Boolean(snapshot) || attempt.busy;
 
   const hasCustomer = order.customer_id != null;
-  const refundedByMethod = order.refunded_by_method ?? {};
+  const refundedByMethod = useMemo(() => order.refunded_by_method ?? {}, [order.refunded_by_method]);
 
   // Lignes remboursables : on exclut les lignes annulées (jamais encaissées).
   const refundableItems: RefundableItem[] = useMemo(
@@ -73,6 +83,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
   );
 
   const refundTotal = useMemo(() => {
+    if (snapshot) return snapshot.tenders.reduce((sum, tender) => sum + tender.amount, 0);
     let s = 0;
     for (const [oiId, qty] of selectedQty.entries()) {
       if (qty <= 0) continue;
@@ -80,7 +91,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
       if (it) s += computeRefundLineAmount(it, qty);
     }
     return s;
-  }, [selectedQty, itemsById]);
+  }, [selectedQty, itemsById, snapshot]);
 
   // Montant payé par méthode (pour le plafond par tender des méthodes d'origine).
   const paidByMethod = useMemo(() => {
@@ -106,7 +117,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
 
   // Défaut : première méthode non-cash, sinon store credit si un client existe.
   const defaultMethod = nonCashOptions[0]?.method ?? (hasCustomer ? 'store_credit' : '');
-  const effectiveMethod = method || defaultMethod;
+  const effectiveMethod = snapshot?.tenders[0]?.method ?? (method || defaultMethod);
 
   const draftLines = useMemo(
     () =>
@@ -149,12 +160,11 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
   const reasonOk = reason.trim().length >= 3;
   const pinOk = /^\d{6}$/.test(pin);
   const canSubmit =
-    refundTotal > 0 &&
+    attempt.allowed && !attempt.storageError && !attempt.busy && (snapshot ? pinOk : (refundTotal > 0 &&
     effectiveMethod !== '' &&
     reasonOk &&
     pinOk &&
-    validation?.ok === true &&
-    !m.isPending;
+    validation?.ok === true));
 
   function handleQty(oiId: string, next: number): void {
     setSelectedQty((prev) => {
@@ -170,25 +180,27 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
     setMethod('');
     setReason('');
     setPin('');
-    idem.current = crypto.randomUUID();
+    setFormError(null);
     onClose();
   }
 
   async function handleSubmit(): Promise<void> {
     if (!canSubmit) return;
-    try {
-      const res = await m.mutateAsync({
+    const managerPin = pin;
+    setPin('');
+    setFormError(null);
+    const outcome = await attempt.submit(snapshot ?? {
         orderId: order.id,
         lines: draftLines,
         tenders: [{ method: effectiveMethod, amount: refundTotal }],
         reason: reason.trim(),
-        managerPin: pin,
-        idempotencyKey: idem.current,
-      });
-      toast.success(`Refund ${res.refund_number} recorded`);
+      }, (payload, key, current) => m.mutateAsync({ ...payload, managerPin, idempotencyKey: key, sessionGuard: current }));
+    if (!outcome.current) return;
+    if ('result' in outcome) {
+      toast.success(`Refund ${outcome.result.refund_number} recorded`);
       handleClose();
-    } catch {
-      // m.error rendu sous le formulaire ; on garde la modale ouverte.
+    } else {
+      setFormError(outcome.error instanceof Error ? outcome.error.message : 'Refund result unconfirmed. Please check the pending attempt.');
     }
   }
 
@@ -202,6 +214,8 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
         <DialogDescription className="sr-only">
           Refund selected lines back to a non-cash tender or as store credit.
         </DialogDescription>
+        {snapshot && <p role="status" className="text-sm text-warning">{PENDING_MESSAGE}</p>}
+        {snapshot && <p className="text-xs text-text-secondary">Saved lines: {snapshot.lines.map((line) => `${line.order_item_id} × ${line.qty}`).join(', ')}</p>}
 
         {/* Lignes à rembourser */}
         <div>
@@ -231,7 +245,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                         type="button"
                         aria-label={`Decrease ${full?.name_snapshot ?? ''}`}
                         className="flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40"
-                        disabled={qty <= 0}
+                        disabled={frozen || qty <= 0}
                         onClick={() => handleQty(it.order_item_id, qty - 1)}
                       >
                         <Minus className="h-3 w-3" aria-hidden />
@@ -241,7 +255,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                         type="button"
                         aria-label={`Increase ${full?.name_snapshot ?? ''}`}
                         className="flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40"
-                        disabled={qty >= remaining}
+                        disabled={frozen || qty >= remaining}
                         onClick={() => handleQty(it.order_item_id, qty + 1)}
                       >
                         <Plus className="h-3 w-3" aria-hidden />
@@ -265,10 +279,12 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           <select
             id="refund-method-bo"
             value={effectiveMethod}
+            disabled={frozen}
             onChange={(e) => setMethod(e.target.value)}
             className={`mt-1 w-full rounded border border-border-strong bg-bg-elevated p-2 text-sm text-text-primary ${FOCUS_RING}`}
             data-testid="refund-method"
           >
+            {snapshot && <option value={effectiveMethod}>{methodLabel(effectiveMethod)} — saved refund destination</option>}
             {nonCashOptions.length === 0 && !hasCustomer && (
               <option value="" disabled>
                 No eligible destination
@@ -287,7 +303,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           <p className="mt-1 text-xs text-text-muted">
             Cash refunds require an open register (POS) and are unavailable here.
           </p>
-          {hadCashOnly && !hasCustomer && (
+          {!snapshot && hadCashOnly && !hasCustomer && (
             <p className="mt-1 text-xs text-danger">
               This order was paid in cash and has no customer for store credit — it cannot be refunded from the back-office.
             </p>
@@ -299,13 +315,14 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           <label htmlFor="refund-reason-bo" className="block text-sm font-medium">Reason</label>
           <input
             id="refund-reason-bo"
-            value={reason}
+            value={snapshot?.reason ?? reason}
+            disabled={frozen}
             onChange={(e) => setReason(e.target.value)}
             className={`mt-1 w-full rounded border border-border-strong p-2 text-sm placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="Min. 3 characters…"
             data-testid="refund-reason"
           />
-          {!reasonOk && reason.length > 0 && <p className="mt-1 text-xs text-danger">Min. 3 characters</p>}
+          {!snapshot && !reasonOk && reason.length > 0 && <p className="mt-1 text-xs text-danger">Min. 3 characters</p>}
         </div>
 
         {/* PIN manager */}
@@ -314,6 +331,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           <input
             id="refund-pin-bo"
             type="password"
+            autoComplete="off"
             inputMode="numeric"
             maxLength={6}
             value={pin}
@@ -323,12 +341,12 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           />
         </div>
 
-        {validation && !validation.ok && draftLines.length > 0 && (
+        {!snapshot && validation && !validation.ok && draftLines.length > 0 && (
           <p className="text-xs text-danger" data-testid="refund-validation">
             {validation.error}{validation.detail ? ` — ${validation.detail}` : ''}
           </p>
         )}
-        {m.error && <p className="text-sm text-danger" data-testid="refund-error">{m.error.message}</p>}
+        {(formError ?? attempt.storageError) && <p role="alert" className="text-sm text-danger" data-testid="refund-error">{formError ?? attempt.storageError}</p>}
 
         <div className="flex items-center justify-between">
           <span className="text-sm text-text-secondary">
@@ -347,7 +365,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
               onClick={handleClose}
               data-testid="refund-cancel"
             >
-              Cancel
+              {snapshot || attempt.busy ? 'Close' : 'Cancel'}
             </Button>
             <Button
               type="button"
@@ -358,7 +376,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
               disabled={!canSubmit}
               data-testid="refund-submit"
             >
-              {m.isPending ? 'Refunding…' : 'Refund'}
+              {attempt.busy ? 'Refunding…' : snapshot ? 'Check pending refund' : 'Refund'}
             </Button>
           </div>
         </div>

@@ -18,6 +18,9 @@ import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { B2B_SETTLEMENT_BADGE, B2B_SETTLEMENT_TONE } from '../paymentStatusMeta.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { useAuthStore } from '@/stores/authStore.js';
+import { useFinancialAttempt, usePendingPaymentTargets } from '@/lib/useFinancialAttempt.js';
+import { PENDING_MESSAGE } from '@/lib/pendingFinancialAttempts.js';
 
 export interface RecordB2bPaymentModalProps {
   open:    boolean;
@@ -55,10 +58,15 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
   const [reference,  setReference]        = useState<string>('');
   const [paidAt,     setPaidAt]           = useState<string>('');
   const [notes,      setNotes]            = useState<string>('');
-  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   const [formError, setFormError]         = useState<string | null>(null);
   const [selectedIds, setSelectedIds]     = useState<string[]>([]);
   const [result, setResult]               = useState<RecordB2bPaymentResult | null>(null);
+  const attempt = useFinancialAttempt('payment', customerId, open);
+  const pendingTargets = usePendingPaymentTargets();
+  const snapshot = attempt.pending?.payload;
+  const frozen = Boolean(snapshot) || attempt.busy;
+  const effectiveIds = snapshot ? snapshot.invoiceIds ?? [] : selectedIds;
+  const sessionToken = useAuthStore((s) => s.sessionToken);
 
   useEffect(() => {
     if (open) {
@@ -68,17 +76,16 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
       setReference('');
       setPaidAt('');
       setNotes('');
-      setIdempotencyKey(crypto.randomUUID());
       setFormError(null);
       setSelectedIds(initialInvoiceIds ?? []);
       setResult(null);
     }
-  }, [open, initialCustomerId, initialInvoiceIds]);
+  }, [open, initialCustomerId, initialInvoiceIds, sessionToken]);
 
   const invoices = useB2bInvoices(customerId, true, open && customerId !== '');
 
   useEffect(() => {
-    if (!open || selectedIds.length === 0 || amount !== '' || !invoices.data) return;
+    if (!open || snapshot || selectedIds.length === 0 || amount !== '' || !invoices.data) return;
     const sum = invoices.data
       .filter((r) => selectedIds.includes(r.invoice_id))
       .reduce((acc, r) => acc + Number(r.outstanding), 0);
@@ -91,13 +98,13 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
     [customers.data, customerId],
   );
 
-  const numericAmount = Number.parseFloat(amount);
+  const numericAmount = snapshot?.amount ?? Number.parseFloat(amount);
   const amountValid   = Number.isFinite(numericAmount) && numericAmount > 0;
-  const overpaying    = selectedCustomer !== null
+  const overpaying    = !snapshot && selectedCustomer !== null
                         && amountValid
                         && numericAmount > Number(selectedCustomer.b2b_current_balance ?? 0);
 
-  const canSubmit = customerId !== '' && amountValid && !overpaying && !recordMut.isPending;
+  const canSubmit = attempt.allowed && customerId !== '' && amountValid && !overpaying && !attempt.busy && !attempt.storageError;
 
   function handleClose(): void {
     setFormError(null);
@@ -123,19 +130,24 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
     if (!canSubmit) return;
     setFormError(null);
 
-    try {
-      const res = await recordMut.mutateAsync({
+    const outcome = await attempt.submit(snapshot ?? {
         customerId,
         amount: numericAmount,
         method,
         ...(reference.trim() !== '' ? { reference: reference.trim() } : {}),
         ...(paidAt.trim()    !== '' ? { paidAt }                       : {}),
         ...(notes.trim()     !== '' ? { notes: notes.trim() }          : {}),
-        idempotencyKey,
         ...(selectedIds.length > 0 ? { invoiceIds: selectedIds } : {}),
-      });
-      setResult(res);
-    } catch (err) {
+      }, (payload, key, current) => recordMut.mutateAsync({ ...payload, idempotencyKey: key, sessionGuard: current }));
+    if (!outcome.current) return;
+    if ('result' in outcome) {
+      setResult(outcome.result);
+    } else {
+      const err = outcome.error;
+      if (snapshot) {
+        setFormError(`${err instanceof Error ? err.message : 'Request failed.'} The original result remains unconfirmed. Keep the saved details and check this pending attempt.`);
+        return;
+      }
       if (err instanceof RecordB2bPaymentError) {
         switch (err.code) {
           case 'overpayment_not_allowed':
@@ -157,7 +169,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
             setFormError(err.message);
         }
       } else {
-        setFormError('Something went wrong. Please retry.');
+        setFormError(err instanceof Error ? err.message : 'Something went wrong. Please retry.');
       }
     }
   }
@@ -199,6 +211,16 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               {formError}
             </div>
           )}
+          {snapshot && <p role="status" className="text-sm text-warning">{PENDING_MESSAGE}</p>}
+          {attempt.storageError && <p role="alert" className="text-sm text-danger">{attempt.storageError}</p>}
+          {!snapshot && !initialCustomerId && pendingTargets.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {pendingTargets.map((target) => <Button key={target} type="button" variant="secondary" size="sm"
+                onClick={() => { setCustomerId(target); setSelectedIds([]); setAmount(''); }}>
+                Check pending payment for {customers.data?.find((customer) => customer.id === target)?.b2b_company_name ?? target}
+              </Button>)}
+            </div>
+          )}
 
           <div className="space-y-1">
             <label htmlFor={customerId_} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -208,9 +230,10 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               id={customerId_}
               value={customerId}
               onChange={(e) => { setCustomerId(e.target.value); setSelectedIds([]); }}
-              disabled={customers.isLoading}
+              disabled={frozen || customers.isLoading}
             >
               <option value="">— Select a B2B customer —</option>
+              {snapshot && !selectedCustomer && <option value={customerId}>{customerId} — pending payment</option>}
               {customers.data?.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.b2b_company_name ?? c.name}
@@ -227,8 +250,9 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
           {customerId !== '' && (
             <div className="space-y-1">
               <span className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
-                Open invoices {selectedIds.length > 0 ? `(${selectedIds.length} selected — allocation order)` : '(none selected → FIFO)'}
+                Open invoices {effectiveIds.length > 0 ? `(${effectiveIds.length} selected — allocation order)` : '(none selected → FIFO)'}
               </span>
+              {snapshot && <p className="text-xs text-text-secondary">Saved invoice selection: {snapshot.invoiceIds?.length ? snapshot.invoiceIds.join(', ') : 'FIFO'}</p>}
               {invoices.isLoading ? (
                 <p className="text-xs text-text-muted">Loading invoices…</p>
               ) : (invoices.data ?? []).length === 0 ? (
@@ -241,7 +265,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                         <span className="flex items-center gap-2">
                           <input className={FOCUS_RING}
                             type="checkbox"
-                            checked={selectedIds.includes(inv.invoice_id)}
+                            checked={effectiveIds.includes(inv.invoice_id)}
+                            disabled={frozen}
                             onChange={() => toggleInvoice(inv)}
                             data-testid={`rp-invoice-${inv.order_number}`}
                           />
@@ -254,7 +279,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   ))}
                 </ul>
               )}
-              {selectedIds.length > 0 && amountValid && (() => {
+              {!snapshot && selectedIds.length > 0 && amountValid && (() => {
                 const sum = (invoices.data ?? [])
                   .filter((r) => selectedIds.includes(r.invoice_id))
                   .reduce((acc, r) => acc + Number(r.outstanding), 0);
@@ -278,7 +303,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                 inputMode="decimal"
                 min={0}
                 step="0.01"
-                value={amount}
+                value={snapshot ? String(snapshot.amount) : amount}
+                disabled={frozen}
                 onChange={(e) => setAmount(e.target.value)}
                 aria-invalid={(amount !== '' && !amountValid) || overpaying}
               />
@@ -292,7 +318,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               </label>
               <Select
                 id={methodId}
-                value={method}
+                value={snapshot?.method ?? method}
+                disabled={frozen}
                 onChange={(e) => { setMethod(e.target.value as B2bPaymentMethod); }}
               >
                 {METHODS.map((m) => (
@@ -310,7 +337,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               <Input
                 id={refId}
                 type="text"
-                value={reference}
+                value={snapshot ? snapshot.reference ?? '' : reference}
+                disabled={frozen}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="Bank ref / check #"
               />
@@ -322,7 +350,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               <Input
                 id={dateId}
                 type="datetime-local"
-                value={paidAt}
+                value={snapshot ? snapshot.paidAt ?? '' : paidAt}
+                disabled={frozen}
                 onChange={(e) => setPaidAt(e.target.value)}
               />
             </div>
@@ -334,7 +363,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
             </label>
             <textarea
               id={notesId}
-              value={notes}
+              value={snapshot ? snapshot.notes ?? '' : notes}
+              disabled={frozen}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className={`w-full rounded-md border border-border-strong bg-bg-input p-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`}
@@ -343,9 +373,9 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={handleClose}>{snapshot || attempt.busy ? 'Close' : 'Cancel'}</Button>
             <Button type="submit" variant="ink" disabled={!canSubmit}>
-              {recordMut.isPending ? 'Recording…' : 'Record payment'}
+              {attempt.busy ? 'Recording…' : snapshot ? 'Check pending payment' : 'Record payment'}
             </Button>
           </div>
         </form>

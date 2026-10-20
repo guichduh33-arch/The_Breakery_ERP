@@ -47,6 +47,7 @@ import {
   orderTypeLabel,
 } from '@/features/orders/statusMeta.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 
 export interface OrderDetailDrawerProps {
   orderId: string | null;
@@ -254,13 +255,14 @@ export function OrderDetailDrawer({
   // la liste) : aucune surface concurrente ne le déclenche, la modale vit donc
   // ici, en état local — zéro couplage à la page de liste.
   const [refundOpen, setRefundOpen] = useState(false);
+  const pendingRefund = useHasPendingFinancial('refund', orderId ?? '');
   const reprint = useReprintReceipt();
 
   // Reste remboursable = le total moins ce qui est déjà remboursé.
   const canRefund =
     data !== undefined && hasRefund
-    && REFUNDABLE_STATUSES.has(data.status)
-    && data.total_refunded < data.total;
+    && (pendingRefund || (REFUNDABLE_STATUSES.has(data.status)
+    && data.total_refunded < data.total));
   // Le reçu duplicata n'a de sens que sur une commande qui a porté l'argent.
   const canReprint = data !== undefined && hasReprint && isOrderDetailPaid(data);
 
@@ -356,7 +358,7 @@ export function OrderDetailDrawer({
                     onClick={() => { setRefundOpen(true); }}
                   >
                     <Undo2 className="h-3.5 w-3.5" aria-hidden />
-                    Refund
+                    {pendingRefund ? 'Check pending refund' : 'Refund'}
                   </Button>
                 )}
                 {voidAction !== null && (

@@ -3,15 +3,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import B2BOrderDetailPage from '../B2BOrderDetailPage.js';
+import { financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
+import { runFinancialAttempt } from '@/lib/pendingFinancialAttempts.js';
 
 const { state, rpc } = vi.hoisted(() => ({
   state: { delivered: false, paid: false, missing: false, error: false, allowed: true },
   rpc: vi.fn(),
 }));
-vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (select: (s: { hasPermission: () => boolean }) => unknown) =>
-    select({ hasPermission: () => state.allowed }),
-}));
+vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 vi.mock('@/features/btob/components/B2bOrderItemsPanel.js', () => ({
   B2bOrderItemsPanel: ({ orderId }: { orderId: string }) => <div>Items for {orderId}</div>,
 }));
@@ -65,6 +64,8 @@ function setup() {
 
 describe('B2B order detail', () => {
   beforeEach(() => {
+    installFinancialBrowser(); resetFinancialSession();
+    financialTestAuth.setState({ hasPermission: () => state.allowed });
     Object.assign(state, {
       delivered: false,
       paid: false,
@@ -116,5 +117,14 @@ describe('B2B order detail', () => {
     setup();
     expect(await screen.findByRole('alert')).toHaveTextContent('Connection failed');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+  it('keeps Check pending payment available after the invoice becomes fully settled', async () => {
+    state.paid = true;
+    await runFinancialAttempt({ scope: { environment: import.meta.env.VITE_SUPABASE_URL as string,
+      profileId: 'profile-a', operation: 'payment', target: 'c1' }, expectedRevision: null,
+      payload: { customerId: 'c1', amount: 100, method: 'store_credit', invoiceIds: ['o1'] },
+      current: () => true, send: () => Promise.reject(new Error('Lost response')) }).catch(() => undefined);
+    setup(); fireEvent.click(await screen.findByRole('button', { name: 'Check pending payment' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Payment for o1');
   });
 });

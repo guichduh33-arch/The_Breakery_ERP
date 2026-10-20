@@ -29,6 +29,7 @@ import { formatCount, formatIdr, formatIdrShort } from '@/features/dashboard/uti
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 import { FOCUS_WITHIN_RING } from '@/components/focusRing.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { usePendingPaymentTargets } from '@/lib/useFinancialAttempt.js';
 import { useB2bDashboard, type B2bClientRow } from '@/features/btob/hooks/useB2bDashboard.js';
 import {
   useB2bPaymentsReceived,
@@ -56,6 +57,7 @@ export default function B2BPaymentsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('customers.read');
   const canRecord = hasPermission('b2b.payment.record');
+  const pendingPaymentTargets = usePendingPaymentTargets();
   const dash = useB2bDashboard();
   // Session 59 / Task 6a — seed the initial tab from `?tab=` so a JE-source
   // drilldown link (reference_type b2b_*) can land straight on Invoices.
@@ -135,7 +137,7 @@ export default function B2BPaymentsPage(): JSX.Element {
             disabled={!canRecord}
             onClick={() => openRecord()}
           >
-            <Plus className="h-3.5 w-3.5" aria-hidden /> Record Payment
+            <Plus className="h-3.5 w-3.5" aria-hidden /> {pendingPaymentTargets.length > 0 ? 'Check pending payments' : 'Record Payment'}
           </button>
         }
       />
