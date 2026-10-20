@@ -9,6 +9,7 @@ vi.mock('@/lib/queryClient', () => ({ queryClient: { invalidateQueries: vi.fn() 
 import { useOfflineReplay } from '../hooks/useOfflineReplay';
 import { useAuthStore } from '@/stores/authStore';
 import { useCloudStatusStore } from '../cloudStatusStore';
+import { notifyOutboxCommitted } from '../offlineOutboxWake';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -19,6 +20,32 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('automatic offline replay', () => {
+  it('wakes after a completed drain when another intent is committed, without a network change', async () => {
+    const hook = renderHook(useOfflineReplay);
+    await act(async () => { await Promise.resolve(); });
+    expect(replay).toHaveBeenCalledTimes(1);
+    await act(async () => { notifyOutboxCommitted(); await Promise.resolve(); });
+    expect(replay).toHaveBeenCalledTimes(2);
+    hook.unmount();
+    await act(async () => { notifyOutboxCommitted(); await Promise.resolve(); });
+    expect(replay).toHaveBeenCalledTimes(2);
+  });
+  it('reruns after an enqueue during a drain, but preserves the transient-failure backoff', async () => {
+    let finish!: (r: { replayed: number; failed: number }) => void;
+    replay.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    const hook = renderHook(useOfflineReplay);
+    act(() => notifyOutboxCommitted());
+    replay.mockResolvedValue({ replayed: 0, failed: 0 });
+    await act(async () => { finish({ replayed: 1, failed: 0 }); await Promise.resolve(); });
+    expect(replay).toHaveBeenCalledTimes(2);
+    replay.mockResolvedValue({ replayed: 0, failed: 1 });
+    await act(async () => { notifyOutboxCommitted(); await Promise.resolve(); });
+    const calls = replay.mock.calls.length;
+    await act(async () => { notifyOutboxCommitted(); await vi.advanceTimersByTimeAsync(14999); });
+    expect(replay).toHaveBeenCalledTimes(calls);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(replay).toHaveBeenCalledTimes(calls + 1); hook.unmount();
+  });
   it('retries with unchanged network/auth at 15/30/60 seconds, capped at 60', async () => {
     replay.mockResolvedValue({ replayed: 0, failed: 1 });
     const hook = renderHook(useOfflineReplay);

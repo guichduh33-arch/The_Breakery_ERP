@@ -22,6 +22,7 @@ export interface PaymentAttempt {
   version: 1;
   result?: PaymentSuccessState;
   successEffectsStarted?: boolean;
+  stationPrinting?: 'prepared';
   state: 'pending' | 'unknown' | 'confirmed' | 'refused';
   cart: Cart;
   tenders: Tender[];

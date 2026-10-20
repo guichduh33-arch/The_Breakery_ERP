@@ -90,7 +90,7 @@ BEGIN
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
   SELECT id INTO v_oi FROM order_items WHERE order_id = current_setting('rrr.order2')::uuid LIMIT 1;
-  r := refund_order_rpc_v11(
+  r := refund_order_rpc_v12(
     current_setting('rrr.order2')::uuid,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method','cash','amount',5000)),

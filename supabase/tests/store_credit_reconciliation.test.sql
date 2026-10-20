@@ -79,7 +79,7 @@ BEGIN
 
   -- 4) REFUND intégral de la vente 1, émis en avoir (+20 000).
   SELECT id, quantity INTO v_oi, v_qty FROM order_items WHERE order_id = v_order1 LIMIT 1;
-  v_res := refund_order_rpc_v11(
+  v_res := refund_order_rpc_v12(
     v_order1,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', v_qty)),
     jsonb_build_array(jsonb_build_object('method', 'store_credit', 'amount', 20000)),

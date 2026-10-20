@@ -15,6 +15,7 @@
 import { logger } from '@breakery/utils';
 import type { Tender } from '@breakery/domain';
 import type { BusModifierLine } from './busTopics';
+import { notifyOutboxCommitted } from './offlineOutboxWake';
 
 /** Ligne d'items au format attendu par fire_counter_order p_items. */
 export interface OfflineFireItem {
@@ -231,12 +232,14 @@ function lsWriteQuarantine(records: QuarantinedIntent[]): void {
 export async function enqueueIntent(intent: OfflineIntent): Promise<void> {
   if (hasIDB) {
     await idbTx('readwrite', (s) => s.put(intent));
+    notifyOutboxCommitted();
     return;
   }
   const all = lsRead();
   if (all.some((r) => r.id === intent.id)) return;
   all.push(intent);
   lsWrite(all);
+  notifyOutboxCommitted();
 }
 
 /** Tous les intents en attente, ordre de replay (seq croissante). */

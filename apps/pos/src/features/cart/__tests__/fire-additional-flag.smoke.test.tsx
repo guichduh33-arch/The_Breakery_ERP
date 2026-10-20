@@ -1,5 +1,7 @@
 // apps/pos/src/features/cart/__tests__/fire-additional-flag.smoke.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
+import { usePrintJobs } from '@/services/print/printJobs';
 
 // Force the print service mock buffer (VITE_PRINT_MOCK path).
 vi.stubEnv('VITE_PRINT_MOCK', '1');
@@ -28,6 +30,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
+  usePrintJobs.setState({ jobs: [] });
+  installPrintLocks();
   vi.clearAllMocks();
   clearMockPrintBuffer();
   useShiftStore.setState({ current: { id: 'shift-1' } } as never);

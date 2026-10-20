@@ -26,6 +26,7 @@ import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
+import { usePaidStationPrinting } from './usePaidStationPrinting';
 import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
 import { hubBus } from '@/features/lan/hubBusClient';
 import { enqueueIntent, nextIntentSeq } from '@/features/lan/offlineOutbox';
@@ -88,6 +89,7 @@ export function usePaymentFlowLogic() {
     }
   }, [selectedMethod, attachedCustomer]);
   const { mutation: fireToStations } = useFireToStations();
+  usePaidStationPrinting(activeAttempt, fireToStations);
   // ADR-015 — gate hors-ligne : mode OFFLINE + réglage offline_payments_enabled
   // (la fenêtre de durée A5 est supprimée).
   const offlineGate = useOfflinePaymentGate();
@@ -324,7 +326,7 @@ export function usePaymentFlowLogic() {
       const sessionId = saved?.context.sessionId ?? useShiftStore.getState().current?.id;
       if (!sessionId || !user) throw new Error('no_open_shift');
       const snapshot = saved && saved.state !== 'refused' ? saved : JSON.parse(JSON.stringify({
-        version: 1, state: 'pending', cart: state.cart, tenders: tendersToShip,
+        version: 1, state: 'pending', stationPrinting: 'prepared', cart: state.cart, tenders: tendersToShip,
         context: {
           idempotencyKey, appendUuid: crypto.randomUUID(), sessionId, userId: user.id,
           pickedUpOrderId: state.pickedUpOrderId, orderOrigin: state.orderOrigin,
@@ -375,16 +377,6 @@ export function usePaymentFlowLogic() {
       // S43 P0-3 — printOnly: the order already exists in the DB (created by
       // complete_order_with_payment_v11 / paid via pay_existing_order_v7).
       // Persisting here would mint an orphan order or append to a paid one.
-      fireToStations.mutateAsync({ orderNumber: result.order_number, printOnly: true }).then((results) => {
-        for (const r of results) {
-          if (!r.ok) {
-            toast.error(`${r.role} printer unreachable — ticket saved to KDS, not printed`);
-          }
-        }
-      }).catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : 'unknown';
-        toast.error(`Station print failed: ${message}`);
-      });
 
       // S44 D4 — points and balance come from the server envelope (the DB
       // resolves the tier × category multiplier). Fall back to the local

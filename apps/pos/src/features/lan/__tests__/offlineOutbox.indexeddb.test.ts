@@ -29,6 +29,17 @@ async function prepareWrite() {
 }
 
 describe('durabilité IndexedDB avant confirmation tablette', () => {
+  it('announces only a durable commit, with no intent content', async () => {
+    const event = vi.fn();
+    window.addEventListener('breakery:offline-outbox-committed', event);
+    try {
+      const { transaction, promise } = await prepareWrite();
+      expect(event).not.toHaveBeenCalled();
+      transaction.oncomplete?.(); await promise;
+      expect(event).toHaveBeenCalledTimes(1);
+      expect(event.mock.calls[0]?.[0]).not.toHaveProperty('detail');
+    } finally { window.removeEventListener('breakery:offline-outbox-committed', event); }
+  });
   it('attend le commit de la transaction avant de confirmer l’écriture', async () => {
     const { transaction, promise } = await prepareWrite();
     let committed = false;

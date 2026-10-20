@@ -5,6 +5,8 @@
 // items "unsent" (re-firing them would duplicate the DB lines).
 import { beginOrderSend, finishOrderSend } from '@/stores/orderSendGuard';
 import { useRef } from 'react';
+import type { PaymentAttempt } from '@/stores/paymentAttempt';
+import { printPaidSnapshot } from './printPaidSnapshot';
 import { clearCounterFire, counterFireScope, isDefiniteFireRefusal, resumeCounterFire, saveCounterFire, type CounterFireAttempt, type CounterFireArgs } from './counterFireRecovery';
 import type { OrderSnapshot } from '@/stores/orderSnapshot';
 import { mintDiscountAuthorization } from '@/features/discounts/mintDiscountAuthorization';
@@ -63,6 +65,7 @@ export interface FireContext {
    * station exactly like the legacy flow.
    */
   printOnly?: boolean;
+  printSnapshot?: PaymentAttempt;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,8 +146,15 @@ export function useFireToStations(): UseFireToStationsResult {
 
       const sessionId = useShiftStore.getState().current?.id;
       const auth = useAuthStore.getState();
+      const actorId = auth.user?.id ?? '';
+      const actorToken = auth.sessionToken ?? null;
+      if (printOnly && ctx?.printSnapshot && orderNumber) {
+        if (ctx.printSnapshot.context.userId !== actorId) throw new Error('Resume this payment with the original cashier');
+        return await printPaidSnapshot(ctx.printSnapshot, orderNumber, printersMap, queryClient, serverName,
+          () => useAuthStore.getState().user?.id === actorId && useAuthStore.getState().sessionToken === actorToken);
+      }
       const saved = !printOnly && sessionId
-        ? resumeCounterFire(await counterFireScope(auth.user?.id ?? '', auth.sessionToken ?? null, sessionId)) : null;
+        ? resumeCounterFire(await counterFireScope(actorId, actorToken, sessionId)) : null;
       if (saved && (ctx?.forceOffline || isOfflineMode())) {
         throw new Error('Cloud order send is unconfirmed — reconnect and resume it before sending offline');
       }
@@ -301,15 +311,21 @@ export function useFireToStations(): UseFireToStationsResult {
               ...(!existingOrderId && sourceCode !== null ? { p_source_code: sourceCode } : {}),
             };
             const attempt: CounterFireAttempt = saved ?? saveCounterFire({ version: 1,
-              scope: await counterFireScope(auth.user?.id ?? '', auth.sessionToken ?? null, sessionId),
+              scope: await counterFireScope(actorId, actorToken, sessionId),
               args, items: toPersist, additional: isAdditional,
               ...(tableNo !== undefined ? { tableNumber: tableNo } : {}),
             });
+            const currentAuth = useAuthStore.getState();
+            if ((currentAuth.user?.id ?? '') !== actorId || (currentAuth.sessionToken ?? null) !== actorToken
+              || useShiftStore.getState().current?.id !== sessionId) throw new Error('Your session changed — resume the saved order send');
             const { data, error } = await supabase.rpc('fire_counter_order_v10', attempt.args);
             if (error) {
-              if (isDefiniteFireRefusal(error)) clearCounterFire();
+              if (!saved && isDefiniteFireRefusal(error)) clearCounterFire();
               throw Object.assign(new Error(error.message), { details: error });
             }
+            const confirmedAuth = useAuthStore.getState();
+            if ((confirmedAuth.user?.id ?? '') !== actorId || (confirmedAuth.sessionToken ?? null) !== actorToken
+              || useShiftStore.getState().current?.id !== sessionId) throw new Error('Your session changed — resume the saved order send');
             const env = data as unknown as {
               order_id: string;
               order_number: string;

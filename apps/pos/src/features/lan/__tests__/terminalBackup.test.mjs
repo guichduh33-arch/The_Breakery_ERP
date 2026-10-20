@@ -8,11 +8,29 @@ import { createRequire } from 'node:module';
 import { captureTerminalBackup, encryptTerminalBackup } from '../terminalBackup.ts';
 
 const projectRef = 'getctmbpjnrrjzncaqze';
-const storage = (values = {}) => ({ getItem: (key) => values[key] ?? null });
+const storage = (values = {}) => ({ getItem: (key) => values[key] ?? null,
+  length: Object.keys(values).length, key: (index) => Object.keys(values)[index] ?? null });
 const input = () => ({ projectRef, terminalCode: 'POS-1', origin: 'https://pos.example.com',
   local: storage(), session: storage() });
 
 describe('terminal recovery export', () => {
+  it('includes fire/cash recovery, all paper/kitchen journals and validated refund tombstones', async () => {
+    const prefix = 'breakery:financial-attempt:v1:https%3A%2F%2Fdev.supabase.co:cashier:refund:';
+    const resolved = JSON.stringify({ version: 1, revision: '11111111-2222-4333-8444-555555555555', operation: 'refund', target: 'order', status: 'resolved' });
+    const pending = JSON.stringify({ version: 1, revision: '11111111-2222-4333-8444-555555555555', operation: 'refund', target: 'other', status: 'pending',
+      idempotencyKey: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', payload: { orderId: 'other', lines: [{ order_item_id: 'line', qty: 1 }], tenders: [{ method: 'cash', amount: 20 }], reason: 'Return' } });
+    const result = await captureTerminalBackup({ ...input(), local: storage({
+      'breakery.print-jobs.v1': 'print', 'breakery.receipt-jobs.v1': 'receipt', 'breakery.kitchen-journal.v1': 'kitchen',
+      [prefix + 'order']: resolved, [prefix + 'other']: pending, 'breakery-pos-auth': 'secret',
+    }), session: storage({ 'breakery.counter-fire-attempt.v1': 'fire', 'breakery.cash-movement-attempt.v1': 'cash' }) });
+    expect(result.session['breakery.counter-fire-attempt.v1']).toBe('fire');
+    expect(result.session['breakery.cash-movement-attempt.v1']).toBe('cash');
+    expect(result.local['breakery.print-jobs.v1']).toBe('print'); expect(result.local['breakery.receipt-jobs.v1']).toBe('receipt');
+    expect(result.local['breakery.kitchen-journal.v1']).toBe('kitchen');
+    expect(result.local[prefix + 'order']).toBe(resolved); expect(result.local[prefix + 'other']).toBe(pending);
+    expect(JSON.stringify(result)).not.toContain('secret');
+    await expect(captureTerminalBackup({ ...input(), local: storage({ [prefix + 'order']: '{"managerPin":"secret"}' }) })).rejects.toThrow('invalid');
+  });
   it('preserves original payment keys, legacy intents and rejected records without auth secrets', async () => {
     const local = storage({
       'pos:offline_outbox': '[{"kind":"cash_payment","id":"original-key","seq":3}]',
