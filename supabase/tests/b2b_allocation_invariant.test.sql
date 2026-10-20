@@ -98,11 +98,11 @@ BEGIN
   v_inv1 := pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice(v_cust, 1, 50000, '2026-06-10'::timestamptz);
   UPDATE customers SET b2b_current_balance = 150000 WHERE id = v_cust;
-  v_res := record_b2b_payment_v3(
+  v_res := record_b2b_payment_v4(
     p_customer_id => v_cust, p_amount => 100000, p_method => 'cash'::payment_method,
     p_invoice_ids => ARRAY[v_inv1]);
   PERFORM set_config('breakery.pay',  v_res->>'payment_id', false);
-  v_res := record_b2b_payment_v3(
+  v_res := record_b2b_payment_v4(
     p_customer_id => v_cust, p_amount => 50000, p_method => 'cash'::payment_method,
     p_invoice_ids => ARRAY[v_inv2]);
   PERFORM set_config('breakery.pay_b', v_res->>'payment_id', false);
@@ -127,7 +127,7 @@ SELECT ok(
   (SELECT amount FROM b2b_payments WHERE id = current_setting('breakery.pay')::uuid) = 100000
   AND (SELECT SUM(amount_applied) FROM b2b_payment_allocations
         WHERE payment_id = current_setting('breakery.pay')::uuid) = 100000,
-  'T2: record_b2b_payment_v3 path survives the flush — Σ allocations = amount = 100000');
+  'T2: record_b2b_payment_v4 path survives the flush — Σ allocations = amount = 100000');
 
 -- T3 — paiement orphelin refusé
 SELECT throws_ok(

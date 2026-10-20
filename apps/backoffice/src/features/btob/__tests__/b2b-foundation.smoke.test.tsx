@@ -243,7 +243,7 @@ describe('B2B foundation (S24)', () => {
     expect(screen.queryByText(/delivery date/i)).not.toBeInTheDocument();
   });
 
-  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v3', async () => {
+  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v4', async () => {
     renderPaymentModal();
     // Wait for B2B customer option to appear.
     await waitFor(() => {
@@ -258,7 +258,7 @@ describe('B2B foundation (S24)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));
