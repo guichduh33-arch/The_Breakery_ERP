@@ -42,8 +42,8 @@ export function readCounterFire(): CounterFireAttempt | null {
 export function resumeCounterFire(scope: CounterFireScope): CounterFireAttempt | null {
   const saved = readCounterFire();
   if (saved && (saved.scope.project !== scope.project || saved.scope.userId !== scope.userId
-    || saved.scope.session !== scope.session || saved.scope.shiftId !== scope.shiftId)) {
-    throw new Error('Resume the saved order send with the original cashier, session and shift');
+    || saved.scope.shiftId !== scope.shiftId)) {
+    throw new Error('Resume the saved order send with the original cashier and shift');
   }
   return saved;
 }
@@ -63,9 +63,8 @@ export function isDefiniteFireRefusal(error: { code?: string }): boolean {
 }
 
 /** Le jeton de session ne voyage pas dans le snapshot de reprise. */
-export async function counterFireScope(userId: string, token: string | null, shiftId: string): Promise<CounterFireScope> {
-  const digest = token ? await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)) : null;
+export function counterFireScope(userId: string, _token: string | null, shiftId: string): Promise<CounterFireScope> {
   const configuredProject: unknown = import.meta.env.VITE_SUPABASE_URL;
-  return { project: typeof configuredProject === 'string' ? configuredProject : '', userId, shiftId,
-    session: digest ? Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('') : null };
+  return Promise.resolve({ project: typeof configuredProject === 'string' ? configuredProject : '', userId, shiftId,
+    session: null }); // Champ v1 conservé ; le JWT renouvelé n'identifie pas la tentative métier.
 }

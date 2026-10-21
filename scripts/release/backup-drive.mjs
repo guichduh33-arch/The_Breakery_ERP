@@ -1,10 +1,11 @@
 // Transport préparé pour le Drive privé validé ; aucun login ou install implicite.
 // Références : https://rclone.org/drive/ et /commands/rclone_copyto/, /rclone_cat/.
 import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { lstatSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { rotateBackups } from './backup-retention.mjs';
 
 const APPROVED_FOLDER = '1WWBmF8xG5muXnfdIBnWfpaaMspfzMFUN';
 const MAGIC = Buffer.from('BREAKERY-BACKUP-1\n');
@@ -73,7 +74,8 @@ export function prepareDriveCopy(receiptPath, config) {
   const common = ['--config', config.configPath, '--drive-root-folder-id', APPROVED_FOLDER,
     '--drive-skip-shortcuts', '--drive-shared-with-me=false', '--drive-trashed-only=false',
     '--retries', '3', '--low-level-retries', '3', '--contimeout', '30s', '--timeout', '2m', '--stats', '0'];
-  return { archivePath, receipt, remotePath, bytes: bytes.length,
+  return { archivePath, receipt, remotePath, bytes: bytes.length, commonArgs: common,
+    listArgs: ['lsjson', `${config.remote}:${receipt.projectRef}`, '--files-only', '--max-depth', '1', ...common],
     uploadArgs: ['copyto', archivePath, remotePath, '--ignore-existing', '--immutable', '--checksum', ...common],
     readbackArgs: ['cat', remotePath, ...common] };
 }
@@ -85,25 +87,30 @@ export function runRclone(executable, args, expectedBytes = 0) {
     const child = spawn(executable, args, { shell: false, windowsHide: true, env,
       stdio: ['ignore', 'pipe', 'ignore'] });
     const hash = createHash('sha256');
+    const chunks = [];
     let count = 0;
     let invalid = false;
     const timer = setTimeout(() => { invalid = true; child.kill(); }, 15 * 60 * 1000);
     child.stdout.on('data', (chunk) => {
       count += chunk.length;
-      if (count > expectedBytes) { invalid = true; child.kill(); }
+      if (count > (expectedBytes === null ? 4 * 1024 * 1024 : expectedBytes)) { invalid = true; child.kill(); }
+      else if (expectedBytes === null) chunks.push(chunk);
       else hash.update(chunk);
     });
     child.on('error', () => { clearTimeout(timer); reject(new Error('rclone could not run; no credentials logged.')); });
     child.on('close', (code) => {
       clearTimeout(timer);
-      if (code !== 0 || invalid || count !== expectedBytes) {
+      if (code !== 0 || invalid || (expectedBytes !== null && count !== expectedBytes)) {
         reject(new Error('rclone transfer/readback failed; local archive preserved.'));
+      } else if (expectedBytes === null) {
+        try { resolveRun(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+        catch { reject(new Error('rclone listing invalid; no credentials logged.')); }
       } else resolveRun({ bytes: count, sha256: hash.digest('hex') });
     });
   });
 }
 
-export async function publishBackup(receiptPath, config, { execute = false, run = runRclone } = {}) {
+export async function publishBackup(receiptPath, config, { execute = false, run = runRclone, now = new Date() } = {}) {
   const plan = prepareDriveCopy(receiptPath, config);
   if (!execute) return { status: 'prepared-only', folderId: config.folderId,
     sha256: plan.receipt.sha256, cloudCopyVerified: false };
@@ -114,10 +121,12 @@ export async function publishBackup(receiptPath, config, { execute = false, run 
   const proof = { version: 1, status: 'encrypted-cloud-copy-verified',
     folderId: config.folderId, projectRef: plan.receipt.projectRef, sha256: downloaded.sha256,
     bytes: downloaded.bytes, verifiedAt: new Date().toISOString(), cloudCopyVerified: true,
-    applicationRecoveryVerified: false, retentionDeletionEnabled: false };
-  const proofPath = receiptPath.replace('.receipt.json', `.drive-${Date.now()}.json`);
+    receiptSha256: sha(readFileSync(receiptPath)), archiveCreatedAt: plan.receipt.createdAt,
+    applicationRecoveryVerified: false, retentionDeletionEnabled: plan.receipt.database?.archiveListingVerified === true };
+  const proofPath = receiptPath.replace('.receipt.json', `.drive-${Date.now()}-${randomBytes(8).toString('hex')}.json`);
   writeFileSync(proofPath, JSON.stringify(proof, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
-  return proof;
+  const rotation = await rotateBackups({ receiptPath, config, plan, run, planReceipt: prepareDriveCopy, now });
+  return { ...proof, rotation };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

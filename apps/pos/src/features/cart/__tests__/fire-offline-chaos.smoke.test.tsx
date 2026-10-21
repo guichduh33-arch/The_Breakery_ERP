@@ -11,6 +11,8 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
+import { usePrintJobs } from '@/services/print/printJobs';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -120,6 +122,8 @@ function seedCart(): void {
 
 describe('offline fire chaos (spec 006x lot 5)', () => {
   beforeEach(() => {
+    usePrintJobs.setState({ jobs: [] });
+    installPrintLocks();
     localStorage.clear();
     rpcMock.mockReset();
     printStationTicketMock.mockReset();

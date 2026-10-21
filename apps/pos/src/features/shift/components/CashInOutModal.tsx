@@ -70,6 +70,8 @@ export function CashInOutModal({
     let resumingUncertain = false;
     try {
       const auth = useAuthStore.getState();
+      const actorId = auth.user?.id;
+      const actorToken = auth.sessionToken;
       const saved = await resumeCashMovement(auth.user?.id ?? '', auth.sessionToken, sessionId);
       resumingUncertain = saved !== null;
       const attempt = saved ?? saveCashMovement({ version: 1,
@@ -78,7 +80,15 @@ export function CashInOutModal({
           idempotency_key: crypto.randomUUID() },
       });
       setRecovery({ attempt, error: null });
+      const currentAuth = useAuthStore.getState();
+      if (currentAuth.user?.id !== actorId || currentAuth.sessionToken !== actorToken) {
+        throw new Error('Your session changed — resume the saved cash movement');
+      }
       const result = await mut.mutateAsync(attempt.input);
+      const confirmedAuth = useAuthStore.getState();
+      if (confirmedAuth.user?.id !== actorId || confirmedAuth.sessionToken !== actorToken) {
+        throw new Error('Your session changed — resume the saved cash movement');
+      }
       clearCashMovement();
       setRecovery({ attempt: null, error: null });
       toast.success(`${attempt.input.direction === 'in' ? 'Cash In' : 'Cash Out'} recorded (${formatIdr(attempt.input.amount)}).`);

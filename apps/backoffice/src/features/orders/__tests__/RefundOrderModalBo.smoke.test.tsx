@@ -8,6 +8,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
+vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 
 const { mutateAsync } = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 
@@ -46,6 +48,7 @@ function renderModal(order: Order) {
 
 describe('RefundOrderModalBo — cross-shift BO refund (lot 6c)', () => {
   beforeEach(() => {
+    installFinancialBrowser(); resetFinancialSession();
     mutateAsync.mockReset();
     mutateAsync.mockResolvedValue({ refund_number: 'REF-001' });
   });

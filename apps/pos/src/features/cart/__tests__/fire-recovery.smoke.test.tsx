@@ -42,6 +42,7 @@ describe('envoi caisse avec ACK perdu', () => {
     const original = structuredClone(rpc.mock.calls[0]![1] as CounterFireArgs);
     expect(hasPendingCounterFire()).toBe(true);
     first.unmount();
+    auth.sessionToken = 'renewed-pin-token';
     // Même un ancien terminal ayant édité le panier entre les deux appels reste sûr.
     useCartStore.setState({ cart: { items: [{ ...line, quantity: 3 }, { ...line, id: 'extra', name: 'Extra' }], order_type: 'take_out' } });
     rpc.mockResolvedValueOnce(confirmed());
@@ -63,6 +64,21 @@ describe('envoi caisse avec ACK perdu', () => {
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(hasPendingCounterFire()).toBe(true);
     expect(print).not.toHaveBeenCalled();
+  });
+  it('keeps the uncertain send after a later server refusal', async () => {
+    rpc.mockRejectedValueOnce(new Error('ACK lost'));
+    const { result } = renderHook(() => useFireToStations(), { wrapper });
+    await act(async () => { await expect(result.current.mutation.mutateAsync(undefined)).rejects.toThrow('ACK lost'); });
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0003', message: 'permission removed' } });
+    await act(async () => { await expect(result.current.mutation.mutateAsync(undefined)).rejects.toThrow('permission removed'); });
+    expect(hasPendingCounterFire()).toBe(true); expect(print).not.toHaveBeenCalled();
+  });
+  it('does not apply a stale confirmation to a changed PIN session', async () => {
+    rpc.mockImplementationOnce(() => { auth.sessionToken = 'another-token'; return Promise.resolve(confirmed()); });
+    const { result } = renderHook(() => useFireToStations(), { wrapper });
+    await act(async () => { await expect(result.current.mutation.mutateAsync(undefined)).rejects.toThrow('session changed'); });
+    expect(hasPendingCounterFire()).toBe(true); expect(print).not.toHaveBeenCalled();
+    expect(useCartStore.getState().lockedItemIds).toEqual([]);
   });
   it('libère le panier après un refus serveur explicite, sans imprimer', async () => {
     rpc.mockResolvedValueOnce({ data: null, error: { code: '23514', message: 'product unavailable' } });

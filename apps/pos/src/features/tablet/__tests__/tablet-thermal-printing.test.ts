@@ -3,6 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 import type { TabletCart, StationTicketPayload } from '@breakery/domain';
 import { printTabletTickets } from '../hooks/printTabletTickets';
 import { usePrintJobs } from '@/services/print/printJobs';
+import { installPrintLocks } from '@/services/print/__tests__/printBrowser';
 const mocks = vi.hoisted(() => ({ send: vi.fn(), stations: vi.fn(), printers: vi.fn(), copies: vi.fn() }));
 vi.mock('@/services/print/printService', () => ({ printStationTicket: mocks.send }));
 vi.mock('@/features/cart/hooks/useStationMap', () => ({ getStationMap: mocks.stations, STATION_MAP_KEY: ['station-map'] }));
@@ -14,6 +15,7 @@ const cart: TabletCart = { orderType: 'take_out', tableNumber: '7', notes: 'Alle
 ] };
 beforeEach(() => {
   vi.resetAllMocks(); usePrintJobs.setState({ jobs: [] });
+  installPrintLocks();
   mocks.stations.mockResolvedValue({ coffee: ['kitchen', 'barista'] });
   mocks.printers.mockResolvedValue(new Map([['kitchen', { ip_address: '192.168.1.13', port: 9100 }],
     ['barista', { ip_address: '192.168.1.32', port: 9100 }]]));

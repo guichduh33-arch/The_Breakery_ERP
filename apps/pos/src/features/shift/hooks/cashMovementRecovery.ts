@@ -39,8 +39,8 @@ export async function resumeCashMovement(userId: string, token: string | null, s
   if (!saved) return null;
   const scope = await counterFireScope(userId, token, shiftId);
   if (saved.scope.project !== scope.project || saved.scope.userId !== scope.userId
-    || saved.scope.session !== scope.session || saved.scope.shiftId !== scope.shiftId) {
-    throw new Error('Resume the saved cash movement with the original cashier, session and shift');
+    || saved.scope.shiftId !== scope.shiftId) {
+    throw new Error('Resume the saved cash movement with the original cashier and shift');
   }
   return saved;
 }

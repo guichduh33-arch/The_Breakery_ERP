@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import { B2bOrderItemsPanel } from '@/features/btob/components/B2bOrderItemsPanel.js';
 import { B2bOrderStatus } from '@/features/btob/components/B2bOrderStatus.js';
 import { B2bPickupDialog } from '@/features/btob/components/B2bPickupDialog.js';
@@ -40,6 +41,7 @@ export default function B2BOrderDetailPage(): JSX.Element {
     },
   });
   const order = query.data;
+  const pendingPayment = useHasPendingFinancial('payment', order?.customer_id ?? '');
   const date = (value: string | null | undefined): string =>
     value ? formatDateShortWita(value) : '—';
   return (
@@ -125,14 +127,14 @@ export default function B2BOrderDetailPage(): JSX.Element {
                     </Button>
                   </>
                 )}
-                {Number(order.outstanding) > 0 && (
+                {(Number(order.outstanding) > 0 || (canPay && pendingPayment)) && (
                   <Button
                     disabled={!canPay || query.isError}
                     onClick={() => {
                       setPaymentOpen(true);
                     }}
                   >
-                    Record payment
+                    {pendingPayment ? 'Check pending payment' : 'Record payment'}
                   </Button>
                 )}
               </div>

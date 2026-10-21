@@ -14,6 +14,7 @@ import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPayme
 // Le MÊME formateur que la page : l'assertion épingle le montant, pas une
 // chaîne recopiée à la main qui divergerait au premier changement de locale.
 import { formatIdr } from '@/features/dashboard/utils/format.js';
+import { financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
 
 const mockRpc = vi.fn();
 
@@ -101,6 +102,12 @@ vi.mock('@/lib/supabase.js', () => {
       gte:    () => chain,
       order:  () => chain,
       limit:  (n: number) => { rows = rows.slice(0, n); return chain; },
+      maybeSingle: () => {
+        const args = mockRpc.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+        return Promise.resolve({ data: { id: 'pay-1', payment_number: 'BP-2026-0001',
+          customer_id: args.p_customer_id, idempotency_key: args.p_idempotency_key,
+          amount: args.p_amount, method: args.p_method, journal_entry_id: 'je-1' }, error: null });
+      },
       then:   (resolve: Resolver) =>
         resolve({ data: headOnly ? null : rows, error: null, count: rows.length }),
     };
@@ -117,7 +124,9 @@ vi.mock('@/lib/supabase.js', () => {
         return Promise.resolve(out ?? {
           data: {
             payment_id: 'pay-1', payment_number: 'BP-2026-0001',
-            allocation: [], allocations: [], je_id: 'je-1',
+            allocation: [{ invoice_id: 'i2', amount_applied: 100000, fully_settled: false }],
+            allocations: [{ invoice_id: 'i2', amount_applied: 100000, fully_settled: false }], je_id: 'je-1',
+            allocated_total: 100000, unallocated: 0,
             customer_balance_after: 150000, idempotent_replay: false,
           },
           error: null,
@@ -127,14 +136,7 @@ vi.mock('@/lib/supabase.js', () => {
   };
 });
 
-vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({
-      hasPermission: (p: string) =>
-        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update'
-        || p === 'b2b.payment.record' || p === 'b2b.order.cancel',
-    }),
-}));
+vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 
 if (typeof crypto.randomUUID !== 'function') {
   Object.defineProperty(globalThis.crypto, 'randomUUID', {
@@ -194,7 +196,12 @@ function renderPaymentModal(): void {
 }
 
 describe('B2B foundation (S24)', () => {
-  beforeEach(() => mockRpc.mockReset());
+  beforeEach(() => {
+    mockRpc.mockReset(); installFinancialBrowser(); resetFinancialSession();
+    financialTestAuth.setState({ hasPermission: (p) =>
+      p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update'
+      || p === 'b2b.payment.record' || p === 'b2b.order.cancel' });
+  });
 
   it('T1 — dashboard outstanding AR aggregates view_ar_aging rows', async () => {
     renderDashboard();
@@ -243,7 +250,7 @@ describe('B2B foundation (S24)', () => {
     expect(screen.queryByText(/delivery date/i)).not.toBeInTheDocument();
   });
 
-  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v3', async () => {
+  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v4', async () => {
     renderPaymentModal();
     // Wait for B2B customer option to appear.
     await waitFor(() => {
@@ -258,7 +265,7 @@ describe('B2B foundation (S24)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v3', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));

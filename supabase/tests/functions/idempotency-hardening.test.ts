@@ -286,7 +286,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const body = await res.json();
     expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
     expect(body.refund_id).toBeTruthy();
-    // S78 (D-6) : refund_order_rpc_v11 n'émet idempotent_replay QUE sur le
+    expect(body.order_number).toBe('VITEST-IDEMP-' + TEST_ORDER_ID.substring(0, 8));
+    // S78 (D-6) : la famille refund_order_rpc n'émet idempotent_replay QUE sur le
     // replay (convention projet : premier appel = enveloppe sans le flag).
     expect(body.idempotent_replay).not.toBe(true);
   });
@@ -319,6 +320,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     expect(first.status, `body=${JSON.stringify(firstBody)}`).toBe(200);
     // S78 : cf. TS3 — le flag n'apparaît que sur replay.
     expect(firstBody.idempotent_replay).not.toBe(true);
+    expect(firstBody.order_number).toBe('VITEST-IDEMP-' + TEST_ORDER_ID.substring(0, 8));
 
     // Second call : same idempotency key → replay envelope.
     const second = await fetch(REFUND_FN_URL, { method: 'POST', headers, body: payload });
@@ -326,6 +328,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     expect(second.status, `body=${JSON.stringify(secondBody)}`).toBe(200);
     expect(secondBody.idempotent_replay).toBe(true);
     expect(secondBody.refund_id).toBe(firstBody.refund_id);
+    expect(secondBody.order_number).toBe(firstBody.order_number);
 
     // Verify audit_logs row exists for the replay (best-effort : EF logs via
     // admin client, may be slightly async). Retry up to 3x avec 200ms wait.

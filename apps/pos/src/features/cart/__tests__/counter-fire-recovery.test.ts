@@ -12,6 +12,10 @@ const attempt: CounterFireAttempt = {
 };
 beforeEach(() => { sessionStorage.clear(); finishOrderSend(); });
 describe('reprise durable d’un envoi caisse', () => {
+  it('resumes a legacy v1 snapshot after re-PIN without changing its request', () => {
+    saveCounterFire(attempt);
+    expect(resumeCounterFire({ ...attempt.scope, session: 'renewed-jwt-hash' })).toEqual(attempt);
+  });
   it('relit la clé et le contenu figé même si le brouillon d’origine a changé', () => {
     const original = structuredClone(attempt);
     saveCounterFire(original);
@@ -19,7 +23,7 @@ describe('reprise durable d’un envoi caisse', () => {
     expect(resumeCounterFire(attempt.scope)).toEqual(attempt);
     expect(hasPendingCounterFire()).toBe(true);
   });
-  it.each(['project', 'userId', 'session', 'shiftId'] as const)('refuse un autre contexte %s sans effacer la tentative', (key) => {
+  it.each(['project', 'userId', 'shiftId'] as const)('refuse un autre contexte %s sans effacer la tentative', (key) => {
     saveCounterFire(attempt);
     expect(() => resumeCounterFire({ ...attempt.scope, [key]: 'other' })).toThrow('original cashier');
     expect(resumeCounterFire(attempt.scope)).toEqual(attempt);

@@ -134,10 +134,11 @@ export function useEntityNames(ids: readonly string[]): ReadonlyMap<string, stri
     enabled: missingKey !== '',
     staleTime: Infinity,
     retry: false,
-    queryFn: async (): Promise<null> => {
+    queryFn: async ({ signal }): Promise<null> => {
       const targets = missingKey.split(',');
       let partial = false;
       for (let i = 0; i < targets.length; i += CHUNK) {
+        if (signal.aborted) return null;
         const slice = targets.slice(i, i + CHUNK);
         const [products, customers, sessions] = await Promise.all([
           supabase.from('products').select('id, name').in('id', slice),
@@ -149,6 +150,9 @@ export function useEntityNames(ids: readonly string[]): ReadonlyMap<string, stri
           // pas une erreur.
           supabase.from('pos_sessions').select('id, opened_at, terminal:lan_devices(name)').in('id', slice),
         ]);
+        // Le transport peut encore répondre après cancelQueries/clear. Ces
+        // écritures explicites ne doivent pas repeupler le cache de B avec A.
+        if (signal.aborted) return null;
         const resolved = new Map<string, string>();
         for (const r of products.data ?? [])  resolved.set(r.id.toLowerCase(), r.name);
         for (const r of customers.data ?? []) resolved.set(r.id.toLowerCase(), r.name);

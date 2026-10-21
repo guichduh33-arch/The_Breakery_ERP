@@ -85,7 +85,8 @@ export default function LoginPage() {
     if (!selectedUserId || isLoading) return;
     setError(null);
     try {
-      await login(selectedUserId, value);
+      const accepted = await login(selectedUserId, value);
+      if (!accepted) return;
       const state = useAuthStore.getState();
       const kitchenOnly = state.hasPermission('inventory.production.kitchen') && !state.hasPermission('inventory.read');
       void navigate(kitchenLogin || kitchenOnly ? '/kitchen' : '/backoffice', { replace: true });

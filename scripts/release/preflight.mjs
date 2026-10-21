@@ -22,13 +22,28 @@ export function successfulRun(runs, sha, event, jobs, required = REQUIRED_JOBS) 
   }
   return run;
 }
-export function validateProtection(rules, environment) {
-  if (!rules.some((rule) => rule.type === 'pull_request')) throw new Error('master doit exiger une PR.');
-  const contexts = rules.filter((rule) => rule.type === 'required_status_checks')
-    .flatMap((rule) => rule.parameters?.required_status_checks ?? []).map((check) => check.context);
-  if (REQUIRED_PROTECTION.some((name) => !contexts.includes(name))) throw new Error('Contrôles obligatoires absents des règles effectives de master.');
-  if (!environment.protection_rules?.some((rule) => rule.type === 'required_reviewers' && rule.reviewers?.length)) {
+export function validateProtection(rules, environment, deploymentBranches) {
+  if (!Array.isArray(rules) || !rules.some((rule) => rule.type === 'deletion') ||
+      !rules.some((rule) => rule.type === 'non_fast_forward')) throw new Error('master doit interdire suppression et force-push.');
+  if (!rules.some((rule) => rule.type === 'pull_request' &&
+      rule.parameters?.required_review_thread_resolution === true &&
+      rule.parameters?.dismiss_stale_reviews_on_push === true)) throw new Error('master doit exiger une PR et la résolution des conversations.');
+  const checks = rules.filter((rule) => rule.type === 'required_status_checks' &&
+    rule.parameters?.strict_required_status_checks_policy === true && rule.parameters?.do_not_enforce_on_create === false)
+    .flatMap((rule) => rule.parameters?.required_status_checks ?? []);
+  if (REQUIRED_PROTECTION.some((name) => !checks.some((check) => check.context === name && check.integration_id === 15368))) {
+    throw new Error('Contrôles stricts GitHub Actions obligatoires absents des règles effectives de master.');
+  }
+  if (!environment.protection_rules?.some((rule) => rule.type === 'required_reviewers' &&
+      Array.isArray(rule.reviewers) && rule.reviewers.length && rule.reviewers.every((entry) =>
+        ['User', 'Team'].includes(entry.type) && Number.isSafeInteger(entry.reviewer?.id) && entry.reviewer.id > 0))) {
     throw new Error('Un approbateur doit protéger l’environnement Production.');
+  }
+  if (environment.deployment_branch_policy?.protected_branches !== false ||
+      environment.deployment_branch_policy?.custom_branch_policies !== true ||
+      !Array.isArray(deploymentBranches) || deploymentBranches.length !== 1 ||
+      deploymentBranches[0].name !== 'master' || deploymentBranches[0].type !== 'branch') {
+    throw new Error('Production doit restreindre les branches de déploiement à master uniquement.');
   }
 }
 
@@ -69,7 +84,8 @@ export async function checkRelease({ sha, projectRef, get }) {
   validateProject(projectRef);
   const branch = await get('branches/master');
   if (branch.commit?.sha !== sha) throw new Error('Le SHA demandé doit être la tête actuelle de master.');
-  validateProtection(await pages(get, 'rules/branches/master'), await get('environments/Production'));
+  validateProtection(await pages(get, 'rules/branches/master'), await get('environments/Production'),
+    await pages(get, 'environments/Production/deployment-branch-policies', 'branch_policies'));
   const proofs = [await workflowProof(get, 'ci.yml', sha, ['push'], REQUIRED_JOBS)];
   const prs = await pages(get, `commits/${sha}/pulls`);
   const pr = prs.find((item) => item.merged_at && item.base?.ref === 'master' && item.merge_commit_sha === sha);

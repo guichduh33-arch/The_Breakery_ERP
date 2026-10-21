@@ -20,6 +20,7 @@ import { OrderDetailDrawer } from './components/OrderDetailDrawer';
 import { OrderHistoryStats } from './components/OrderHistoryStats';
 import { VoidOrderModal } from './components/VoidOrderModal';
 import { RefundOrderModal } from './components/RefundOrderModal';
+import { PendingRefundRecovery } from './components/PendingRefundRecovery';
 import { toast } from 'sonner';
 import type { TenderRowMethod } from '@breakery/ui';
 
@@ -169,6 +170,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] overflow-hidden">
             <section className={cn('overflow-y-auto p-4 space-y-4', selectedId && 'max-lg:hidden')}>
               <OrderHistoryStats stats={stats} />
+              <PendingRefundRecovery onConfirmed={(res) => presentReceipt(res, false)} />
 
               <SectionLabel size="xs" as="h3">Transactions</SectionLabel>
 
@@ -308,23 +310,27 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
 
       {detail.data && (
         <RefundOrderModal
+          key={detail.data.id}
           open={refundOpen}
           onClose={() => setRefundOpen(false)}
           order={detail.data}
           isPending={refundMutation.isPending}
-          onSubmit={async ({ lines, tenders, reason, managerPin, idempotencyKey }) => {
+          onSubmit={async ({ orderId, lines, tenders, reason, managerPin, idempotencyKey, sessionGuard }) => {
             try {
               const res = await refundMutation.mutateAsync({
-                orderId: detail.data!.id,
+                orderId,
                 lines,
                 tenders,
                 reason,
                 managerPin,
                 idempotencyKey,
+                sessionGuard,
               });
+              if (sessionGuard?.() === false) return;
               setRefundOpen(false);
               presentReceipt(res, false);
             } catch (err: unknown) {
+              if (sessionGuard?.() === false) throw err;
               const e = err as { details?: { error?: string }; status?: number };
               const msg = e.details?.error ?? 'refund_failed';
               if (e.status === 401) toast.error('Wrong manager PIN');

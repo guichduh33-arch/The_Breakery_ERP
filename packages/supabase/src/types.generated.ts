@@ -8287,7 +8287,7 @@ export type Database = {
           has_drift: boolean
         }[]
       }
-      record_b2b_payment_v3: {
+      record_b2b_payment_v4: {
         Args: {
           p_amount: number
           p_customer_id: string
@@ -8409,7 +8409,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v11: {
+      refund_order_rpc_v12: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

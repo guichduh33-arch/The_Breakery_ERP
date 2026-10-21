@@ -16,6 +16,7 @@ import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useCloudStatusStore } from '../cloudStatusStore';
 import { replayOfflineOutbox } from '../offlineReplay';
+import { subscribeOutboxCommitted } from '../offlineOutboxWake';
 
 export function useOfflineReplay(): void {
   useEffect(() => {
@@ -75,7 +76,7 @@ export function useOfflineReplay(): void {
         running = false;
         if (rerunRequested) {
           rerunRequested = false;
-          run();
+          if (timer === null) run();
         }
       });
     };
@@ -89,6 +90,10 @@ export function useOfflineReplay(): void {
     };
     const unsubCloud = useCloudStatusStore.subscribe(changed);
     const unsubAuth = useAuthStore.subscribe(changed);
+    const unsubOutbox = subscribeOutboxCommitted(() => {
+      if (running) rerunRequested = true;
+      else if (timer === null) run();
+    });
     run();
 
     return () => {
@@ -96,6 +101,7 @@ export function useOfflineReplay(): void {
       clearTimer();
       unsubCloud();
       unsubAuth();
+      unsubOutbox();
     };
   }, []);
 }
