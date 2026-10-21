@@ -15,9 +15,11 @@
 -- (not a general allowlist) so the zero-tolerance check can't silently widen;
 -- the companion suite `list_login_users.test.sql` positively asserts anon
 -- CAN execute it and that its exposure stays minimal.
+-- La garde pre-request est également exécutable par anon, avec signature exacte :
+-- elle reste neutre pour les parcours publics et ne retourne aucune donnée.
 BEGIN;
 
-SELECT plan(2);
+SELECT plan(9);
 
 -- A1 (Wave 2) : zero anon GRANTs remain on user-owned public base tables OR views
 -- Excludes supabase_admin-owned pgtap extension views (platform-managed, out of scope).
@@ -49,9 +51,30 @@ SELECT is_empty(
       WHERE n.nspname = 'public'
         AND has_function_privilege('anon', p.oid, 'EXECUTE')
         AND ro.rolname != 'supabase_admin'
-        AND p.proname != 'list_login_users_v1' $$,
-  'no anon function EXECUTE remains on postgres-owned public.* (except list_login_users_v1, S58 pre-auth login picker — see list_login_users.test.sql)'
+        AND p.proname != 'list_login_users_v1'
+        AND p.oid != 'public.enforce_pin_session_v2()'::regprocedure $$,
+  'no unexpected anon function EXECUTE remains (login picker and exact pre-request guard only)'
 );
+
+SELECT ok(obj_description('public.enforce_pin_session_v2()'::regprocedure, 'pg_proc') LIKE
+  'anon-callable:%', 'la garde porte la justification publique obligatoire');
+SELECT ok(to_regprocedure('public.enforce_pin_session_v1()') IS NULL, 'ancienne garde retirée');
+SELECT ok(NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.enforce_pin_session_v2()'::regprocedure),
+  'la garde conserve le rôle appelant');
+SET LOCAL ROLE anon;
+SELECT lives_ok('SELECT public.enforce_pin_session_v2()', 'pre-request anon neutre sans session PIN');
+RESET ROLE;
+SELECT set_config('request.jwt.claims', '{}', true);
+SET LOCAL ROLE authenticated;
+SELECT throws_ok('SELECT public.enforce_pin_session_v2()', 'PT401', 'session_expired',
+  'authenticated sans session reste refusé');
+RESET ROLE;
+SET LOCAL ROLE kiosk_display;
+SELECT lives_ok('SELECT public.enforce_pin_session_v2()', 'appareil conserve ses propres gates');
+RESET ROLE;
+SET LOCAL ROLE service_role;
+SELECT lives_ok('SELECT public.enforce_pin_session_v2()', 'serveur conserve ses propres gates');
+RESET ROLE;
 
 SELECT * FROM finish();
 ROLLBACK;
