@@ -26,6 +26,11 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      TEST_PIN_EMP000: ${{ secrets.TEST_PIN_EMP000 }}
+      TEST_PIN_EMP001: ${{ secrets.TEST_PIN_EMP001 }}
+      TEST_PIN_EMP002: ${{ secrets.TEST_PIN_EMP002 }}
+      TEST_PIN_EMP003: ${{ secrets.TEST_PIN_EMP003 }}
+      TEST_PIN_EMP004: ${{ secrets.TEST_PIN_EMP004 }}
     steps:
       - uses: actions/checkout@v7
 

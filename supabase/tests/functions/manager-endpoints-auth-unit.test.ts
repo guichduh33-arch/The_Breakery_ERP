@@ -64,6 +64,13 @@ describe.each(endpoints)('$name — refus avant toute mutation métier', ({ hand
     expect(rpc).not.toHaveBeenCalled();
     expect(from).not.toHaveBeenCalled();
   });
+  it('propage une vérification de session indisponible avant le PIN', async () => {
+    actor.mockResolvedValue(Response.json({ error: 'session_check_unavailable' }, { status: 503 }));
+    expect((await handler(request())).status).toBe(503);
+    expect(manager).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+  });
   it('refuse un PIN incorrect et comptabilise cet échec', async () => {
     expect((await handler(request())).status).toBe(401);
     expect(failure).toHaveBeenCalledTimes(1);

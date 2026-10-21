@@ -19,11 +19,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
   beforeAll(async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
 
-    // Reset any lockout and get admin profile
-    await admin
-      .from('user_profiles')
-      .update({ failed_login_attempts: 0, locked_until: null })
-      .eq('employee_code', 'EMP000');
+    // Le verrouillage du compte n'est jamais réinitialisé par une fixture.
     const { data: profile } = await admin
       .from('user_profiles')
       .select('id')
@@ -31,7 +27,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       .single();
     if (!profile) throw new Error('Seed not loaded — run supabase db reset');
 
-    accessToken = await loginAs('EMP000', '1234');
+    accessToken = await loginAs('EMP000');
 
     // Close any existing open session for admin
     await admin

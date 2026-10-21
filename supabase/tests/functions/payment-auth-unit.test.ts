@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ serve: vi.fn(), rpc: vi.fn(), admin: vi.fn(), pin: vi.fn(), verify: vi.fn() }));
+const mocks = vi.hoisted(() => ({ serve: vi.fn(), rpc: vi.fn(), sessionRpc: vi.fn(), admin: vi.fn(), pin: vi.fn(), verify: vi.fn() }));
 vi.mock('https://deno.land/std@0.224.0/http/server.ts', () => ({ serve: mocks.serve }));
 vi.mock('https://deno.land/x/djwt@v3.0.2/mod.ts', () => ({ verify: mocks.verify }));
 vi.mock('https://esm.sh/@supabase/supabase-js@2.47.10', () => ({ createClient: () => ({ rpc: mocks.rpc }) }));
@@ -18,7 +18,10 @@ vi.mock('../../functions/_shared/permissions.ts', () => ({
 describe('paiement — identité vérifiée avant les accès métier', () => {
   beforeEach(() => {
     vi.clearAllMocks(); vi.resetModules();
-    mocks.verify.mockResolvedValue({ role: 'authenticated', sub: 'employee', app_metadata: { provider: 'pin' } });
+    mocks.verify.mockResolvedValue({ role: 'authenticated', sub: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      session_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', exp: Date.now() / 1000 + 60, app_metadata: { provider: 'pin' } });
+    mocks.sessionRpc.mockResolvedValue({ data: true, error: null });
+    mocks.admin.mockReturnValue({ rpc: mocks.sessionRpc });
     vi.stubGlobal('Deno', { env: { get: (name: string) => ({
       JWT_SECRET: 'test-only-signing-secret', SUPABASE_URL: 'https://example.test', SUPABASE_ANON_KEY: 'test-only',
     })[name] } });
@@ -62,6 +65,12 @@ describe('paiement — identité vérifiée avant les accès métier', () => {
   it.each(['', 'Basic test', 'Bearer '])('refuse le header %s', async (header) => {
     await expectRejected(header);
     expect(mocks.verify).not.toHaveBeenCalled();
+  });
+  it.each([[false, null, 401], [null, { message: 'offline' }, 503]])('refuse une session non confirmée', async (data, error, status) => {
+    mocks.sessionRpc.mockResolvedValue({ data, error });
+    expect((await invoke()).status).toBe(status);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.pin).not.toHaveBeenCalled();
   });
   it('laisse le JWT PIN vérifié atteindre le contrôle RPC', async () => {
     mocks.rpc.mockResolvedValue({ data: { order_id: 'confirmed' }, error: null });

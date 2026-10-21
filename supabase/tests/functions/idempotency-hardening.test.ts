@@ -69,7 +69,7 @@ async function loginAs(employeeCode: string, _pin: string): Promise<{
   accessToken: string;
   profileId:   string;
 }> {
-  const r = await loginAsFull(employeeCode);
+  const r = await loginAsFull(employeeCode, _pin);
   return { accessToken: r.token, profileId: r.profileId };
 }
 

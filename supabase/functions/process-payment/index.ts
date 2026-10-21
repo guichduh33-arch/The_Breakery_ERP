@@ -179,7 +179,9 @@ serve(withPermissionErrors(async (req) => {
     return jsonResponse({ error: 'authorization_required' }, 401);
   }
   // Vérifier l'employé avant tout accès métier, même sans gate JWT de passerelle.
-  if (!await getActingAuthUserId(req)) {
+  const actingUser = await getActingAuthUserId(req);
+  if (actingUser instanceof Response) return actingUser;
+  if (!actingUser) {
     return jsonResponse({ error: 'not_authenticated' }, 401);
   }
 

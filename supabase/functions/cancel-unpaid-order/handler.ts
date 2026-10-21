@@ -30,7 +30,7 @@ export interface CancelDependencies {
   cors: (req: Request) => Response | null;
   json: (body: unknown, status?: number) => Response;
   rateLimit: (req: Request) => Promise<Response | null>;
-  actor: (req: Request) => Promise<string | null>;
+  actor: (req: Request) => Promise<string | Response | null>;
   manager: (pin: string, req: Request) => Promise<string | Response>;
   execute: (args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
 }
@@ -41,6 +41,7 @@ export async function handleCancelUnpaid(req: Request, deps: CancelDependencies)
   const limited = await deps.rateLimit(req);
   if (limited) return limited;
   const actor = await deps.actor(req);
+  if (actor instanceof Response) return actor;
   if (!actor) return deps.json({ error: 'not_authenticated' }, 401);
   const pin = req.headers.get('x-manager-pin');
   if (!pin) return deps.json({ error: 'missing_manager_pin' }, 400);

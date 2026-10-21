@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ serve: vi.fn(), rpc: vi.fn(), from: vi.fn(), limit: vi.fn(), permissions: vi.fn() }));
+const mocks = vi.hoisted(() => ({ serve: vi.fn(), rpc: vi.fn(), from: vi.fn(), limit: vi.fn(), permissions: vi.fn(), sign: vi.fn() }));
 vi.mock('https://deno.land/std@0.224.0/http/server.ts', () => ({ serve: mocks.serve }));
 vi.mock('../../functions/_shared/supabase-admin.ts', () => ({ getAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }) }));
 vi.mock('../../functions/_shared/rate-limit.ts', () => ({ checkRateLimitDurable: mocks.limit, getClientIp: () => '127.0.0.1' }));
-vi.mock('../../functions/_shared/jwt.ts', () => ({ signJwt: async () => 'jwt', getJwtSecret: () => 'test-only' }));
+vi.mock('../../functions/_shared/jwt.ts', () => ({ signJwt: mocks.sign, getJwtSecret: () => 'test-only' }));
 vi.mock('../../functions/_shared/permissions.ts', () => ({
   computePermissionsForRole: mocks.permissions,
   withPermissionErrors: (handler: unknown) => handler,
@@ -16,6 +16,7 @@ describe('connexion — PIN uniquement en header', () => {
     mocks.limit.mockResolvedValue({ allowed: true });
     mocks.rpc.mockResolvedValue({ data: true, error: null });
     mocks.permissions.mockResolvedValue(['pos.sale.create']);
+    mocks.sign.mockResolvedValue('jwt');
     mocks.from.mockImplementation((table: string) => {
       const data = table === 'user_profiles'
         ? { id: 'profile', auth_user_id: 'auth', role_code: 'CASHIER', is_active: true,
@@ -49,10 +50,13 @@ describe('connexion — PIN uniquement en header', () => {
   });
 
   it.each(['pos', 'backoffice'])('émet une session pour %s avec le PIN du header', async (device_type) => {
-    const response = await invoke({ user_id: 'profile', device_type }, '285741');
+    const response = await invoke({ user_id: 'profile', device_type, session_id: 'untrusted-session' }, '285741');
     expect(response.status).toBe(200);
     expect(mocks.rpc).toHaveBeenCalledWith('verify_user_pin', { p_user_id: 'profile', p_pin: '285741' });
     expect(await response.json()).toMatchObject({ auth: { access_token: 'jwt' }, permissions: ['pos.sale.create'] });
+    expect(mocks.sign).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      sub: 'auth', session_id: 'session', app_metadata: { provider: 'pin' },
+    }), 'test-only');
   });
 
   it('ne remplace pas le header par un PIN JSON contradictoire', async () => {

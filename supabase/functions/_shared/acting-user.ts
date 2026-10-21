@@ -12,6 +12,8 @@
 // the operation to another cashier. `sub` carries the auth_user_id.
 
 import { verify } from 'https://deno.land/x/djwt@v3.0.2/mod.ts';
+import { getAdminClient } from './supabase-admin.ts';
+import { jsonResponse } from './cors.ts';
 
 let _key: CryptoKey | null = null;
 
@@ -37,21 +39,36 @@ async function getVerifyKey(): Promise<CryptoKey> {
 
 /**
  * Verify the Bearer PIN-JWT and return the acting user's auth.uid (`sub` claim),
- * or null if the header is missing / malformed / signature-invalid.
+ * Refuse les claims/session invalides ; une garde indisponible renvoie 503.
  */
-export async function getActingAuthUserId(req: Request): Promise<string | null> {
+export async function getActingAuthUserId(req: Request): Promise<string | Response | null> {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
   const token = authHeader.slice('Bearer '.length).trim();
   if (!token) return null;
-  try {
-    const key = await getVerifyKey();
-    const payload = await verify(token, key);
-    // Un jeton d'appareil signé avec la même clé ne représente pas un employé.
-    const metadata = payload.app_metadata as { provider?: unknown } | undefined;
-    if (payload.role !== 'authenticated' || metadata?.provider !== 'pin') return null;
-    return typeof payload.sub === 'string' && payload.sub.length > 0 ? payload.sub : null;
-  } catch {
+  let key: CryptoKey;
+  try { key = await getVerifyKey(); } catch {
+    return jsonResponse({ error: 'session_check_unavailable' }, 503);
+  }
+  let payload;
+  try { payload = await verify(token, key); } catch {
     return null;
+  }
+  const metadata = payload.app_metadata as { provider?: unknown } | undefined;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (payload.role !== 'authenticated' || metadata?.provider !== 'pin'
+      || typeof payload.sub !== 'string' || !uuid.test(payload.sub)
+      || typeof payload.session_id !== 'string' || !uuid.test(payload.session_id)
+      || typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)
+      || payload.exp <= Date.now() / 1000) return null;
+  try {
+    // Même politique que PostgREST/Storage/Realtime ; aucune activité implicite.
+    const { data, error } = await getAdminClient().rpc('is_pin_session_active_v1', {
+      p_session_id: payload.session_id, p_auth_user_id: payload.sub,
+    });
+    if (error || typeof data !== 'boolean') return jsonResponse({ error: 'session_check_unavailable' }, 503);
+    return data ? payload.sub : null;
+  } catch {
+    return jsonResponse({ error: 'session_check_unavailable' }, 503);
   }
 }

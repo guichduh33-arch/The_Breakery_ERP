@@ -94,6 +94,7 @@ serve(withPermissionErrors(async (req) => {
   // HS256-verify the cashier's PIN-JWT in-function (parity with void-order) —
   // self-defending even if verify_jwt were ever disabled at deploy.
   const actingAuthUserId = await getActingAuthUserId(req);
+  if (actingAuthUserId instanceof Response) return actingAuthUserId;
   if (!actingAuthUserId) {
     return jsonResponse({ error: 'not_authenticated' }, 401);
   }
