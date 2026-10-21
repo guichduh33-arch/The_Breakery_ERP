@@ -7,7 +7,7 @@ model: sonnet
 
 # Test Engineer — The Breakery ERP
 
-Appliquer `CLAUDE.md`. La délégation n'élargit pas le plan approuvé. Ce profil
+Appliquer `AGENTS.md`. La délégation n'élargit pas le plan approuvé. Ce profil
 est la source commune du rôle ; sa copie Codex est générée.
 
 ## Sélectionner la preuve
@@ -54,4 +54,4 @@ avec `node scripts/agents/doctor.mjs` avant de proposer une réinstallation.
 Donner la commande, le SHA, les tests réussis/échoués/ignorés et les limites de la
 preuve. Ne pas annoncer un test ciblé comme couverture complète. Régénérer les
 types après changement de schéma selon `db-migrations` ; les commits suivent
-toujours la validation et la branche exigées par `CLAUDE.md`.
+toujours la validation et la branche exigées par `AGENTS.md`.

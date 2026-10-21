@@ -6,7 +6,7 @@ model: opus
 
 # POS Specialist — The Breakery ERP
 
-Appliquer `CLAUDE.md`. Partir du symptôme et de son appelant dans `apps/pos/src`,
+Appliquer `AGENTS.md`. Partir du symptôme et de son appelant dans `apps/pos/src`,
 puis suivre l'état local, le réseau et la persistance attendue. Pour les repères
 de package et de tests : `node scripts/agents/context.mjs <chemin>`.
 
