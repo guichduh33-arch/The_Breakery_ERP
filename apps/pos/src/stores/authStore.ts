@@ -5,6 +5,7 @@ import {
   loginWithPin,
   getSession,
   logoutSession,
+  createSessionRevocations,
   setSupabaseAccessToken,
   setSupabaseCloudEnabled,
   type LoginResponse,
@@ -65,7 +66,7 @@ interface AuthState {
   // (sessionDeathWatch) then remains the only net.
   authExpiresAt: number | null;
 
-  login: (userId: string, pin: string) => Promise<void>;
+  login: (userId: string, pin: string) => Promise<boolean>;
   logout: () => Promise<void>;
   bootstrap: () => Promise<void>;
   lock: (reason?: 'manual' | 'session_expired') => void;
@@ -76,6 +77,10 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'breakery-pos-auth';
+export const sessionRevocations = createSessionRevocations({
+  environment: () => supabaseUrl, storageKey: STORAGE_KEY,
+  send: (token) => logoutSession(supabaseUrl, token),
+});
 let authGeneration = 0;
 interface SessionFlight { token: string; generation: number; requestedAt: number; promise: ReturnType<typeof getSession> }
 let activeFlight: SessionFlight | null = null;
@@ -116,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
       authExpiresAt: null,
 
       async login(userId, pin) {
-        authGeneration += 1;
+        const operation = ++authGeneration;
         const requestedAt = Date.now();
         if (navigator.onLine === false) throw new Error('Connect to the server to sign in');
         set({ isLoading: true, error: null });
@@ -126,6 +131,11 @@ export const useAuthStore = create<AuthState>()(
             pin,
             device_type: 'pos',
           });
+          if (operation !== authGeneration) {
+            sessionRevocations.enqueue(res.session.token);
+            void sessionRevocations.retry();
+            return false;
+          }
           // Session 13 (task 25-003) — drop client PIN fallback.
           // The PIN flow mints an HS256 JWT that GoTrue (ES256-only on modern
           // Supabase CLI) refuses to validate via `auth.setSession`. We inject
@@ -146,7 +156,9 @@ export const useAuthStore = create<AuthState>()(
             authExpiresAt: res.auth.expires_at,
           });
           logger.info('login.success', { user_id: res.user.id });
+          return true;
         } catch (err: unknown) {
+          if (operation !== authGeneration) return false;
           // Session 13 (task 25-004) — error redaction. The EF already
           // collapses identity-mode failures to `invalid_credentials`. Show
           // that generically ; never echo internal error codes to the user.
@@ -165,9 +177,7 @@ export const useAuthStore = create<AuthState>()(
       async logout() {
         authGeneration += 1;
         const token = get().sessionToken;
-        if (token) {
-          try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
-        }
+        if (token) sessionRevocations.enqueue(token);
         // Drop the client-side bearer (counterpart to setSupabaseAccessToken on login).
         setSupabaseAccessToken(null);
         setSupabaseCloudEnabled(true);
@@ -178,6 +188,7 @@ export const useAuthStore = create<AuthState>()(
           sessionToken: null,
           permissions: [],
           isAuthenticated: false,
+          isLoading: false,
           isLocked: false,
           lockReason: null,
           error: null,
@@ -187,6 +198,7 @@ export const useAuthStore = create<AuthState>()(
           sessionTimeoutMinutes: null,
           authExpiresAt: null,
         });
+        void sessionRevocations.retry();
       },
 
       /**

@@ -5,6 +5,7 @@ import {
   loginWithPin,
   getSession,
   logoutSession,
+  createSessionRevocations,
   setSupabaseAccessToken,
   type LoginResponse,
   type PermissionCode,
@@ -79,6 +80,10 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'breakery-backoffice-auth';
+export const sessionRevocations = createSessionRevocations({
+  environment: () => supabaseUrl, storageKey: STORAGE_KEY,
+  send: (token) => logoutSession(supabaseUrl, token),
+});
 
 const asyncStorage = {
   getItem: (name: string) => safeStorage.get(name),
@@ -113,7 +118,11 @@ export const useAuthStore = create<AuthState>()(
             pin,
             device_type: 'backoffice',
           });
-          if (operation !== generation) return false;
+          if (operation !== generation) {
+            sessionRevocations.enqueue(res.session.token);
+            void sessionRevocations.retry();
+            return false;
+          }
           if (get().sessionToken !== res.session.token) clearSessionCache();
           setSupabaseAccessToken(res.auth.access_token);
           set({
@@ -139,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
       logout() {
         const token = get().sessionToken;
         ++generation;
+        if (token) sessionRevocations.enqueue(token);
         setSupabaseAccessToken(null);
         set({
           user: null,
@@ -155,13 +165,7 @@ export const useAuthStore = create<AuthState>()(
           authSnapshot: null,
         });
         clearSessionCache();
-        // La révocation distante ne possède plus aucun effet local : une
-        // nouvelle connexion peut aboutir pendant cet aller-retour.
-        if (token) {
-          // Résoudre aussi l'appel local sans attendre : les appelants qui
-          // naviguent après logout ne doivent pas rediriger B à son retour.
-          void logoutSession(supabaseUrl, token).catch(() => { /* best-effort */ });
-        }
+        void sessionRevocations.retry();
         return Promise.resolve();
       },
 

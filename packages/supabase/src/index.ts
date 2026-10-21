@@ -20,6 +20,8 @@ export * from './enums.js';
 export { hasPermission, hasAnyPermission, type PermissionCode } from './rls/permissions.js';
 export { loginWithPin, getSession, logoutSession, changePin, recordSessionActivity } from './auth/pinAuth.js';
 export { startSessionActivity } from './auth/sessionActivity.js';
+export { createSessionRevocations } from './auth/sessionRevocations.js';
+export type { RevocationStatus } from './auth/sessionRevocations.js';
 export type { LoginRequest, LoginResponse, LoginError, ChangePinRequest } from './auth/pinAuth.js';
 export { issueKioskJwt } from './auth/kioskAuth.js';
 export type {

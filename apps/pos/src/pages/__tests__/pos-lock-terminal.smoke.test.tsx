@@ -10,7 +10,7 @@ describe('POS lock terminal wiring', () => {
       user: { id: 'u1', full_name: 'Bob', role_code: 'CASHIER', employee_code: 'E1' },
       sessionToken: 'tok', permissions: [], isAuthenticated: true, isLoading: false,
       error: null, sessionTimeoutMinutes: 30, isLocked: true,
-      login: async () => { /* fixture sans effet */ }, unlock: () => { /* fixture sans effet */ },
+      login: async () => true, unlock: () => { /* fixture sans effet */ },
     });
   });
 

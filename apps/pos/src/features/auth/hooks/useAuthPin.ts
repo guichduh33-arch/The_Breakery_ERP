@@ -41,7 +41,7 @@ export function useAuthPin(): UseAuthPin {
     setStatus('verifying');
     setError(null);
     try {
-      await login(userId, pin);
+      if (await login(userId, pin) === false) return;
       setStatus('success');
     } catch (err) {
       // Generic message — the EF + store have already collapsed identity

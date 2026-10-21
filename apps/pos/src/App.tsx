@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { initSessionDeathWatch, disposeSessionDeathWatch } from './features/auth/sessionDeathWatch';
 import { initSessionRefresh, disposeSessionRefresh } from './features/auth/sessionRefresh';
 import { recordSessionActivity, startSessionActivity } from '@breakery/supabase';
@@ -15,7 +15,7 @@ import { PosEventOutboxMount } from './features/audit/PosEventOutboxMount';
 import { HubPresenceMount } from './features/lan/HubPresenceMount';
 import { SettingsRealtimeMount } from './components/SettingsRealtimeMount';
 import { CatalogRealtimeMount } from './components/CatalogRealtimeMount';
-import { useAuthStore } from './stores/authStore';
+import { useAuthStore, sessionRevocations } from './stores/authStore';
 import { startCloudSession } from './features/auth/cloudSession';
 import { OfflineSaleContext } from './features/lan/OfflineSaleContext';
 
@@ -30,6 +30,19 @@ function BootLoading() {
       </div>
     </div>
   );
+}
+
+function SessionRevocationNotice() {
+  const status = useSyncExternalStore(sessionRevocations.subscribe, sessionRevocations.getSnapshot);
+  useEffect(() => sessionRevocations.start(), []);
+  if (!status.pending && !status.storageError) return null;
+  return <div role="alert" className="fixed bottom-3 left-3 z-50 max-w-sm rounded-md border border-danger bg-bg-base p-3 text-sm text-text-primary">
+    <p>{status.pending ? 'A previous sign-out is not confirmed by the server. Keep this tab open and reconnect to finish revocation.' : 'Sign-out recovery storage needs attention.'}</p>
+    {status.storageError && <p>The revocation could not be saved. Keep this tab open and retry.</p>}
+    <button type="button" className="mt-2 underline" disabled={status.busy} onClick={() => { void sessionRevocations.retry(); }}>
+      {status.busy ? 'Checking…' : 'Retry sign-out'}
+    </button>
+  </div>;
 }
 
 /**
@@ -107,6 +120,7 @@ export default function App() {
         <CatalogRealtimeMount />
         {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
         <IdleWarningToast />
+        <SessionRevocationNotice />
         <BootGate>
           <OfflineSaleContext />
           <AppRoutes />
