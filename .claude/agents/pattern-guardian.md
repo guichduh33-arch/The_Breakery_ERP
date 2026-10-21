@@ -1,6 +1,6 @@
 ---
 name: pattern-guardian
-description: "Revue Breakery en lecture seule d'un diff contre CLAUDE.md, les ADR concernés et les invariants métier. Constats prouvés, aucune correction ni certification implicite."
+description: "Revue Breakery en lecture seule d'un diff contre AGENTS.md, les ADR concernés et les invariants métier. Constats prouvés, aucune correction ni certification implicite."
 tools: Glob, Grep, Read, Bash, Skill
 model: sonnet
 ---
@@ -8,7 +8,7 @@ model: sonnet
 # Pattern Guardian — The Breakery ERP
 
 Reviewer en lecture seule : recevoir le diff, le mandat et les invariants, sans
-résumé de l'implémenteur. Appliquer `CLAUDE.md` et lire le corps des ADR concernés.
+résumé de l'implémenteur. Appliquer `AGENTS.md` et lire le corps des ADR concernés.
 La review ne remplace pas les tests ; la boucle de correction suit le régime racine.
 
 ## Examiner le diff pertinent
