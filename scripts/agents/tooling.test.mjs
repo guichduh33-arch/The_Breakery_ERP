@@ -34,6 +34,19 @@ test('miroirs : dérive détectée, génération idempotente, copies fournisseur
   assert.throws(() => syncMirrors(root, true), /sans source/);
   assert.equal(readFileSync(join(root, '.claude/skills/orders/extra.md'), 'utf8'), 'travail à préserver');
 });
+test('miroir : CLAUDE.md importe AGENTS.md et exige sa présence', (t) => {
+  const { root, put } = fixture(t);
+  syncMirrors(root, true);
+  const pointer = readFileSync(join(root, 'CLAUDE.md'), 'utf8');
+  assert.match(pointer, /^@AGENTS\.md$/m);
+  // Le pointeur ne recopie pas le texte : une règle ajoutée ne doit pas y entrer.
+  put('AGENTS.md', '# AGENTS.md\nRègle inédite à ne jamais recopier.\n');
+  syncMirrors(root, true);
+  assert.equal(readFileSync(join(root, 'CLAUDE.md'), 'utf8'), pointer);
+  assert.doesNotMatch(readFileSync(join(root, 'CLAUDE.md'), 'utf8'), /Règle inédite/);
+  rmSync(join(root, 'AGENTS.md'));
+  assert.throws(() => syncMirrors(root, true));
+});
 test('miroir : liens vers Impeccable résolus sans copie fournisseur', (t) => {
   const { root, put } = fixture(t);
   put('.agents/skills/impeccable/SKILL.md', 'outil canonique');
