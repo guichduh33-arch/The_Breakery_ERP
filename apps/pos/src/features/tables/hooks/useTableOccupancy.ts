@@ -48,6 +48,9 @@ function acquireOccupancyChannel(queryClient: QueryClient): () => void {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         void queryClient.invalidateQueries({ queryKey: OCCUPANCY_KEY });
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' }, () => {
+        void queryClient.invalidateQueries({ queryKey: OCCUPANCY_KEY });
+      })
       .subscribe();
   }
   return () => {

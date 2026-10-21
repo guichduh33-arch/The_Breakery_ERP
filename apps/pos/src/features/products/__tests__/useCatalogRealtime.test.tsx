@@ -145,6 +145,14 @@ describe('useCatalogRealtime — query invalidation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['display', 'showcase-products'] });
   });
 
+  it('un signal privé de suppression rafraîchit catalogue et variantes sans lire de payload métier', () => {
+    const invalidateSpy = mountWithSpy();
+    const signal = handlersRef.current.get('ui_invalidation_topics');
+    expect(signal).toBeDefined(); signal?.({ new: { topic: 'catalog', revision: 'opaque' } });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['categories'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
+  });
   it('a non-SUBSCRIBED status invalidates nothing', () => {
     const invalidateSpy = mountWithSpy();
     subscribeCbRef.current?.('CHANNEL_ERROR');

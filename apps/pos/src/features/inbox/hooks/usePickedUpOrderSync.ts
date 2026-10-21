@@ -38,7 +38,9 @@ export function usePickedUpOrderSync(): void {
     const channel = supabase.channel(`picked-up-order-${crypto.randomUUID()}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${currentOrderId}`,
-      }, () => { void reload(); }).subscribe();
+      }, () => { void reload(); })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' }, () => { void reload(); })
+      .subscribe();
     void reload();
     const timer = setInterval(() => { void reload(); }, 20_000);
     return () => { disposed = true; clearInterval(timer); void supabase.removeChannel(channel); };

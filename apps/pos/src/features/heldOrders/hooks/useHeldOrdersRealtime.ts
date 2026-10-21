@@ -23,6 +23,9 @@ export function useHeldOrdersRealtime(enabled = true): void {
       .on('postgres_changes' as never, { event: '*', schema: 'public', table: 'orders' }, () => {
         void qc.invalidateQueries({ queryKey: ['held-orders'] });
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' }, () => {
+        void qc.invalidateQueries({ queryKey: ['held-orders'] });
+      })
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);

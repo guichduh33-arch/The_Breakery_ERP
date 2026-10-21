@@ -144,6 +144,13 @@ describe('useSettingsRealtime — query invalidation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['receipt-template'] });
   });
 
+  it('un signal privé rafraîchit les réglages et le modèle de ticket supprimé', () => {
+    const invalidateSpy = mountWithSpy();
+    const signal = handlersRef.current.get('ui_invalidation_topics');
+    expect(signal).toBeDefined(); signal?.({ new: { topic: 'settings', revision: 'opaque' } });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['business-config'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['receipt-template'] });
+  });
   it('a non-SUBSCRIBED status invalidates nothing', () => {
     const invalidateSpy = mountWithSpy();
     subscribeCbRef.current?.('CHANNEL_ERROR');

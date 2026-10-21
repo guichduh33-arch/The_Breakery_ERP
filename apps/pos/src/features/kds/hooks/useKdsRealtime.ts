@@ -85,6 +85,10 @@ export function useKdsRealtime(
           if (onEvent !== undefined) onEvent(payload);
         },
       )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' }, () => {
+        void qc.invalidateQueries({ queryKey: ['kds', station] });
+        void qc.invalidateQueries({ queryKey: ['kds-served', station] });
+      })
       .subscribe((status: string) => {
         // 'SUBSCRIBED' means the realtime socket is live; anything else
         // (CHANNEL_ERROR, TIMED_OUT, CLOSED) means events may be dropping.

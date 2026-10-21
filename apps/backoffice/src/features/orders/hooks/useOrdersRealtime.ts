@@ -58,6 +58,11 @@ export function useOrdersRealtime() {
         { event: 'UPDATE', schema: 'public', table: 'orders' },
         onEvent,
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' },
+        onEvent,
+      )
       .subscribe((status) => setConnected((status as string) === 'SUBSCRIBED'));
 
     return () => {

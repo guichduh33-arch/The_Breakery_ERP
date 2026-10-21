@@ -83,8 +83,7 @@ export function useCatalogRealtime(enabled: boolean): void {
       .on(
         // Same strict-literal typing workaround as useKdsRealtime.
         'postgres_changes' as never,
-        // '*' : INSERT (création/variante), UPDATE (prix, is_active,
-        // visible_on_pos…) et DELETE (dissolution parent hard-delete).
+        // INSERT/UPDATE ; les suppressions passent par le signal privé ci-dessous.
         { event: '*', schema: 'public', table: 'products' } as never,
         () => invalidateAll(qc, PRODUCTS_KEYS),
       )
@@ -92,6 +91,11 @@ export function useCatalogRealtime(enabled: boolean): void {
         'postgres_changes' as never,
         { event: '*', schema: 'public', table: 'categories' } as never,
         () => invalidateAll(qc, CATEGORIES_KEYS),
+      )
+      .on(
+        'postgres_changes' as never,
+        { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.catalog' } as never,
+        () => invalidateAll(qc, ALL_CATALOG_KEYS),
       )
       .subscribe((status: string) => {
         // Initial join and every rejoin after CHANNEL_ERROR/TIMED_OUT: refresh
