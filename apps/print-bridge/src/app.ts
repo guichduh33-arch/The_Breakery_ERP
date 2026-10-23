@@ -7,6 +7,7 @@ import cors from 'cors';
 import type { PrinterTarget, ReceiptPayload, StationTicketPayload } from '@breakery/domain';
 import type { BridgeConfig } from './config.js';
 import { isPrivateIpv4, isPrivatePrefix } from './ipGuard.js';
+import { isAllowedOrigin, ownOrigin } from './originGuard.js';
 import { probeTcp as realProbe, scanHosts as realScan, hostsForPrefix } from './scan.js';
 import { renderReceipt } from './render/receipt.js';
 import { renderStationTicket } from './render/stationTicket.js';
@@ -79,7 +80,8 @@ export function createApp({
   app.set('case sensitive routing', true);
   app.set('strict routing', true);
   app.use((req, res, next) => {
-    if (req.headers.origin && !config.allowedOrigins.includes(req.headers.origin)) {
+    const own = ownOrigin(req.secure, req.get('host'));
+    if (!isAllowedOrigin(req.headers.origin, own, config.allowedOrigins)) {
       res.status(403).json({ error: 'origin_forbidden' });
       return;
     }
