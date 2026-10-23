@@ -174,7 +174,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      async logout() {
+      logout() {
         authGeneration += 1;
         const token = get().sessionToken;
         if (token) sessionRevocations.enqueue(token);
@@ -199,6 +199,7 @@ export const useAuthStore = create<AuthState>()(
           authExpiresAt: null,
         });
         void sessionRevocations.retry();
+        return Promise.resolve();
       },
 
       /**
