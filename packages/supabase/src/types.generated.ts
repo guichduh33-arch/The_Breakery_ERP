@@ -7088,7 +7088,7 @@ export type Database = {
         }
         Returns: Json
       }
-      enforce_pin_session_v1: { Args: never; Returns: undefined }
+      enforce_pin_session_v2: { Args: never; Returns: undefined }
       enqueue_notification_v2: {
         Args: {
           p_channel?: string
