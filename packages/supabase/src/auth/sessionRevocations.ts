@@ -25,7 +25,8 @@ export function createSessionRevocations({ environment, storageKey, send,
       const raw = storage().getItem(key());
       if (!raw) return;
       const value: unknown = JSON.parse(raw);
-      if (!Array.isArray(value) || value.some((token) => typeof token !== 'string' || !token || token.length > 1024)) {
+      if (!Array.isArray(value) || !value.every((token: unknown): token is string =>
+        typeof token === 'string' && token.length > 0 && token.length <= 1024)) {
         corrupt = true;
         throw new Error('Invalid revocation journal');
       }
