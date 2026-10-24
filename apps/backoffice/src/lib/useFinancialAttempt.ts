@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
+import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
 import { pendingFinancialTargets, readFinancialSlot, runFinancialAttempt, subscribeFinancialAttempts, type FinancialOperation, type FinancialPayloads } from './pendingFinancialAttempts.js';
 
@@ -19,7 +20,11 @@ export function captureFinancialSession() {
 export function useFinancialAttempt<K extends FinancialOperation>(operation: K, target: string, open: boolean) {
   const profileId = useAuthStore((s) => s.user?.id);
   const token = useAuthStore((s) => s.sessionToken);
-  const permission = operation === 'refund' ? 'orders.refund' : 'b2b.payment.record';
+  const permissions: Record<FinancialOperation, PermissionCode> = {
+    refund: 'orders.refund', payment: 'b2b.payment.record',
+    loyalty_conversion: 'customers.store_credit.convert', loyalty_adjustment: 'loyalty.adjust',
+  };
+  const permission = permissions[operation];
   const allowed = useAuthStore((s) => s.hasPermission(permission));
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   const [busy, setBusy] = useState(false);

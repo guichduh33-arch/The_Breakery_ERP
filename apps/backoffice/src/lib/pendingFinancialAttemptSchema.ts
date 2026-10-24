@@ -16,7 +16,14 @@ export interface PaymentSnapshot {
   notes?: string;
   invoiceIds?: string[];
 }
-export interface FinancialPayloads { refund: RefundSnapshot; payment: PaymentSnapshot }
+export interface LoyaltyConversionSnapshot { customerId: string; points: number }
+export interface LoyaltyAdjustmentSnapshot { customerId: string; delta: number; reason: string }
+export interface FinancialPayloads {
+  refund: RefundSnapshot;
+  payment: PaymentSnapshot;
+  loyalty_conversion: LoyaltyConversionSnapshot;
+  loyalty_adjustment: LoyaltyAdjustmentSnapshot;
+}
 export type FinancialOperation = keyof FinancialPayloads;
 export interface FinancialScope { environment: string; profileId: string; operation: FinancialOperation; target: string }
 export interface BaseSlot { version: 1; revision: string; operation: FinancialOperation; target: string }
@@ -49,7 +56,17 @@ export function validPayload(operation: FinancialOperation, target: string, valu
       && value.tenders.every((tender: unknown) => isRecord(tender) && exact(tender, ['method', 'amount', 'reference'])
         && method(tender.method) && positive(tender.amount) && optionalText(tender, 'reference'));
   }
-  return exact(value, ['customerId', 'amount', 'method', 'reference', 'paidAt', 'notes', 'invoiceIds'])
+  if (operation === 'loyalty_conversion') {
+    return exact(value, ['customerId', 'points']) && value.customerId === target
+      && finite(value.points) && Number.isInteger(value.points) && value.points > 0
+      && value.points <= 2147483647 && value.points % 100 === 0;
+  }
+  if (operation === 'loyalty_adjustment') {
+    return exact(value, ['customerId', 'delta', 'reason']) && value.customerId === target
+      && finite(value.delta) && Number.isInteger(value.delta) && value.delta !== 0 && Math.abs(value.delta) <= 1000000
+      && text(value.reason) && value.reason === value.reason.trim() && value.reason.length >= 5 && value.reason.length <= 500;
+  }
+  return operation === 'payment' && exact(value, ['customerId', 'amount', 'method', 'reference', 'paidAt', 'notes', 'invoiceIds'])
     && value.customerId === target && positive(value.amount) && method(value.method)
     && optionalText(value, 'reference') && optionalText(value, 'paidAt') && optionalText(value, 'notes')
     && (value.invoiceIds === undefined || (Array.isArray(value.invoiceIds)

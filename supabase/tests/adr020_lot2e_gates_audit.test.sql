@@ -72,30 +72,30 @@ END $$;
 
 -- T1 — ajustement autorisé : ledger + ligne d'audit, actor = id de PROFIL
 -- (jamais auth.uid()), metadata/payload complets.
-DO $$ DECLARE v_row RECORD; v_audit RECORD; v_profile UUID; BEGIN
+DO $$ DECLARE v_row JSONB; v_audit RECORD; v_profile UUID; BEGIN
   PERFORM pg_temp.authenticate_pin(current_setting('l2e.adj')::uuid);
-  SELECT * INTO v_row FROM adjust_loyalty_points_v2(
-    current_setting('l2e.cust')::uuid, 100, 'ADR020 lot e — test T1');
+  v_row := adjust_loyalty_points_v3(
+    current_setting('l2e.cust')::uuid, 100, 'ADR020 lot e — test T1', gen_random_uuid());
   SELECT id INTO v_profile FROM user_profiles
    WHERE auth_user_id = current_setting('l2e.adj')::uuid AND deleted_at IS NULL;
   SELECT * INTO v_audit FROM audit_logs
    WHERE action = 'loyalty.adjust' AND entity_id = current_setting('l2e.cust')::uuid
    ORDER BY id DESC LIMIT 1;
   INSERT INTO _r VALUES ('t01_adjust_audite',
-    v_row.txn_id IS NOT NULL AND v_row.new_balance = 100
+    (v_row->>'txn_id')::uuid IS NOT NULL AND (v_row->>'new_balance')::integer = 100
     AND v_audit.actor_id = v_profile
     AND (v_audit.payload->>'delta')::int = 100
     AND (v_audit.payload->>'balance_before')::int = 0
     AND (v_audit.payload->>'balance_after')::int = 100
-    AND (v_audit.metadata->>'loyalty_txn_id')::uuid = v_row.txn_id
+    AND (v_audit.metadata->>'loyalty_txn_id')::uuid = (v_row->>'txn_id')::uuid
     AND (SELECT count(*) FROM loyalty_transactions lt
-          WHERE lt.id = v_row.txn_id AND lt.transaction_type = 'adjust') = 1);
+          WHERE lt.id = (v_row->>'txn_id')::uuid AND lt.transaction_type = 'adjust') = 1);
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('t01_adjust_audite', false); END $$;
 
 -- T2 — customers.read sans loyalty.adjust : refusé (garde négative).
 DO $$ BEGIN
   PERFORM pg_temp.authenticate_pin(current_setting('l2e.lect')::uuid);
-  PERFORM adjust_loyalty_points_v2(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T2');
+  PERFORM adjust_loyalty_points_v3(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T2', gen_random_uuid());
   INSERT INTO _r VALUES ('t02_adjust_refuse_lecteur', false);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t02_adjust_refuse_lecteur', SQLERRM = 'forbidden');
@@ -104,16 +104,17 @@ END $$;
 -- T3 — sans aucun droit : refusé.
 DO $$ BEGIN
   PERFORM pg_temp.authenticate_pin(current_setting('l2e.nul')::uuid);
-  PERFORM adjust_loyalty_points_v2(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T3');
+  PERFORM adjust_loyalty_points_v3(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T3', gen_random_uuid());
   INSERT INTO _r VALUES ('t03_adjust_refuse_sans_droit', false);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t03_adjust_refuse_sans_droit', SQLERRM = 'forbidden');
 END $$;
 
--- T4 — versioning monotone : l'ancienne signature non versionnée est droppée.
+-- T4 — versioning monotone : les anciennes signatures sont droppées.
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t04_ancienne_version_absente',
-    to_regprocedure('public.adjust_loyalty_points(uuid,integer,text)') IS NULL);
+    to_regprocedure('public.adjust_loyalty_points(uuid,integer,text)') IS NULL
+    AND to_regprocedure('public.adjust_loyalty_points_v2(uuid,integer,text)') IS NULL);
 END $$;
 
 -- T5 — RLS loyalty_transactions : sans customers.read, aucune ligne visible.
@@ -191,7 +192,7 @@ END $$;
 -- et anon ne peuvent plus exécuter la fonction d'anniversaire (déc. 5).
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t11_acl',
-    NOT has_function_privilege('anon', 'public.adjust_loyalty_points_v2(uuid,integer,text)', 'EXECUTE')
+    NOT has_function_privilege('anon', 'public.adjust_loyalty_points_v3(uuid,integer,text,uuid)', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.export_customers_v1()', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.notify_birthday_customers_v2()', 'EXECUTE')
     AND NOT has_function_privilege('authenticated', 'public.notify_birthday_customers_v2()', 'EXECUTE')
@@ -216,7 +217,7 @@ CREATE TEMP TABLE _cap(l TEXT);
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t01_adjust_audite'),           'T1: ajustement autorise -> ledger + ligne audit_logs (actor = id de profil, diff complet)');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t02_adjust_refuse_lecteur'),   'T2: customers.read sans loyalty.adjust -> forbidden');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t03_adjust_refuse_sans_droit'),'T3: sans aucun droit -> forbidden');
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t04_ancienne_version_absente'),'T4: adjust_loyalty_points (non versionnee) droppee, seule la v2 vit');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t04_ancienne_version_absente'),'T4: anciennes signatures ajustement supprimees');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t05_rls_loyalty_sans_droit'),  'T5: RLS loyalty_transactions -> 0 ligne sans customers.read');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t06_rls_loyalty_lecteur'),     'T6: RLS loyalty_transactions -> customers.read voit le ledger');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t07_rls_prix_sans_droit'),     'T7: RLS customer_product_prices -> 0 ligne sans customers.read');
