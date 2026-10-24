@@ -5666,6 +5666,21 @@ export type Database = {
           },
         ]
       }
+      ui_invalidation_topics: {
+        Row: {
+          revision: string
+          topic: string
+        }
+        Insert: {
+          revision?: string
+          topic: string
+        }
+        Update: {
+          revision?: string
+          topic?: string
+        }
+        Relationships: []
+      }
       unit_conversions: {
         Row: {
           created_at: string
