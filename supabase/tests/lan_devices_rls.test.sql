@@ -3,6 +3,8 @@
 -- sous RLS lan.devices.manage" (policies S13, migration 20260517000171).
 -- Runner : MCP execute_sql, enveloppe BEGIN..ROLLBACK portée par ce fichier.
 BEGIN;
+\ir helpers/pin_session.sql
+SELECT plan(7);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 -- Les sections sous SET LOCAL ROLE authenticated doivent pouvoir enregistrer
@@ -21,8 +23,7 @@ END $$;
 
 -- ── En tant que CASHIER (pas lan.devices.manage) ────────────────────────────
 DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    jsonb_build_object('sub', '00000000-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000002');
 END $$;
 SET LOCAL ROLE authenticated;
 
@@ -66,8 +67,7 @@ RESET ROLE;
 
 -- ── En tant que SUPER_ADMIN (a lan.devices.manage) ──────────────────────────
 DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    jsonb_build_object('sub', '00000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 END $$;
 SET LOCAL ROLE authenticated;
 
@@ -119,8 +119,7 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t6_heartbeat_deleted_ignored', false);
 END $$;
 
-SELECT format('lan_devices_rls: %s/%s pass', count(*) FILTER (WHERE pass), count(*)) AS result,
-       COALESCE(array_agg(name) FILTER (WHERE NOT pass), '{}') AS failures
-  FROM _r;
+SELECT ok(pass, name) FROM _r ORDER BY name;
+SELECT * FROM finish();
 
 ROLLBACK;

@@ -5,6 +5,7 @@
 -- completed, non-B2B, non-historical, no test-product line) over live data.
 
 BEGIN;
+\ir helpers/pin_session.sql
 SELECT plan(8);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────
@@ -16,8 +17,7 @@ SELECT throws_ok(
 );
 
 -- ── Impersonate an owner holding reports.sales.read ───────────────────────
-SELECT set_config('request.jwt.claims',
-  json_build_object('sub','00000000-0000-0000-0000-000000000001')::text, true);
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 SET LOCAL role authenticated;
 
 -- ── Date-range guards ─────────────────────────────────────────────────────

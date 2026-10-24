@@ -16,6 +16,7 @@
 -- doit pas rendre la suite verte à vide). Run via MCP execute_sql — enveloppe
 -- BEGIN..ROLLBACK portée par ce fichier.
 BEGIN;
+\ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
@@ -72,8 +73,7 @@ END $$;
 -- T1 — ajustement autorisé : ledger + ligne d'audit, actor = id de PROFIL
 -- (jamais auth.uid()), metadata/payload complets.
 DO $$ DECLARE v_row RECORD; v_audit RECORD; v_profile UUID; BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.adj'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.adj')::uuid);
   SELECT * INTO v_row FROM adjust_loyalty_points_v2(
     current_setting('l2e.cust')::uuid, 100, 'ADR020 lot e — test T1');
   SELECT id INTO v_profile FROM user_profiles
@@ -94,8 +94,7 @@ EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('t01_adjust_audite', false); E
 
 -- T2 — customers.read sans loyalty.adjust : refusé (garde négative).
 DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.lect'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.lect')::uuid);
   PERFORM adjust_loyalty_points_v2(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T2');
   INSERT INTO _r VALUES ('t02_adjust_refuse_lecteur', false);
 EXCEPTION WHEN OTHERS THEN
@@ -104,8 +103,7 @@ END $$;
 
 -- T3 — sans aucun droit : refusé.
 DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.nul'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.nul')::uuid);
   PERFORM adjust_loyalty_points_v2(current_setting('l2e.cust')::uuid, 10, 'ADR020 lot e — test T3');
   INSERT INTO _r VALUES ('t03_adjust_refuse_sans_droit', false);
 EXCEPTION WHEN OTHERS THEN
@@ -120,8 +118,7 @@ END $$;
 
 -- T5 — RLS loyalty_transactions : sans customers.read, aucune ligne visible.
 DO $$ DECLARE n INT; BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.nul'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.nul')::uuid);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO n FROM loyalty_transactions;
   RESET ROLE;
@@ -132,8 +129,7 @@ END $$;
 
 -- T6 — RLS loyalty_transactions : customers.read voit la ligne du T1.
 DO $$ DECLARE n INT; BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.lect'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.lect')::uuid);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO n FROM loyalty_transactions
    WHERE customer_id = current_setting('l2e.cust')::uuid;
@@ -145,8 +141,7 @@ END $$;
 
 -- T7 — RLS customer_product_prices : sans customers.read, rien.
 DO $$ DECLARE n INT; BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.nul'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.nul')::uuid);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO n FROM customer_product_prices;
   RESET ROLE;
@@ -157,8 +152,7 @@ END $$;
 
 -- T8 — RLS customer_product_prices : customers.read voit le prix du décor.
 DO $$ DECLARE n INT; BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.lect'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.lect')::uuid);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO n FROM customer_product_prices
    WHERE customer_id = current_setting('l2e.cust')::uuid;
@@ -171,8 +165,7 @@ END $$;
 -- T9 — export autorisé : lignes = fiches actives, ligne d'audit avec row_count
 -- et actor = id de PROFIL du lecteur.
 DO $$ DECLARE n INT; v_actifs INT; v_audit RECORD; v_profile UUID; BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.lect'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.lect')::uuid);
   SELECT count(*) INTO n FROM export_customers_v1();
   SELECT count(*) INTO v_actifs FROM customers WHERE deleted_at IS NULL;
   SELECT id INTO v_profile FROM user_profiles
@@ -187,8 +180,7 @@ EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('t09_export_audite', false); E
 
 -- T10 — export sans customers.read : refusé (garde négative).
 DO $$ BEGIN
-  PERFORM set_config('request.jwt.claims',
-    json_build_object('sub', current_setting('l2e.nul'), 'role', 'authenticated')::text, true);
+  PERFORM pg_temp.authenticate_pin(current_setting('l2e.nul')::uuid);
   PERFORM count(*) FROM export_customers_v1();
   INSERT INTO _r VALUES ('t10_export_refuse', false);
 EXCEPTION WHEN OTHERS THEN

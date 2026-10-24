@@ -10,6 +10,7 @@
 -- produit et au rapport Top products de diverger.
 
 BEGIN;
+\ir helpers/pin_session.sql
 SELECT plan(11);
 
 -- ── Gate : appelant sans auth.uid() / sans reports.sales.read est refusé ────
@@ -22,8 +23,7 @@ SELECT throws_ok(
 );
 
 -- ── On endosse un propriétaire porteur de reports.sales.read ───────────────
-SELECT set_config('request.jwt.claims',
-  json_build_object('sub','00000000-0000-0000-0000-000000000001')::text, true);
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 SET LOCAL role authenticated;
 
 -- ── Garde sur l'argument ───────────────────────────────────────────────────

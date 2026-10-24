@@ -14,7 +14,7 @@
 -- Lancer via MCP execute_sql (enveloppe BEGIN … ROLLBACK portée par ce fichier).
 
 BEGIN;
-SELECT plan(6);
+SELECT plan(7);
 
 -- ── T1/T2 : l'invariant, asserté sur TOUT le schéma.
 SELECT is(
@@ -29,12 +29,15 @@ SELECT is(
       AND pg_get_functiondef(p.oid) ~* 'DELETE\s+FROM\s+(public\.)?stock_movements'),
   0, 'T2 aucune fonction du schéma ne fait DELETE sur stock_movements');
 
--- ── T3 : la RLS ne porte aucune policy d'écriture destructive.
+-- ── T3 : aucune policy permissive n'ouvre une écriture destructive.
 SELECT is(
   (SELECT count(*)::int FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'stock_movements'
+      AND permissive = 'PERMISSIVE'
       AND cmd IN ('UPDATE', 'DELETE', 'ALL')),
-  0, 'T3 aucune policy UPDATE/DELETE/ALL sur stock_movements');
+  0, 'T3 aucune policy permissive UPDATE/DELETE/ALL sur stock_movements');
+SELECT ok(NOT has_table_privilege('authenticated', 'public.stock_movements', 'UPDATE,DELETE,TRUNCATE'),
+  'authenticated ne possède aucun droit destructif sur le ledger');
 
 -- ── T4/T5/T6 : la primitive pose la référence À L'INSERTION.
 DO $do$

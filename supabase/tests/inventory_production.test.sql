@@ -32,7 +32,7 @@
 -- guard (g->kg and mL->L are convertible).
 
 BEGIN;
-
+\ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- Plan : 15 tests (T_PROD_01..15).
@@ -207,10 +207,9 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_mgr_auth FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr_auth IS NULL THEN
-    PERFORM set_config('breakery.t_prod_05_pass','skip',true);
-    RETURN;
+    RAISE EXCEPTION 'T_PROD_05: missing required actor fixture';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_mgr_auth::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr_auth);
   PERFORM set_config('role', 'authenticated', true);
   v_rid  := upsert_recipe_v2(v_bag, v_flo, 0.250, 'kg', 'first');
   v_rid2 := upsert_recipe_v2(v_bag, v_flo, 0.300, 'kg', 'updated');
@@ -219,7 +218,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_05_pass',
     CASE WHEN v_rid = v_rid2 AND v_qty = 0.300 THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_05_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_05_pass') = 'yes',
   'T_PROD_05: MANAGER upserts (insert then update) recipe row in place');
 
 -- ---------------------------------------------------------------------------
@@ -234,10 +233,9 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_cash_auth FROM user_profiles WHERE employee_code='EMP001';
   IF v_cash_auth IS NULL THEN
-    PERFORM set_config('breakery.t_prod_06_pass','skip',true);
-    RETURN;
+    RAISE EXCEPTION 'T_PROD_06: missing required actor fixture';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_cash_auth::text, true);
+  PERFORM pg_temp.authenticate_pin(v_cash_auth);
   PERFORM set_config('role', 'authenticated', true);
   BEGIN
     PERFORM upsert_recipe_v2(v_bag, v_flo, 0.250, 'kg', NULL);
@@ -247,7 +245,7 @@ BEGIN
   PERFORM set_config('role','postgres',true);
   PERFORM set_config('breakery.t_prod_06_pass', CASE WHEN v_raised THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_06_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_06_pass') = 'yes',
   'T_PROD_06: CASHIER → forbidden on upsert_recipe_v2');
 
 -- ---------------------------------------------------------------------------
@@ -264,10 +262,9 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_adm_auth FROM user_profiles WHERE employee_code='EMP000';
   IF v_adm_auth IS NULL THEN
-    PERFORM set_config('breakery.t_prod_07_pass','skip',true);
-    RETURN;
+    RAISE EXCEPTION 'T_PROD_07: missing required actor fixture';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_adm_auth::text, true);
+  PERFORM pg_temp.authenticate_pin(v_adm_auth);
   PERFORM set_config('role', 'authenticated', true);
   SELECT id INTO v_rid FROM recipes
     WHERE product_id=v_bag AND material_id=v_flo AND is_active AND deleted_at IS NULL LIMIT 1;
@@ -280,7 +277,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_07_pass',
     CASE WHEN v_is_active=false AND v_deleted_at IS NOT NULL THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_07_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_07_pass') = 'yes',
   'T_PROD_07: ADMIN deactivates recipe → is_active=false + deleted_at set');
 -- ---------------------------------------------------------------------------
 -- T_PROD_08 — CASHIER → forbidden on record_production_v5
@@ -290,9 +287,9 @@ DECLARE v_cash_auth UUID; v_caught TEXT; v_dummy UUID := gen_random_uuid();
 BEGIN
   SELECT auth_user_id INTO v_cash_auth FROM user_profiles WHERE employee_code='EMP001';
   IF v_cash_auth IS NULL THEN
-    PERFORM set_config('breakery.t_prod_08_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_08: missing required actor fixture';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_cash_auth::text, true);
+  PERFORM pg_temp.authenticate_pin(v_cash_auth);
   PERFORM set_config('role', 'authenticated', true);
   BEGIN
     PERFORM record_production_v6(v_dummy, 10, NULL, NULL, 0, NULL, NULL);
@@ -302,7 +299,7 @@ BEGIN
   PERFORM set_config('role','postgres',true);
   PERFORM set_config('breakery.t_prod_08_pass', CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_08_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_08_pass') = 'yes',
   'T_PROD_08: CASHIER → forbidden on record_production_v6');
 
 -- ---------------------------------------------------------------------------
@@ -313,9 +310,9 @@ DECLARE v_mgr UUID; v_bag UUID := current_setting('breakery.t_prod_baguette')::u
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
-    PERFORM set_config('breakery.t_prod_09_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_09: missing required actor fixture';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   BEGIN
     -- record_production_v5 now requires a non-null section (raised as
@@ -329,7 +326,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_09_pass',
     CASE WHEN v_caught='quantity_must_be_positive' THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_09_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_09_pass') = 'yes',
   'T_PROD_09: qty <= 0 → quantity_must_be_positive');
 
 -- ---------------------------------------------------------------------------
@@ -345,7 +342,7 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
-    PERFORM set_config('breakery.t_prod_10_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_10: missing required actor fixture';
   END IF;
   -- Bring flour stock down to 0.5kg so 50 baguettes need 12.5kg → insufficient.
   UPDATE products SET current_stock = 0.5 WHERE id = v_flo;
@@ -355,7 +352,7 @@ BEGIN
   -- et neutre vis-à-vis de l'état de la base (rollback avec la suite). Aussi :
   -- passer la section seedée (requise avant le contrôle de stock).
   UPDATE business_config SET allow_negative_stock = false WHERE id = 1;
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   -- Ensure single recipe for clarity (deactivate any others on this product first)
   -- Skipped to keep the test isolated.
@@ -372,7 +369,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_10_pass',
     CASE WHEN v_caught='insufficient_stock' AND v_detail LIKE '%Test Flour%' THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_10_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_10_pass') = 'yes',
   'T_PROD_10: insufficient_stock raised with missing material in DETAIL');
 
 -- ADR-008 D9.3 (20260729000005) : record_production_v5 drops `_bom_flatten` /
@@ -401,7 +398,7 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
-    PERFORM set_config('breakery.t_prod_11_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_11: missing required actor fixture';
   END IF;
   -- Refresh stocks
   UPDATE products SET current_stock=100 WHERE id=v_flo;
@@ -411,7 +408,7 @@ BEGIN
   UPDATE products SET current_stock=0   WHERE id=v_bag;
   SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
 
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo,   250, 'g',  NULL);
   PERFORM upsert_recipe_v2(v_bag, v_salt,    5, 'g',  NULL);
@@ -433,7 +430,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_11_pass',
     CASE WHEN v_movements_count=5 AND v_je_balanced=5 THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_11_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_11_pass') = 'yes',
   'T_PROD_11: 50-baguette happy path → 5 movements + 5 balanced JEs');
 
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
@@ -453,12 +450,12 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
-    PERFORM set_config('breakery.t_prod_12_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_12: missing required actor fixture';
   END IF;
   UPDATE products SET current_stock=100 WHERE id=v_flo;
   UPDATE products SET current_stock=0   WHERE id=v_bag;
   SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
   v_r1 := record_production_v6(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
@@ -470,7 +467,7 @@ BEGIN
               AND (v_r2->>'idempotent_replay') = 'true'
               AND v_dup = 1 THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_12_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_12_pass') = 'yes',
   'T_PROD_12: idempotency replay same production_id, no duplicate');
 
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
@@ -483,9 +480,9 @@ DECLARE v_mgr UUID; v_caught TEXT; v_dummy UUID := gen_random_uuid();
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
-    PERFORM set_config('breakery.t_prod_13_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_13: missing required actor fixture';
   END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   BEGIN
     PERFORM revert_production_v2(v_dummy, 'test reason');
@@ -496,7 +493,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_13_pass',
     CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_13_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_13_pass') = 'yes',
   'T_PROD_13: MANAGER → forbidden on revert_production_v2');
 
 -- ---------------------------------------------------------------------------
@@ -516,7 +513,7 @@ BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   SELECT auth_user_id INTO v_adm FROM user_profiles WHERE employee_code='EMP000';
   IF v_mgr IS NULL OR v_adm IS NULL THEN
-    PERFORM set_config('breakery.t_prod_14_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_14: missing required actor fixture';
   END IF;
   UPDATE products SET current_stock=100 WHERE id=v_flo;
   UPDATE products SET current_stock=0   WHERE id=v_bag;
@@ -530,13 +527,14 @@ BEGIN
   -- yields exactly 1 production_in + 1 production_out = 2 movements to reverse.
   UPDATE recipes SET is_active = false, deleted_at = now() WHERE product_id = v_bag AND is_active;
 
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
   v_result := record_production_v6(v_bag, 50, v_section, NULL, 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
-
-  PERFORM set_config('request.jwt.claim.sub', v_adm::text, true);
+  PERFORM set_config('role','postgres',true);
+  PERFORM pg_temp.authenticate_pin(v_adm);
+  PERFORM set_config('role','authenticated',true);
   v_revert := revert_production_v2(v_pid, 'pgTAP test reversal');
   PERFORM set_config('role','postgres',true);
 
@@ -552,7 +550,7 @@ BEGIN
               AND (v_revert->>'reverse_je_count')::int = 2
          THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_14_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_14_pass') = 'yes',
   'T_PROD_14: ADMIN reverts → stock restored + balanced ledger');
 -- ---------------------------------------------------------------------------
 -- T_PROD_15 — get_production_suggestions_v1 returns row for product with
@@ -570,13 +568,13 @@ DECLARE
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
-    PERFORM set_config('breakery.t_prod_15_pass','skip',true); RETURN;
+    RAISE EXCEPTION 'T_PROD_15: missing required actor fixture';
   END IF;
 
   -- Ensure: low stock + active recipe + recent sales injected via direct INSERT.
   UPDATE products SET current_stock=2 WHERE id=v_bag;
   UPDATE products SET current_stock=100 WHERE id=v_flo;
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
   PERFORM set_config('role','postgres',true);
@@ -593,7 +591,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total, created_at)
   VALUES (v_test_order, v_bag, 'Baguette', 5000, 10, 50000, now() - INTERVAL '1 day');
 
-  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v1(7, 3, 7) WHERE product_id = v_bag;
   PERFORM set_config('role','postgres',true);
@@ -601,7 +599,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_15_pass',
     CASE WHEN v_count = 1 THEN 'yes' ELSE 'no' END, true);
 END $$;
-SELECT ok(current_setting('breakery.t_prod_15_pass') IN ('yes','skip'),
+SELECT ok(current_setting('breakery.t_prod_15_pass') = 'yes',
   'T_PROD_15: get_production_suggestions_v1 returns row for low-stock product');
 
 SELECT * FROM finish();

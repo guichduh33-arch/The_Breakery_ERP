@@ -97,16 +97,16 @@ SELECT ok(
   'T5 — record_stock_movement_v1 (réécrit _087) audite dans audit_logs (entity_type/entity_id/metadata)'
 );
 
--- T6 : RLS audit_logs intacte — une seule policy (admin_read, SELECT) ;
--- aucune policy INSERT/UPDATE/DELETE pour authenticated.
+-- T6 : seule policy permissive = admin_read SELECT ; une garde restrictive
+-- supplémentaire n'accorde aucun droit d'écriture.
 SELECT ok(
   (SELECT COUNT(*) = 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'audit_logs')
+    WHERE schemaname = 'public' AND tablename = 'audit_logs' AND permissive = 'PERMISSIVE')
   AND
   (SELECT COUNT(*) = 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'audit_logs'
-      AND policyname = 'admin_read' AND cmd = 'SELECT'),
-  'T6 — RLS audit_logs : policy unique admin_read (SELECT), pas d''écriture authenticated'
+      AND policyname = 'admin_read' AND cmd = 'SELECT' AND permissive = 'PERMISSIVE'),
+  'T6 — RLS audit_logs : permissive unique admin_read SELECT, aucune ouverture d''écriture'
 );
 
 SELECT * FROM finish();

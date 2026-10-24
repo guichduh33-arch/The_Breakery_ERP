@@ -18,6 +18,7 @@
 -- Runner : execute via MCP execute_sql under BEGIN..ROLLBACK envelope.
 
 BEGIN;
+\ir helpers/pin_session.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -42,7 +43,7 @@ BEGIN
   PERFORM set_config('ps.admin_profile', v_admin_profile::text, false);
   PERFORM set_config('ps.cashier_uid',   COALESCE(v_cashier_uid::text, ''), false);
   PERFORM set_config('ps.category_id',   v_category_id::text,   false);
-  PERFORM set_config('request.jwt.claim.sub', v_admin_uid::text, false);
+  PERFORM pg_temp.authenticate_pin(v_admin_uid);
 END $boot$;
 
 -- Helper : create a recipe-built finished product.
@@ -212,26 +213,22 @@ DECLARE
   v_blocked BOOLEAN := FALSE;
 BEGIN
   v_cashier := NULLIF(current_setting('ps.cashier_uid'), '')::uuid;
-  IF v_cashier IS NULL THEN
-    PERFORM set_config('ps.t6', 'skip', false);
-    RETURN;
-  END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_cashier::text, false);
+  PERFORM pg_temp.authenticate_pin(v_cashier);
   PERFORM set_config('role', 'authenticated', false);
   BEGIN
     INSERT INTO production_schedules (scheduled_date, slot, recipe_id, planned_qty)
     VALUES (CURRENT_DATE + 5, '11am', current_setting('ps.p2')::uuid, 10);
-  EXCEPTION WHEN OTHERS THEN
+  EXCEPTION WHEN insufficient_privilege THEN
     v_blocked := TRUE;
   END;
   PERFORM set_config('role','postgres',false);
-  PERFORM set_config('request.jwt.claim.sub', current_setting('ps.admin_uid'), false);
+  PERFORM pg_temp.authenticate_pin(current_setting('ps.admin_uid')::uuid);
   PERFORM set_config('ps.t6', CASE WHEN v_blocked THEN 'blocked' ELSE 'allowed' END, false);
 END $t6$;
 
 SELECT ok(
-  current_setting('ps.t6') IN ('blocked','skip'),
-  'T6: CASHIER role blocked from INSERT (or skipped when seed missing)'
+  current_setting('ps.t6') = 'blocked',
+  'T6: CASHIER with a valid PIN session is blocked from INSERT'
 );
 
 SELECT * FROM finish();

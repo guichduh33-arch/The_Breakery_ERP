@@ -6,6 +6,7 @@
 -- and category revenue is a positive composition over the same scope.
 
 BEGIN;
+\ir helpers/pin_session.sql
 \ir helpers/sales.sql
 SELECT plan(10);
 
@@ -17,8 +18,7 @@ SELECT throws_ok(
 );
 
 -- ── Impersonate an owner holding reports.sales.read ───────────────────────
-SELECT set_config('request.jwt.claims',
-  json_build_object('sub','00000000-0000-0000-0000-000000000001')::text, true);
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 SET LOCAL role authenticated;
 
 -- ── Date-range guards ─────────────────────────────────────────────────────

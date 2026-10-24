@@ -1,5 +1,6 @@
 -- Audit stock : effets metier, rejeu durable, cloisonnement des droits.
 BEGIN;
+\ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE TEMP TABLE audit_results(line text);
 INSERT INTO audit_results SELECT no_plan();
@@ -15,8 +16,7 @@ INSERT INTO audit_results SELECT is((SELECT count(*) FROM primary_actor),1::bigi
 INSERT INTO products(id,sku,name,category_id,retail_price,cost_price,unit,current_stock)
 SELECT product_id,'AUDIT-' || product_id,'Stock audit fixture',
  (SELECT id FROM categories LIMIT 1),0,0,'pcs',0 FROM stock_fixture;
-SELECT set_config('request.jwt.claim.sub',
- (SELECT auth_user_id::text FROM primary_actor),true);
+SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM primary_actor));
 INSERT INTO stock_results SELECT 'noop',public.adjust_stock_v2(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
 SELECT public.record_incoming_stock_v2(product_id,5,NULL,NULL,'Audit receipt',NULL) FROM stock_fixture;
 INSERT INTO stock_results SELECT 'noop_replay',public.adjust_stock_v2(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
@@ -51,7 +51,7 @@ INSERT INTO user_permission_overrides(user_profile_id,permission_code,is_granted
  SELECT id,'inventory.receive',true,'Stock audit second actor',NULL FROM second_actor
  ON CONFLICT (user_profile_id,permission_code) DO UPDATE
  SET is_granted=true,reason=EXCLUDED.reason,expires_at=NULL;
-SELECT set_config('request.jwt.claim.sub',(SELECT auth_user_id::text FROM second_actor),true);
+SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM second_actor));
 GRANT ALL ON audit_results,stock_fixture TO authenticated;
 SET LOCAL ROLE authenticated;
 INSERT INTO audit_results SELECT ok(has_permission(auth.uid(),'inventory.receive'),'Second actor is authorized to receive');
@@ -59,8 +59,7 @@ INSERT INTO audit_results SELECT throws_ok(
  format('SELECT public.record_incoming_stock_v2(%L,3,NULL,NULL,%L,%L)',product_id,'Audit durable receipt',incoming_key),
  '22023','idempotency_conflict','Authorized second actor cannot reuse original actor key') FROM stock_fixture;
 RESET ROLE;
-SELECT set_config('request.jwt.claim.sub',
- (SELECT auth_user_id::text FROM primary_actor),true);
+SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM primary_actor));
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM stock_fixture)),2::numeric,'Actor conflict leaves stock unchanged');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM stock_movements WHERE idempotency_key=(SELECT incoming_key FROM stock_fixture)),1::bigint,'Actor conflict leaves ledger unchanged');
 INSERT INTO audit_results SELECT throws_ok(
@@ -94,7 +93,7 @@ INSERT INTO audit_results SELECT throws_ok(
 INSERT INTO audit_results SELECT lives_ok(
  format('SELECT public.record_incoming_stock_v2(%L,3,NULL,NULL,%L,%L)',product_id,'Audit durable receipt',incoming_key),
  'Original receipt remains replayable after product deletion') FROM stock_fixture;
--- Un JWT sans profil ne dispose d'aucune permission ; tester les vraies policies.
+-- Le refus métier doit porter sur un profil actif avec une vraie session PIN.
 INSERT INTO inventory_counts(id,count_number,created_by)
  SELECT count_id,'AUDIT-' || count_id,
  (SELECT id FROM user_profiles WHERE auth_user_id=auth.uid() AND deleted_at IS NULL LIMIT 1) FROM stock_fixture;
@@ -105,8 +104,18 @@ SET LOCAL ROLE authenticated;
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM public.inventory_counts WHERE id=(SELECT count_id FROM stock_fixture)),1::bigint,'Authorized reader sees fixture header');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM public.inventory_count_items WHERE count_id=(SELECT count_id FROM stock_fixture)),1::bigint,'Authorized reader sees fixture item');
 RESET ROLE;
-SELECT set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
+DO $fixture$
+DECLARE v_uid uuid := gen_random_uuid(); v_profile uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO auth.users(id,email) VALUES(v_uid,v_uid || '@stock-rls.invalid');
+  INSERT INTO roles(code,name) VALUES('STOCK_RLS_TEST','Stock RLS test');
+  INSERT INTO user_profiles(id,auth_user_id,employee_code,full_name,pin_hash,role_code)
+  VALUES(v_profile,v_uid,'STOCK-' || v_profile,'Stock RLS test','not-a-login-hash','STOCK_RLS_TEST');
+  PERFORM pg_temp.authenticate_pin(v_uid);
+END $fixture$;
 SET LOCAL ROLE authenticated;
+INSERT INTO audit_results SELECT ok(request_has_active_pin_session_v1(),'Denied reader has an active PIN session');
+INSERT INTO audit_results SELECT ok(NOT has_permission(auth.uid(),'inventory.read'),'Denied reader lacks inventory.read');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM public.inventory_counts WHERE id=(SELECT count_id FROM stock_fixture)),0::bigint,'Fixture header hidden without inventory.read');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM public.inventory_count_items WHERE count_id=(SELECT count_id FROM stock_fixture)),0::bigint,'Fixture item hidden without inventory.read');
 INSERT INTO audit_results SELECT throws_ok(
@@ -114,8 +123,7 @@ INSERT INTO audit_results SELECT throws_ok(
  'P0003','forbidden','Permission checked before replay') FROM stock_fixture;
 RESET ROLE;
 -- Exact regression: a fractional no-op, an intervening outgoing movement, then replay.
-SELECT set_config('request.jwt.claim.sub',
- (SELECT auth_user_id::text FROM primary_actor),true);
+SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM primary_actor));
 CREATE TEMP TABLE decrement_fixture AS SELECT gen_random_uuid() product_id,gen_random_uuid() request_key;
 INSERT INTO products(id,sku,name,category_id,retail_price,cost_price,unit,current_stock)
  SELECT product_id,'AUDIT-KG-' || product_id,'Fractional stock audit fixture',

@@ -1,5 +1,6 @@
 -- Fixtures transactionnelles : aucun droit ni mouvement ne subsiste après le test.
 BEGIN;
+\ir helpers/pin_session.sql
 SELECT plan(39);
 CREATE TEMP TABLE kitchen_fixture (profile uuid, uid uuid, section uuid, other_section uuid, product uuid, material uuid, request jsonb, receipt jsonb);
 DO $$
@@ -25,7 +26,7 @@ BEGIN
     'idempotency_key',gen_random_uuid(),'section_id',s,'day',CURRENT_DATE,
     'items',jsonb_build_array(jsonb_build_object('product_id',fin,'unit','dozen','quantity_produced',1,
       'quantity_waste',0,'waste_reason','','note','Chef note'))),NULL);
-  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u,'role','authenticated')::text,true);
+  PERFORM pg_temp.authenticate_pin(u);
 END $$;
 SELECT is(jsonb_array_length(get_kitchen_stations_v1()),1,'Only assigned stations');
 SELECT is(jsonb_array_length(get_kitchen_products_v1((SELECT section FROM kitchen_fixture))),1,'Assigned producible products');
@@ -94,7 +95,7 @@ BEGIN
   INSERT INTO user_profiles(id,auth_user_id,employee_code,full_name,pin_hash,role_code)
     VALUES(p,u,'KA-' || p,'Kitchen admin test','not-a-login-hash','SUPER_ADMIN');
   INSERT INTO kitchen_admin_fixture VALUES(p,u);
-  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u,'role','authenticated')::text,true);
+  PERFORM pg_temp.authenticate_pin(u);
 END $$;
 SELECT lives_ok(format('SELECT set_user_kitchen_access_v1(%L,true,ARRAY[%L]::uuid[],%L)',
   (SELECT profile FROM kitchen_fixture),(SELECT section FROM kitchen_fixture),'Tablet chef assignment'),'Super admin assigns kitchen access');
