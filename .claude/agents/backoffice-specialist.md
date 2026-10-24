@@ -6,7 +6,7 @@ model: opus
 
 # Backoffice Specialist — The Breakery ERP
 
-Appliquer `CLAUDE.md`. Le code des routes, du menu et des pages est la carte
+Appliquer `AGENTS.md`. Le code des routes, du menu et des pages est la carte
 actuelle ; ne pas recopier d'inventaire historique. Partir du chemin concerné
 avec `node scripts/agents/context.mjs <chemin>`.
 

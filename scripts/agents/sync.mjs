@@ -6,6 +6,14 @@ import { ROOT, filesUnder, isMain, normalized, read, slash } from './lib.mjs';
 export const VENDOR_SKILLS = new Set(['playwright-cli', 'impeccable']);
 const toClaude = (text) => text.replaceAll('AGENTS.md', 'CLAUDE.md');
 const toCodex = (text) => text.replaceAll('CLAUDE.md', 'AGENTS.md');
+// `CLAUDE.md` n'est plus une copie du texte : Claude Code charge `AGENTS.md`
+// par cet import, ce qui laisse une seule source à relire et à corriger.
+export const CLAUDE_POINTER = '# CLAUDE.md — The Breakery ERP\n'
+  + '\n'
+  + '> Pointeur généré par `scripts/agents/sync.mjs`. La loi vit dans `AGENTS.md` ;\n'
+  + "> l'import ci-dessous la charge intégralement. N'écrire aucune règle ici.\n"
+  + '\n'
+  + '@AGENTS.md\n';
 
 export function roleToToml(source) {
   const match = normalized(source).match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -25,8 +33,10 @@ export function roleToToml(source) {
 
 export function expectedMirrors(root = ROOT) {
   const result = new Map();
-  result.set('CLAUDE.md', read(join(root, 'AGENTS.md')).replace(/^# AGENTS\.md/, '# CLAUDE.md')
-    .replace('Co-author Codex si assisté.', 'Co-author Claude si assisté.'));
+  // La source `AGENTS.md` doit exister : un pointeur vers un fichier absent
+  // laisserait une session démarrer sans la loi, sans rien signaler.
+  read(join(root, 'AGENTS.md'));
+  result.set('CLAUDE.md', CLAUDE_POINTER);
   const skills = join(root, '.agents/skills');
   for (const entry of readdirSync(skills, { withFileTypes: true })) {
     if (!entry.isDirectory() || VENDOR_SKILLS.has(entry.name)) continue;
