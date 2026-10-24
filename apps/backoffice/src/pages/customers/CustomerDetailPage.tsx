@@ -37,6 +37,7 @@ import { Button, Card } from '@/components/BackofficeUi.js';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
 import { formatDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
 import { useCustomerDetail } from '@/features/customers/hooks/useCustomerDetail.js';
@@ -86,6 +87,7 @@ export function CustomerDetailPage(): JSX.Element {
   // ADR-013 Lot 4 — avoir client (seeds _235 : MANAGER+).
   const canGrant = hasPermission('customers.store_credit.grant');
   const canConvert = hasPermission('customers.store_credit.convert');
+  const pendingConversion = useHasPendingFinancial('loyalty_conversion', id ?? '');
 
   const { data, isLoading } = useCustomerDetail(id);
   const history = useCustomerLoyaltyHistory(id ?? null);
@@ -282,11 +284,11 @@ export function CustomerDetailPage(): JSX.Element {
                 type="button"
                 size="sm"
                 variant="secondary"
-                disabled={customer.loyalty_points < 100}
+                disabled={!pendingConversion && customer.loyalty_points < 100}
                 onClick={() => setConverting(true)}
                 data-testid="convert-store-credit"
               >
-                <Star className="h-3.5 w-3.5 text-text-muted" aria-hidden /> Convert points to credit
+                <Star className="h-3.5 w-3.5 text-text-muted" aria-hidden /> {pendingConversion ? 'Check pending conversion' : 'Convert points to credit'}
               </Button>
             )}
           </div>
