@@ -7088,6 +7088,7 @@ export type Database = {
         }
         Returns: Json
       }
+      enforce_pin_session_v2: { Args: never; Returns: undefined }
       enqueue_notification_v2: {
         Args: {
           p_channel?: string
@@ -7900,6 +7901,10 @@ export type Database = {
       in_todo: { Args: never; Returns: boolean }
       is_authenticated: { Args: never; Returns: boolean }
       is_empty: { Args: { "": string }; Returns: string }
+      is_pin_session_active_v1: {
+        Args: { p_auth_user_id: string; p_session_id: string }
+        Returns: boolean
+      }
       isnt_empty: { Args: { "": string }; Returns: string }
       kds_bump_item_v2: {
         Args: { p_idempotency_key?: string; p_order_item_id: string }
@@ -8054,6 +8059,10 @@ export type Database = {
       }
       list_recipes_v1: { Args: { p_product_id: string }; Returns: Json[] }
       lives_ok: { Args: { "": string }; Returns: string }
+      logout_user_session_v1: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: boolean
+      }
       manage_display_device_v1: {
         Args: {
           p_action: string
@@ -8461,6 +8470,7 @@ export type Database = {
         }
         Returns: Json
       }
+      request_has_active_pin_session_v1: { Args: never; Returns: boolean }
       reservation_consume_v1: {
         Args: { p_reservation_id: string }
         Returns: Json
