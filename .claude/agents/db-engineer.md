@@ -7,7 +7,7 @@ model: sonnet
 
 # DB Engineer — The Breakery ERP
 
-Appliquer `CLAUDE.md`, puis lire le skill `db-migrations` et le skill métier du
+Appliquer `AGENTS.md`, puis lire le skill `db-migrations` et le skill métier du
 flux concerné. `security-auth` précise les droits. Aucun inventaire historique
 de tables ou de versions ne remplace le schéma live.
 

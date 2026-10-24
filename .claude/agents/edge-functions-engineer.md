@@ -7,7 +7,7 @@ model: sonnet
 
 # Edge Functions Engineer — The Breakery ERP
 
-Appliquer `CLAUDE.md` et le skill `edge-functions`. Ajouter `security-auth` pour
+Appliquer `AGENTS.md` et le skill `edge-functions`. Ajouter `security-auth` pour
 le sens des contrôles et `db-migrations` lorsque le contrat SQL est concerné.
 Suivre l'appelant, le handler, les helpers partagés et la RPC effectivement appelée.
 

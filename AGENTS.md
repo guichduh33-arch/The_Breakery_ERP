@@ -208,10 +208,14 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 
 - Modifier les règles racines dans `AGENTS.md`, les skills métier dans
   `.agents/skills`, les profils de rôle dans `.claude/agents/*.md`.
-  `CLAUDE.md`, les copies métier `.claude/skills` et les profils `.codex/agents`
-  sont générés par `node scripts/agents/sync.mjs --write` puis contrôlés par
-  `node scripts/agents/sync.mjs --check`. Les copies Playwright CLI et Impeccable
-  restent gérées par leurs outils. Ne pas éditer les miroirs à la main.
+  `AGENTS.md` est la seule copie du texte des règles racines : `CLAUDE.md` n'est
+  qu'un pointeur généré qui l'importe, et une règle écrite là serait invisible
+  pour Codex. Ce pointeur, les copies métier `.claude/skills` et les profils
+  `.codex/agents` sont générés par `node scripts/agents/sync.mjs --write` puis
+  contrôlés par `node scripts/agents/sync.mjs --check`. Les copies Playwright CLI
+  et Impeccable restent gérées par leurs outils. Ne pas éditer les miroirs à la
+  main. Les skills citent `CLAUDE.md` ou `AGENTS.md` selon leur arbre : les deux
+  chemins mènent au même texte.
 - Diagnostic local sans installation ni nettoyage : `node scripts/agents/doctor.mjs`.
   Repères ciblés par chemin : `node scripts/agents/context.mjs <chemin>`.
   Les profils `context:snapshot` restent des inventaires, pas des listes à tout lire.
@@ -354,7 +358,8 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 - Branches : `feat/<scope>`, `fix/<scope>`, `chore/<scope>` ; `docs/<scope>` pour
   un sujet documentaire. Une branche = un sujet.
   (Le préfixe `swarm/` est aboli avec le mode multi-session.)
-- Commits conventionnels (`feat(scope): …`). Co-author Codex si assisté.
+- Commits conventionnels (`feat(scope): …`). Co-author l'agent qui a assisté,
+  nommé par l'agent lui-même : ce fichier sert les deux outils.
 - **Un commit `docs(...)` par un agent sans validation préalable de Mamat =
   violation de la règle documentaire 1.**
 - **Jamais de commit direct sur master.** Tout changement passe par une branche
