@@ -78,9 +78,11 @@ export function createSessionRevocations({ environment, storageKey, send,
   }
   function start(target: EventTarget = window): () => void {
     const wake = () => { void retry(); };
+    // Le LAN peut rester connecté pendant une panne WAN, sans événement online.
+    const timer = setInterval(() => { if (tokens.size > 0) wake(); }, 15_000);
     target.addEventListener('online', wake);
     wake();
-    return () => target.removeEventListener('online', wake);
+    return () => { clearInterval(timer); target.removeEventListener('online', wake); };
   }
   // Un import du store n'initialise ni la configuration cloud ni un accès réseau.
   if (typeof environment === 'string') load();

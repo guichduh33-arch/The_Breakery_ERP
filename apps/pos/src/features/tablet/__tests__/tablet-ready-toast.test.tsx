@@ -19,9 +19,9 @@ const handlers = vi.hoisted(() => ({ current: null as ((p: unknown) => void) | n
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     channel: () => ({
-      on: (_evt: string, _cfg: unknown, cb: (p: unknown) => void) => {
-        handlers.current = cb;
-        return { subscribe: () => ({}) };
+      on(_evt: string, cfg: { table: string }, cb: (p: unknown) => void) {
+        if (cfg.table === 'order_items') handlers.current = cb;
+        return this;
       },
       subscribe: () => ({}),
     }),

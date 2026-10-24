@@ -11,6 +11,7 @@
 -- Runner : execute via MCP execute_sql under BEGIN..ROLLBACK envelope.
 
 BEGIN;
+\ir helpers/pin_session.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -169,6 +170,7 @@ SELECT is(
 -- T5 — Column-guard trigger : an authenticated (non-postgres) caller cannot
 -- mutate non-ack columns. Simulate by SET ROLE authenticated.
 -- ---------------------------------------------------------------------------
+SELECT pg_temp.authenticate_pin(current_setting('ma.admin_uid')::uuid);
 DO $t5$
 DECLARE
   v_pid UUID;
@@ -182,10 +184,14 @@ BEGIN
 
   SET LOCAL ROLE authenticated;
   PERFORM set_config('request.jwt.claim.sub', current_setting('ma.admin_uid'), true);
+  IF NOT EXISTS(SELECT 1 FROM margin_alerts WHERE id=v_alert_id) THEN
+    RAISE EXCEPTION 'margin_alert_fixture_not_visible';
+  END IF;
 
   BEGIN
     UPDATE margin_alerts SET expected_margin_pct = 99.99 WHERE id = v_alert_id;
-  EXCEPTION WHEN OTHERS THEN
+  EXCEPTION WHEN SQLSTATE 'P0001' THEN
+    IF SQLERRM <> 'margin_alerts_ack_only' THEN RAISE; END IF;
     v_blocked := TRUE;
   END;
 

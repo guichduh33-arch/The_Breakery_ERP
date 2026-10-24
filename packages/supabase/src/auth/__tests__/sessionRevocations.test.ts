@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSessionRevocations } from '../sessionRevocations.js';
 function storageFixture() {
   const data = new Map<string,string>();
@@ -12,6 +12,7 @@ const environment = 'https://example.test';
 const key = `auth:pending-logouts:${encodeURIComponent(environment)}`;
 let fixture: ReturnType<typeof storageFixture>;
 beforeEach(() => { fixture = storageFixture(); });
+afterEach(() => { vi.useRealTimers(); });
 const create = (send = vi.fn<(token: string) => Promise<void>>().mockResolvedValue(undefined), env = environment) =>
   createSessionRevocations({ environment: env, storageKey: 'auth', send, storage: () => fixture.storage });
 describe('révocation différée sur la persistance d’auth existante', () => {
@@ -71,5 +72,35 @@ describe('révocation différée sur la persistance d’auth existante', () => {
     send.mockResolvedValue(undefined); target.dispatchEvent(new Event('online')); await queue.retry();
     expect(queue.getSnapshot().pending).toBe(0); stop(); send.mockClear();
     target.dispatchEvent(new Event('online')); expect(send).not.toHaveBeenCalled();
+  });
+  it('reprend après une panne cloud sans événement online et arrête le timer au démontage', async () => {
+    vi.useFakeTimers();
+    const send = vi.fn().mockRejectedValue(new Error('Supabase 503'));
+    const queue = create(send); queue.enqueue('operator-A');
+    const stop = queue.start(new EventTarget()); await queue.retry();
+    expect(queue.getSnapshot().pending).toBe(1);
+    fixture.data.set('auth', JSON.stringify({ state: { sessionToken: 'operator-B' } }));
+    send.mockResolvedValue(undefined);
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(send.mock.calls).toEqual([['operator-A'], ['operator-A']]);
+    expect(queue.getSnapshot().pending).toBe(0);
+    const persisted = JSON.parse(fixture.data.get('auth')!) as { state: { sessionToken: string } };
+    expect(persisted.state.sessionToken).toBe('operator-B');
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(send).toHaveBeenCalledTimes(2);
+    stop(); queue.enqueue('operator-C');
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+  it('ne double pas un envoi lent pendant les relances temporisées', async () => {
+    vi.useFakeTimers();
+    let done!: () => void;
+    const send = vi.fn().mockImplementation(() => new Promise<void>((resolve) => { done = resolve; }));
+    const queue = create(send); queue.enqueue('opaque');
+    const stop = queue.start(new EventTarget());
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(send).toHaveBeenCalledExactlyOnceWith('opaque');
+    done(); await queue.retry(); stop();
+    expect(queue.getSnapshot().pending).toBe(0);
   });
 });
