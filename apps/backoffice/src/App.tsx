@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useSyncExternalStore } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { SkipToContent, Toaster, useIdleTimeout, IdleWarningToast, BrandMark } from '@breakery/ui';
@@ -6,7 +6,7 @@ import { queryClient } from './lib/queryClient.js';
 import { AppRoutes } from './routes/index.js';
 import { AppErrorBoundary } from './components/AppErrorBoundary.js';
 import { ErrorState } from './components/ErrorState.js';
-import { useAuthStore } from './stores/authStore.js';
+import { useAuthStore, sessionRevocations } from './stores/authStore.js';
 import { recordSessionActivity, startSessionActivity } from '@breakery/supabase';
 import { supabaseUrl } from './lib/supabase.js';
 import { startSessionRefresh } from './stores/sessionRefresh.js';
@@ -42,6 +42,19 @@ function BootLoading() {
       </div>
     </div>
   );
+}
+
+function SessionRevocationNotice() {
+  const status = useSyncExternalStore(sessionRevocations.subscribe, sessionRevocations.getSnapshot);
+  useEffect(() => sessionRevocations.start(), []);
+  if (!status.pending && !status.storageError) return null;
+  return <div role="alert" className="fixed bottom-3 left-3 z-50 max-w-sm rounded-md border border-danger bg-bg-base p-3 text-sm text-text-primary">
+    <p>{status.pending ? 'A previous sign-out is not confirmed by the server. Keep this tab open and reconnect to finish revocation.' : 'Sign-out recovery storage needs attention.'}</p>
+    {status.storageError && <p>The revocation could not be saved. Keep this tab open and retry.</p>}
+    <button type="button" className="mt-2 underline" disabled={status.busy} onClick={() => { void sessionRevocations.retry(); }}>
+      {status.busy ? 'Checking…' : 'Retry sign-out'}
+    </button>
+  </div>;
 }
 
 /**
@@ -95,6 +108,7 @@ export default function App() {
           <IdleTimeoutMount />
           {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
           <IdleWarningToast />
+          <SessionRevocationNotice />
           <BootGate>
             {/* Les routes hors coquille (catch-all racine) sont elles aussi
                 lazy : sans frontière ici, leur suspension au premier rendu

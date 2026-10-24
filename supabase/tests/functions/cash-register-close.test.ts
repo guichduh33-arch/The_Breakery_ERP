@@ -29,7 +29,7 @@ const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 // Historically returned the auth user id (not the profile id) as `profileId`;
 // that field is unused by the call-sites but preserved for fidelity.
 async function loginAs(employeeCode: string, _pin: string): Promise<{ token: string; profileId: string }> {
-  const r = await loginAsFull(employeeCode);
+  const r = await loginAsFull(employeeCode, _pin);
   return { token: r.token, profileId: r.authUserId };
 }
 

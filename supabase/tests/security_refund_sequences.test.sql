@@ -21,11 +21,12 @@ SELECT ok(
   'refund_sequences_select_auth policy exists for authenticated'
 );
 
--- A3 : No INSERT/UPDATE/DELETE policy means all client DML denied
+-- A3 : aucune policy permissive ne doit ouvrir les écritures clientes.
 SELECT is_empty(
   $$ SELECT policyname FROM pg_policies
       WHERE schemaname='public' AND tablename='refund_sequences'
-        AND cmd IN ('INSERT','UPDATE','DELETE') $$,
+        AND permissive = 'PERMISSIVE'
+        AND cmd IN ('INSERT','UPDATE','DELETE','ALL') $$,
   'no client-writable policies on refund_sequences'
 );
 

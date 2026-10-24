@@ -96,7 +96,8 @@ export default function LoginPage(): JSX.Element {
       if (!selectedUser) return;
       setError(null);
       void login(selectedUser.id, rawPin)
-        .then(() => {
+        .then((accepted) => {
+          if (accepted === false) return;
           try { localStorage.setItem(LAST_USER_KEY, selectedUser.id); } catch { /* storage unavailable */ }
           const { user } = useAuthStore.getState();
           const dest = tabletReturn ?? (user?.role_code === 'waiter' || isNativeShell() ? '/tablet/order' : '/pos');

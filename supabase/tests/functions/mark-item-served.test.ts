@@ -14,15 +14,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('mark_item_served RPC', 
   beforeAll(async () => {
     admin = createClient(SUPABASE_URL, SERVICE);
 
-    await admin.from('user_profiles')
-      .update({ failed_login_attempts: 0, locked_until: null })
-      .eq('employee_code', 'EMP000');
-
     const { data: profile } = await admin.from('user_profiles')
       .select('id').eq('employee_code', 'EMP000').single();
     if (!profile) throw new Error('Seed not loaded — run supabase db reset');
 
-    const token = await loginAs('EMP000', '1234');
+    const token = await loginAs('EMP000');
     authedClient = createClient(SUPABASE_URL, SERVICE, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });

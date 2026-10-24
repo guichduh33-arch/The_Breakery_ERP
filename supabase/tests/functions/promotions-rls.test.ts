@@ -33,7 +33,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role
   // A pre-existing promo row inserted via service-role for read/update tests.
   let seedPromoId: string;
 
-  const login = async (employeeCode: string, _pin: string) => loginAs(employeeCode);
+  const login = async (employeeCode: string, pin: string) => loginAs(employeeCode, pin);
 
   beforeAll(async () => {
     admin = createClient(SUPABASE_URL, SERVICE);

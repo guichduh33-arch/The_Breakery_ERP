@@ -198,6 +198,7 @@ serve(withPermissionErrors(async (req) => {
     role: 'authenticated',
     aud: 'authenticated',
     sub: profile.auth_user_id,   // auth.users.id
+    session_id: session.id,
     email: `cashier-${profile.employee_code}@thebreakery.local`,
     iat: nowSec,
     exp: expiresAt,

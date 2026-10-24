@@ -160,7 +160,7 @@ export async function getSession(
 }
 
 /**
- * Revoke a session server-side. Best-effort: failures are not surfaced.
+ * Revoke a session server-side and require confirmation.
  *
  * Calls `POST {supabaseUrl}/functions/v1/auth-logout`. The caller is still
  * responsible for clearing local state and calling
@@ -170,10 +170,13 @@ export async function getSession(
  * @param sessionToken - Token to revoke.
  */
 export async function logoutSession(supabaseUrl: string, sessionToken: string): Promise<void> {
-  await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-logout`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-logout`, {
     method: 'POST',
     headers: { 'x-session-token': sessionToken },
   });
+  if (!response.ok) throw new Error('Session revocation failed');
+  const result = await response.json() as { ok?: unknown };
+  if (result.ok !== true) throw new Error('Session revocation not confirmed');
 }
 
 /**

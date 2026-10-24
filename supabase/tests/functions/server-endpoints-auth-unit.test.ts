@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { serve, getUser, from, rpc, env, sendEmail } = vi.hoisted(() => ({
-  serve: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), env: vi.fn(), sendEmail: vi.fn(),
+const { serve, actor, getUser, from, rpc, env, sendEmail } = vi.hoisted(() => ({
+  serve: vi.fn(), actor: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), env: vi.fn(), sendEmail: vi.fn(),
 }));
+vi.mock('../../functions/_shared/acting-user.ts', () => ({ getActingAuthUserId: actor }));
 vi.mock('https://deno.land/std@0.224.0/http/server.ts', () => ({ serve }));
 vi.mock('../../functions/_shared/cors.ts', () => ({
   handleCors: () => null,
@@ -28,6 +29,7 @@ beforeEach(() => {
     NOTIFICATION_DISPATCH_SECRET: 'test-dispatch-secret', LAN_HEARTBEAT_SECRET: 'test-hub-secret',
   })[name]);
   getUser.mockResolvedValue({ data: { user: null }, error: { message: 'Invalid token' } });
+  actor.mockResolvedValue(null);
   rpc.mockResolvedValue({ data: [], error: null });
   const printerQuery = {
     eq: vi.fn(),
@@ -51,7 +53,7 @@ describe('notifications — refus avant la prise du lot et tout envoi', () => {
     { data: false, error: null },
     { data: null, error: { message: 'Permission lookup failed' } },
   ])('refuse sans permission vérifiée : %j', async (result) => {
-    getUser.mockResolvedValue({ data: { user: { id: 'user' } }, error: null });
+    actor.mockResolvedValue('user');
     rpc.mockResolvedValue(result);
     expect((await dispatch(request({ authorization: 'Bearer user-token' }))).status).toBe(401);
     expect(rpc).toHaveBeenCalledExactlyOnceWith('has_permission', {
@@ -65,10 +67,19 @@ describe('notifications — refus avant la prise du lot et tout envoi', () => {
     expect(rpc).toHaveBeenCalledExactlyOnceWith('pick_notifications_batch_v2', { p_limit: 50 });
   });
   it('accepte un utilisateur dont la permission est vérifiée', async () => {
-    getUser.mockResolvedValue({ data: { user: { id: 'user' } }, error: null });
+    actor.mockResolvedValue('user');
     rpc.mockResolvedValueOnce({ data: true, error: null });
     expect((await dispatch(request({ authorization: 'Bearer user-token' }))).status).toBe(200);
     expect(rpc).toHaveBeenNthCalledWith(2, 'pick_notifications_batch_v2', { p_limit: 50 });
+  });
+});
+
+describe('notification — session indisponible', () => {
+  it('refuse avant la prise du lot', async () => {
+    actor.mockResolvedValue(Response.json({ error: 'session_check_unavailable' }, { status: 503 }));
+    expect((await dispatch(request({ authorization: 'Bearer user-token' }))).status).toBe(503);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });
 

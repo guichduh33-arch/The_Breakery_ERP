@@ -22,6 +22,7 @@ import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getPublishableApiKey } from '../_shared/api-keys.ts';
 import { initLayout, type BusinessInfo } from '../_shared/pdf-layout.ts';
 import { TEMPLATES, type TemplateName } from '../_shared/pdf-templates/index.ts';
@@ -64,13 +65,14 @@ serve(async (req) => {
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return jsonResponse({ error: 'authorization_required' }, 401);
 
+  const actingUserId = await getActingAuthUserId(req);
+  if (actingUserId instanceof Response) return actingUserId;
+  if (!actingUserId) return jsonResponse({ error: 'invalid_auth' }, 401);
   const userClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
     getPublishableApiKey()!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return jsonResponse({ error: 'invalid_auth' }, 401);
 
   // Parse body
   let body: Body;
@@ -85,7 +87,7 @@ serve(async (req) => {
 
   // Permission check (caller must have the template's required permission)
   const { data: hasPerm, error: permErr } = await userClient.rpc('has_permission', {
-    p_uid:  userData.user.id,
+    p_uid:  actingUserId,
     p_perm: tplReg.permission,
   });
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
@@ -96,7 +98,7 @@ serve(async (req) => {
   // fermé de permissions et était seedée, mais n'était lue nulle part ; elle
   // devient la condition d'extraction, en ET de la permission du template.
   const { data: hasExport, error: exportErr } = await userClient.rpc('has_permission', {
-    p_uid:  userData.user.id,
+    p_uid:  actingUserId,
     p_perm: 'reports.export',
   });
   if (exportErr) return jsonResponse({ error: 'permission_check_failed', detail: exportErr.message }, 500);
@@ -142,7 +144,7 @@ serve(async (req) => {
   const now = new Date();
   const yyyy = String(now.getUTCFullYear());
   const mm   = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const path = `${userData.user.id}/${yyyy}/${mm}/${body.filename}.pdf`;
+  const path = `${actingUserId}/${yyyy}/${mm}/${body.filename}.pdf`;
 
   const { error: uploadErr } = await admin.storage
     .from('reports-exports')

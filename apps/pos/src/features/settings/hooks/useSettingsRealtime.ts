@@ -64,7 +64,7 @@ function invalidateAll(
  * kiosk JWT). Renders nothing, returns nothing — consumers keep reading
  * through their existing hooks.
  */
-export function useSettingsRealtime(enabled: boolean): void {
+export function useSettingsRealtime(enabled: boolean, privateSignals = true): void {
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -84,8 +84,13 @@ export function useSettingsRealtime(enabled: boolean): void {
         // Templates can be created / switched / deleted, not only updated.
         { event: '*', schema: 'public', table: 'receipt_templates' } as never,
         () => invalidateAll(qc, RECEIPT_TEMPLATE_KEYS),
-      )
-      .subscribe((status: string) => {
+      );
+    if (privateSignals) channel.on(
+      'postgres_changes' as never,
+      { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.settings' } as never,
+      () => invalidateAll(qc, ALL_SETTINGS_KEYS),
+    );
+    channel.subscribe((status: string) => {
         // Initial join and every rejoin after CHANNEL_ERROR/TIMED_OUT: refresh
         // everything so changes missed while offline are picked up.
         if (status === 'SUBSCRIBED') invalidateAll(qc, ALL_SETTINGS_KEYS);
@@ -94,5 +99,5 @@ export function useSettingsRealtime(enabled: boolean): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [enabled, qc]);
+  }, [enabled, privateSignals, qc]);
 }

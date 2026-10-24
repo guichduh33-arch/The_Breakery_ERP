@@ -92,6 +92,9 @@ export function useTabletOrderStatusListener() {
           void queryClient.invalidateQueries({ queryKey: ['tablet-orders', userId] });
         },
       )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['tablet-orders', userId] });
+      })
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };

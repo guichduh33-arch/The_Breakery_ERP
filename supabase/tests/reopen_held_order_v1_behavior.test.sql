@@ -22,6 +22,7 @@
 -- the server contract. Append-no-duplicate is a CLIENT invariant (useFireToStations
 -- excludes lockedItemIds before the append RPC) covered by the POS smokes.
 BEGIN;
+\ir helpers/pin_session.sql
 \ir helpers/session.sql
 
 DO $seed$
@@ -55,8 +56,8 @@ BEGIN
 END $seed$;
 
 -- Authenticate as the seeded Test Cashier (stable seed uuid) for the gated RPCs.
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000002');
 SET LOCAL role authenticated;
-SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 DO $rpc$
 DECLARE

@@ -33,9 +33,9 @@ SELECT is_empty(
 -- permissives sur la même table, c'est exactement le piège d'origine.
 SELECT is(
   (SELECT count(*) FROM pg_policy
-    WHERE polrelid = 'public.orders'::regclass AND polcmd = 'r'),
+    WHERE polrelid = 'public.orders'::regclass AND polcmd = 'r' AND polpermissive),
   1::bigint,
-  'T2 — orders ne porte qu''une politique SELECT'
+  'T2 — orders ne porte qu''une politique permissive SELECT'
 );
 
 -- T3 — le rempart réel. Aucune écriture directe : tout passe par les RPC
@@ -44,11 +44,10 @@ SELECT is(
 SELECT is(
   (SELECT count(*) FROM pg_policy
     WHERE polrelid IN ('public.orders'::regclass, 'public.order_items'::regclass)
-      AND polcmd <> 'r'),
+      AND polcmd <> 'r' AND polpermissive),
   0::bigint,
-  'T3 — aucune politique INSERT/UPDATE/DELETE sur orders ni order_items'
+  'T3 — aucune politique permissive INSERT/UPDATE/DELETE/ALL sur orders ni order_items'
 );
-
 -- T4 — la règle est écrite à l'endroit où elle s'applique, et elle se nomme.
 SELECT matches(
   (SELECT obj_description(pol.oid, 'pg_policy')

@@ -118,6 +118,9 @@ export function useOpenOrders(enabled = true) {
     const channel = supabase
       .channel(`dashboard-open-orders-${crypto.randomUUID()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onEvent)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders',
+      }, onEvent)
       .subscribe();
     return () => { cancel(); void supabase.removeChannel(channel); };
   }, [enabled, qc]);

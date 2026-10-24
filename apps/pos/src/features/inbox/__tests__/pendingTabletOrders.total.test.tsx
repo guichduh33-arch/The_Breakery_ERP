@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase', () => ({
         }),
       }),
     }),
-    channel: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}) }),
+    channel: () => ({ on() { return this; }, subscribe: () => ({}) }),
     removeChannel: vi.fn(),
   },
 }));

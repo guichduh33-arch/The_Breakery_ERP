@@ -58,6 +58,7 @@ serve(async (req) => {
   if (!authHeader?.startsWith('Bearer ')) return jsonResponse({ error: 'authorization_required' }, 401);
 
   const actingUserId = await getActingAuthUserId(req);
+  if (actingUserId instanceof Response) return actingUserId;
   if (!actingUserId) return jsonResponse({ error: 'invalid_auth' }, 401);
 
   const userClient = createClient(

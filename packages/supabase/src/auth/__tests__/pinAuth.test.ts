@@ -4,7 +4,22 @@
 // x-current-pin/x-new-pin headers, never the JSON body (request bodies get
 // logged by default by PostgREST/pgaudit/proxies; headers are not).
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { changePin, getSession, loginWithPin } from '../pinAuth.js';
+import { changePin, getSession, loginWithPin, logoutSession } from '../pinAuth.js';
+
+describe('logoutSession — confirmation serveur', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it.each([
+    new Response(JSON.stringify({ error: 'logout_unavailable' }), { status: 503 }),
+    new Response(JSON.stringify({ ok: false })), new Response('{}'),
+  ])('remonte une révocation non confirmée', async (response) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+    await expect(logoutSession('https://example.test', 'opaque')).rejects.toThrow();
+  });
+  it('accepte uniquement la confirmation explicite', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ok: true })));
+    await expect(logoutSession('https://example.test', 'opaque')).resolves.toBeUndefined();
+  });
+});
 
 describe('loginWithPin — transport du PIN', () => {
   afterEach(() => vi.unstubAllGlobals());

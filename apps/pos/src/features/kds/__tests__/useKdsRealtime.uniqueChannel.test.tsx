@@ -21,19 +21,22 @@ const channelSpy = vi.fn();
 // captured-closure variable to `undefined` across the intervening
 // renderHook() call.
 const handlerRef: { current: ((payload: unknown) => void) | undefined } = { current: undefined };
+const signalRef: { current: ((payload: unknown) => void) | undefined } = { current: undefined };
 
 vi.mock('@/lib/supabase', () => {
-  const onMock = vi.fn((_event: unknown, _filter: unknown, handler: (payload: unknown) => void) => {
-    handlerRef.current = handler;
-    return { subscribe: vi.fn().mockReturnThis() };
-  });
   return {
     supabase: {
       channel: (name: string) => {
         channelSpy(name);
-        return {
-          on: onMock,
+        const channel = {
+          on: vi.fn((_event: unknown, filter: { table?: string }, handler: (payload: unknown) => void) => {
+            if (filter.table === 'order_items') handlerRef.current = handler;
+            if (filter.table === 'ui_invalidation_topics') signalRef.current = handler;
+            return channel;
+          }),
+          subscribe: vi.fn().mockReturnThis(),
         };
+        return channel;
       },
       removeChannel: vi.fn(),
     },
@@ -106,5 +109,16 @@ describe('useKdsRealtime — D19 channel uniqueness', () => {
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['kds', 'kitchen'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['kds-served', 'kitchen'] });
+  });
+  it('rafraîchit sur signal privé sans émettre de faux événement cuisine LAN', () => {
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const onEvent = vi.fn();
+    const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client: qc }, children);
+    renderHook(() => useKdsRealtime('kitchen', { onEvent }), { wrapper });
+    expect(signalRef.current).toBeDefined(); signalRef.current?.({});
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['kds','kitchen'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['kds-served','kitchen'] });
+    expect(onEvent).not.toHaveBeenCalled();
   });
 });

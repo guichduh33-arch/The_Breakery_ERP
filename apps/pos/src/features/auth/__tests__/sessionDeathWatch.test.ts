@@ -8,11 +8,13 @@
 //  T3  kiosk surfaces (no PIN session) never trigger the probe.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type * as SupabaseModule from '@breakery/supabase';
 
 const getSessionMock = vi.fn();
 let capturedHandler: ((status: number) => void) | null = null;
 
-vi.mock('@breakery/supabase', () => ({
+vi.mock('@breakery/supabase', async (importOriginal) => ({
+  ...await importOriginal<typeof SupabaseModule>(),
   // lib/supabase.ts builds the client at module load — a stub suffices here.
   getSupabaseClient: vi.fn(() => ({})),
   setSupabaseAuthErrorHandler: (h: ((status: number) => void) | null) => {

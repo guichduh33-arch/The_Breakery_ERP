@@ -47,6 +47,7 @@ serve(async (req) => {
         role: 'authenticated',
         aud: 'authenticated',
         sub: profile.auth_user_id, // auth.users.id
+        session_id: sessionResult.sessionId,
         email: `cashier-${profile.employee_code}@thebreakery.local`,
         iat: nowSec,
         exp: expiresAt,

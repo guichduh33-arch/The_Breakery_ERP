@@ -8,10 +8,10 @@ import type { OrderSnapshot } from '@/stores/orderSnapshot';
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), changed: (): void => undefined }));
 vi.mock('../fetchOrderSnapshot', () => ({ fetchOrderSnapshot: mocks.fetch }));
 vi.mock('@/lib/supabase', () => ({ supabase: {
-  channel: () => ({ on: (_event: unknown, _filter: unknown, cb: () => void) => {
-    mocks.changed = cb;
-    return { subscribe: () => ({}) };
-  } }), removeChannel: vi.fn().mockResolvedValue(null),
+  channel: () => ({ on(_event: unknown, filter: { table: string }, cb: () => void) {
+    if (filter.table === 'order_items') mocks.changed = cb;
+    return this;
+  }, subscribe: () => ({}) }), removeChannel: vi.fn().mockResolvedValue(null),
 } }));
 const snapshot: OrderSnapshot = { order_id: 'a', order_number: 'P-42', order_type: 'dine_in', customerId: 'customer', tableNumber: '7', notes: null, items: [{ id: 'server', client_line_id: 'local', product_id: 'coffee', name: 'Coffee', unit_price: 20000, quantity: 2, line_total: 38000, discount_amount: 2000, modifiers: [], is_locked: true, kitchen_status: 'pending' }] };
 

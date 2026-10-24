@@ -29,6 +29,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { sendEmail, type SendEmailResult } from '../_shared/email-provider.ts';
 import {
   substituteVars,
@@ -141,7 +142,7 @@ function computeBackoffMinutes(nextRetries: number): number {
   return Math.min(2 ** nextRetries, 60);
 }
 
-async function authorize(req: Request): Promise<{ ok: boolean; reason?: string }> {
+async function authorize(req: Request): Promise<{ ok: boolean; reason?: string } | Response> {
   // S50 V2a-i T6 — read the shared secret from a header (not the query string,
   // which leaks into access logs / CDN logs / the dashboard).
   const headerSecret = req.headers.get('x-dispatch-secret');
@@ -158,17 +159,15 @@ async function authorize(req: Request): Promise<{ ok: boolean; reason?: string }
   const token = auth.slice('Bearer '.length).trim();
   if (!token) return { ok: false, reason: 'empty_token' };
 
-  // Validate the bearer token by asking GoTrue who it belongs to.
+  const actingUserId = await getActingAuthUserId(req);
+  if (actingUserId instanceof Response) return actingUserId;
+  if (!actingUserId) return { ok: false, reason: 'invalid_token' };
   const admin = getAdminClient();
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data?.user) {
-    return { ok: false, reason: 'invalid_token' };
-  }
 
   // Check has_permission via RPC (service_role bypass — but we still
   // gate on the caller's identity).
   const { data: hasPerm, error: permErr } = await admin.rpc('has_permission', {
-    p_uid:  data.user.id,
+    p_uid:  actingUserId,
     p_perm: 'notifications.send',
   });
   if (permErr) return { ok: false, reason: `perm_check_error: ${permErr.message}` };
@@ -254,6 +253,7 @@ serve(async (req) => {
   }
 
   const auth = await authorize(req);
+  if (auth instanceof Response) return auth;
   if (!auth.ok) {
     return jsonResponse({ error: 'unauthorized', reason: auth.reason }, 401);
   }

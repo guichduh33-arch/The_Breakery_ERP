@@ -36,6 +36,9 @@ export function usePendingTabletOrders() {
           void queryClient.invalidateQueries({ queryKey: ['pending-tablet-orders'] });
         },
       )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['pending-tablet-orders'] });
+      })
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };

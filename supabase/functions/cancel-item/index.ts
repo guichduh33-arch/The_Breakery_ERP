@@ -69,6 +69,7 @@ serve(async (req) => {
 
   // GAP 1 — resolve the acting cashier server-side (RPC is service_role-only now).
   const actingAuthUserId = await getActingAuthUserId(req);
+  if (actingAuthUserId instanceof Response) return actingAuthUserId;
   if (!actingAuthUserId) {
     return jsonResponse({ error: 'not_authenticated' }, 401);
   }

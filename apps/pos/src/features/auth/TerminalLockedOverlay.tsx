@@ -31,8 +31,7 @@ export function TerminalLockedOverlay() {
     setError(null);
     setIsVerifying(true);
     try {
-      await login(user.id, pin);
-      unlock();
+      if (await login(user.id, pin) !== false) unlock();
     } catch (cause: unknown) {
       const failure = cause as { status?: number; isTimeout?: boolean; details?: { error?: string }; message?: string } | null;
       const reason = failure?.details?.error ?? failure?.message;
