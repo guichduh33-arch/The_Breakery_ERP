@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
-const rpcSpy = vi.fn();
+const rpcSpy = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (...a: unknown[]) => rpcSpy(...a),
@@ -35,8 +35,8 @@ describe('VoidZReportModal', () => {
   });
 
   it('disables continue until reason length >= 10 (step 1)', () => {
-    render(wrap(<VoidZReportModal open zreportId="z1" onOpenChange={() => {}} />));
-    const cont = screen.getByTestId('void-continue') as HTMLButtonElement;
+    render(wrap(<VoidZReportModal open zreportId="z1" onOpenChange={() => undefined} />));
+    const cont = screen.getByTestId<HTMLButtonElement>('void-continue');
     expect(cont.disabled).toBe(true);
     fireEvent.change(screen.getByTestId('void-reason-input'), { target: { value: 'too short' } });
     expect(cont.disabled).toBe(true);
