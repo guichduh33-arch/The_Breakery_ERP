@@ -7,17 +7,20 @@ import { usePayExpense } from '../hooks/useExpenseActions.js';
 export interface PayDialogProps {
   open: boolean;
   expenseId: string;
+  recordedPaymentMethod: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function PayDialog({ open, expenseId, onClose, onSuccess }: PayDialogProps): JSX.Element {
+export function PayDialog({ open, expenseId, recordedPaymentMethod, onClose, onSuccess }: PayDialogProps): JSX.Element {
   const [method, setMethod] = useState<'cash' | 'transfer' | 'card'>('cash');
   const mut = usePayExpense();
+  const isCredit = recordedPaymentMethod === 'credit';
+  const recordedLabel = ({ cash: 'Cash', transfer: 'Bank transfer', card: 'Card' } as Record<string, string>)[recordedPaymentMethod] ?? recordedPaymentMethod;
 
   async function handleSubmit(): Promise<void> {
     try {
-      await mut.mutateAsync({ id: expenseId, paymentMethod: method });
+      await mut.mutateAsync({ id: expenseId, ...(isCredit ? { paymentMethod: method } : {}) });
       onSuccess?.();
       onClose();
     } catch {
@@ -31,10 +34,10 @@ export function PayDialog({ open, expenseId, onClose, onSuccess }: PayDialogProp
         <DialogHeader>
           <DialogTitle>Mark expense as paid</DialogTitle>
           <DialogDescription>
-            For credit expenses, this posts a second JE clearing the AP.
+{isCredit ? 'Choose how to settle this credit expense.' : 'The recorded payment method is fixed at approval.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-1">
+        {isCredit ? <div className="space-y-1">
           <label htmlFor="pay-method" className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
             Payment method
           </label>
@@ -48,7 +51,10 @@ export function PayDialog({ open, expenseId, onClose, onSuccess }: PayDialogProp
             <option value="transfer">Bank transfer</option>
             <option value="card">Card</option>
           </Select>
-        </div>
+        </div> : <div className="space-y-1">
+          <p className="text-sm text-text-secondary">Recorded payment method</p>
+          <p className="font-medium text-text-primary">{recordedLabel}</p>
+        </div>}
         {mut.error !== null && mut.error !== undefined && (
           <div className="text-xs text-red">{mut.error.message}</div>
         )}
