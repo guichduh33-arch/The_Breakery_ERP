@@ -1,20 +1,22 @@
 // apps/backoffice/src/features/customers/components/ConvertLoyaltyModal.tsx
 // ADR-013 Lot 4 (D6) — conversion points fidélité → avoir (BO seulement).
 // Points par multiples de 100, taux serveur 1 pt = Rp 10 (préversion client
-// indicative — le serveur reste autoritaire). Une idempotency key par
-// ouverture (useRef, régénérée à la fermeture).
+// indicative — le serveur reste autoritaire). Clé et payload durables jusqu'à confirmation.
 
-import { useState, useRef, type JSX } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogDescription } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { formatCurrency } from '@breakery/utils';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { useFinancialAttempt } from '@/lib/useFinancialAttempt.js';
+import { FinancialAttemptError, PENDING_MESSAGE } from '@/lib/pendingFinancialAttempts.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import {
   useConvertLoyaltyToStoreCredit, ConvertStoreCreditError, type ConvertErrorCode,
 } from '../hooks/useConvertLoyaltyToStoreCredit.js';
 
-// Miroir de la constante serveur (convert_loyalty_to_store_credit_v1 : ×10).
+// Miroir de la constante serveur (conversion points → avoir : ×10).
 const RP_PER_POINT = 10;
 
 const ERROR_COPY: Record<ConvertErrorCode, string> = {
@@ -39,34 +41,41 @@ export function ConvertLoyaltyModal({
 }: Props): JSX.Element {
   const [pointsStr, setPointsStr] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const idem = useRef(crypto.randomUUID());
   const m = useConvertLoyaltyToStoreCredit();
+  const attempt = useFinancialAttempt('loyalty_conversion', customerId, open);
+  const snapshot = attempt.pending?.payload;
+  const sessionToken = useAuthStore((s) => s.sessionToken);
+  useEffect(() => { setPointsStr(''); setFormError(null); }, [open, customerId, sessionToken]);
 
-  const points = Number(pointsStr || '0');
+  const points = snapshot?.points ?? Number(pointsStr || '0');
   const pointsOk =
     Number.isInteger(points) && points > 0 && points % 100 === 0 && points <= loyaltyPoints;
-  const canSubmit = pointsOk && !m.isPending;
+  const canSubmit = attempt.allowed && (Boolean(snapshot) || pointsOk) && !attempt.busy && !attempt.storageError;
 
   const handleClose = (): void => {
     setPointsStr('');
     setFormError(null);
-    idem.current = crypto.randomUUID();
     onClose();
   };
 
   const handleSubmit = async (): Promise<void> => {
     if (!canSubmit) return;
     setFormError(null);
-    try {
-      const result = await m.mutateAsync({ customerId, points, idempotencyKey: idem.current });
+    const outcome = await attempt.submit(snapshot ?? { customerId, points },
+      (payload, key, current) => m.mutateAsync({ ...payload, idempotencyKey: key, sessionGuard: current }));
+    if (!outcome.current) return;
+    if ('result' in outcome && outcome.result) {
+      const result = outcome.result;
       toast.success(
         `${result.points_converted.toLocaleString('id-ID')} points converted to ${formatCurrency(result.amount)} store credit`
         + ` — new balance ${formatCurrency(result.balance_after)}`,
       );
       handleClose();
-    } catch (err) {
+    } else {
+      const err = outcome.error;
       const code: ConvertErrorCode = err instanceof ConvertStoreCreditError ? err.code : 'unknown';
-      setFormError(ERROR_COPY[code]);
+      setFormError(snapshot ? 'The original result remains unconfirmed. Keep the saved details and check this pending conversion.'
+        : err instanceof FinancialAttemptError && code === 'unknown' ? err.message : ERROR_COPY[code]);
     }
   };
 
@@ -80,6 +89,8 @@ export function ConvertLoyaltyModal({
         <p className="text-sm text-text-secondary">
           Available: <span className="font-medium tabular-nums">{loyaltyPoints.toLocaleString('id-ID')}</span> points
         </p>
+        {snapshot && <p role="status" className="text-sm text-warning">{PENDING_MESSAGE}</p>}
+        {attempt.storageError && <p role="alert" className="text-sm text-danger">{attempt.storageError}</p>}
         <div>
           <label htmlFor="convert-points" className="block text-sm font-medium">Points to convert</label>
           <input
@@ -87,13 +98,14 @@ export function ConvertLoyaltyModal({
             type="number"
             min={100}
             step={100}
-            value={pointsStr}
+            value={snapshot ? String(snapshot.points) : pointsStr}
+            disabled={Boolean(snapshot) || attempt.busy}
             onChange={(e) => setPointsStr(e.target.value)}
             className={`mt-1 w-full border border-border-strong rounded p-2 text-sm tabular-nums placeholder:text-text-muted ${FOCUS_RING}`}
             placeholder="100"
             data-testid="convert-points"
           />
-          {!pointsOk && pointsStr.length > 0 && (
+          {!snapshot && !pointsOk && pointsStr.length > 0 && (
             <p className="text-xs text-danger mt-1">
               Positive multiple of 100, up to {loyaltyPoints.toLocaleString('id-ID')} points
             </p>
@@ -121,7 +133,7 @@ export function ConvertLoyaltyModal({
             disabled={!canSubmit}
             data-testid="convert-submit"
           >
-            {m.isPending ? 'Converting…' : 'Convert'}
+            {attempt.busy ? 'Checking…' : snapshot ? 'Check pending conversion' : 'Convert'}
           </Button>
         </div>
       </DialogContent>

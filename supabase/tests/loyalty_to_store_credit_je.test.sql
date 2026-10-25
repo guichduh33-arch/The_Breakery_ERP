@@ -1,5 +1,5 @@
 -- supabase/tests/loyalty_to_store_credit_je.test.sql
--- ADR-013 Lot 4 (D6) — convert_loyalty_to_store_credit_v1 :
+-- ADR-013 Lot 4 (D6) — convert_loyalty_to_store_credit_v2 :
 --   conversion points -> avoir (x10), ledger loyalty_conversion, JE de transfert
 --   de dette DR 2210 / CR 2220, gardes (P0010 points insuffisants, multiple de
 --   100), replay idempotent.
@@ -30,7 +30,7 @@ END $$;
 DO $$
 DECLARE v_res JSONB; v_pts INT; v_bal NUMERIC; v_n INT; v_lt INT;
 BEGIN
-  v_res := convert_loyalty_to_store_credit_v1(
+  v_res := convert_loyalty_to_store_credit_v2(
     current_setting('scc.cust')::uuid, 1000, current_setting('scc.idem')::uuid);
   SELECT loyalty_points, store_credit_balance INTO v_pts, v_bal
     FROM customers WHERE id = current_setting('scc.cust')::uuid;
@@ -67,7 +67,7 @@ SELECT ok(current_setting('scc.t2')::boolean,
 DO $$
 DECLARE v_res JSONB; v_pts INT; v_n INT;
 BEGIN
-  v_res := convert_loyalty_to_store_credit_v1(
+  v_res := convert_loyalty_to_store_credit_v2(
     current_setting('scc.cust')::uuid, 1000, current_setting('scc.idem')::uuid);
   SELECT loyalty_points INTO v_pts FROM customers WHERE id = current_setting('scc.cust')::uuid;
   SELECT count(*) INTO v_n FROM customer_store_credit_ledger
@@ -80,13 +80,13 @@ SELECT ok(current_setting('scc.t3')::boolean,
 
 -- T4 — points insuffisants (5000 > 1000) → P0010.
 SELECT throws_ok($q$
-  SELECT convert_loyalty_to_store_credit_v1(current_setting('scc.cust')::uuid, 5000)
+  SELECT convert_loyalty_to_store_credit_v2(current_setting('scc.cust')::uuid, 5000, gen_random_uuid())
 $q$, 'P0010', NULL,
   'T4: converting more points than the balance rejected (P0010)');
 
 -- T5 — non-multiple de 100 → check_violation.
 SELECT throws_ok($q$
-  SELECT convert_loyalty_to_store_credit_v1(current_setting('scc.cust')::uuid, 150)
+  SELECT convert_loyalty_to_store_credit_v2(current_setting('scc.cust')::uuid, 150, gen_random_uuid())
 $q$, '23514', 'Points to convert must be a positive multiple of 100',
   'T5: non-multiple-of-100 points rejected');
 
