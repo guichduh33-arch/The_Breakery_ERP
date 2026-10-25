@@ -2,7 +2,7 @@
 //
 // Session 26b / Wave 5 — smoke for FiscalPeriodModal.
 //   T1 — Modal requires PIN (6 digits) before RPC fires.
-//   T2 — Submit calls close_fiscal_period_v1 with p_lock=true when checkbox is ticked.
+//   T2 — Submit calls close_fiscal_period_v2 with p_lock=true when checkbox is ticked.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -83,7 +83,7 @@ describe('FiscalPeriodModal (S26b Wave 5)', () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('T2 — submit calls close_fiscal_period_v1 with p_lock=true when checkbox ticked', async () => {
+  it('T2 — submit calls close_fiscal_period_v2 with p_lock=true when checkbox ticked', async () => {
     renderModal();
     await waitFor(() => {
       expect(screen.queryByRole('option', { name: /April 2026/i })).not.toBeNull();
@@ -101,7 +101,7 @@ describe('FiscalPeriodModal (S26b Wave 5)', () => {
     fireEvent.click(screen.getByTestId('fp-modal-submit'));
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('close_fiscal_period_v1',
+      expect(mockRpc).toHaveBeenCalledWith('close_fiscal_period_v2',
         expect.objectContaining({
           p_period_id: 'p1',
           p_manager_pin: '123456',

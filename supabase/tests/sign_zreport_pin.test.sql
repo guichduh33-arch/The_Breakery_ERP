@@ -1,5 +1,5 @@
 -- supabase/tests/sign_zreport_pin.test.sql
--- S37 Wave A Task A5 (BO-01) — sign_zreport_v2 valide réellement le PIN manager.
+-- S37 Wave A Task A5 (BO-01) — sign_zreport_v3 valide réellement le PIN manager.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
 SELECT plan(6);
@@ -33,13 +33,12 @@ END $$;
 
 -- T1 : PIN NULL → P0001, status reste draft
 SELECT throws_ok(
-  $$ SELECT sign_zreport_v2(current_setting('breakery.v_zr')::uuid, NULL) $$,
+  $$ SELECT sign_zreport_v3(current_setting('breakery.v_zr')::uuid, NULL) $$,
   'P0001', NULL, 'T1 NULL PIN raises pin_required');
 
--- T2 : mauvais PIN → P0003, status reste draft
-SELECT throws_ok(
-  $$ SELECT sign_zreport_v2(current_setting('breakery.v_zr')::uuid, '999999') $$,
-  'P0003', NULL, 'T2 wrong PIN raises invalid_pin');
+-- T2 : refus retourné, status reste draft et compteur conservé.
+SELECT is(sign_zreport_v3(current_setting('breakery.v_zr')::uuid, '999999')->>'error',
+  'invalid_pin', 'T2 wrong PIN returns invalid_pin');
 SELECT is(
   (SELECT status::text FROM z_reports WHERE id = current_setting('breakery.v_zr')::uuid),
   'draft', 'T2b status still draft after rejected PINs');
@@ -47,7 +46,7 @@ SELECT is(
 -- T3 : bon PIN → signed + audit
 DO $$ DECLARE v_res JSONB; v_audit INT;
 BEGIN
-  v_res := sign_zreport_v2(current_setting('breakery.v_zr')::uuid, '424242');
+  v_res := sign_zreport_v3(current_setting('breakery.v_zr')::uuid, '424242');
   SELECT count(*) INTO v_audit FROM audit_logs
    WHERE action = 'zreport.sign' AND entity_id = current_setting('breakery.v_zr')::uuid;
   PERFORM set_config('breakery.t3_ok', ((v_res->>'status') = 'signed' AND (v_res->>'idempotent_replay')::boolean = false)::text, true);
@@ -59,7 +58,7 @@ SELECT is(current_setting('breakery.t3_audit'), 'true', 'T4 emits zreport.sign a
 -- T5 : replay avec bon PIN → idempotent_replay = true
 DO $$ DECLARE v_res JSONB;
 BEGIN
-  v_res := sign_zreport_v2(current_setting('breakery.v_zr')::uuid, '424242');
+  v_res := sign_zreport_v3(current_setting('breakery.v_zr')::uuid, '424242');
   PERFORM set_config('breakery.t5_ok', ((v_res->>'idempotent_replay')::boolean = true AND (v_res->>'status') = 'signed')::text, true);
 END $$;
 SELECT is(current_setting('breakery.t5_ok'), 'true', 'T5 idempotent replay returns same result');

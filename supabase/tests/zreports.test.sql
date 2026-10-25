@@ -38,7 +38,7 @@ VALUES ('cccccccc-0000-0000-0000-000000000029', 'cccccccc-0000-0000-0000-0000000
         extensions.crypt('424242', extensions.gen_salt('bf')), true)
 ON CONFLICT (id) DO NOTHING;
 
--- S58 repair: sign_zreport_v2 / void_zreport_v2 now require a validated manager PIN
+-- S58 repair: sign_zreport_v3 / void_zreport_v3 now require a validated manager PIN
 -- (via _verify_pin_with_lockout → crypt(pin, pin_hash)). Seed a known PIN ('424242')
 -- for the manager (004) so the happy-path sign/void assertions can succeed.
 UPDATE user_profiles
@@ -168,7 +168,7 @@ DECLARE
   v_result JSONB;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := sign_zreport_v2('eeeeeeee-0000-0000-0000-000000000001', '424242');
+  v_result := sign_zreport_v3('eeeeeeee-0000-0000-0000-000000000001', '424242');
   PERFORM set_config('breakery.t3_status', v_result->>'status', false);
   PERFORM set_config('breakery.t4_replay', (v_result->>'idempotent_replay'), false);
 END
@@ -186,7 +186,7 @@ DECLARE
   v_result JSONB;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := sign_zreport_v2('eeeeeeee-0000-0000-0000-000000000001', '424242');
+  v_result := sign_zreport_v3('eeeeeeee-0000-0000-0000-000000000001', '424242');
   PERFORM set_config('breakery.t5_replay', (v_result->>'idempotent_replay'), false);
 END
 $$;
@@ -202,7 +202,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM sign_zreport_v2('eeeeeeee-0000-0000-0000-000000000001', '424242');
+    PERFORM sign_zreport_v3('eeeeeeee-0000-0000-0000-000000000001', '424242');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -222,7 +222,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM sign_zreport_v2(gen_random_uuid(), '424242');
+    PERFORM sign_zreport_v3(gen_random_uuid(), '424242');
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
     v_caught := (v_sqlstate = 'P0002');
@@ -242,7 +242,7 @@ DECLARE
   v_result JSONB;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"cccccccc-0000-0000-0000-000000000029"}';
-  v_result := void_zreport_v2(
+  v_result := void_zreport_v3(
     'eeeeeeee-0000-0000-0000-000000000002',
     'Manager misclicked, signed wrong shift',
     '424242'
@@ -263,7 +263,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM void_zreport_v2(
+    PERFORM void_zreport_v3(
       'eeeeeeee-0000-0000-0000-000000000003',
       'should not work as manager at all',
       '424242'
@@ -288,7 +288,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"cccccccc-0000-0000-0000-000000000029"}';
   BEGIN
-    PERFORM void_zreport_v2('eeeeeeee-0000-0000-0000-000000000003', 'short', '424242');
+    PERFORM void_zreport_v3('eeeeeeee-0000-0000-0000-000000000003', 'short', '424242');
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
     v_caught := (v_sqlstate = '23514');
@@ -351,8 +351,8 @@ SELECT ok(
 -- T14 : REVOKE EXECUTE FROM anon on 3 zreport RPCs
 -- ============================================================================
 SELECT ok(
-  NOT has_function_privilege('anon', 'sign_zreport_v2(uuid, text)', 'execute')
-  AND NOT has_function_privilege('anon', 'void_zreport_v2(uuid, text, text)', 'execute')
+  NOT has_function_privilege('anon', 'sign_zreport_v3(uuid, text)', 'execute')
+  AND NOT has_function_privilege('anon', 'void_zreport_v3(uuid, text, text)', 'execute')
   AND NOT has_function_privilege('anon', 'get_zreport_snapshot_v1(uuid)', 'execute'),
   'T14: anon cannot EXECUTE sign/void/get_snapshot zreport RPCs'
 );

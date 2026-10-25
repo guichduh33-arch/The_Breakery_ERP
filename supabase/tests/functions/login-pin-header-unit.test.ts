@@ -14,7 +14,7 @@ describe('connexion — PIN uniquement en header', () => {
   beforeEach(() => {
     vi.clearAllMocks(); vi.resetModules();
     mocks.limit.mockResolvedValue({ allowed: true });
-    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    mocks.rpc.mockResolvedValue({ data: { ok: true }, error: null });
     mocks.permissions.mockResolvedValue(['pos.sale.create']);
     mocks.sign.mockResolvedValue('jwt');
     mocks.from.mockImplementation((table: string) => {
@@ -52,7 +52,7 @@ describe('connexion — PIN uniquement en header', () => {
   it.each(['pos', 'backoffice'])('émet une session pour %s avec le PIN du header', async (device_type) => {
     const response = await invoke({ user_id: 'profile', device_type, session_id: 'untrusted-session' }, '285741');
     expect(response.status).toBe(200);
-    expect(mocks.rpc).toHaveBeenCalledWith('verify_user_pin', { p_user_id: 'profile', p_pin: '285741' });
+    expect(mocks.rpc).toHaveBeenCalledWith('verify_login_pin_v1', { p_user_id: 'profile', p_pin: '285741', p_ip: '127.0.0.1' });
     expect(await response.json()).toMatchObject({ auth: { access_token: 'jwt' }, permissions: ['pos.sale.create'] });
     expect(mocks.sign).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       sub: 'auth', session_id: 'session', app_metadata: { provider: 'pin' },
@@ -61,14 +61,35 @@ describe('connexion — PIN uniquement en header', () => {
 
   it('ne remplace pas le header par un PIN JSON contradictoire', async () => {
     await invoke({ user_id: 'profile', device_type: 'pos', pin: '999999' }, '285741');
-    expect(mocks.rpc).toHaveBeenCalledWith('verify_user_pin', { p_user_id: 'profile', p_pin: '285741' });
+    expect(mocks.rpc).toHaveBeenCalledWith('verify_login_pin_v1', { p_user_id: 'profile', p_pin: '285741', p_ip: '127.0.0.1' });
   });
 
   it('refuse le mauvais PIN vérifié par la DB', async () => {
-    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    mocks.rpc.mockResolvedValue({ data: { ok: false, error: 'invalid_pin', attempts_remaining: 3 }, error: null });
     const response = await invoke({ user_id: 'profile', device_type: 'pos' }, '999999');
     expect(response.status).toBe(401);
     expect(await response.json()).toMatchObject({ error: 'invalid_credentials' });
+    expect(mocks.from).not.toHaveBeenCalledWith('user_sessions');
+  });
+
+  it('conserve le refus client opaque après le résultat SQL', async () => {
+    mocks.rpc.mockResolvedValue({ data: { ok: false, error: 'invalid_pin', attempts_remaining: 2 }, error: null });
+    const response = await invoke({ user_id: 'profile', device_type: 'pos' }, '999999');
+    expect(await response.json()).toEqual({ error: 'invalid_credentials' });
+    expect(mocks.sign).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ ok: false, error: 'account_locked', minutes_left: 7 }, 403, 'account_locked'],
+    [{ ok: false, error: 'user_inactive' }, 403, 'user_inactive'],
+    [true, 500, 'internal_error'],
+    [null, 500, 'internal_error'],
+  ])('refuse une vérification serveur sans succès confirmé %#', async (data, status, error) => {
+    mocks.rpc.mockResolvedValue({ data, error: null });
+    const response = await invoke({ user_id: 'profile', device_type: 'pos' }, '285741');
+    expect(response.status).toBe(status);
+    expect(await response.json()).toMatchObject({ error });
+    expect(mocks.sign).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalledWith('user_sessions');
   });
 

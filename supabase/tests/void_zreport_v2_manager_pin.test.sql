@@ -1,6 +1,6 @@
--- S50 Vague 2a-i · T5 — void_zreport_v2 : PIN manager validé serveur
+-- S50 Vague 2a-i · T5 — void_zreport_v3 : PIN manager validé serveur
 --
--- T1 : PIN invalide          -> invalid_pin (P0003), Z-Report reste draft.
+-- T1 : PIN invalide -> refus JSON, Z-Report reste draft.
 -- T2 : void valide           -> status voided + voided_by/void_reason posés, idempotent_replay=false.
 -- T3 : replay (déjà annulé)  -> idempotent_replay=true, statut stable.
 -- T4 : void_zreport_v1 droppée (bump v1->v2).
@@ -26,26 +26,26 @@ VALUES ('eee50001-0000-0000-0000-000000000001',
 
 CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 
--- T1 : PIN invalide -> invalid_pin (P0003) ; le Z-Report reste draft
-DO $a$ BEGIN
-  PERFORM void_zreport_v2('eee50001-0000-0000-0000-000000000001', 'manager misclicked wrong shift', '0000');
-  INSERT INTO _r VALUES ('A', false);
-EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('A', SQLERRM LIKE '%invalid_pin%'); END $a$;
+-- T1 : PIN invalide -> refus JSON, Z-Report reste draft.
+DO $a$ DECLARE v jsonb; BEGIN
+  v := void_zreport_v3('eee50001-0000-0000-0000-000000000001', 'manager misclicked wrong shift', '0000');
+  INSERT INTO _r VALUES ('A', v->>'error'='invalid_pin' AND (SELECT status::text='draft' FROM z_reports WHERE id='eee50001-0000-0000-0000-000000000001'));
+EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('A', false); END $a$;
 
 -- T2 : void valide -> voided + idempotent_replay=false + champs voided_* posés
 DO $b$ DECLARE v jsonb; st text; vb uuid; vr text; BEGIN
-  v := void_zreport_v2('eee50001-0000-0000-0000-000000000001', 'manager misclicked wrong shift', '112233');
+  v := void_zreport_v3('eee50001-0000-0000-0000-000000000001', 'manager misclicked wrong shift', '112233');
   SELECT status::text, voided_by, void_reason INTO st, vb, vr FROM z_reports WHERE id='eee50001-0000-0000-0000-000000000001';
   INSERT INTO _r VALUES ('B', (v->>'idempotent_replay')::boolean=false AND st='voided' AND vb IS NOT NULL AND vr='manager misclicked wrong shift');
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('B', false); END $b$;
 
 -- T3 : replay -> idempotent_replay=true, statut stable
 DO $c$ DECLARE v jsonb; BEGIN
-  v := void_zreport_v2('eee50001-0000-0000-0000-000000000001', 'manager misclicked wrong shift', '112233');
+  v := void_zreport_v3('eee50001-0000-0000-0000-000000000001', 'manager misclicked wrong shift', '112233');
   INSERT INTO _r VALUES ('C', (v->>'idempotent_replay')::boolean=true AND v->>'status'='voided');
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('C', false); END $c$;
 
-SELECT ok((SELECT pass FROM _r WHERE name='A'), 'T1 — PIN invalide -> invalid_pin (P0003)');
+SELECT ok((SELECT pass FROM _r WHERE name='A'), 'T1 — PIN invalide -> refus JSON sans annulation');
 SELECT ok((SELECT pass FROM _r WHERE name='B'), 'T2 — void valide -> voided + voided_by/void_reason poses');
 SELECT ok((SELECT pass FROM _r WHERE name='C'), 'T3 — replay -> idempotent_replay=true, statut stable');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace

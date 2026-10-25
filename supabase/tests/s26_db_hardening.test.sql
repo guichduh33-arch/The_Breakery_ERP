@@ -146,12 +146,12 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname IN (
-      'close_fiscal_period_v1', 'get_general_ledger_v3',
-      'get_trial_balance_v4', 'create_manual_je_v1'
+      'close_fiscal_period_v2', 'get_general_ledger_v3',
+      'get_trial_balance_v4', 'create_manual_je_v2'
     )
     GROUP BY 1 HAVING COUNT(*) = 4
   ),
-  'T13: 4 cockpit RPCs exist (close_fiscal_period_v1, get_general_ledger_v3, get_trial_balance_v4, create_manual_je_v1)'
+  'T13: 4 cockpit RPCs exist (close_fiscal_period_v2, get_general_ledger_v3, get_trial_balance_v4, create_manual_je_v2)'
 );
 
 -- T14 vérifie structurellement que le payload contient les bons champs.

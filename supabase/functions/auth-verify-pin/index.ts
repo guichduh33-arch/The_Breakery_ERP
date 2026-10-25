@@ -9,11 +9,7 @@ import { signJwt, getJwtSecret } from '../_shared/jwt.ts';
 import { logAndRedact, redactError } from '../_shared/error-redact.ts';
 
 const PIN_REGEX = /^\d{6}$/;
-// PIN policy (ADR-006 déc. 9) — défauts historiques, utilisés en fallback si
-// la lecture de business_config échoue ; les valeurs vives viennent de
-// Settings > Security (pin_max_failed / pin_lockout_minutes, set_setting_v13).
-const MAX_FAILED = 5;
-const LOCKOUT_MIN = 15;
+// La politique et les compteurs PIN sont vérifiés atomiquement par la RPC de login.
 // Session 13 (25-002) — tightened from 20/min to 3/min (≈ 12/hour) on the
 // invalid-pin path. After the 4th attempt within 60s from one IP we 429.
 const RATE_LIMIT_PER_MIN = 3;
@@ -69,17 +65,6 @@ serve(withPermissionErrors(async (req) => {
 
   const admin = getAdminClient();
 
-  // 0. PIN policy configurable (catégorie security) — fallback 5/15.
-  let maxFailed = MAX_FAILED;
-  let lockoutMin = LOCKOUT_MIN;
-  const { data: policy } = await admin
-    .from('business_config')
-    .select('pin_max_failed, pin_lockout_minutes')
-    .eq('id', 1)
-    .maybeSingle();
-  if (typeof policy?.pin_max_failed === 'number') maxFailed = policy.pin_max_failed;
-  if (typeof policy?.pin_lockout_minutes === 'number') lockoutMin = policy.pin_lockout_minutes;
-
   // 1. Fetch profile
   const { data: profile, error: profileErr } = await admin
     .from('user_profiles')
@@ -93,43 +78,28 @@ serve(withPermissionErrors(async (req) => {
     return jsonResponse(redactError('user_not_found'), 401);
   }
 
-  if (!profile.is_active) {
-    return jsonResponse(redactError('user_inactive'), 403);
-  }
-
-  if (profile.locked_until && new Date(profile.locked_until) > new Date()) {
-    const minutesLeft = Math.ceil((new Date(profile.locked_until).getTime() - Date.now()) / 60_000);
-    return jsonResponse(redactError('account_locked', { minutes_left: minutesLeft }), 403);
-  }
-
-  // 2. Verify PIN via DB function
-  const { data: pinValid, error: verifyErr } = await admin.rpc('verify_user_pin', {
-    p_user_id: user_id,
-    p_pin: pin,
+  // 2. La RPC verrouille le profil, vérifie le PIN et conserve chaque refus.
+  const { data: verification, error: verifyErr } = await admin.rpc('verify_login_pin_v1', {
+    p_user_id: user_id, p_pin: pin, p_ip: ip,
   });
-
   if (verifyErr) {
     return jsonResponse(logAndRedact('verify-pin:rpc', verifyErr), 500);
   }
-
-  if (!pinValid) {
-    const newAttempts = (profile.failed_login_attempts ?? 0) + 1;
-    const updates: Record<string, unknown> = { failed_login_attempts: newAttempts };
-    if (newAttempts >= maxFailed) {
-      updates.locked_until = new Date(Date.now() + lockoutMin * 60_000).toISOString();
+  if (!verification || typeof verification !== 'object' || Array.isArray(verification)
+      || typeof verification.ok !== 'boolean') {
+    return jsonResponse(redactError('internal'), 500);
+  }
+  if (!verification.ok) {
+    if (verification.error === 'user_inactive') return jsonResponse(redactError('user_inactive'), 403);
+    if (verification.error === 'user_not_found') return jsonResponse(redactError('user_not_found'), 401);
+    if (verification.error === 'invalid_pin_format') return jsonResponse(redactError('invalid_pin_format'), 400);
+    if (verification.error === 'account_locked' && typeof verification.minutes_left === 'number') {
+      return jsonResponse(redactError('account_locked', { minutes_left: verification.minutes_left }), 403);
     }
-    await admin.from('user_profiles').update(updates).eq('id', user_id);
-    await admin.from('audit_logs').insert({
-      actor_id: profile.id,
-      action: 'login.failed',
-      entity_type: 'user_profiles',
-      entity_id: profile.id,
-      metadata: { attempts: newAttempts, ip },
-    });
-    return jsonResponse(
-      redactError('invalid_pin', { attempts_remaining: Math.max(0, maxFailed - newAttempts) }),
-      401,
-    );
+    if (verification.error === 'invalid_pin' && typeof verification.attempts_remaining === 'number') {
+      return jsonResponse(redactError('invalid_pin', { attempts_remaining: verification.attempts_remaining }), 401);
+    }
+    return jsonResponse(redactError('internal'), 500);
   }
 
   // 2bis. Audit lot 1, P1 sécurité n°6 — refuser d'émettre un jeton sans sujet.
@@ -155,10 +125,10 @@ serve(withPermissionErrors(async (req) => {
     return jsonResponse(redactError('permission_denied', { code: 'PERMISSION_MISSING' }), 403);
   }
 
-  // 3. PIN OK : reset compteur, set last_login
+  // 3. La RPC a réinitialisé le compteur ; dater le login autorisé.
   await admin
     .from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null, last_login_at: new Date().toISOString() })
+    .update({ last_login_at: new Date().toISOString() })
     .eq('id', user_id);
 
   // 4. Generate session token (UUID v4) — sera hashé par trigger DB

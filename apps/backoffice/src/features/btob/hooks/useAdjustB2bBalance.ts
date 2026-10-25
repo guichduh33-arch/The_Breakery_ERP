@@ -31,13 +31,17 @@ export function useAdjustB2bBalance(customerId: string) {
 
   return useMutation<AdjustB2bBalanceResult, Error, AdjustB2bBalanceInput>({
     mutationFn: async ({ delta, reason, managerPin }) => {
-      const { data, error } = await supabase.rpc('adjust_b2b_balance_v2', {
+      const { data, error } = await supabase.rpc('adjust_b2b_balance_v3', {
         p_customer_id:     customerId,
         p_delta:           delta,
         p_reason:          reason,
         p_manager_pin:     managerPin,
         p_idempotency_key: keyRef.current,
       });
+      // Un refus retourné permet au serveur de commiter le compteur PIN.
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
+      }
       if (error) throw error;
       return data as unknown as AdjustB2bBalanceResult;
     },

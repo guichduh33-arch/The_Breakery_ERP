@@ -64,10 +64,14 @@ export function useApproveExpense() {
       // `_verify_pin_with_lockout` (verrouillage après échecs répétés). Le PIN
       // voyage en argument de RPC, jamais en en-tête : PostgREST ne transmet pas
       // les en-têtes à la fonction, c'est le seul véhicule qu'elle peut valider.
-      const { data, error } = await supabase.rpc('approve_expense_v4', {
+      const { data, error } = await supabase.rpc('approve_expense_v5', {
         p_expense_id:  id,
         p_manager_pin: manager_pin,
       });
+      // Un refus retourné permet au serveur de commiter le compteur PIN.
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
+      }
       if (error) throw error;
       return data as unknown as ApproveResult;
     },

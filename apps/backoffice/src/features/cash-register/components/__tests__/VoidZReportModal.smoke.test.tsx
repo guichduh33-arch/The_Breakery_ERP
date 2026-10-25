@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
-const rpcSpy = vi.fn();
+const rpcSpy = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (...a: unknown[]) => rpcSpy(...a),
@@ -35,8 +35,8 @@ describe('VoidZReportModal', () => {
   });
 
   it('disables continue until reason length >= 10 (step 1)', () => {
-    render(wrap(<VoidZReportModal open zreportId="z1" onOpenChange={() => {}} />));
-    const cont = screen.getByTestId('void-continue') as HTMLButtonElement;
+    render(wrap(<VoidZReportModal open zreportId="z1" onOpenChange={() => undefined} />));
+    const cont = screen.getByTestId<HTMLButtonElement>('void-continue');
     expect(cont.disabled).toBe(true);
     fireEvent.change(screen.getByTestId('void-reason-input'), { target: { value: 'too short' } });
     expect(cont.disabled).toBe(true);
@@ -44,7 +44,7 @@ describe('VoidZReportModal', () => {
     expect(cont.disabled).toBe(false);
   });
 
-  it('S50 T5 — calls void_zreport_v2 with trimmed reason + manager PIN and closes on success', async () => {
+  it('S50 T5 — calls void_zreport_v3 with trimmed reason + manager PIN and closes on success', async () => {
     const onSuccess = vi.fn();
     const onOpenChange = vi.fn();
     render(wrap(
@@ -65,7 +65,7 @@ describe('VoidZReportModal', () => {
     fireEvent.click(screen.getByTestId('void-submit'));
     await waitFor(() =>
       expect(rpcSpy).toHaveBeenCalledWith(
-        'void_zreport_v2',
+        'void_zreport_v3',
         { p_zreport_id: 'z1', p_reason: 'manager misclicked', p_manager_pin: '123456' },
       ),
     );
