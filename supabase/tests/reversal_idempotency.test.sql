@@ -66,14 +66,14 @@ DECLARE
   v_res JSONB; v_void_count INT; v_refund_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_order := complete_order_with_payment_v28(
+  v_order := complete_order_with_payment_v29(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 2, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',50000,'cash_received',50000,'change_given',0));
   v_order_id := (v_order->>'order_id')::uuid;
 
-  v_res := void_order_rpc_v11(v_order_id, 'S55 idempotency void test', v_manager_prof, v_cashier_auth, v_key);
+  v_res := void_order_rpc_v12(v_order_id, 'S55 idempotency void test', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT COUNT(*) INTO v_void_count FROM stock_movements
     WHERE product_id = v_prod AND movement_type = 'sale_void' AND reference_type = 'orders' AND reference_id = v_order_id;
@@ -108,7 +108,7 @@ DECLARE
   v_res2 JSONB; v_void_count INT; v_refund_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res2 := void_order_rpc_v11(v_order_id, 'S55 idempotency void test replay', v_manager_prof, v_cashier_auth, v_key);
+  v_res2 := void_order_rpc_v12(v_order_id, 'S55 idempotency void test replay', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT COUNT(*) INTO v_void_count FROM stock_movements
     WHERE product_id = v_prod AND movement_type = 'sale_void' AND reference_type = 'orders' AND reference_id = v_order_id;
@@ -171,7 +171,7 @@ DECLARE
   v_res JSONB; v_is_cancelled BOOLEAN;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res := cancel_order_item_rpc_v6(v_item, 'S55 idempotency cancel test', v_manager_prof, v_cashier_auth, v_key);
+  v_res := cancel_order_item_rpc_v7(v_item, 'S55 idempotency cancel test', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT is_cancelled INTO v_is_cancelled FROM order_items WHERE id = v_item;
 
@@ -199,7 +199,7 @@ DECLARE
   v_res2 JSONB;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res2 := cancel_order_item_rpc_v6(v_item, 'S55 idempotency cancel test replay', v_manager_prof, v_cashier_auth, v_key);
+  v_res2 := cancel_order_item_rpc_v7(v_item, 'S55 idempotency cancel test replay', v_manager_prof, v_cashier_auth, v_key);
 
   PERFORM set_config('s55.cancel_t4', CASE WHEN
     (v_res2->>'idempotent_replay')::boolean = true
@@ -224,7 +224,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   BEGIN
-    PERFORM cancel_order_item_rpc_v6(v_item, 'S55 idempotency cancel test K2', v_manager_prof, v_cashier_auth, v_key2);
+    PERFORM cancel_order_item_rpc_v7(v_item, 'S55 idempotency cancel test K2', v_manager_prof, v_cashier_auth, v_key2);
   EXCEPTION WHEN SQLSTATE '23514' THEN
     v_caught := true;
   END;

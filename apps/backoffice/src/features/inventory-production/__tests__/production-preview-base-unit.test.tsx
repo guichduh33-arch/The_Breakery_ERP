@@ -87,7 +87,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
   beforeEach(() => {
     mockRpc.mockReset();
     mockRpc.mockImplementation((fn: string) =>
-      fn === 'recipe_bom_full_v2'
+      fn === 'recipe_bom_full_v3'
         ? { data: [FLOUR_LEAF], error: null }
         : { data: null, error: { message: 'unexpected rpc' } },
     );
@@ -119,7 +119,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
     await waitFor(() => {
       expect(flourRowText()).toMatch(/0,05 kg/);
     });
-    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v2', { p_product_id: 'p-bag', p_max_depth: 5 });
+    expect(mockRpc).toHaveBeenCalledWith('recipe_bom_full_v3', { p_product_id: 'p-bag', p_max_depth: 5 });
     expect(screen.getByTestId('status-ok')).toBeInTheDocument();
   });
 

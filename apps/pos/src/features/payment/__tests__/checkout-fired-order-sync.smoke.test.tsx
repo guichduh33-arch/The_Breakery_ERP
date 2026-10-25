@@ -2,7 +2,7 @@ vi.mock('@/features/discounts/mintDiscountAuthorization', () => ({ mintDiscountA
 // apps/pos/src/features/payment/__tests__/checkout-fired-order-sync.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : checkout d'un ordre comptoir FIRED.
-// pay_existing_order_v20 paie les order_items PERSISTÉS, pas le panier local —
+// pay_existing_order_v21 paie les order_items PERSISTÉS, pas le panier local —
 // les items ajoutés APRÈS le dernier fire doivent être appendés à l'ordre DB
 // (fire_counter_order_v10 append mode) AVANT le paiement, sinon le client paie
 // un total partiel.
@@ -116,12 +116,12 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     seedFiredCounterCart();
   });
 
-  it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v20', async () => {
+  it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v21', async () => {
     await runCheckout();
 
     expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual([
       'fire_counter_order_v10',
-      'pay_existing_order_v20',
+      'pay_existing_order_v21',
     ]);
 
     const appendArgs = rpcMock.mock.calls[0]![1] as Record<string, unknown>;
@@ -149,7 +149,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v20']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v21']);
   });
 
   it('tablet pickup (printedItemIds empty): never appends — all items already live in DB', async () => {
@@ -159,7 +159,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v20']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v21']);
   });
 
   it('appends only new tablet lines and preserves persisted lines across a payment retry', async () => {

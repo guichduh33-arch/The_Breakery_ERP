@@ -37,7 +37,7 @@ INSERT INTO customers(id, name, customer_type, category_id, b2b_credit_limit)
 SELECT customer_id, 'BSC ' || name, 'b2b', (SELECT category_id FROM bsc_context), NULL FROM bsc_customer;
 DO $$ DECLARE c record; r jsonb; nonce uuid; amount numeric; BEGIN
   FOR c IN SELECT * FROM bsc_customer LOOP
-    r := create_b2b_order_v7(c.customer_id, jsonb_build_array(jsonb_build_object(
+    r := create_b2b_order_v8(c.customer_id, jsonb_build_array(jsonb_build_object(
       'product_id', (SELECT product_id FROM bsc_context), 'quantity', 1)), NULL, NULL, gen_random_uuid());
     UPDATE bsc_customer SET invoice_id = (r->>'order_id')::uuid WHERE name = c.name;
     amount := CASE c.name WHEN 'insufficient' THEN 10000 WHEN 'partial' THEN 100000

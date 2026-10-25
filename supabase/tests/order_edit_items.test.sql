@@ -169,7 +169,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('breakery.test_item')::uuid,
       5, gen_random_uuid());
     v_status := 'pass';
@@ -185,7 +185,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('breakery.test_item')::uuid,
       0, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE '22023' THEN v_status := 'pass';
@@ -202,7 +202,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('breakery.test_item')::uuid,
       3, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_status := 'pass';
@@ -217,7 +217,7 @@ SELECT ok(current_setting('breakery.t8_pass') = 'pass', 'T8: update_qty on compl
 DO $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
-  PERFORM update_order_item_qty_v6(
+  PERFORM update_order_item_qty_v7(
     current_setting('breakery.test_item')::uuid, 7, gen_random_uuid());
 END $$;
 SELECT cmp_ok(
@@ -337,7 +337,7 @@ BEGIN
   UPDATE products SET retail_price = retail_price + 7777
    WHERE id = current_setting('breakery.test_product')::uuid;
   BEGIN
-    PERFORM update_order_item_qty_v6(v_item, 3, gen_random_uuid());
+    PERFORM update_order_item_qty_v7(v_item, 3, gen_random_uuid());
     SELECT unit_price, line_total, modifiers_total INTO v_line
       FROM order_items WHERE id = v_item;
     IF v_line.unit_price = v_before

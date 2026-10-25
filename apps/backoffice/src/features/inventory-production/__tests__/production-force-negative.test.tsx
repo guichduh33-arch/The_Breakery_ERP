@@ -51,13 +51,13 @@ const SHORTAGE_ERROR = {
 };
 
 /**
- * La carte monte l'aperçu de faisabilité, qui appelle `recipe_bom_full_v2` :
+ * La carte monte l'aperçu de faisabilité, qui appelle `recipe_bom_full_v3` :
  * les appels RPC ne sont plus tous des soumissions de lot. On ne raisonne donc
  * que sur les appels de la RPC de production.
  */
 function batchCalls(): [string, { p_batch: Record<string, unknown> }][] {
   return mockRpc.mock.calls.filter(
-    (c) => c[0] === 'record_batch_production_v8',
+    (c) => c[0] === 'record_batch_production_v9',
   ) as [string, { p_batch: Record<string, unknown> }][];
 }
 
@@ -90,7 +90,7 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     // L'aperçu partage le mock : sans BOM neutre, il rendrait l'erreur de
     // pénurie du lot comme une erreur de résolution de recette.
     mockRpc.mockImplementation((fn: string) =>
-      fn === 'recipe_bom_full_v2' ? { data: [], error: null } : SHORTAGE_ERROR,
+      fn === 'recipe_bom_full_v3' ? { data: [], error: null } : SHORTAGE_ERROR,
     );
     resolvers.product_sections = () => ({ data: [{ product_id: 'p-bag' }], error: null });
     resolvers.products = () => ({
@@ -147,9 +147,9 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
     const calls = batchCalls();
     const lastCall = calls[calls.length - 1]!;
     // ADR-016 (20260729000001) fused the old _v3 impl + _v4 date wrapper into
-    // a single orchestrator, bumped again to record_batch_production_v8 by
+    // a single orchestrator, bumped again to record_batch_production_v9 by
     // ADR-008 D5/D6 (20260729000003) — the hook now calls _v6.
-    expect(lastCall[0]).toBe('record_batch_production_v8');
+    expect(lastCall[0]).toBe('record_batch_production_v9');
     expect(lastCall[1].p_batch.force_negative).toBe(true);
   });
 });

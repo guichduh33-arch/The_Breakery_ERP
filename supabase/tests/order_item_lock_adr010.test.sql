@@ -128,7 +128,7 @@ DO $$
 DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   BEGIN
-    PERFORM cancel_order_item_rpc_v6(
+    PERFORM cancel_order_item_rpc_v7(
       current_setting('brk.i1')::uuid, 'ADR10 T1 no waste',
       current_setting('brk.mgr_prof')::uuid, current_setting('brk.cash_auth')::uuid,
       NULL, NULL);
@@ -144,7 +144,7 @@ DO $$
 DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   BEGIN
-    PERFORM cancel_order_item_rpc_v6(
+    PERFORM cancel_order_item_rpc_v7(
       current_setting('brk.i1')::uuid, 'ADR10 T2 over waste',
       current_setting('brk.mgr_prof')::uuid, current_setting('brk.cash_auth')::uuid,
       NULL, 4);
@@ -160,7 +160,7 @@ DO $$
 DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   BEGIN
-    PERFORM cancel_order_item_rpc_v6(
+    PERFORM cancel_order_item_rpc_v7(
       current_setting('brk.i1')::uuid, 'ADR10 T3 waste ok',
       current_setting('brk.mgr_prof')::uuid, current_setting('brk.cash_auth')::uuid,
       NULL, 2);
@@ -191,7 +191,7 @@ DO $$
 DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   BEGIN
-    PERFORM cancel_order_item_rpc_v6(
+    PERFORM cancel_order_item_rpc_v7(
       current_setting('brk.i2')::uuid, 'ADR10 T4 free line',
       current_setting('brk.mgr_prof')::uuid, current_setting('brk.cash_auth')::uuid,
       NULL, NULL);
@@ -212,7 +212,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('brk.i3')::uuid, 7, gen_random_uuid(), NULL, NULL, NULL);
   EXCEPTION WHEN SQLSTATE '23514' THEN v_status := 'pass';
                 WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
@@ -227,7 +227,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('brk.i3')::uuid, 3, gen_random_uuid(), NULL, NULL, 'ADR10 T6');
   EXCEPTION WHEN SQLSTATE 'P0003' THEN v_status := 'pass';
                 WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
@@ -242,7 +242,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('brk.i3')::uuid, 3, gen_random_uuid(),
       current_setting('brk.nonce_bad')::uuid, NULL, 'ADR10 T7');
   EXCEPTION WHEN SQLSTATE 'P0003' THEN v_status := 'pass';
@@ -258,7 +258,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('brk.i3')::uuid, 3, gen_random_uuid(),
       current_setting('brk.nonce_ok')::uuid, NULL, 'ADR10 T8 delta waste');
     v_status := 'pass';
@@ -294,7 +294,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v6(
+    PERFORM update_order_item_qty_v7(
       current_setting('brk.i4')::uuid, 1, gen_random_uuid(),
       current_setting('brk.nonce_ok')::uuid, NULL, 'ADR10 T9 reuse');
   EXCEPTION WHEN SQLSTATE 'P0003' THEN v_status := 'pass';
@@ -339,7 +339,7 @@ DO $$
 DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   BEGIN
-    PERFORM cancel_order_item_rpc_v6(
+    PERFORM cancel_order_item_rpc_v7(
       current_setting('brk.i7')::uuid, 'ADR10 T12 recipe waste',
       current_setting('brk.mgr_prof')::uuid, current_setting('brk.cash_auth')::uuid,
       NULL, 1);

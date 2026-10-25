@@ -31,17 +31,17 @@ BEGIN
     FROM public.orders o WHERE id=v_order;
 END;
 $fixture$;
-SELECT ok(NOT has_function_privilege('anon','public.cancel_unpaid_order_v1(uuid,timestamptz,jsonb,jsonb,text,uuid,uuid,uuid)','EXECUTE'),'anon/PUBLIC refusés');
-SELECT ok(NOT has_function_privilege('authenticated','public.cancel_unpaid_order_v1(uuid,timestamptz,jsonb,jsonb,text,uuid,uuid,uuid)','EXECUTE'),'client direct refusé');
-SELECT ok(has_function_privilege('service_role','public.cancel_unpaid_order_v1(uuid,timestamptz,jsonb,jsonb,text,uuid,uuid,uuid)','EXECUTE'),'EF autorisée');
+SELECT ok(NOT has_function_privilege('anon','public.cancel_unpaid_order_v2(uuid,timestamptz,jsonb,jsonb,text,uuid,uuid,uuid)','EXECUTE'),'anon/PUBLIC refusés');
+SELECT ok(NOT has_function_privilege('authenticated','public.cancel_unpaid_order_v2(uuid,timestamptz,jsonb,jsonb,text,uuid,uuid,uuid)','EXECUTE'),'client direct refusé');
+SELECT ok(has_function_privilege('service_role','public.cancel_unpaid_order_v2(uuid,timestamptz,jsonb,jsonb,text,uuid,uuid,uuid)','EXECUTE'),'EF autorisée');
 CREATE TEMP TABLE cancel_denied AS
   SELECT id,auth_user_id FROM public.user_profiles WHERE is_active AND deleted_at IS NULL AND auth_user_id IS NOT NULL
     AND NOT public.has_permission_for_profile(id,'payments.process')
     AND NOT public.has_permission_for_profile(id,'pos.sale.cancel_item') LIMIT 1;
 DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM cancel_denied) THEN RAISE EXCEPTION 'fixture: active profile without cancellation/payment permissions required'; END IF; END $$;
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',actor,d.auth_user_id,key),
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',actor,d.auth_user_id,key),
   'P0003','permission_denied','acteur sans permission refusé') FROM cancel_fixture CROSS JOIN cancel_denied d;
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',d.id,auth_id,key),
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',d.id,auth_id,key),
   'P0003','manager_permission_denied','manager sans permission refusé') FROM cancel_fixture CROSS JOIN cancel_denied d;
 -- Fixtures distinctes déjà payées : aucun changement du statut de la commande test.
 CREATE TEMP TABLE cancel_paid_cases(id uuid, label text);
@@ -65,12 +65,12 @@ END;
 $paid_fixture$;
 SELECT is(o.status::text,p.label,'fixture réellement '||p.label)
   FROM cancel_paid_cases p JOIN public.orders o ON o.id=p.id;
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',p.id,stamp,items,losses,'Test reason',actor,auth_id,gen_random_uuid()),
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',p.id,stamp,items,losses,'Test reason',actor,auth_id,gen_random_uuid()),
   '23514','unpaid_order_required','statut '||p.label||' refusé') FROM cancel_fixture CROSS JOIN cancel_paid_cases p;
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,'[]',losses,'Test reason',actor,auth_id,key),
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,'[]',losses,'Test reason',actor,auth_id,key),
   'P0014','order_changed','snapshot périmé refusé') FROM cancel_fixture;
 -- La seconde perte échoue après la première annulation : tous ses effets doivent être annulés.
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,
   jsonb_set(losses,'{1,waste_qty}','3'),'Test reason',actor,auth_id,key),
   '22023','invalid_waste_qty','perte supérieure à la quantité refusée atomiquement') FROM cancel_fixture;
 SELECT is((SELECT count(*)::int FROM public.order_items i WHERE i.order_id=f.order_id AND i.is_cancelled),0,'aucune ligne partiellement annulée') FROM cancel_fixture f;
@@ -81,13 +81,13 @@ SELECT is((SELECT count(*)::int FROM public.unpaid_order_cancel_keys WHERE key=f
 UPDATE public.order_items SET kitchen_status='served' WHERE id=(SELECT (items->0->>'id')::uuid FROM cancel_fixture);
 UPDATE cancel_fixture f SET items=(SELECT jsonb_agg(to_jsonb(i) ORDER BY i.id) FROM public.order_items i WHERE i.order_id=f.order_id),
   stamp=(SELECT updated_at FROM public.orders WHERE id=f.order_id);
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',actor,auth_id,key),
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',actor,auth_id,key),
   '23514','served_item_cannot_be_cancelled','ligne servie protégée') FROM cancel_fixture;
 UPDATE public.order_items SET kitchen_status='pending' WHERE order_id=(SELECT order_id FROM cancel_fixture);
 UPDATE cancel_fixture f SET items=(SELECT jsonb_agg(to_jsonb(i) ORDER BY i.id) FROM public.order_items i WHERE i.order_id=f.order_id),
   stamp=(SELECT updated_at FROM public.orders WHERE id=f.order_id);
-SELECT is(public.cancel_unpaid_order_v1(order_id,stamp,items,losses,'Test reason',actor,auth_id,key)->>'status','voided','annulation totale') FROM cancel_fixture;
-SELECT is(public.cancel_unpaid_order_v1(order_id,stamp,items,losses,'Test reason',actor,auth_id,key)->>'status','voided','ACK perdu : rejeu même résultat') FROM cancel_fixture;
+SELECT is(public.cancel_unpaid_order_v2(order_id,stamp,items,losses,'Test reason',actor,auth_id,key)->>'status','voided','annulation totale') FROM cancel_fixture;
+SELECT is(public.cancel_unpaid_order_v2(order_id,stamp,items,losses,'Test reason',actor,auth_id,key)->>'status','voided','ACK perdu : rejeu même résultat') FROM cancel_fixture;
 SELECT is((SELECT count(*)::int FROM public.order_items i WHERE i.order_id=f.order_id AND i.is_cancelled),2,'deux lignes annulées') FROM cancel_fixture f;
 SELECT is((SELECT current_stock FROM public.products WHERE id=f.product_id),8::numeric,'pertes une seule fois') FROM cancel_fixture f;
 SELECT is((SELECT count(*)::int FROM public.stock_movements WHERE product_id=f.product_id),2,'deux mouvements sans doublon') FROM cancel_fixture f;
@@ -96,7 +96,7 @@ SELECT is((SELECT count(*)::int FROM public.order_payments WHERE order_id=f.orde
 SELECT is((SELECT count(*)::int FROM public.journal_entries WHERE reference_id=f.order_id),0,'aucune JE de vente ou extourne pour la commande impayée') FROM cancel_fixture f;
 SELECT is((SELECT total FROM public.orders WHERE id=f.order_id),0::numeric,'total nul') FROM cancel_fixture f;
 SELECT is((SELECT count(*)::int FROM public.audit_logs WHERE entity_id=f.order_id AND action='order.cancel_unpaid'),1,'audit global unique') FROM cancel_fixture f;
-SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v1(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',actor,auth_id,gen_random_uuid()),
+SELECT throws_ok(format('SELECT public.cancel_unpaid_order_v2(%L,%L,%L,%L,%L,%L,%L,%L)',order_id,stamp,items,losses,'Test reason',actor,auth_id,gen_random_uuid()),
   '23514','unpaid_order_required','commande close non annulable avec une nouvelle clé') FROM cancel_fixture;
 SELECT * FROM finish();
 ROLLBACK;

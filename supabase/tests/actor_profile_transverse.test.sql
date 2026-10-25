@@ -291,7 +291,7 @@ SELECT is(
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
-      'update_category_v2','update_order_item_qty_v6','update_product_v4','update_variant_v2',
+      'update_category_v2','update_order_item_qty_v7','update_product_v4','update_variant_v2',
       'upsert_product_modifiers_v3','upsert_section_v2')),
   32::bigint,
   'T22: les 32 nouvelles versions existent');
@@ -305,7 +305,7 @@ SELECT is(
       'import_sales_v2','import_suppliers_v2','recompute_all_recipe_costs_v3','recompute_recipe_cost_v3',
       'record_cash_wallet_movement_v2','remove_order_item_v4','reorder_categories_v2','reorder_variants_v2',
       'set_product_base_unit_v2','set_product_is_test_v2','set_product_sections_v2','set_product_units_v2',
-      'update_category_v2','update_order_item_qty_v6','update_product_v4','update_variant_v2',
+      'update_category_v2','update_order_item_qty_v7','update_product_v4','update_variant_v2',
       'upsert_product_modifiers_v3','upsert_section_v2')
       AND has_function_privilege('anon', p.oid, 'EXECUTE')),
   0::bigint,

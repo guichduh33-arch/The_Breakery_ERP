@@ -210,7 +210,7 @@ DO $pay$
 DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM pay_existing_order_v20(
+    PERFORM pay_existing_order_v21(
       p_order_id := current_setting('ccsp.order1')::uuid,
       p_payment  := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb
     );
@@ -221,7 +221,7 @@ BEGIN
 END $pay$;
 
 SELECT ok(current_setting('ccsp.pay1_pass')::boolean,
-  'T4: pay_existing_order_v20(cash 50000) accepte le montant facture par la caisse (refuse sous v7 : total 48000) - recu: ' || current_setting('ccsp.pay1_msg'));
+  'T4: pay_existing_order_v21(cash 50000) accepte le montant facture par la caisse (refuse sous v7 : total 48000) - recu: ' || current_setting('ccsp.pay1_msg'));
 
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000e5f02'), 99,
   'T5a: composant Large deduit -1 au paiement');

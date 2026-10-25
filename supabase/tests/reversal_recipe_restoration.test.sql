@@ -52,7 +52,7 @@ BEGIN
     VALUES (v_mgr_prof, 0, 'open') RETURNING id INTO v_sess;
 
   -- ===== Commande 1 : sera ANNULEE (void) =====
-  r := complete_order_with_payment_v28(
+  r := complete_order_with_payment_v29(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(
@@ -67,7 +67,7 @@ BEGIN
   PERFORM set_config('rrr.ing_after_sale',
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
-  PERFORM void_order_rpc_v11(
+  PERFORM void_order_rpc_v12(
     p_order_id            := current_setting('rrr.order1')::uuid,
     p_reason              := 'pgTAP reversal recipe restoration',
     p_authorized_by       := v_mgr_prof,
@@ -79,7 +79,7 @@ BEGIN
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
   -- ===== Commande 2 : sera REMBOURSEE a moitie =====
-  r := complete_order_with_payment_v28(
+  r := complete_order_with_payment_v29(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(
@@ -90,7 +90,7 @@ BEGIN
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
   SELECT id INTO v_oi FROM order_items WHERE order_id = current_setting('rrr.order2')::uuid LIMIT 1;
-  r := refund_order_rpc_v12(
+  r := refund_order_rpc_v13(
     current_setting('rrr.order2')::uuid,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method','cash','amount',5000)),

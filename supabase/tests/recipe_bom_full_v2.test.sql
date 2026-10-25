@@ -135,10 +135,10 @@ END $fixture$;
 -- T1 — RPC returns rows for a recipe-product.
 -- ===========================================================================
 SELECT ok(
-  (SELECT COUNT(*) > 0 FROM recipe_bom_full_v2(
+  (SELECT COUNT(*) > 0 FROM recipe_bom_full_v3(
     current_setting('breakery.top')::uuid, 5
   )),
-  'T1: recipe_bom_full_v2 returns at least one row for top product'
+  'T1: recipe_bom_full_v3 returns at least one row for top product'
 );
 
 -- ===========================================================================
@@ -149,11 +149,11 @@ DECLARE
   v_sub1_found BOOLEAN; v_sub2_found BOOLEAN;
 BEGIN
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
+    SELECT 1 FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 5)
      WHERE material_id = current_setting('breakery.sub1')::uuid
   ) INTO v_sub1_found;
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
+    SELECT 1 FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 5)
      WHERE material_id = current_setting('breakery.sub2')::uuid
   ) INTO v_sub2_found;
   PERFORM set_config('breakery.t2_pass',
@@ -163,7 +163,7 @@ END $t2$;
 
 SELECT ok(
   current_setting('breakery.t2_pass')::boolean,
-  'T2: leaf-only contract — sub_1 and sub_2 absent from recipe_bom_full_v2 output'
+  'T2: leaf-only contract — sub_1 and sub_2 absent from recipe_bom_full_v3 output'
 );
 
 -- ===========================================================================
@@ -171,7 +171,7 @@ SELECT ok(
 --      only ONE row for leaf_a.
 -- ===========================================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM recipe_bom_full_v2(
+  (SELECT COUNT(*)::INT FROM recipe_bom_full_v3(
     current_setting('breakery.top')::uuid, 5
   ) WHERE material_id = current_setting('breakery.leaf_a')::uuid),
   1,
@@ -188,11 +188,11 @@ DECLARE
   v_qty_a NUMERIC; v_qty_b NUMERIC;
 BEGIN
   SELECT qty_per_unit INTO v_qty_a
-    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
+    FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 5)
    WHERE material_id = current_setting('breakery.leaf_a')::uuid;
 
   SELECT qty_per_unit INTO v_qty_b
-    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
+    FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 5)
    WHERE material_id = current_setting('breakery.leaf_b')::uuid;
 
   PERFORM set_config('breakery.t4_pass',
@@ -223,13 +223,13 @@ DECLARE
   v_sub1_found  BOOLEAN;
 BEGIN
   SELECT COUNT(*) INTO v_row_count
-    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 1);
+    FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 1);
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 1)
+    SELECT 1 FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 1)
      WHERE material_id = current_setting('breakery.leaf_a')::uuid
   ) INTO v_leaf_a_found;
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 1)
+    SELECT 1 FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 1)
      WHERE material_id = current_setting('breakery.sub1')::uuid
   ) INTO v_sub1_found;
   PERFORM set_config('breakery.t5_pass',
@@ -273,7 +273,7 @@ BEGIN
 
   -- The cycle guard (NOT material_id = ANY(path)) must terminate the walk.
   SELECT COUNT(*) INTO v_row_count
-    FROM recipe_bom_full_v2(v_ca, 5);
+    FROM recipe_bom_full_v3(v_ca, 5);
 
   -- With a perfect cycle and no true leaves, output should be 0 rows (no leaves found).
   PERFORM set_config('breakery.t6_pass', 'true', false);
@@ -293,7 +293,7 @@ SELECT ok(
 -- T7 — invalid_max_depth raises P0001.
 -- ===========================================================================
 SELECT throws_ok(
-  format($q$SELECT * FROM recipe_bom_full_v2(%L::uuid, 0)$q$,
+  format($q$SELECT * FROM recipe_bom_full_v3(%L::uuid, 0)$q$,
          current_setting('breakery.top')),
   'P0001',
   'invalid_max_depth',
@@ -304,7 +304,7 @@ SELECT throws_ok(
 -- T8 — NULL product_id raises P0001.
 -- ===========================================================================
 SELECT throws_ok(
-  $$SELECT * FROM recipe_bom_full_v2(NULL::uuid, 5)$$,
+  $$SELECT * FROM recipe_bom_full_v3(NULL::uuid, 5)$$,
   'P0001',
   'product_id_required',
   'T8: NULL product_id raises P0001 product_id_required'
@@ -320,7 +320,7 @@ DECLARE
 BEGIN
   SELECT ARRAY_AGG(material_name ORDER BY ordinality)
     INTO v_names
-    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
+    FROM recipe_bom_full_v3(current_setting('breakery.top')::uuid, 5)
          WITH ORDINALITY;
 
   v_sorted := ARRAY(SELECT unnest(v_names) ORDER BY 1);
@@ -342,7 +342,7 @@ DO $t10_setup$ BEGIN
 END $t10_setup$;
 
 SELECT throws_ok(
-  format($q$SELECT * FROM recipe_bom_full_v2(%L::uuid, 5)$q$,
+  format($q$SELECT * FROM recipe_bom_full_v3(%L::uuid, 5)$q$,
          current_setting('breakery.top')),
   'P0003',
   'forbidden',

@@ -36,7 +36,7 @@ export async function getHistory(sectionId: string, day: string, cursor: Kitchen
   return data as unknown as KitchenRecord[];
 }
 export async function submitProduction(request: KitchenRequest): Promise<KitchenReceipt> {
-  const { data, error } = await supabase.rpc('record_kitchen_production_v1', { p_request: request as unknown as Json });
+  const { data, error } = await supabase.rpc('record_kitchen_production_v2', { p_request: request as unknown as Json });
   if (error) throw error;
   return data as unknown as KitchenReceipt;
 }
