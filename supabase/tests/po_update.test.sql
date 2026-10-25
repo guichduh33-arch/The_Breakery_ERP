@@ -102,7 +102,7 @@ BEGIN
   DECLARE v_item_id UUID;
   BEGIN
     SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_locked_id::uuid LIMIT 1;
-    PERFORM receive_purchase_order_v4(
+    PERFORM receive_purchase_order_v5(
       p_po_id          := v_po_locked_id::uuid,
       p_received_items := jsonb_build_array(
         jsonb_build_object('po_item_id', v_item_id, 'received_quantity', 10)

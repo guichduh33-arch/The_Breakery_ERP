@@ -206,7 +206,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v4(
+  v_result := receive_purchase_order_v5(
     p_po_id          := v_po_id,
     p_received_items := v_received
   );
@@ -279,7 +279,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v4(
+  PERFORM receive_purchase_order_v5(
     p_po_id          := v_po_id,
     p_received_items := v_received
   );
