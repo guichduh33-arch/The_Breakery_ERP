@@ -1,7 +1,7 @@
 -- ADR-013 D6/D12/D13 et ADR-020 D6 : reprise liée et atomicité des ledgers.
 BEGIN;
 \ir helpers/pin_session.sql
-SELECT plan(30);
+SELECT plan(31);
 
 DO $$
 DECLARE v_actor uuid; v_customer uuid; v_category uuid;
@@ -30,6 +30,12 @@ SELECT ok(NOT has_table_privilege('authenticated', 'public.loyalty_operation_res
   'result table is private');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.loyalty_operation_results'::regclass),
   'result table has RLS');
+SELECT ok(EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.loyalty_operation_results'::regclass
+  AND polname='pin_session_required' AND NOT polpermissive AND polcmd='*'
+  AND 'authenticated'::regrole::oid=ANY(polroles)
+  AND pg_get_expr(polqual,polrelid) LIKE '%request_has_active_pin_session_v1%'
+  AND pg_get_expr(polwithcheck,polrelid) LIKE '%request_has_active_pin_session_v1%'),
+  'private result table preserves the shared restrictive PIN session guard');
 SELECT ok(NOT has_function_privilege('authenticated', 'public._read_loyalty_operation_v1(text,uuid,uuid,uuid,jsonb)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public._read_loyalty_operation_v1(text,uuid,uuid,uuid,jsonb)', 'EXECUTE'),
   'replay helper cannot be called by clients');
