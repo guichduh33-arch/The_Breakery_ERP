@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useUpsertProductModifiers.ts
 //
-// Wraps upsert_product_modifiers_v2 (S27, gate products.modifiers.update).
+// Wraps upsert_product_modifiers_v3 (S27, gate products.modifiers.update).
 // REPLACE semantics: the RPC soft-deletes the product's current modifiers and
 // re-inserts from the serialized payload. Invalidates both the admin load key
 // and the POS-shared ['product-modifiers'] keys.
@@ -18,7 +18,7 @@ export function useUpsertProductModifiers(productId: string) {
   const qc = useQueryClient();
   return useMutation<unknown, Error, EditableModifierGroup[]>({
     mutationFn: async (groups) => {
-      const { data, error } = await supabase.rpc('upsert_product_modifiers_v2', {
+      const { data, error } = await supabase.rpc('upsert_product_modifiers_v3', {
         p_product_id: productId,
         p_groups: serializeModifierGroups(groups) as Json,
       });

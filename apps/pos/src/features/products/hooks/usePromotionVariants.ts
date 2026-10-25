@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
-import type { POSVariantRow } from './useProductVariants';
+import { normalizeVariantStock, type POSVariantRow } from './useProductVariants';
 
 type Variant = POSVariantRow & { parent_product_id: string };
 
@@ -11,12 +11,14 @@ export async function fetchPromotionVariants(parentIds: string[]): Promise<Varia
   for (let start = 0; start < parentIds.length; start += 100) {
     for (let page = 0; ; page += 1) {
       const { data, error } = await supabase.from('products')
-        .select('id, parent_product_id, name, retail_price, variant_label, variant_axis, variant_sort_order, is_active, current_stock, deduct_stock')
+        .select('id, parent_product_id, name, retail_price, variant_label, variant_axis, variant_sort_order, is_active, current_stock, deduct_stock, track_inventory, display_stock(quantity)')
         .in('parent_product_id', parentIds.slice(start, start + 100))
         .eq('is_active', true).eq('visible_on_pos', true).is('deleted_at', null)
         .order('id', { ascending: true }).range(page * 500, page * 500 + 499);
       if (error) throw error;
-      rows.push(...(data ?? []) as Variant[]);
+      rows.push(...((data ?? []) as unknown as (Omit<Variant, 'display_stock'> & {
+        display_stock?: { quantity: number } | { quantity: number }[] | null;
+      })[]).map(normalizeVariantStock));
       if ((data?.length ?? 0) < 500) break;
     }
   }

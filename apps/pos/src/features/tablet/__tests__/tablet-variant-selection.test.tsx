@@ -30,7 +30,7 @@ import { TabletProductGrid } from '../components/TabletProductGrid';
 const orange: POSVariantRow = {
   id: 'orange', name: 'Fresh Juice Orange', retail_price: 45000,
   variant_label: 'Orange', variant_axis: 'flavor', variant_sort_order: 10,
-  is_active: true, current_stock: 0, deduct_stock: false,
+  is_active: true, current_stock: 0, deduct_stock: false, track_inventory: false, display_stock: null,
 };
 const apple: POSVariantRow = { ...orange, id: 'apple', name: 'Fresh Juice Apple', variant_label: 'Apple', retail_price: 40000 };
 
@@ -91,7 +91,7 @@ describe('sélection des variantes depuis la tablette', () => {
   });
 
   it('refuse une variante unique épuisée suivie en stock', () => {
-    mocks.variants = [{ ...orange, deduct_stock: true }];
+    mocks.variants = [{ ...orange, track_inventory: true, deduct_stock: true }];
     openParent();
     expect(screen.getByTestId('variant-tile-orange')).toBeDisabled();
     expect(useTabletCartStore.getState().items).toEqual([]);
