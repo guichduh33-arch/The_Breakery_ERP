@@ -8588,7 +8588,7 @@ export type Database = {
         }
         Returns: Json
       }
-      revert_production_v2: {
+      revert_production_v3: {
         Args: { p_production_id: string; p_reason: string }
         Returns: Json
       }
