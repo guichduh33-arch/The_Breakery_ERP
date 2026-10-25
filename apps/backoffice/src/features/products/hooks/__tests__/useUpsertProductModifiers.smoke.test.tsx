@@ -35,11 +35,11 @@ describe('useUpsertProductModifiers', () => {
     rpc.mockResolvedValue({ data: { modifiers: [] }, error: null });
   });
 
-  it('calls upsert_product_modifiers_v2 with the serialized payload', async () => {
+  it('calls upsert_product_modifiers_v3 with the serialized payload', async () => {
     const { result } = renderHook(() => useUpsertProductModifiers('prod-1'), { wrapper });
     result.current.mutate(GROUPS);
     await waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
-    expect(rpc).toHaveBeenCalledWith('upsert_product_modifiers_v2', expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith('upsert_product_modifiers_v3', expect.objectContaining({
       p_product_id: 'prod-1',
     }));
     const arg = rpc.mock.calls[0]![1] as { p_groups: Record<string, unknown>[] };

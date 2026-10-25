@@ -30,3 +30,17 @@ it('propagates errors instead of publishing a partial catalog', async () => {
   mocks.from.mockReturnValue(builder);
   await expect(fetchPromotionVariants(['p'])).rejects.toThrow('offline');
 });
+
+it('hydrates the shared variant shape with tracking and normalized vitrine stock', async () => {
+  const builder = { select: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), range: vi.fn().mockResolvedValue({ data: [
+      { id: 'tracked', parent_product_id: 'p', track_inventory: true, display_stock: [{ quantity: 0 }] },
+      { id: 'untracked', parent_product_id: 'p', track_inventory: false, display_stock: null },
+    ], error: null }) };
+  mocks.from.mockReturnValue(builder);
+  expect(await fetchPromotionVariants(['p'])).toMatchObject([
+    { id: 'tracked', track_inventory: true, display_stock: { quantity: 0 } },
+    { id: 'untracked', track_inventory: false, display_stock: null },
+  ]);
+  expect(builder.select).toHaveBeenCalledWith(expect.stringContaining('track_inventory, display_stock(quantity)'));
+});

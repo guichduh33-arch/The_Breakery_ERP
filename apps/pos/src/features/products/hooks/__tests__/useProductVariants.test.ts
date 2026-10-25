@@ -53,4 +53,16 @@ describe('useProductVariants — visible_on_pos (session 59 review finding)', ()
     renderHook(() => useProductVariants(null), { wrapper });
     expect(fromMock).not.toHaveBeenCalled();
   });
+  it('loads tracking and normalizes object, array, empty and missing vitrine relations', async () => {
+    orderMock.mockResolvedValue({ data: [
+      { id: 'a', track_inventory: true, display_stock: { quantity: 0 } },
+      { id: 'b', track_inventory: false, display_stock: [{ quantity: 4 }] },
+      { id: 'c', display_stock: [] }, { id: 'd', display_stock: null }, { id: 'e' },
+    ], error: null });
+    const { result } = renderHook(() => useProductVariants('parent-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(selectMock).toHaveBeenCalledWith(expect.stringContaining('track_inventory, display_stock(quantity)'));
+    expect(result.current.data?.map((r) => r.display_stock)).toEqual([{ quantity: 0 }, { quantity: 4 }, null, null, null]);
+    expect(result.current.data?.[1]?.track_inventory).toBe(false);
+  });
 });

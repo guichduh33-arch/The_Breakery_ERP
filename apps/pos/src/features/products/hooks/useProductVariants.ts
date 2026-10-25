@@ -23,7 +23,19 @@ export interface POSVariantRow {
   is_active: boolean;
   current_stock: number | null;
   deduct_stock: boolean;
+  // Champs additifs : les anciens snapshots hors ligne restent lisibles.
+  track_inventory?: boolean;
+  display_stock?: { quantity: number } | null;
 }
+
+interface DisplayStock { quantity: number }
+export function normalizeVariantStock<T extends { display_stock?: DisplayStock | DisplayStock[] | null }>(row: T):
+  Omit<T, 'display_stock'> & { display_stock: DisplayStock | null } {
+  const { display_stock, ...rest } = row;
+  return { ...rest, display_stock: Array.isArray(display_stock) ? display_stock[0] ?? null : display_stock ?? null };
+}
+
+type RawVariant = Omit<POSVariantRow, 'display_stock'> & { display_stock?: DisplayStock | DisplayStock[] | null };
 
 export function productVariantsOptions(parentId: string | null | undefined) {
   return queryOptions({
@@ -33,7 +45,7 @@ export function productVariantsOptions(parentId: string | null | undefined) {
       const { data, error } = await supabase
         .from('products')
         .select(
-          'id, name, retail_price, variant_label, variant_axis, variant_sort_order, is_active, current_stock, deduct_stock',
+          'id, name, retail_price, variant_label, variant_axis, variant_sort_order, is_active, current_stock, deduct_stock, track_inventory, display_stock(quantity)',
         )
         .eq('parent_product_id', parentId!)
         .eq('is_active', true)
@@ -42,7 +54,7 @@ export function productVariantsOptions(parentId: string | null | undefined) {
         .order('variant_sort_order', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as POSVariantRow[];
+      return ((data ?? []) as unknown as RawVariant[]).map(normalizeVariantStock);
     },
   });
 }

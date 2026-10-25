@@ -40,6 +40,8 @@ const PRODUCTS_KEYS: readonly (readonly string[])[] = [
   ['pos-product-variants'],
   ['pos-product-variants-batch'],
   ['display', 'showcase-products'],
+  ['combo-config'],
+  ['product-modifiers'],
 ];
 
 // A categories event touches the category nav AND the product grid: rows
@@ -47,6 +49,8 @@ const PRODUCTS_KEYS: readonly (readonly string[])[] = [
 const CATEGORIES_KEYS: readonly (readonly string[])[] = [
   ['categories'],
   ['products'],
+  ['combo-config'],
+  ['product-modifiers'],
 ];
 
 const ALL_CATALOG_KEYS: readonly (readonly string[])[] = [
@@ -55,6 +59,8 @@ const ALL_CATALOG_KEYS: readonly (readonly string[])[] = [
   ['pos-product-variants-batch'],
   ['categories'],
   ['display', 'showcase-products'],
+  ['combo-config'],
+  ['product-modifiers'],
 ];
 
 function invalidateAll(

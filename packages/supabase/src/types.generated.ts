@@ -9040,7 +9040,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      upsert_product_modifiers_v2: {
+      upsert_product_modifiers_v3: {
         Args: { p_groups: Json; p_product_id: string }
         Returns: Json
       }

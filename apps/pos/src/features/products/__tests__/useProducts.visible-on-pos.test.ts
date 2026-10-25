@@ -1,9 +1,7 @@
 // apps/pos/src/features/products/__tests__/useProducts.visible-on-pos.test.ts
 //
-// Session 59 (05 D1.1) — proves useProducts filters BOTH the parent query
-// and the variant-existence probe on `visible_on_pos = true`. Before this
-// fix, the BO toggle `products.visible_on_pos` (GeneralPanel.tsx) had no
-// effect at the counter — only `is_active` was enforced.
+// La grille respecte visible_on_pos ; les enfants actifs même masqués
+// conservent le statut de groupe du parent.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -94,12 +92,15 @@ describe('useProducts — visible_on_pos (session 59, 05 D1.1)', () => {
     expect(result.current.data?.[0]?.name).toBe('Croissant');
   });
 
-  it('filters the variant-existence probe on visible_on_pos = true too', async () => {
+  it('keeps a parent grouped when all its active children are hidden', async () => {
+    variantsChain = makeChain([{ parent_product_id: VISIBLE_PRODUCT.id }]);
     const { result } = renderHook(() => useProducts(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(variantsChain.eq).toHaveBeenCalledWith('is_active', true);
-    expect(variantsChain.eq).toHaveBeenCalledWith('visible_on_pos', true);
+    expect(variantsChain.eq).not.toHaveBeenCalledWith('visible_on_pos', true);
+    expect(variantsChain.is).toHaveBeenCalledWith('deleted_at', null);
+    expect(result.current.data?.[0]?.has_variants).toBe(true);
   });
 
   it('still excludes is_active = false as before (non-regression)', async () => {
