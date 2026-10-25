@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FinancialAttemptError, financialStorageKey, readFinancialSlot, runFinancialAttempt } from '../pendingFinancialAttempts.js';
 import { deferred, installFinancialBrowser } from './financialAttemptTestUtils.js';
 import type { PaymentSnapshot } from '../pendingFinancialAttemptSchema.js';
+import { validPayload } from '../pendingFinancialAttemptSchema.js';
 import { FinancialAttemptError as SharedFinancialAttemptError } from '@breakery/utils';
 
 const scope = { environment: 'https://dev.supabase.co', profileId: 'profile-a', operation: 'payment' as const, target: 'customer-a' };
@@ -11,6 +12,22 @@ const options = { scope, payload, expectedRevision: null, current };
 
 describe('durable financial attempts', () => {
   beforeEach(() => { vi.restoreAllMocks(); installFinancialBrowser(); });
+  it('accepts only closed loyalty snapshots and rejects secrets, changed targets and non-integer amounts', () => {
+    const conversion = { customerId: 'customer-a', points: 100 };
+    const adjustment = { customerId: 'customer-a', delta: -100, reason: 'Correct duplicate points' };
+    expect(validPayload('loyalty_conversion', 'customer-a', conversion)).toBe(true);
+    expect(validPayload('loyalty_adjustment', 'customer-a', adjustment)).toBe(true);
+    expect(validPayload('loyalty_conversion', 'customer-b', conversion)).toBe(false);
+    expect(validPayload('loyalty_adjustment', 'customer-b', adjustment)).toBe(false);
+    for (const points of [0, -100, 150, 100.5, 2147483700, NaN]) {
+      expect(validPayload('loyalty_conversion', 'customer-a', { ...conversion, points })).toBe(false);
+    }
+    for (const delta of [0, 0.5, 1000001, NaN]) {
+      expect(validPayload('loyalty_adjustment', 'customer-a', { ...adjustment, delta })).toBe(false);
+    }
+    expect(validPayload('loyalty_conversion', 'customer-a', { ...conversion, pin: 'never-save' })).toBe(false);
+    expect(validPayload('loyalty_adjustment', 'customer-a', { ...adjustment, token: 'never-save' })).toBe(false);
+  });
   it('reads existing v1 strings and preserves the shared error identity', async () => {
     expect(FinancialAttemptError).toBe(SharedFinancialAttemptError);
     const key = 'breakery:financial-attempt:v1:https%3A%2F%2Fdev.supabase.co:profile-a:payment:customer-a';

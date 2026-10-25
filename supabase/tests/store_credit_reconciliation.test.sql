@@ -65,7 +65,7 @@ BEGIN
   PERFORM set_config('scr.grant_bal', v_res->>'balance_after', true);
 
   -- 2) CONVERSION 1 000 pts -> +10 000.
-  v_res := convert_loyalty_to_store_credit_v1(v_cust, 1000, NULL);
+  v_res := convert_loyalty_to_store_credit_v2(v_cust, 1000, gen_random_uuid());
 
   -- 3) VENTE 1 payée intégralement en avoir (-20 000).
   v_res := complete_order_with_payment_v28(
