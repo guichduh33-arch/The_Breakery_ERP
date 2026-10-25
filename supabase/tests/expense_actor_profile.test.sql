@@ -204,7 +204,7 @@ VALUES (
 );
 
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e4');
-SELECT pay_expense_v3('a7a70000-0000-0000-0000-0000000000e4', 'transfer');
+SELECT pay_expense_v4('a7a70000-0000-0000-0000-0000000000e4', 'transfer');
 
 SELECT is(
   (SELECT je.created_by FROM journal_entries je
@@ -280,7 +280,7 @@ SELECT is(
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname IN (
      'create_expense_v2', 'submit_expense_v3', 'approve_expense_v5',
-     'reject_expense_v2', 'pay_expense_v3',
+     'reject_expense_v2', 'pay_expense_v4',
      'set_expense_threshold_v3', 'delete_expense_threshold_v2'
    )),
   true,

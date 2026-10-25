@@ -319,7 +319,7 @@ export default function ExpenseDetailPage(): JSX.Element {
         currentUserRole={currentUserRole}
       />
       <RejectDialog  open={rejectOpen}  expenseId={id} onClose={() => setRejectOpen(false)} />
-      <PayDialog     open={payOpen}     expenseId={id} onClose={() => setPayOpen(false)} />
+      <PayDialog open={payOpen} expenseId={id} recordedPaymentMethod={expense.payment_method} onClose={() => setPayOpen(false)} />
     </div>
   );
 }

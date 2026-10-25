@@ -8252,7 +8252,7 @@ export type Database = {
         }
         Returns: Json
       }
-      pay_expense_v3: {
+      pay_expense_v4: {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
       }
