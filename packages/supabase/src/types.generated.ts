@@ -8297,7 +8297,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      receive_purchase_order_v4: {
+      receive_purchase_order_v5: {
         Args: {
           p_idempotency_key?: string
           p_po_id: string
