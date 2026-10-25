@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRevertProduction.ts
 //
-// Calls `revert_production_v2`. ADMIN+ only (server-side gate) — ADR-008 D8 acte
+// Calls `revert_production_v3`. ADMIN+ only (server-side gate) — ADR-008 D8 acte
 // que la permission `inventory.production.delete` suffit, sans PIN.
 //
 // ADR-008 D7 — l'annulation est refusée dès que le stock produit est ressorti
@@ -62,7 +62,7 @@ export function useRevertProduction() {
   const qc = useQueryClient();
   return useMutation<unknown, RevertProductionError, RevertProductionArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('revert_production_v2', {
+      const { data, error } = await supabase.rpc('revert_production_v3', {
         p_production_id: args.productionId,
         p_reason:        args.reason,
       });
