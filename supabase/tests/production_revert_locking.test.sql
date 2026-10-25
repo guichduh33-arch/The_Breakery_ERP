@@ -27,9 +27,9 @@ BEGIN
  (old_product,'REVERT-'||left(old_product::text,8),'Revert old',category,200,0,0,'pcs','finished',true,true,true);
  INSERT INTO public.recipes(product_id,material_id,quantity,unit,is_active)
  VALUES(product,material,0.1,'kg',true),(consumed_product,material,0.1,'kg',true),(old_product,material,0.1,'kg',true);
- production:=(public.record_production_v6(p_product_id:=product,p_quantity_produced:=10,p_section_id:=station)->>'production_id')::uuid;
- consumed:=(public.record_production_v6(p_product_id:=consumed_product,p_quantity_produced:=10,p_section_id:=station)->>'production_id')::uuid;
- old_production:=(public.record_production_v6(p_product_id:=old_product,p_quantity_produced:=10,p_section_id:=station)->>'production_id')::uuid;
+ production:=(public.record_production_v7(p_product_id:=product,p_quantity_produced:=10,p_section_id:=station)->>'production_id')::uuid;
+ consumed:=(public.record_production_v7(p_product_id:=consumed_product,p_quantity_produced:=10,p_section_id:=station)->>'production_id')::uuid;
+ old_production:=(public.record_production_v7(p_product_id:=old_product,p_quantity_produced:=10,p_section_id:=station)->>'production_id')::uuid;
  PERFORM public.record_stock_movement_v1(p_product_id:=consumed_product,p_movement_type:='waste',p_quantity:=-1,p_reason:='Revert consumed fixture');
  UPDATE public.production_records SET production_date=now()-interval '25 hours' WHERE id=old_production;
  result:=public.revert_production_v3(production,'Revert nominal fixture');

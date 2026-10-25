@@ -30,7 +30,7 @@ serve((req) => handleCancelUnpaid(req, {
     return jsonResponse({ error: 'authorization_unavailable' }, 503);
   },
   execute: async (args) => {
-    const result = await getAdminClient().rpc('cancel_unpaid_order_v1', args);
+    const result = await getAdminClient().rpc('cancel_unpaid_order_v2', args);
     if (result.error) console.error('[cancel-unpaid-order] rpc', result.error.code);
     return result;
   },

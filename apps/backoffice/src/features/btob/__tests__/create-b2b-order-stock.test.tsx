@@ -48,7 +48,7 @@ describe('B2B stock validation', () => {
     expect(screen.queryByText(/Only .* in stock/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Create B2B order' }));
     await waitFor(() => { expect(close).toHaveBeenCalledOnce(); });
-    expect(rpc).toHaveBeenCalledWith('create_b2b_order_v7', expect.objectContaining({ p_items: [{ product_id: 'mini', quantity: 2, unit_price: 5000 }] }));
+    expect(rpc).toHaveBeenCalledWith('create_b2b_order_v8', expect.objectContaining({ p_items: [{ product_id: 'mini', quantity: 2, unit_price: 5000 }] }));
   });
 
   it('still blocks a tracked product with insufficient own stock', async () => {

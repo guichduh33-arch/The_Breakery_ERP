@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/components/IngredientAggregatePreview.tsx
 //
-// Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v2.
+// Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v3.
 //
 // Monté par ProductionEntryCard (l'écran de production atteignable). Il vivait
 // auparavant sur la page batch, inatteignable sans taper son URL : l'écran
@@ -76,7 +76,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
       queryKey: ['inv-prod', 'bom-full', row.productId] as const,
       staleTime: 30_000,
       queryFn: async (): Promise<BomLeafRow[]> => {
-        const { data, error } = await supabase.rpc('recipe_bom_full_v2', {
+        const { data, error } = await supabase.rpc('recipe_bom_full_v3', {
           p_product_id: row.productId,
           p_max_depth:  5,
         });

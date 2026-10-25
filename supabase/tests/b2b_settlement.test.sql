@@ -103,7 +103,7 @@ CREATE OR REPLACE FUNCTION pg_temp.mk_invoice(p_cust UUID, p_qty NUMERIC, p_pric
 RETURNS UUID LANGUAGE plpgsql AS $$
 DECLARE v_res JSONB; v_id UUID;
 BEGIN
-  v_res := create_b2b_order_v7(
+  v_res := create_b2b_order_v8(
     p_customer_id => p_cust,
     p_items => jsonb_build_array(jsonb_build_object(
       'product_id','b2b52002-0000-0000-0000-000000000001','quantity',p_qty,'unit_price',p_price)));
@@ -265,7 +265,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   SELECT current_stock INTO v_stock_before FROM products WHERE id='b2b52002-0000-0000-0000-000000000001';
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000006',3,50000,'2026-06-07'::timestamptz);
-  v_res := cancel_b2b_order_v2(v_inv, 'erroneous invoice');
+  v_res := cancel_b2b_order_v3(v_inv, 'erroneous invoice');
   SELECT current_stock INTO v_stock_after FROM products WHERE id='b2b52002-0000-0000-0000-000000000001';
   SELECT total_debit, total_credit INTO v_je_debit, v_je_credit
     FROM journal_entries WHERE reference_type='b2b_order_cancel' AND reference_id=v_inv;
@@ -293,9 +293,9 @@ BEGIN
   PERFORM set_config('breakery.t9_inv', v_inv::text, false);
 END $t9_setup$;
 SELECT throws_ok(
-  format($$ SELECT cancel_b2b_order_v2(%L, 'try cancel allocated') $$, current_setting('breakery.t9_inv')),
+  format($$ SELECT cancel_b2b_order_v3(%L, 'try cancel allocated') $$, current_setting('breakery.t9_inv')),
   'P0011', NULL,
-  'T9: cancel_b2b_order_v2 on an allocated invoice raises P0011 (order_has_payments)');
+  'T9: cancel_b2b_order_v3 on an allocated invoice raises P0011 (order_has_payments)');
 
 -- ===========================================================================
 -- T10 — create_b2b_order over credit limit (TOCTOU gate fires)
@@ -307,7 +307,7 @@ BEGIN
   UPDATE customers SET b2b_current_balance=0 WHERE id='b2b52001-0000-0000-0000-000000000008';
 END $t10_setup$;
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v7(
+  $$ SELECT create_b2b_order_v8(
        p_customer_id=>'b2b52001-0000-0000-0000-000000000008',
        p_items=>jsonb_build_array(jsonb_build_object(
          'product_id','b2b52002-0000-0000-0000-000000000001','quantity',12,'unit_price',50000))) $$,
@@ -397,123 +397,6 @@ SELECT ok(current_setting('breakery.t14')::boolean,
   'T14: anon EXECUTE record_b2b_payment_v4 → insufficient_privilege');
 
 -- ===========================================================================
--- T15 — reliquat refusé (audit lot 1 P0 n°4, finding 1) : record_b2b_payment_v3
---   RAISE P0011 payment_not_fully_allocated si v_remaining > 0 après les deux
---   boucles ; JE + b2b_payments + allocations + décrément de balance annulés
---   EN BLOC. Voir le commentaire d'en-tête pour la reproduction et le choix de
---   plier "raise + 3 preuves de rollback" dans un seul ok() (budget plan(17)).
--- ===========================================================================
-DO $t15$
-DECLARE
-  v_cust UUID := 'b2b52001-0000-0000-0000-000000000015';
-  v_pay_count_before INT; v_pay_count_after INT;
-  v_je_count_before  INT; v_je_count_after  INT;
-  v_balance_after NUMERIC;
-  v_caught_p0011  BOOLEAN := FALSE;
-BEGIN
-  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
-
-  INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
-  VALUES (v_cust, 'PGTAP S52 C15 Remainder', 'b2b', 'PT C15', NULL, 0)
-  ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
-
-  PERFORM pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-12'::timestamptz);
-
-  -- Cache inflation : le chemin d'atteignabilité nommé par l'audit (le guard
-  -- anti-overpayment lit customers.b2b_current_balance, pas Σ outstanding).
-  UPDATE customers SET b2b_current_balance = 150000 WHERE id = v_cust;
-
-  SELECT COUNT(*) INTO v_pay_count_before FROM b2b_payments WHERE customer_id = v_cust;
-  SELECT COUNT(*) INTO v_je_count_before FROM journal_entries
-    WHERE reference_type = 'b2b_payment'
-      AND description = 'B2B payment received from customer ' || v_cust::text;
-
-  BEGIN
-    PERFORM record_b2b_payment_v4(
-      p_customer_id => v_cust, p_amount => 150000, p_method => 'cash'::payment_method);
-  EXCEPTION WHEN OTHERS THEN
-    IF SQLSTATE = 'P0011' THEN
-      v_caught_p0011 := TRUE;
-    ELSE
-      RAISE WARNING 'T15 unexpected error % : %', SQLSTATE, SQLERRM;
-    END IF;
-  END;
-
-  SELECT COUNT(*) INTO v_pay_count_after FROM b2b_payments WHERE customer_id = v_cust;
-  SELECT COUNT(*) INTO v_je_count_after FROM journal_entries
-    WHERE reference_type = 'b2b_payment'
-      AND description = 'B2B payment received from customer ' || v_cust::text;
-  SELECT b2b_current_balance INTO v_balance_after FROM customers WHERE id = v_cust;
-
-  PERFORM set_config('breakery.t15', CASE WHEN
-    v_caught_p0011
-    AND v_pay_count_before = 0 AND v_pay_count_after = 0
-    AND v_je_count_before  = 0 AND v_je_count_after  = 0
-    AND v_balance_after = 150000
-  THEN 'true' ELSE 'false' END, false);
-END $t15$;
-SELECT ok(current_setting('breakery.t15')::boolean,
-  'T15: remainder refused — record_b2b_payment_v4 raises P0011 payment_not_fully_allocated; JE/payment/balance cache all rolled back (audit lot1 P0#4)');
-
--- ===========================================================================
--- T16 — contrat de payload : allocated_total / unallocated (nouvelles clés v3)
--- ===========================================================================
-DO $t16$
-DECLARE
-  v_cust UUID := 'b2b52001-0000-0000-0000-000000000016';
-  v_res JSONB;
-BEGIN
-  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
-
-  INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
-  VALUES (v_cust, 'PGTAP S52 C16 Payload', 'b2b', 'PT C16', NULL, 0)
-  ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
-
-  PERFORM pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-13'::timestamptz);
-  UPDATE customers SET b2b_current_balance = 100000 WHERE id = v_cust;
-
-  v_res := record_b2b_payment_v4(
-    p_customer_id => v_cust, p_amount => 100000, p_method => 'cash'::payment_method);
-
-  PERFORM set_config('breakery.t16', CASE WHEN
-    (v_res->>'allocated_total')::numeric = 100000
-    AND (v_res->>'unallocated')::numeric = 0
-  THEN 'true' ELSE 'false' END, false);
-END $t16$;
-SELECT ok(current_setting('breakery.t16')::boolean,
-  'T16: payload contract — record_b2b_payment_v4 returns allocated_total=100000, unallocated=0 on a clean full settlement');
-
--- ===========================================================================
--- T17 — FIFO sert toujours une facture b2b_pending PARTIELLEMENT réglée
---   (non-régression du prédicat FIFO élargi à status <> 'voided')
--- ===========================================================================
-DO $t17$
-DECLARE
-  v_cust UUID := 'b2b52001-0000-0000-0000-000000000017';
-  v_inv UUID;
-BEGIN
-  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
-
-  INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
-  VALUES (v_cust, 'PGTAP S52 C17 FIFO', 'b2b', 'PT C17', NULL, 0)
-  ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
-
-  v_inv := pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-14'::timestamptz);
-  UPDATE customers SET b2b_current_balance = 100000 WHERE id = v_cust;
-
-  PERFORM record_b2b_payment_v4(
-    p_customer_id => v_cust, p_amount => 40000, p_method => 'cash'::payment_method);
-  PERFORM record_b2b_payment_v4(
-    p_customer_id => v_cust, p_amount => 60000, p_method => 'cash'::payment_method);
-
-  PERFORM set_config('breakery.t17', CASE WHEN
-    (SELECT status FROM orders WHERE id = v_inv) = 'paid'
-    AND (SELECT outstanding FROM view_b2b_invoices WHERE invoice_id = v_inv) = 0
-    AND (SELECT SUM(amount_applied) FROM b2b_payment_allocations WHERE invoice_id = v_inv) = 100000
-  THEN 'true' ELSE 'false' END, false);
-END $t17$;
-SELECT ok(current_setting('breakery.t17')::boolean,
-  'T17: FIFO still serves a partially-settled b2b_pending invoice — 2nd payment (60K, no p_invoice_ids) completes it (status=paid, outstanding=0)');
-
+\ir helpers/b2b_settlement_remainder_checks.sql
 SELECT * FROM finish();
 ROLLBACK;

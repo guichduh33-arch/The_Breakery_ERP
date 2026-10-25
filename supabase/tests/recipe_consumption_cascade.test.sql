@@ -30,25 +30,25 @@ END $$;
 -- 1. Cappuccino cascade : descend dans espresso (non suivi), s'arrête sur
 --    grains + lait (suivis) → exactement 2 lignes.
 SELECT is(
-  (SELECT count(*)::int FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'), 1)),
+  (SELECT count(*)::int FROM _resolve_recipe_consumption_v2((SELECT id FROM _ids WHERE label='cap'), 1)),
   2, 'cappuccino cascade yields exactly the two tracked leaves (beans + milk)');
 
 -- 2. La quantité de grains est convertie/positive (18 g pour 1 cappuccino).
 SELECT is(
-  (SELECT qty_base FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'), 1)
+  (SELECT qty_base FROM _resolve_recipe_consumption_v2((SELECT id FROM _ids WHERE label='cap'), 1)
      WHERE product_id = (SELECT id FROM _ids WHERE label='beans')),
   18::numeric, 'beans consumption is 18 g per cappuccino');
 
 -- 3. Quand l'espresso devient suivi, la cascade s'arrête sur lui (présent).
 UPDATE products SET track_inventory = true WHERE id = (SELECT id FROM _ids WHERE label='esp');
 SELECT ok(
-  EXISTS(SELECT 1 FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'),1)
+  EXISTS(SELECT 1 FROM _resolve_recipe_consumption_v2((SELECT id FROM _ids WHERE label='cap'),1)
            WHERE product_id = (SELECT id FROM _ids WHERE label='esp')),
   'stops at espresso once it becomes tracked (espresso emitted)');
 
 -- 4. ... et ne descend plus jusqu'aux grains.
 SELECT ok(
-  NOT EXISTS(SELECT 1 FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'),1)
+  NOT EXISTS(SELECT 1 FROM _resolve_recipe_consumption_v2((SELECT id FROM _ids WHERE label='cap'),1)
            WHERE product_id = (SELECT id FROM _ids WHERE label='beans')),
   'no longer descends to beans once espresso is tracked');
 
@@ -60,7 +60,7 @@ UPDATE recipes SET quantity = 0.15, unit = 'lt'
  WHERE product_id = (SELECT id FROM _ids WHERE label='cap')
    AND material_id = (SELECT id FROM _ids WHERE label='milk');
 SELECT is(
-  (SELECT qty_base FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'), 1)
+  (SELECT qty_base FROM _resolve_recipe_consumption_v2((SELECT id FROM _ids WHERE label='cap'), 1)
      WHERE product_id = (SELECT id FROM _ids WHERE label='milk')),
   150::numeric, 'convertible unit is converted: 0.15 lt -> 150 ml');
 
@@ -77,7 +77,7 @@ BEGIN
     VALUES ((SELECT id FROM _ids WHERE label='cap'), v_cupmat, 10, 'g');
 END $$;
 SELECT throws_ok(
-  $$ SELECT * FROM _resolve_recipe_consumption_v1((SELECT id FROM _ids WHERE label='cap'), 1) $$,
+  $$ SELECT * FROM _resolve_recipe_consumption_v2((SELECT id FROM _ids WHERE label='cap'), 1) $$,
   'P0002', NULL, 'unconvertible unit pair raises instead of deducting raw qty');
 
 SELECT * FROM finish();

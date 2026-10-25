@@ -2941,6 +2941,7 @@ export type Database = {
           paid_at: string | null
           pickup_date: string | null
           promotion_total: number
+          recipe_consumption_revision: number | null
           sent_to_kitchen_at: string | null
           served_by: string | null
           session_id: string | null
@@ -2980,6 +2981,7 @@ export type Database = {
           paid_at?: string | null
           pickup_date?: string | null
           promotion_total?: number
+          recipe_consumption_revision?: number | null
           sent_to_kitchen_at?: string | null
           served_by?: string | null
           session_id?: string | null
@@ -3019,6 +3021,7 @@ export type Database = {
           paid_at?: string | null
           pickup_date?: string | null
           promotion_total?: number
+          recipe_consumption_revision?: number | null
           sent_to_kitchen_at?: string | null
           served_by?: string | null
           session_id?: string | null
@@ -6418,7 +6421,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      _record_order_item_waste_v1: {
+      _record_order_item_waste_v2: {
         Args: {
           p_combo_components: Json
           p_created_by: string
@@ -6500,7 +6503,28 @@ export type Database = {
         Args: { p_line_qty: number; p_modifiers: Json; p_product_id: string }
         Returns: Json
       }
-      _resolve_recipe_consumption_v1: {
+      _resolve_order_recipe_restoration_v1: {
+        Args: {
+          p_max_depth?: number
+          p_order_id: string
+          p_product_id: string
+          p_qty: number
+        }
+        Returns: {
+          product_id: string
+          qty_base: number
+          unit: string
+        }[]
+      }
+      _resolve_recipe_consumption_legacy_v1: {
+        Args: { p_max_depth?: number; p_product_id: string; p_qty: number }
+        Returns: {
+          product_id: string
+          qty_base: number
+          unit: string
+        }[]
+      }
+      _resolve_recipe_consumption_v2: {
         Args: { p_max_depth?: number; p_product_id: string; p_qty: number }
         Returns: {
           product_id: string
@@ -6651,7 +6675,7 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
-      cancel_b2b_order_v2: {
+      cancel_b2b_order_v3: {
         Args: {
           p_idempotency_key?: string
           p_order_id: string
@@ -6663,7 +6687,7 @@ export type Database = {
         Args: { p_count_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_order_item_rpc_v6: {
+      cancel_order_item_rpc_v7: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -6678,7 +6702,7 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_unpaid_order_v1: {
+      cancel_unpaid_order_v2: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -6728,6 +6752,7 @@ export type Database = {
           paid_at: string | null
           pickup_date: string | null
           promotion_total: number
+          recipe_consumption_revision: number | null
           sent_to_kitchen_at: string | null
           served_by: string | null
           session_id: string | null
@@ -6807,7 +6832,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v28: {
+      complete_order_with_payment_v29: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6858,7 +6883,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v7: {
+      create_b2b_order_v8: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -8208,7 +8233,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v20: {
+      pay_existing_order_v21: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8276,6 +8301,7 @@ export type Database = {
           paid_at: string | null
           pickup_date: string | null
           promotion_total: number
+          recipe_consumption_revision: number | null
           sent_to_kitchen_at: string | null
           served_by: string | null
           session_id: string | null
@@ -8305,7 +8331,7 @@ export type Database = {
         }
         Returns: Json
       }
-      recipe_bom_full_v2: {
+      recipe_bom_full_v3: {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: {
           cost_price: number
@@ -8380,7 +8406,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v8: {
+      record_batch_production_v9: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8417,7 +8443,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_kitchen_production_v1: { Args: { p_request: Json }; Returns: Json }
+      record_kitchen_production_v2: { Args: { p_request: Json }; Returns: Json }
       record_pin_failure_v1: {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
@@ -8436,7 +8462,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v6: {
+      record_production_v7: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
@@ -8489,7 +8515,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v12: {
+      refund_order_rpc_v13: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -8913,7 +8939,7 @@ export type Database = {
           code: string
         }[]
       }
-      update_order_item_qty_v6: {
+      update_order_item_qty_v7: {
         Args: {
           p_auth_id?: string
           p_idempotency_key: string
@@ -9070,7 +9096,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v11: {
+      void_order_rpc_v12: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

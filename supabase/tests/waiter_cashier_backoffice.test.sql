@@ -70,7 +70,7 @@ SELECT lives_ok(format($q$SELECT create_tablet_order_v10(gen_random_uuid(),%L::u
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.cashier_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.cashier_claims'),true);
 SELECT is((SELECT count(*)::int FROM order_items WHERE order_id=current_setting('wa.order')::uuid),2,'caisse voit les deux tournées');
-SELECT lives_ok(format($q$SELECT pay_existing_order_v20(p_order_id:=%L::uuid,p_idempotency_key:=gen_random_uuid(),
+SELECT lives_ok(format($q$SELECT pay_existing_order_v21(p_order_id:=%L::uuid,p_idempotency_key:=gen_random_uuid(),
  p_payments:=jsonb_build_array(jsonb_build_object('method','cash','amount',(SELECT sum(line_total) FROM order_items WHERE order_id=%L::uuid),
  'cash_received',(SELECT sum(line_total) FROM order_items WHERE order_id=%L::uuid))))$q$,
  current_setting('wa.order'),current_setting('wa.order'),current_setting('wa.order')),'paiement autorisé en caisse');

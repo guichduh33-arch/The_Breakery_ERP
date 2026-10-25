@@ -47,14 +47,14 @@ BEGIN
   SELECT current_stock INTO v_stock_before FROM products      WHERE id=v_prod;
   SELECT count(*)      INTO v_dm_before    FROM display_movements WHERE product_id=v_prod;
 
-  v_res := create_b2b_order_v7(v_cust,
+  v_res := create_b2b_order_v8(v_cust,
              jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 2)),
              NULL, NULL, gen_random_uuid());
   v_order := (v_res->>'order_id')::uuid;
 
   SELECT quantity INTO v_disp_sold FROM display_stock WHERE product_id=v_prod;
 
-  PERFORM cancel_b2b_order_v2(v_order, 'pgTAP display restore check', gen_random_uuid());
+  PERFORM cancel_b2b_order_v3(v_order, 'pgTAP display restore check', gen_random_uuid());
 
   SELECT quantity      INTO v_disp_after  FROM display_stock WHERE product_id=v_prod;
   SELECT current_stock INTO v_stock_after FROM products      WHERE id=v_prod;

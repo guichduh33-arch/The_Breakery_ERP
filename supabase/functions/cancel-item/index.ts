@@ -9,7 +9,7 @@
 // S55 — idempotency: reads `x-idempotency-key` header, relays to the cancel RPC.
 // ADR-009 déc. 3 — cancel is allowed on draft AND pending_payment orders
 // (fired-but-unpaid counter orders), item not served.
-// ADR-010 D4 — calls cancel_order_item_rpc_v6: cancelling a kitchen-sent item
+// ADR-010 D4 — calls cancel_order_item_rpc_v7: cancelling a kitchen-sent item
 // (is_locked = true) requires a waste declaration — `waste_qty` (0..line qty,
 // authorizer's judgment) travels in the body and is forwarded as p_waste_qty;
 // the RPC refuses a locked cancel without it. Unlocked items: ignored.
@@ -122,7 +122,7 @@ serve(async (req) => {
   // (version courante = le call-site .rpc() ci-dessous, les commentaires
   // historiques mentent).
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('cancel_order_item_rpc_v6', {
+  const { data, error } = await admin.rpc('cancel_order_item_rpc_v7', {
     p_order_item_id:       body.order_item_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,

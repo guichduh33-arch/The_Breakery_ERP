@@ -96,7 +96,7 @@ END $$;
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v28(
+    PERFORM complete_order_with_payment_v29(
       p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,
@@ -117,7 +117,7 @@ SELECT ok(current_setting('a12d1.t1')::boolean,
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v28(
+    PERFORM complete_order_with_payment_v29(
       p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,
@@ -135,7 +135,7 @@ SELECT ok(current_setting('a12d1.t2')::boolean,
 -- T3 : la variante à la place du parent → vente OK (la garde ne sur-bloque pas).
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v28(
+  v_env := complete_order_with_payment_v29(
     p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,

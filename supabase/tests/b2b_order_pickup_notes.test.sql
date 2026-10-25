@@ -35,7 +35,7 @@ BEGIN
   IF v_prod IS NULL THEN RAISE EXCEPTION 'Aucun produit stocké disponible'; END IF;
 
   -- Saisie complète, avec des espaces autour de la note comme en frappe réelle.
-  v_res := create_b2b_order_v7(v_cust,
+  v_res := create_b2b_order_v8(v_cust,
              jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 1)),
              '  PO-4711 pickup at 9am  ', DATE '2026-09-20', gen_random_uuid());
   SELECT pickup_date, notes INTO v_o FROM orders WHERE id=(v_res->>'order_id')::uuid;
@@ -43,7 +43,7 @@ BEGIN
   PERFORM set_config('breakery.nt', COALESCE(v_o.notes,'NULL'), true);
 
   -- Note faite d'espaces : elle ne doit pas devenir une chaîne vide en base.
-  v_res := create_b2b_order_v7(v_cust,
+  v_res := create_b2b_order_v8(v_cust,
              jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 1)),
              '   ', NULL, gen_random_uuid());
   SELECT notes INTO v_o FROM orders WHERE id=(v_res->>'order_id')::uuid;

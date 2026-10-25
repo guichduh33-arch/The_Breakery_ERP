@@ -1,5 +1,5 @@
 // supabase/tests/functions/recipe-bom-full.test.ts
-// Session 17 / Phase 1.D — Live integration smoke test for recipe_bom_full_v2.
+// Session 17 / Phase 1.D — Live integration smoke test for recipe_bom_full_v3.
 //
 // Coverage:
 //   - Happy path: flat recipe (Brioche BRD-004, 7 leaf materials) returns
@@ -90,7 +90,7 @@ async function cleanupAll(admin: SupabaseClient) {
   await admin.from('products').delete().in('id', ids);
 }
 
-describeLive('recipe_bom_full_v2 — live integration', () => {
+describeLive('recipe_bom_full_v3 — live integration', () => {
   let managerToken: string;
   let admin: SupabaseClient;
 
@@ -105,7 +105,7 @@ describeLive('recipe_bom_full_v2 — live integration', () => {
 
   it('flat recipe (Brioche): returns leaf materials with correct shape', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v3', {
       p_product_id: BRIOCHE_ID,
       p_max_depth: 5,
     });
@@ -132,7 +132,7 @@ describeLive('recipe_bom_full_v2 — live integration', () => {
 
   it('output is sorted alphabetically by material_name', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v3', {
       p_product_id: BRIOCHE_ID,
       p_max_depth: 5,
     });
@@ -173,7 +173,7 @@ describeLive('recipe_bom_full_v2 — live integration', () => {
       p_unit: 'pcs', p_notes: null,
     });
 
-    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v3', {
       p_product_id: top.id,
       p_max_depth: 5,
     });
@@ -201,7 +201,7 @@ describeLive('recipe_bom_full_v2 — live integration', () => {
 
   it('invalid p_max_depth returns an error', async () => {
     const mgr = jwtClient(managerToken);
-    const { error } = await mgr.rpc('recipe_bom_full_v2', {
+    const { error } = await mgr.rpc('recipe_bom_full_v3', {
       p_product_id: BRIOCHE_ID,
       p_max_depth: 0,
     });
@@ -215,7 +215,7 @@ describeLive('recipe_bom_full_v2 — live integration', () => {
     allSkus.push(bare.sku);
 
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v3', {
       p_product_id: bare.id,
       p_max_depth: 5,
     });

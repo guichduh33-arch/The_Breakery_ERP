@@ -68,7 +68,7 @@ BEGIN
   v_res := convert_loyalty_to_store_credit_v2(v_cust, 1000, gen_random_uuid());
 
   -- 3) VENTE 1 payée intégralement en avoir (-20 000).
-  v_res := complete_order_with_payment_v28(
+  v_res := complete_order_with_payment_v29(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -79,7 +79,7 @@ BEGIN
 
   -- 4) REFUND intégral de la vente 1, émis en avoir (+20 000).
   SELECT id, quantity INTO v_oi, v_qty FROM order_items WHERE order_id = v_order1 LIMIT 1;
-  v_res := refund_order_rpc_v12(
+  v_res := refund_order_rpc_v13(
     v_order1,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', v_qty)),
     jsonb_build_array(jsonb_build_object('method', 'store_credit', 'amount', 20000)),
@@ -88,7 +88,7 @@ BEGIN
   PERFORM set_config('scr.refund_bal', v_res->>'store_credit_balance_after', true);
 
   -- 5) VENTE 2 payée en avoir (-20 000) puis VOID (restitution +20 000).
-  v_res := complete_order_with_payment_v28(
+  v_res := complete_order_with_payment_v29(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -96,7 +96,7 @@ BEGIN
     p_payment := jsonb_build_object('method','store_credit','amount',20000),
     p_customer_id := v_cust);
   v_order2 := (v_res->>'order_id')::uuid;
-  v_res := void_order_rpc_v11(v_order2, 'reconciliation pgTAP void', v_prof, v_auth, NULL);
+  v_res := void_order_rpc_v12(v_order2, 'reconciliation pgTAP void', v_prof, v_auth, NULL);
 
   PERFORM set_config('scr.cust',   v_cust::text,   true);
   PERFORM set_config('scr.nonce',  v_nonce::text,  true);
