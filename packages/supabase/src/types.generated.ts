@@ -2343,6 +2343,51 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_operation_results: {
+        Row: {
+          actor_id: string
+          created_at: string
+          customer_id: string
+          idempotency_key: string
+          operation: string
+          payload: Json
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          customer_id: string
+          idempotency_key: string
+          operation: string
+          payload: Json
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          customer_id?: string
+          idempotency_key?: string
+          operation?: string
+          payload?: Json
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_operation_results_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_operation_results_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_transactions: {
         Row: {
           created_at: string
@@ -6350,6 +6395,16 @@ export type Database = {
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
+      _read_loyalty_operation_v1: {
+        Args: {
+          p_actor: string
+          p_customer: string
+          p_key: string
+          p_operation: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
       _recalc_order_totals: { Args: { p_order_id: string }; Returns: undefined }
       _record_cancel_waste_stock_v1: {
         Args: {
@@ -6546,13 +6601,14 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_loyalty_points_v2: {
-        Args: { p_customer_id: string; p_delta: number; p_reason: string }
-        Returns: {
-          new_balance: number
-          new_lifetime: number
-          txn_id: string
-        }[]
+      adjust_loyalty_points_v3: {
+        Args: {
+          p_customer_id: string
+          p_delta: number
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
       }
       adjust_stock_v2: {
         Args: {
@@ -6777,10 +6833,10 @@ export type Database = {
         Args: { p_product_id: string; p_target_flour_qty: number }
         Returns: Json
       }
-      convert_loyalty_to_store_credit_v1: {
+      convert_loyalty_to_store_credit_v2: {
         Args: {
           p_customer_id: string
-          p_idempotency_key?: string
+          p_idempotency_key: string
           p_points: number
         }
         Returns: Json
