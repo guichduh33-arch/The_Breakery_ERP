@@ -6582,7 +6582,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_b2b_balance_v2: {
+      adjust_b2b_balance_v3: {
         Args: {
           p_customer_id: string
           p_delta: number
@@ -6619,7 +6619,7 @@ export type Database = {
         }
         Returns: Json
       }
-      approve_expense_v4: {
+      approve_expense_v5: {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
       }
@@ -6749,15 +6749,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      close_fiscal_period_v1: {
+      close_fiscal_period_v2: {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
       }
-      close_fiscal_year_v2: {
+      close_fiscal_year_v3: {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v9: {
+      close_shift_v10: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number
@@ -6953,7 +6953,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_manual_je_v1: {
+      create_manual_je_v2: {
         Args: {
           p_description: string
           p_entry_date: string
@@ -8297,7 +8297,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      receive_purchase_order_v4: {
+      receive_purchase_order_v5: {
         Args: {
           p_idempotency_key?: string
           p_po_id: string
@@ -8780,7 +8780,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
-      sign_zreport_v2: {
+      sign_zreport_v3: {
         Args: { p_manager_pin: string; p_zreport_id: string }
         Returns: Json
       }
@@ -9040,7 +9040,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      upsert_product_modifiers_v2: {
+      upsert_product_modifiers_v3: {
         Args: { p_groups: Json; p_product_id: string }
         Returns: Json
       }
@@ -9062,6 +9062,10 @@ export type Database = {
         Returns: Json
       }
       validate_opname_v2: { Args: { p_count_id: string }; Returns: Json }
+      verify_login_pin_v1: {
+        Args: { p_ip: string; p_pin: string; p_user_id: string }
+        Returns: Json
+      }
       verify_user_pin: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
@@ -9076,7 +9080,7 @@ export type Database = {
         }
         Returns: Json
       }
-      void_zreport_v2: {
+      void_zreport_v3: {
         Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }

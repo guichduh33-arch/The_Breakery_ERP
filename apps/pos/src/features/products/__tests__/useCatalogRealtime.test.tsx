@@ -111,7 +111,7 @@ describe('useCatalogRealtime — query invalidation', () => {
     return invalidateSpy;
   }
 
-  it('a products event invalidates the grid + variant-picker keys only', () => {
+  it('a products event refreshes products, variants, combos and modifiers', () => {
     const invalidateSpy = mountWithSpy();
     const handler = handlersRef.current.get('products');
     expect(handler).toBeDefined();
@@ -120,6 +120,8 @@ describe('useCatalogRealtime — query invalidation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['display', 'showcase-products'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['combo-config'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['product-modifiers'] });
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['categories'] });
   });
 
@@ -131,6 +133,8 @@ describe('useCatalogRealtime — query invalidation', () => {
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['categories'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['combo-config'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['product-modifiers'] });
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
   });
 
@@ -143,6 +147,8 @@ describe('useCatalogRealtime — query invalidation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['categories'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['display', 'showcase-products'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['combo-config'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['product-modifiers'] });
   });
 
   it('un signal privé de suppression rafraîchit catalogue et variantes sans lire de payload métier', () => {
@@ -152,6 +158,8 @@ describe('useCatalogRealtime — query invalidation', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['categories'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['combo-config'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['product-modifiers'] });
   });
   it('a non-SUBSCRIBED status invalidates nothing', () => {
     const invalidateSpy = mountWithSpy();

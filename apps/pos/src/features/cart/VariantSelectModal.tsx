@@ -10,9 +10,8 @@
 // UX shortcut: if the parent has exactly one active variant, the modal
 // auto-picks it on mount (no useless extra tap).
 //
-// Disabled state: a tile is disabled when the variant is inactive OR (it
-// tracks stock AND current_stock ≤ 0). Mirrors the soft-out behaviour of
-// `ProductCard` for the main grid.
+// Vendabilité identique à la grille : track_inventory et compteur vitrine
+// prioritaire, avec repli sur le stock global pour les anciens snapshots.
 //
 // ADR-011 §3 — the auto-pick shortcut is gated on the SAME sellability check
 // as the tiles: a lone sold-out variant used to be auto-added to the cart,
@@ -29,6 +28,7 @@ import {
   DialogTitle,
 } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
+import { isSellable } from '@breakery/domain';
 import {
   useProductVariants,
   type POSVariantRow,
@@ -42,7 +42,8 @@ export interface VariantSelectModalProps {
 }
 
 function isVariantDisabled(v: POSVariantRow): boolean {
-  return !v.is_active || (v.deduct_stock && (v.current_stock ?? 0) <= 0);
+  // Repli legacy seulement : les anciens snapshots ne portaient que deduct_stock.
+  return !v.is_active || !isSellable(v.track_inventory ?? v.deduct_stock, v.display_stock?.quantity ?? null, v.current_stock ?? 0);
 }
 
 export function VariantSelectModal({
@@ -102,9 +103,9 @@ export function VariantSelectModal({
                 <div className="text-sm font-mono">
                   {formatIdr(v.retail_price)}
                 </div>
-                {v.deduct_stock && (
+                {(v.track_inventory ?? v.deduct_stock) && (
                   <div className="text-xs text-text-muted">
-                    stock {v.current_stock ?? 0}
+                    stock {v.display_stock?.quantity ?? v.current_stock ?? 0}
                   </div>
                 )}
               </button>

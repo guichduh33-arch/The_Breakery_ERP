@@ -55,10 +55,15 @@ export function useCloseFiscalYear() {
   const qc = useQueryClient();
   return useMutation<CloseFiscalYearResult, CloseFiscalYearError, CloseFiscalYearArgs>({
     mutationFn: async ({ fiscalYear, managerPin }) => {
-      const { data, error } = await supabase.rpc('close_fiscal_year_v2', {
+      const { data, error } = await supabase.rpc('close_fiscal_year_v3', {
         p_fiscal_year: fiscalYear,
         p_manager_pin: managerPin,
       });
+      // Un refus retourné permet au serveur de commiter le compteur PIN.
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
+        const message = typeof data.error === 'string' ? data.error : 'invalid_pin';
+        throw new CloseFiscalYearError(classifyCloseFiscalYearError(message), message);
+      }
       if (error !== null) {
         throw new CloseFiscalYearError(classifyCloseFiscalYearError(error.message), error.message);
       }

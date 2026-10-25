@@ -16,11 +16,15 @@ export function useCloseFiscalPeriod() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, CloseFiscalPeriodArgs>({
     mutationFn: async ({ periodId, managerPin, lock }) => {
-      const { data, error } = await supabase.rpc('close_fiscal_period_v1', {
+      const { data, error } = await supabase.rpc('close_fiscal_period_v2', {
         p_period_id:   periodId,
         p_manager_pin: managerPin,
         p_lock:        lock,
       });
+      // Un refus retourné permet au serveur de commiter le compteur PIN.
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
+      }
       if (error !== null) throw new Error(error.message);
       return data;
     },

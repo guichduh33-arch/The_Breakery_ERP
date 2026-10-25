@@ -2,13 +2,8 @@
 -- S38 Wave A Task A3 (SEC-06) — _verify_pin_with_lockout + record_pin_failure_v1 + gate P0004.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 --
--- NOTE (DEV-S38-A-02) : on n'asserte PAS « un PIN faux via sign_zreport_v2 incrémente le
--- compteur » — c'est FAUX par construction : PostgREST enveloppe l'appel dans une transaction
--- unique, le RAISE P0003 de la RPC rollback l'incrément du helper. Les garanties réelles
--- testées ici : (1) le helper standalone compte + lock (politique 5/15min), (2) le gate
--- locked_until → P0004 est effectif DANS les RPCs (lecture seule, survit au raise),
--- (3) record_pin_failure_v1 (transaction séparée, EF service_role) compte + lock,
--- (4) REVOKEs, (5) non-régression du happy path.
+-- Les refus métier JSON conservent désormais les compteurs. Ce fichier garde
+-- les preuves du helper, du verrou actif, des audits et du retour au succès.
 BEGIN;
 SELECT plan(12);
 
@@ -98,13 +93,13 @@ SELECT is(
   (SELECT failed_login_attempts FROM user_profiles WHERE id = current_setting('breakery.v_prof')::uuid),
   0, 'T5 success resets failed_login_attempts to 0');
 
--- T6 : gate effectif DANS la RPC — caller locké → sign_zreport_v2 raise P0004 (même avec bon PIN)
+-- T6 : gate effectif DANS la RPC — caller locké → sign_zreport_v3 raise P0004 (même avec bon PIN)
 DO $$ BEGIN
   UPDATE user_profiles SET locked_until = now() + interval '10 minutes'
    WHERE id = current_setting('breakery.v_prof')::uuid;
 END $$;
 SELECT throws_ok(
-  $$ SELECT sign_zreport_v2(current_setting('breakery.v_zr')::uuid, '424242') $$,
+  $$ SELECT sign_zreport_v3(current_setting('breakery.v_zr')::uuid, '424242') $$,
   'P0004', NULL, 'T6 locked caller cannot sign zreport even with correct PIN');
 
 -- T7 : REVOKEs — helper + record_pin_failure_v1 inaccessibles aux rôles applicatifs
@@ -134,7 +129,7 @@ DO $$ DECLARE v_res JSONB;
 BEGIN
   UPDATE user_profiles SET failed_login_attempts = 0, locked_until = NULL
    WHERE id = current_setting('breakery.v_prof')::uuid;
-  v_res := sign_zreport_v2(current_setting('breakery.v_zr')::uuid, '424242');
+  v_res := sign_zreport_v3(current_setting('breakery.v_zr')::uuid, '424242');
   PERFORM set_config('breakery.t9_ok', ((v_res->>'status') = 'signed')::text, true);
 END $$;
 SELECT is(current_setting('breakery.t9_ok'), 'true', 'T9 correct PIN signs zreport after unlock');

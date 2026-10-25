@@ -31,7 +31,7 @@ function renderModal(onClose = vi.fn()) {
 }
 
 describe('AdjustB2bBalanceModal', () => {
-  it('submits delta + reason + PIN to adjust_b2b_balance_v2 with an idempotency key', async () => {
+  it('submits delta + reason + PIN to adjust_b2b_balance_v3 with an idempotency key', async () => {
     renderModal();
     fireEvent.change(screen.getByLabelText(/delta/i), { target: { value: '-50000' } });
     fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'write-off drift' } });
@@ -39,7 +39,7 @@ describe('AdjustB2bBalanceModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /adjust balance/i }));
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
     const [fn, args] = rpcMock.mock.calls[0] as unknown as [string, Record<string, unknown>];
-    expect(fn).toBe('adjust_b2b_balance_v2');
+    expect(fn).toBe('adjust_b2b_balance_v3');
     expect(args.p_customer_id).toBe('b1');
     expect(args.p_delta).toBe(-50000);
     expect(args.p_reason).toBe('write-off drift');

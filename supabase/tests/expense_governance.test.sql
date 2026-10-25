@@ -82,7 +82,7 @@ SELECT submit_expense_v3('eeeeeeee-0000-0000-0000-000000000003');
 
 -- Approve T3 step 1 ONLY as EMP000 (SUPER_ADMIN) — step 2 left pending for T6/T7/T8
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000003', '123456');
+SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000003', '123456');
 
 -- Category-specific threshold [100k, 1M) 2 steps (used by T9/T11/T15/T17)
 SELECT set_expense_threshold_v3(
@@ -119,7 +119,7 @@ VALUES ('eeeeeeee-0000-0000-0000-000000000016', 'EXP-GOV28-016', 'aaaaaaaa-0000-
 -- required_approval_steps_snapshot intentionally NULL (legacy pre-S28)
 
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000016', '123456');
+SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000016', '123456');
 
 -- ============================================================================
 SELECT plan(20);
@@ -150,7 +150,7 @@ SELECT is(
 -- T4: SOD creator block (creator = EMP003, approves own T2 expense)
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
 SELECT throws_ok(
-  $$ SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000002', '123456') $$,
+  $$ SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000002', '123456') $$,
   'P0001', NULL,
   'T4 : SOD creator block → P0001 sod_creator_block'
 );
@@ -158,7 +158,7 @@ SELECT throws_ok(
 -- T5: CASHIER (EMP001, auth _002) missing expenses.approve
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
 SELECT throws_ok(
-  $$ SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000002', '123456') $$,
+  $$ SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000002', '123456') $$,
   '42501', NULL,
   'T5 : CASHIER missing expenses.approve → 42501'
 );
@@ -173,14 +173,14 @@ SELECT is(
 -- T7: same EMP000 tries to approve T3 step 2 → sod_already_approved
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
 SELECT throws_ok(
-  $$ SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000003', '123456') $$,
+  $$ SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000003', '123456') $$,
   'P0001', NULL,
   'T7 : same approver cannot approve twice → P0001 sod_already_approved'
 );
 
 -- T8: different ADMIN (bbbbbbbb-...) approves T3 step 2 → status=approved
 SET LOCAL "request.jwt.claims" = '{"sub":"bbbbbbbb-0000-0000-0000-000000000001"}';
-SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000003', '123456');
+SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000003', '123456');
 
 SELECT is(
   (SELECT status FROM expenses WHERE id = 'eeeeeeee-0000-0000-0000-000000000003'),
@@ -303,25 +303,22 @@ SELECT ok(
 SELECT is(
   (SELECT bool_and(NOT has_function_privilege('anon', oid, 'EXECUTE'))
    FROM pg_proc
-   WHERE proname IN ('submit_expense_v3', 'approve_expense_v4',
+   WHERE proname IN ('submit_expense_v3', 'approve_expense_v5',
                      'set_expense_threshold_v3', 'delete_expense_threshold_v2')),
   true,
   'T18 : anon REVOKEd on all 4 S28 RPCs (approve now v4)'
 );
 
--- T19: approve_expense_v4 with a WRONG manager PIN → P0003 invalid_pin (H1 fix).
+-- T19: approve_expense_v5 with a WRONG manager PIN → returned invalid_pin (H1 fix).
 -- SUPER_ADMIN (_001) has expenses.approve and is not the creator of the 1-step
 -- expense eeee…02, so the PIN gate is reached and rejects before any state change.
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
-SELECT throws_ok(
-  $$ SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000002', '999999') $$,
-  'P0003', NULL,
-  'T19 : wrong manager PIN → P0003 invalid_pin'
-);
+SELECT is(approve_expense_v5('eeeeeeee-0000-0000-0000-000000000002', '999999')->>'error',
+  'invalid_pin','T19 : wrong manager PIN is returned and counted');
 
--- T20: approve_expense_v4 with NULL manager PIN → P0001 pin_required (H1 fix).
+-- T20: approve_expense_v5 with NULL manager PIN → P0001 pin_required (H1 fix).
 SELECT throws_ok(
-  $$ SELECT approve_expense_v4('eeeeeeee-0000-0000-0000-000000000002', NULL) $$,
+  $$ SELECT approve_expense_v5('eeeeeeee-0000-0000-0000-000000000002', NULL) $$,
   'P0001', NULL,
   'T20 : missing manager PIN → P0001 pin_required'
 );

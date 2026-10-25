@@ -40,7 +40,7 @@ BEGIN
     VALUES(r,'REFC-'||r::text,o,s,5000,0,'Regression void mirror',p,p,true);
   INSERT INTO refund_payments(refund_id,method,amount) VALUES(r,'cash',5000);
   PERFORM set_config('refclose.session',s::text,true);
-  INSERT INTO refund_close_result SELECT close_shift_v9(s,11000,p_counted_qris:=11000,p_counted_card:=11000);
+  INSERT INTO refund_close_result SELECT close_shift_v10(s,11000,p_counted_qris:=11000,p_counted_card:=11000);
 END $fixture$;
 SELECT is((SELECT (result->>'expected_cash')::numeric FROM refund_close_result),11000::numeric,'Cash net of partial refund; store credit and void excluded');
 SELECT is((SELECT (result->>'expected_qris')::numeric FROM refund_close_result),11000::numeric,'QRIS net of partial refund');
@@ -53,8 +53,8 @@ SELECT is((SELECT (snapshot#>>'{totals_by_payment_method,cash}')::numeric FROM z
 SELECT is((SELECT (snapshot#>>'{reconciliation,qris,expected}')::numeric FROM z_reports WHERE shift_id=current_setting('refclose.session')::uuid),11000::numeric,'Snapshot QRIS agrees');
 SELECT is((SELECT (snapshot#>>'{reconciliation,card,expected}')::numeric FROM z_reports WHERE shift_id=current_setting('refclose.session')::uuid),11000::numeric,'Snapshot card agrees');
 SELECT is((SELECT (snapshot->>'refunds_total')::numeric FROM z_reports WHERE shift_id=current_setting('refclose.session')::uuid),34000::numeric,'Refund total excludes full-void mirror');
-SELECT ok((close_shift_v9(current_setting('refclose.session')::uuid,11000)->>'idempotent_replay')::boolean,'Retry does not close twice');
-SELECT ok(NOT has_function_privilege('anon','public.close_shift_v9(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb)','EXECUTE'),'Anon denied');
+SELECT ok((close_shift_v10(current_setting('refclose.session')::uuid,11000)->>'idempotent_replay')::boolean,'Retry does not close twice');
+SELECT ok(NOT has_function_privilege('anon','public.close_shift_v10(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb)','EXECUTE'),'Anon denied');
 SELECT ok(to_regprocedure('public.close_shift_v8(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb)') IS NULL,'Published previous version removed');
 SELECT * FROM finish();
 ROLLBACK;

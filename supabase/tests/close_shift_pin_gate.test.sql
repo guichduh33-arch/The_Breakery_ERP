@@ -1,22 +1,12 @@
 -- supabase/tests/close_shift_pin_gate.test.sql
--- S66 (12 D2.1) — close_shift_v9 : approbation manager (approbateur désigné +
+-- S66 (12 D2.1) — close_shift_v10 : approbation manager (approbateur désigné +
 -- PIN 6 chiffres) exigée serveur au-delà des seuils
 -- business_config.shift_variance_pin_threshold_abs/pct (défauts 200 000 / 2 %).
 --   T1  : variance dans la bande « note seule » (1 %) + note, sans approbateur -> OK
 --   T2  : variance sur-seuil PIN + note, sans approbateur -> pin_approval_required (P0001)
 --   T3  : approbateur sans shift.variance.approve (cashier) -> approver_not_authorized (P0003)
---   T4  : PIN au mauvais format (pas 6 chiffres) -> invalid_pin (P0003)…
---   T4b : … SANS consommer de tentative (miroir manager-pin.ts : un typo de
---         format n'est pas un signal brute-force)
---   T5  : PIN faux -> invalid_pin (P0003)…
---   T5b : … l'incrément de failed_login_attempts est ANNULÉ par l'exception
---         (⚠️ FINDING F-1 S66, pré-existant S38 : pour TOUS les RPCs PIN-in-arg
---         qui RAISE après _verify_pin_with_lockout — void_zreport_v2,
---         sign_zreport_v2, etc. — le rollback de la transaction emporte le
---         compteur ; seul le chemin EF (auth-verify-pin / manager-pin.ts)
---         persiste les échecs. Le helper reste utile : il honore locked_until
---         posé par le chemin EF. Fix envisageable = comptage via EF ou
---         transaction autonome — hors périmètre S66, dette D-x INDEX)
+--   T4  : format incorrect -> refus JSON, aucune tentative consommée.
+--   T5  : PIN faux -> refus JSON, tentative conservée.
 --   T6  : approbateur légitime + bon PIN -> clôture OK
 --   T6b : session closed + variance_approved_by = approbateur
 --   T6c : compteur d'échecs remis à zéro par le succès PIN
@@ -95,7 +85,7 @@ END $fixture$;
 -- approbateur -> passe (le seuil PIN par défaut est 200 000 / 2 %).
 -- ===========================================================================
 SELECT lives_ok(
-  $$SELECT close_shift_v9('66c50001-0000-0000-0000-000000000002'::uuid, 10100000, 'over from event float', NULL)$$,
+  $$SELECT close_shift_v10('66c50001-0000-0000-0000-000000000002'::uuid, 10100000, 'over from event float', NULL)$$,
   'T1: note-band variance with a note, no approver -> succeeds'
 );
 
@@ -103,7 +93,7 @@ SELECT lives_ok(
 -- T2 — sur-seuil PIN (+300 000), note fournie mais pas d'approbateur/PIN.
 -- ===========================================================================
 SELECT throws_ok(
-  $$SELECT close_shift_v9('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL)$$,
+  $$SELECT close_shift_v10('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL)$$,
   'P0001', 'pin_approval_required',
   'T2: above-PIN-threshold variance without approver -> pin_approval_required (P0001)'
 );
@@ -113,7 +103,7 @@ SELECT throws_ok(
 -- ===========================================================================
 SELECT throws_ok(
   format(
-    $$SELECT close_shift_v9('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
+    $$SELECT close_shift_v10('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
     current_setting('shift66.cashier_prof')
   ),
   'P0003', 'approver_not_authorized',
@@ -123,14 +113,8 @@ SELECT throws_ok(
 -- ===========================================================================
 -- T4 — PIN au mauvais format -> invalid_pin, tentative NON consommée.
 -- ===========================================================================
-SELECT throws_ok(
-  format(
-    $$SELECT close_shift_v9('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '12ab56')$$,
-    current_setting('shift66.appr_prof')
-  ),
-  'P0003', 'invalid_pin',
-  'T4: malformed PIN (not 6 digits) -> invalid_pin (P0003)'
-);
+SELECT is(close_shift_v10('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, current_setting('shift66.appr_prof')::uuid, '12ab56')->>'error',
+  'invalid_pin','T4: malformed PIN is returned without consuming an attempt');
 
 SELECT is(
   (SELECT failed_login_attempts FROM user_profiles WHERE id = current_setting('shift66.appr_prof')::uuid),
@@ -141,22 +125,13 @@ SELECT is(
 -- ===========================================================================
 -- T5 — PIN faux -> invalid_pin, tentative comptée (lockout S38).
 -- ===========================================================================
-SELECT throws_ok(
-  format(
-    $$SELECT close_shift_v9('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '111111')$$,
-    current_setting('shift66.appr_prof')
-  ),
-  'P0003', 'invalid_pin',
-  'T5: wrong PIN -> invalid_pin (P0003)'
-);
+SELECT is(close_shift_v10('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, current_setting('shift66.appr_prof')::uuid, '111111')->>'error',
+  'invalid_pin','T5: wrong PIN is returned without rolling back the attempt');
 
--- ⚠️ Comportement RÉEL ancré (FINDING F-1) : l'incrément du helper est annulé
--- par le RAISE 'invalid_pin' qui suit dans la même transaction. Si un futur
--- fix rend le comptage durable, cette assertion DOIT passer à 1.
+-- Le refus ne lève plus d'exception : la tentative reste comptée.
 SELECT is(
   (SELECT failed_login_attempts FROM user_profiles WHERE id = current_setting('shift66.appr_prof')::uuid),
-  0,
-  'T5b (FINDING F-1): wrong-PIN increment rolled back with the raised exception (pre-existing S38 limitation)'
+  1, 'T5b: wrong-PIN attempt is retained'
 );
 
 -- ===========================================================================
@@ -165,7 +140,7 @@ SELECT is(
 -- ===========================================================================
 SELECT lives_ok(
   format(
-    $$SELECT close_shift_v9('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
+    $$SELECT close_shift_v10('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
     current_setting('shift66.appr_prof')
   ),
   'T6: designated approver with correct PIN -> close succeeds'
@@ -181,7 +156,7 @@ SELECT is(
 SELECT is(
   (SELECT failed_login_attempts FROM user_profiles WHERE id = current_setting('shift66.appr_prof')::uuid),
   0,
-  'T6c: counter at 0 after successful PIN (reset path — trivially 0 while F-1 stands)'
+  'T6c: successful PIN resets the retained failed attempt'
 );
 
 -- ===========================================================================
@@ -193,7 +168,7 @@ DECLARE
   v_caught BOOLEAN := false;
 BEGIN
   BEGIN
-    v_res := close_shift_v9('66c50001-0000-0000-0000-000000000001'::uuid, 800000, NULL, NULL);
+    v_res := close_shift_v10('66c50001-0000-0000-0000-000000000001'::uuid, 800000, NULL, NULL);
   EXCEPTION WHEN OTHERS THEN
     v_caught := true;
   END;

@@ -19,7 +19,7 @@ vi.mock('../../functions/_shared/manager-pin.ts', () => ({
 }));
 vi.mock('../../functions/_shared/supabase-admin.ts', () => ({
   getAdminClient: () => ({
-    rpc: async () => ({ data: true, error: null }),
+    rpc: async () => ({ data: { ok: true }, error: null }),
     from: (table: string) => {
       const response = table === 'user_permission_overrides'
         ? { data: null, error: { message: 'overrides unavailable' } }

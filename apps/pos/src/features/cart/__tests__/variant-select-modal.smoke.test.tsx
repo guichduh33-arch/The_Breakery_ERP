@@ -155,4 +155,32 @@ describe('VariantSelectModal', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
     expect(screen.getByTestId('variant-tile-v1')).toBeDisabled();
   });
+
+  const cases: [string, Partial<POSVariantRow>, boolean][] = [
+    ['vitrine empty before global stock', { track_inventory: true, current_stock: 20, display_stock: { quantity: 0 } }, true],
+    ['vitrine available before global stock', { track_inventory: true, current_stock: 0, display_stock: { quantity: 3 } }, false],
+    ['untracked stock is always available', { track_inventory: false, current_stock: 0, deduct_stock: true, display_stock: { quantity: 0 } }, false],
+    ['tracked fallback to global stock', { track_inventory: true, current_stock: 0, deduct_stock: false, display_stock: null }, true],
+    ['legacy untracked snapshot', { current_stock: 0, deduct_stock: false }, false],
+    ['inactive with available stock', { is_active: false, track_inventory: false, current_stock: 20 }, true],
+  ];
+  it.each(cases)('%s uses the same availability for auto-pick and a manual tile', async (_name, patch, disabled) => {
+    const variant = { ...mockVariants[0]!, ...patch };
+    mockState.variants = [variant];
+    const { VariantSelectModal } = await import('../VariantSelectModal');
+    const onPick = vi.fn();
+    const props = { open: true, parent: { id: 'p1', name: 'Croissant' }, onOpenChange: vi.fn(), onPick };
+    const first = render(<VariantSelectModal {...props} />);
+    expect(onPick).toHaveBeenCalledTimes(disabled ? 0 : 1);
+    first.unmount(); onPick.mockClear();
+    mockState.variants = [variant, mockVariants[1]!];
+    render(<VariantSelectModal {...props} />);
+    const tile = screen.getByTestId('variant-tile-v1');
+    if (disabled) expect(tile).toBeDisabled(); else expect(tile).toBeEnabled();
+    fireEvent.click(tile);
+    expect(onPick).toHaveBeenCalledTimes(disabled ? 0 : 1);
+    if ((variant.track_inventory ?? variant.deduct_stock) && variant.display_stock) {
+      expect(tile).toHaveTextContent(`stock ${variant.display_stock.quantity}`);
+    }
+  });
 });

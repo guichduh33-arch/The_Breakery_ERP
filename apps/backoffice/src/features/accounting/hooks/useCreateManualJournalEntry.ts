@@ -3,6 +3,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import type { Json } from '@breakery/supabase';
 import { JOURNAL_ENTRIES_KEY } from './useJournalEntries.js';
 
 export interface ManualJELine {
@@ -23,13 +24,16 @@ export function useCreateManualJournalEntry() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, CreateManualJEArgs>({
     mutationFn: async ({ description, entry_date, lines, manager_pin }) => {
-      const { data, error } = await supabase.rpc('create_manual_je_v1', {
+      const { data, error } = await supabase.rpc('create_manual_je_v2', {
         p_description: description,
         p_entry_date:  entry_date,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_lines:       lines as any,
+        p_lines:       lines as unknown as Json,
         p_manager_pin: manager_pin,
       });
+      // Un refus retourné permet au serveur de commiter le compteur PIN.
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
+      }
       if (error !== null) throw new Error(error.message);
       return data;
     },

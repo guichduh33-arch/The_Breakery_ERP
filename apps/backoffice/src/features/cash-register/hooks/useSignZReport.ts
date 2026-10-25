@@ -24,15 +24,19 @@ export function useSignZReport() {
 
   const mutation = useMutation<SignZReportResult, Error, { zreportId: string; managerPin: string }>({
     mutationFn: async ({ zreportId, managerPin }) => {
-      const { data, error } = await supabase.rpc('sign_zreport_v2', {
+      const { data, error } = await supabase.rpc('sign_zreport_v3', {
         p_zreport_id: zreportId,
         p_manager_pin: managerPin,
       });
+      // Un refus retourné permet au serveur de commiter le compteur PIN.
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
+      }
       if (error) throw error;
       return data as unknown as SignZReportResult;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: Z_REPORTS_QK });
+      void qc.invalidateQueries({ queryKey: Z_REPORTS_QK });
     },
   });
 
@@ -40,6 +44,6 @@ export function useSignZReport() {
     ...mutation,
     // S37: kept as a no-op for call-site compatibility (SignZReportModal) —
     // replay safety now lives in the RPC's idempotent-replay branch.
-    resetIdempotency: (): void => {},
+    resetIdempotency: (): void => undefined,
   };
 }

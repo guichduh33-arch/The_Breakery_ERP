@@ -86,7 +86,7 @@ export function useReceivePurchaseOrder() {
         // mouvements sur un reference_type jamais stampé et renvoyait toujours 0.
         // ADR-027 — bumped to v4 : `p_section_id` disparaît, une réception ne
         // demande plus aucun choix d'emplacement.
-        'receive_purchase_order_v4',
+        'receive_purchase_order_v5',
         rpcArgs,
       );
 
