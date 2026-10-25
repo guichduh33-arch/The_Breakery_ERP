@@ -246,7 +246,7 @@ describe('JournalEntriesPage (S26b Wave 2)', () => {
       expect.objectContaining({ account_id: 'a1', credit: 12000000 }),
     ]);
     await waitFor(() => {
-      expect(spy.rpc).toHaveBeenCalledWith('create_manual_je_v1',
+      expect(spy.rpc).toHaveBeenCalledWith('create_manual_je_v2',
         expect.objectContaining({
           p_description: 'April rent payment',
           p_manager_pin: '123456',

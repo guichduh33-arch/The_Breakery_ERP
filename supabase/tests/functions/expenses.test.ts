@@ -51,7 +51,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Create (admin EMP000). approve_expense_v4 verifies the CALLER's own PIN and
+    // 1. Create (admin EMP000). approve_expense_v5 verifies the CALLER's own PIN and
     //    blocks the creator from approving, so the creator must differ from the
     //    approver (EMP003, the only account whose PIN is known live). EMP000 is
     //    SUPER_ADMIN and has expenses.create.
@@ -86,8 +86,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const { error: sErr } = await sbAdm.rpc('submit_expense_v3', { p_expense_id: expenseId });
     expect(sErr).toBeNull();
 
-    // 4. Approve (manager EMP003 — approve_expense_v4 verifies the caller's own PIN).
-    const { data: approveData, error: aErr } = await sbMgr.rpc('approve_expense_v4', {
+    // 4. Approve (manager EMP003 — approve_expense_v5 verifies the caller's own PIN).
+    const { data: approveData, error: aErr } = await sbMgr.rpc('approve_expense_v5', {
       p_expense_id:  expenseId,
       p_manager_pin: '111111',
     });
@@ -97,7 +97,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const result = approveData as unknown as { status: string };
     expect(result.status).toBe('approved');
 
-    // 5. Assert JE balanced. approve_expense_v4 no longer returns je_id, so look the
+    // 5. Assert JE balanced. approve_expense_v5 no longer returns je_id, so look the
     //    entry up by its reference (reference_type='expense', reference_id=expense id).
     const { data: jeRow } = await admin.from('journal_entries').select('id, total_debit, total_credit')
       .eq('reference_type', 'expense').eq('reference_id', expenseId).single();
@@ -144,7 +144,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
 
     await sbAdm.rpc('submit_expense_v3', { p_expense_id: expenseId });
 
-    const { data: approveData } = await sbMgr.rpc('approve_expense_v4', {
+    const { data: approveData } = await sbMgr.rpc('approve_expense_v5', {
       p_expense_id:  expenseId,
       p_manager_pin: '111111',
     });
@@ -153,7 +153,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     // rendait l'échec illisible (null.id au lookup JE).
     expect((approveData as unknown as { status: string }).status).toBe('approved');
 
-    // approve_expense_v4 no longer returns je_id — look it up by reference.
+    // approve_expense_v5 no longer returns je_id — look it up by reference.
     const { data: jeRow } = await admin.from('journal_entries').select('id')
       .eq('reference_type', 'expense').eq('reference_id', expenseId).single();
     const jeId = (jeRow as { id: string }).id;

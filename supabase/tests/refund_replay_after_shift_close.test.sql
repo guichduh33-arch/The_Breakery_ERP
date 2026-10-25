@@ -115,7 +115,7 @@ grid:=grid || jsonb_build_object(denomination::text,pieces);
 remaining:=remaining-pieces*denomination;
 END LOOP;
 IF remaining<>0 THEN RAISE EXCEPTION 'fixture: cash grid'; END IF;
-UPDATE rr_ctx SET closed=close_shift_v9(c.shift_id,c.cash,
+UPDATE rr_ctx SET closed=close_shift_v10(c.shift_id,c.cash,
 p_notes:='Replay close',p_idempotency_key:=gen_random_uuid(),
 p_counted_qris:=0,p_counted_card:=0,p_denominations:=grid);
 END $close$;

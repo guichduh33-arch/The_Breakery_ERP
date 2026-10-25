@@ -9,9 +9,9 @@
 --   T5  : record_b2b_payment_v1 idempotency replay (même UUID)
 --   T6  : record_b2b_payment_v1 overpayment → RAISE P0011
 --   T7  : record_b2b_payment_v1 non-b2b customer → RAISE P0001
---   T8  : adjust_b2b_balance_v2 happy path positive delta (JE + manager PIN, S50 V2a-i)
---   T9  : adjust_b2b_balance_v2 happy path negative delta
---   T10 : adjust_b2b_balance_v2 underflow → RAISE P0011
+--   T8  : adjust_b2b_balance_v3 happy path positive delta (JE + manager PIN, S50 V2a-i)
+--   T9  : adjust_b2b_balance_v3 happy path negative delta
+--   T10 : adjust_b2b_balance_v3 underflow → RAISE P0011
 --   T11 : create_b2b_order_v1 happy path → AR augmenté + JE + stock décrémenté
 --   T12 : create_b2b_order_v1 credit limit exceeded → RAISE P0011
 --   T13 : create_b2b_order_v1 idempotency replay
@@ -20,29 +20,22 @@
 --
 -- Run via MCP execute_sql wrap BEGIN/ROLLBACK ; pgtap extension est pré-créée
 -- sur V3 dev.
-
 BEGIN;
-
 CREATE EXTENSION IF NOT EXISTS pgtap;
-
 SELECT plan(15);
-
 -- ---------------------------------------------------------------------------
 -- Fixtures
 -- ---------------------------------------------------------------------------
-
 -- 1 retail customer + 3 b2b customers (unlimited / limit 1M balance 200K /
 -- limit 500K balance 0)
 INSERT INTO customers (id, name, customer_type) VALUES
   ('b2bf0001-0000-0000-0000-000000000001', 'PGTAP B2BF Retail', 'retail')
 ON CONFLICT (id) DO NOTHING;
-
 INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance) VALUES
   ('b2bf0001-0000-0000-0000-000000000002', 'PGTAP B2BF Unlimited', 'b2b', 'PT Unlimited', NULL, 0),
   ('b2bf0001-0000-0000-0000-000000000003', 'PGTAP B2BF Capped',    'b2b', 'PT Capped',    1000000, 200000),
   ('b2bf0001-0000-0000-0000-000000000004', 'PGTAP B2BF Tight',     'b2b', 'PT Tight',     500000,  0)
 ON CONFLICT (id) DO NOTHING;
-
 -- Force the values in case rows already exist from a prior run (fixture reset)
 UPDATE customers SET b2b_credit_limit = NULL,    b2b_current_balance = 0
  WHERE id = 'b2bf0001-0000-0000-0000-000000000002';
@@ -50,7 +43,6 @@ UPDATE customers SET b2b_credit_limit = 1000000, b2b_current_balance = 200000
  WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
 UPDATE customers SET b2b_credit_limit = 500000,  b2b_current_balance = 0
  WHERE id = 'b2bf0001-0000-0000-0000-000000000004';
-
 -- 1 product avec current_stock=100
 INSERT INTO products (id, sku, name, category_id, retail_price, current_stock, min_stock_threshold)
 VALUES (
@@ -63,7 +55,6 @@ VALUES (
 -- T11 teste un produit tracké → stock 100→97).
 UPDATE products SET current_stock = 100.000, track_inventory = true, deduct_stock = false
  WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
-
 -- Bootstrap admin uid (EMP000 — pre-existing seed)
 DO $bootstrap$
 DECLARE v_admin_uid UUID;
@@ -73,17 +64,15 @@ BEGIN
     RAISE EXCEPTION 'Seed user EMP000 not found';
   END IF;
   PERFORM set_config('breakery.admin_uid', v_admin_uid::text, false);
-  -- S50 V2a-i : PIN manager connu pour adjust_b2b_balance_v2 (transaction-local, ROLLBACK).
+  -- S50 V2a-i : PIN manager connu pour adjust_b2b_balance_v3 (transaction-local, ROLLBACK).
   UPDATE user_profiles SET pin_hash = hash_pin('112233'), locked_until = NULL, failed_login_attempts = 0
    WHERE employee_code = 'EMP000';
 END $bootstrap$;
-
 CREATE OR REPLACE FUNCTION pg_temp.set_jwt_uid(p_uid UUID) RETURNS VOID
 LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', p_uid::text, true);
 END $$;
-
 -- ===========================================================================
 -- T1 — b2b_payments table existe + RLS active + REVOKE INSERT enforced
 -- ===========================================================================
@@ -91,7 +80,6 @@ SELECT has_table(
   'public', 'b2b_payments',
   'T1: b2b_payments table exists'
 );
-
 -- ===========================================================================
 -- T2 — view_b2b_invoices retourne uniquement les orders B2B
 -- ===========================================================================
@@ -99,7 +87,6 @@ SELECT has_view(
   'public', 'view_b2b_invoices',
   'T2: view_b2b_invoices exists'
 );
-
 -- ===========================================================================
 -- T3 — view_ar_aging buckets correctement par age_days
 -- ===========================================================================
@@ -107,7 +94,6 @@ SELECT has_view(
   'public', 'view_ar_aging',
   'T3: view_ar_aging exists'
 );
-
 -- ===========================================================================
 -- T4 — record_b2b_payment_v1 happy path → balance décrémentée + JE émis
 -- ===========================================================================
@@ -120,7 +106,6 @@ DECLARE
   v_je_total NUMERIC;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
-
   -- Le solde de 100K est porté par une VRAIE facture (2 × 50K), plus par un
   -- UPDATE du cache : depuis record_b2b_payment_v3 (audit lot 1 P0 n°4), un
   -- paiement qu'aucune facture ne peut absorber est refusé (P0011) — la
@@ -136,19 +121,15 @@ BEGIN
       'unit_price', 50000
     ))
   );
-
   v_result := record_b2b_payment_v4(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount      => 50000,
     p_method      => 'cash'::payment_method
   );
-
   SELECT b2b_current_balance INTO v_balance_after
     FROM customers WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
-
   v_je_id := (v_result->>'je_id')::uuid;
   SELECT total_debit INTO v_je_total FROM journal_entries WHERE id = v_je_id;
-
   PERFORM set_config('breakery.t4_pass',
     CASE WHEN
       v_balance_after = 50000
@@ -158,7 +139,6 @@ BEGIN
 END $t4$;
 SELECT ok(current_setting('breakery.t4_pass')::boolean,
   'T4: record_b2b_payment_v1 happy path — balance 100K→50K + JE 50K emitted');
-
 -- ===========================================================================
 -- T5 — record_b2b_payment_v1 idempotency replay (same UUID)
 -- ===========================================================================
@@ -172,30 +152,24 @@ DECLARE
   v_count_after INT;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
-
   UPDATE customers SET b2b_current_balance = 200000
    WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
-
   SELECT COUNT(*) INTO v_count_before FROM b2b_payments
     WHERE idempotency_key = v_key;
-
   v_r1 := record_b2b_payment_v4(
     p_customer_id    => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount         => 10000,
     p_method         => 'cash'::payment_method,
     p_idempotency_key => v_key
   );
-
   v_r2 := record_b2b_payment_v4(
     p_customer_id    => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount         => 10000,
     p_method         => 'cash'::payment_method,
     p_idempotency_key => v_key
   );
-
   SELECT COUNT(*) INTO v_count_after FROM b2b_payments
     WHERE idempotency_key = v_key;
-
   PERFORM set_config('breakery.t5_pass',
     CASE WHEN
       v_count_before = 0
@@ -206,7 +180,6 @@ BEGIN
 END $t5$;
 SELECT ok(current_setting('breakery.t5_pass')::boolean,
   'T5: record_b2b_payment_v1 idempotency — 2 calls same key → 1 row, replay flag');
-
 -- ===========================================================================
 -- T6 — record_b2b_payment_v1 overpayment → RAISE P0011
 -- ===========================================================================
@@ -218,7 +191,6 @@ BEGIN
   UPDATE customers SET b2b_current_balance = 100000
    WHERE id = 'b2bf0001-0000-0000-0000-000000000004';
 END $t6_setup$;
-
 SELECT throws_ok(
   $$ SELECT record_b2b_payment_v4(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
@@ -229,7 +201,6 @@ SELECT throws_ok(
   NULL,
   'T6: record_b2b_payment_v1 overpayment raises P0011'
 );
-
 -- ===========================================================================
 -- T7 — record_b2b_payment_v1 non-b2b customer → RAISE P0001 (customer_not_b2b)
 -- ===========================================================================
@@ -238,7 +209,6 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 END $t7_setup$;
-
 SELECT throws_ok(
   $$ SELECT record_b2b_payment_v4(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000001',
@@ -249,7 +219,6 @@ SELECT throws_ok(
   NULL,
   'T7: record_b2b_payment_v1 on retail customer raises customer_not_b2b'
 );
-
 -- ===========================================================================
 -- T8 — adjust_b2b_balance_v1 happy path positive delta
 -- ===========================================================================
@@ -260,17 +229,14 @@ DECLARE
   v_balance_after NUMERIC;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
-
   UPDATE customers SET b2b_current_balance = 100000
    WHERE id = 'b2bf0001-0000-0000-0000-000000000002';
-
-  v_result := adjust_b2b_balance_v2(
+  v_result := adjust_b2b_balance_v3(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_delta       => 50000,
     p_reason      => 'T8 admin adjustment',
     p_manager_pin => '112233'
   );
-
   SELECT b2b_current_balance INTO v_balance_after
     FROM customers WHERE id = 'b2bf0001-0000-0000-0000-000000000002';
 
@@ -298,7 +264,7 @@ BEGIN
   UPDATE customers SET b2b_current_balance = 100000
    WHERE id = 'b2bf0001-0000-0000-0000-000000000002';
 
-  v_result := adjust_b2b_balance_v2(
+  v_result := adjust_b2b_balance_v3(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_delta       => -30000,
     p_reason      => 'T9 admin credit',
@@ -330,7 +296,7 @@ BEGIN
 END $t10_setup$;
 
 SELECT throws_ok(
-  $$ SELECT adjust_b2b_balance_v2(
+  $$ SELECT adjust_b2b_balance_v3(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
        p_delta       => -100000,
        p_reason      => 'T10 underflow test',
@@ -338,7 +304,7 @@ SELECT throws_ok(
      ) $$,
   'P0011',
   NULL,
-  'T10: adjust_b2b_balance_v2 underflow raises P0011 balance_underflow'
+  'T10: adjust_b2b_balance_v3 underflow raises P0011 balance_underflow'
 );
 
 -- ===========================================================================

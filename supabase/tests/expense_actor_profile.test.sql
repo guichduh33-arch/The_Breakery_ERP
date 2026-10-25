@@ -12,7 +12,7 @@
 -- format create_user_v1 réel (id <> auth_user_id, cf.
 -- close_shift_v8_closed_by_profile.test.sql:27-40) — un créateur SUPER_ADMIN et un
 -- approbateur ADMIN — et exerce les SEPT RPCs versionnées (create_expense_v2,
--- submit_expense_v3, approve_expense_v4, reject_expense_v2, pay_expense,
+-- submit_expense_v3, approve_expense_v5, reject_expense_v2, pay_expense,
 -- set_expense_threshold, delete_expense_threshold_v2) plus le helper interne
 -- _emit_expense_je (appelé en place par submit/approve).
 --
@@ -30,7 +30,7 @@
 --   T2  : audit_logs.actor_id pour action='expense.create' = profil créateur (pas l'auth id).
 --   T3a : submit_expense_v3 sur ce même montant (bracket [0,100k) → auto-approve) → lives_ok.
 --   T3b : journal_entries.created_by (reference_type='expense') = profil créateur.
---   T4a : submit_expense_v3 (bracket [100k,1M) 1 step) puis approve_expense_v4 par
+--   T4a : submit_expense_v3 (bracket [100k,1M) 1 step) puis approve_expense_v5 par
 --         l'approbateur ADMIN → lives_ok.
 --   T4b : audit_logs.actor_id pour action='expense.approved_step' = profil approbateur.
 --   T4c : journal_entries.created_by (reference_type='expense', 2e dépense) = profil approbateur.
@@ -157,8 +157,8 @@ SELECT is(
 DO $$ BEGIN PERFORM set_config('request.jwt.claim.sub', 'a7a70000-0000-0000-0000-0000000000a2', TRUE); END $$;
 
 SELECT lives_ok(
-  $$ SELECT approve_expense_v4('a7a70000-0000-0000-0000-0000000000e2'::uuid, '123456') $$,
-  'T4a : approve_expense_v4 by profile.id <> auth_user_id approver lives (P0 regression)'
+  $$ SELECT approve_expense_v5('a7a70000-0000-0000-0000-0000000000e2'::uuid, '123456') $$,
+  'T4a : approve_expense_v5 by profile.id <> auth_user_id approver lives (P0 regression)'
 );
 
 SELECT is(
@@ -279,7 +279,7 @@ SELECT is(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname IN (
-     'create_expense_v2', 'submit_expense_v3', 'approve_expense_v4',
+     'create_expense_v2', 'submit_expense_v3', 'approve_expense_v5',
      'reject_expense_v2', 'pay_expense_v3',
      'set_expense_threshold_v3', 'delete_expense_threshold_v2'
    )),
