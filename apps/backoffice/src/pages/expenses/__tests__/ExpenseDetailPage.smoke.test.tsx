@@ -153,3 +153,15 @@ describe('ExpenseDetailPage (Phase 5.A rewrite)', () => {
     currentPerms = new Set(['expenses.read', 'expenses.approve', 'expenses.pay']);
   });
 });
+
+it('shows the VAT-inclusive amount as total and the net amount separately', () => {
+  EXPENSE.vat_amount = 25_000;
+  try {
+    renderPage();
+    expect(screen.getByText('Total (incl. VAT)').parentElement).toHaveTextContent('250.000');
+    expect(screen.getByText('Net (excl. VAT)').parentElement).toHaveTextContent('225.000');
+    expect(screen.getByText('VAT').parentElement).toHaveTextContent('25.000');
+  } finally {
+    EXPENSE.vat_amount = 0;
+  }
+});

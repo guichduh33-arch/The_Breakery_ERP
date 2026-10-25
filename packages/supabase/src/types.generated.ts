@@ -6317,7 +6317,7 @@ export type Database = {
       _current_profile_id: { Args: never; Returns: string }
       _currtest: { Args: never; Returns: number }
       _dashboard_cash_on_hand_v1: { Args: never; Returns: Json }
-      _dashboard_cost_mtd_v1: {
+      _dashboard_cost_mtd_v2: {
         Args: { p_today: string; p_tz: string }
         Returns: Json
       }
@@ -7383,7 +7383,7 @@ export type Database = {
       }
       get_dashboard_action_queue_v1: { Args: never; Returns: Json }
       get_dashboard_open_orders_v1: { Args: never; Returns: Json }
-      get_dashboard_overview_v3: { Args: never; Returns: Json }
+      get_dashboard_overview_v4: { Args: never; Returns: Json }
       get_discounts_loyalty_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json

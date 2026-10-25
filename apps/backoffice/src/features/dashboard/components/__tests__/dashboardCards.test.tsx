@@ -88,6 +88,17 @@ describe('CostMtdCard', () => {
     ],
   };
 
+
+  it('hides restricted costs including residual lines and comparisons', () => {
+    wrap(<CostMtdCard cost={{ ...cost, restricted: true }} isLoading={false} error={null} />);
+    const card = screen.getByTestId('card-cost-mtd');
+    expect(card).toHaveTextContent(/restricted/i);
+    expect(card).not.toHaveTextContent('Flour & grains');
+    expect(card).not.toHaveTextContent('8,4%');
+    expect(card).not.toHaveTextContent('118');
+    expect(card).not.toHaveTextContent('34,1%');
+  });
+
   it('paints a RISING cost red and a falling one green', () => {
     // Sur un coût, monter est mauvais : sans l'inversion, la carte féliciterait
     // une dérive d'achat.

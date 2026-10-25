@@ -38,6 +38,7 @@ import {
 } from '@/features/reports/components/BreakdownCard.js';
 import { PairedBarsChart } from '@/features/reports/components/charts/PairedBarsChart.js';
 import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
+import { alignExpenseDays } from '@/features/reports/utils/alignExpenseDays.js';
 import {
   useExpensesByCategory, type ExpenseCategoryRow,
 } from '@/features/reports/hooks/useExpensesByCategory.js';
@@ -95,16 +96,11 @@ export default function OperatingExpensesPage(): JSX.Element {
   const rows     = useMemo(() => data?.by_category ?? [], [data]);
   const hasCompare = period.compare && prevData !== undefined;
 
-  // La série journalière : la comparaison s'aligne par RANG dans sa propre
-  // fenêtre — deux fenêtres n'ont pas les mêmes dates, et la forme de la
-  // semaine est ce qui se compare.
-  const chartData = useMemo(() => {
-    const cur = data?.by_day ?? [];
-    const cmp = prevData?.by_day ?? [];
-    return cur.map((d, i) => ({
-      date: d.date, current: d.total, compare: cmp[i]?.total ?? 0,
-    }));
-  }, [data?.by_day, prevData?.by_day]);
+  // Le rang porte le JOUR dans sa fenêtre, même quand aucune dépense n'existe.
+  const chartData = useMemo(() => alignExpenseDays(
+    start, end, compareRange.start, compareRange.end,
+    data?.by_day ?? [], prevData?.by_day ?? [],
+  ), [start, end, compareRange.start, compareRange.end, data?.by_day, prevData?.by_day]);
 
   const top = topSlice(
     rows.slice().sort((a, b) => b.total - a.total), (r) => r.total, 'spend',

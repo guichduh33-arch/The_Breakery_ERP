@@ -87,3 +87,15 @@ describe('DashboardKpiStrip — comparisons with no baseline', () => {
     expect(screen.queryByTestId('no-baseline')).not.toBeInTheDocument();
   });
 });
+
+it('hides restricted margin values and comparisons even when residual numbers exist', () => {
+  const kpis = kpisWith(4.2, -1.8);
+  kpis.gross_margin.restricted = true;
+  wrap(<DashboardKpiStrip kpis={kpis} isLoading={false} />);
+  const margin = screen.getByTestId('kpi-gross-margin');
+  expect(margin).toHaveTextContent(/restricted/i);
+  expect(margin).toHaveTextContent('—');
+  expect(margin).not.toHaveTextContent('61,4');
+  expect(margin).not.toHaveTextContent('yest');
+  expect(margin).not.toHaveTextContent('D-7');
+});

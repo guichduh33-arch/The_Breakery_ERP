@@ -269,13 +269,13 @@ export default function ExpenseDetailPage(): JSX.Element {
           <Card variant="default" padding="md" className="space-y-4">
             <SectionLabel as="h2" size="sm" className="text-gold">Financial</SectionLabel>
             <dl className="space-y-2 text-sm">
-              <SummaryRow label="Amount" value={fmtIdr(expense.amount)} />
+              <SummaryRow label="Net (excl. VAT)" value={fmtIdr(Number(expense.amount) - Number(expense.vat_amount ?? 0))} />
               <SummaryRow label="VAT"    value={fmtIdr(expense.vat_amount)} />
             </dl>
             <div className="flex items-baseline justify-between border-t border-border-subtle pt-3">
-              <SectionLabel as="span" size="sm">Net (DR)</SectionLabel>
+              <SectionLabel as="span" size="sm">Total (incl. VAT)</SectionLabel>
               <span className="font-mono text-xl tabular-nums text-gold">
-                {fmtIdr(Number(expense.amount) - Number(expense.vat_amount ?? 0))}
+                {fmtIdr(expense.amount)}
               </span>
             </div>
             {(expense.je_id !== null && expense.je_id !== undefined) && (

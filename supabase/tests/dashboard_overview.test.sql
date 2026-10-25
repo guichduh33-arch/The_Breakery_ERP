@@ -1,5 +1,5 @@
 -- supabase/tests/dashboard_overview.test.sql
--- S63 — get_dashboard_overview_v3 (dashboard d'accueil BO).
+-- S63 — get_dashboard_overview_v4 (dashboard d'accueil BO).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 -- DB dev non vide -> assertions KPI en DELTA vs baseline capturé avant seed.
 --
@@ -15,12 +15,15 @@
 --     lui, d'où le trou volontaire dans la numérotation — les noms restants sont
 --     des identifiants et ne se renumérotent pas.
 BEGIN;
+\ir helpers/pin_session.sql
+SELECT plan(15);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
 DO $$
 DECLARE
   v_auth UUID; v_profile UUID; v_session UUID; v_cat UUID; v_prod UUID; v_cust UUID;
+  v_cust_cat UUID;
   v_o1 UUID; v_o2 UUID; v_o3 UUID; v_o4 UUID; v_o5 UUID;
   v_tz TEXT; v_today DATE; v_day2 DATE;
   v_before JSONB; v_after JSONB;
@@ -31,21 +34,24 @@ DECLARE
   v_h_min INT; v_h_max INT;
   v_rand UUID; v_denied BOOLEAN := false;
 BEGIN
-  -- Acteur : un user seedé qui a reports.read
-  SELECT up.auth_user_id, up.id INTO v_auth, v_profile
-    FROM user_profiles up
-   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND has_permission(up.auth_user_id, 'reports.read')
-   LIMIT 1;
-  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+
+  v_auth := gen_random_uuid(); v_profile := gen_random_uuid();
+  INSERT INTO auth.users(id) VALUES (v_auth);
+  INSERT INTO public.user_profiles(id, auth_user_id, role_code, employee_code, full_name, pin_hash, is_active)
+    VALUES (v_profile, v_auth, 'CASHIER', 'RPT-' || left(v_profile::text,8), 'Report fixture', hash_pin('285741'), true);
+  INSERT INTO public.user_permission_overrides(user_profile_id, permission_code, is_granted, reason, granted_by)
+    SELECT v_profile, code, true, 'Transactional report fixture', v_profile
+    FROM unnest(ARRAY['reports.read','reports.sales.read','reports.financial.read','accounting.cash.read']) code;
+  PERFORM pg_temp.authenticate_pin(v_auth);
 
   SELECT COALESCE(MAX(timezone), 'Asia/Makassar') INTO v_tz FROM business_config WHERE id = 1;
   v_today := (now() AT TIME ZONE v_tz)::date;
   v_day2  := ((now() - interval '2 days') AT TIME ZONE v_tz)::date;
 
   -- ── Baseline avant seed ───────────────────────────────────────────────
-  v_before := get_dashboard_overview_v3();
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_before := get_dashboard_overview_v4();
+  EXECUTE 'RESET ROLE';
   v_cash_b := COALESCE((SELECT (e->>'amount')::numeric
                           FROM jsonb_array_elements(v_before->'payments'->'lines') e
                          WHERE e->>'method' = 'cash'), 0);
@@ -61,12 +67,13 @@ BEGIN
   -- ── Seed ──────────────────────────────────────────────────────────────
   INSERT INTO pos_sessions (opened_by, opening_cash, status)
     VALUES (v_profile, 0, 'closed') RETURNING id INTO v_session;
-  SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
+  INSERT INTO categories(name, slug) VALUES ('Report fixture', 'rpt-' || gen_random_uuid()) RETURNING id INTO v_cat;
   INSERT INTO products (sku, name, category_id, retail_price, cost_price, unit, current_stock)
     VALUES ('TST-S63-DASH', 'S63 Dash Item', v_cat, 50000, 20000, 'pcs', 100)
     RETURNING id INTO v_prod;
-  INSERT INTO customers (name, customer_type)
-    VALUES ('S63 Dash Customer', 'retail') RETURNING id INTO v_cust;
+  INSERT INTO customer_categories(name, slug) VALUES ('Report fixture', 'rpt-' || gen_random_uuid()) RETURNING id INTO v_cust_cat;
+  INSERT INTO customers (name, customer_type, category_id)
+    VALUES ('S63 Dash Customer', 'retail', v_cust_cat) RETURNING id INTO v_cust;
 
   -- o1 : payée maintenant, 50 000, cash, client ; 1 ligne valide + 1 ligne ANNULÉE (exclue d'items_sold)
   INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via, session_id, customer_id, paid_at)
@@ -114,7 +121,9 @@ BEGIN
     VALUES (v_o1, 'RF-S63-1', 'S63 test refund', 10000, 1000, v_profile, v_profile, v_session);
 
   -- ── Après seed ────────────────────────────────────────────────────────
-  v_after := get_dashboard_overview_v3();
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_after := get_dashboard_overview_v4();
+  EXECUTE 'RESET ROLE';
   v_cash_a := COALESCE((SELECT (e->>'amount')::numeric
                           FROM jsonb_array_elements(v_after->'payments'->'lines') e
                          WHERE e->>'method' = 'cash'), 0);
@@ -180,18 +189,24 @@ BEGIN
 
   -- T13 : sans reports.read -> 42501
   v_rand := gen_random_uuid();
-  PERFORM set_config('request.jwt.claim.sub', v_rand::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_rand)::text, true);
+  INSERT INTO auth.users(id) VALUES(v_rand);
+  INSERT INTO user_profiles(auth_user_id, role_code, employee_code, full_name, pin_hash)
+    VALUES(v_rand, 'CASHIER', 'DENY-' || left(v_rand::text,8), 'Denied report fixture', hash_pin('285741')) RETURNING id INTO v_profile;
+  INSERT INTO user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
+    VALUES(v_profile,'reports.read',false,'Denied report fixture');
+  PERFORM pg_temp.authenticate_pin(v_rand);
+  EXECUTE 'SET LOCAL ROLE authenticated';
   BEGIN
-    PERFORM get_dashboard_overview_v3();
+    PERFORM get_dashboard_overview_v4();
     v_denied := false;
   EXCEPTION WHEN insufficient_privilege THEN v_denied := true;
   END;
+  EXECUTE 'RESET ROLE';
   INSERT INTO _r SELECT 'T13_permission_denied_42501', v_denied;
 
   -- T14 : anon n'a pas EXECUTE (trio S20)
   INSERT INTO _r SELECT 'T14_anon_execute_revoked',
-    NOT has_function_privilege('anon', 'public.get_dashboard_overview_v3()', 'EXECUTE');
+    NOT has_function_privilege('anon', 'public.get_dashboard_overview_v4()', 'EXECUTE');
 
   -- T15 : le helper privé reste hors de portée des deux rôles clients. La refonte
   --       a déplacé le calcul dans _dashboard_kpis_v2 ; sans cette assertion, un
@@ -201,6 +216,7 @@ BEGIN
     AND NOT has_function_privilege('authenticated', 'public._dashboard_kpis_v2(text,date)', 'EXECUTE');
 END $$;
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT ok(pass, name) FROM _r ORDER BY name;
+SELECT * FROM finish();
 -- Attendu : 15 lignes, pass = true partout (T10 retiré ; T11b et T15 ajoutés).
 ROLLBACK;

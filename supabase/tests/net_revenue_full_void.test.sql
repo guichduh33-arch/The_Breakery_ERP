@@ -1,7 +1,7 @@
 -- supabase/tests/net_revenue_full_void.test.sql
 -- S64 T4 — fix I-1 : les refunds is_full_void (voids même-jour) ne sont plus
 -- soustraits du net (la commande voidée sort déjà du brut — lineage 20260704000018).
--- Pin sur get_dashboard_overview_v3 (kpis.net_revenue.value + revenue_30d) ET get_daily_sales_v3.
+-- Pin sur get_dashboard_overview_v4 (kpis.net_revenue.value + revenue_30d) ET get_daily_sales_v3.
 -- Porté de la v1 le 2026-08-07 : les KPI sont devenus des objets
 -- {value, vs_yesterday, vs_d7}, et `revenue_today` s'appelle `net_revenue`.
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
@@ -9,6 +9,8 @@
 -- dashboard_overview.test.sql (chk_orders_void_consistency / fn_create_je_for_refund
 -- déjà résolus là — DEV-S63-02).
 BEGIN;
+\ir helpers/pin_session.sql
+SELECT plan(11);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -23,21 +25,23 @@ DECLARE
   v_dash_3 JSONB; v_daily_3 JSONB;   -- après o2 + refund partiel
   v_rev30_today_b NUMERIC; v_rev30_today_3 NUMERIC;
 BEGIN
-  -- Acteur : un user seedé qui a reports.read ET reports.sales.read
-  SELECT up.auth_user_id, up.id INTO v_auth, v_profile
-    FROM user_profiles up
-   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND has_permission(up.auth_user_id, 'reports.read')
-     AND has_permission(up.auth_user_id, 'reports.sales.read')
-   LIMIT 1;
-  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+
+  v_auth := gen_random_uuid(); v_profile := gen_random_uuid();
+  INSERT INTO auth.users(id) VALUES (v_auth);
+  INSERT INTO public.user_profiles(id, auth_user_id, role_code, employee_code, full_name, pin_hash, is_active)
+    VALUES (v_profile, v_auth, 'CASHIER', 'RPT-' || left(v_profile::text,8), 'Report fixture', hash_pin('285741'), true);
+  INSERT INTO public.user_permission_overrides(user_profile_id, permission_code, is_granted, reason, granted_by)
+    SELECT v_profile, code, true, 'Transactional report fixture', v_profile
+    FROM unnest(ARRAY['reports.read','reports.sales.read','reports.financial.read','accounting.cash.read']) code;
+  PERFORM pg_temp.authenticate_pin(v_auth);
 
   SELECT COALESCE(MAX(timezone), 'Asia/Makassar') INTO v_tz FROM business_config WHERE id = 1;
   v_today := (now() AT TIME ZONE v_tz)::date;
 
   -- ── Baseline ──────────────────────────────────────────────────────────
-  v_dash_b  := get_dashboard_overview_v3();
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_dash_b  := get_dashboard_overview_v4();
+  EXECUTE 'RESET ROLE';
   v_daily_b := get_daily_sales_v3(v_today::text, v_today::text);
   v_rev30_today_b := COALESCE((SELECT (e->>'net')::numeric
                                  FROM jsonb_array_elements(v_dash_b->'revenue_30d') e
@@ -46,7 +50,7 @@ BEGIN
   -- ── Seed commun ───────────────────────────────────────────────────────
   INSERT INTO pos_sessions (opened_by, opening_cash, status)
     VALUES (v_profile, 0, 'closed') RETURNING id INTO v_session;
-  SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
+  INSERT INTO categories(name, slug) VALUES ('Report fixture', 'rpt-' || gen_random_uuid()) RETURNING id INTO v_cat;
   INSERT INTO products (sku, name, category_id, retail_price, cost_price, unit, current_stock)
     VALUES ('TST-S64-NETVOID', 'S64 NetVoid Item', v_cat, 60000, 20000, 'pcs', 100)
     RETURNING id INTO v_prod;
@@ -58,7 +62,9 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
     VALUES (v_o1, v_prod, 'S64 NetVoid Item', 60000, 1, 60000);
 
-  v_dash_1  := get_dashboard_overview_v3();
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_dash_1  := get_dashboard_overview_v4();
+  EXECUTE 'RESET ROLE';
   v_daily_1 := get_daily_sales_v3(v_today::text, v_today::text);
 
   INSERT INTO _r SELECT 'T01_dash_revenue_today_delta_plus_60k',
@@ -82,7 +88,9 @@ BEGIN
     VALUES (v_o1, 'RF-S64NV-1', 'S64 test full void', 60000, 1000,
             v_profile, v_profile, v_session, true);
 
-  v_dash_2  := get_dashboard_overview_v3();
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_dash_2  := get_dashboard_overview_v4();
+  EXECUTE 'RESET ROLE';
   v_daily_2 := get_daily_sales_v3(v_today::text, v_today::text);
 
   INSERT INTO _r SELECT 'T03_dash_full_void_net_delta_zero',
@@ -110,7 +118,9 @@ BEGIN
     VALUES (v_o2, 'RF-S64NV-2', 'S64 test partial refund', 5000, 500,
             v_profile, v_profile, v_session);
 
-  v_dash_3  := get_dashboard_overview_v3();
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_dash_3  := get_dashboard_overview_v4();
+  EXECUTE 'RESET ROLE';
   v_daily_3 := get_daily_sales_v3(v_today::text, v_today::text);
   v_rev30_today_3 := COALESCE((SELECT (e->>'net')::numeric
                                  FROM jsonb_array_elements(v_dash_3->'revenue_30d') e
@@ -127,6 +137,7 @@ BEGIN
     v_rev30_today_3 - v_rev30_today_b = 40000;
 END $$;
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT ok(pass, name) FROM _r ORDER BY name;
+SELECT * FROM finish();
 -- Attendu : 11 lignes, pass = true partout.
 ROLLBACK;

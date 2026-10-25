@@ -205,6 +205,7 @@ export function DashboardKpiStrip({
   }
 
   const margin = kpis.gross_margin;
+  const marginRestricted = margin.restricted === true;
   const cash   = kpis.cash_on_hand;
 
   // Journée pas encore commencée : la veille sert de base à des comparaisons
@@ -259,17 +260,19 @@ export function DashboardKpiStrip({
       {includes('Gross margin') && (
         <Tile
           label="Gross margin"
-          value={formatPct(margin.value)}
-          unavailable={margin.value === null}
+          value={marginRestricted ? '—' : formatPct(margin.value)}
+          unavailable={marginRestricted || margin.value === null}
+          {...(marginRestricted ? { unavailableLabel: 'restricted' } : {})}
           testId="kpi-gross-margin"
-          target={target('gross_margin')}
+          target={marginRestricted ? null : target('gross_margin')}
         >
-          {!noSalesYet && (
+          {!marginRestricted && !noSalesYet && (
             <>
               {!noYesterday && <Delta value={margin.vs_yesterday_pt} unit="pt" period="yest" />}
               {!noD7 && <Delta value={margin.vs_d7_pt} unit="pt" period="D-7" />}
             </>
           )}
+          {marginRestricted && <span className={NOTE}>restricted — financial permission required</span>}
         </Tile>
       )}
 

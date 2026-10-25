@@ -61,6 +61,7 @@ function makeChain(rows: unknown[]) {
     order:  vi.fn().mockReturnThis(),
     limit:  vi.fn().mockReturnThis(),
     eq:     vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
     gte:    vi.fn().mockReturnThis(),
     lte:    vi.fn().mockReturnThis(),
     then: (

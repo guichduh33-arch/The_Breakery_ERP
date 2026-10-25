@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/dashboard/hooks/useDashboardOverview.ts
 //
-// Écran 1c — l'agrégat du dashboard « Today », câblé sur get_dashboard_overview_v3.
+// Écran 1c — l'agrégat du dashboard « Today », câblé sur get_dashboard_overview_v4.
 //
 // L'enveloppe jsonb du RPC est typée à la main (le regen produit `Json`), même
 // pattern que usePaymentsByMethod. Les types portent les DEUX réserves de source
@@ -22,11 +22,12 @@ export interface KpiDelta {
 }
 
 export interface GrossMarginKpi {
+  restricted?: boolean;
   value: number | null;
   vs_yesterday_pt: number | null;
   vs_d7_pt: number | null;
   /** Toujours 'current_cost_price' aujourd'hui — voir l'en-tête. */
-  basis: string;
+  basis: string | null;
   /** Part du CA dont le produit a un cost_price. < 100 ⇒ marge partielle. */
   cost_coverage_pct: number | null;
 }
@@ -80,12 +81,13 @@ export interface CostLine {
 }
 
 export interface CostMtd {
-  cogs_total: number;
-  opex_total: number;
-  sales_mtd: number;
+  restricted?: boolean;
+  cogs_total: number | null;
+  opex_total: number | null;
+  sales_mtd: number | null;
   cogs_pct_of_sales: number | null;
   opex_pct_of_sales: number | null;
-  total: number;
+  total: number | null;
   cost_per_basket: number | null;
   lines: CostLine[];
 }
@@ -117,7 +119,7 @@ export function useDashboardOverview(enabled = true) {
   return useQuery<DashboardOverview, Error>({
     queryKey: DASHBOARD_OVERVIEW_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_dashboard_overview_v3');
+      const { data, error } = await supabase.rpc('get_dashboard_overview_v4');
       if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return data as unknown as DashboardOverview;
     },

@@ -3,6 +3,7 @@
 // S29 Wave 6.A.1 — list Z-Reports with optional status + date range filter.
 
 import { useQuery } from '@tanstack/react-query';
+import { toLocalDayStartUTC, toLocalDayEndUTC } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 
 export type ZReportStatus = 'draft' | 'signed' | 'voided';
@@ -39,7 +40,7 @@ export interface ZReportListRow {
 export interface ZReportsFilters {
   status?:        ZReportStatus;
   startDate?:     string; // YYYY-MM-DD, filters generated_at >= startDate
-  endDate?:       string; // YYYY-MM-DD, filters generated_at <= endDate + '23:59:59'
+  endDate?:       string; // Jour métier inclus ; borne supérieure exclusive au minuit suivant.
 }
 
 export const Z_REPORTS_QK = ['z_reports'] as const;
@@ -55,8 +56,12 @@ export function useZReports(filters: ZReportsFilters = {}) {
         .order('generated_at', { ascending: false })
         .limit(200);
       if (filters.status)    q = q.eq('status', filters.status);
-      if (filters.startDate) q = q.gte('generated_at', `${filters.startDate}T00:00:00Z`);
-      if (filters.endDate)   q = q.lte('generated_at', `${filters.endDate}T23:59:59Z`);
+      if (filters.startDate) q = q.gte('generated_at', toLocalDayStartUTC(filters.startDate).toISOString());
+      if (filters.endDate) {
+        // PostgreSQL conserve les microsecondes : [minuit, minuit suivant).
+        const nextMidnight = new Date(toLocalDayEndUTC(filters.endDate).getTime() + 1);
+        q = q.lt('generated_at', nextMidnight.toISOString());
+      }
       const { data, error } = await q;
       if (error) throw error;
       interface RawShift {

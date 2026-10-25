@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/__tests__/Dashboard.test.tsx
 //
-// Écran 1c — tests de la page (enveloppe get_dashboard_overview_v3).
+// Écran 1c — tests de la page (enveloppe get_dashboard_overview_v4).
 // La prop `data` désactive le hook agrégat ET les trois panneaux : aucun réseau.
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
@@ -178,12 +178,14 @@ describe('DashboardPage — écran 1c', () => {
   });
 
   it('renders the gross margin in POINTS, never as a relative change', () => {
+    grant('reports.financial.read');
     renderWith(overviewFixture());
     // 1,4pt, pas 1,4% : comparer deux taux en relatif est le rapport faux type.
     expect(screen.getByTestId('kpi-gross-margin')).toHaveTextContent('1,4pt');
   });
 
   it('keeps the gross-margin figure without the explanatory paragraph', () => {
+    grant('reports.financial.read');
     renderWith(overviewFixture());
     expect(screen.getByTestId('kpi-gross-margin')).toHaveTextContent('61,8%');
     expect(screen.queryByText(/Gross margin uses the current cost price/i)).not.toBeInTheDocument();
@@ -305,6 +307,7 @@ describe('DashboardPage — écran 1c', () => {
   });
 
   it('renders the four detail cards with their data', () => {
+    grant('reports.financial.read');
     renderWith(overviewFixture());
     expect(screen.getByTestId('card-open-orders')).toBeInTheDocument();
     expect(screen.getByTestId('card-display-stock')).toBeInTheDocument();
