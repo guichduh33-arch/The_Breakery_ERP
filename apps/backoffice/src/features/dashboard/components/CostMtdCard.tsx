@@ -16,6 +16,7 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardCard } from './DashboardCard.js';
+import { RestrictedState } from '@/components/RestrictedState.js';
 import { Delta } from './Delta.js';
 import { formatIdr, formatIdrShort, formatPct } from '../utils/format.js';
 import { familyColor } from '@/features/reports/utils/chartColors.js';
@@ -30,6 +31,9 @@ export function CostMtdCard({
   isLoading: boolean;
   error: Error | null;
 }): JSX.Element {
+  if (cost?.restricted === true) {
+    return <RestrictedState what="COGS and expenses" permission="reports.financial.read" data-testid="card-cost-mtd" />;
+  }
   const lines = cost?.lines ?? [];
   const shown = lines.slice(0, MAX_LINES);
   const hidden = lines.length - shown.length;

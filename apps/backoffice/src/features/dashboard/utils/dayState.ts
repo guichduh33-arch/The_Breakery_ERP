@@ -61,7 +61,7 @@ export function hasNoComparisonBase(
           kpis.customers.vs_yesterday,
           kpis.items_sold.vs_yesterday,
           kpis.avg_basket.vs_yesterday,
-          kpis.gross_margin.vs_yesterday_pt,
+          kpis.gross_margin.restricted === true ? null : kpis.gross_margin.vs_yesterday_pt,
         ]
       : [
           kpis.net_revenue.vs_d7,
@@ -69,7 +69,7 @@ export function hasNoComparisonBase(
           kpis.customers.vs_d7,
           kpis.items_sold.vs_d7,
           kpis.avg_basket.vs_d7,
-          kpis.gross_margin.vs_d7_pt,
+          kpis.gross_margin.restricted === true ? null : kpis.gross_margin.vs_d7_pt,
         ];
   return deltas.every((d) => d === null);
 }

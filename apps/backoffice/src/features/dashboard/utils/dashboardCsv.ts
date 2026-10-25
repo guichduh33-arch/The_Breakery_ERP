@@ -12,7 +12,7 @@
 //
 // Arbitré le 2026-08-07 : ce format est la cible retenue (ni CSV large, ni PDF).
 
-import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
+import { buildCsv, downloadCsv, toLocalDateStr, type CsvColumn } from '@breakery/domain';
 import type { DashboardOverview } from '../hooks/useDashboardOverview.js';
 import { orderTypeLabel, paymentMethodLabel } from './format.js';
 
@@ -50,8 +50,10 @@ export function buildDashboardCsvRows(o: DashboardOverview): DashboardCsvRow[] {
   kpi('Avg basket', k.avg_basket.value, 'IDR');
   // La base de la marge voyage AVEC la marge : un chiffre exporté sans sa
   // réserve devient un chiffre officiel dans un tableur.
-  kpi(`Gross margin (${k.gross_margin.basis})`, k.gross_margin.value, '%');
-  kpi('Gross margin cost coverage', k.gross_margin.cost_coverage_pct, '%');
+  if (k.gross_margin.restricted !== true) {
+    kpi(`Gross margin (${k.gross_margin.basis})`, k.gross_margin.value, '%');
+    kpi('Gross margin cost coverage', k.gross_margin.cost_coverage_pct, '%');
+  }
   if (k.cash_on_hand.restricted !== true) {
     kpi('Cash on hand', k.cash_on_hand.value ?? null, 'IDR');
     for (const w of k.cash_on_hand.wallets) {
@@ -68,11 +70,13 @@ export function buildDashboardCsvRows(o: DashboardOverview): DashboardCsvRow[] {
   rows.push({ section: 'Payments', metric: 'Total collected', value: o.payments.total, unit: 'IDR' });
   rows.push({ section: 'Payments', metric: 'Cash expected in drawer', value: o.payments.cash_expected_drawer, unit: 'IDR' });
 
-  for (const l of o.cost_mtd.lines) {
-    rows.push({ section: `Cost MTD (${l.family})`, metric: `${l.account_code} ${l.account_name}`, value: l.amount, unit: 'IDR' });
+  if (o.cost_mtd.restricted !== true) {
+    for (const l of o.cost_mtd.lines) {
+      rows.push({ section: `Cost MTD (${l.family})`, metric: `${l.account_code} ${l.account_name}`, value: l.amount, unit: 'IDR' });
+    }
+    rows.push({ section: 'Cost MTD', metric: 'Total', value: o.cost_mtd.total, unit: 'IDR' });
+    rows.push({ section: 'Cost MTD', metric: 'Cost per basket', value: o.cost_mtd.cost_per_basket, unit: 'IDR' });
   }
-  rows.push({ section: 'Cost MTD', metric: 'Total', value: o.cost_mtd.total, unit: 'IDR' });
-  rows.push({ section: 'Cost MTD', metric: 'Cost per basket', value: o.cost_mtd.cost_per_basket, unit: 'IDR' });
 
   for (const d of o.revenue_30d) {
     rows.push({ section: 'Revenue 30 d', metric: d.date, value: d.net, unit: 'IDR' });
@@ -85,6 +89,6 @@ export function buildDashboardCsvRows(o: DashboardOverview): DashboardCsvRow[] {
 }
 
 export function exportDashboardCsv(o: DashboardOverview): void {
-  const day = o.generated_at.slice(0, 10);
+  const day = toLocalDateStr(o.generated_at);
   downloadCsv(buildCsv(buildDashboardCsvRows(o), COLUMNS), `dashboard-today-${day}.csv`);
 }

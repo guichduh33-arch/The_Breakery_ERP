@@ -12,9 +12,10 @@
 //   3. L'état du plancher et de la vitrine arrive en REALTIME, pas en poll :
 //      leur marqueur « live » est une promesse tenue (useDashboardPanels).
 //
-// Cadences et droits : l'agrégat (`get_dashboard_overview_v3`, poll 60 s) porte
+// Cadences et droits : l'agrégat (`get_dashboard_overview_v4`, poll 60 s) porte
 // la barrière `reports.read`, et son bloc trésorerie exige en plus
-// `accounting.cash.read`. Les trois panneaux ont chacun LEUR droit — d'où des
+// `accounting.cash.read`. Coûts et marge exigent `reports.financial.read`.
+// Les trois panneaux ont chacun LEUR droit — d'où des
 // requêtes séparées, pour qu'un rôle sans droit rapport garde l'état du
 // plancher qu'il a le droit de voir. Chaque carte dégrade seule ; un 42501 se
 // rend « restreint », jamais en erreur rouge.
@@ -65,6 +66,7 @@ import { RevenueShareCard } from '@/features/dashboard/components/RevenueShareCa
 import { Delta } from '@/features/dashboard/components/Delta.js';
 import { formatClock, formatHourRange, formatIdr, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
 import { exportDashboardCsv } from '@/features/dashboard/utils/dashboardCsv.js';
+import { dashboardFinancialView } from '@/features/dashboard/utils/dashboardFinancial.js';
 import { revenue30dTarget } from '@/features/dashboard/utils/kpiTargets.js';
 import { useTodayHours } from '@/features/dashboard/hooks/useTodayHours.js';
 import {
@@ -127,7 +129,9 @@ export default function DashboardPage({ data }: DashboardPageProps) {
   const isTest = data !== undefined;
   const live = useDashboardOverview(!isTest);
 
-  const overview  = isTest ? data.data : live.data ?? null;
+  const loadedOverview = isTest ? data.data : live.data ?? null;
+  const overview = loadedOverview === null ? null
+    : dashboardFinancialView(loadedOverview, hasPermission('reports.financial.read'));
   const isLoading = isTest ? data.isLoading : live.isLoading;
   const error     = isTest ? data.error : live.error ?? null;
   const refetch   = isTest ? data.refetch : () => { void live.refetch(); };
