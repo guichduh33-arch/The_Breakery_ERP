@@ -443,3 +443,6 @@ verify_jwt = false
 
 [functions.customer-birthday-notify]
 verify_jwt = false
+
+[functions.download-expense-receipt]
+verify_jwt = false

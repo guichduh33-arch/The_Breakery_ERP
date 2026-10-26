@@ -21,6 +21,7 @@ import { ChevronRight, CornerDownLeft, Search } from 'lucide-react';
 import { CenterModal, cn, useDebouncedValue } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
 import { NAV_DOMAINS, flattenDestinations, visibleDomains } from './nav.js';
 import { MIN_ENTITY_QUERY, usePaletteSearch } from './usePaletteSearch.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
@@ -98,6 +99,7 @@ export interface CommandPaletteProps {
 
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const navigate = useNavigate();
+  const beginDraft = useBeginExpenseDraft();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
@@ -119,7 +121,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       crumbs: d.columnLabel === '' ? [d.domainLabel] : [d.domainLabel, d.columnLabel],
       group: 'Pages',
     }));
-    const actions: PaletteEntry[] = ACTIONS.filter((a) => hasPermission(a.permission)).map((a) => ({
+    const actions: PaletteEntry[] = ACTIONS.filter((a) => hasPermission(a.permission) || (a.permission === 'expenses.create' && hasPermission('expenses.manage'))).map((a) => ({
       to: a.to,
       label: a.label,
       crumbs: [],
@@ -197,7 +199,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const go = (to: string) => {
     onClose();
-    void navigate(to);
+    if (to === '/backoffice/expenses/new') void beginDraft.begin();
+    else void navigate(to);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {

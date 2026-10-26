@@ -1,113 +1,85 @@
-// apps/backoffice/src/features/expenses/components/ReceiptUploader.tsx
-//
-// Uploads receipt files to the private `expense-receipts` bucket under the
-// path convention `expenses/{expense_id}/receipt.<ext>`. Returns the storage
-// path on success — the caller persists it in `expenses.receipt_url`.
-
-import { useId, useState } from 'react';
-import { supabase } from '@/lib/supabase.js';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useAuthStore } from '@/stores/authStore.js';
+import { captureFinancialSession } from '@/lib/useFinancialAttempt.js';
+import type { ExpenseReceiptSnapshot } from '@/lib/pendingFinancialAttemptSchema.js';
 import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { useExpenseReceipt } from '../hooks/useExpenseReceipt.js';
+import { RECEIPT_ACCEPT, receiptFileDigest, validateReceiptFile } from '../utils/expenseReceiptFiles.js';
 
 export interface ReceiptUploaderProps {
-  /** UUID for namespacing the path. For new expenses, generate a draft UUID client-side. */
   expenseId: string;
-  /** Existing path. */
-  value?: string;
-  /** Called when upload completes — receives the storage path (object name). */
-  onUploaded: (path: string) => void;
-  disabled?: boolean;
+  value: string | null;
+  editable: boolean;
+  onBusyChange: (busy: boolean) => void;
 }
 
-const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf';
-const MAX_SIZE = 5 * 1024 * 1024;
-
-export function ReceiptUploader({
-  expenseId, value, onUploaded, disabled,
-}: ReceiptUploaderProps): JSX.Element {
-  const [busy,  setBusy]  = useState(false);
+export function ReceiptUploader({expenseId, value, editable, onBusyChange}: ReceiptUploaderProps): JSX.Element {
+  const attempt = useExpenseReceipt(expenseId);
+  const profile = useAuthStore(s => s.user?.id);
+  const token = useAuthStore(s => s.sessionToken);
+  const identity = JSON.stringify([expenseId, profile, token]);
+  const observed = useRef(identity); observed.current = identity;
+  const mounted = useRef(true);
+  const [file, setFile] = useState<File>();
+  const [hashing, setHashing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const errorId = useId();
+  const blocked = hashing || attempt.busy || Boolean(attempt.pending) || Boolean(attempt.storageError);
+  useEffect(() => {onBusyChange(blocked);}, [blocked, onBusyChange]);
+  useEffect(() => {setFile(undefined); setHashing(false); setError(null); setMessage(null);}, [identity]);
+  useEffect(() => {mounted.current = true; return () => {mounted.current = false;};}, []);
+  const current = (session: ReturnType<typeof captureFinancialSession>) => mounted.current
+    && observed.current === identity && session.current();
 
-  async function handleChange(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
-    const file = e.target.files?.[0];
-    if (file === undefined) return;
-
-    setError(null);
-    if (file.size > MAX_SIZE) {
-      setError('Receipt is too large (max 5 MB).');
-      return;
-    }
-    const ext = file.name.split('.').pop() ?? 'bin';
-    const path = `expenses/${expenseId}/receipt.${ext}`;
-
-    setBusy(true);
-    try {
-      const { error: upErr } = await supabase.storage
-        .from('expense-receipts')
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr !== null) {
-        setError(upErr.message);
-        return;
-      }
-      onUploaded(path);
-    } finally {
-      setBusy(false);
+  async function change(payload: ExpenseReceiptSnapshot, selected?: File): Promise<void> {
+    const session = captureFinancialSession();
+    if (!current(session)) return;
+    setError(null); setMessage(null);
+    const outcome = await attempt.submit(payload, selected);
+    if (!outcome.current || !current(session)) return;
+    if ('error' in outcome) {
+      setError(outcome.error instanceof Error ? outcome.error.message : 'The receipt change is unconfirmed. Check it again.');
+    } else if (outcome.result) {
+      setFile(undefined);
+      if (!outcome.result.applied) setError(outcome.result.reason === 'receipt_requires_draft'
+        ? 'This expense has already been submitted. The receipt was not changed.'
+        : 'The receipt changed in another tab. Review the current expense before continuing.');
+      else setMessage('Receipt change confirmed.');
     }
   }
-
-  return (
-    <div className="space-y-2">
-      <input
-        type="file"
-        // Le libellé visible du champ est un `<span>` porté par le formulaire
-        // appelant (ExpenseForm, « Receipt (optional) ») : il ne peut pas être
-        // associé, l'id du contrôle vivant ici. Le nom accessible est donc posé
-        // sur le contrôle lui-même — WCAG 1.3.1 / 4.1.2.
-        aria-label="Receipt file"
-        accept={ACCEPT}
-        aria-invalid={error !== null}
-        {...(error !== null ? { 'aria-describedby': errorId } : {})}
-        disabled={disabled === true || busy}
-        onChange={(e) => { void handleChange(e); }}
-        /* Le bouton du champ est un CONTRÔLE, pas une pastille : il prend la
-           géométrie de contrôle du système — feuille blanche, liseré
-           `border-strong` (3,83:1, seuil WCAG 1.4.11 clos), rayon 4 px, survol
-           sur papier pressé. Il portait `bg-gold-soft` + `text-gold` sans
-           bordure, ce que The Ink-Not-Gold Rule interdit et que DESIGN.md
-           relève par ailleurs comme le contrôle « Receipt file » à 1,08:1 —
-           une seule passe règle les deux défauts. */
-        /* La hauteur du contrôle était OBTENUE, pas décidée : `file:py-1.5` plus
-           la ligne du texte donnaient ≈ 32 px, un TROISIÈME cran sur un
-           formulaire où les sept autres champs font 44 px. DESIGN.md § Champs
-           n'en déclare que deux, et celui-ci est un champ de formulaire — donc
-           44 px. La hauteur est portée par le BOUTON du champ (`file:`), qui est
-           la seule boîte visible : la poser sur l'input laisserait le bouton
-           collé en haut d'une zone de 44 px. */
-        className={`block w-full text-sm text-text-secondary file:mr-3 file:h-touch-min file:rounded-md file:border file:border-border-strong file:bg-bg-elevated file:px-3 file:text-sm file:text-text-primary hover:file:bg-surface-4 ${FOCUS_RING}`}
-      />
-      {/* Les deux retours de l'envoi arrivaient en silence : « Uploading… »
-          apparaît hors du flux de lecture (role="status", poli), et le refus
-          interrompt le geste (role="alert", assertif) tout en étant rattaché au
-          champ par `aria-describedby`. */}
-      {busy && <div role="status" className="text-xs text-text-secondary">Uploading…</div>}
-      {error !== null && (
-        <div id={errorId} role="alert" className="text-xs text-red">{error}</div>
-      )}
-      {value !== undefined && value !== '' && (
-        <div className="text-xs text-text-secondary">
-          <span className="font-mono">{value}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="ml-2"
-            onClick={() => { onUploaded(''); }}
-          >
-            Remove
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+  async function attach(selected: File): Promise<void> {
+    const session = captureFinancialSession();
+    if (!current(session) || !editable || blocked) return;
+    setHashing(true); setError(null); setMessage(null); setFile(selected);
+    try {
+      validateReceiptFile(selected);
+      const sha256 = await receiptFileDigest(selected);
+      if (!current(session)) return;
+      await change({expenseId, expectedPath: value === '' ? null : value, kind: 'attach',
+        mime: selected.type, size: selected.size, sha256}, selected);
+    } catch (e) {if (current(session)) setError((e as Error).message);}
+    finally {if (current(session)) setHashing(false);}
+  }
+  const pending = attempt.pending?.payload;
+  return <div className="space-y-2">
+    {pending && <p role="status" className="text-sm text-text-secondary">The receipt change is unconfirmed. Check it before submitting or selecting another receipt.</p>}
+    {((editable && !pending) || pending?.kind === 'attach') && <input type="file" aria-label={pending ? 'Select the same receipt file' : 'Receipt file'}
+      accept={RECEIPT_ACCEPT} disabled={hashing || attempt.busy || !attempt.allowed || Boolean(attempt.storageError)}
+      aria-invalid={Boolean(error ?? attempt.storageError)} aria-describedby={error ?? attempt.storageError ? errorId : undefined}
+      className={'block w-full text-sm text-text-secondary ' + FOCUS_RING}
+      onChange={e => {
+        const selected = e.target.files?.[0]; e.target.value = '';
+        if (!selected) return;
+        if (pending) setFile(selected); else void attach(selected);
+      }} />}
+    {pending && <Button size="sm" disabled={attempt.busy || !attempt.allowed || Boolean(attempt.storageError)}
+      onClick={() => {void change(pending, pending.kind === 'attach' ? file : undefined);}}>Check pending receipt</Button>}
+    {editable && value && !pending && <Button size="sm" variant="ghost" disabled={blocked || !attempt.allowed}
+      onClick={() => {void change({expenseId, kind: 'remove', expectedPath: value});}}>Remove receipt</Button>}
+    {(hashing || attempt.busy) && <p role="status" className="text-sm text-text-secondary">Checking receipt…</p>}
+    {(error ?? attempt.storageError) && <p role="alert" id={errorId} className="text-sm text-danger">{attempt.storageError ?? error}</p>}
+    {message && <p role="status" className="text-sm text-text-secondary">{message}</p>}
+  </div>;
 }

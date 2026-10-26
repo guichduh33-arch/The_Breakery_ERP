@@ -2,11 +2,13 @@
 //
 // Session 14 / Phase 5.A — smoke for the rebuilt expense detail page.
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { readExpenseDraftSeed, type ExpenseDraftNavigationState } from '@/features/expenses/utils/expenseDraftNavigation.js';
 import type { JSX } from 'react';
+import { financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
 import ExpenseDetailPage from '@/pages/expenses/ExpenseDetailPage.js';
 import type { ExpenseRow } from '@/features/expenses/hooks/useExpensesList.js';
 import type * as UseExpensesListModule from '@/features/expenses/hooks/useExpensesList.js';
@@ -73,18 +75,16 @@ vi.mock('@/features/expenses/components/RejectDialog.js',  () => ({ RejectDialog
 vi.mock('@/features/expenses/components/PayDialog.js',     () => ({ PayDialog:     () => null }));
 
 let currentPerms = new Set<string>(['expenses.read', 'expenses.approve', 'expenses.pay']);
-vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: (p: string) => currentPerms.has(p) }),
-}));
+vi.mock('@/stores/authStore.js', async () => ({useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth}));
+beforeEach(() => {installFinancialBrowser(); resetFinancialSession(); financialTestAuth.setState({hasPermission: p => currentPerms.has(p)});});
 
 // Session 59 / Task 6b — stand-in for NewExpensePage that just echoes the
 // navigation state, so the "Duplicate" test can assert on the seed without
 // pulling in NewExpensePage's own mocking (covered separately in
 // NewExpensePage.smoke.test.tsx).
 function DuplicateTargetProbe(): JSX.Element {
-  const location = useLocation() as { state: { duplicateFrom?: unknown } | null };
-  return <pre data-testid="duplicate-seed">{JSON.stringify(location.state?.duplicateFrom ?? null)}</pre>;
+  const location = useLocation() as {state: ExpenseDraftNavigationState | null};
+  return <pre data-testid="duplicate-seed">{JSON.stringify(readExpenseDraftSeed(location.state?.expenseDraftTicket) ?? null)}</pre>;
 }
 
 function renderPage(): ReturnType<typeof render> {
@@ -129,12 +129,12 @@ describe('ExpenseDetailPage (Phase 5.A rewrite)', () => {
   });
 
   // Session 59 / Task 6b — "Duplicate" button.
-  it('shows Duplicate for a user with expenses.create and navigates with a prefilled seed', () => {
+  it('shows Duplicate for a user with expenses.create and navigates with a prefilled seed', async () => {
     currentPerms = new Set(['expenses.read', 'expenses.create']);
     renderPage();
     const duplicateBtn = screen.getByRole('button', { name: /Duplicate/i });
     fireEvent.click(duplicateBtn);
-    const seed: unknown = JSON.parse(screen.getByTestId('duplicate-seed').textContent ?? 'null');
+    const seed: unknown = JSON.parse((await screen.findByTestId('duplicate-seed')).textContent ?? 'null');
     expect(seed).toEqual({
       category_id:    'cat-1',
       amount:         '250000',

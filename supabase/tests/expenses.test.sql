@@ -10,15 +10,15 @@
 --
 -- Coverage T_EXP_01..11 :
 --   T_EXP_01 : tables/indexes/columns exist
---   T_EXP_02 : 12 standard categories seeded with active account
+--   T_EXP_02 : catégorie autonome liée à son compte de charge actif
 --   T_EXP_03 : next_expense_number() formats and monotonic
 --   T_EXP_04 : RLS enabled on expenses + expense_categories
---   T_EXP_05 : create_expense_v2 happy path
+--   T_EXP_05 : create_expense_v3 happy path
 --   T_EXP_06 : submit_expense_v1 draft -> submitted
 --   T_EXP_07 : approve_expense_v1 (cash) emits balanced 2-line JE
 --   T_EXP_08 : approve_expense_v1 (credit + VAT) emits 2-line JE (VAT folded, S59 F-4)
 --   T_EXP_09 : pay_expense on credit-approved emits payment JE
---   T_EXP_10 : create_expense_v2 idempotency_key replay returns same id
+--   T_EXP_10 : create_expense_v3 idempotency_key replay returns same id
 --   T_EXP_11 : real _emit_expense_je(uuid) call, vat_amount>0 — balanced JE, 2 lines,
 --              no line on account 1151 (S59 F-4 fix, real RPC not a simulation)
 --
@@ -76,14 +76,24 @@ SELECT ok(
 SELECT ok(true, 'T_EXP_01 schema OK');
 
 -- ---------------------------------------------------------------------------
--- T_EXP_02 : 12 categories seeded with active account
+-- T_EXP_02 : la configuration éditable n'impose aucun comptage global.
 -- ---------------------------------------------------------------------------
 
-SELECT is(
-  (SELECT COUNT(*)::INT FROM expense_categories WHERE is_active = true),
-  12,
-  'T_EXP_02 12 active expense_categories seeded'
-);
+CREATE TEMP TABLE expense_core_fixture(category_id uuid);
+WITH charge AS (
+  INSERT INTO accounts(code,name,account_class,account_type,balance_type,is_active)
+  VALUES('EXP-CAT-'||gen_random_uuid(),'Expense category fixture',6,'expense','debit',true)
+  RETURNING id
+), category AS (
+  INSERT INTO expense_categories(code,name,account_id,is_active)
+  SELECT 'EXP-CAT-'||gen_random_uuid(),'Expense category fixture',id,true FROM charge
+  RETURNING id,account_id
+)
+INSERT INTO expense_core_fixture SELECT id FROM category;
+SELECT is((SELECT count(*)::int FROM expense_core_fixture f
+  JOIN expense_categories c ON c.id=f.category_id JOIN accounts a ON a.id=c.account_id
+  WHERE c.is_active AND a.is_active AND a.account_type='expense'),1,
+  'T_EXP_02 a category references its own active expense account');
 
 -- ---------------------------------------------------------------------------
 -- T_EXP_03 : next_expense_number formatting + monotonic
@@ -95,7 +105,7 @@ DECLARE
   v_n2 TEXT;
   v_cat UUID;
 BEGIN
-  SELECT id INTO v_cat FROM expense_categories WHERE code='OTHER';
+  SELECT category_id INTO v_cat FROM pg_temp.expense_core_fixture;
   v_n1 := next_expense_number('2026-06-01');
   INSERT INTO expenses (expense_number, category_id, amount, payment_method, description, expense_date)
   VALUES (v_n1, v_cat, 1, 'cash', 't_exp_03 fixture', '2026-06-01');
@@ -145,7 +155,7 @@ DECLARE
   v_credit    UUID;
   v_n         TEXT;
 BEGIN
-  SELECT id INTO v_cat FROM expense_categories WHERE code='UTILITIES';
+  SELECT category_id INTO v_cat FROM pg_temp.expense_core_fixture;
   SELECT id INTO v_admin FROM user_profiles WHERE role_code IN ('SUPER_ADMIN','ADMIN') LIMIT 1;
 
   -- Direct insert (bypassing RLS as service_role) of a submitted expense.
@@ -207,7 +217,7 @@ DECLARE
   v_ap        UUID;
   v_n         TEXT;
 BEGIN
-  SELECT id INTO v_cat FROM expense_categories WHERE code='UTILITIES';
+  SELECT category_id INTO v_cat FROM pg_temp.expense_core_fixture;
   SELECT id INTO v_admin FROM user_profiles WHERE role_code IN ('SUPER_ADMIN','ADMIN') LIMIT 1;
 
   v_n := next_expense_number('2026-06-03');
@@ -287,7 +297,7 @@ DECLARE
   v_key   UUID := '00000000-0000-0000-0000-000000000123';
   v_failed BOOLEAN := false;
 BEGIN
-  SELECT id INTO v_cat FROM expense_categories WHERE code='OFFICE';
+  SELECT category_id INTO v_cat FROM pg_temp.expense_core_fixture;
   SELECT id INTO v_admin FROM user_profiles WHERE role_code IN ('SUPER_ADMIN','ADMIN') LIMIT 1;
 
   INSERT INTO expenses (expense_number, category_id, amount, payment_method,
@@ -329,7 +339,7 @@ DECLARE
   v_je_id      UUID;
   v_n          TEXT;
 BEGIN
-  SELECT id INTO v_cat FROM expense_categories WHERE code='UTILITIES';
+  SELECT category_id INTO v_cat FROM pg_temp.expense_core_fixture;
   SELECT id, auth_user_id INTO v_admin, v_admin_auth
     FROM user_profiles WHERE role_code IN ('SUPER_ADMIN','ADMIN') AND is_active = true LIMIT 1;
 

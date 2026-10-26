@@ -155,9 +155,10 @@ describe('nav model', () => {
       expect(visibleDomains(NAV_DOMAINS, allowAll)).toHaveLength(NAV_DOMAINS.length);
     });
 
-    it('ne laisse que Today quand le rôle n’a aucun droit', () => {
+    it('laisse Today et les dépenses personnelles quand le rôle n’a aucun droit', () => {
       const visible = visibleDomains(NAV_DOMAINS, allowNone);
-      expect(visible.map((d) => d.id)).toEqual(['today']);
+      expect(visible.map((d) => d.id)).toEqual(['today', 'finance']);
+      expect(flattenDestinations(visible).map(d => d.to)).toContain('/backoffice/expenses');
     });
 
     it('vide la colonne puis le domaine en cascade', () => {

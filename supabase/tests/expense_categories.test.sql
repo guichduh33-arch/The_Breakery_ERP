@@ -37,7 +37,7 @@ SELECT throws_ok($$UPDATE expense_categories SET code='RENAME' WHERE code='TEST_
 SELECT lives_ok($$SELECT update_expense_category_v1((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
   'Renamed', (SELECT accounts[2] FROM cat_fixture), 'Updated', true)$$, 'unused account editable');
 
-SELECT lives_ok($$SELECT create_expense_v2((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
+SELECT lives_ok($$SELECT create_expense_v3((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
   5000, 'cash', 'Category fixture', CURRENT_DATE, 0, NULL, NULL,
   'ec300000-0000-0000-0000-000000000003')$$, 'create draft with active category');
 SELECT throws_ok($$SELECT update_expense_category_v1((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
@@ -50,10 +50,10 @@ SELECT throws_ok($$SELECT update_expense_category_v1((SELECT id FROM expense_cat
 UPDATE expenses SET deleted_at=NULL WHERE idempotency_key='ec300000-0000-0000-0000-000000000003';
 SELECT lives_ok($$SELECT update_expense_category_v1((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
   'Renamed', (SELECT accounts[2] FROM cat_fixture), 'Updated again', false)$$, 'used category may be renamed and disabled');
-SELECT throws_ok($$SELECT create_expense_v2((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
+SELECT throws_ok($$SELECT create_expense_v3((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
   5000, 'cash', 'Blocked', CURRENT_DATE)$$,
   '22023', 'expense_category_inactive', 'new RPC expense cannot use inactive category');
-SELECT lives_ok($$SELECT create_expense_v2((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
+SELECT lives_ok($$SELECT create_expense_v3((SELECT id FROM expense_categories WHERE code='TEST_CAT_3009'),
   5000, 'cash', 'Category fixture', CURRENT_DATE, 0, NULL, NULL,
   'ec300000-0000-0000-0000-000000000003')$$, 'replay of existing expense survives deactivation');
 SELECT lives_ok($$UPDATE expenses SET description='Existing expense continues', category_id=category_id
@@ -61,7 +61,7 @@ SELECT lives_ok($$UPDATE expenses SET description='Existing expense continues', 
   'unchanged category does not block existing expense');
 SELECT lives_ok($$SELECT create_expense_category_v1('TEST_OTHER_3009', 'Other',
   (SELECT accounts[1] FROM cat_fixture))$$, 'second active category');
-SELECT create_expense_v2((SELECT id FROM expense_categories WHERE code='TEST_OTHER_3009'),
+SELECT create_expense_v3((SELECT id FROM expense_categories WHERE code='TEST_OTHER_3009'),
   5000, 'cash', 'Other fixture', CURRENT_DATE, 0, NULL, NULL,
   'ec300000-0000-0000-0000-000000000004');
 SELECT throws_ok($$UPDATE expenses SET category_id=(SELECT id FROM expense_categories WHERE code='TEST_CAT_3009')

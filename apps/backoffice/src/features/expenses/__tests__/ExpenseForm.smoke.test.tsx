@@ -44,7 +44,6 @@ function renderForm(initial: ExpenseFormValues = emptyExpenseFormValues()) {
   const utils = render(
     <QueryClientProvider client={qc}>
       <ExpenseForm
-        draftId="00000000-0000-0000-0000-000000000099"
         value={values}
         onChange={onChange}
         onSubmit={onSubmit}
@@ -107,7 +106,6 @@ describe('ExpenseForm — smoke', () => {
       description: 'Electricity bill',
       vendor_name: 'PLN',
       expense_date: '2026-06-01',
-      receipt_url: '',
     };
     renderForm(values);
     const submit = screen.getByRole('button', { name: /Save as draft/i });
@@ -123,7 +121,6 @@ describe('ExpenseForm — smoke', () => {
       description: 'Electricity bill',
       vendor_name: 'PLN',
       expense_date: '2026-06-01',
-      receipt_url: '',
     };
     const { onSubmit } = renderForm(values);
     const submit = screen.getByRole('button', { name: /Save as draft/i });

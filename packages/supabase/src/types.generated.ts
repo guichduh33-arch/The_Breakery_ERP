@@ -1421,6 +1421,84 @@ export type Database = {
           },
         ]
       }
+      expense_creation_results: {
+        Row: {
+          actor_id: string
+          created_at: string
+          expense_id: string
+          idempotency_key: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          expense_id: string
+          idempotency_key: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          expense_id?: string
+          idempotency_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_creation_results_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_creation_results_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: true
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_receipt_results: {
+        Row: {
+          actor_id: string
+          created_at: string
+          expense_id: string
+          idempotency_key: string
+          request_payload: Json
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          expense_id: string
+          idempotency_key: string
+          request_payload: Json
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          expense_id?: string
+          idempotency_key?: string
+          request_payload?: Json
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_receipt_results_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_receipt_results_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -6398,6 +6476,19 @@ export type Database = {
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
+      _read_expense_creation_v1: {
+        Args: { p_key: string; p_profile: string }
+        Returns: string
+      }
+      _read_expense_receipt_v1: {
+        Args: {
+          p_actor: string
+          p_expense: string
+          p_key: string
+          p_request: Json
+        }
+        Returns: Json
+      }
       _read_loyalty_operation_v1: {
         Args: {
           p_actor: string
@@ -6666,6 +6757,10 @@ export type Database = {
           p_secret_hash: string
         }
         Returns: Json
+      }
+      authorize_expense_receipt_download_v1: {
+        Args: { p_expense_id: string; p_session_id: string }
+        Returns: string
       }
       calculate_pb1_payable_v3: {
         Args: { p_period_end: string; p_period_start: string }
@@ -6964,7 +7059,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_expense_v2: {
+      create_expense_v3: {
         Args: {
           p_amount: number
           p_category_id: string
@@ -8716,6 +8811,15 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      set_expense_receipt_v1: {
+        Args: {
+          p_expected_path?: string
+          p_expense_id: string
+          p_idempotency_key?: string
+          p_storage_path?: string
+        }
+        Returns: Json
       }
       set_expense_threshold_v3: {
         Args: {

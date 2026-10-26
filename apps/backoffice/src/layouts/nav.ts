@@ -153,7 +153,7 @@ export const NAV_DOMAINS: NavDomain[] = [
       {
         label: 'Expenses',
         links: [
-          { to: '/backoffice/expenses', label: 'Expenses', permission: 'expenses.read' },
+          { to: '/backoffice/expenses', label: 'Expenses' },
         ],
       },
       {

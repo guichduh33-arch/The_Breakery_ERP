@@ -67,21 +67,21 @@ describe('PermissionGate — le refus s’affiche, il n’éjecte plus', () => {
   afterEach(cleanup);
 
   it("laisse l'utilisateur sur son URL au lieu de le renvoyer à l'accueil", async () => {
-    renderAt('/backoffice/expenses');
+    renderAt('/backoffice/settings/expense-thresholds');
     await screen.findByTestId('route-denied');
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/backoffice/expenses');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/backoffice/settings/expense-thresholds');
   });
 
   it('garde la coquille de navigation montée', async () => {
-    renderAt('/backoffice/expenses');
+    renderAt('/backoffice/settings/expense-thresholds');
     await screen.findByTestId('route-denied');
     expect(screen.getByTestId('shell-nav')).toBeInTheDocument();
   });
 
   it('nomme la permission manquante et offre une sortie', async () => {
-    renderAt('/backoffice/expenses');
+    renderAt('/backoffice/settings/expense-thresholds');
     const denied = await screen.findByTestId('route-denied');
-    expect(denied).toHaveTextContent('expenses.read');
+    expect(denied).toHaveTextContent('expenses.thresholds.read');
     expect(denied).toHaveTextContent('Access restricted');
     expect(screen.getByRole('link', { name: /back to dashboard/i })).toHaveAttribute(
       'href',

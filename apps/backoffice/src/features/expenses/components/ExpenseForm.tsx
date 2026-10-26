@@ -15,7 +15,7 @@ import { Input, Select } from '@breakery/ui';
 import { Button } from '@/components/BackofficeUi.js';
 import { FormField } from '@/components/FormField.js';
 import { CategoryPicker } from './CategoryPicker.js';
-import { ReceiptUploader } from './ReceiptUploader.js';
+import { toLocalDateStr } from '@breakery/domain';
 
 export interface ExpenseFormValues {
   category_id: string;
@@ -25,7 +25,6 @@ export interface ExpenseFormValues {
   description: string;
   vendor_name: string;
   expense_date: string; // yyyy-mm-dd
-  receipt_url: string;
 }
 
 export const emptyExpenseFormValues = (): ExpenseFormValues => ({
@@ -35,8 +34,7 @@ export const emptyExpenseFormValues = (): ExpenseFormValues => ({
   payment_method: 'cash',
   description: '',
   vendor_name: '',
-  expense_date: new Date().toISOString().slice(0, 10),
-  receipt_url: '',
+  expense_date: toLocalDateStr(new Date()),
 });
 
 // Session 59 / Task 6b — fields carried over by "Duplicate" from an existing
@@ -48,8 +46,6 @@ export type DuplicateExpenseSeed = Pick<
 >;
 
 export interface ExpenseFormProps {
-  /** Pre-generated UUID (for namespacing receipt uploads before insert). */
-  draftId: string;
   value: ExpenseFormValues;
   onChange: (next: ExpenseFormValues) => void;
   onSubmit: () => void;
@@ -69,7 +65,7 @@ const FIELD_DOM_IDS: Partial<Record<keyof ExpenseFormValues, string>> = {
 const FIELD_ORDER = ['category_id', 'expense_date', 'amount', 'vat_amount', 'description'] as const;
 
 export function ExpenseForm({
-  draftId, value, onChange, onSubmit, onCancel, submitting, submitLabel,
+  value, onChange, onSubmit, onCancel, submitting, submitLabel,
 }: ExpenseFormProps): JSX.Element {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -194,11 +190,7 @@ export function ExpenseForm({
         <span className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">
           Receipt (optional)
         </span>
-        <ReceiptUploader
-          expenseId={draftId}
-          value={value.receipt_url}
-          onUploaded={(p) => patch({ receipt_url: p })}
-        />
+        <p className="text-sm text-text-secondary">Save the draft first, then attach its receipt on the expense page.</p>
       </div>
 
       {/* `size="sm"` explicite : le défaut du primitif rend 56 px, et cette

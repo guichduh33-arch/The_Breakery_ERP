@@ -13,9 +13,8 @@
 --           Un `CREATE OR REPLACE VIEW` sans la clause `WITH` l'efface EN SILENCE —
 --           c'est exactement ce qu'a fait 20260808000001. `pg_class.reloptions` fait
 --           foi, jamais le COMMENT (celui posé en 2026-08-08 mentait).
---   T5-T7 : la policy UPDATE de `expenses` est bornée au brouillon de son auteur,
---           et porte un WITH CHECK. Sans WITH CHECK, un UPDATE nu promeut une
---           dépense en `approved` sans SOD, sans PIN et sans écriture comptable.
+--   T5-T7 : les clients ne peuvent plus UPDATE `expenses` directement.
+--           Les RPC portent seules les transitions, la SOD, le PIN et la JE.
 --
 -- Run via MCP execute_sql wrap BEGIN/ROLLBACK ; pgtap est pré-créée sur V3 dev.
 
@@ -64,32 +63,30 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T5-T7 — expenses : la policy UPDATE est bornée
+-- T5-T7 — expenses : seules les RPC peuvent écrire, même pour un brouillon.
 -- ---------------------------------------------------------------------------
 
 SELECT is(
-  (SELECT count(*)::int FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'expenses' AND cmd = 'UPDATE'),
-  1,
-  'T5: expenses has exactly one UPDATE policy'
-);
-
--- La policy ne doit PAS ouvrir sur une permission large : toute transition de statut
--- passe par les RPC SECURITY DEFINER, qui portent la SOD, le PIN et la JE.
-SELECT is(
-  (SELECT bool_or(qual ILIKE '%expenses.manage%') FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'expenses' AND cmd = 'UPDATE'),
+  has_table_privilege('authenticated','public.expenses','UPDATE'),
   false,
-  'T6: the expenses UPDATE policy does NOT grant blanket access to expenses.manage holders'
+  'T5: authenticated cannot UPDATE expenses directly, including through PUBLIC'
 );
 
--- Sans WITH CHECK, USING ne valide que la ligne AVANT modification : un brouillon
--- peut alors être promu en `approved` par un UPDATE nu.
+-- Le refus anon inclut les privilèges éventuellement hérités de PUBLIC.
 SELECT is(
-  (SELECT bool_and(with_check IS NOT NULL AND with_check ILIKE '%draft%') FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'expenses' AND cmd = 'UPDATE'),
-  true,
-  'T7: the expenses UPDATE policy has a WITH CHECK pinning the resulting row to draft'
+  has_table_privilege('anon','public.expenses','UPDATE'),
+  false,
+  'T6: anon cannot UPDATE expenses directly, including through PUBLIC'
+);
+
+-- Une policy ALL permissive rouvrirait aussi UPDATE ; la garde PIN restrictive
+-- ne constitue pas une autorisation d'écrire et reste donc compatible.
+SELECT is(
+  (SELECT count(*)::int FROM pg_policies
+    WHERE schemaname='public' AND tablename='expenses'
+      AND permissive='PERMISSIVE' AND cmd IN ('UPDATE','ALL')),
+  0,
+  'T7: no permissive UPDATE or ALL policy can bypass the expense RPCs'
 );
 
 SELECT * FROM finish();
