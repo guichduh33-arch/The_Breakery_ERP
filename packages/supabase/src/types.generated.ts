@@ -6376,6 +6376,10 @@ export type Database = {
           ledger_id: string
         }[]
       }
+      _assert_payment_gift_eligible_v1: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
       _assert_product_sellable_v1: {
         Args: { p_is_combo_component?: boolean; p_product_id: string }
         Returns: undefined
@@ -6462,6 +6466,10 @@ export type Database = {
         Args: { p_source: string; p_vars: Json }
         Returns: string
       }
+      _payment_gift_items_v1: {
+        Args: { p_evaluation: Json; p_promotions: Json }
+        Returns: Json
+      }
       _pb1_split_v1: {
         Args: { p_items_total: number }
         Returns: {
@@ -6473,6 +6481,10 @@ export type Database = {
       _pct_change: {
         Args: { p_current: number; p_previous: number }
         Returns: number
+      }
+      _pos_order_snapshot_data_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
@@ -6927,7 +6939,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v29: {
+      complete_order_with_payment_v30: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7291,7 +7303,7 @@ export type Database = {
         }
         Returns: string
       }
-      evaluate_promotions_v2: {
+      evaluate_promotions_v3: {
         Args: {
           p_cart_items: Json
           p_customer_id?: string
@@ -7326,7 +7338,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v10: {
+      fire_counter_order_v11: {
         Args: {
           p_client_uuid: string
           p_customer_id?: string
@@ -7655,7 +7667,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_order_snapshot_v1: { Args: { p_order_id: string }; Returns: Json }
+      get_pos_order_snapshot_v2: { Args: { p_order_id: string }; Returns: Json }
       get_pos_order_type_category_mix_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -8332,7 +8344,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v21: {
+      pay_existing_order_v22: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8639,7 +8651,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v5: {
+      reopen_held_order_v6: {
         Args: { p_order_id: string; p_session_id?: string }
         Returns: Json
       }

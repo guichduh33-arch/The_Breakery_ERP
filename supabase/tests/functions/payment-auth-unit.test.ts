@@ -77,6 +77,6 @@ describe('paiement — identité vérifiée avant les accès métier', () => {
     const response = await invoke('Bearer test', false);
     expect(response.status).toBe(200);
     expect(mocks.verify).toHaveBeenCalledOnce();
-    expect(mocks.rpc).toHaveBeenCalledWith('complete_order_with_payment_v29', expect.any(Object));
+    expect(mocks.rpc).toHaveBeenCalledWith('complete_order_with_payment_v30', expect.any(Object));
   });
 });

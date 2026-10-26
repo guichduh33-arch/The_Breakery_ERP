@@ -1,7 +1,7 @@
 import type { CartItem } from '@breakery/domain';
 import type { Database } from '@breakery/supabase';
 
-export type CounterFireArgs = Database['public']['Functions']['fire_counter_order_v10']['Args'];
+export type CounterFireArgs = Database['public']['Functions']['fire_counter_order_v11']['Args'];
 export interface CounterFireScope {
   project: string;
   userId: string;

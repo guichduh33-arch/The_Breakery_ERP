@@ -1,4 +1,4 @@
-import type { AppliedPromotion, PaymentMethod, PaymentResultLine } from '@breakery/domain';
+import type { AppliedPromotion, CartItem, PaymentMethod, PaymentResultLine } from '@breakery/domain';
 export interface PaymentSuccessState {
   orderNumber: string;
   orderId?: string;
@@ -9,6 +9,7 @@ export interface PaymentSuccessState {
   taxAmount: number;
   subtotal?: number;
   lines?: PaymentResultLine[];
+  paidItems?: CartItem[];
   changeGiven: number | null;
   pointsEarned: number;
   // S44 D4 — server-resolved loyalty balance (direct/EF path only).

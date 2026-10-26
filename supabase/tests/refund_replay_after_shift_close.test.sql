@@ -81,7 +81,7 @@ p_metadata:=jsonb_build_object('reference_type','test_fixture','reference_id',c.
 INSERT INTO pos_sessions(opened_by,opening_cash,status)
 VALUES(c.profile,100000,'open') RETURNING id INTO c.shift_id;
 SELECT total INTO sale_amount FROM _pb1_split_v1(44000);
-made:=complete_order_with_payment_v29(
+made:=complete_order_with_payment_v30(
 p_session_id:=c.shift_id,p_order_type:='take_out',
 p_items:=jsonb_build_array(jsonb_build_object(
 'product_id',c.product_id,'quantity',2,'unit_price',22000,'modifiers','[]'::jsonb)),

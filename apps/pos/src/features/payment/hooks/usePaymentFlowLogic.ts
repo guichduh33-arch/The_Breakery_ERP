@@ -61,7 +61,8 @@ export function usePaymentFlowLogic() {
   const removeTender = usePaymentStore((s) => s.removeTender);
 
   const liveCart = useCartStore((s) => s.cart);
-  const cart = activeAttempt?.cart ?? liveCart;
+  const savedCart = activeAttempt?.cart ?? liveCart;
+  const cart = activeAttempt?.result?.paidItems ? { ...savedCart, items: activeAttempt.result.paidItems } : savedCart;
   const liveCustomer = useCartStore((s) => s.attachedCustomer);
   const attachedCustomer = activeAttempt ? activeAttempt.customer : liveCustomer;
   const livePromotions = useCartStore((s) => s.appliedPromotions);
@@ -390,6 +391,7 @@ export function usePaymentFlowLogic() {
         taxAmount: result.tax_amount ?? tax_amount,
         ...(result.subtotal != null ? { subtotal: result.subtotal } : {}),
         ...(result.lines ? { lines: result.lines } : {}),
+        ...(result.paid_items ? { paidItems: result.paid_items } : {}),
         changeGiven: result.change_given,
         pointsEarned: result.loyalty_points_earned
           ?? (attachedCustomer

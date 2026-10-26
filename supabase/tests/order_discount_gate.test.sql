@@ -60,7 +60,7 @@ END $$;
 
 -- T1 : discount > 0 sans authorized_by → exception P0014 (ADR-013 Lot 3 : ERRCODE dédié, ex-P0001)
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v29(
+  $$ SELECT complete_order_with_payment_v30(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -71,7 +71,7 @@ SELECT throws_ok(
 -- T2 : authorized_by sans sales.discount → P0003 (fails on has_permission, before
 -- the nonce is even consulted -- no nonce needed here).
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v29(
+  $$ SELECT complete_order_with_payment_v30(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -86,7 +86,7 @@ BEGIN
   INSERT INTO discount_authorizations (manager_profile_id)
     VALUES (current_setting('breakery.v_mgr')::uuid)
     RETURNING id INTO v_nonce;
-  v_res := complete_order_with_payment_v29(
+  v_res := complete_order_with_payment_v30(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -109,7 +109,7 @@ SELECT is(current_setting('breakery.t3_audit'), 'true', 'T3 emits one order.disc
 -- réelle est côté EF (mauvais PIN => aucun nonce n'est minté) et testée dans
 -- discount_auth_nonce.test.sql (T1/T3/T4/T5).
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v29(
+  $$ SELECT complete_order_with_payment_v30(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -122,7 +122,7 @@ SELECT throws_ok(
 -- T5 : pas de discount → pas de nonce requis → succès
 DO $$ DECLARE v_res JSONB;
 BEGIN
-  v_res := complete_order_with_payment_v29(
+  v_res := complete_order_with_payment_v30(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -134,7 +134,7 @@ SELECT is(current_setting('breakery.t5_ok'), 'true', 'T5 no-discount sale needs 
 -- T6 : unit_price client 15000 < retail 20000 sans override → serveur force 20000 + audit
 DO $$ DECLARE v_res JSONB; v_oid UUID; v_persisted NUMERIC; v_audit INT;
 BEGIN
-  v_res := complete_order_with_payment_v29(
+  v_res := complete_order_with_payment_v30(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 15000)),
@@ -152,7 +152,7 @@ SELECT is(current_setting('breakery.t6_audit'), 'true', 'T6 emits order.price_ov
 -- T7 : gift line avec promotion déclarée → prix 0 respecté
 DO $$ DECLARE v_res JSONB; v_oid UUID; v_gift_price NUMERIC;
 BEGIN
-  v_res := complete_order_with_payment_v29(
+  v_res := complete_order_with_payment_v30(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(
@@ -169,16 +169,21 @@ BEGIN
 END $$;
 SELECT is(current_setting('breakery.t7_ok'), 'true', 'T7 declared gift line keeps unit_price 0');
 
--- T8 : gift line SANS promotion déclarée → check_violation
-SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v29(
+-- T8 : une estimation cadeau sans promotion déclarée n'attribue aucun article.
+DO $$ DECLARE v_result jsonb;
+BEGIN
+  v_result := complete_order_with_payment_v30(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(
          jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000),
          jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 0, 'is_promo_gift', true)),
-       p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000)) $$,
-  '23514', NULL, 'T8 undeclared gift line is rejected');
+       p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000));
+  PERFORM set_config('breakery.t8_order',v_result->>'order_id',true);
+END $$;
+SELECT ok((SELECT count(*)=1 AND bool_and(NOT is_promo_gift AND unit_price=20000)
+  FROM order_items WHERE order_id=current_setting('breakery.t8_order')::uuid),
+  'T8 undeclared gift estimate cannot grant an extra line');
 
 SELECT * FROM finish();
 ROLLBACK;

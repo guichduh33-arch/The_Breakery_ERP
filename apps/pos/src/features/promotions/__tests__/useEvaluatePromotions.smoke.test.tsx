@@ -208,7 +208,7 @@ describe('useEvaluatePromotions', () => {
 
     const applied = await result.current.runEvaluation(CART_3_BAGUETTES, null);
 
-    expect(rpcMock).toHaveBeenCalledWith('evaluate_promotions_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('evaluate_promotions_v3', expect.objectContaining({
       p_cart_items: expect.any(Array) as unknown,
       p_subtotal: 45000,
     }));
@@ -319,7 +319,7 @@ describe('cartToRpcPayload — gift lines are not fed back into the RPC', () => 
       { ...CART_3_BAGUETTES.items[0]!, id: 'cancelled', quantity: 99, is_cancelled: true },
     ] };
     await result.current.runEvaluation(cart, null);
-    expect(rpcMock).toHaveBeenLastCalledWith('evaluate_promotions_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenLastCalledWith('evaluate_promotions_v3', expect.objectContaining({
       p_subtotal: 15000, p_cart_items: [{ line_id: 'l1', product_id: 'prod-baguette', quantity: 1, unit_price: 15000 }],
     }));
   });

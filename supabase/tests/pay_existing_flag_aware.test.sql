@@ -16,7 +16,7 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v10(
+  r := fire_counter_order_v11(
     p_client_uuid := '00000000-0000-0000-0000-0000000cfbbb'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf002',
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000fd001","quantity":1,"unit_price":5000,"modifiers":[]}]'::jsonb,
@@ -31,7 +31,7 @@ CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 -- allow_negative = false -> pay must reject (insufficient); order stays unpaid.
 UPDATE business_config SET allow_negative_stock=false WHERE id=1;
 DO $$ DECLARE r jsonb; BEGIN
-  r := pay_existing_order_v21(p_order_id := current_setting('fa.order_id')::uuid,
+  r := pay_existing_order_v22(p_order_id := current_setting('fa.order_id')::uuid,
         p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb);
   INSERT INTO _r VALUES ('blocked', false);
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('blocked', true); END $$;
@@ -40,7 +40,7 @@ INSERT INTO _r VALUES ('still_unpaid', (SELECT status::text FROM orders WHERE id
 -- allow_negative = true -> pay succeeds, stock goes to -1.
 UPDATE business_config SET allow_negative_stock=true WHERE id=1;
 DO $$ DECLARE r jsonb; BEGIN
-  r := pay_existing_order_v21(p_order_id := current_setting('fa.order_id')::uuid,
+  r := pay_existing_order_v22(p_order_id := current_setting('fa.order_id')::uuid,
         p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb);
   INSERT INTO _r VALUES ('paid_neg', (SELECT status::text FROM orders WHERE id=current_setting('fa.order_id')::uuid)='paid'
                                      AND (SELECT current_stock FROM products WHERE id='00000000-0000-0000-0000-0000000fd001')=-1);

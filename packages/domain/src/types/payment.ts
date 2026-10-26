@@ -1,6 +1,8 @@
 // packages/domain/src/types/payment.ts
 // gopay/ovo/dana : e-wallets individuels (ADR-006 déc. 9 lot B, migration _207) —
 // settlement identique au QRIS (mapping comptable + bucket de réconciliation).
+import type { CartItem } from './cart.js';
+
 export type PaymentMethod =
   'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit' | 'gopay' | 'ovo' | 'dana';
 
@@ -48,6 +50,8 @@ export interface PaymentResult {
   // may omit `lines`; consumers fall back to the client cart when absent.
   subtotal?: number;
   lines?: PaymentResultLine[];
+  /** Lignes réellement persistées, cadeaux acquis compris. */
+  paid_items?: CartItem[];
   // S44 D4 — loyalty figures come from the server envelope (the DB resolves the
   // tier × category multiplier). The receipt/success modal display these instead
   // of recomputing client-side. `loyalty_balance_after` is present on the direct

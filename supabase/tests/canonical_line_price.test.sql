@@ -70,7 +70,7 @@ END $$;
 DO $$
 DECLARE r JSONB;
 BEGIN
-  r := complete_order_with_payment_v29(
+  r := complete_order_with_payment_v30(
     p_session_id := current_setting('w1.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items      := jsonb_build_array(jsonb_build_object(
@@ -145,7 +145,7 @@ SELECT is(
 -- Gate anon
 SELECT ok(
   NOT has_function_privilege('anon',
-    'complete_order_with_payment_v29(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid,text)',
+    'complete_order_with_payment_v30(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid,text)',
     'EXECUTE'),
   'T9 anon EXECUTE revoque sur v17');
 

@@ -119,6 +119,7 @@ export function useFireToStations(): UseFireToStationsResult {
   const stationMapReady = stationMapData !== undefined && Object.keys(stationMap).length > 0;
   const candidates = cartItems.filter((item) => {
     if (item.is_cancelled) return false;
+    if (item.is_promo_gift && !item.server_id) return false;
     if (printedItemIds.includes(item.id)) return false;
     return true;
   });
@@ -166,6 +167,8 @@ export function useFireToStations(): UseFireToStationsResult {
 
       // 1. Grab unprinted items from the cart store (excludes cancelled lines).
       let unprinted = saved?.items ?? useCartStore.getState().unprintedItems();
+      // Les cadeaux locaux restent provisoires jusqu'au paiement serveur.
+      if (!printOnly && !saved) unprinted = unprinted.filter((item) => !item.is_promo_gift || item.server_id);
       if (unprinted.length === 0) return [];
 
       const tableNo =
@@ -318,7 +321,7 @@ export function useFireToStations(): UseFireToStationsResult {
             const currentAuth = useAuthStore.getState();
             if ((currentAuth.user?.id ?? '') !== actorId || (currentAuth.sessionToken ?? null) !== actorToken
               || useShiftStore.getState().current?.id !== sessionId) throw new Error('Your session changed — resume the saved order send');
-            const { data, error } = await supabase.rpc('fire_counter_order_v10', attempt.args);
+            const { data, error } = await supabase.rpc('fire_counter_order_v11', attempt.args);
             if (error) {
               if (!saved && isDefiniteFireRefusal(error)) clearCounterFire();
               throw Object.assign(new Error(error.message), { details: error });

@@ -1,14 +1,14 @@
 -- supabase/tests/promotion_usage_caps.test.sql
 -- S57 P2.1 (Chantier A, A-D4/A-D5/A-D6/A-D7) — promotion usage caps.
 --
--- T1 : global cap (max_uses) reached -> evaluate_promotions_v2 stops returning
+-- T1 : global cap (max_uses) reached -> evaluate_promotions_v3 stops returning
 --      the promo ; a second order declaring it is rejected (check_violation).
 -- T2 : per-customer cap (max_uses_per_customer) is scoped per customer_id —
 --      a different customer still gets it after the first customer is capped.
 -- T3 : anonymous order (no customer_id) bypasses the per-customer cap entirely
 --      (A-D6) — usable repeatedly with no customer attached.
 -- T4 : voiding an order frees its usage (voided_at IS NOT NULL excluded from
---      the count, A-D7) — evaluate_promotions_v2 returns the promo again.
+--      the count, A-D7) — evaluate_promotions_v3 returns the promo again.
 -- T5 : both caps NULL -> illimité, usable repeatedly without ever being capped.
 --
 -- LIMITATION (documented, not a gap in the migration): the atomic hard-gate
@@ -16,7 +16,7 @@
 -- raising `promo_cap_exceeded`) only fires in a genuine cross-session race —
 -- two concurrent checkouts both evaluating the SAME cap before either commits
 -- its promotion_applications row. A single-connection, serial pgTAP script
--- cannot reproduce that race (evaluate_promotions_v2's advisory filter always
+-- cannot reproduce that race (evaluate_promotions_v3's advisory filter always
 -- sees the immediately-prior INSERT within the same transaction — read-your-
 -- own-writes), so a sequential over-cap attempt is rejected earlier by the
 -- PRE-EXISTING "Promotion amount mismatch" check (v_server_eval no longer
@@ -32,7 +32,7 @@ SELECT plan(13);
 
 DO $$
 DECLARE
-  v_auth UUID; v_prof UUID; v_sess UUID; v_prod UUID; v_cat UUID;
+  v_auth UUID; v_prof UUID; v_sess UUID; v_prod UUID; v_cat UUID; v_customer_cat UUID;
   v_cust1 UUID; v_cust2 UUID;
   v_promo_global UUID; v_promo_percust UUID; v_promo_unlim UUID; v_promo_voidfree UUID;
 BEGIN
@@ -55,8 +55,10 @@ BEGIN
     VALUES ('TST-S57-CAP', 'S57 Promo Cap Product', v_cat, 20000, 1000, true, false)
     RETURNING id INTO v_prod;
 
-  INSERT INTO customers (name, customer_type) VALUES ('S57 Cap Cust 1', 'retail') RETURNING id INTO v_cust1;
-  INSERT INTO customers (name, customer_type) VALUES ('S57 Cap Cust 2', 'retail') RETURNING id INTO v_cust2;
+  INSERT INTO customer_categories(name,slug)
+    VALUES('Promotion cap fixture','promotion-cap-'||gen_random_uuid()) RETURNING id INTO v_customer_cat;
+  INSERT INTO customers (name, customer_type,category_id) VALUES ('S57 Cap Cust 1', 'retail',v_customer_cat) RETURNING id INTO v_cust1;
+  INSERT INTO customers (name, customer_type,category_id) VALUES ('S57 Cap Cust 2', 'retail',v_customer_cat) RETURNING id INTO v_cust2;
 
   -- Isolate the cart evaluation: deactivate every OTHER active promo for the tx.
   UPDATE promotions SET is_active = false WHERE is_active = true;
@@ -92,7 +94,7 @@ UPDATE promotions SET is_active = (slug = 'test-cap-global') WHERE slug LIKE 'te
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v29(
+  r := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18000,'cash_received',18000,'change_given',0),
@@ -102,13 +104,13 @@ END $$;
 
 SELECT is(
   jsonb_array_length(
-    (evaluate_promotions_v2(
+    (evaluate_promotions_v3(
       jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod'), 'quantity', 1, 'unit_price', 20000)),
       NULL, 20000))->'applied_promotions'),
-  0, 'T1a: global cap reached -> evaluate_promotions_v2 no longer returns the promo');
+  0, 'T1a: global cap reached -> evaluate_promotions_v3 no longer returns the promo');
 
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v29(
+  SELECT complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18000,'cash_received',18000,'change_given',0),
@@ -127,7 +129,7 @@ UPDATE promotions SET is_active = (slug = 'test-cap-percust') WHERE slug LIKE 't
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v29(
+  r := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18500,'cash_received',18500,'change_given',0),
@@ -137,20 +139,20 @@ END $$;
 
 SELECT is(
   jsonb_array_length(
-    (evaluate_promotions_v2(
+    (evaluate_promotions_v3(
       jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod'), 'quantity', 1, 'unit_price', 20000)),
       current_setting('cap.cust1')::uuid, 20000))->'applied_promotions'),
   0, 'T2a: customer 1 per-customer cap reached -> evaluate excludes it for customer 1');
 
 SELECT is(
   jsonb_array_length(
-    (evaluate_promotions_v2(
+    (evaluate_promotions_v3(
       jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod'), 'quantity', 1, 'unit_price', 20000)),
       current_setting('cap.cust2')::uuid, 20000))->'applied_promotions'),
   1, 'T2b: customer 2 (different customer) still gets the promo — cap is per-customer, not global');
 
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v29(
+  SELECT complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18500,'cash_received',18500,'change_given',0),
@@ -161,7 +163,7 @@ $q$, '23514', NULL, 'T2c: customer 1 second attempt rejected (per-customer cap a
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v29(
+  r := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18500,'cash_received',18500,'change_given',0),
@@ -180,12 +182,12 @@ SELECT ok(current_setting('cap.t2d_ok')::boolean,
 DO $$
 DECLARE r1 jsonb; r2 jsonb;
 BEGIN
-  r1 := complete_order_with_payment_v29(
+  r1 := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18500,'cash_received',18500,'change_given',0),
     p_promotions := jsonb_build_array(jsonb_build_object('promotion_id', current_setting('cap.percust')::uuid, 'amount', 1500)));
-  r2 := complete_order_with_payment_v29(
+  r2 := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18500,'cash_received',18500,'change_given',0),
@@ -203,7 +205,7 @@ UPDATE promotions SET is_active = (slug = 'test-cap-voidfree') WHERE slug LIKE '
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v29(
+  r := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18800,'cash_received',18800,'change_given',0),
@@ -213,7 +215,7 @@ END $$;
 
 SELECT is(
   jsonb_array_length(
-    (evaluate_promotions_v2(
+    (evaluate_promotions_v3(
       jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod'), 'quantity', 1, 'unit_price', 20000)),
       NULL, 20000))->'applied_promotions'),
   0, 'T4a: cap reached after first use -> evaluate excludes the promo');
@@ -230,7 +232,7 @@ END $$;
 
 SELECT is(
   jsonb_array_length(
-    (evaluate_promotions_v2(
+    (evaluate_promotions_v3(
       jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod'), 'quantity', 1, 'unit_price', 20000)),
       NULL, 20000))->'applied_promotions'),
   1, 'T4b: voiding the order frees the usage -> evaluate returns the promo again');
@@ -238,7 +240,7 @@ SELECT is(
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v29(
+  r := complete_order_with_payment_v30(
     p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
     p_payment := jsonb_build_object('method','cash','amount',18800,'cash_received',18800,'change_given',0),
@@ -257,7 +259,7 @@ DO $$
 DECLARE r jsonb; i INT;
 BEGIN
   FOR i IN 1..3 LOOP
-    r := complete_order_with_payment_v29(
+    r := complete_order_with_payment_v30(
       p_session_id := current_setting('cap.sess')::uuid, p_order_type := 'take_out'::order_type,
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod')::uuid, 'quantity', 1, 'unit_price', 20000)),
       p_payment := jsonb_build_object('method','cash','amount',19000,'cash_received',19000,'change_given',0),
@@ -271,7 +273,7 @@ SELECT is(
 
 SELECT is(
   jsonb_array_length(
-    (evaluate_promotions_v2(
+    (evaluate_promotions_v3(
       jsonb_build_array(jsonb_build_object('product_id', current_setting('cap.prod'), 'quantity', 1, 'unit_price', 20000)),
       NULL, 20000))->'applied_promotions'),
   1, 'T5b: unlimited promo is still returned by evaluate after 3 uses');

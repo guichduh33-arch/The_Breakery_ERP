@@ -3,10 +3,8 @@
 --
 -- Money-path (complete_order_with_payment_v28) :
 --   T1 : combo dont un composant est un produit-PARENT → refus 'product_is_parent'
---   T2 : le même combo en ligne cadeau (is_promo_gift) → refusé AUSSI, et par la
---        garde parent, pas par le contrôle de promotion. La garde vit dans la
---        boucle des composants, qui tourne toujours ; le résolveur de prix, lui,
---        est sauté pour une ligne cadeau. T2 est ce qui prouve ce choix.
+--   T2 : un combo ne peut pas être attribué automatiquement comme cadeau :
+--        sa composition exige des choix explicites, même avant les composants.
 --   T3 : le même combo avec la VARIANTE au lieu du parent → vente OK (pas de
 --        sur-blocage).
 -- Catalogue (upsert_combo_v3) :
@@ -96,7 +94,7 @@ END $$;
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v29(
+    PERFORM complete_order_with_payment_v30(
       p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,
@@ -111,31 +109,22 @@ END $$;
 SELECT ok(current_setting('a12d1.t1')::boolean,
   'T1 composant de combo produit-parent refuse (product_is_parent) — recu: ' || current_setting('a12d1.t1msg'));
 
--- T2 : ligne cadeau, composant parent. Le contrôle de promotion cadeau vit en
--- aval de la boucle des composants : si la garde parent ne couvrait pas les
--- cadeaux, le message reçu serait celui de la promotion, pas product_is_parent.
+-- T2 : le contrat cadeau refuse la composition sans inventer les choix.
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v29(
-      p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
-      p_items := jsonb_build_array(jsonb_build_object(
-        'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,
-        'unit_price', 0, 'modifiers', '[]'::jsonb, 'is_promo_gift', true,
-        'combo_components', jsonb_build_array(jsonb_build_object(
-          'product_id', current_setting('a12d1.parent')::uuid, 'quantity', 1)))),
-      p_payment := jsonb_build_object('method','cash','amount',0,'cash_received',0,'change_given',0));
+    PERFORM public._assert_payment_gift_eligible_v1(current_setting('a12d1.combo')::uuid);
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
-  PERFORM set_config('a12d1.t2', (v_msg ILIKE '%product_is_parent%')::text, true);
+  PERFORM set_config('a12d1.t2', (v_msg ILIKE '%promo_gift_requires_configuration%')::text, true);
   PERFORM set_config('a12d1.t2msg', v_msg, true);
 END $$;
 SELECT ok(current_setting('a12d1.t2')::boolean,
-  'T2 combo cadeau a composant parent refuse par la garde parent — recu: ' || current_setting('a12d1.t2msg'));
+  'T2 automatic combo gift requires explicit composition — recu: ' || current_setting('a12d1.t2msg'));
 
 -- T3 : la variante à la place du parent → vente OK (la garde ne sur-bloque pas).
 DO $$ DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v29(
+  v_env := complete_order_with_payment_v30(
     p_session_id := current_setting('a12d1.sess')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', current_setting('a12d1.combo')::uuid, 'quantity', 1,

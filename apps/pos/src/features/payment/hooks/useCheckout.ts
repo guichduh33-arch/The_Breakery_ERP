@@ -5,10 +5,11 @@ import type { Cart, PaymentInput, PaymentResult, PaymentResultLine } from '@brea
 import { buildOrderPayload } from '@breakery/domain';
 import type { CheckoutContext } from '@/stores/paymentAttempt';
 import type { OrderSnapshot } from '@/stores/orderSnapshot';
+import { snapshotCart } from '@/stores/orderSnapshot';
 import { mintDiscountAuthorization } from '@/features/discounts/mintDiscountAuthorization';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v21']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v22']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -44,6 +45,7 @@ interface CheckoutResponse {
   // S51 — server-authoritative subtotal + per-line breakdown (money-path v15).
   subtotal?: number;
   lines?: PaymentResultLine[];
+  order_snapshot?: OrderSnapshot;
   // S44 D4 — v12 returns the server-resolved loyalty figures.
   loyalty_points_earned?: number;
   loyalty_balance_after?: number;
@@ -86,7 +88,7 @@ export function useCheckout() {
       const { pickedUpOrderId, appliedPromotions } = cartState;
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v13 / pay_existing_order_v21). The client no
+      // (complete_order_with_payment_v13 / pay_existing_order_v22). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
@@ -111,7 +113,7 @@ export function useCheckout() {
         // cannot protect us there).
         const printedIds = cartState.printedItemIds;
         const unsynced = cartState.cart.items.filter(
-          (i) => !i.is_cancelled && !i.server_id
+          (i) => !i.is_cancelled && !i.is_promo_gift && !i.server_id
             && !printedIds.includes(i.id)
             && !cartState.lockedItemIds.includes(i.id),
         );
@@ -124,7 +126,7 @@ export function useCheckout() {
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
           const authorizationId = unsynced.some((i) => i.discount) ? await savedDiscountAuthorization(input.context, 'appendDiscountAuthId') : undefined;
-          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v10', {
+          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v11', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
@@ -133,7 +135,7 @@ export function useCheckout() {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v21
+              // S47 — combo lines persist their components so pay_existing_order_v22
               // deducts each component's stock at payment.
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
@@ -189,7 +191,7 @@ export function useCheckout() {
           args.p_promotions = promotionPayload;
         }
 
-        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v21 exige
+        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v22 exige
         // un nonce discount_authorizations à usage unique. Le RPC étant appelé en
         // DIRECT depuis le navigateur (contrairement à complete_order qui passe
         // par process-payment), le mint service-role ne peut se faire dans le RPC.
@@ -203,8 +205,12 @@ export function useCheckout() {
 
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v21', args as PayExistingOrderArgs);
-        if (error) throw Object.assign(new Error(error.message), { details: error });
+        const { error, data } = await supabase.rpc('pay_existing_order_v22', args as PayExistingOrderArgs);
+        if (error) {
+          const giftCode = ['promo_gift_requires_configuration', 'promo_gift_unavailable']
+            .find((code) => error.message.startsWith(`${code}:`));
+          throw Object.assign(new Error(error.message), { details: { ...error, ...(giftCode ? { error: giftCode } : {}) } });
+        }
         const envelope = data as unknown as {
           order_id: string;
           order_number: string;
@@ -215,6 +221,7 @@ export function useCheckout() {
           // S51 — present when the pickup RPC exposes the per-line breakdown;
           // omitted otherwise (le bump S51 concernait complete_order, pas pay_existing).
           lines?: PaymentResultLine[];
+          order_snapshot?: OrderSnapshot;
           loyalty_points_earned?: number;
           idempotent_replay: boolean;
         };
@@ -232,6 +239,7 @@ export function useCheckout() {
           // S51 — forward the server breakdown so the receipt consumes it.
           ...(envelope.subtotal != null ? { subtotal: envelope.subtotal } : {}),
           ...(envelope.lines ? { lines: envelope.lines } : {}),
+          ...paidItemsFromResponse(envelope, input.cart),
           // S44 D4 — v8 returns points_earned (no balance_after on the pickup path).
           ...(envelope.loyalty_points_earned != null ? { loyalty_points_earned: envelope.loyalty_points_earned } : {}),
         };
@@ -240,6 +248,7 @@ export function useCheckout() {
       const accessToken = await getAccessToken();
       const cartWithLoyalty: typeof input.cart = {
         ...input.cart,
+        items: input.cart.items.filter((item) => !item.is_promo_gift),
         ...(customerId ? { customerId } : {}),
         ...(loyaltyPointsToRedeem ? { loyaltyPointsToRedeem } : {}),
         ...(tableNumber ? { tableNumber } : {}),
@@ -285,6 +294,7 @@ export function useCheckout() {
         // values instead of recomputing client-side.
         ...(body.subtotal != null ? { subtotal: body.subtotal } : {}),
         ...(body.lines ? { lines: body.lines } : {}),
+        ...paidItemsFromResponse(body, input.cart),
         // S44 D4 — v12 envelope carries the server-resolved loyalty figures.
         ...(body.loyalty_points_earned != null ? { loyalty_points_earned: body.loyalty_points_earned } : {}),
         ...(body.loyalty_balance_after != null ? { loyalty_balance_after: body.loyalty_balance_after } : {}),
@@ -295,6 +305,20 @@ export function useCheckout() {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
+}
+
+function paidItemsFromResponse(body: { order_id: string; order_snapshot?: OrderSnapshot }, cart: Cart): Pick<PaymentResult, 'paid_items'> {
+  const snapshot = body.order_snapshot;
+  if (!snapshot) {
+    if (cart.items.some((item) => item.is_promo_gift && !item.server_id)) throw new Error('network_error');
+    return {};
+  }
+  if (snapshot.order_id !== body.order_id || !Array.isArray(snapshot.items)
+    || snapshot.items.some((item) => !item.id || !item.product_id || !Number.isFinite(item.quantity)
+      || item.quantity <= 0 || !Number.isFinite(item.unit_price) || !Array.isArray(item.modifiers))) {
+    throw new Error('network_error');
+  }
+  return { paid_items: snapshotCart(snapshot).items };
 }
 
 async function savedDiscountAuthorization(context: CheckoutContext | undefined, key: 'appendDiscountAuthId' | 'paymentDiscountAuthId'): Promise<string> {

@@ -149,6 +149,12 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).toMatch(/promotion/i);
       expect(result.userMessage).not.toContain('promo_cap_exceeded');
     });
+    it.each(['promo_gift_requires_configuration', 'promo_gift_unavailable'])('explains %s without exposing the code', (code) => {
+      const result = classifyCheckoutError(Object.assign(new Error(code), { details: { error: code }, status: 409 }));
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/gift/i);
+      expect(result.userMessage).not.toContain(code);
+    });
 
     it('maps product_inactive to friendly EN copy (ADR-011 déc. 2)', () => {
       const err = Object.assign(new Error('product_inactive'), {

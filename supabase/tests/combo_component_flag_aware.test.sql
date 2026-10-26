@@ -67,7 +67,7 @@ BEGIN
     (v_grp_a, v_coffee, 0, true, 0),
     (v_grp_b, v_cake,   0, true, 0);
 
-  PERFORM complete_order_with_payment_v29(
+  PERFORM complete_order_with_payment_v30(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
