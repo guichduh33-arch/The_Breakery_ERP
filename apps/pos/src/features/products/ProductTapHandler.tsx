@@ -15,14 +15,16 @@
 //      `setPending` or `useProductModifiers`.
 //   3. Finished products: existing flow (open ModifierModal if groups, else direct).
 //
-// Customer pricing: if a customer is attached, unit_price is resolved via
-// get_customer_product_price RPC before addItem. Combos use
+// Le prix client passe par le résolveur serveur canonique avant ajout. Combos use
 // `combo_base_price` (emitted by ComboConfigModal as `unitPrice`) and do NOT
 // go through the fetchPrice path.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
+import { useShiftStore } from '@/stores/shiftStore';
+import { useAuthStore } from '@/stores/authStore';
+import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 import { useCartStore } from '@/stores/cartStore';
 import { useCustomerProductPrice } from '@/features/customerCategories/hooks/useCustomerProductPrice';
 import { VariantSelectModal } from '@/features/cart/VariantSelectModal';
@@ -38,7 +40,8 @@ export interface ProductTapHandlerProps {
 export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   const add = useCartStore((s) => s.add);
   const addCombo = useCartStore((s) => s.addCombo);
-  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [pending, setPending] = useState<Product | null>(null);
   // Session 27c — variant picker state. The parent product is preserved so
   // we can synthesise the chosen variant into a Product-shaped object that
@@ -76,16 +79,29 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   }
 
   async function addWithPrice(product: Product, modifiers: SelectedModifiers) {
-    if (!assertSellable(product)) return;
-    if (!attachedCustomer) {
-      add(product, modifiers, product.retail_price);
-      return;
-    }
+    if (!mounted.current || isCartPaymentLocked() || !assertSellable(product)) return;
+    const origin = useCartStore.getState();
+    const customerId = origin.cart.customerId ?? null;
+    if (!customerId) { add(product, modifiers, product.retail_price); return; }
+    const auth = useAuthStore.getState(), shift = useShiftStore.getState().current?.id;
+    const current = () => {
+      const now = useCartStore.getState(), account = useAuthStore.getState();
+      return mounted.current && !isCartPaymentLocked() && account.isAuthenticated && !account.isLocked && !account.isLoading
+        && account.user?.id === auth.user?.id && account.sessionToken === auth.sessionToken
+        && useShiftStore.getState().current?.id === shift
+        && Boolean(auth.user?.id && auth.sessionToken) && (account.hasPermission('customers.read') || account.hasPermission('pos.sale.create'))
+        && now.cart.customerId === origin.cart.customerId && now.attachedCustomer === origin.attachedCustomer
+        && now.cart.order_type === origin.cart.order_type && now.cart.tableNumber === origin.cart.tableNumber
+        && now.pickedUpOrderId === origin.pickedUpOrderId && now.offlineOrder === origin.offlineOrder
+        && now.orderSnapshotVersion === origin.orderSnapshotVersion && now.lockedItemIds === origin.lockedItemIds
+        && now.printedItemIds === origin.printedItemIds;
+    };
+    if (!current()) return;
     try {
-      const price = await fetchPrice(product.id, attachedCustomer?.id ?? null);
-      add(product, modifiers, price);
+      const price = await fetchPrice(product.id, customerId);
+      if (current()) add(product, modifiers, price);
     } catch {
-      add(product, modifiers);
+      if (current()) toast.error('Price could not be confirmed. The item was not added. Please try again.');
     }
   }
 

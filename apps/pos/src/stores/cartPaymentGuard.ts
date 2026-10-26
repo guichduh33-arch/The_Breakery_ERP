@@ -11,12 +11,13 @@ export function isCartPaymentLocked(): boolean {
 
 /** Seules les commandes de saisie sont bloquées ; les accusés serveur peuvent encore être appliqués. */
 export function guardCartActions(actions: CartState): CartState {
-  const names: (keyof CartState)[] = ['add', 'addCombo', 'update', 'remove', 'restoreLine', 'clear', 'voidOrder', 'setOrderType', 'setTableNumber', 'attachCustomer', 'detachCustomer', 'setRedeemPoints', 'restoreCart', 'reopenOrder', 'setCartDiscount', 'setLineDiscount', 'setAppliedPromotions', 'dismissPromotion'];
+  const names: (keyof CartState)[] = ['add', 'addCombo', 'update', 'remove', 'restoreLine', 'clear', 'voidOrder', 'setOrderType', 'setTableNumber', 'attachCustomer', 'detachCustomer', 'applyCustomerPrices', 'setRedeemPoints', 'restoreCart', 'reopenOrder', 'setCartDiscount', 'setLineDiscount', 'setAppliedPromotions', 'dismissPromotion'];
   const guarded = Object.fromEntries(names.map((name) => [name, (...args: unknown[]) => {
     if (isCartPaymentLocked()) {
       if (name !== 'setAppliedPromotions') toast.error(hasPendingCounterFire()
         ? 'Resume the saved order send before changing this order'
         : isOrderSending() ? 'Sending order — wait for confirmation before changing it' : 'Resume the saved payment before changing this order');
+      if (name === 'applyCustomerPrices') return false;
       return name === 'setAppliedPromotions' ? { addedGifts: [], removedGifts: [] } : undefined;
     }
     return Reflect.apply(actions[name] as (...values: unknown[]) => unknown, actions, args);

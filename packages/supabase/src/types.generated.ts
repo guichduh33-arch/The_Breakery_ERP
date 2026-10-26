@@ -7569,6 +7569,10 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_product_price_v1: {
+        Args: { p_customer_id?: string; p_product_id: string }
+        Returns: number
+      }
       get_pos_sales_overview_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json

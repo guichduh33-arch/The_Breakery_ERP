@@ -1,17 +1,5 @@
-// apps/pos/src/stores/cartStore.ts
-//
-// Session 2 extension: lockedItemIds + canEdit guard + sendCurrentBatch helper.
-// Session 3 extension: customerId + loyaltyPointsToRedeem + redemptionAmount.
-// Session 4 extension: tableNumber + setTableNumber + restoreCart.
-// Session 5 extension: pickedUpOrderId + setPickedUpOrderId (tablet pickup flow).
-// Session 6 extension: cartDiscount + setCartDiscount + setLineDiscount.
-// Session 7 extension: attachedCustomer includes optional category for pricing tier display.
-// Session 9 extension: appliedPromotions + dismissedPromotionIds + auto gift sync.
-// Session 34 extension: printedItemIds + markPrinted + unprintedItems/unprintedItemIds (ticket de-dup).
-// Persisted in sessionStorage so a tab reload doesn't drop the lock state.
-// (`appliedPromotions` and `dismissedPromotionIds` are intentionally in-memory
-//  only — they are recomputed at every cart change and a fresh tab should
-//  start from a clean slate.)
+// Panier persistant : lignes envoyées verrouillées, client et prix locaux atomiques.
+// Promotions et exclusions manuelles sont réévaluées après un rechargement.
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import {
@@ -30,9 +18,9 @@ import {
 import { reconcileOrderItems, snapshotCart } from './orderSnapshot';
 import { usePosSettingsStore } from './posSettingsStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
-
 import type { CartState } from './cartTypes';
 export type { CartState, CustomerWithCategory, ReopenOrderItem, ReopenOrderPayload } from './cartTypes';
+import { customerPricingPatch } from './cartCustomerPricing';
 import { reconcilePromotions } from './cartPromotions';
 import { guardCartActions, isCartPaymentLocked } from './cartPaymentGuard';
 
@@ -257,6 +245,13 @@ export const useCartStore = create<CartState>()(
       detachCustomer: () =>
         set((s) => ({ cart: domainDetachCustomer(s.cart), attachedCustomer: null })),
 
+      applyCustomerPrices: (expected, customer, prices) => {
+        if (isCartPaymentLocked()) return false;
+        const patch = customerPricingPatch(get(), expected, customer, prices);
+        if (!patch) return false;
+        set(patch);
+        return true;
+      },
       setRedeemPoints: (points) =>
         set((s) => ({ cart: domainSetRedeemPoints(s.cart, points) })),
 

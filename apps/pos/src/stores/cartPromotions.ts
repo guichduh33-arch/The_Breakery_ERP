@@ -1,103 +1,54 @@
 import { calculateTotals, pointsToValue, type AppliedPromotion, type CartItem } from '@breakery/domain';
 import type { CartState } from './cartTypes';
-interface GiftChange { name: string; promotion_id: string }
-function makeGiftLineId(promotionId: string): string { return `gift-${promotionId}`; }
-export function reconcilePromotions(state: CartState, next: AppliedPromotion[], productLookup: Record<string, { name: string }> = {}): { patch: Partial<CartState>; addedGifts: GiftChange[]; removedGifts: GiftChange[] } {
-        const addedGifts: { name: string; promotion_id: string }[] = [];
-        const removedGifts: { name: string; promotion_id: string }[] = [];
-
-
-        const nextById = new Map(next.map((ap) => [ap.promotion_id, ap]));
-
-        // Index existing gift lines by promotion_id for fast lookup.
-        const existingGiftPromoIds = new Set<string>();
-        for (const it of state.cart.items) {
-          if (it.is_promo_gift && it.promotion_id) {
-            existingGiftPromoIds.add(it.promotion_id);
-          }
-        }
-
-        // 1. Drop gift lines whose promotion is no longer applied.
-        let nextItems: CartItem[] = state.cart.items.filter((it) => {
-          if (!it.is_promo_gift || !it.promotion_id) return true;
-          const stillApplied = nextById.has(it.promotion_id);
-          if (!stillApplied) {
-            removedGifts.push({ name: it.name, promotion_id: it.promotion_id });
-          }
-          return stillApplied;
-        });
-
-        // 2. Add gift lines for newly-applied free_product promos.
-        for (const ap of next) {
-          if (!ap.gift_to_add) continue;
-          if (existingGiftPromoIds.has(ap.promotion_id)) continue;
-          const giftName = productLookup[ap.gift_to_add.product_id]?.name ?? ap.name;
-          const giftLine: CartItem = {
-            id: makeGiftLineId(ap.promotion_id),
-            product_id: ap.gift_to_add.product_id,
-            name: giftName,
-            unit_price: 0,
-            quantity: ap.gift_to_add.qty,
-            modifiers: [],
-            is_promo_gift: true,
-            promotion_id: ap.promotion_id,
-          };
-          nextItems = [...nextItems, giftLine];
-          addedGifts.push({ name: giftName, promotion_id: ap.promotion_id });
-        }
-
-        // ADR-013 D11 — la promo entre dans le pipeline canonique du domaine :
-        // `cart.promotionTotal` est écrit ICI (source unique), les call-sites
-        // appellent `calculateTotals` sans post-traitement. Clamp du rachat de
-        // points dans le MÊME set : l'éval promo est asynchrone (debounce +
-        // RPC), un rachat validé avant l'arrivée d'une promo peut dépasser le
-        // post-promo — on le réduit au max valide pour que les gardes du
-        // domaine (RedemptionExceedsTotalError) restent un filet jamais touché.
-        // items_total exact du domaine (lignes annulées exclues, remises
-        // ligne déduites) sur un cart nu — aucune garde ne peut throw ici.
-        const itemsTotal = calculateTotals(
-          { items: nextItems, order_type: state.cart.order_type },
-          0,
-        ).subtotal;
-        // Promo clampée aux items : un montant évalué > items_total (petit
-        // panier + fixed_amount généreux) ne doit jamais mettre le cart dans
-        // un état où DiscountExceedsTotalError throw au render.
-        const promoTotal = Math.min(
-          next.reduce((sum, ap) => sum + ap.amount, 0),
-          itemsTotal,
-        );
-        const promoChanged = (state.cart.promotionTotal ?? 0) !== promoTotal;
-
-        const currentPoints = state.cart.loyaltyPointsToRedeem ?? 0;
-        let clampedPoints = currentPoints;
-        if (currentPoints > 0) {
-          const postPromo = itemsTotal - promoTotal;
-          const maxPoints = Math.floor(postPromo / pointsToValue(1));
-          clampedPoints = Math.min(currentPoints, maxPoints);
-        }
-        const pointsChanged = clampedPoints !== currentPoints;
-
-        // Session 36 / Bug 1 fix — idempotent reconcile. When nothing changed,
-        // `nextItems` is content-identical to the current cart (only a fresh
-        // array instance). Preserve the EXISTING `cart` reference in that case
-        // so `usePromotionsAutoEval` (whose effect depends on `cart`) does NOT
-        // re-fire and re-call `evaluate_promotions_v2` on a 200ms loop.
-        // `appliedPromotions` is not in that effect's deps, so refreshing it is
-        // safe. Quand seul `promotionTotal` change, la nouvelle référence cart
-        // déclenche UNE éval supplémentaire qui converge (2ᵉ passage : montant
-        // identique → référence préservée).
-        const giftsChanged = addedGifts.length > 0 || removedGifts.length > 0;
-        const cartChanged = giftsChanged || promoChanged || pointsChanged;
-        const patch: Partial<CartState> = {
-          cart: cartChanged
-            ? {
-                ...state.cart,
-                items: nextItems,
-                promotionTotal: promoTotal,
-                ...(pointsChanged ? { loyaltyPointsToRedeem: clampedPoints } : {}),
-              }
-            : state.cart,
-          appliedPromotions: next,
-        };
-        return { patch, addedGifts, removedGifts };
+interface GiftChange {name: string; promotion_id: string}
+export function reconcilePromotions(state: CartState,next: AppliedPromotion[],productLookup: Record<string,{name:string}> = {}): {
+ patch: Partial<CartState>; addedGifts: GiftChange[]; removedGifts: GiftChange[];
+} {
+ const addedGifts: GiftChange[]=[],removedGifts: GiftChange[]=[];
+ const protectedIds=new Set([...state.lockedItemIds,...state.printedItemIds]);
+ const protectedLine=(item: CartItem)=>(Boolean(item.server_id) || item.server_line_total!==undefined || item.is_cancelled===true || protectedIds.has(item.id));
+ const fixedQuantities=new Map<string,number>();
+ for(const item of state.cart.items) {
+  if(item.is_promo_gift && item.promotion_id && protectedLine(item) && !item.is_cancelled) {
+   fixedQuantities.set(item.promotion_id,(fixedQuantities.get(item.promotion_id)??0)+item.quantity);
+  }
+ }
+ const desired=new Map(next.filter(ap=>ap.gift_to_add).map(ap=>{
+  const gift=ap.gift_to_add!;
+  if(!Number.isFinite(gift.qty) || gift.qty<0)throw new Error('Invalid promotional gift quantity');
+  return [ap.promotion_id,{productId:gift.product_id,quantity:Math.max(0,gift.qty-(fixedQuantities.get(ap.promotion_id)??0)),name:productLookup[gift.product_id]?.name??ap.name}] as const;
+ }));
+ const consumed=new Set<string>();
+ const nextItems: CartItem[]=[];
+ for(const item of state.cart.items) {
+  if(!item.is_promo_gift || !item.promotion_id || protectedLine(item)) {nextItems.push(item);continue;}
+  const gift=desired.get(item.promotion_id);
+  if(!gift || gift.quantity===0 || consumed.has(item.promotion_id)) {
+   removedGifts.push({name:item.name,promotion_id:item.promotion_id});continue;
+  }
+  consumed.add(item.promotion_id);
+  if(item.product_id!==gift.productId) {
+   removedGifts.push({name:item.name,promotion_id:item.promotion_id});
+   addedGifts.push({name:gift.name,promotion_id:item.promotion_id});
+   nextItems.push({id:item.id,product_id:gift.productId,name:gift.name,quantity:gift.quantity,unit_price:0,modifiers:[],is_promo_gift:true,promotion_id:item.promotion_id});
+  } else if(item.quantity!==gift.quantity || item.unit_price!==0 || item.name!==gift.name) {
+   nextItems.push({...item,quantity:gift.quantity,unit_price:0,name:gift.name});
+  } else nextItems.push(item);
+ }
+ for(const [promotionId,gift] of desired) {
+  if(consumed.has(promotionId) || gift.quantity===0)continue;
+  const baseId='gift-'+promotionId;
+  const id=nextItems.some(item=>item.id===baseId)?baseId+'-'+crypto.randomUUID():baseId;
+  nextItems.push({id,product_id:gift.productId,name:gift.name,unit_price:0,quantity:gift.quantity,modifiers:[],is_promo_gift:true,promotion_id:promotionId});
+  addedGifts.push({name:gift.name,promotion_id:promotionId});
+ }
+ // ADR-013 D11 : pipeline du domaine, puis clamp existant du rachat de points.
+ const itemsTotal=calculateTotals({items:nextItems,order_type:state.cart.order_type},0).subtotal;
+ const promoTotal=Math.min(next.reduce((sum,ap)=>sum+ap.amount,0),itemsTotal);
+ const currentPoints=state.cart.loyaltyPointsToRedeem??0;
+ const clampedPoints=currentPoints>0?Math.min(currentPoints,Math.floor((itemsTotal-promoTotal)/pointsToValue(1))):currentPoints;
+ const giftsChanged=nextItems.length!==state.cart.items.length || nextItems.some((item,index)=>item!==state.cart.items[index]);
+ const changed=giftsChanged || (state.cart.promotionTotal??0)!==promoTotal || clampedPoints!==currentPoints;
+ return {patch:{cart:changed?{...state.cart,items:nextItems,promotionTotal:promoTotal,
+   ...(clampedPoints!==currentPoints?{loyaltyPointsToRedeem:clampedPoints}:{})}:state.cart,appliedPromotions:next},addedGifts,removedGifts};
 }
