@@ -263,7 +263,7 @@ serve(withPermissionErrors(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v29, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v30, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -323,7 +323,7 @@ serve(withPermissionErrors(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v29', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v30', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -389,6 +389,12 @@ serve(withPermissionErrors(async (req) => {
       // Le matching sur le texte du RAISE reste INTERNE à l'EF — seul le code
       // dédié sort (classifier POS → FR copy).
       const msg = String(error.message ?? '');
+      if (msg.includes('promo_gift_requires_configuration')) {
+        return jsonResponse({ error: 'promo_gift_requires_configuration' }, 409);
+      }
+      if (msg.includes('promo_gift_unavailable')) {
+        return jsonResponse({ error: 'promo_gift_unavailable' }, 409);
+      }
       if (msg.includes('Promotion amount mismatch')) {
         return jsonResponse({ error: 'promo_amount_mismatch' }, 409);
       }

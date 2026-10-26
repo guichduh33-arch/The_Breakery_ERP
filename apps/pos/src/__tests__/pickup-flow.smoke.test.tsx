@@ -85,7 +85,7 @@ describe('pickup-flow smoke', () => {
     });
 
     mocks.rpc.mockImplementation((name: string) => {
-      if (name === 'get_pos_order_snapshot_v1') {
+      if (name === 'get_pos_order_snapshot_v2') {
         return Promise.resolve({ data: {
           order_id: PICKUP_RESULT.id, order_number: PICKUP_RESULT.order_number,
           order_type: PICKUP_RESULT.order_type, tableNumber: PICKUP_RESULT.table_number,

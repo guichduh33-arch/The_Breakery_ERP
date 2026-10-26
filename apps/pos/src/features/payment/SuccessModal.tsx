@@ -122,7 +122,8 @@ function buildReceiptPayload(
     },
     ...(props.customerName ? { customer: { name: props.customerName } } : {}),
     items: charged.map((item, idx) => {
-      const sl = useServerLines ? serverLines[idx] : undefined;
+      const sl = item.server_id ? serverLines?.find((line) => line.line_id === item.server_id)
+        : useServerLines ? serverLines[idx] : undefined;
       // Critique 2026-08-29 P1 — repli client aligné sur lineTotalOf (combos
       // ADR-017 + arrondi roundIdr), la formule que calculateTotals facture.
       const clientLineTotal = lineTotalOf(item);

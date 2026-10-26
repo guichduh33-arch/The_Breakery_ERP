@@ -78,7 +78,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
         FROM customers WHERE id = p_customer_id;     END IF;
     SELECT COALESCE(jsonb_agg(jsonb_build_object(              'product_id', oi.product_id::text,              'quantity',   oi.quantity,
              'unit_price', oi.unit_price)), '[]'::jsonb)       INTO v_eval_items       FROM order_items oi
-      WHERE oi.order_id = p_order_id AND oi.is_cancelled = false AND oi.is_promo_gift = false;      v_server_eval := evaluate_promotions_v2(
+      WHERE oi.order_id = p_order_id AND oi.is_cancelled = false AND oi.is_promo_gift = false;      v_server_eval := evaluate_promotions_v3(
       p_cart_items  := v_eval_items,       p_customer_id := p_customer_id,       p_subtotal    := v_eval_subtotal
     );      FOR v_promo IN SELECT * FROM jsonb_array_elements(p_promotions) LOOP
       v_promo_id     := (v_promo->>'promotion_id')::UUID;       v_promo_amount := (v_promo->>'amount')::DECIMAL(14,2);

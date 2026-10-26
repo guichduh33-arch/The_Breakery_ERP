@@ -180,6 +180,10 @@ function friendlyFatalMessage(code: string, message?: string): string {
     case 'promo_cap_exceeded':
       // S57 P2.1 — v17 hard-gates promotion usage caps atomically.
       return 'This promotion has reached its usage cap. Remove the promotion and try again.';
+    case 'promo_gift_requires_configuration':
+      return 'This gift requires choices that the promotion cannot provide. Choose a gift without required options.';
+    case 'promo_gift_unavailable':
+      return 'This promotional gift is unavailable. Update the promotion before charging.';
     case 'product_inactive':
       // ADR-011 déc. 2 — v19 refuse un produit désactivé au paiement, même
       // déjà présent au panier (refus strict, pas de tolérance).

@@ -1,5 +1,5 @@
 // supabase/tests/functions/promotions-evaluate-v1.test.ts
-// Session 13 / Phase 2.C — live Vitest integration for `evaluate_promotions_v2`
+// Session 13 / Phase 2.C — live Vitest integration for `evaluate_promotions_v3`
 // (S57 P2.1: repointed v1 -> v2, file name kept for history/git-blame).
 //
 // Runs against staging `ikcyvlovptebroadgtvd`. Uses PIN-login to obtain a
@@ -37,7 +37,7 @@ interface EvaluatePromotionsV1Result {
   total_discount: number;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 RPC — live', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v3 RPC — live', () => {
   let token: string;
   let originalActiveSlugs: string[] = [];
   let productAId: string;
@@ -148,13 +148,13 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 
     }
   }, 30_000);
 
-  it('T_LIVE_01: BOGO new shape — 3 baguettes ⇒ 1 free + 15k discount', async () => {
+  it('T_LIVE_01: BOGO new shape grants one free item without a second discount', async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     await admin.from('promotions').update({ is_active: false }).like('slug', 'live-%');
     await admin.from('promotions').update({ is_active: true }).eq('slug', 'live-bogo-2-1-baguette');
 
     const sb = jwtClient(token);
-    const { data, error } = await sb.rpc('evaluate_promotions_v2', {
+    const { data, error } = await sb.rpc('evaluate_promotions_v3', {
       p_cart_items: [
         { line_id: 'L1', product_id: productAId, quantity: 3, unit_price: 15000 },
       ],
@@ -164,11 +164,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 
     const result = data as unknown as EvaluatePromotionsV1Result;
     expect(result.applied_promotions).toHaveLength(1);
     expect(result.applied_promotions[0]!.type).toBe('bogo');
-    expect(result.applied_promotions[0]!.discount_amount).toBe(15000);
+    expect(result.applied_promotions[0]!.discount_amount).toBe(0);
     expect(result.applied_promotions[0]!.free_items).toEqual([
       { product_id: productAId, quantity: 1 },
     ]);
-    expect(result.total_discount).toBe(15000);
+    expect(result.total_discount).toBe(0);
   });
 
   it('T_LIVE_02: Threshold subtotal — 150k cart @ 10% ⇒ 15k discount', async () => {
@@ -177,7 +177,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 
     await admin.from('promotions').update({ is_active: true }).eq('slug', 'live-threshold-100k-10');
 
     const sb = jwtClient(token);
-    const { data, error } = await sb.rpc('evaluate_promotions_v2', {
+    const { data, error } = await sb.rpc('evaluate_promotions_v3', {
       p_cart_items: [
         { line_id: 'L1', product_id: productBId, quantity: 3, unit_price: 50000 },
       ],
@@ -198,7 +198,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 
     await admin.from('promotions').update({ is_active: true }).eq('slug', 'live-bundle-bcd-50k');
 
     const sb = jwtClient(token);
-    const { data, error } = await sb.rpc('evaluate_promotions_v2', {
+    const { data, error } = await sb.rpc('evaluate_promotions_v3', {
       p_cart_items: [
         { line_id: 'L1', product_id: productBId, quantity: 1, unit_price: 20000 },
         { line_id: 'L2', product_id: productCId, quantity: 1, unit_price: 25000 },

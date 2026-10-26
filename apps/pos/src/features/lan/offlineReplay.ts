@@ -83,7 +83,7 @@ function emitPaymentFailure(intent: OfflineIntent, message: string): void {
   });
 }
 
-type FireArgs = Database['public']['Functions']['fire_counter_order_v10']['Args'];
+type FireArgs = Database['public']['Functions']['fire_counter_order_v11']['Args'];
 type TabletArgs = Database['public']['Functions']['create_tablet_order_v10']['Args'];
 
 interface FireEnvelope {
@@ -118,7 +118,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
       // La racine a été rejouée dans un run précédent (record déjà supprimé) :
       // son replay idempotent renvoie la commande sans revalider les items —
       // le lookup client_uuid court-circuite AVANT toute validation.
-      const { data, error } = await supabase.rpc('fire_counter_order_v10', {
+      const { data, error } = await supabase.rpc('fire_counter_order_v11', {
         p_client_uuid: intent.root_client_uuid,
         p_session_id: intent.session_id,
         p_items: [],
@@ -150,7 +150,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     // d'intent est INCHANGÉ (append-only, ADR-015) — enrichissement au rejeu.
     if (!isAppend && getOrderSourceCode() !== null) args.p_source_code = getOrderSourceCode();
 
-    const { data, error } = await supabase.rpc('fire_counter_order_v10', args as FireArgs);
+    const { data, error } = await supabase.rpc('fire_counter_order_v11', args as FireArgs);
     if (error) throw Object.assign(new Error(error.message), { details: error });
     const env = data as unknown as FireEnvelope;
     orderIdByRoot.set(intent.root_client_uuid, env.order_id);
@@ -172,7 +172,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     if (orderId === undefined) {
       // Fire rejoué dans un run précédent — replay idempotent pour retrouver
       // l'order_id (voir note ci-dessus : court-circuit avant validation).
-      const { data, error } = await supabase.rpc('fire_counter_order_v10', {
+      const { data, error } = await supabase.rpc('fire_counter_order_v11', {
         p_client_uuid: intent.root_client_uuid,
         // La branche idempotente n'atteint jamais ces args ; s'ils sont
         // atteints, la racine n'a JAMAIS été rejouée (anomalie) → l'échec de
@@ -199,7 +199,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     // 2026-09-05 — v18 → v19 : lignes annulées exclues du total facturé et du
     // déstockage (audit lot 1 P0 n°5). Signature inchangée, replay des intents
     // en file inchangé.
-    const { error } = await supabase.rpc('pay_existing_order_v21', {
+    const { error } = await supabase.rpc('pay_existing_order_v22', {
       p_order_id: orderId,
       ...tenderArgs,
       p_idempotency_key: intent.id,

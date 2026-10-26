@@ -21,7 +21,7 @@ export function useReopenHeldOrder() {
       if (isCartPaymentLocked()) throw new Error('Resume the saved payment first');
       const before = useCartStore.getState();
       const sessionId = useShiftStore.getState().current?.id;
-      const { data, error } = await supabase.rpc('reopen_held_order_v5', {
+      const { data, error } = await supabase.rpc('reopen_held_order_v6', {
         p_order_id: orderId,
         ...(sessionId ? { p_session_id: sessionId } : {}),
       });

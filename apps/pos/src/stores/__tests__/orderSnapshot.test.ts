@@ -9,6 +9,12 @@ const row: OrderItemSnapshot = {
 };
 
 describe('order snapshots', () => {
+  it('preserves the server gift and promotion identity', () => {
+    const item = snapshotItem({ ...row, unit_price: 0, line_total: 0, discount_amount: 0,
+      is_promo_gift: true, promotion_id: 'promotion' });
+    expect(item).toMatchObject({ is_promo_gift: true, promotion_id: 'promotion', server_id: 'server' });
+    expect(lineTotalOf(item)).toBe(0);
+  });
   it('raccorde les identités sans perdre les lignes locales', () => {
     const sent: CartItem = { id: 'local', product_id: 'coffee', name: 'Coffee', unit_price: 20_000, quantity: 1, modifiers: [] };
     const draft = { ...sent, id: 'draft', product_id: 'bread' };

@@ -1,7 +1,7 @@
 // apps/pos/src/features/cart/__tests__/fire-persists-order.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : le fire comptoir doit persister AVANT d'imprimer
-// (fire_counter_order_v10), et marquer les items locked+printed même si
+// (fire_counter_order_v11), et marquer les items locked+printed même si
 // l'imprimante échoue — la DB est la source de vérité ; un échec d'impression
 // ne doit plus laisser les items « non envoyés » (sinon re-fire = doublon DB).
 //
@@ -129,7 +129,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
     seedCart();
   });
 
-  it('calls fire_counter_order_v10 with ALL unprinted items, sets pickedUpOrderId, marks items even when print fails', async () => {
+  it('calls fire_counter_order_v11 with ALL unprinted items, sets pickedUpOrderId, marks items even when print fails', async () => {
     const { useFireToStations } = await import('../hooks/useFireToStations');
     const { result } = renderHook(() => useFireToStations(), { wrapper });
 
@@ -139,7 +139,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
 
     expect(rpcMock).toHaveBeenCalledTimes(1);
     const [fnName, args] = rpcMock.mock.calls[0] as [string, Record<string, unknown>];
-    expect(fnName).toBe('fire_counter_order_v10');
+    expect(fnName).toBe('fire_counter_order_v11');
     expect(args.p_session_id).toBe('sess-1');
     expect(args.p_order_id).toBeUndefined(); // create mode
     expect(args.p_table_number).toBe('T5');
@@ -300,5 +300,21 @@ describe('useFireToStations persists before printing (P0-3)', () => {
       await expect(result.current.mutation.mutateAsync(undefined)).rejects.toThrow('no_open_shift');
     });
     expect(rpcMock).not.toHaveBeenCalled();
+  });
+  it('keeps local promotional gifts provisional when sending to stations', async () => {
+    const state = useCartStore.getState();
+    useCartStore.setState({ cart: { ...state.cart, items: [...state.cart.items, {
+      id: 'provisional', product_id: 'p-barista', name: 'Provisional gift', unit_price: 0,
+      quantity: 4, modifiers: [], is_promo_gift: true, promotion_id: 'promotion',
+    }] } });
+    const { useFireToStations } = await import('../hooks/useFireToStations');
+    const { result } = renderHook(useFireToStations, { wrapper });
+    expect(result.current.firableCount).toBeLessThanOrEqual(2);
+    await act(async () => { await result.current.mutation.mutateAsync(undefined); });
+    const shipped = (rpcMock.mock.calls[0]?.[1] as { p_items: unknown[] }).p_items;
+    expect(shipped).toHaveLength(2);
+    expect(useCartStore.getState().lockedItemIds).not.toContain('provisional');
+    expect(useCartStore.getState().printedItemIds).not.toContain('provisional');
+    expect(printStationTicketMock.mock.calls.flat().map((value) => JSON.stringify(value)).join(' ')).not.toContain('Provisional gift');
   });
 });

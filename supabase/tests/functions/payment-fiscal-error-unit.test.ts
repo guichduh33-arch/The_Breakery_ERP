@@ -55,4 +55,9 @@ describe('paiement — erreurs comptables distinctes du verrouillage PIN', () =>
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ order_id: 'confirmed' });
   });
+  it.each(['promo_gift_requires_configuration', 'promo_gift_unavailable'])('exposes the bounded gift refusal %s', async (code) => {
+    const response = await invoke({ code: '23514', message: `${code}: private product detail` });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: code });
+  });
 });

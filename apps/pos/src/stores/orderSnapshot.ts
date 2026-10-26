@@ -17,6 +17,8 @@ export interface OrderItemSnapshot {
   is_cancelled?: boolean;
   is_locked: boolean;
   kitchen_status: string | null;
+  is_promo_gift?: boolean;
+  promotion_id?: string | null;
 }
 
 export interface OrderSnapshot {
@@ -44,6 +46,8 @@ export function snapshotItem(row: OrderItemSnapshot, localId?: string): CartItem
     ...(row.product_type ? { product_type: row.product_type as ProductType } : {}),
     ...(row.combo_components ? { combo_components: row.combo_components } : {}),
     ...(row.is_cancelled ? { is_cancelled: true } : {}),
+    ...(row.is_promo_gift ? { is_promo_gift: true } : {}),
+    ...(row.promotion_id ? { promotion_id: row.promotion_id } : {}),
     ...(discount > 0 ? { discount: {
       type: 'fixed_amount' as const, value: discount, amount: discount,
       reason: row.discount_reason ?? 'Recorded discount',

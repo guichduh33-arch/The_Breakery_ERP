@@ -1,6 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { groupItemsByStation, type CartItem, type PrepStation, type StationTicketPayload } from '@breakery/domain';
 import type { PaymentAttempt } from '@/stores/paymentAttempt';
+import { usePaymentStore } from '@/stores/paymentStore';
+import { snapshotCart } from '@/stores/orderSnapshot';
+import { fetchOrderSnapshot } from '@/features/inbox/hooks/fetchOrderSnapshot';
 import { runPrintJob } from '@/services/print/printJobs';
 import { getKotCopies } from '@/features/settings/hooks/useKotCopies';
 import { getStationMap } from './useStationMap';
@@ -10,7 +13,20 @@ import type { StationFireResult } from './useFireToStations';
 /** Paiement déjà confirmé : aucune lecture ou écriture du panier vivant. */
 export async function printPaidSnapshot(snapshot: PaymentAttempt, orderNumber: string,
   printers: StationPrintersMap | undefined, qc: QueryClient, serverName: string, current: () => boolean): Promise<StationFireResult[]> {
-  const items = snapshot.cart.items.filter((item) => !item.is_cancelled && !snapshot.context.printedItemIds.includes(item.id));
+  let paidItems = snapshot.result?.paidItems;
+  if (!paidItems && snapshot.cart.items.some((item) => item.is_promo_gift && !item.server_id)) {
+    const orderId = snapshot.result?.orderId;
+    if (!orderId || !current()) throw new Error('Paid order confirmation unavailable — check the saved order');
+    const recorded = await fetchOrderSnapshot(orderId);
+    const active = usePaymentStore.getState().attempt;
+    if (!current() || active?.context.idempotencyKey !== snapshot.context.idempotencyKey
+      || active.result?.orderId !== orderId) throw new Error('Your session or saved payment changed');
+    paidItems = snapshotCart(recorded).items;
+    usePaymentStore.getState().completeAttempt({ ...active.result, paidItems });
+  }
+  const items = (paidItems ?? snapshot.cart.items).filter((item) => !item.is_cancelled
+    && !snapshot.context.printedItemIds.includes(item.id)
+    && !snapshot.context.printedItemIds.includes(item.server_id ?? item.id));
   const grouped = groupItemsByStation(items, await getStationMap(qc));
   const copies = await getKotCopies(qc);
   const resolvedPrinters = printers ?? await getStationPrinters(qc);
