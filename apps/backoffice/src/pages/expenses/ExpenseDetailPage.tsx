@@ -9,7 +9,7 @@
 // sont les dialogues existants qui pilotent chaque transition.
 
 import { useState, type JSX, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   Building2,
   Calendar,
@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Copy,
   CreditCard,
-  FileText,
   Receipt,
   Tag,
   XCircle,
@@ -36,6 +35,9 @@ import { RejectDialog } from '@/features/expenses/components/RejectDialog.js';
 import { PayDialog } from '@/features/expenses/components/PayDialog.js';
 import { ApprovalTimeline } from '@/features/expenses/components/ApprovalTimeline.js';
 import { ThresholdResolutionBadge } from '@/features/expenses/components/ThresholdResolutionBadge.js';
+import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
+import { ExpenseReceiptPanel } from '@/features/expenses/components/ExpenseReceiptPanel.js';
+import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
 import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/useExpenseThresholds.js';
 import {
@@ -78,14 +80,16 @@ function ExpenseBreadcrumb({ leaf }: { leaf: string }): JSX.Element {
 export default function ExpenseDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
   const id = params.id ?? '';
-  const navigate = useNavigate();
+  const beginDraft = useBeginExpenseDraft();
+  const pendingReceipt = useHasPendingFinancial('expense_receipt', id);
+  const [receiptBusy, setReceiptBusy] = useState(false);
 
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const currentUserId = useAuthStore((s) => s.user?.id ?? null);
   const currentUserRole = useAuthStore((s) => s.user?.role_code ?? null);
   const canApprove = hasPermission('expenses.approve');
   const canPay     = hasPermission('expenses.pay');
-  const canCreate  = hasPermission('expenses.create');
+  const canCreate  = hasPermission('expenses.create') || hasPermission('expenses.manage');
 
   const { data: expense, isLoading, error } = useExpenseDetail(id);
   const { data: cats } = useExpenseCategories(true);
@@ -120,6 +124,7 @@ export default function ExpenseDetailPage(): JSX.Element {
   const category = (cats ?? []).find((c) => c.id === expense.category_id);
 
   async function handleSubmitForReview(): Promise<void> {
+    if (receiptBusy || pendingReceipt) return;
     try {
       await submit.mutateAsync({ id });
       // Rotate the idempotency key so a subsequent submit (same mount) is a fresh call.
@@ -142,7 +147,7 @@ export default function ExpenseDetailPage(): JSX.Element {
       vendor_name: expense!.vendor_name ?? '',
       description: expense!.description ?? '',
     };
-    void navigate('/backoffice/expenses/new', { state: { duplicateFrom: seed } });
+    void beginDraft.begin(seed);
   }
 
   return (
@@ -176,16 +181,16 @@ export default function ExpenseDetailPage(): JSX.Element {
         actions={
           <>
             {canCreate && (
-              <button type="button" className={TOOLBAR_BTN_SECONDARY} onClick={handleDuplicate}>
+              <button type="button" className={TOOLBAR_BTN_SECONDARY} disabled={beginDraft.busy} onClick={handleDuplicate}>
                 <Copy className={TOOLBAR_ICON} aria-hidden /> Duplicate
               </button>
             )}
-            {expense.status === 'draft' && (
+            {expense.status === 'draft' && (canCreate && expense.created_by === currentUserId || hasPermission('expenses.manage')) && (
               <button
                 type="button"
                 className={TOOLBAR_BTN_PRIMARY}
                 onClick={() => { void handleSubmitForReview(); }}
-                disabled={submit.isPending}
+                disabled={submit.isPending || receiptBusy || pendingReceipt}
               >
                 {submit.isPending ? 'Submitting…' : 'Submit for approval'}
               </button>
@@ -250,19 +255,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             </dl>
           </Card>
 
-          {expense.receipt_url !== null && expense.receipt_url !== '' && (
-            <Card variant="default" padding="md" className="space-y-2">
-              <SectionLabel as="h2" size="sm" className="text-gold">Receipt</SectionLabel>
-              <a
-                href={expense.receipt_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-gold hover:underline"
-              >
-                <FileText className="h-4 w-4" aria-hidden /> View receipt
-              </a>
-            </Card>
-          )}
+          <ExpenseReceiptPanel expense={expense} onBusyChange={setReceiptBusy} />
         </div>
 
         <div className="space-y-6">

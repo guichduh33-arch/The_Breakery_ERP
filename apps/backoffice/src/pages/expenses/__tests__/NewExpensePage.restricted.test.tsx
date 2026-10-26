@@ -17,8 +17,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NewExpensePage from '@/pages/expenses/NewExpensePage.js';
 
-vi.mock('@/features/expenses/hooks/useCreateExpense.js', () => ({
-  useCreateExpense: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
+vi.mock('@/features/expenses/hooks/useExpenseDraftCreation.js', () => ({
+  useExpenseDraftCreation: () => ({save: vi.fn(), startNew: vi.fn(), busy: false, pending: null, pointer: null, storageError: null}),
 }));
 
 vi.mock('@/stores/authStore.js', () => ({

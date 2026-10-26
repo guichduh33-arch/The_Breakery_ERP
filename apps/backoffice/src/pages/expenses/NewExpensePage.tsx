@@ -1,166 +1,99 @@
-// apps/backoffice/src/pages/expenses/NewExpensePage.tsx
-//
-// Instance nommée de l'ARCHÉTYPE 4 — Form, « la conséquence avant
-// l'engagement » (DESIGN.md § Page Archetypes). Deux colonnes : la saisie à
-// gauche, la conséquence à droite — total dérivé, chaîne d'approbation qui
-// s'appliquera, historique comparable. Le statut du brouillon vit dans
-// l'en-tête, servi par `PageHeader`, source unique du bandeau.
-//
-// Le bandeau annonçait un « Fraunces heading » : Fraunces ne fait plus partie
-// du système typographique (`packages/ui/src/tokens/typography.css`), et le
-// titre de page rend en Instrument Sans depuis la refonte du shell.
-//
-// Le fil d'Ariane est la SEULE sortie de la page. Elle rendait aussi un
-// « ← Back to expenses » : deux vocabulaires pour le même geste sur le même
-// écran, alors que l'ossature commune ne déclare qu'un fil d'Ariane.
-//
-// Le comportement du formulaire est inchangé — `ExpenseForm` + la famille
-// `create_expense` gardent la validation et la soumission idempotente.
-
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
-import { useCreateExpense } from '@/features/expenses/hooks/useCreateExpense.js';
-import type { CreateExpenseInput } from '@/features/expenses/hooks/useCreateExpense.js';
-import {
-  ExpenseForm,
-  emptyExpenseFormValues,
-  type ExpenseFormValues,
-  type DuplicateExpenseSeed,
-} from '@/features/expenses/components/ExpenseForm.js';
+import { useExpenseDraftCreation } from '@/features/expenses/hooks/useExpenseDraftCreation.js';
+import { ExpenseForm, emptyExpenseFormValues, type ExpenseFormValues } from '@/features/expenses/components/ExpenseForm.js';
 import { ExpenseConsequenceRail } from '@/features/expenses/components/ExpenseConsequenceRail.js';
-import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
 import { PageHeader } from '@/components/PageHeader.js';
 import { RestrictedState } from '@/components/RestrictedState.js';
-
-interface NewExpenseNavigationState {
-  duplicateFrom?: DuplicateExpenseSeed;
-}
+import { Button } from '@/components/BackofficeUi.js';
+import { clearExpenseDraftNavigation, readExpenseDraftSeed, type ExpenseDraftNavigationState } from '@/features/expenses/utils/expenseDraftNavigation.js';
+import type { ExpenseCreationSnapshot } from '@/lib/pendingFinancialAttemptSchema.js';
 
 function Breadcrumb(): JSX.Element {
-  return (
-    <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
-      <Link to="/backoffice/expenses" className="hover:text-text-primary">Expenses</Link>
-      <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
-      <span className="text-text-secondary">New</span>
-    </nav>
-  );
-}
-
-// Le statut vit dans l'en-tête (exigence de l'archétype), et il dit la vérité
-// entière : c'est un brouillon, et il n'est pas encore enregistré.
-function DraftMeta(): JSX.Element {
-  return (
-    <div className="flex items-center gap-2">
-      <ExpenseStatusBadge status="draft" />
-      <span className="text-xs text-text-muted">Not saved yet</span>
-    </div>
-  );
+  return <nav className="flex items-center gap-1 text-xs text-text-muted" aria-label="Breadcrumb">
+    <Link to="/backoffice/expenses" className="hover:text-text-primary">Expenses</Link>
+    <ChevronRight className="h-3 w-3 text-text-inert" aria-hidden />
+    <span className="text-text-secondary">New</span>
+  </nav>;
 }
 
 export default function NewExpensePage(): JSX.Element {
-  const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canCreate     = hasPermission('expenses.create');
-  const navigate      = useNavigate();
-  const location      = useLocation();
+  const profile = useAuthStore(s => s.user?.id);
+  const token = useAuthStore(s => s.sessionToken);
+  const location = useLocation();
+  const ticket = (location.state as ExpenseDraftNavigationState | null)?.expenseDraftTicket;
+  // Le secret ne devient jamais une clé React ou un attribut du document.
+  const context = useRef({profile, token, ticket, generation: 0});
+  if (context.current.profile !== profile || context.current.token !== token || (ticket && ticket !== context.current.ticket)) {
+    context.current = {profile, token, ticket, generation: context.current.generation + 1};
+  }
+  return <DraftPage key={context.current.generation} ticket={context.current.ticket} />;
+}
 
-  const [draftId] = useState<string>(() => crypto.randomUUID());
-  const [idemKey] = useState<string>(() => crypto.randomUUID());
-  // Session 59 / Task 6b — "Duplicate" (ExpenseDetailPage) navigates here with
-  // { duplicateFrom } in navigation state. The date is always today and the
-  // receipt is never carried over, regardless of what's in duplicateFrom.
+function DraftPage({ticket}: {ticket: string | undefined}): JSX.Element {
+  const hasPermission = useAuthStore(s => s.hasPermission);
+  const canCreate = hasPermission('expenses.create') || hasPermission('expenses.manage');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const recovery = useExpenseDraftCreation();
+  const [error, setError] = useState<string | null>(null);
+  const [formGeneration, setFormGeneration] = useState(0);
   const [values, setValues] = useState<ExpenseFormValues>(() => {
     const base = emptyExpenseFormValues();
-    const duplicateFrom = (location.state as NewExpenseNavigationState | null)?.duplicateFrom;
-    if (duplicateFrom === undefined) return base;
-    return {
-      ...base,
-      ...duplicateFrom,
-      expense_date: base.expense_date,
-      receipt_url: '',
-    };
+    const seed = readExpenseDraftSeed(ticket);
+    return seed ? {...base, category_id: seed.category_id, amount: seed.amount, vat_amount: seed.vat_amount,
+      payment_method: seed.payment_method, vendor_name: seed.vendor_name, description: seed.description} : base;
   });
 
-  const create = useCreateExpense();
-
-  const isSubmitting = create.isPending;
-  const submitDisabled = useMemo(() => isSubmitting, [isSubmitting]);
-
-  // Le refus garde le fil d'Ariane et le titre : sans eux, un opérateur arrivé
-  // ici par un lien perdait l'écran entier et n'avait pour seule issue que le
-  // bouton Retour du navigateur.
-  if (!canCreate) {
-    return (
-      <div className="space-y-6 max-w-3xl">
-        <Breadcrumb />
-        <PageHeader title="New expense" />
-        <RestrictedState what="creating expenses" permission="expenses.create" />
-      </div>
-    );
-  }
-
-  async function handleSubmit(): Promise<void> {
-    try {
-      const input: CreateExpenseInput = {
-        category_id: values.category_id,
-        amount: Number.parseFloat(values.amount),
-        vat_amount: values.vat_amount === '' ? 0 : Number.parseFloat(values.vat_amount),
-        payment_method: values.payment_method,
-        description: values.description.trim(),
-        expense_date: values.expense_date,
-        idempotency_key: idemKey,
-      };
-      const vendor = values.vendor_name.trim();
-      if (vendor !== '') input.vendor_name = vendor;
-      if (values.receipt_url !== '') input.receipt_url = values.receipt_url;
-
-      const id = await create.mutateAsync(input);
-      void navigate(`/backoffice/expenses/${id}`);
-    } catch {
-      // surfaced via create.error
+  useEffect(() => {
+    if (!ticket) return;
+    clearExpenseDraftNavigation(ticket);
+    if ((location.state as ExpenseDraftNavigationState | null)?.expenseDraftTicket === ticket) {
+      void navigate('/backoffice/expenses/new', {state: null, replace: true});
     }
+  }, [ticket, location.state, navigate]);
+
+  async function save(): Promise<void> {
+    setError(null);
+    const payload: ExpenseCreationSnapshot = recovery.pending?.payload ?? {
+      category_id: values.category_id, amount: Number(values.amount),
+      vat_amount: Number(values.vat_amount || '0'), payment_method: values.payment_method,
+      description: values.description.trim(), expense_date: values.expense_date,
+      ...(values.vendor_name.trim() ? {vendor_name: values.vendor_name.trim()} : {}),
+    };
+    const outcome = await recovery.save(payload);
+    if (!outcome.current) return;
+    if ('error' in outcome) setError(outcome.error instanceof Error ? outcome.error.message : 'The save is unconfirmed. Check it again.');
+    else if (outcome.result) void navigate('/backoffice/expenses/' + outcome.result);
   }
-
-  return (
-    // `max-w-6xl` borne la mesure du formulaire : la largeur des deux colonnes
-    // devient constante de 1280 à 1920 px, et le rail garde 376 px de large
-    // partout. Le back-office n'a pas de cible tablette — aucun palier sous
-    // 1024 px n'est fabriqué ici.
-    <div className="space-y-6 max-w-6xl">
-      <Breadcrumb />
-
-      <PageHeader
-        title="New expense"
-        subtitle="Capture an operational expense. Submit it later to request approval."
-        actions={<DraftMeta />}
-      />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="space-y-6">
-          <ExpenseForm
-            draftId={draftId}
-            value={values}
-            onChange={setValues}
-            onSubmit={() => { void handleSubmit(); }}
-            onCancel={() => { void navigate('/backoffice/expenses'); }}
-            submitting={submitDisabled}
-            submitLabel="Save as draft"
-          />
-
-          {create.error !== null && create.error !== undefined && (
-            <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
-              Failed to save: {create.error.message}
-            </div>
-          )}
-        </div>
-
-        <ExpenseConsequenceRail
-          categoryId={values.category_id}
-          amount={values.amount}
-          vatAmount={values.vat_amount}
-        />
-      </div>
-    </div>
-  );
+  async function startNew(): Promise<void> {
+    try {
+      if (await recovery.startNew()) {
+        setValues(emptyExpenseFormValues()); setFormGeneration(n => n + 1); setError(null);
+        void navigate('/backoffice/expenses/new', {state: null, replace: true});
+      }
+    } catch (e) { setError((e as Error).message); }
+  }
+  return <div className="space-y-6 max-w-6xl">
+    <Breadcrumb />
+    <PageHeader title="New expense" subtitle="Save a draft before attaching its receipt or requesting approval." />
+    {!canCreate ? <RestrictedState what="creating expenses" permission="expenses.create" /> : <>
+      {(recovery.storageError ?? error) && <div role="alert" className="text-danger">{recovery.storageError ?? error}</div>}
+      {recovery.pending ? <section className="space-y-3" aria-label="Pending expense save">
+        <p role="status">The save is unconfirmed. Check the same draft before starting another expense.</p>
+        <p>{recovery.pending.payload.description} — {recovery.pending.payload.amount} IDR — {recovery.pending.payload.expense_date}</p>
+        <Button size="sm" disabled={recovery.busy || Boolean(recovery.storageError)} onClick={() => {void save();}}>Check pending save</Button>
+      </section> : recovery.pointer?.status === 'saved' ? <section className="space-y-3">
+        <p>This draft has already been saved. Open it to attach a receipt or submit it.</p>
+        <Link className="text-text-primary underline" to={'/backoffice/expenses/' + recovery.pointer.expenseId}>Open saved draft</Link>
+        <Button size="sm" disabled={recovery.busy || Boolean(recovery.storageError)} onClick={() => {void startNew();}}>Start another expense</Button>
+      </section> : <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+        <ExpenseForm key={formGeneration} value={values} onChange={setValues} onSubmit={() => {void save();}}
+          onCancel={() => {void navigate('/backoffice/expenses');}} submitting={recovery.busy || Boolean(recovery.storageError)} submitLabel="Save as draft" />
+        <ExpenseConsequenceRail categoryId={values.category_id} amount={values.amount} vatAmount={values.vat_amount} />
+      </div>}
+    </>}
+  </div>;
 }

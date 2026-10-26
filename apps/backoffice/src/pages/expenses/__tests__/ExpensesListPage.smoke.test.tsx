@@ -154,21 +154,21 @@ describe('ExpensesListPage', () => {
   it('shows the New expense CTA when create permission is granted', () => {
     currentPerms = new Set(['expenses.read', 'expenses.create']);
     renderPage();
-    expect(screen.getByRole('link', { name: /New expense/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New expense/i })).toBeInTheDocument();
   });
 
   it('hides the create CTA when only read permission is granted', () => {
     currentPerms = new Set(['expenses.read']);
     renderPage();
-    expect(screen.queryByRole('link', { name: /New expense/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /New expense/i })).not.toBeInTheDocument();
     currentPerms = new Set(['expenses.read', 'expenses.create']);
   });
 
-  it('blocks the page when the user lacks expenses.read', () => {
+  it('opens the personal expense view without general read permission', () => {
     currentPerms = new Set();
     renderPage();
     expect(screen.queryByRole('heading', { name: /^Expenses$/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/do not have permission to view expenses/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'My expenses' })).toBeInTheDocument();
     currentPerms = new Set(['expenses.read', 'expenses.create']);
   });
 });

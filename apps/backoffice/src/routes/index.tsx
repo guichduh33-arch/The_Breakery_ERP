@@ -511,25 +511,19 @@ export function AppRoutes() {
         <Route
           path="expenses"
           element={
-            <PermissionGate required="expenses.read">
-              <ExpensesListPage />
-            </PermissionGate>
+            <ExpensesListPage />
           }
         />
         <Route
           path="expenses/new"
           element={
-            <PermissionGate required="expenses.create">
-              <NewExpensePage />
-            </PermissionGate>
+            <NewExpensePage />
           }
         />
         <Route
           path="expenses/:id"
           element={
-            <PermissionGate required="expenses.read">
-              <ExpenseDetailPage />
-            </PermissionGate>
+            <ExpenseDetailPage />
           }
         />
         <Route

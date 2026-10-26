@@ -4,10 +4,14 @@
 // state. Proves: fields carried over, expense_date forced to today, no
 // receipt carried over, and no auto-submit (still a draft requiring a click).
 
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { toLocalDateStr } from '@breakery/domain';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { financialTestAuth, installFinancialBrowser, resetFinancialSession } from '@/lib/__tests__/financialAttemptTestUtils.js';
+import { prepareExpenseDraftNavigation } from '@/features/expenses/utils/expenseDraftNavigation.js';
+import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
 import NewExpensePage from '@/pages/expenses/NewExpensePage.js';
 import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
 
@@ -29,14 +33,12 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
-vi.mock('@/features/expenses/hooks/useCreateExpense.js', () => ({
-  useCreateExpense: () => ({ mutateAsync: vi.fn(), isPending: false, error: null }),
+vi.mock('@/features/expenses/hooks/useExpenseDraftCreation.js', () => ({
+  useExpenseDraftCreation: () => ({save: vi.fn(), startNew: vi.fn(), busy: false, pending: null, pointer: null, storageError: null}),
 }));
 
-vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: () => true }),
-}));
+vi.mock('@/stores/authStore.js', async () => ({useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth}));
+beforeEach(() => {installFinancialBrowser(); resetFinancialSession();});
 
 const SEED: DuplicateExpenseSeed = {
   category_id:    'cat-1',
@@ -47,13 +49,16 @@ const SEED: DuplicateExpenseSeed = {
   description:    'Office supplies',
 };
 
-function renderPage(state?: { duplicateFrom?: DuplicateExpenseSeed }): ReturnType<typeof render> {
+function SamePageNew() {const start = useBeginExpenseDraft(); return <button onClick={() => {void start.begin();}}>New expense shortcut</button>;}
+
+function renderPage(state?: { duplicateFrom?: DuplicateExpenseSeed }, trusted = true): ReturnType<typeof render> {
+  const navigationState = state?.duplicateFrom && trusted ? prepareExpenseDraftNavigation(state.duplicateFrom) : state;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[{ pathname: '/backoffice/expenses/new', state }]}>
+      <MemoryRouter initialEntries={[{ pathname: '/backoffice/expenses/new', state: navigationState }]}>
         <Routes>
-          <Route path="/backoffice/expenses/new" element={<NewExpensePage />} />
+          <Route path="/backoffice/expenses/new" element={<><SamePageNew /><NewExpensePage /></>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -61,10 +66,29 @@ function renderPage(state?: { duplicateFrom?: DuplicateExpenseSeed }): ReturnTyp
 }
 
 describe('NewExpensePage — duplicate prefill (S59 Task 6b)', () => {
+  it('ignores private duplicate data left in legacy browser history', async () => {
+    renderPage({duplicateFrom: SEED}, false);
+    expect(await screen.findByLabelText(/^Amount \(IDR\)/i)).toHaveValue(null);
+    expect(screen.getByLabelText(/Description/i)).toHaveValue('');
+  });
+  it('clears duplicated values after switching operator/session', async () => {
+    renderPage({duplicateFrom: SEED});
+    expect(await screen.findByLabelText(/^Amount \(IDR\)/i)).toHaveValue(250000);
+    act(() => {financialTestAuth.setState({sessionToken: 'new-operator-session'});});
+    expect(screen.getByLabelText(/^Amount \(IDR\)/i)).toHaveValue(null);
+    expect(screen.getByLabelText(/Vendor/i)).toHaveValue('');
+  });
+  it('starts an empty form when New expense is chosen on the same route', async () => {
+    renderPage({duplicateFrom: SEED});
+    expect(await screen.findByLabelText(/^Amount \(IDR\)/i)).toHaveValue(250000);
+    fireEvent.click(screen.getByRole('button', {name: 'New expense shortcut'}));
+    await waitFor(() => expect(screen.getByLabelText(/^Amount \(IDR\)/i)).toHaveValue(null));
+    expect(screen.getByLabelText(/Description/i)).toHaveValue('');
+  });
   it('with no navigation state, renders the empty form (unchanged behaviour)', async () => {
     renderPage();
     expect(await screen.findByLabelText(/^Amount \(IDR\)/i)).toHaveValue(null);
-    expect(screen.getByLabelText(/^Date/i)).toHaveValue(new Date().toISOString().slice(0, 10));
+    expect(screen.getByLabelText(/^Date/i)).toHaveValue(toLocalDateStr(new Date()));
   });
 
   it('with duplicateFrom in navigation state, prefills category/amount/VAT/payment method/vendor/description', async () => {
@@ -79,7 +103,7 @@ describe('NewExpensePage — duplicate prefill (S59 Task 6b)', () => {
   it('forces expense_date to today even when duplicateFrom is set', async () => {
     renderPage({ duplicateFrom: SEED });
     await screen.findByLabelText(/^Amount \(IDR\)/i);
-    expect(screen.getByLabelText(/^Date/i)).toHaveValue(new Date().toISOString().slice(0, 10));
+    expect(screen.getByLabelText(/^Date/i)).toHaveValue(toLocalDateStr(new Date()));
   });
 
   it('does not auto-submit — the draft still requires clicking Save', async () => {

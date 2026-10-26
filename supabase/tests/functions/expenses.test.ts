@@ -36,7 +36,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
 
   it('cashier cannot create an expense (permission gate)', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('create_expense_v2', {
+    const { error } = await sb.rpc('create_expense_v3', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         100000,
       p_payment_method: 'cash',
@@ -58,7 +58,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const sbAdm = jwtClient(adminToken);
     const sbMgr = jwtClient(managerToken);
     const idemKey = crypto.randomUUID();
-    const { data: createId, error: cErr } = await sbAdm.rpc('create_expense_v2', {
+    const { data: createId, error: cErr } = await sbAdm.rpc('create_expense_v3', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         850000,
       p_payment_method: 'cash',
@@ -72,7 +72,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const expenseId = createId as unknown as string;
 
     // 2. Idempotency : same key returns same id.
-    const { data: replayId } = await sbAdm.rpc('create_expense_v2', {
+    const { data: replayId } = await sbAdm.rpc('create_expense_v3', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         999,
       p_payment_method: 'cash',
@@ -132,7 +132,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     // inexistant. Le sujet ici est le JE 3-lignes credit+VAT : on reste dans
     // la bande 100k..1M (1 étape Manager). Le multi-étapes appartient à la
     // couverture expense-governance.
-    const { data: createId } = await sbAdm.rpc('create_expense_v2', {
+    const { data: createId } = await sbAdm.rpc('create_expense_v3', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         550000,
       p_vat_amount:     50000,

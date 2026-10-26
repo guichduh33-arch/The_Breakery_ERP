@@ -33,6 +33,7 @@ import { DataTable, TabsList, TabsTrigger } from '@/components/BackofficeUi.js';
 import { formatCurrency, formatDate } from '@breakery/utils';
 import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStrip.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
 import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
 import { ExpenseCategoriesTab } from '@/features/expenses/components/ExpenseCategoriesTab.js';
 import {
@@ -94,8 +95,9 @@ const EXPENSE_COUNTERS: readonly {
 
 export default function ExpensesListPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canRead   = hasPermission('expenses.read');
-  const canCreate = hasPermission('expenses.create');
+  const canReadAll = hasPermission('expenses.read') || hasPermission('expenses.manage');
+  const beginDraft = useBeginExpenseDraft();
+  const canCreate = hasPermission('expenses.create') || hasPermission('expenses.manage');
 
   const [tab, setTab]                     = useState<'expenses' | 'categories'>('expenses');
   const [status, setStatus]               = useState<ExpenseFilterKey>('all');
@@ -215,15 +217,11 @@ export default function ExpensesListPage(): JSX.Element {
     },
   ], []);
 
-  if (!canRead) {
-    return <div className="text-text-secondary">You do not have permission to view expenses.</div>;
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
         className="items-start gap-4"
-        title="Expenses"
+        title={canReadAll ? 'Expenses' : 'My expenses'}
         subtitle="Manage and track your bakery's expenditure."
         actions={
           <>
@@ -234,9 +232,9 @@ export default function ExpensesListPage(): JSX.Element {
               <Download className={TOOLBAR_ICON} aria-hidden /> Export
             </button>
             {canCreate && (
-              <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+              <button type="button" className={TOOLBAR_BTN_PRIMARY} disabled={beginDraft.busy} onClick={() => {void beginDraft.begin();}}>
                 <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
-              </Link>
+              </button>
             )}
           </>
         }
@@ -347,9 +345,9 @@ export default function ExpensesListPage(): JSX.Element {
                   </p>
                   {canCreate && (
                     <div className="mt-4">
-                      <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+                      <button type="button" className={TOOLBAR_BTN_PRIMARY} disabled={beginDraft.busy} onClick={() => {void beginDraft.begin();}}>
                         <Plus className="h-3.5 w-3.5" aria-hidden /> Add first expense
-                      </Link>
+                      </button>
                     </div>
                   )}
                 </div>

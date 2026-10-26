@@ -11,7 +11,7 @@
 -- id = auth_user_id (comptes SEED historiques). Ce fichier construit deux profils au
 -- format create_user_v1 réel (id <> auth_user_id, cf.
 -- close_shift_v8_closed_by_profile.test.sql:27-40) — un créateur SUPER_ADMIN et un
--- approbateur ADMIN — et exerce les SEPT RPCs versionnées (create_expense_v2,
+-- approbateur ADMIN — et exerce les SEPT RPCs versionnées (create_expense_v3,
 -- submit_expense_v3, approve_expense_v5, reject_expense_v2, pay_expense,
 -- set_expense_threshold, delete_expense_threshold_v2) plus le helper interne
 -- _emit_expense_je (appelé en place par submit/approve).
@@ -25,7 +25,7 @@
 -- Couverture (T1-T10, certains Tn éclatés en sous-assertions Tna/Tnb quand plusieurs
 -- vérifications distinctes portent sur le même appel — pattern T14/T18 de
 -- expense_governance.test.sql) :
---   T1  : create_expense_v2 par le créateur SUPER_ADMIN → lives_ok (RED attendu : 23503
+--   T1  : create_expense_v3 par le créateur SUPER_ADMIN → lives_ok (RED attendu : 23503
 --         avant fix / "does not exist" avant migration).
 --   T2  : audit_logs.actor_id pour action='expense.create' = profil créateur (pas l'auth id).
 --   T3a : submit_expense_v3 sur ce même montant (bracket [0,100k) → auto-approve) → lives_ok.
@@ -114,18 +114,18 @@ VALUES (
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e3');
 
 -- ============================================================================
--- T1 : create_expense_v2 par le créateur — la toute première écriture audit_logs du
+-- T1 : create_expense_v3 par le créateur — la toute première écriture audit_logs du
 -- module (la ligne qui plantait 23503 avant fix / "does not exist" avant migration).
 -- ============================================================================
 
 SELECT plan(14);
 
 SELECT lives_ok(
-  $$ SELECT create_expense_v2(
+  $$ SELECT create_expense_v3(
        'a7a70000-0000-0000-0000-0000000000c1'::uuid, 50000, 'cash',
        'ACTORPROF T1 create', CURRENT_DATE
      ) $$,
-  'T1 : create_expense_v2 by profile.id <> auth_user_id creator lives (P0 regression)'
+  'T1 : create_expense_v3 by profile.id <> auth_user_id creator lives (P0 regression)'
 );
 
 SELECT is(
@@ -279,7 +279,7 @@ SELECT is(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname IN (
-     'create_expense_v2', 'submit_expense_v3', 'approve_expense_v5',
+     'create_expense_v3', 'submit_expense_v3', 'approve_expense_v5',
      'reject_expense_v2', 'pay_expense_v4',
      'set_expense_threshold_v3', 'delete_expense_threshold_v2'
    )),

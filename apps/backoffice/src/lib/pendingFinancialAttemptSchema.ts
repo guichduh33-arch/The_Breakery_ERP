@@ -18,7 +18,20 @@ export interface PaymentSnapshot {
 }
 export interface LoyaltyConversionSnapshot { customerId: string; points: number }
 export interface LoyaltyAdjustmentSnapshot { customerId: string; delta: number; reason: string }
+export interface ExpenseCreationSnapshot {
+  category_id: string; amount: number; vat_amount: number;
+  payment_method: 'cash' | 'transfer' | 'card' | 'credit';
+  description: string; expense_date: string; vendor_name?: string;
+}
+export type ExpenseReceiptSnapshot = {
+  expenseId: string; expectedPath: string | null;
+} & ({ kind: 'remove' } | {
+  kind: 'attach'; mime: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
+  size: number; sha256: string;
+});
 export interface FinancialPayloads {
+  expense_creation: ExpenseCreationSnapshot;
+  expense_receipt: ExpenseReceiptSnapshot;
   refund: RefundSnapshot;
   payment: PaymentSnapshot;
   loyalty_conversion: LoyaltyConversionSnapshot;
@@ -46,6 +59,24 @@ const optionalText = (v: Record<string, unknown>, key: string) => v[key] === und
 /** Liste fermée : jamais de PIN, de bearer, d'en-têtes ou de réponse serveur. */
 export function validPayload(operation: FinancialOperation, target: string, value: unknown): boolean {
   if (!isRecord(value)) return false;
+  if (operation === 'expense_creation') {
+    return target === 'new' && exact(value, ['category_id','amount','vat_amount','payment_method','description','expense_date','vendor_name'])
+      && uuid(value.category_id) && positive(value.amount) && finite(value.vat_amount)
+      && value.vat_amount >= 0 && value.vat_amount <= value.amount
+      && typeof value.payment_method === 'string' && ['cash','transfer','card','credit'].includes(value.payment_method)
+      && text(value.description) && value.description.trim().length > 0 && value.description.length <= 250
+      && typeof value.expense_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.expense_date)
+      && (value.vendor_name === undefined || (text(value.vendor_name) && value.vendor_name.length <= 120));
+  }
+  if (operation === 'expense_receipt') {
+    if (!uuid(value.expenseId) || value.expenseId !== target
+      || !(value.expectedPath === null || text(value.expectedPath))) return false;
+    if (value.kind === 'remove') return exact(value,['expenseId','expectedPath','kind']);
+    return value.kind === 'attach' && exact(value,['expenseId','expectedPath','kind','mime','size','sha256'])
+      && typeof value.mime === 'string' && ['image/jpeg','image/png','image/webp','application/pdf'].includes(value.mime)
+      && finite(value.size) && Number.isInteger(value.size) && value.size >= 0 && value.size <= 5242880
+      && typeof value.sha256 === 'string' && /^[a-f0-9]{64}$/.test(value.sha256);
+  }
   if (operation === 'refund') {
     return exact(value, ['orderId', 'lines', 'tenders', 'reason']) && value.orderId === target
       && text(value.reason) && value.reason.trim().length >= 3
