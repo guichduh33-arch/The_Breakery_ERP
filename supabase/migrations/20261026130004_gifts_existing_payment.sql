@@ -29,7 +29,7 @@ DECLARE
   END IF;    SELECT id INTO v_profile_id FROM user_profiles
     WHERE auth_user_id = v_user_id AND deleted_at IS NULL;   IF v_profile_id IS NULL THEN     RAISE EXCEPTION 'User profile not found' USING ERRCODE = 'P0001';
   END IF;    IF NOT has_permission(v_user_id, 'payments.process') THEN
-    RAISE EXCEPTION 'Permission denied: payments.process' USING ERRCODE = 'P0003';   END IF; 
+    RAISE EXCEPTION 'Permission denied: payments.process' USING ERRCODE = 'P0003';   END IF;
   IF p_idempotency_key IS NOT NULL THEN     SELECT id INTO v_order.id FROM orders WHERE idempotency_key = p_idempotency_key;     IF v_order.id IS NOT NULL THEN
       RETURN (         SELECT jsonb_build_object(           'order_id',          o.id,
           'order_number', o.order_number, 'order_snapshot', public._pos_order_snapshot_data_v1(o.id),           'subtotal',          o.subtotal,           'tax_amount',        o.tax_amount,
@@ -45,7 +45,7 @@ DECLARE
        WHERE id = p_discount_auth_id          AND consumed_at IS NULL          AND expires_at > now()
          AND scope = 'discount'          AND manager_profile_id = p_discount_authorized_by;       IF NOT FOUND THEN
         RAISE EXCEPTION 'Invalid manager PIN for discount authorization'           USING ERRCODE = 'P0003';       END IF;
-    END IF;   END IF; 
+    END IF;   END IF;
   IF p_payments IS NOT NULL AND p_payment IS NOT NULL THEN     RAISE EXCEPTION 'Cannot supply both p_payment and p_payments' USING ERRCODE = 'check_violation';   END IF;
   IF p_payments IS NOT NULL THEN     v_payments_arr := p_payments;   ELSIF p_payment IS NOT NULL THEN
     v_payments_arr := jsonb_build_array(p_payment);   ELSE     RAISE EXCEPTION 'Must supply p_payment or p_payments' USING ERRCODE = 'check_violation';
@@ -72,28 +72,28 @@ DECLARE
       RAISE EXCEPTION 'Customer not found: %', p_customer_id USING ERRCODE = 'P0002';     END IF;     IF v_sc_balance < v_sc_amount THEN
       RAISE EXCEPTION 'Insufficient store credit (balance: %)', v_sc_balance         USING ERRCODE = 'P0016';     END IF;
   END IF;    SELECT COALESCE(allow_negative_stock, true)
-    INTO v_allow_negative     FROM business_config WHERE id = 1; 
+    INTO v_allow_negative     FROM business_config WHERE id = 1;
   IF p_offline_replay THEN     v_allow_negative := true;   END IF;
    SELECT COALESCE(SUM(line_total), 0)     INTO v_items_total
     FROM order_items     WHERE order_id = p_order_id       AND is_cancelled = false;
    SELECT COALESCE(SUM(oi.unit_price * oi.quantity), 0)     INTO v_eval_subtotal
-    FROM order_items oi     WHERE oi.order_id = p_order_id AND oi.is_cancelled = false AND oi.is_promo_gift = false; 
+    FROM order_items oi     WHERE oi.order_id = p_order_id AND oi.is_cancelled = false AND oi.is_promo_gift = false;
   IF p_promotions IS NOT NULL AND jsonb_array_length(p_promotions) > 0 THEN     v_now_dow  := EXTRACT(ISODOW FROM v_now)::INTEGER;     v_now_hour := EXTRACT(HOUR  FROM v_now)::INTEGER;
      IF p_customer_id IS NOT NULL THEN       SELECT category_id INTO v_customer_category_id
-        FROM customers WHERE id = p_customer_id;     END IF; 
+        FROM customers WHERE id = p_customer_id;     END IF;
     SELECT COALESCE(jsonb_agg(jsonb_build_object(              'product_id', oi.product_id::text,              'quantity',   oi.quantity,
              'unit_price', oi.unit_price)), '[]'::jsonb)       INTO v_eval_items       FROM order_items oi
       WHERE oi.order_id = p_order_id AND oi.is_cancelled = false AND oi.is_promo_gift = false;      v_server_eval := evaluate_promotions_v3(
       p_cart_items  := v_eval_items,       p_customer_id := p_customer_id,       p_subtotal    := v_eval_subtotal
     );      FOR v_promo IN SELECT * FROM jsonb_array_elements(p_promotions) LOOP
-      v_promo_id     := (v_promo->>'promotion_id')::UUID;       v_promo_amount := (v_promo->>'amount')::DECIMAL(14,2); 
+      v_promo_id     := (v_promo->>'promotion_id')::UUID;       v_promo_amount := (v_promo->>'amount')::DECIMAL(14,2);
       IF v_promo_amount IS NULL OR v_promo_amount < 0 THEN         RAISE EXCEPTION 'Invalid promotion amount for %: %', v_promo_id, v_promo_amount           USING ERRCODE = 'check_violation';
       END IF;        SELECT * INTO v_promo_record FROM promotions
         WHERE id = v_promo_id AND is_active = true AND deleted_at IS NULL;       IF v_promo_record.id IS NULL THEN         RAISE EXCEPTION 'Promotion not found or inactive: %', v_promo_id
-          USING ERRCODE = 'check_violation';       END IF; 
+          USING ERRCODE = 'check_violation';       END IF;
       IF v_promo_record.start_at IS NOT NULL AND v_promo_record.start_at > v_now THEN         RAISE EXCEPTION 'Promotion not yet active: %', v_promo_record.slug           USING ERRCODE = 'check_violation';
       END IF;       IF v_promo_record.end_at IS NOT NULL AND v_promo_record.end_at < v_now THEN         RAISE EXCEPTION 'Promotion expired: %', v_promo_record.slug
-          USING ERRCODE = 'check_violation';       END IF; 
+          USING ERRCODE = 'check_violation';       END IF;
       IF (v_promo_record.day_of_week_mask & (1 << (v_now_dow - 1))) = 0 THEN         RAISE EXCEPTION 'Promotion not valid this day: %', v_promo_record.slug           USING ERRCODE = 'check_violation';
       END IF;        IF v_promo_record.start_hour IS NOT NULL THEN
         IF v_now_hour < v_promo_record.start_hour            OR v_now_hour >= v_promo_record.end_hour THEN           RAISE EXCEPTION 'Promotion not valid this hour: %', v_promo_record.slug
@@ -108,20 +108,20 @@ DECLARE
         WHERE (sp->>'promotion_id')::uuid = v_promo_id         LIMIT 1;       IF v_server_amount IS NULL THEN
         RAISE EXCEPTION 'Promotion amount mismatch: % not applicable to this cart', v_promo_record.slug           USING ERRCODE = 'check_violation';       END IF;
       IF v_server_amount <> v_promo_amount THEN         RAISE EXCEPTION 'Promotion amount mismatch: % (client %, server %)',           v_promo_record.slug, v_promo_amount, v_server_amount
-          USING ERRCODE = 'check_violation';       END IF; 
+          USING ERRCODE = 'check_violation';       END IF;
       v_promotion_total := v_promotion_total + v_promo_amount;     END LOOP;   END IF;
    -- ADR-013 D11 : gardes etagees, miroir exact de calculateTotals (packages/domain) :
   -- items -> promo -> redemption -> remise panier -> taxe.
   v_post_promo := v_items_total - v_promotion_total;   IF v_post_promo < 0 THEN     RAISE EXCEPTION 'Promotions exceed items total' USING ERRCODE = 'check_violation';
   END IF;   IF v_redemption_amount > v_post_promo THEN     RAISE EXCEPTION 'Redemption exceeds post-promotion total' USING ERRCODE = 'check_violation';
   END IF;   v_total := v_post_promo - v_redemption_amount - p_discount_amount;   IF v_total < 0 THEN
-    RAISE EXCEPTION 'Discounts + promotions exceed items total' USING ERRCODE = 'check_violation';   END IF; 
+    RAISE EXCEPTION 'Discounts + promotions exceed items total' USING ERRCODE = 'check_violation';   END IF;
   SELECT s.tax_amount, s.total     INTO v_tax_amount, v_total     FROM _pb1_split_v1(v_total) s;
    v_pay_idx := 0;   v_pay_sum := 0;
   v_total_change := 0;   FOR v_payment_entry IN SELECT * FROM jsonb_array_elements(v_payments_arr) LOOP     v_pay_idx       := v_pay_idx + 1;
     v_pay_method    := (v_payment_entry->>'method')::payment_method;     v_pay_amount    := (v_payment_entry->>'amount')::DECIMAL(14,2);     v_pay_cash_recv := NULLIF(v_payment_entry->>'cash_received','')::DECIMAL(14,2);
     v_pay_change    := NULLIF(v_payment_entry->>'change_given','')::DECIMAL(14,2);      IF v_pay_amount IS NULL OR v_pay_amount <= 0 THEN
-      RAISE EXCEPTION 'Tender %: amount must be > 0', v_pay_idx USING ERRCODE = 'check_violation';     END IF; 
+      RAISE EXCEPTION 'Tender %: amount must be > 0', v_pay_idx USING ERRCODE = 'check_violation';     END IF;
     IF v_pay_cash_recv IS NOT NULL AND v_pay_cash_recv > v_pay_amount AND v_pay_idx < v_pay_count THEN       RAISE EXCEPTION 'Tender % (intermediate): cash_received cannot exceed amount', v_pay_idx         USING ERRCODE = 'check_violation';
     END IF;      IF v_pay_method = 'cash' THEN
       IF v_pay_cash_recv IS NOT NULL THEN         IF v_pay_cash_recv < v_pay_amount AND v_pay_idx = v_pay_count THEN           RAISE EXCEPTION 'Invalid change amount: cash_received (%) < amount (%)',
@@ -133,7 +133,7 @@ DECLARE
      v_pay_sum := v_pay_sum + v_pay_amount;     IF v_pay_change IS NOT NULL THEN
       v_total_change := v_total_change + v_pay_change;     END IF;   END LOOP;
    IF v_pay_sum <> v_total THEN     RAISE EXCEPTION 'Sum of tender amounts (%) != order total (%)', v_pay_sum, v_total
-      USING ERRCODE = 'check_violation';   END IF; 
+      USING ERRCODE = 'check_violation';   END IF;
   -- Nouvelles lignes générées seulement après la validation du règlement.
   FOR v_gift IN SELECT * FROM jsonb_array_elements(public._payment_gift_items_v1(v_server_eval, p_promotions)) LOOP
     -- Un cadeau historique préparé ou annulé reste un fait : jamais recréé.
@@ -209,7 +209,7 @@ DECLARE
       END IF;        INSERT INTO promotion_applications (order_id, promotion_id, amount, description)
       VALUES (         p_order_id,         v_promo_id,
         (v_promo->>'amount')::DECIMAL(14,2),         COALESCE(v_promo->>'description', '')       );
-    END LOOP;   END IF; 
+    END LOOP;   END IF;
   FOR v_payment_entry IN SELECT * FROM jsonb_array_elements(v_payments_arr) LOOP     INSERT INTO order_payments (       order_id, method, amount, cash_received, change_given, reference
     ) VALUES (       p_order_id,       (v_payment_entry->>'method')::payment_method,
       (v_payment_entry->>'amount')::DECIMAL(14,2),       NULLIF(v_payment_entry->>'cash_received','')::DECIMAL(14,2),       NULLIF(v_payment_entry->>'change_given','')::DECIMAL(14,2),
@@ -225,7 +225,7 @@ DECLARE
     SELECT id INTO v_je_id       FROM journal_entries       WHERE reference_type = 'sale' AND reference_id = p_order_id;
      v_loyalty_liab_id  := resolve_mapping_account('LOYALTY_LIABILITY');     v_sale_discount_id := resolve_mapping_account('SALE_DISCOUNT');
      IF v_je_id IS NOT NULL THEN       INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, description) VALUES
-        (v_je_id, v_loyalty_liab_id, v_redemption_amount, 0,                   'Loyalty redemption — DR liability'),         (v_je_id, v_sale_discount_id, 0,                  v_redemption_amount, 'Loyalty redemption — CR discount'); 
+        (v_je_id, v_loyalty_liab_id, v_redemption_amount, 0,                   'Loyalty redemption — DR liability'),         (v_je_id, v_sale_discount_id, 0,                  v_redemption_amount, 'Loyalty redemption — CR discount');
       UPDATE journal_entries         SET total_debit  = total_debit  + v_redemption_amount,             total_credit = total_credit + v_redemption_amount
         WHERE id = v_je_id;     END IF;   END IF;
    IF p_loyalty_points_redeemed > 0 THEN     UPDATE customers

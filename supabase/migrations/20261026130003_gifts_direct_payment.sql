@@ -39,7 +39,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
   END IF;    SELECT id INTO v_profile_id FROM user_profiles
     WHERE auth_user_id = v_user_id AND deleted_at IS NULL;   IF v_profile_id IS NULL THEN     RAISE EXCEPTION 'User profile not found' USING ERRCODE = 'P0001';
   END IF;    IF NOT has_permission(v_user_id, 'pos.sale.create') THEN
-    RAISE EXCEPTION 'Permission denied: pos.sale.create' USING ERRCODE = 'P0003';   END IF; 
+    RAISE EXCEPTION 'Permission denied: pos.sale.create' USING ERRCODE = 'P0003';   END IF;
   IF p_idempotency_key IS NOT NULL THEN     SELECT id INTO v_order_id FROM orders WHERE idempotency_key = p_idempotency_key;     IF v_order_id IS NOT NULL THEN
       RETURN (         SELECT jsonb_build_object(           'order_id',          o.id,
           'order_number', o.order_number, 'order_snapshot', public._pos_order_snapshot_data_v1(o.id),           'subtotal',          o.subtotal,           'tax_amount',        o.tax_amount,
@@ -60,18 +60,18 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
    IF p_payments IS NOT NULL AND p_payment IS NOT NULL THEN     RAISE EXCEPTION 'Cannot supply both p_payment and p_payments' USING ERRCODE = 'check_violation';
   END IF;   IF p_payments IS NOT NULL THEN     v_payments_arr := p_payments;
   ELSIF p_payment IS NOT NULL THEN     v_payments_arr := jsonb_build_array(p_payment);   ELSE
-    RAISE EXCEPTION 'Must supply p_payment or p_payments' USING ERRCODE = 'check_violation';   END IF; 
+    RAISE EXCEPTION 'Must supply p_payment or p_payments' USING ERRCODE = 'check_violation';   END IF;
   v_pay_count := jsonb_array_length(v_payments_arr);   IF v_pay_count < 1 OR v_pay_count > 5 THEN     RAISE EXCEPTION 'Invalid tender count: % (must be 1..5)', v_pay_count
-      USING ERRCODE = 'check_violation';   END IF; 
+      USING ERRCODE = 'check_violation';   END IF;
   IF NOT EXISTS (     SELECT 1 FROM pos_sessions       WHERE id = p_session_id
         AND opened_by = v_profile_id         AND status = 'open'   ) THEN
-    RAISE EXCEPTION 'No open session for this user' USING ERRCODE = 'P0001';   END IF; 
+    RAISE EXCEPTION 'No open session for this user' USING ERRCODE = 'P0001';   END IF;
   IF p_loyalty_points_redeemed > 0 THEN     IF p_customer_id IS NULL THEN       RAISE EXCEPTION 'Cannot redeem points without customer attached'
         USING ERRCODE = 'check_violation';     END IF;     IF p_loyalty_points_redeemed % 100 <> 0 THEN
       RAISE EXCEPTION 'Points must be a multiple of 100'         USING ERRCODE = 'check_violation';     END IF;
     SELECT loyalty_points INTO v_loyalty_balance       FROM customers WHERE id = p_customer_id;     IF v_loyalty_balance < p_loyalty_points_redeemed THEN
       RAISE EXCEPTION 'Insufficient loyalty points (balance: %)', v_loyalty_balance         USING ERRCODE = 'P0010';     END IF;
-    v_redemption_amount := p_loyalty_points_redeemed * 10;   END IF; 
+    v_redemption_amount := p_loyalty_points_redeemed * 10;   END IF;
   -- ADR-013 Lot 4 (D8) : paiement par avoir gate serveur -- client rattache +
   -- solde suffisant, verifie sous verrou (lock-then-check, patron B2B _139).
   -- Positionne AVANT les verrous produits pour fixer l'ordre de verrouillage
@@ -83,9 +83,9 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
       RAISE EXCEPTION 'Customer not found: %', p_customer_id USING ERRCODE = 'P0002';     END IF;     IF v_sc_balance < v_sc_amount THEN
       RAISE EXCEPTION 'Insufficient store credit (balance: %)', v_sc_balance         USING ERRCODE = 'P0016';     END IF;
   END IF;    SELECT allow_negative_stock INTO v_allow_negative
-    FROM business_config WHERE id = 1;   v_allow_negative := COALESCE(v_allow_negative, true); 
+    FROM business_config WHERE id = 1;   v_allow_negative := COALESCE(v_allow_negative, true);
   v_items_total := 0;   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP     SELECT * INTO v_product FROM products
-      WHERE id = (v_item->>'product_id')::UUID       FOR UPDATE; 
+      WHERE id = (v_item->>'product_id')::UUID       FOR UPDATE;
     IF v_product.id IS NULL THEN       RAISE EXCEPTION 'Product not found: %', v_item->>'product_id' USING ERRCODE = 'P0002';     END IF;
     -- ADR-022 dec. 1 : la garde ADR-011 dec. 2, jusqu'ici ecrite inline ici,
     -- passe par le depositaire unique partage par les quatre portes de vente.
@@ -95,7 +95,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
      SELECT lp.unit_price, lp.modifiers_total, lp.line_subtotal, lp.modifiers_resolved       INTO v_srv_unit_price, v_srv_mod_per_unit, v_srv_line_subtotal, v_srv_mods_resolved
       FROM _resolve_line_price_v2(         v_product.id,         v_quantity,
         COALESCE(v_item->'modifiers', '[]'::jsonb),         p_customer_id,         v_item_is_gift,
-        (v_product.product_type = 'combo')       ) lp; 
+        (v_product.product_type = 'combo')       ) lp;
     IF v_product.product_type = 'combo' THEN       -- S57 A-D1/A-D2: real combo pricing (base + Sigma surcharge) + composition
       -- validation in one pass.
       IF NOT v_item_is_gift THEN         v_combo_price := _resolve_combo_price_v1(           v_product.id, COALESCE(v_item->'combo_components', '[]'::jsonb)
@@ -148,20 +148,20 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
       SELECT category_id INTO v_customer_category_id         FROM customers WHERE id = p_customer_id;     END IF;
      SELECT COALESCE(jsonb_agg(jsonb_build_object(              'product_id', item->>'product_id',
              'quantity',   (item->>'quantity')::numeric,              'unit_price', (item->>'unit_price')::numeric)), '[]'::jsonb)       INTO v_eval_items
-      FROM jsonb_array_elements(p_items) AS item       WHERE COALESCE((item->>'is_promo_gift')::boolean, false) = false; 
+      FROM jsonb_array_elements(p_items) AS item       WHERE COALESCE((item->>'is_promo_gift')::boolean, false) = false;
     -- S57 A-D5: evaluate_promotions_v1 -> v2 (advisory cap filtering).
     v_server_eval := evaluate_promotions_v3(       p_cart_items  := v_eval_items,       p_customer_id := p_customer_id,
-      p_subtotal    := v_eval_subtotal     ); 
+      p_subtotal    := v_eval_subtotal     );
     FOR v_promo IN SELECT * FROM jsonb_array_elements(p_promotions) LOOP       v_promo_id     := (v_promo->>'promotion_id')::UUID;       v_promo_amount := (v_promo->>'amount')::DECIMAL(14,2);
        IF v_promo_amount IS NULL OR v_promo_amount < 0 THEN         RAISE EXCEPTION 'Invalid promotion amount for %: %', v_promo_id, v_promo_amount
-          USING ERRCODE = 'check_violation';       END IF; 
+          USING ERRCODE = 'check_violation';       END IF;
       SELECT * INTO v_promo_record FROM promotions         WHERE id = v_promo_id AND is_active = true AND deleted_at IS NULL;       IF v_promo_record.id IS NULL THEN
         RAISE EXCEPTION 'Promotion not found or inactive: %', v_promo_id           USING ERRCODE = 'check_violation';       END IF;
        IF v_promo_record.start_at IS NOT NULL AND v_promo_record.start_at > v_now THEN         RAISE EXCEPTION 'Promotion not yet active: %', v_promo_record.slug
           USING ERRCODE = 'check_violation';       END IF;       IF v_promo_record.end_at IS NOT NULL AND v_promo_record.end_at < v_now THEN
         RAISE EXCEPTION 'Promotion expired: %', v_promo_record.slug           USING ERRCODE = 'check_violation';       END IF;
        IF (v_promo_record.day_of_week_mask & (1 << (v_now_dow - 1))) = 0 THEN         RAISE EXCEPTION 'Promotion not valid this day: %', v_promo_record.slug
-          USING ERRCODE = 'check_violation';       END IF; 
+          USING ERRCODE = 'check_violation';       END IF;
       IF v_promo_record.start_hour IS NOT NULL THEN         IF v_now_hour < v_promo_record.start_hour            OR v_now_hour >= v_promo_record.end_hour THEN
           RAISE EXCEPTION 'Promotion not valid this hour: %', v_promo_record.slug             USING ERRCODE = 'check_violation';         END IF;
       END IF;        IF v_items_total < v_promo_record.min_items_total THEN
@@ -189,13 +189,13 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
   v_post_promo := v_items_total - v_promotion_total;   IF v_post_promo < 0 THEN     RAISE EXCEPTION 'Promotions exceed items total' USING ERRCODE = 'check_violation';
   END IF;   IF v_redemption_amount > v_post_promo THEN     RAISE EXCEPTION 'Redemption exceeds post-promotion total' USING ERRCODE = 'check_violation';
   END IF;   v_total := v_post_promo - v_redemption_amount - p_discount_amount;   IF v_total < 0 THEN
-    RAISE EXCEPTION 'Discounts + promotions exceed items total' USING ERRCODE = 'check_violation';   END IF; 
+    RAISE EXCEPTION 'Discounts + promotions exceed items total' USING ERRCODE = 'check_violation';   END IF;
   SELECT s.tax_amount, s.total     INTO v_tax_amount, v_total     FROM _pb1_split_v1(v_total) s;
    v_pay_idx := 0;   v_pay_sum := 0;
   v_total_change := 0;   FOR v_payment_entry IN SELECT * FROM jsonb_array_elements(v_payments_arr) LOOP     v_pay_idx       := v_pay_idx + 1;
     v_pay_method    := (v_payment_entry->>'method')::payment_method;     v_pay_amount    := (v_payment_entry->>'amount')::DECIMAL(14,2);     v_pay_cash_recv := NULLIF(v_payment_entry->>'cash_received','')::DECIMAL(14,2);
     v_pay_change    := NULLIF(v_payment_entry->>'change_given','')::DECIMAL(14,2);      IF v_pay_amount IS NULL OR v_pay_amount <= 0 THEN
-      RAISE EXCEPTION 'Tender %: amount must be > 0', v_pay_idx USING ERRCODE = 'check_violation';     END IF; 
+      RAISE EXCEPTION 'Tender %: amount must be > 0', v_pay_idx USING ERRCODE = 'check_violation';     END IF;
     IF v_pay_cash_recv IS NOT NULL AND v_pay_cash_recv > v_pay_amount AND v_pay_idx < v_pay_count THEN       RAISE EXCEPTION 'Tender % (intermediate): cash_received cannot exceed amount', v_pay_idx         USING ERRCODE = 'check_violation';
     END IF;      IF v_pay_method = 'cash' THEN
       IF v_pay_cash_recv IS NOT NULL THEN         IF v_pay_cash_recv < v_pay_amount AND v_pay_idx = v_pay_count THEN           RAISE EXCEPTION 'Invalid change amount: cash_received (%) < amount (%)',
@@ -207,9 +207,9 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
      v_pay_sum := v_pay_sum + v_pay_amount;     IF v_pay_change IS NOT NULL THEN
       v_total_change := v_total_change + v_pay_change;     END IF;   END LOOP;
    IF v_pay_sum <> v_total THEN     RAISE EXCEPTION 'Sum of tender amounts (%) != order total (%)', v_pay_sum, v_total
-      USING ERRCODE = 'check_violation';   END IF; 
+      USING ERRCODE = 'check_violation';   END IF;
   INSERT INTO order_sequences (date, last_number)     VALUES (CURRENT_DATE, 1)     ON CONFLICT (date) DO UPDATE
-      SET last_number = order_sequences.last_number + 1     RETURNING last_number INTO v_seq_number; 
+      SET last_number = order_sequences.last_number + 1     RETURNING last_number INTO v_seq_number;
   -- Numérotation par origine : <code><DDMMYYYY><NNN>, séquence quotidienne
   -- partagée entre toutes les portes (CURRENT_DATE = jour métier, fuseau de
   -- session Asia/Makassar — même bucket que le reset de order_sequences).
@@ -218,7 +218,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
     idempotency_key, paid_at, table_number,     discount_amount, discount_type, discount_value, discount_reason, discount_authorized_by,     promotion_total
   ) VALUES (     v_order_number, p_session_id, v_profile_id, p_order_type, 'pending_payment',     v_items_total, v_tax_amount, v_total,
     p_customer_id, p_loyalty_points_redeemed, v_redemption_amount,     p_idempotency_key, NULL, p_table_number,     p_discount_amount, p_discount_type, p_discount_value, p_discount_reason, p_discount_authorized_by,
-    v_promotion_total   ) RETURNING id INTO v_order_id; 
+    v_promotion_total   ) RETURNING id INTO v_order_id;
   IF v_has_discount AND p_discount_auth_id IS NOT NULL THEN     UPDATE discount_authorizations SET consumed_order_id = v_order_id WHERE id = p_discount_auth_id;   END IF;
    IF v_has_discount THEN     INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, metadata)
       VALUES (v_profile_id, 'order.discount_applied', 'orders', v_order_id, jsonb_build_object(         'order_number',          v_order_number,         'order_discount_amount', p_discount_amount,
@@ -229,9 +229,9 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
         'overrides',    v_price_overrides,         'rpc_version',  'v29-recipe-units'       ));
   END IF;    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
     v_product_id := (v_item->>'product_id')::UUID;     v_quantity   := (v_item->>'quantity')::DECIMAL;     v_unit_price := (v_item->>'unit_price')::DECIMAL;
-    v_item_is_gift  := COALESCE((v_item->>'is_promo_gift')::BOOLEAN, false);     v_item_promo_id := NULLIF(v_item->>'promotion_id', '')::UUID; 
+    v_item_is_gift  := COALESCE((v_item->>'is_promo_gift')::BOOLEAN, false);     v_item_promo_id := NULLIF(v_item->>'promotion_id', '')::UUID;
     IF v_item_is_gift THEN PERFORM public._assert_payment_gift_eligible_v1(v_product_id); END IF;
-    SELECT product_type, combo_base_price INTO v_item_product_type, v_combo_base       FROM products WHERE id = v_product_id; 
+    SELECT product_type, combo_base_price INTO v_item_product_type, v_combo_base       FROM products WHERE id = v_product_id;
     SELECT lp.unit_price, lp.modifiers_total, lp.line_subtotal, lp.modifiers_resolved       INTO v_srv_unit_price, v_srv_mod_per_unit, v_srv_line_subtotal, v_srv_mods_resolved       FROM _resolve_line_price_v2(
         v_product_id,         v_quantity,         COALESCE(v_item->'modifiers', '[]'::jsonb),
         p_customer_id,         v_item_is_gift,         (v_item_product_type = 'combo')
@@ -244,7 +244,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
     -- create_tablet_order (override produit > categorie), et l'array
     -- multi-station est renseigne. Le JOIN categories precedent ignorait
     -- l'override produit et laissait dispatch_stations NULL.
-    v_dispatch_stations := _resolve_dispatch_stations_v1(v_product_id);     v_dispatch_station  := v_dispatch_stations[1]; 
+    v_dispatch_stations := _resolve_dispatch_stations_v1(v_product_id);     v_dispatch_station  := v_dispatch_stations[1];
     v_mod_ingredients := CASE       WHEN v_item_product_type <> 'combo'       THEN NULLIF(_resolve_modifier_ingredients_v1(v_product_id, v_modifiers, v_quantity), '[]'::jsonb)
       ELSE NULLIF(_resolve_combo_modifier_ingredients_v1(v_item->'combo_components', v_quantity), '[]'::jsonb) END;      INSERT INTO order_items (
       order_id, product_id, name_snapshot, unit_price, quantity, line_total,       modifiers, modifiers_total, dispatch_station, dispatch_stations, combo_components,       discount_amount, discount_type, discount_value, discount_reason,
@@ -262,7 +262,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
      v_lines_agg := v_lines_agg || jsonb_build_array(jsonb_build_object(       'line_id',         v_line_id,
       'product_id',      v_product_id,       'quantity',        v_quantity,       'unit_price',      v_srv_unit_price,
       'modifiers_total', v_srv_mod_per_unit,       'line_subtotal',   v_srv_line_subtotal,       'line_discount',   v_line_discount,
-      'line_total',      v_line_total     )); 
+      'line_total',      v_line_total     ));
     IF v_item_product_type = 'combo' THEN       FOR v_comp IN SELECT * FROM jsonb_array_elements(COALESCE(v_item->'combo_components', '[]'::jsonb)) LOOP         v_comp_qty := (v_comp->>'quantity')::DECIMAL * v_quantity;
          -- Audit lot 2 P0-5 : miroir de la branche non-combo ci-dessous. Un
         -- composant suivi (ou en vitrine) vend son propre stock ; un fini non
@@ -280,22 +280,22 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
         FROM products WHERE id = v_product_id;        IF v_line_track THEN
         PERFORM _record_sale_stock_v1(           p_product_id     := v_product_id,           p_quantity       := v_quantity,
           p_reference_id   := v_order_id,           p_created_by     := v_profile_id,           p_reason         := 'POS sale',
-          p_allow_negative := v_allow_negative         ); 
+          p_allow_negative := v_allow_negative         );
       ELSIF v_line_deduct THEN         FOR v_cons IN SELECT * FROM _resolve_recipe_consumption_v2(v_product_id, v_quantity) LOOP           PERFORM _record_sale_stock_v1(
             p_product_id     := v_cons.product_id,             p_quantity       := v_cons.qty_base,             p_reference_id   := v_order_id,
             p_created_by     := v_profile_id,             p_reason         := 'POS recipe consumption',             p_unit           := v_cons.unit,
             p_allow_negative := v_allow_negative           );         END LOOP;
-      END IF;     END IF; 
+      END IF;     END IF;
     IF v_mod_ingredients IS NOT NULL THEN       FOR v_ing IN         SELECT * FROM jsonb_to_recordset(v_mod_ingredients)
           AS x(product_id UUID, qty_base NUMERIC, unit TEXT, group_name TEXT, option_label TEXT)       LOOP         PERFORM _record_sale_stock_v1(
           p_product_id     := v_ing.product_id,           p_quantity       := v_ing.qty_base,           p_reference_id   := v_order_id,
           p_created_by     := v_profile_id,           p_reason         := 'POS modifier: ' || v_ing.group_name || ' / ' || v_ing.option_label,           p_unit           := v_ing.unit,
           p_allow_negative := v_allow_negative         );       END LOOP;
-    END IF;   END LOOP; 
+    END IF;   END LOOP;
   IF p_promotions IS NOT NULL AND jsonb_array_length(p_promotions) > 0 THEN     FOR v_promo IN SELECT * FROM jsonb_array_elements(p_promotions) LOOP       v_promo_id := (v_promo->>'promotion_id')::UUID;
        -- S57 A-D5: hard gate — atomic re-check of usage caps at the money-path INSERT.
       PERFORM pg_advisory_xact_lock(hashtext(v_promo_id::text));        SELECT max_uses, max_uses_per_customer
-        INTO v_cap_max_uses, v_cap_max_per_customer         FROM promotions WHERE id = v_promo_id; 
+        INTO v_cap_max_uses, v_cap_max_per_customer         FROM promotions WHERE id = v_promo_id;
       IF v_cap_max_uses IS NOT NULL THEN         SELECT count(*) INTO v_uses_global           FROM promotion_applications pa
           JOIN orders o ON o.id = pa.order_id           WHERE pa.promotion_id = v_promo_id AND o.voided_at IS NULL;         IF v_uses_global >= v_cap_max_uses THEN
           RAISE EXCEPTION 'promo_cap_exceeded: promotion % has reached its global usage limit (%)',             v_promo_id, v_cap_max_uses USING ERRCODE = 'check_violation';         END IF;
@@ -303,7 +303,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
         SELECT count(*) INTO v_uses_customer           FROM promotion_applications pa           JOIN orders o ON o.id = pa.order_id
           WHERE pa.promotion_id = v_promo_id             AND o.customer_id = p_customer_id             AND o.voided_at IS NULL;
         IF v_uses_customer >= v_cap_max_per_customer THEN           RAISE EXCEPTION 'promo_cap_exceeded: promotion % has reached its per-customer usage limit (%)',             v_promo_id, v_cap_max_per_customer USING ERRCODE = 'check_violation';
-        END IF;       END IF; 
+        END IF;       END IF;
       INSERT INTO promotion_applications (order_id, promotion_id, amount, description)       VALUES (         v_order_id,
         v_promo_id,         (v_promo->>'amount')::DECIMAL(14,2),         COALESCE(v_promo->>'description', '')
       );     END LOOP;   END IF;
@@ -320,7 +320,7 @@ DECLARE   v_cmp products%ROWTYPE;  -- audit lot 2 P0-5 : drapeaux du composant d
     SELECT id INTO v_je_id       FROM journal_entries       WHERE reference_type = 'sale' AND reference_id = v_order_id;
      v_loyalty_liab_id  := resolve_mapping_account('LOYALTY_LIABILITY');     v_sale_discount_id := resolve_mapping_account('SALE_DISCOUNT');
      IF v_je_id IS NOT NULL THEN       INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, description) VALUES
-        (v_je_id, v_loyalty_liab_id, v_redemption_amount, 0,                   'Loyalty redemption -- DR liability'),         (v_je_id, v_sale_discount_id, 0,                  v_redemption_amount, 'Loyalty redemption -- CR discount'); 
+        (v_je_id, v_loyalty_liab_id, v_redemption_amount, 0,                   'Loyalty redemption -- DR liability'),         (v_je_id, v_sale_discount_id, 0,                  v_redemption_amount, 'Loyalty redemption -- CR discount');
       UPDATE journal_entries         SET total_debit  = total_debit  + v_redemption_amount,             total_credit = total_credit + v_redemption_amount
         WHERE id = v_je_id;     END IF;   END IF;
    IF p_loyalty_points_redeemed > 0 THEN     UPDATE customers
