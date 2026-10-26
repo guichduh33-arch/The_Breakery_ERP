@@ -48,7 +48,7 @@ const ChangePinModal = lazy(() => import('@/features/auth/ChangePinModal').then(
 import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
-import { useCartStore } from '@/stores/cartStore';
+import { useCustomerCartPricing } from '@/features/customerCategories/hooks/useCustomerCartPricing';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
 import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
@@ -107,8 +107,7 @@ export default function PosPage() {
 
   const closeSummary = closeSummaryQuery.data;
 
-  const attachCustomer = useCartStore((s) => s.attachCustomer);
-  const detachCustomer = useCartStore((s) => s.detachCustomer);
+  const customerPricing = useCustomerCartPricing();
 
   // Heartbeat LAN + présence bus : montés au shell (HubPresenceMount,
   // App.tsx) depuis le 2026-08-25 — la présence survit à la navigation
@@ -158,10 +157,13 @@ export default function PosPage() {
     return row as unknown as Customer;
   }
 
-  function handleDetachCustomer() {
-    detachCustomer();
-    toast.info('Pricing not auto-recomputed. Re-add items to apply new pricing.');
+  async function handleSelectCustomer(customer: CustomerWithCategory | null): Promise<boolean> {
+    const outcome = await customerPricing.change(customer);
+    if (outcome.status === 'error') toast.error(outcome.message);
+    return outcome.status === 'applied';
   }
+
+  function handleDetachCustomer() { void handleSelectCustomer(null); }
 
   return (
     <div className="h-dvh flex flex-col bg-bg-base text-text-primary">
@@ -356,8 +358,9 @@ export default function PosPage() {
       {historyOpen && <OrderHistoryPanel open onClose={() => setHistoryOpen(false)} />}
       {customerSearchOpen && <CustomerAttachModal
         open={customerSearchOpen}
-        onClose={() => setCustomerSearchOpen(false)}
-        onSelect={(customer) => { attachCustomer(customer); setCustomerSearchOpen(false); }}
+        onClose={() => { customerPricing.cancel(); setCustomerSearchOpen(false); }}
+        onSelect={handleSelectCustomer}
+        selecting={customerPricing.busy}
         searchFn={searchCustomers}
         createFn={createCustomer}
       />}

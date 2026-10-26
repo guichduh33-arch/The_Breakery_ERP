@@ -4,7 +4,7 @@
 // Smoke tests for customer category pricing.
 // Spec §4.4 CC7–CC9.
 //   - VIP customer (5% discount) → tap product (retail 35000) → cart line at 33250
-//   - Detach customer → toast "Pricing not auto-recomputed"
+//   - Résolution sans client → prix retail
 //
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
@@ -104,7 +104,7 @@ function wrapper(children: ReactNode) {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('Customer pricing smoke — RPC get_customer_product_price', () => {
+describe('Customer pricing smoke — RPC get_pos_product_price_v1', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [], attachedCustomer: null });
@@ -117,7 +117,7 @@ describe('Customer pricing smoke — RPC get_customer_product_price', () => {
     const { result } = renderHook(() => useCustomerProductPrice(), { wrapper: ({ children }) => wrapper(children) });
     const price = await result.current(AMERICANO_PRODUCT.id, VIP_CUSTOMER.id);
 
-    expect(mockRpc).toHaveBeenCalledWith('get_customer_product_price', {
+    expect(mockRpc).toHaveBeenCalledWith('get_pos_product_price_v1', {
       p_product_id: AMERICANO_PRODUCT.id,
       p_customer_id: VIP_CUSTOMER.id,
     });
@@ -133,10 +133,16 @@ describe('Customer pricing smoke — RPC get_customer_product_price', () => {
     // The hook omits p_customer_id when null (exactOptionalPropertyTypes-safe;
     // generated Args type is `{ p_customer_id?: string }` so passing `null`
     // would be rejected). RPC defaults p_customer_id → NULL server-side.
-    expect(mockRpc).toHaveBeenCalledWith('get_customer_product_price', {
+    expect(mockRpc).toHaveBeenCalledWith('get_pos_product_price_v1', {
       p_product_id: AMERICANO_PRODUCT.id,
     });
     expect(price).toBe(35000);
+  });
+
+  it.each([null, undefined, '', ' ', -1, 'NaN', 'Infinity', {}])('rejects an invalid quote %j', async (data) => {
+    mockRpc.mockResolvedValue({ data, error: null });
+    const { result } = renderHook(() => useCustomerProductPrice());
+    await expect(result.current('product', 'customer')).rejects.toThrow(/price could not be confirmed/);
   });
 
   it('cartStore.add with unit_price override stores discounted price in cart line', () => {

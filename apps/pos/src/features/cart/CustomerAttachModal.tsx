@@ -1,20 +1,4 @@
-// apps/pos/src/features/cart/CustomerAttachModal.tsx
-//
-// Session 14 / Phase 2.B — POS-side customer attach modal.
-//
-// Ref: docs/Design/caissapp/50-customer-attach-search-list.jpg
-//
-// Centered dialog with the title "Select a Customer", a 4-tab control
-// (SEARCH / FAVORITES / QR / NEW), a search bar and a list of customer rows.
-// Each row has:
-//   - Colored avatar circle (initial)
-//   - Name + (for B2B-like) "Bali Organic Store" sub-line
-//   - Customer category badge (top, e.g. "Wholesale" green) + tier badge
-//     (bottom, e.g. "Bronze" / "Gold")
-//
-// Wire-up — the caller hands in `searchFn` and `createFn` so we don't
-// duplicate the supabase query logic that already lives in `Pos.tsx`.
-
+// Sélecteur client : recherche/création injectées, fermeture après confirmation des prix.
 import { Heart, QrCode, Search, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import type { Customer, LoyaltyTier } from '@breakery/domain';
@@ -34,7 +18,8 @@ import type { CustomerWithCategory } from '@/stores/cartStore';
 interface CustomerAttachModalProps {
   open: boolean;
   onClose: () => void;
-  onSelect: (customer: Customer) => void;
+  onSelect: (customer: Customer) => void | boolean | Promise<boolean>;
+  selecting?: boolean;
   searchFn: (query: string) => Promise<CustomerWithCategory[]>;
   createFn?: (input: { name: string; phone: string; email?: string }) => Promise<Customer>;
 }
@@ -251,6 +236,7 @@ export function CustomerAttachModal({
   onSelect,
   searchFn,
   createFn,
+  selecting,
 }: CustomerAttachModalProps): JSX.Element {
   const [tab, setTab] = useState<TabKey>('search');
   const [query, setQuery] = useState('');
@@ -292,6 +278,13 @@ export function CustomerAttachModal({
     };
   }, [tab, query, searchFn]);
 
+  function selectCustomer(customer: Customer): void {
+    const outcome = onSelect(customer);
+    if (outcome && typeof outcome === 'object') {
+      void outcome.then((accepted) => { if (accepted) onClose(); }).catch(() => undefined);
+    } else if (outcome !== false) onClose();
+  }
+
   async function handleCreate(data: QuickCreateState): Promise<void> {
     if (!createFn) return;
     setIsCreating(true);
@@ -302,8 +295,7 @@ export function CustomerAttachModal({
       };
       if (data.email) input.email = data.email;
       const created = await createFn(input);
-      onSelect(created);
-      onClose();
+      selectCustomer(created);
     } finally {
       setIsCreating(false);
     }
@@ -321,7 +313,7 @@ export function CustomerAttachModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl p-0 gap-0 bg-bg-elevated">
+      <DialogContent className="max-w-xl p-0 gap-0 bg-bg-elevated" aria-busy={selecting === true}>
         <DialogTitle asChild>
           <span className={SR_ONLY}>Select a customer</span>
         </DialogTitle>
@@ -331,6 +323,7 @@ export function CustomerAttachModal({
             or create a new customer.
           </span>
         </DialogDescription>
+        {selecting && <p role="status" className="px-4 text-xs text-text-secondary">Checking customer prices…</p>}
 
         <header className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-2 min-w-0">
@@ -409,10 +402,7 @@ export function CustomerAttachModal({
                 <CustomerRow
                   key={c.id}
                   customer={c}
-                  onSelect={() => {
-                    onSelect(c);
-                    onClose();
-                  }}
+                  onSelect={() => selectCustomer(c)}
                 />
               ))}
               {showNewCta && (

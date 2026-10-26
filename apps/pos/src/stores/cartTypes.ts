@@ -1,4 +1,5 @@
 import type { AppliedPromotion, Cart, CartItem, ComboComponent, Customer, CustomerCategory, Discount, OrderType, Product, SelectedModifiers } from '@breakery/domain';
+import type { CustomerPricingSnapshot } from './cartCustomerPricing';
 import type { OrderItemSnapshot, OrderSnapshot } from './orderSnapshot';
 export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
 
@@ -90,6 +91,7 @@ export interface CartState {
   // Customer + loyalty
   attachCustomer: (customer: Customer | CustomerWithCategory) => void;
   detachCustomer: () => void;
+  applyCustomerPrices: (expected: CustomerPricingSnapshot, customer: CustomerWithCategory | null, prices: ReadonlyMap<string, number>) => boolean;
   setRedeemPoints: (points: number) => void;
   redemptionAmount: () => number;
 
@@ -140,8 +142,8 @@ export interface CartState {
   /**
    * Replace the current applied promotions and reconcile gift lines:
    * for each AppliedPromotion with `gift_to_add`, add a unit_price=0 cart
-   * line if not already present ; for each existing gift line whose
-   * promotion_id is not in `next`, remove it. Returns the diff so callers
+   * line if not already present ; reconcile local quantity/SKU and preserve
+   * server, locked, printed and cancelled lines. Returns the diff so callers
    * can surface toasts ("Free X added" / "Free X removed").
    */
   setAppliedPromotions: (

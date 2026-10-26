@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StrictMode } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ProductTapHandler } from '../ProductTapHandler';
 import type { Product } from '@breakery/domain';
 
 const CROISSANT: Product = {
@@ -48,8 +49,10 @@ vi.mock('@/features/products/hooks/useProductVariants', () => ({
   useProductVariants: () => ({ data: [] }),
 }));
 vi.mock('@/stores/cartStore', () => ({
-  useCartStore: <T,>(selector: (s: { add: typeof addSpy; attachedCustomer: null }) => T) =>
-    selector({ add: addSpy, attachedCustomer: null }),
+  useCartStore: Object.assign(<T,>(selector: (s: { add: typeof addSpy; attachedCustomer: null }) => T) =>
+    selector({ add: addSpy, attachedCustomer: null }), {
+      getState: () => ({ cart: {}, attachedCustomer: null }),
+    }),
 }));
 vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
   useCustomerProductPrice: () => priceSpy,
@@ -74,7 +77,6 @@ describe('ProductTapHandler — no double-add under StrictMode (Bug 2)', () => {
   beforeEach(() => { addSpy.mockClear(); priceSpy.mockClear(); });
 
   it('a single tap on a no-modifier product calls add() exactly once', async () => {
-    const { ProductTapHandler } = await import('../ProductTapHandler');
     render(
       wrapper(
         <StrictMode>
