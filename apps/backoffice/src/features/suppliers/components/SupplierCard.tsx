@@ -28,7 +28,7 @@ const TITLE_LINK =
 // L'anneau vit sur la CARTE, pas sur le texte du titre : c'est l'objet entier
 // qui est désigné comme cible.
 const CARD =
-  'group relative flex flex-col gap-3 transition-colors hover:border-border-gold hover:bg-surface-4 ' +
+  'group relative flex min-w-0 flex-col gap-3 transition-colors hover:border-border-gold hover:bg-surface-4 ' +
   'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold';
 
 export interface SupplierCardProps {
@@ -60,16 +60,16 @@ export function SupplierCard({
       className={CARD}
       data-testid={`supplier-card-${row.code}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-3">
+      <div className="flex min-w-0 flex-wrap items-start gap-2">
+        <div className="flex min-w-0 w-full items-start gap-3">
           <span
             aria-hidden
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gold"
           >
             <Building2 className="h-4 w-4" />
           </span>
-          <div className="min-w-0">
-            <div className="text-text-primary leading-tight">
+          <div className="min-w-0 flex-1">
+            <div className="break-words text-text-primary leading-tight">
               <Link to={detailPath} className={TITLE_LINK}>{row.name}</Link>
             </div>
             {row.notes !== null && row.notes !== '' && (
@@ -87,7 +87,7 @@ export function SupplierCard({
             `group-focus-within:opacity-100` : les quatre actions n'étaient
             révélées qu'au SURVOL. Atteintes au clavier elles restaient à
             `opacity-0` — un contrôle focalisé et invisible (WCAG 2.4.7). */}
-        <div className="relative flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="relative ml-auto flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
           <Button variant="ghost" size="sm" onClick={open} aria-label={`View ${row.name}`}>
             <Eye className="h-3.5 w-3.5" aria-hidden />
           </Button>
@@ -125,15 +125,15 @@ export function SupplierCard({
 
       <div className="border-t border-border-subtle pt-2 text-xs text-text-secondary space-y-1 min-h-[1.5rem]">
         {row.contact_phone !== null && row.contact_phone !== '' && (
-          <div className="flex items-center gap-1.5">
-            <Phone className="h-3 w-3" aria-hidden />
-            <span>{row.contact_phone}</span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Phone className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate">{row.contact_phone}</span>
           </div>
         )}
         {row.contact_email !== null && row.contact_email !== '' && (
-          <div className="flex items-center gap-1.5">
-            <Mail className="h-3 w-3" aria-hidden />
-            <span className="truncate">{row.contact_email}</span>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Mail className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate">{row.contact_email}</span>
           </div>
         )}
       </div>

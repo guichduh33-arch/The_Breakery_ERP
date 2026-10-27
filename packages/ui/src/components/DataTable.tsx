@@ -40,8 +40,10 @@ export interface DataTableColumn<TRow> {
   sortable?: boolean;
   /** Right-align numeric columns. */
   align?: 'left' | 'right' | 'center';
-  /** Optional fixed width (CSS string e.g. "120px" or "1fr"). */
+  /** Largeur souhaitée, absolue ou proportionnelle (ex. "120px", "25%"). */
   width?: string;
+  /** Largeur minimale lisible ; le conteneur défile si nécessaire. */
+  minWidth?: string;
   /** Optional cell class merge. */
   cellClassName?: string;
   /** Optional header class merge. */
@@ -180,7 +182,7 @@ export function DataTable<TRow>({
       // entières — sans barre de défilement et sans que la page défile
       // horizontalement. `overflow-x-auto` révèle le dépassement au lieu de le
       // masquer ; `overflow-y-hidden` conserve le découpage des coins.
-      className={cn('w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
+      className={cn('min-w-0 w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
     >
       <span role="status" className="sr-only">{isLoading ? 'Loading data…' : ''}</span>
       <table className="w-full border-collapse" aria-busy={Boolean(isLoading)}>
@@ -194,7 +196,7 @@ export function DataTable<TRow>({
                 <th
                   key={col.id}
                   scope="col"
-                  style={col.width !== undefined ? { width: col.width } : undefined}
+                  style={{ width: col.width, minWidth: col.minWidth }}
                   aria-sort={
                     isSorted
                       ? sort?.direction === 'asc'
@@ -214,7 +216,7 @@ export function DataTable<TRow>({
                   // Tableaux de DESIGN.md (« libellés en label mono capitales »).
                   className={cn(
                     cellPad,
-                    'font-data',
+                    'font-data whitespace-nowrap text-left',
                     col.align === 'right' && 'text-right',
                     col.align === 'center' && 'text-center',
                     col.headerClassName,
@@ -299,7 +301,7 @@ export function DataTable<TRow>({
                           className={cn(
                             cellPad,
                             'text-sm text-text-primary',
-                            col.align === 'right' && 'text-right tabular-nums',
+                            col.align === 'right' && 'text-right tabular-nums whitespace-nowrap',
                             col.align === 'center' && 'text-center',
                             col.cellClassName,
                           )}

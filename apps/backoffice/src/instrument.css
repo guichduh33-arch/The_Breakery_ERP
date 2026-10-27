@@ -94,6 +94,10 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
+    /* Même lecture pour les tables natives et DataTable : intitulés à gauche,
+     * montants sur une ligne. Les alignements explicites restent prioritaires. */
+    .bo-page :where(thead th) { text-align: left; white-space: nowrap; }
+    .bo-page :where(td.text-right) { white-space: nowrap; }
     .bo-page :where(td, th) { vertical-align: middle; }
     .bo-page :where(thead) { background: var(--surface-inert); }
     .bo-page :where(tbody tr) { border-color: var(--border-row); }
