@@ -4,6 +4,7 @@
 
 import { roundIdr } from '@breakery/utils';
 import type { RefundLineDraft, RefundableItem } from './types.js';
+import { computeRedemptionRefund, type RefundBreakdown, type RefundRedemptionContext } from './redemptionRefund.js';
 
 /**
  * Pro-rata: refund_amount = round_idr(line_total * qty / line.quantity).
@@ -21,14 +22,29 @@ export function computeRefundLineAmount(line: RefundableItem, qty: number): numb
 export function computeRefundTotal(
   draft: readonly RefundLineDraft[],
   itemsById: ReadonlyMap<string, RefundableItem>,
+  redemption?: RefundRedemptionContext,
 ): number {
+  return computeRefundBreakdown(draft, itemsById, redemption).total;
+}
+
+export function computeRefundBreakdown(
+  draft: readonly RefundLineDraft[],
+  itemsById: ReadonlyMap<string, RefundableItem>,
+  redemption?: RefundRedemptionContext,
+): RefundBreakdown {
+  if (redemption && redemption.points_redeemed > 0) {
+    return computeRedemptionRefund(draft, itemsById, redemption);
+  }
   let sum = 0;
+  const amounts = new Map<string, number>();
   for (const d of draft) {
     const it = itemsById.get(d.order_item_id);
-    if (!it) return Number.NaN;
-    sum += computeRefundLineAmount(it, d.qty);
+    if (!it) return { total: Number.NaN, points_restored: 0, line_amounts: amounts };
+    const amount = computeRefundLineAmount(it, d.qty);
+    amounts.set(d.order_item_id, amount);
+    sum += amount;
   }
-  return sum;
+  return { total: sum, points_restored: 0, line_amounts: amounts };
 }
 
 /**

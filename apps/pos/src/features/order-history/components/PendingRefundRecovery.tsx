@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Currency, FullScreenModal, NumpadPin } from '@breakery/ui';
 import { PENDING_MESSAGE } from '@breakery/utils';
-import { usePendingRefundTargets, useRefundAttempt } from '../hooks/useRefundAttempt';
+import { captureRefundSession, usePendingRefundTargets, useRefundAttempt } from '../hooks/useRefundAttempt';
 import { useRefundOrder, type RefundResponse } from '../hooks/useRefundOrder';
 
 function PendingRefund({ target, onClose, onConfirmed }: {
@@ -27,13 +27,14 @@ function PendingRefund({ target, onClose, onConfirmed }: {
       <p className="text-sm font-semibold">Manager PIN</p>
       <NumpadPin key={pinKey} maxLength={6} isLoading={!saved || !attempt.allowed || attempt.busy || Boolean(attempt.storageError)}
         onSubmit={(managerPin) => { if (!saved) return; void (async () => {
+          let current = captureRefundSession().current;
           try {
-            await attempt.submit(saved, async (payload, idempotencyKey, current) => {
-              const result = await mutation.mutateAsync({ ...payload, managerPin, idempotencyKey, sessionGuard: current });
-              if (current()) onConfirmed(result);
+            await attempt.submit(saved, async (payload, idempotencyKey, isCurrent) => {
+              const result = await mutation.mutateAsync({ ...payload, managerPin, idempotencyKey, sessionGuard: isCurrent });
+              if (isCurrent()) onConfirmed(result);
               return result;
-            });
-          } catch (err) { setError(err instanceof Error ? err.message : 'Refund confirmation unavailable'); setPinKey((n) => n + 1); }
+            }, (isCurrent) => { current = isCurrent; });
+          } catch (err) { if (current()) { setError(err instanceof Error ? err.message : 'Refund confirmation unavailable'); setPinKey((n) => n + 1); } }
         })(); }} />
       <Button variant="secondary" onClick={onClose}>Close</Button>
     </div>

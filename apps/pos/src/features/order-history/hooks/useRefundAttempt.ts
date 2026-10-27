@@ -32,10 +32,12 @@ export function useRefundAttempt(target: string, open: boolean) {
   useEffect(() => { active.current++; setBusy(false); }, [identity, allowed]);
   useEffect(() => () => { active.current++; }, []);
 
-  async function submit<R>(payload: RefundSnapshot, send: (value: RefundSnapshot, key: string, current: () => boolean) => Promise<R>) {
+  async function submit<R>(payload: RefundSnapshot, send: (value: RefundSnapshot, key: string, current: () => boolean) => Promise<R>,
+    onCurrent?: (current: () => boolean) => void) {
     const session = captureRefundSession();
     const generation = active.current;
     const current = () => generation === active.current && session.current();
+    onCurrent?.(current);
     if (!scope || !current()) throw new Error('Sign in with refund permission before continuing.');
     setBusy(true);
     try {

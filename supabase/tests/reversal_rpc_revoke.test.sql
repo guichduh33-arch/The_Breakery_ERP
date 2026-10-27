@@ -15,21 +15,21 @@
 BEGIN;
 SELECT plan(11);
 
-SELECT is(has_function_privilege('authenticated', 'public.refund_order_rpc_v13(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'refund_order_rpc_v13 NOT executable by authenticated');
-SELECT is(has_function_privilege('anon', 'public.refund_order_rpc_v13(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'refund_order_rpc_v13 NOT executable by anon');
-SELECT is(has_function_privilege('service_role', 'public.refund_order_rpc_v13(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
-          true, 'refund_order_rpc_v13 executable by service_role');
+SELECT is(has_function_privilege('authenticated', 'public.refund_order_rpc_v14(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'refund_order_rpc_v14 NOT executable by authenticated');
+SELECT is(has_function_privilege('anon', 'public.refund_order_rpc_v14(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'refund_order_rpc_v14 NOT executable by anon');
+SELECT is(has_function_privilege('service_role', 'public.refund_order_rpc_v14(uuid,jsonb,jsonb,text,uuid,uuid,uuid)', 'EXECUTE'),
+          true, 'refund_order_rpc_v14 executable by service_role');
 
-SELECT is(has_function_privilege('authenticated', 'public.void_order_rpc_v12(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'void_order_rpc_v12 NOT executable by authenticated');
-SELECT is(has_function_privilege('anon', 'public.void_order_rpc_v12(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'void_order_rpc_v12 NOT executable by anon');
-SELECT is(has_function_privilege('public', 'public.void_order_rpc_v12(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'void_order_rpc_v12 NOT executable by PUBLIC');
-SELECT is(has_function_privilege('service_role', 'public.void_order_rpc_v12(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          true, 'void_order_rpc_v12 executable by service_role');
+SELECT is(has_function_privilege('authenticated', 'public.void_order_rpc_v13(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'void_order_rpc_v13 NOT executable by authenticated');
+SELECT is(has_function_privilege('anon', 'public.void_order_rpc_v13(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'void_order_rpc_v13 NOT executable by anon');
+SELECT is(has_function_privilege('public', 'public.void_order_rpc_v13(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'void_order_rpc_v13 NOT executable by PUBLIC');
+SELECT is(has_function_privilege('service_role', 'public.void_order_rpc_v13(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          true, 'void_order_rpc_v13 executable by service_role');
 
 SELECT is(has_function_privilege('authenticated', 'public.cancel_order_item_rpc_v7(uuid,text,uuid,uuid,uuid,numeric)', 'EXECUTE'),
           false, 'cancel_order_item_rpc_v7 NOT executable by authenticated');

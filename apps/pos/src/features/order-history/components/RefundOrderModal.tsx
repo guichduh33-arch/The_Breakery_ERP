@@ -8,7 +8,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { PENDING_MESSAGE } from '@breakery/utils';
-import { useRefundAttempt } from '../hooks/useRefundAttempt';
+import { captureRefundSession, useRefundAttempt } from '../hooks/useRefundAttempt';
 import { X } from 'lucide-react';
 import {
   Button, NumpadPin, FullScreenModal, cn, Input, Currency,
@@ -16,7 +16,7 @@ import {
   type RefundTenderSplitterEntry,
 } from '@breakery/ui';
 import {
-  computeRefundLineAmount,
+  computeRefundBreakdown,
   validateRefundDraft,
   type RefundableItem,
   type MethodLedgerEntry,
@@ -72,16 +72,16 @@ export function RefundOrderModal({
     [refundableItems],
   );
 
-  const refundTotal = useMemo(() => {
-    if (attempt.pending) return attempt.pending.payload.tenders.reduce((sum, tender) => sum + tender.amount, 0);
-    let s = 0;
-    for (const [oiId, qty] of selectedQty.entries()) {
-      if (qty <= 0) continue;
-      const it = itemsById.get(oiId);
-      if (it) s += computeRefundLineAmount(it, qty);
-    }
-    return s;
-  }, [selectedQty, itemsById, attempt.pending]);
+  const refundQuote = useMemo(() => computeRefundBreakdown(
+    Array.from(selectedQty.entries()).filter(([, qty]) => qty > 0)
+      .map(([order_item_id, qty]) => ({ order_item_id, qty })),
+    itemsById, { order_total: order.total, prior_refunds_total: order.total_refunded,
+      points_redeemed: order.loyalty_points_redeemed ?? 0 },
+  ), [selectedQty, itemsById, order.total, order.total_refunded, order.loyalty_points_redeemed]);
+  const refundTotal = attempt.pending
+    ? attempt.pending.payload.tenders.reduce((sum, tender) => sum + tender.amount, 0)
+    : refundQuote.total;
+  const pointsOnly = !attempt.pending && refundTotal === 0 && refundQuote.points_restored > 0;
 
   const methodLedger: MethodLedgerEntry[] = useMemo(() => {
     const paidByMethod = new Map<PaymentMethod, number>();
@@ -104,12 +104,12 @@ export function RefundOrderModal({
   );
 
   const draftTenders: RefundTender[] = useMemo(
-    () => tenderValues.map((v) => ({ method: v.method, amount: v.amount })),
-    [tenderValues],
+    () => pointsOnly ? [] : tenderValues.map((v) => ({ method: v.method, amount: v.amount })),
+    [tenderValues, pointsOnly],
   );
 
   const validation = useMemo(() => {
-    if (draftLines.length === 0 || draftTenders.length === 0) return null;
+    if (draftLines.length === 0 || (draftTenders.length === 0 && !pointsOnly)) return null;
     return validateRefundDraft({
       draft_lines: draftLines,
       draft_tenders: draftTenders,
@@ -117,12 +117,13 @@ export function RefundOrderModal({
       items_by_id: itemsById,
       order_total: order.total,
       prior_refunds_total: order.total_refunded,
+      loyalty_points_redeemed: order.loyalty_points_redeemed ?? 0,
       method_ledger: methodLedger,
     });
-  }, [draftLines, draftTenders, reason, itemsById, order.total, order.total_refunded, methodLedger]);
+  }, [draftLines, draftTenders, reason, itemsById, order.total, order.total_refunded, order.loyalty_points_redeemed, methodLedger, pointsOnly]);
 
   const canSubmit =
-    refundTotal > 0
+    (refundTotal > 0 || pointsOnly)
     && reason.trim().length >= 3
     && validation !== null
     && validation.ok === true;
@@ -152,12 +153,14 @@ export function RefundOrderModal({
       return;
     }
     setPinError(null);
-    let current = () => false;
+    let current = captureRefundSession().current;
     try {
       await attempt.submit({ orderId: order.id, lines: draftLines, tenders: draftTenders, reason: reason.trim() },
-        async (value, key, isCurrent) => { current = isCurrent; await onSubmit({ ...value, managerPin: pin, idempotencyKey: key, sessionGuard: isCurrent }); });
+        async (value, key, isCurrent) => { await onSubmit({ ...value, managerPin: pin, idempotencyKey: key, sessionGuard: isCurrent }); },
+        (isCurrent) => { current = isCurrent; });
       if (current()) clearDraftAndClose();
     } catch (error) {
+      if (!current()) return;
       setPinError(error instanceof Error ? error.message : 'Refund confirmation unavailable');
       setPinKey((k) => k + 1);
     }
@@ -199,6 +202,7 @@ export function RefundOrderModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {attempt.pending && <p role="status">{PENDING_MESSAGE}</p>}
           {attempt.storageError && <p role="alert">{attempt.storageError}</p>}
+          {!attempt.pending && refundQuote.points_restored > 0 && <p role="status">Points to restore: {refundQuote.points_restored}</p>}
           <fieldset disabled={frozen} className="space-y-6 min-w-0">
           <legend className="sr-only">Refund details</legend>
           <section>
@@ -208,8 +212,7 @@ export function RefundOrderModal({
             <div className="rounded-md border border-border-subtle bg-bg-elevated">
               {order.items.map((it) => {
                 const qty = selectedQty.get(it.id) ?? 0;
-                const refundableItem = itemsById.get(it.id)!;
-                const amount = computeRefundLineAmount(refundableItem, qty);
+                const amount = refundQuote.line_amounts.get(it.id) ?? 0;
                 return (
                   <RefundLineRow
                     key={it.id}
@@ -231,7 +234,7 @@ export function RefundOrderModal({
           </section>
 
           <section>
-            <RefundTenderSplitter
+            {pointsOnly ? <p>No money remains to refund. Only the remaining loyalty points will be restored.</p> : <RefundTenderSplitter
               refundTotal={refundTotal}
               methods={methodLedger.map((m) => ({
                 method: m.method,
@@ -240,7 +243,7 @@ export function RefundOrderModal({
               }))}
               values={tenderValues}
               onChange={setTenderValues}
-            />
+            />}
             {!attempt.pending && validation && !validation.ok && draftLines.length > 0 && draftTenders.length > 0 && (
               <div role="alert" className="mt-2 text-xs text-red-as-text">
                 {validation.error}{validation.detail ? ` — ${validation.detail}` : ''}

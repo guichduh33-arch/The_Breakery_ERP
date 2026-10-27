@@ -45,6 +45,42 @@ async function submit() { fireEvent.click(screen.getByTestId('refund-submit')); 
 describe('refund durable recovery with real hook and modal', () => {
   beforeEach(() => { vi.restoreAllMocks(); installFinancialBrowser(); resetFinancialSession(); backend.mockReset(); vi.stubGlobal('fetch', backend); vi.mocked(toast.success).mockClear(); vi.mocked(toast.error).mockClear(); });
 
+  it.each([{ already: 0.999, quantity: 0.001, points: 1 }, { already: 0.9, quantity: 0.1, points: 10 }])('confirms a final points-only return after $already was already returned', async ({ already, quantity, points }) => {
+    backend.mockResolvedValue(reply({ ...success, total_refunded: 0, tax_refunded: 0, pts_restored: points, tenders: [] }));
+    const view = setup({ ...order, total: 9000, total_refunded: 9000, loyalty_points_redeemed: 100,
+      items: [{ ...order.items[0]!, quantity: 1, line_total: 10000, qty_already_refunded: already }] });
+    draft();
+    expect(screen.getByText(/No money remains to refund/)).toBeInTheDocument();
+    await submit();
+    await waitFor(() => expect(view.close).toHaveBeenCalled());
+    expect((JSON.parse(backend.mock.calls[0]![1]!.body as string) as { tenders: unknown }).tenders).toEqual([]);
+    expect((JSON.parse(backend.mock.calls[0]![1]!.body as string) as { lines: unknown }).lines)
+      .toEqual([{ order_item_id: 'item-1', qty: quantity }]);
+    expect(readFinancialSlot(scope)?.status).toBe('resolved');
+  });
+
+  it('explains insufficient points and resolves a first refusal without a success notification', async () => {
+    backend.mockResolvedValue(reply({ error: 'loyalty_points_unavailable' }, 422));
+    const view = setup(); draft(); await submit();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not enough loyalty points');
+    await waitFor(() => expect(readFinancialSlot(scope)?.status).toBe('resolved'));
+    expect(view.close).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('keeps an uncertain refund and its exact key after a later points refusal', async () => {
+    backend.mockRejectedValueOnce(new Error('Response lost'))
+      .mockResolvedValueOnce(reply({ error: 'loyalty_points_unavailable' }, 422));
+    setup(); draft(); await submit();
+    await screen.findByRole('alert');
+    const saved = readFinancialSlot(scope);
+    fireEvent.change(screen.getByTestId('refund-pin'), { target: { value: '654321' } });
+    fireEvent.click(screen.getByTestId('refund-submit'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Not enough loyalty points'));
+    expect(readFinancialSlot(scope)).toEqual(saved);
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
   it('recovers a committed full refund after unmount/reload and reuses the exact key and payload with a newly entered PIN', async () => {
     const ledger = new Map<string, unknown>();
     backend.mockImplementation((_url, init) => {

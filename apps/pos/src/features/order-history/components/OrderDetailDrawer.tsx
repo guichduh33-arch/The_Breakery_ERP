@@ -19,6 +19,8 @@ export function OrderDetailDrawer({
 }: OrderDetailDrawerProps): JSX.Element {
   const isVoided = order.status === 'voided';
   const remainingRefundable = order.total - order.total_refunded;
+  const remainingPointsReturn = (order.loyalty_points_redeemed ?? 0) > 0
+    && order.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity);
   // P1-3 : « Remaining » displayed in the totals section is the customer's
   // outstanding balance DUE, not the refundable amount — a fully-paid order
   // must show 0 (it used to show the gross total). Statuses meaning "fully
@@ -129,7 +131,7 @@ export function OrderDetailDrawer({
           size="lg"
           className="w-full"
           onClick={onRefundClick}
-          disabled={isVoided || remainingRefundable <= 0}
+          disabled={isVoided || (remainingRefundable <= 0 && !remainingPointsReturn)}
         >
           Refund lines
         </Button>

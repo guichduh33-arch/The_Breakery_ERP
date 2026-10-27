@@ -73,7 +73,7 @@ BEGIN
     p_payment := jsonb_build_object('method','cash','amount',50000,'cash_received',50000,'change_given',0));
   v_order_id := (v_order->>'order_id')::uuid;
 
-  v_res := void_order_rpc_v12(v_order_id, 'S55 idempotency void test', v_manager_prof, v_cashier_auth, v_key);
+  v_res := void_order_rpc_v13(v_order_id, 'S55 idempotency void test', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT COUNT(*) INTO v_void_count FROM stock_movements
     WHERE product_id = v_prod AND movement_type = 'sale_void' AND reference_type = 'orders' AND reference_id = v_order_id;
@@ -108,7 +108,7 @@ DECLARE
   v_res2 JSONB; v_void_count INT; v_refund_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res2 := void_order_rpc_v12(v_order_id, 'S55 idempotency void test replay', v_manager_prof, v_cashier_auth, v_key);
+  v_res2 := void_order_rpc_v13(v_order_id, 'S55 idempotency void test replay', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT COUNT(*) INTO v_void_count FROM stock_movements
     WHERE product_id = v_prod AND movement_type = 'sale_void' AND reference_type = 'orders' AND reference_id = v_order_id;

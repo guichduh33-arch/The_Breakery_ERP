@@ -30,6 +30,7 @@ export interface OrderDetail {
   status: 'paid' | 'completed' | 'voided' | 'draft';
   total: number;
   tax_amount: number;
+  loyalty_points_redeemed?: number;
   customer_id: string | null;
   table_number: string | null;
   paid_at: string | null;
@@ -65,6 +66,7 @@ interface RawDetail {
   status: 'paid' | 'completed' | 'voided' | 'draft';
   total: number;
   tax_amount: number;
+  loyalty_points_redeemed?: number;
   customer_id: string | null;
   table_number: string | null;
   paid_at: string | null;
@@ -100,7 +102,7 @@ export function useOrderDetail(orderId: string | null) {
         .from('orders')
         .select(
           `id, order_number, status, total, tax_amount, customer_id, table_number,
-           paid_at, voided_at, void_reason,
+           paid_at, voided_at, void_reason, loyalty_points_redeemed,
            order_items(id, product_id, name_snapshot, quantity, line_total, is_cancelled),
            order_payments(id, method, amount, reference),
            refunds(total, refund_lines(order_item_id, qty), refund_payments(method, amount))`,
@@ -152,6 +154,7 @@ export function useOrderDetail(orderId: string | null) {
         status: raw.status,
         total: Number(raw.total),
         tax_amount: Number(raw.tax_amount),
+        loyalty_points_redeemed: Number(raw.loyalty_points_redeemed ?? 0),
         customer_id: raw.customer_id,
         table_number: raw.table_number,
         paid_at: raw.paid_at,

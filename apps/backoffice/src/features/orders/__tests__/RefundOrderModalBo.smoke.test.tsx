@@ -92,6 +92,24 @@ describe('RefundOrderModalBo — cross-shift BO refund (lot 6c)', () => {
     }));
   });
 
+  it('refunds only the net payment and shows the redeemed points to restore', async () => {
+    renderModal(makeOrder({
+      total: 90_000, loyalty_points_redeemed: 1000,
+      payments: [{ id: 'pay-1', method: 'card', amount: 90_000, cash_received: null,
+        change_given: null, paid_at: '2026-05-22T10:05:00Z', reference: null }],
+    }));
+    fireEvent.click(screen.getByLabelText('Increase Latte'));
+    expect(screen.getByRole('status')).toHaveTextContent('Points to restore: 500');
+    fireEvent.change(screen.getByTestId('refund-reason'), { target: { value: 'customer return' } });
+    fireEvent.change(screen.getByTestId('refund-pin'), { target: { value: '123456' } });
+    const submit = screen.getByTestId('refund-submit');
+    await waitFor(() => expect(submit).not.toBeDisabled());
+    fireEvent.click(submit);
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({
+      lines: [{ order_item_id: 'i-1', qty: 1 }], tenders: [{ method: 'card', amount: 45_000 }],
+    })));
+  });
+
   it('offers store credit as the escape hatch for a cash order with a customer', async () => {
     renderModal(makeOrder({
       payments: [{ id: 'pay-1', method: 'cash', amount: 100_000, cash_received: 100_000, change_given: 0, paid_at: '2026-05-22T10:05:00Z', reference: null }],

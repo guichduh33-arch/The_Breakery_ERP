@@ -50,7 +50,10 @@ export function useVoidOrder() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as VoidResponse;
-        throw Object.assign(new Error(err.error ?? 'void_failed'), { details: err, status: res.status });
+        const message = err.error === 'loyalty_points_unavailable'
+          ? 'Not enough loyalty points are available to reverse this sale, including restored points. No changes were made.'
+          : err.error ?? 'void_failed';
+        throw Object.assign(new Error(message), { details: err, status: res.status });
       }
       return await res.json() as VoidResponse;
     },

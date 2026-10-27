@@ -230,6 +230,15 @@ describe('OrderDetailDrawer — aperçu canonique (lot 6a)', () => {
     expect(screen.queryByTestId('drawer-refund')).toBeNull();
   });
 
+  it('keeps the refund action for remaining redeemed points after all money was returned', async () => {
+    grantedPerms = new Set(['orders.refund']);
+    orderOverrides = { total_refunded: 100000, loyalty_points_redeemed: 100,
+      items: [{ ...BASE_ORDER.items[0], qty_already_refunded: 1 }] };
+    renderDrawer();
+    fireEvent.click(await screen.findByTestId('drawer-refund'));
+    expect(await screen.findByTestId('refund-modal-bo')).toBeInTheDocument();
+  });
+
   it('T14 Refund is absent without the orders.refund permission', async () => {
     grantedPerms = new Set(['orders.void']);
     renderDrawer({ onVoid: vi.fn() });

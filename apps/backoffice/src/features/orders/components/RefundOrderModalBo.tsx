@@ -2,7 +2,7 @@
 //
 // Lot 6c — modale de remboursement partiel côté BACK-OFFICE (thème ivoire).
 //
-// Elle réutilise la LOGIQUE de domaine du refund (`computeRefundLineAmount`,
+// Elle réutilise la LOGIQUE de domaine du refund (`computeRefundBreakdown`,
 // `validateRefundDraft`) — la même que le POS — mais un rendu theme-backoffice :
 // pas de FullScreenModal ni de NumpadPin (surfaces tablette luxe-dark du POS),
 // un Dialog centré et des primitives natives, à l'image de VoidOrderModal.
@@ -19,7 +19,7 @@ import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js
 import { Minus, Plus, Undo2 } from 'lucide-react';
 import { formatCurrency } from '@breakery/utils';
 import {
-  computeRefundLineAmount,
+  computeRefundBreakdown,
   validateRefundDraft,
   type RefundableItem,
   type MethodLedgerEntry,
@@ -82,16 +82,16 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
     [refundableItems],
   );
 
-  const refundTotal = useMemo(() => {
-    if (snapshot) return snapshot.tenders.reduce((sum, tender) => sum + tender.amount, 0);
-    let s = 0;
-    for (const [oiId, qty] of selectedQty.entries()) {
-      if (qty <= 0) continue;
-      const it = itemsById.get(oiId);
-      if (it) s += computeRefundLineAmount(it, qty);
-    }
-    return s;
-  }, [selectedQty, itemsById, snapshot]);
+  const refundQuote = useMemo(() => computeRefundBreakdown(
+    Array.from(selectedQty.entries()).filter(([, qty]) => qty > 0)
+      .map(([order_item_id, qty]) => ({ order_item_id, qty })),
+    itemsById, { order_total: order.total, prior_refunds_total: order.total_refunded,
+      points_redeemed: order.loyalty_points_redeemed ?? 0 },
+  ), [selectedQty, itemsById, order.total, order.total_refunded, order.loyalty_points_redeemed]);
+  const refundTotal = snapshot
+    ? snapshot.tenders.reduce((sum, tender) => sum + tender.amount, 0)
+    : refundQuote.total;
+  const pointsOnly = !snapshot && refundTotal === 0 && refundQuote.points_restored > 0;
 
   // Montant payé par méthode (pour le plafond par tender des méthodes d'origine).
   const paidByMethod = useMemo(() => {
@@ -145,23 +145,24 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
   }, [effectiveMethod, refundTotal, paidByMethod, refundedByMethod]);
 
   const validation = useMemo(() => {
-    if (draftLines.length === 0 || !effectiveMethod || refundTotal <= 0) return null;
+    if (draftLines.length === 0 || (!pointsOnly && (!effectiveMethod || refundTotal <= 0))) return null;
     return validateRefundDraft({
       draft_lines: draftLines,
-      draft_tenders: [{ method: effectiveMethod as PaymentMethod, amount: refundTotal }],
+      draft_tenders: pointsOnly ? [] : [{ method: effectiveMethod as PaymentMethod, amount: refundTotal }],
       reason: reason.trim() || 'placeholder',
       items_by_id: itemsById,
       order_total: order.total,
       prior_refunds_total: order.total_refunded,
+      loyalty_points_redeemed: order.loyalty_points_redeemed ?? 0,
       method_ledger: methodLedger,
     });
-  }, [draftLines, effectiveMethod, refundTotal, reason, itemsById, order.total, order.total_refunded, methodLedger]);
+  }, [draftLines, effectiveMethod, refundTotal, reason, itemsById, order.total, order.total_refunded, order.loyalty_points_redeemed, methodLedger, pointsOnly]);
 
   const reasonOk = reason.trim().length >= 3;
   const pinOk = /^\d{6}$/.test(pin);
   const canSubmit =
-    attempt.allowed && !attempt.storageError && !attempt.busy && (snapshot ? pinOk : (refundTotal > 0 &&
-    effectiveMethod !== '' &&
+    attempt.allowed && !attempt.storageError && !attempt.busy && (snapshot ? pinOk : ((refundTotal > 0 || pointsOnly) &&
+    (effectiveMethod !== '' || pointsOnly) &&
     reasonOk &&
     pinOk &&
     validation?.ok === true));
@@ -192,7 +193,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
     const outcome = await attempt.submit(snapshot ?? {
         orderId: order.id,
         lines: draftLines,
-        tenders: [{ method: effectiveMethod, amount: refundTotal }],
+        tenders: pointsOnly ? [] : [{ method: effectiveMethod, amount: refundTotal }],
         reason: reason.trim(),
       }, (payload, key, current) => m.mutateAsync({ ...payload, managerPin, idempotencyKey: key, sessionGuard: current }));
     if (!outcome.current) return;
@@ -217,6 +218,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
         {snapshot && <p role="status" className="text-sm text-warning">{PENDING_MESSAGE}</p>}
         {snapshot && <p className="text-xs text-text-secondary">Saved lines: {snapshot.lines.map((line) => `${line.order_item_id} × ${line.qty}`).join(', ')}</p>}
 
+        {!snapshot && refundQuote.points_restored > 0 && <p role="status">Points to restore: {refundQuote.points_restored}</p>}
         {/* Lignes à rembourser */}
         <div>
           <div className="font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
@@ -225,9 +227,9 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
           <ul className="mt-2 max-h-56 divide-y divide-border-row overflow-y-auto rounded-md border border-border-subtle">
             {refundableItems.map((it) => {
               const full = order.items.find((o) => o.id === it.order_item_id);
-              const remaining = it.quantity - it.qty_already_refunded;
+              const remaining = Math.max(0, Math.round((it.quantity - it.qty_already_refunded) * 1000) / 1000);
               const qty = selectedQty.get(it.order_item_id) ?? 0;
-              const amount = computeRefundLineAmount(it, qty);
+              const amount = refundQuote.line_amounts.get(it.order_item_id) ?? 0;
               const exhausted = remaining <= 0;
               return (
                 <li key={it.order_item_id} className="flex items-center gap-3 px-3 py-2.5 text-sm">
@@ -256,7 +258,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
                         aria-label={`Increase ${full?.name_snapshot ?? ''}`}
                         className="flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-text-secondary disabled:opacity-40"
                         disabled={frozen || qty >= remaining}
-                        onClick={() => handleQty(it.order_item_id, qty + 1)}
+                        onClick={() => handleQty(it.order_item_id, Math.min(remaining, qty + 1))}
                       >
                         <Plus className="h-3 w-3" aria-hidden />
                       </button>
@@ -272,7 +274,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
         </div>
 
         {/* Destination du remboursement */}
-        <div>
+        {pointsOnly || snapshot?.tenders.length === 0 ? <p>No money remains to refund. Only the remaining loyalty points will be restored.</p> : <div>
           <label htmlFor="refund-method-bo" className="block font-data text-xs font-semibold uppercase tracking-widest text-text-muted">
             Refund destination
           </label>
@@ -308,7 +310,7 @@ export function RefundOrderModalBo({ open, onClose, order }: Props): JSX.Element
               This order was paid in cash and has no customer for store credit — it cannot be refunded from the back-office.
             </p>
           )}
-        </div>
+        </div>}
 
         {/* Motif */}
         <div>

@@ -80,11 +80,11 @@ BEGIN
  FOR c IN SELECT * FROM unit_compat_cases LOOP
   k:=gen_random_uuid();
   IF c.path='complete' THEN
-   r:=void_order_rpc_v12(c.order_id,'Unit compatibility void',f.profile_id,f.auth_id,k);
+   r:=void_order_rpc_v13(c.order_id,'Unit compatibility void',f.profile_id,f.auth_id,k);
    INSERT INTO unit_compat_tap SELECT is((SELECT sum(quantity) FROM stock_movements WHERE reference_id=c.order_id AND movement_type='sale_void'),c.consumed,c.mode||' void restores original calculation');
    INSERT INTO unit_compat_tap SELECT is((SELECT sum(quantity) FROM stock_movements WHERE reference_id=c.order_id),0::numeric,c.mode||' void nets zero');
    SELECT count(*) INTO count_before FROM stock_movements WHERE reference_id=c.order_id;
-   again:=void_order_rpc_v12(c.order_id,'Unit compatibility void',f.profile_id,f.auth_id,k);
+   again:=void_order_rpc_v13(c.order_id,'Unit compatibility void',f.profile_id,f.auth_id,k);
    INSERT INTO unit_compat_tap SELECT ok((again->>'idempotent_replay')::boolean AND (SELECT count(*) FROM stock_movements WHERE reference_id=c.order_id)=count_before,c.mode||' void replay no movements');
   ELSIF c.path='b2b' THEN
    r:=cancel_b2b_order_v3(c.order_id,'Unit compatibility cancel',k);
@@ -97,13 +97,13 @@ BEGIN
    SELECT id INTO item FROM order_items WHERE order_id=c.order_id;
    lines:=jsonb_build_array(jsonb_build_object('order_item_id',item,'qty',2));
    tenders:=jsonb_build_array(jsonb_build_object('method','cash','amount',4000));
-   r:=refund_order_rpc_v13(c.order_id,lines,tenders,'Unit compatibility partial',f.profile_id,k,f.auth_id);
+   r:=refund_order_rpc_v14(c.order_id,lines,tenders,'Unit compatibility partial',f.profile_id,k,f.auth_id);
    INSERT INTO unit_compat_tap SELECT is((SELECT sum(quantity) FROM stock_movements WHERE reference_id=(r->>'refund_id')::uuid),c.consumed/2,c.mode||' partial refund retains original calculation');
-   INSERT INTO unit_compat_tap SELECT throws_like(format('SELECT void_order_rpc_v12(%L,%L,%L,%L)',c.order_id,'Unit compatibility refused void',f.profile_id,f.auth_id),'Cannot void order%partial refund%',c.mode||' void after partial remains refused');
+   INSERT INTO unit_compat_tap SELECT throws_like(format('SELECT void_order_rpc_v13(%L,%L,%L,%L)',c.order_id,'Unit compatibility refused void',f.profile_id,f.auth_id),'Cannot void order%partial refund%',c.mode||' void after partial remains refused');
    SELECT count(*) INTO count_before FROM stock_movements WHERE reference_id=(r->>'refund_id')::uuid;
-   again:=refund_order_rpc_v13(c.order_id,lines,tenders,'Unit compatibility partial',f.profile_id,k,f.auth_id);
+   again:=refund_order_rpc_v14(c.order_id,lines,tenders,'Unit compatibility partial',f.profile_id,k,f.auth_id);
    INSERT INTO unit_compat_tap SELECT ok(again->>'refund_id'=r->>'refund_id' AND (SELECT count(*) FROM stock_movements WHERE reference_id=(r->>'refund_id')::uuid)=count_before,c.mode||' partial refund replay no movements');
-   again:=refund_order_rpc_v13(c.order_id,lines,tenders,'Unit compatibility remainder',f.profile_id,gen_random_uuid(),f.auth_id);
+   again:=refund_order_rpc_v14(c.order_id,lines,tenders,'Unit compatibility remainder',f.profile_id,gen_random_uuid(),f.auth_id);
    INSERT INTO unit_compat_tap SELECT is((SELECT sum(s.quantity) FROM stock_movements s WHERE s.reference_id=c.order_id OR s.reference_id IN(SELECT id FROM refunds WHERE order_id=c.order_id)),0::numeric,c.mode||' final refund nets zero');
   END IF;
  END LOOP;
@@ -126,7 +126,7 @@ BEGIN
 END $client_revision$;
 INSERT INTO unit_compat_tap SELECT throws_ok($q$SELECT * FROM _resolve_order_recipe_restoration_v1(gen_random_uuid(),gen_random_uuid(),1)$q$,'P0002','order_not_found','restoration requires original order');
 INSERT INTO unit_compat_tap SELECT throws_ok($q$UPDATE orders SET recipe_consumption_revision=3 WHERE id=(SELECT order_id FROM unit_compat_cases LIMIT 1)$q$,'23514',NULL,'unknown revisions refused');
-INSERT INTO unit_compat_tap SELECT ok((SELECT count(*)=8 AND bool_and(NOT has_function_privilege('authenticated',p.oid,'EXECUTE') AND NOT has_function_privilege('anon',p.oid,'EXECUTE') AND has_function_privilege('service_role',p.oid,'EXECUTE')) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN('_resolve_recipe_consumption_v2','_resolve_recipe_consumption_legacy_v1','_resolve_order_recipe_restoration_v1','_record_order_item_waste_v2','refund_order_rpc_v13','void_order_rpc_v12','cancel_order_item_rpc_v7','cancel_unpaid_order_v2')),'internal and reversal functions retain service-only ACL');
+INSERT INTO unit_compat_tap SELECT ok((SELECT count(*)=8 AND bool_and(NOT has_function_privilege('authenticated',p.oid,'EXECUTE') AND NOT has_function_privilege('anon',p.oid,'EXECUTE') AND has_function_privilege('service_role',p.oid,'EXECUTE')) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN('_resolve_recipe_consumption_v2','_resolve_recipe_consumption_legacy_v1','_resolve_order_recipe_restoration_v1','_record_order_item_waste_v2','refund_order_rpc_v14','void_order_rpc_v13','cancel_order_item_rpc_v7','cancel_unpaid_order_v2')),'internal and reversal functions retain service-only ACL');
 DO $failed_consumption$
 DECLARE f record; k uuid:=gen_random_uuid(); before_count bigint; failed boolean:=false;
 BEGIN

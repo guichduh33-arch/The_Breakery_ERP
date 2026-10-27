@@ -258,11 +258,12 @@ export function OrderDetailDrawer({
   const pendingRefund = useHasPendingFinancial('refund', orderId ?? '');
   const reprint = useReprintReceipt();
 
-  // Reste remboursable = le total moins ce qui est déjà remboursé.
+  // Un arrondi monétaire peut laisser des points sur des quantités encore à retourner.
   const canRefund =
     data !== undefined && hasRefund
     && (pendingRefund || (REFUNDABLE_STATUSES.has(data.status)
-    && data.total_refunded < data.total));
+    && (data.total_refunded < data.total || ((data.loyalty_points_redeemed ?? 0) > 0
+      && data.items.some((item) => !item.is_cancelled && item.line_total > 0 && item.qty_already_refunded < item.quantity)))));
   // Le reçu duplicata n'a de sens que sur une commande qui a porté l'argent.
   const canReprint = data !== undefined && hasReprint && isOrderDetailPaid(data);
 

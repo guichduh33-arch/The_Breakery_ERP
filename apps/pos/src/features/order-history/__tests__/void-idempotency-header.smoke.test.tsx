@@ -91,6 +91,16 @@ afterEach(() => {
 // =====================================================================
 
 describe('S55 useVoidOrder — manager-pin header + idempotency wiring', () => {
+  it('explains when unavailable points block a void', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ error: 'loyalty_points_unavailable' }), { status: 422 }));
+    const { useVoidOrder } = await import('../hooks/useVoidOrder');
+    const { result } = renderHook(() => useVoidOrder(), { wrapper: makeWrapper() });
+    await act(async () => {
+      await expect(result.current.mutateAsync({ orderId: 'order-1', reason: 'Customer return', managerPin: '987654' }))
+        .rejects.toThrow('Not enough loyalty points are available to reverse this sale, including restored points. No changes were made.');
+    });
+  });
   it('C1: sends x-manager-pin + x-idempotency-key headers; body has no manager_pin', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

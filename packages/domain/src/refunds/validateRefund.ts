@@ -3,7 +3,7 @@
 // All checks mirror refund_order_rpc's server checks. Server is authoritative.
 
 import type { RefundLineDraft, RefundableItem, MethodLedgerEntry, RefundTender } from './types.js';
-import { computeRefundLineAmount } from './computeRefund.js';
+import { computeRefundBreakdown } from './computeRefund.js';
 
 export type RefundValidation =
   | { ok: true; refund_total: number }
@@ -32,28 +32,37 @@ export interface RefundValidateInput {
   order_total: number;
   prior_refunds_total: number;
   method_ledger: readonly MethodLedgerEntry[];
+  loyalty_points_redeemed?: number;
 }
 
 export function validateRefundDraft(input: RefundValidateInput): RefundValidation {
   if (input.draft_lines.length < 1) return { ok: false, error: 'no_lines' };
-  if (input.draft_tenders.length < 1) return { ok: false, error: 'no_tenders' };
   if (!input.reason || input.reason.trim().length < 3) {
     return { ok: false, error: 'reason_too_short' };
   }
 
-  let refund_total = 0;
   for (const d of input.draft_lines) {
     const it = input.items_by_id.get(d.order_item_id);
     if (!it) return { ok: false, error: 'unknown_item', detail: d.order_item_id };
     if (it.is_cancelled) return { ok: false, error: 'item_cancelled', detail: d.order_item_id };
-    if (!Number.isFinite(d.qty) || d.qty <= 0) {
+    const requested = Math.round(d.qty * 1000);
+    if (!Number.isFinite(d.qty) || d.qty <= 0 || !Number.isSafeInteger(requested) || requested <= 0) {
       return { ok: false, error: 'qty_invalid', detail: d.order_item_id };
     }
-    const remaining = it.quantity - it.qty_already_refunded;
-    if (d.qty > remaining) {
-      return { ok: false, error: 'qty_exceeds_remaining', detail: `${d.order_item_id} max=${remaining}` };
+    const remaining = Math.round(it.quantity * 1000) - Math.round(it.qty_already_refunded * 1000);
+    if (requested > remaining) {
+      return { ok: false, error: 'qty_exceeds_remaining', detail: `${d.order_item_id} max=${remaining / 1000}` };
     }
-    refund_total += computeRefundLineAmount(it, d.qty);
+  }
+
+  const quote = computeRefundBreakdown(input.draft_lines, input.items_by_id, {
+    order_total: input.order_total,
+    prior_refunds_total: input.prior_refunds_total,
+    points_redeemed: input.loyalty_points_redeemed ?? 0,
+  });
+  const refund_total = quote.total;
+  if (input.draft_tenders.length < 1 && !(refund_total === 0 && quote.points_restored > 0)) {
+    return { ok: false, error: 'no_tenders' };
   }
 
   if (input.prior_refunds_total + refund_total > input.order_total) {
