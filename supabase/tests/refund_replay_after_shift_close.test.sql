@@ -94,7 +94,7 @@ SELECT total INTO c.sale_total FROM orders WHERE id=c.order_id;
 SELECT s.total INTO c.amount FROM order_items i
 CROSS JOIN LATERAL _pb1_split_v1(round_idr(i.line_total/i.quantity)) s
 WHERE i.id=c.item_id;
-c.first:=refund_order_rpc_v13(c.order_id,
+c.first:=refund_order_rpc_v14(c.order_id,
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay test',c.profile,c.key,c.auth_id);
@@ -125,13 +125,13 @@ DO $replay$
 DECLARE c rr_ctx%ROWTYPE; result jsonb; code text; message text;
 BEGIN
 SELECT * INTO STRICT c FROM rr_ctx;
-result:=refund_order_rpc_v13(c.order_id,
+result:=refund_order_rpc_v14(c.order_id,
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay test',c.profile,c.key,c.auth_id);
 UPDATE rr_ctx SET replay=result;
 -- La clé persistée fait foi même si la requête présente une autre commande.
-result:=refund_order_rpc_v13(gen_random_uuid(),
+result:=refund_order_rpc_v14(gen_random_uuid(),
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay different order',c.profile,c.key,c.auth_id);
@@ -139,7 +139,7 @@ UPDATE rr_ctx SET mismatched=result;
 INSERT INTO rr_snap VALUES('replay',
 pg_temp.rrc_state(c.order_id,c.product_id,c.shift_id,c.profile));
 BEGIN
-PERFORM refund_order_rpc_v13(c.order_id,
+PERFORM refund_order_rpc_v14(c.order_id,
 jsonb_build_array(jsonb_build_object('order_item_id',c.item_id,'qty',1)),
 jsonb_build_array(jsonb_build_object('method','cash','amount',c.amount)),
 'Replay test',c.profile,c.new_key,c.auth_id);
@@ -153,7 +153,7 @@ pg_temp.rrc_state(c.order_id,c.product_id,c.shift_id,c.profile));
 END $replay$;
 DO $checks$
 DECLARE c rr_ctx%ROWTYPE; b jsonb; a jsonb; rejected jsonb; expected jsonb;
-signature text:='public.refund_order_rpc_v13(uuid,jsonb,jsonb,text,uuid,uuid,uuid)';
+signature text:='public.refund_order_rpc_v14(uuid,jsonb,jsonb,text,uuid,uuid,uuid)';
 BEGIN
 SELECT * INTO STRICT c FROM rr_ctx;
 SELECT state INTO STRICT b FROM rr_snap WHERE stage='closed';

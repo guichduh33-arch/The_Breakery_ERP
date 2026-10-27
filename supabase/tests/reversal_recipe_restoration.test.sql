@@ -67,7 +67,7 @@ BEGIN
   PERFORM set_config('rrr.ing_after_sale',
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
-  PERFORM void_order_rpc_v12(
+  PERFORM void_order_rpc_v13(
     p_order_id            := current_setting('rrr.order1')::uuid,
     p_reason              := 'pgTAP reversal recipe restoration',
     p_authorized_by       := v_mgr_prof,
@@ -90,7 +90,7 @@ BEGIN
     (SELECT current_stock FROM products WHERE id = v_ing)::text, false);
 
   SELECT id INTO v_oi FROM order_items WHERE order_id = current_setting('rrr.order2')::uuid LIMIT 1;
-  r := refund_order_rpc_v13(
+  r := refund_order_rpc_v14(
     current_setting('rrr.order2')::uuid,
     jsonb_build_array(jsonb_build_object('order_item_id', v_oi, 'qty', 1)),
     jsonb_build_array(jsonb_build_object('method','cash','amount',5000)),

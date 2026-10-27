@@ -62,6 +62,8 @@ describe('voidErrorText — aucun jeton machine ne sort à l’écran', () => {
     expect(voidErrorText(new Error('cross_shift_not_allowed')))
       .toBe('This order belongs to a closed shift and can no longer be voided.');
     expect(voidErrorText(new Error('missing_manager_pin'))).toBe('Manager PIN is required.');
+    expect(voidErrorText(new Error('loyalty_points_unavailable')))
+      .toBe('Not enough loyalty points are available to reverse this sale, including restored points. No changes were made.');
   });
 
   it('tait un jeton INCONNU au lieu de l’afficher', () => {

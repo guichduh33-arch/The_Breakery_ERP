@@ -110,7 +110,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('void_order_rpc_v12', {
+  const { data, error } = await admin.rpc('void_order_rpc_v13', {
     p_order_id:            body.order_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
@@ -127,6 +127,7 @@ serve(async (req) => {
     if (error.code === 'P0011') return jsonResponse({ error: 'cross_shift_not_allowed' }, 422);
     // Lot 6b (v10) — cross-shift : void refusé si un paiement cash existe.
     if (error.code === 'P0016') return jsonResponse({ error: 'cash_void_requires_open_session' }, 422);
+    if (error.code === 'P0020') return jsonResponse({ error: 'loyalty_points_unavailable' }, 422);
     if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
     return jsonResponse(logAndRedact('void-order', error.message ?? error), 500);
   }

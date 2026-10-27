@@ -105,7 +105,8 @@ serve(async (req) => {
       return jsonResponse({ error: 'invalid_line', index: i }, 400);
     }
   }
-  if (!Array.isArray(body.tenders) || body.tenders.length === 0) {
+  // Une restitution de points sans argent utilise [] ; la RPC en prouve le montant.
+  if (!Array.isArray(body.tenders)) {
     return jsonResponse({ error: 'no_tenders' }, 400);
   }
   for (let i = 0; i < body.tenders.length; i++) {
@@ -136,7 +137,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('refund_order_rpc_v13', {
+  const { data, error } = await admin.rpc('refund_order_rpc_v14', {
     p_order_id:            body.order_id,
     p_lines:               body.lines,
     p_tenders:             body.tenders,
@@ -157,6 +158,7 @@ serve(async (req) => {
     if (error.code === 'P0015') return jsonResponse({ error: 'store_credit_requires_customer' }, 422);
     // Lot 6b (v10) — cross-shift : le cash exige une session ouverte.
     if (error.code === 'P0016') return jsonResponse({ error: 'cash_refund_requires_open_session' }, 422);
+    if (error.code === 'P0020') return jsonResponse({ error: 'loyalty_points_unavailable' }, 422);
     if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
     return jsonResponse(logAndRedact('refund-order', error.message ?? error), 500);
   }

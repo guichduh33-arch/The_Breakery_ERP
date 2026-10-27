@@ -72,6 +72,7 @@ export interface OrderDetail {
   subtotal: number;
   discount_amount: number;
   tax_amount: number;
+  loyalty_points_redeemed?: number;
   total: number;
   items: OrderItem[];
   payments: OrderPayment[];
@@ -100,7 +101,7 @@ export function useOrderDetail(id: string | undefined) {
           id, order_number, status, order_type, table_number, created_at, paid_at,
           sent_to_kitchen_at,
           customer_id, served_by,
-          subtotal, discount_amount, tax_amount, total,
+          subtotal, discount_amount, tax_amount, total, loyalty_points_redeemed,
           customers(name),
           user_profiles!orders_served_by_fkey(full_name),
           order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled, kitchen_status),
@@ -126,6 +127,7 @@ export function useOrderDetail(id: string | undefined) {
         subtotal: number;
         discount_amount: number;
         tax_amount: number;
+        loyalty_points_redeemed?: number;
         total: number;
         customers: { name: string } | null;
         user_profiles: { full_name: string } | null;
@@ -172,6 +174,7 @@ export function useOrderDetail(id: string | undefined) {
         subtotal: Number(row.subtotal ?? 0),
         discount_amount: Number(row.discount_amount ?? 0),
         tax_amount: Number(row.tax_amount ?? 0),
+        loyalty_points_redeemed: Number(row.loyalty_points_redeemed ?? 0),
         total: Number(row.total ?? 0),
         items: (row.order_items ?? []).map((it) => ({
           ...it,

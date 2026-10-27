@@ -83,7 +83,7 @@ export function validPayload(operation: FinancialOperation, target: string, valu
       && Array.isArray(value.lines) && value.lines.length > 0 && value.lines.length <= 1000
       && value.lines.every((line: unknown) => isRecord(line) && exact(line, ['order_item_id', 'qty'])
         && identifier(line.order_item_id) && positive(line.qty))
-      && Array.isArray(value.tenders) && value.tenders.length > 0 && value.tenders.length <= 9
+      && Array.isArray(value.tenders) && value.tenders.length <= 9
       && value.tenders.every((tender: unknown) => isRecord(tender) && exact(tender, ['method', 'amount', 'reference'])
         && method(tender.method) && positive(tender.amount) && optionalText(tender, 'reference'));
   }

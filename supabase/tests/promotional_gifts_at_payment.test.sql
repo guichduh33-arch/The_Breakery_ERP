@@ -188,7 +188,7 @@ BEGIN
   INSERT INTO gift_checks VALUES('replay after cap consumption returns the first gift',
     replay->'order_snapshot'=result->'order_snapshot' AND (SELECT count(*)=1 FROM public.promotion_applications WHERE promotion_id=promo));
   SELECT current_stock INTO after_stock FROM public.products WHERE id=gift_product;
-  PERFORM public.void_order_rpc_v12(p_order_id:=(result->>'order_id')::uuid,
+  PERFORM public.void_order_rpc_v13(p_order_id:=(result->>'order_id')::uuid,
     p_reason:='Gift rollback fixture',p_authorized_by:=profile,
     p_acting_auth_user_id:=actor,p_idempotency_key:=gen_random_uuid());
   INSERT INTO gift_checks VALUES('void restores the actual gift stock',

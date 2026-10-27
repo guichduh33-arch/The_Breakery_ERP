@@ -72,6 +72,8 @@ export function refundErrorMessage(code: string | undefined, status: number | un
       return 'Order not found.';
     case 'check_violation':
       return 'The refund exceeds what remains refundable on this order.';
+    case 'loyalty_points_unavailable':
+      return 'Not enough loyalty points are available to reverse this sale, including restored points. No changes were made.';
     default:
       if (status === 429) return 'Too many attempts. Please wait and try again.';
       return code ?? 'Refund failed. Please try again.';
@@ -112,8 +114,11 @@ export function useRefundOrder() {
         });
       }
       const data: unknown = await res.json();
+      const pointsOnly = isRecord(data) && data.total_refunded === 0 && data.tax_refunded === 0
+        && finite(data.pts_restored) && Number.isInteger(data.pts_restored) && data.pts_restored > 0
+        && Array.isArray(data.tenders) && data.tenders.length === 0;
       if (!isRecord(data) || !identifier(data.refund_id) || !identifier(data.refund_number)
-        || data.order_id !== orderId || !finite(data.total_refunded) || data.total_refunded <= 0
+        || data.order_id !== orderId || !finite(data.total_refunded) || (data.total_refunded <= 0 && !pointsOnly)
         || !finite(data.tax_refunded) || data.tax_refunded < 0
         || (data.idempotent_replay !== undefined && typeof data.idempotent_replay !== 'boolean')) {
         throw new FinancialAttemptError('The refund response was invalid. Its result is unconfirmed.');
@@ -139,7 +144,7 @@ export function refundDefinitiveFailure(code: string | undefined, status: number
     invalid_json: 400, invalid_order_id: 400, no_lines: 400, invalid_line: 400,
     no_tenders: 400, invalid_tender: 400, reason_too_short: 400,
     not_found: 404, cross_shift_not_allowed: 422, store_credit_requires_customer: 422,
-    cash_refund_requires_open_session: 422, check_violation: 422,
+    cash_refund_requires_open_session: 422, check_violation: 422, loyalty_points_unavailable: 422,
   };
   return code !== undefined && failures[code] === status;
 }

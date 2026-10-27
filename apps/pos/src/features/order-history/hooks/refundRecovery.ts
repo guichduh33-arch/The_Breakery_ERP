@@ -21,7 +21,7 @@ export function validRefundPayload(_operation: 'refund', target: string, v: unkn
     && typeof v.reason === 'string' && v.reason.length <= 10000 && v.reason.trim().length >= 3
     && Array.isArray(v.lines) && v.lines.length > 0 && v.lines.length <= 1000
     && v.lines.every((line: unknown) => isRecord(line) && exact(line, ['order_item_id', 'qty']) && identifier(line.order_item_id) && positive(line.qty))
-    && Array.isArray(v.tenders) && v.tenders.length > 0 && v.tenders.length <= 9
+    && Array.isArray(v.tenders) && v.tenders.length <= 9
     && v.tenders.every((tender: unknown) => isRecord(tender) && exact(tender, ['method', 'amount', 'reference'])
       && PAYMENT_METHODS.some((m) => m === tender.method) && positive(tender.amount)
       && (tender.reference === undefined || (typeof tender.reference === 'string' && tender.reference.length <= 10000)));

@@ -37,6 +37,7 @@ const ERROR_COPY: Record<string, string> = {
   cross_shift_not_allowed:        'This order belongs to a closed shift and can no longer be voided.',
   cash_void_requires_open_session:'A cash payment can only be voided while its POS session is open.',
   check_violation:                'The server refused this void — the order is no longer in a voidable state.',
+  loyalty_points_unavailable:     'Not enough loyalty points are available to reverse this sale, including restored points. No changes were made.',
   method_not_allowed:             'Something went wrong. Please retry.',
   invalid_json:                   'Something went wrong. Please retry.',
   internal_error:                 'Something went wrong. Please retry.',

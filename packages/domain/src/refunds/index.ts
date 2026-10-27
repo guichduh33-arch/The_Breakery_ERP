@@ -12,7 +12,10 @@ export type {
 export {
   computeRefundLineAmount,
   computeRefundTotal,
+  computeRefundBreakdown,
   computeRefundTax,
 } from './computeRefund.js';
+
+export type { RefundBreakdown, RefundRedemptionContext } from './redemptionRefund.js';
 
 export { validateRefundDraft, type RefundValidation, type RefundValidateInput } from './validateRefund.js';
