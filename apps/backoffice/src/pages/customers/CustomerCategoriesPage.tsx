@@ -100,12 +100,12 @@ export default function CustomerCategoriesPage(): JSX.Element {
 
   const columns = useMemo<readonly DataTableColumn<CustomerCategoryRow>[]>(() => [
     {
-      id: 'name', header: 'Category',
+      id: 'name', header: 'Category', width: '28%', minWidth: '16rem',
       render: (cat) => (
-        <span className="flex items-center gap-2.5">
+        <span className="flex flex-wrap items-center gap-2.5">
           {/* Pastille d'identité de catégorie — famille cat-*. */}
           <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full', TONE_BY_SLUG[cat.slug] ?? 'bg-text-subtle')} />
-          <span className="font-medium text-text-primary">{cat.name}</span>
+          <span className="break-words font-medium text-text-primary">{cat.name}</span>
           {cat.is_default && (
             <span className={cn(BADGE, 'bg-surface-4 text-text-muted')} title="Assigned to new customers by default — cannot be deleted.">
               Default
@@ -115,11 +115,11 @@ export default function CustomerCategoriesPage(): JSX.Element {
       ),
     },
     {
-      id: 'slug', header: 'Slug', width: '8rem',
-      render: (cat) => <span className="font-data text-xs text-text-secondary">{cat.slug}</span>,
+      id: 'slug', header: 'Slug', width: '18%', minWidth: '10rem',
+      render: (cat) => <span className="break-all font-data text-xs text-text-secondary">{cat.slug}</span>,
     },
     {
-      id: 'pricing', header: 'Pricing rule', width: '12rem',
+      id: 'pricing', header: 'Pricing rule', width: '22%', minWidth: '12rem',
       render: (cat) => (
         <span className="text-text-secondary">
           {pricingLabel(cat)}
@@ -130,7 +130,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
       ),
     },
     {
-      id: 'loyalty', header: 'Loyalty', width: '7rem',
+      id: 'loyalty', header: 'Loyalty', width: '12%', minWidth: '7rem',
       render: (cat) => (
         cat.loyalty_enabled
           ? <span className="font-data tabular-nums text-text-secondary">×{cat.points_multiplier}</span>
@@ -138,7 +138,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
       ),
     },
     {
-      id: 'status', header: 'Status', width: '6.5rem',
+      id: 'status', header: 'Status', width: '14%', minWidth: '7rem',
       render: (cat) => (
         <span className={cn(BADGE, cat.is_active ? 'bg-success-soft text-success' : 'bg-surface-4 text-text-muted')}>
           {cat.is_active ? 'Active' : 'Inactive'}
@@ -146,7 +146,7 @@ export default function CustomerCategoriesPage(): JSX.Element {
       ),
     },
     {
-      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '6rem',
+      id: 'actions', header: <span className="sr-only">Row actions</span>, align: 'right', width: '6%', minWidth: '6rem',
       render: (cat) => (
         <span className="inline-flex items-center gap-1.5">
           <button

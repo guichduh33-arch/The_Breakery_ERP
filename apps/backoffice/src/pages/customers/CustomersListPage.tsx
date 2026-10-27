@@ -233,6 +233,8 @@ export default function CustomersListPage(): JSX.Element {
     {
       id:     'customer',
       header: 'Customer',
+      width: '26%',
+      minWidth: '15rem',
       sortable: true,
       // La navigation vers la fiche est portée par un vrai lien — le clic-ligne
       // du `DataTable` ne se prend ni au Tab ni à Entrée, et la fiche client
@@ -240,9 +242,9 @@ export default function CustomersListPage(): JSX.Element {
       // Même motif que la colonne « PO Number » des bons de commande :
       // `stopPropagation` empêche la ligne de naviguer une seconde fois.
       render: (row) => (
-        <div className="flex items-center gap-3">
-          <CustomerAvatar name={row.name} />
-          <div className="leading-tight">
+        <div className="flex min-w-0 items-center gap-3">
+          <CustomerAvatar name={row.name} className="shrink-0" />
+          <div className="min-w-0 break-words leading-tight">
             <Link
               to={`/backoffice/customers/${row.id}`}
               onClick={(e) => e.stopPropagation()}
@@ -260,7 +262,8 @@ export default function CustomersListPage(): JSX.Element {
     {
       id:     'category',
       header: 'Category',
-      width:  '10rem',
+      width:  '15%',
+      minWidth: '11rem',
       render: (row) => (
         <CustomerCategoryChip name={row.category_name} slug={row.category_slug} />
       ),
@@ -268,7 +271,8 @@ export default function CustomersListPage(): JSX.Element {
     {
       id:     'tier',
       header: 'Loyalty tier',
-      width:  '10rem',
+      width:  '15%',
+      minWidth: '10rem',
       render: (row) => {
         const t = tierFromLifetime(row.lifetime_points);
         return <LoyaltyBadge tier={t} points={row.loyalty_points} />;
@@ -279,7 +283,8 @@ export default function CustomersListPage(): JSX.Element {
       header: 'B2B balance',
       headerClassName: 'whitespace-nowrap',
       align:  'right',
-      width:  '8.5rem',
+      width:  '13%',
+      minWidth: '10rem',
       render: (row) =>
         row.customer_type === 'b2b' && row.b2b_current_balance > 0 ? (
           <span className="whitespace-nowrap font-data tabular-nums text-warning">
@@ -293,7 +298,8 @@ export default function CustomersListPage(): JSX.Element {
       id:     'points',
       header: 'Points',
       align:  'right',
-      width:  '6rem',
+      width:  '8%',
+      minWidth: '6rem',
       sortable: true,
       render: (row) => (
         <span className="font-data tabular-nums">{row.loyalty_points.toLocaleString('id-ID')}</span>
@@ -303,7 +309,8 @@ export default function CustomersListPage(): JSX.Element {
       id:     'spent',
       header: 'Total spent',
       align:  'right',
-      width:  '8.5rem',
+      width:  '13%',
+      minWidth: '10rem',
       sortable: true,
       render: (row) => (
         <span className="whitespace-nowrap font-data tabular-nums">{formatCurrency(row.total_spent)}</span>
@@ -313,7 +320,8 @@ export default function CustomersListPage(): JSX.Element {
       id:     'last',
       header: 'Last visit',
       align:  'right',
-      width:  '6.5rem',
+      width:  '10%',
+      minWidth: '8rem',
       sortable: true,
       render: (row) => (
         <span className="text-xs text-text-secondary">{formatLastVisit(row.last_visit_at)}</span>
