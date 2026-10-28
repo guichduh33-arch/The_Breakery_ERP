@@ -112,6 +112,13 @@ function TrialBalanceValue(): JSX.Element {
 
 const TILES: Tile[] = [
   {
+    to: '/backoffice/accounting/bank-reconciliation',
+    label: 'Bank reconciliation',
+    description: 'Match bank statements to transactions and settle actual bank fees.',
+    icon: Scale,
+    permission: 'accounting.bank.read',
+  },
+  {
     to: '/backoffice/accounting/chart-of-accounts',
     label: 'Chart of accounts',
     description: 'Browse the full COA, toggle account active state.',

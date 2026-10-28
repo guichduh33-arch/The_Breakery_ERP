@@ -138,6 +138,10 @@ export type PermissionCode =
   | 'settings.kiosk.manage'
   // Session 13 / Phase 6.C — Accounting mappings admin (module 10-012)
   | 'accounting.read'
+  | 'accounting.bank.read'
+  | 'accounting.bank.manage'
+  | 'accounting.bank.validate'
+  | 'accounting.bank.settle'
   | 'accounting.mapping.update'
   // Session 26 / Wave 1.I — Comptable cockpit (S26 _026 seed)
   | 'accounting.coa.read'

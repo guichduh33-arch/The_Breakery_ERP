@@ -163,6 +163,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/accounting/chart-of-accounts', label: 'Chart of accounts', permission: 'accounting.coa.read' },
           { to: '/backoffice/accounting/journal-entries', label: 'Journal entries', permission: 'accounting.gl.read' },
           { to: '/backoffice/accounting/general-ledger', label: 'General ledger', permission: 'accounting.gl.read' },
+          { to: '/backoffice/accounting/bank-reconciliation', label: 'Bank reconciliation', permission: 'accounting.bank.read' },
           { to: '/backoffice/accounting/cash', label: 'Cash treasury', permission: 'accounting.cash.read' },
           { to: '/backoffice/accounting/trial-balance', label: 'Trial balance', permission: 'accounting.tb.read' },
           { to: '/backoffice/accounting/mappings', label: 'Account mappings', permission: 'accounting.read' },
