@@ -31,7 +31,7 @@
 //    the auto-submit-on-length-6 ergonomic. Re-using NumpadVirtual would
 //    force a Cancel button we don't want here.
 
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Delete } from 'lucide-react';
 import { BrandLogo, Button, SectionLabel, cn } from '@breakery/ui';
@@ -79,6 +79,7 @@ export default function LoginPage(): JSX.Element {
   const [selectedUser, setSelectedUser] = useState<LoginUser | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pin, setPin] = useState('');
+  const pinSubmitted = useRef(false);
 
   // Preselect ONLY the last user who signed in on this terminal — never an
   // arbitrary users[0] (a reflex-typed PIN would auto-submit on a colleague's
@@ -116,11 +117,15 @@ export default function LoginPage(): JSX.Element {
     setPin((prev) => prev.slice(0, -1));
   }, []);
 
-  // Auto-submit when 6 digits typed — matches PIN_LENGTH spec.
+  // Une saisie complète reste consommée même si le chargement finit avant la navigation.
   useEffect(() => {
-    if (pin.length === PIN_MAX && !isLoading) {
-      submitPin(pin);
+    if (pin.length !== PIN_MAX) {
+      pinSubmitted.current = false;
+      return;
     }
+    if (isLoading || pinSubmitted.current) return;
+    pinSubmitted.current = true;
+    submitPin(pin);
   }, [pin, isLoading, submitPin]);
 
   // Clear PIN when error surfaces (so user can retype) and on user switch.

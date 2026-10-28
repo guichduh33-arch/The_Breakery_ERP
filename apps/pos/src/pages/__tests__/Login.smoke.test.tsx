@@ -9,10 +9,11 @@
 // the PIN copy now reading "6-digit" (was "4-6 digit").
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type * as ReactRouterDom from 'react-router-dom';
 import LoginPage from '../Login';
+import { useAuthStore } from '@/stores/authStore';
 
 const navigateMock = vi.fn();
 const nativeMock = vi.hoisted(() => vi.fn(() => false));
@@ -22,27 +23,23 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigateMock };
 });
 
-const authState = { current: { error: null as string | null, isLoading: false } };
-const loginMock = vi.fn();
-const setErrorMock = vi.fn();
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: Object.assign(
-    <T,>(selector: (s: {
-      login: typeof loginMock;
-      error: string | null;
-      setError: typeof setErrorMock;
-      isLoading: boolean;
-    }) => T) =>
-      selector({
-        login: loginMock,
-        error: authState.current.error,
-        setError: setErrorMock,
-        isLoading: authState.current.isLoading,
-      }),
-    { getState: () => ({ user: { role_code: 'CASHIER' } }) },
-  ),
+const { loginMock, setErrorMock } = vi.hoisted(() => ({
+  loginMock: vi.fn(),
+  setErrorMock: vi.fn(),
 }));
+
+vi.mock('@/stores/authStore', async () => {
+  const { create } = await import('zustand');
+  return {
+    useAuthStore: create(() => ({
+      login: loginMock,
+      error: null as string | null,
+      setError: setErrorMock,
+      isLoading: false,
+      user: { role_code: 'CASHIER' },
+    })),
+  };
+});
 
 const loginUsersState = {
   current: {
@@ -83,8 +80,9 @@ describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
     loginMock.mockReset();
     loginMock.mockResolvedValue(undefined);
     setErrorMock.mockReset();
+    setErrorMock.mockImplementation((error: string | null) => useAuthStore.setState({ error }));
     loginUsersState.refetch.mockReset();
-    authState.current = { error: null, isLoading: false };
+    useAuthStore.setState({ error: null, isLoading: false });
     loginUsersState.current = {
       data: [
         { id: 'u1', display_name: 'Mamat (Owner)', role: 'Super Admin' },
@@ -154,6 +152,68 @@ describe('POS LoginPage — dynamic user picker (S58 T3)', () => {
       fireEvent.click(screen.getByRole('button', { name: d }));
     }
     expect(loginMock).toHaveBeenCalledWith('u1', '123456');
+    expect(loginMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends one request while pending and after success when navigation is delayed', async () => {
+    let resolveLogin!: (accepted: boolean) => void;
+    loginMock.mockImplementation(() => {
+      useAuthStore.setState({ isLoading: true });
+      return new Promise<boolean>((resolve) => { resolveLogin = resolve; });
+    });
+    navigateMock.mockReturnValue(new Promise<void>(() => { /* La navigation reste en attente. */ }));
+    renderPage();
+    fireEvent.click(screen.getByText('Mamat (Owner)'));
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+
+    expect(loginMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: '6' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '6' }));
+    expect(loginMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      useAuthStore.setState({ isLoading: false });
+      resolveLogin(true);
+      await Promise.resolve();
+    });
+    expect(navigateMock).toHaveBeenCalledWith('/pos', { replace: true });
+    expect(screen.getByText('6 of 6 digits entered')).toBeInTheDocument();
+    expect(loginMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows the same PIN to be entered again after a failed request', async () => {
+    let resolveLogin!: (accepted: boolean) => void;
+    let rejectLogin!: (error: Error) => void;
+    loginMock.mockImplementation(() => {
+      useAuthStore.setState({ isLoading: true });
+      return new Promise<boolean>((resolve, reject) => {
+        resolveLogin = resolve;
+        rejectLogin = reject;
+      });
+    });
+    renderPage();
+    fireEvent.click(screen.getByText('Mamat (Owner)'));
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+
+    await act(async () => {
+      useAuthStore.setState({ error: 'invalid_credentials', isLoading: false });
+      rejectLogin(new Error('invalid_credentials'));
+      await Promise.resolve();
+    });
+    expect(screen.getByText('0 of 6 digits entered')).toBeInTheDocument();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(loginMock).toHaveBeenCalledTimes(1);
+
+    for (const digit of '123456') fireEvent.click(screen.getByRole('button', { name: digit }));
+    expect(loginMock).toHaveBeenCalledTimes(2);
+    expect(loginMock).toHaveBeenNthCalledWith(2, 'u1', '123456');
+    await act(async () => {
+      useAuthStore.setState({ isLoading: false });
+      resolveLogin(true);
+      await Promise.resolve();
+    });
+    expect(navigateMock).toHaveBeenCalledWith('/pos', { replace: true });
+    expect(loginMock).toHaveBeenCalledTimes(2);
   });
 
   it('ouvre la salle après connexion dans l’APK, même avec un compte habilité non waiter', async () => {
