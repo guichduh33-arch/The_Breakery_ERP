@@ -292,6 +292,540 @@ export type Database = {
           },
         ]
       }
+      bank_reconciliation_bank_claims: {
+        Row: {
+          bank_line_id: string
+          match_id: string
+        }
+        Insert: {
+          bank_line_id: string
+          match_id: string
+        }
+        Update: {
+          bank_line_id?: string
+          match_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_bank_claims_bank_line_id_fkey"
+            columns: ["bank_line_id"]
+            isOneToOne: true
+            referencedRelation: "bank_statement_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_bank_claims_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_clearing_claims: {
+        Row: {
+          bank_entry_id: string
+          gl_line_id: string
+        }
+        Insert: {
+          bank_entry_id: string
+          gl_line_id: string
+        }
+        Update: {
+          bank_entry_id?: string
+          gl_line_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_clearing_claims_bank_entry_id_fkey"
+            columns: ["bank_entry_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_clearing_claims_gl_line_id_fkey"
+            columns: ["gl_line_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_entries: {
+        Row: {
+          bank_gl_line_id: string
+          bank_gl_source_ids: string[]
+          bank_line_ids: string[]
+          clearing_line_ids: string[]
+          created_at: string
+          created_by: string
+          fee_amount: number
+          id: string
+          journal_entry_id: string
+          kind: string
+          reconciliation_id: string
+        }
+        Insert: {
+          bank_gl_line_id: string
+          bank_gl_source_ids?: string[]
+          bank_line_ids: string[]
+          clearing_line_ids: string[]
+          created_at?: string
+          created_by: string
+          fee_amount: number
+          id?: string
+          journal_entry_id: string
+          kind: string
+          reconciliation_id: string
+        }
+        Update: {
+          bank_gl_line_id?: string
+          bank_gl_source_ids?: string[]
+          bank_line_ids?: string[]
+          clearing_line_ids?: string[]
+          created_at?: string
+          created_by?: string
+          fee_amount?: number
+          id?: string
+          journal_entry_id?: string
+          kind?: string
+          reconciliation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_entries_bank_gl_line_id_fkey"
+            columns: ["bank_gl_line_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_entries_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_entries_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_entry_bank_claims: {
+        Row: {
+          bank_entry_id: string
+          bank_line_id: string
+        }
+        Insert: {
+          bank_entry_id: string
+          bank_line_id: string
+        }
+        Update: {
+          bank_entry_id?: string
+          bank_line_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_entry_bank_claims_bank_entry_id_fkey"
+            columns: ["bank_entry_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_entry_bank_claims_bank_line_id_fkey"
+            columns: ["bank_line_id"]
+            isOneToOne: true
+            referencedRelation: "bank_statement_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_gl_claims: {
+        Row: {
+          gl_line_id: string
+          match_id: string
+        }
+        Insert: {
+          gl_line_id: string
+          match_id: string
+        }
+        Update: {
+          gl_line_id?: string
+          match_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_gl_claims_gl_line_id_fkey"
+            columns: ["gl_line_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_gl_claims_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_matches: {
+        Row: {
+          amount: number
+          bank_line_ids: string[]
+          created_at: string
+          created_by: string
+          gl_line_ids: string[]
+          id: string
+          reconciliation_id: string
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+        }
+        Insert: {
+          amount: number
+          bank_line_ids: string[]
+          created_at?: string
+          created_by: string
+          gl_line_ids: string[]
+          id?: string
+          reconciliation_id: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_line_ids?: string[]
+          created_at?: string
+          created_by?: string
+          gl_line_ids?: string[]
+          id?: string
+          reconciliation_id?: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_matches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_matches_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_matches_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_net_fee_claims: {
+        Row: {
+          bank_entry_id: string
+          gl_line_id: string
+        }
+        Insert: {
+          bank_entry_id: string
+          gl_line_id: string
+        }
+        Update: {
+          bank_entry_id?: string
+          gl_line_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_net_fee_claims_bank_entry_id_fkey"
+            columns: ["bank_entry_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_net_fee_claims_gl_line_id_fkey"
+            columns: ["gl_line_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_operations: {
+        Row: {
+          actor_id: string
+          created_at: string
+          idempotency_key: string
+          operation: string
+          payload_sha256: string
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          idempotency_key: string
+          operation: string
+          payload_sha256: string
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          idempotency_key?: string
+          operation?: string
+          payload_sha256?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_operations_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_transit: {
+        Row: {
+          gl_line_id: string
+          reason: string
+          reconciliation_id: string
+        }
+        Insert: {
+          gl_line_id: string
+          reason: string
+          reconciliation_id: string
+        }
+        Update: {
+          gl_line_id?: string
+          reason?: string
+          reconciliation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_transit_gl_line_id_fkey"
+            columns: ["gl_line_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entry_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliation_transit_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliations: {
+        Row: {
+          account_id: string
+          closing_balance: number | null
+          created_at: string
+          created_by: string
+          currency: string
+          finalized_at: string | null
+          finalized_by: string | null
+          id: string
+          opening_balance: number | null
+          period_end: string
+          period_start: string
+          snapshot: Json | null
+          snapshot_sha256: string | null
+          status: string
+        }
+        Insert: {
+          account_id: string
+          closing_balance?: number | null
+          created_at?: string
+          created_by: string
+          currency: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          id?: string
+          opening_balance?: number | null
+          period_end: string
+          period_start: string
+          snapshot?: Json | null
+          snapshot_sha256?: string | null
+          status?: string
+        }
+        Update: {
+          account_id?: string
+          closing_balance?: number | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          id?: string
+          opening_balance?: number | null
+          period_end?: string
+          period_start?: string
+          snapshot?: Json | null
+          snapshot_sha256?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliations_finalized_by_fkey"
+            columns: ["finalized_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_statement_imports: {
+        Row: {
+          account_id: string
+          created_at: string
+          file_name: string
+          first_date: string
+          id: string
+          last_date: string
+          payload_sha256: string
+          reconciliation_id: string
+          sheet_name: string
+          source_sha256: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          file_name: string
+          first_date: string
+          id?: string
+          last_date: string
+          payload_sha256: string
+          reconciliation_id: string
+          sheet_name: string
+          source_sha256: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          file_name?: string
+          first_date?: string
+          id?: string
+          last_date?: string
+          payload_sha256?: string
+          reconciliation_id?: string
+          sheet_name?: string
+          source_sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statement_imports_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_statement_imports_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_statement_lines: {
+        Row: {
+          amount: number
+          balance: number | null
+          description: string
+          fingerprint: string
+          id: string
+          import_id: string
+          ordinal: number
+          reconciliation_id: string
+          reference: string | null
+          source_row: number
+          transaction_date: string
+        }
+        Insert: {
+          amount: number
+          balance?: number | null
+          description: string
+          fingerprint: string
+          id?: string
+          import_id: string
+          ordinal?: never
+          reconciliation_id: string
+          reference?: string | null
+          source_row: number
+          transaction_date: string
+        }
+        Update: {
+          amount?: number
+          balance?: number | null
+          description?: string
+          fingerprint?: string
+          id?: string
+          import_id?: string
+          ordinal?: never
+          reconciliation_id?: string
+          reference?: string | null
+          source_row?: number
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statement_lines_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "bank_statement_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_statement_lines_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_config: {
         Row: {
           alert_email: string | null
@@ -6390,6 +6924,51 @@ export type Database = {
         Args: { p_is_combo_component?: boolean; p_product_id: string }
         Returns: undefined
       }
+      _bank_actor: { Args: { p_permission: string }; Returns: string }
+      _bank_audit: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_entity: string
+          p_payload?: Json
+        }
+        Returns: undefined
+      }
+      _bank_gl_effective: {
+        Args: {
+          p_reference_id: string
+          p_reference_type: string
+          p_status: string
+        }
+        Returns: boolean
+      }
+      _bank_money: {
+        Args: { p_nullable?: boolean; p_value: Json }
+        Returns: number
+      }
+      _bank_remember: {
+        Args: {
+          p_actor: string
+          p_key: string
+          p_operation: string
+          p_payload: Json
+          p_result: Json
+        }
+        Returns: Json
+      }
+      _bank_replay: {
+        Args: {
+          p_actor: string
+          p_key: string
+          p_operation: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      _bank_source_integrity: {
+        Args: { p_reconciliation_id: string }
+        Returns: Json
+      }
       _build_zreport_snapshot: { Args: { p_shift_id: string }; Returns: Json }
       _calculate_recipe_cost_walk: {
         Args: {
@@ -6779,6 +7358,94 @@ export type Database = {
       authorize_expense_receipt_download_v1: {
         Args: { p_expense_id: string; p_session_id: string }
         Returns: string
+      }
+      bank_reconciliation_balances_v2: {
+        Args: {
+          p_closing_balance: number
+          p_idempotency_key: string
+          p_opening_balance: number
+          p_reconciliation_id: string
+        }
+        Returns: Json
+      }
+      bank_reconciliation_catalog_v1: { Args: never; Returns: Json }
+      bank_reconciliation_clearing_v2: {
+        Args: {
+          p_after?: string
+          p_limit?: number
+          p_reconciliation_id: string
+        }
+        Returns: Json
+      }
+      bank_reconciliation_detail_v2: {
+        Args: {
+          p_bank_after?: number
+          p_gl_after?: string
+          p_limit?: number
+          p_reconciliation_id: string
+        }
+        Returns: Json
+      }
+      bank_reconciliation_finalize_v3: {
+        Args: {
+          p_idempotency_key: string
+          p_reconciliation_id: string
+          p_transit: Json
+        }
+        Returns: Json
+      }
+      bank_reconciliation_import_v2: {
+        Args: {
+          p_confirm?: boolean
+          p_idempotency_key: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      bank_reconciliation_list_v1: {
+        Args: { p_account_id?: string; p_before?: string; p_limit?: number }
+        Returns: Json
+      }
+      bank_reconciliation_match_v2: {
+        Args: {
+          p_bank_line_ids: string[]
+          p_gl_line_ids: string[]
+          p_idempotency_key: string
+          p_reconciliation_id: string
+        }
+        Returns: Json
+      }
+      bank_reconciliation_post_v4: {
+        Args: {
+          p_bank_gl_line_ids?: string[]
+          p_bank_line_ids: string[]
+          p_clearing_line_ids: string[]
+          p_counter_account_id: string
+          p_description: string
+          p_entry_date: string
+          p_fee_amount: number
+          p_idempotency_key: string
+          p_kind?: string
+          p_manager_pin: string
+          p_reconciliation_id: string
+        }
+        Returns: Json
+      }
+      bank_reconciliation_suggestions_v1: {
+        Args: {
+          p_after?: number
+          p_limit?: number
+          p_reconciliation_id: string
+        }
+        Returns: Json
+      }
+      bank_reconciliation_unmatch_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_match_id: string
+          p_reason: string
+        }
+        Returns: Json
       }
       calculate_pb1_payable_v3: {
         Args: { p_period_end: string; p_period_start: string }

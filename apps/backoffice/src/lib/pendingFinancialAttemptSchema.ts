@@ -1,4 +1,5 @@
 import { PAYMENT_METHODS } from '@breakery/supabase';
+import { validBankPayload, type BankManageSnapshot, type BankPostSnapshot, type BankFinalizeSnapshot } from './bankAttemptSchema.js';
 import type { B2bPaymentMethod } from '@/features/btob/hooks/useRecordB2bPayment.js';
 
 export interface RefundSnapshot {
@@ -30,6 +31,9 @@ export type ExpenseReceiptSnapshot = {
   size: number; sha256: string;
 });
 export interface FinancialPayloads {
+  bank_manage: BankManageSnapshot;
+  bank_post: BankPostSnapshot;
+  bank_finalize: BankFinalizeSnapshot;
   expense_creation: ExpenseCreationSnapshot;
   expense_receipt: ExpenseReceiptSnapshot;
   refund: RefundSnapshot;
@@ -58,6 +62,7 @@ const optionalText = (v: Record<string, unknown>, key: string) => v[key] === und
 
 /** Liste fermée : jamais de PIN, de bearer, d'en-têtes ou de réponse serveur. */
 export function validPayload(operation: FinancialOperation, target: string, value: unknown): boolean {
+  if (operation === 'bank_manage' || operation === 'bank_post' || operation === 'bank_finalize') return validBankPayload(operation, target, value);
   if (!isRecord(value)) return false;
   if (operation === 'expense_creation') {
     return target === 'new' && exact(value, ['category_id','amount','vat_amount','payment_method','description','expense_date','vendor_name'])

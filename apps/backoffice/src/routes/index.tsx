@@ -115,6 +115,7 @@ const PromoRoiPage = lazy(() => import('@/pages/marketing/PromoRoiPage.js'));
 const BirthdayPage = lazy(() => import('@/pages/marketing/BirthdayPage.js'));
 const MappingsPage = lazy(() => import('@/pages/accounting/MappingsPage.js'));
 const AccountingIndexPage = lazy(() => import('@/features/accounting/pages/AccountingIndexPage.js'));
+const BankReconciliationPage = lazy(() => import('@/features/accounting/bank-reconciliation/BankReconciliationPage.js'));
 const ChartOfAccountsPage = lazy(() => import('@/features/accounting/pages/ChartOfAccountsPage.js'));
 const JournalEntriesPage = lazy(() => import('@/features/accounting/pages/JournalEntriesPage.js'));
 const GeneralLedgerPage = lazy(() => import('@/features/accounting/pages/GeneralLedgerPage.js'));
@@ -615,6 +616,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="accounting.read">
               <AccountingIndexPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/bank-reconciliation"
+          element={
+            <PermissionGate required="accounting.bank.read">
+              <BankReconciliationPage />
             </PermissionGate>
           }
         />
