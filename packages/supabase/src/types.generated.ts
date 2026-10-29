@@ -7399,12 +7399,16 @@ export type Database = {
       _historical_import_actor_v1: { Args: { p_kind: string }; Returns: string }
       _historical_import_context_v1: { Args: never; Returns: string }
       _historical_import_date_v1: { Args: { p_value: Json }; Returns: string }
-      _historical_import_document_v1: {
+      _historical_import_document_v2: {
         Args: { p_accounts: Json; p_plan: Json; p_run: string; p_source: Json }
         Returns: string
       }
       _historical_import_envelope_errors_v1: {
         Args: { p_payload: Json }
+        Returns: Json
+      }
+      _historical_import_financial_choices_v1: {
+        Args: { p_addon_choices: Json; p_choices: Json; p_product: string }
         Returns: Json
       }
       _historical_import_hash_v1: { Args: { p_value: Json }; Returns: string }
@@ -7437,7 +7441,7 @@ export type Database = {
         Args: { p_plan: Json; p_run: string; p_source: Json }
         Returns: string
       }
-      _historical_import_plan_v1: { Args: { p_payload: Json }; Returns: Json }
+      _historical_import_plan_v3: { Args: { p_payload: Json }; Returns: Json }
       _historical_import_signed_number_v1: {
         Args: { p_value: Json }
         Returns: number
@@ -7758,7 +7762,7 @@ export type Database = {
         }
         Returns: Json
       }
-      apply_historical_import_v1: {
+      apply_historical_import_v3: {
         Args: { p_client_key: string; p_payload: Json; p_preview_hash: string }
         Returns: Json
       }
@@ -9540,7 +9544,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      preview_historical_import_v1: { Args: { p_payload: Json }; Returns: Json }
+      preview_historical_import_v3: { Args: { p_payload: Json }; Returns: Json }
       receive_purchase_order_v5: {
         Args: {
           p_idempotency_key?: string

@@ -29,7 +29,8 @@
 // serveur refuserait — sans toucher à la signature des quatre hooks.
 
 import type { JSX } from 'react';
-import { Link } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { BookOpen, ClipboardList, LineChart, Scale, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@breakery/ui';
 import { monthStartIsoDate, todayIsoDate } from '@breakery/utils';
@@ -40,6 +41,7 @@ import type { PermissionCode } from '@breakery/supabase';
 import { useChartOfAccounts } from '../hooks/useChartOfAccounts.js';
 import { useJournalEntries } from '../hooks/useJournalEntries.js';
 import { useTrialBalance } from '../hooks/useTrialBalance.js';
+const HistoricalImportPage = lazy(() => import('@/features/historical-import/HistoricalImportPage.js'));
 
 interface Tile {
   to:          string;
@@ -156,8 +158,15 @@ const TILES: Tile[] = [
 ];
 
 export default function AccountingIndexPage(): JSX.Element {
+  const [params] = useSearchParams();
   const hasPerm = useAuthStore((s) => s.hasPermission);
+  const canImport = useAuthStore((s) => s.user?.role_code === 'SUPER_ADMIN'
+    && s.hasPermission('accounting.je.create_manual'));
   const visible = TILES.filter((t) => hasPerm(t.permission));
+
+  if (params.get('import') === 'historical') {
+    return <Suspense fallback={<p role="status">Loading historical import…</p>}><HistoricalImportPage /></Suspense>;
+  }
 
   return (
     <div className="space-y-6">
@@ -174,6 +183,7 @@ export default function AccountingIndexPage(): JSX.Element {
         title="Accounting"
         subtitle="Chart of accounts, journal entries, general ledger and trial balance."
       />
+      {canImport && <Link to="/backoffice/accounting?import=historical" className={`inline-flex rounded-md border border-border-subtle px-3 py-2 text-sm text-text-primary ${FOCUS_RING}`}>Historical financial import</Link>}
 
       <div className="grid gap-3 sm:grid-cols-2" data-testid="accounting-index-tiles">
         {visible.map((tile) => {
