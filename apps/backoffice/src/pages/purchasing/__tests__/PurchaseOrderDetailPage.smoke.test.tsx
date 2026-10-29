@@ -26,6 +26,7 @@ const PO: PurchaseOrderDetail = {
   notes:            null,
   cancel_reason:    null,
   import_reference: null,
+  financial_import_document_id: null,
   is_historical_import: false,
   cancelled_at:     null,
   cancelled_by:     null,

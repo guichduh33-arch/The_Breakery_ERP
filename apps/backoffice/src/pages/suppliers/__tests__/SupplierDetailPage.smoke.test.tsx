@@ -11,6 +11,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
 import type { SupplierRow } from '@/features/suppliers/hooks/useSuppliersList.js';
 import type { SupplierPOListRow } from '@/features/suppliers/hooks/useSupplierPurchases.js';
+import type * as SupplierPurchasesHooks from '@/features/suppliers/hooks/useSupplierPurchases.js';
 
 const SUPPLIER: SupplierRow = {
   id:                 'sup-1',
@@ -43,6 +44,7 @@ const PURCHASES: SupplierPOListRow[] = [
     notes:            null,
     cancel_reason:    null,
     import_reference: null,
+    financial_import_document_id: null,
     is_historical_import: false,
     cancelled_at:     null,
     cancelled_by:     null,
@@ -70,6 +72,7 @@ const PURCHASES: SupplierPOListRow[] = [
     notes:            null,
     cancel_reason:    null,
     import_reference: null,
+    financial_import_document_id: null,
     is_historical_import: false,
     cancelled_at:     null,
     cancelled_by:     null,
@@ -89,7 +92,7 @@ vi.mock('@/features/suppliers/hooks/useSupplierDetail.js', () => ({
 }));
 
 vi.mock('@/features/suppliers/hooks/useSupplierPurchases.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/suppliers/hooks/useSupplierPurchases.js')>();
+  const actual = await importOriginal<typeof SupplierPurchasesHooks>();
   return {
     ...actual,
     useSupplierPurchases: () => ({ data: PURCHASES, isLoading: false, error: null }),
@@ -97,7 +100,7 @@ vi.mock('@/features/suppliers/hooks/useSupplierPurchases.js', async (importOrigi
 });
 
 vi.mock('@/features/suppliers/hooks/useUpdateSupplier.js', () => ({
-  useUpdateSupplier: () => ({ mutate: () => {}, isPending: false }),
+  useUpdateSupplier: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/features/suppliers/components/SupplierFormModal.js', () => ({

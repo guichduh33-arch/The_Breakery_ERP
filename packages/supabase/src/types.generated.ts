@@ -2338,6 +2338,359 @@ export type Database = {
           },
         ]
       }
+      historical_import_allocations: {
+        Row: {
+          amount: number
+          document_id: string
+          journal_entry_id: string
+          native_payment_id: string
+          payment_id: string
+        }
+        Insert: {
+          amount: number
+          document_id: string
+          journal_entry_id: string
+          native_payment_id: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          document_id?: string
+          journal_entry_id?: string
+          native_payment_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_import_allocations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_allocations_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_import_documents: {
+        Row: {
+          account_id: string
+          counterparty_id: string | null
+          created_at: string
+          document_date: string
+          effective_at: string
+          entity_id: string
+          id: string
+          kind: string
+          receipt_date: string | null
+          run_id: string
+          source_hash: string
+          source_payload: Json
+          source_reference: string
+          source_system: string
+          time_precision: string
+          total_amount: number
+        }
+        Insert: {
+          account_id: string
+          counterparty_id?: string | null
+          created_at?: string
+          document_date: string
+          effective_at: string
+          entity_id: string
+          id?: string
+          kind: string
+          receipt_date?: string | null
+          run_id: string
+          source_hash: string
+          source_payload: Json
+          source_reference: string
+          source_system: string
+          time_precision: string
+          total_amount: number
+        }
+        Update: {
+          account_id?: string
+          counterparty_id?: string | null
+          created_at?: string
+          document_date?: string
+          effective_at?: string
+          entity_id?: string
+          id?: string
+          kind?: string
+          receipt_date?: string | null
+          run_id?: string
+          source_hash?: string
+          source_payload?: Json
+          source_reference?: string
+          source_system?: string
+          time_precision?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_import_documents_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_documents_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_import_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          effective_at: string
+          id: string
+          kind: string
+          method: Database["public"]["Enums"]["payment_method"]
+          payment_date: string
+          run_id: string
+          source_hash: string
+          source_payload: Json
+          source_reference: string
+          source_system: string
+          time_precision: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          effective_at: string
+          id?: string
+          kind: string
+          method: Database["public"]["Enums"]["payment_method"]
+          payment_date: string
+          run_id: string
+          source_hash: string
+          source_payload: Json
+          source_reference: string
+          source_system: string
+          time_precision: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          effective_at?: string
+          id?: string
+          kind?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          payment_date?: string
+          run_id?: string
+          source_hash?: string
+          source_payload?: Json
+          source_reference?: string
+          source_system?: string
+          time_precision?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_import_payments_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_import_runs: {
+        Row: {
+          actor_id: string
+          backend_pid: number
+          batch_reference: string
+          client_key: string
+          created_at: string
+          id: string
+          kind: string
+          payload_hash: string
+          preview_hash: string
+          result: Json | null
+          source_system: string
+          status: string
+          transaction_id: number
+        }
+        Insert: {
+          actor_id: string
+          backend_pid?: number
+          batch_reference: string
+          client_key: string
+          created_at?: string
+          id?: string
+          kind: string
+          payload_hash: string
+          preview_hash: string
+          result?: Json | null
+          source_system: string
+          status: string
+          transaction_id?: number
+        }
+        Update: {
+          actor_id?: string
+          backend_pid?: number
+          batch_reference?: string
+          client_key?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          payload_hash?: string
+          preview_hash?: string
+          result?: Json | null
+          source_system?: string
+          status?: string
+          transaction_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_import_runs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_import_stock_effects: {
+        Row: {
+          acquisition_amount: number | null
+          consumed: boolean
+          display_movement_id: string | null
+          document_id: string
+          effective_at: string
+          effective_date: string
+          id: string
+          movement_id: string | null
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          product_id: string
+          quantity: number
+          reference_id: string
+          reference_type: string
+          run_id: string
+          source_line_reference: string | null
+          time_precision: string
+          unit: string
+          unit_cost: number | null
+          unit_cost_representation_delta: number | null
+        }
+        Insert: {
+          acquisition_amount?: number | null
+          consumed?: boolean
+          display_movement_id?: string | null
+          document_id: string
+          effective_at: string
+          effective_date: string
+          id?: string
+          movement_id?: string | null
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          product_id: string
+          quantity: number
+          reference_id: string
+          reference_type: string
+          run_id: string
+          source_line_reference?: string | null
+          time_precision: string
+          unit: string
+          unit_cost?: number | null
+          unit_cost_representation_delta?: number | null
+        }
+        Update: {
+          acquisition_amount?: number | null
+          consumed?: boolean
+          display_movement_id?: string | null
+          document_id?: string
+          effective_at?: string
+          effective_date?: string
+          id?: string
+          movement_id?: string | null
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          product_id?: string
+          quantity?: number
+          reference_id?: string
+          reference_type?: string
+          run_id?: string
+          source_line_reference?: string | null
+          time_precision?: string
+          unit?: string
+          unit_cost?: number | null
+          unit_cost_representation_delta?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_import_stock_effects_display_movement_id_fkey"
+            columns: ["display_movement_id"]
+            isOneToOne: true
+            referencedRelation: "display_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: true
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "historical_import_stock_effects_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           created_at: string
@@ -3538,6 +3891,7 @@ export type Database = {
           discount_reason: string | null
           discount_type: string | null
           discount_value: number | null
+          financial_import_document_id: string | null
           id: string
           idempotency_key: string | null
           import_reference: string | null
@@ -3578,6 +3932,7 @@ export type Database = {
           discount_reason?: string | null
           discount_type?: string | null
           discount_value?: number | null
+          financial_import_document_id?: string | null
           id?: string
           idempotency_key?: string | null
           import_reference?: string | null
@@ -3618,6 +3973,7 @@ export type Database = {
           discount_reason?: string | null
           discount_type?: string | null
           discount_value?: number | null
+          financial_import_document_id?: string | null
           id?: string
           idempotency_key?: string | null
           import_reference?: string | null
@@ -3661,6 +4017,13 @@ export type Database = {
             columns: ["discount_authorized_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_financial_import_document_id_fkey"
+            columns: ["financial_import_document_id"]
+            isOneToOne: true
+            referencedRelation: "historical_import_documents"
             referencedColumns: ["id"]
           },
           {
@@ -5240,6 +5603,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           expected_date: string | null
+          financial_import_document_id: string | null
           id: string
           idempotency_key: string | null
           import_reference: string | null
@@ -5266,6 +5630,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           expected_date?: string | null
+          financial_import_document_id?: string | null
           id?: string
           idempotency_key?: string | null
           import_reference?: string | null
@@ -5292,6 +5657,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           expected_date?: string | null
+          financial_import_document_id?: string | null
           id?: string
           idempotency_key?: string | null
           import_reference?: string | null
@@ -5323,6 +5689,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_financial_import_document_id_fkey"
+            columns: ["financial_import_document_id"]
+            isOneToOne: true
+            referencedRelation: "historical_import_documents"
             referencedColumns: ["id"]
           },
           {
@@ -7023,6 +7396,60 @@ export type Database = {
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
       _get_note: { Args: { "": string }; Returns: string }
+      _historical_import_actor_v1: { Args: { p_kind: string }; Returns: string }
+      _historical_import_context_v1: { Args: never; Returns: string }
+      _historical_import_date_v1: { Args: { p_value: Json }; Returns: string }
+      _historical_import_document_v1: {
+        Args: { p_accounts: Json; p_plan: Json; p_run: string; p_source: Json }
+        Returns: string
+      }
+      _historical_import_envelope_errors_v1: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      _historical_import_hash_v1: { Args: { p_value: Json }; Returns: string }
+      _historical_import_je_v1: {
+        Args: {
+          p_date: string
+          p_description: string
+          p_lines: Json
+          p_reference_id: string
+          p_reference_type: string
+        }
+        Returns: string
+      }
+      _historical_import_modifier_plan_v1: {
+        Args: {
+          p_addon: number
+          p_addon_choices: Json
+          p_addon_reconciled: boolean
+          p_choices: Json
+          p_product_id: string
+          p_quantity: number
+        }
+        Returns: Json
+      }
+      _historical_import_number_v1: {
+        Args: { p_scale?: number; p_value: Json }
+        Returns: number
+      }
+      _historical_import_payment_v1: {
+        Args: { p_plan: Json; p_run: string; p_source: Json }
+        Returns: string
+      }
+      _historical_import_plan_v1: { Args: { p_payload: Json }; Returns: Json }
+      _historical_import_signed_number_v1: {
+        Args: { p_value: Json }
+        Returns: number
+      }
+      _historical_import_timestamp_v1: {
+        Args: { p_date: string; p_precision: string; p_value: Json }
+        Returns: string
+      }
+      _historical_import_unit_price_v1: {
+        Args: { p_value: Json }
+        Returns: number
+      }
       _is_verbose: { Args: never; Returns: boolean }
       _kitchen_assert_section_v1: {
         Args: { p_section_id: string }
@@ -7331,6 +7758,10 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_historical_import_v1: {
+        Args: { p_client_key: string; p_payload: Json; p_preview_hash: string }
+        Returns: Json
+      }
       approve_expense_v5: {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
@@ -7517,6 +7948,7 @@ export type Database = {
           discount_reason: string | null
           discount_type: string | null
           discount_value: number | null
+          financial_import_document_id: string | null
           id: string
           idempotency_key: string | null
           import_reference: string | null
@@ -9070,6 +9502,7 @@ export type Database = {
           discount_reason: string | null
           discount_type: string | null
           discount_value: number | null
+          financial_import_document_id: string | null
           id: string
           idempotency_key: string | null
           import_reference: string | null
@@ -9107,6 +9540,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      preview_historical_import_v1: { Args: { p_payload: Json }; Returns: Json }
       receive_purchase_order_v5: {
         Args: {
           p_idempotency_key?: string
