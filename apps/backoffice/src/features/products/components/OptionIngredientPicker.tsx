@@ -1,12 +1,7 @@
 // apps/backoffice/src/features/products/components/OptionIngredientPicker.tsx
 //
-// Edits a modifier option's `ingredients_to_deduct` array. Deductible
-// ingredients come from useDeductibleIngredientProducts (raw materials ∪
-// semi-finished products — the server resolver deducts any product_id, see
-// spec 2026-07-07-modifier-extras-sfg-ingredients-design.md). Stock deduction
-// at order-time ships in Phase 2 (S49); here we additionally surface the
-// material COST of the option (Σ qty × factor_to_base × cost_price) so the
-// owner can see how the COGS varies per option (e.g. Oat milk vs Fresh).
+// Édition des ingrédients d'une option, avec leurs unités et leur coût.
+// Les produits finis stockés restent sélectionnables sans changer leur classification.
 
 import { useMemo, type JSX } from 'react';
 import { Button } from '@/components/BackofficeUi.js';
@@ -40,11 +35,15 @@ export function OptionIngredientPicker({
   );
 
   const rawMaterials = useMemo(
-    () => materials.filter((m) => !m.is_semi_finished),
+    () => materials.filter((m) => !m.is_semi_finished && !m.is_finished),
     [materials],
   );
   const semiFinished = useMemo(
     () => materials.filter((m) => m.is_semi_finished),
+    [materials],
+  );
+  const finished = useMemo(
+    () => materials.filter((m) => m.is_finished),
     [materials],
   );
 
@@ -105,6 +104,13 @@ export function OptionIngredientPicker({
               {semiFinished.length > 0 && (
                 <optgroup label="Semi-finished">
                   {semiFinished.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {finished.length > 0 && (
+                <optgroup label="Finished products (stock tracked)">
+                  {finished.map((m) => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </optgroup>
