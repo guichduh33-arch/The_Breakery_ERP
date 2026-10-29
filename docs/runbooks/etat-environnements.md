@@ -4,6 +4,7 @@ Relevé initial du 8 octobre 2026 (UTC+8), validé par Mamat.
 Le [complément du lot 1](#complément-du-8-octobre-2026--lot-1-de-préparation-production)
 est validé par Mamat le 9 octobre 2026 ; les sections hors complément conservent
 les limites du relevé initial et ne sont pas réécrites en état actuel.
+Le complément du 29 octobre décrit séparément la mise en service observée.
 
 ## Usage et sources
 
@@ -24,6 +25,92 @@ Git, les PR et leurs preuves. Les plans de session restent en conversation.
 | Rapporté par une preuve datée | Constat d'un autre relevé ; non relu sur la surface réelle |
 | Configuré mais non vérifié | Déclaration ou mécanisme présent, sans preuve d'exécution |
 | Inconnu | Accès ou preuve insuffisants ; ne pas compléter par déduction |
+
+## Complément du 29 octobre 2026 — mise en service V3
+
+Statut documentaire : contenu validé par Mamat le 29 octobre 2026.
+Relevé de livraison du 29 octobre 2026, UTC+8, jusqu’à 03 h 26.
+Le backend, le BO et le POS sont déployés ; la recette financière de production
+et le premier shift ne sont pas encore vérifiés. Cette distinction ne vaut
+ni certification générale des fonctions ni autorisation d’inventer un fond de caisse.
+
+### Candidat et cibles observés
+
+Le candidat Git est `b29c78ee771d857f919a390af5ae16971ef43922`.
+Le BO est compilé depuis ce candidat ; les artefacts POS/Android proviennent de
+`82d820c92750d060fecd01806f9caaa557dbc00d`. Les deux commits ont le même arbre
+`250c8316b07c972267f54b908fda9494693b2138`.
+La cible compilée et déployée est la production V3 `yjhhhmjgsmyzyymvixot`.
+
+| Surface | Observation du 29 octobre | Limite |
+|---|---|---|
+| Backend | Paquet de 62 migrations appliqué atomiquement ; 15 Edge Functions livrées et relues | Aucune vente de test production |
+| BO | Vercel READY, domaine https://backoffice.the-breakery.com ; connexion confirmée par Mamat | Aucun parcours financier authentifié complet |
+| POS caisse | https://pos.the-breakery.com ; catalogue chargé, Mamat connecté, panier vide | Shift fermé, premier encaissement non vérifié |
+| Service Windows | Tâche « Breakery V3 Production » Running sous Cashier ; santé HTTPS 200 | Redémarrage du PC non testé |
+| POS1 | Navigateur appairé au terminal existant ; droits conservés ; heartbeat récent | Aucun droit ajouté |
+| Imprimantes | Cinq heartbeats récents ; un envoi de ticket TEST accepté par le bridge | Sortie papier physique non observée ; tiroir non actionné |
+| Écran client | État « CONNECTED TO CHECKOUT » observé après retour au POS | Parcours après paiement non testé en production |
+| Samsung SM-X205 | Mise à jour conservant les données, version 1.6/code 7 ; APK relue et conforme ; écran PIN observé | Connexion authentifiée et contenu des files locales non vérifiés |
+| CS30 | Appareil absent du relevé USB | Aucune mise à jour constatée dans ce lot |
+
+À 03 h 25 UTC+8, commandes, paiements, remboursements et journaux sont à zéro.
+Les paiements hors ligne restent désactivés. Les stocks initiaux restent à zéro
+et la configuration autorise le stock global négatif ; cela ne prouve aucun inventaire physique.
+
+### Installation caisse et empreintes
+
+La release caisse est `C:/BreakeryV3/releases/b29c78ee-20261029`.
+Le compte existant Cashier a reçu uniquement lecture/exécution et traversée du
+dossier `C:/BreakeryV3/security/production-b29c78ee`, après accord explicite.
+La tâche démarre à l’ouverture de session Cashier, avec reprise sur échec.
+Apache conserve l’origine LAN et relaie le bridge sur 3001 ; Olsera est conservé.
+Ces réglages ne prouvent pas une reprise après reboot.
+
+| Artefact | SHA-256 relevé |
+|---|---|
+| Paquet SQL production, 687 808 octets | `c0f79a452a4ae0372079c819f93e848df0dc41c3b1c4bd3f09b25360b74e541e` |
+| Entrée BO `index-CJy2xbpy.js` | `a9fd8eeeeb7679b83a18376a7f97e4cc5e9b44448e083d4137f159d3b55f3551` |
+| Entrée POS servie `index-B6QcfkWC.js` | `d0bd05fbf0cce1e8c5beb5d0ee1b51a603e59550ea619953ea261c8fd733c2bb` |
+| APK Samsung installée | `1ea52dc8849510643cf308745d4fd9a9fa10fb0bce021f804f1161bc6d19c6ed` |
+
+Publication BO : [workflow réussi](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/40739207119),
+déploiement `dpl_HitfVyNBWA8LEvmznsbW6Nawf8Bi`.
+La CI du candidat rapporte 1 366 tests POS, 1 934 BO et un BO ignoré ;
+la preuve pgTAP porte sur 298 fichiers avec deux assertions ignorées.
+Ces résultats concernent le candidat, pas le diff local de reprise historique.
+
+### Sauvegarde, reprise historique et réserves
+
+La sauvegarde physique Supabase disponible est datée du 29 octobre à 00 h 04 UTC+8.
+Mamat a explicitement accepté la réserve : aucun nouvel export natif complet ni
+restauration fraîche n’est prouvé avant cette livraison. Un complément logique
+chiffré a été conservé ; ce fichier partiel ne remplace pas un dump restaurable
+complet. La sauvegarde quotidienne autonome n’est pas activée.
+
+La décision d’importer les ventes historiques d’octobre remplace l’ancienne
+consigne de conserver zéro vente. Au présent relevé, les imports réels et le
+socle local d’import historique ne sont pas installés en production. Les produits
+et recettes sont conservés ; aucune purge n’est effectuée.
+
+Restent non vérifiés : ouverture du premier shift avec fond réel, premier
+encaissement, sortie papier sur place, connexion Samsung authentifiée,
+mise à jour CS30, reprise après reboot et sauvegarde quotidienne autonome.
+
+### Preuves privées de ce relevé
+
+Les justificatifs sont hors Git, sous le profil utilisateur, dans
+`.codex/visualizations/2026/10/17/01a14a32-8220-7fd2-bd43-ffcff5d86720/` :
+`production-cutover-backend-20261029.json`, `production-bo-verification-20261029.json`,
+`production-edge-source-readback-20261029.json`,
+`samsung-production-installed-observed-20261029.json` et les captures
+`production-pos-live-paired-20261029.png`, `production-pos-print-test-20261029.png`,
+`production-windows-service-observed-20261029.png`.
+Le JSON backend relu après correction porte l’empreinte
+`38c80a8b7df199386e36ddcf897c5abcadaf84d56f3ee1f2404fb7b4ea70322a`.
+Il conserve l’ancien blocage Windows et les observations qui le lèvent.
+Ces preuves privées ne sont pas transportées par un clone ; aucun secret, code
+d’activation ou jeu de données client n’est ajouté à ce bilan.
 
 ## Complément du 8 octobre 2026 — lot 1 de préparation production
 
