@@ -233,3 +233,42 @@ it('routes a ticket and kitchen status over verified TLS, isolates the drawer, t
   pos.close();
   kds.close();
 }, 30000);
+
+function getWithOrigin(route: string, origin: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      { hostname: '127.0.0.1', port, path: route, method: 'GET', ca, headers: { origin } },
+      (res) => {
+        res.resume();
+        res.on('end', () => resolve(res.statusCode ?? 0));
+      },
+    );
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+function upgradeWithOrigin(origin: string): Promise<'open' | 'refused'> {
+  return new Promise((resolve) => {
+    const ws = new WebSocket('wss://127.0.0.1:' + port + '/ws', { ca, origin });
+    ws.once('open', () => {
+      ws.close();
+      resolve('open');
+    });
+    ws.once('error', () => resolve('refused'));
+  });
+}
+
+// Régression boutique du 2026-10-23 : la SPA servie par le pont envoie sa
+// propre origine, absente de HUB_ALLOWED_ORIGINS. Le pont lui refusait ses
+// scripts (403 origin_forbidden) et son hub temps réel : écran blanc en caisse.
+it('admits its own origin over TLS, on HTTP and on the /ws upgrade', async () => {
+  const own = 'https://127.0.0.1:' + port;
+  expect(await getWithOrigin('/health', own)).toBe(200);
+  expect(await upgradeWithOrigin(own)).toBe('open');
+});
+
+it('still refuses a foreign origin, on HTTP and on the /ws upgrade', async () => {
+  expect(await getWithOrigin('/health', 'https://evil.test')).toBe(403);
+  expect(await upgradeWithOrigin('https://evil.test')).toBe('refused');
+});
