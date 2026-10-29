@@ -4,7 +4,7 @@
 -- Runner :
 --   bash supabase/tests/run_pgtap.sh accounting
 --
--- Covers : 35 acceptance tests + 2 invariant tests (M1 trigger order, B1 no-update).
+-- Covers : 35 acceptance tests + 3 invariant tests (trigger inventory, no-update, insert stamp).
 --
 -- T1  : accounting_mappings has ≥ 24 active keys (D11)
 -- T2  : resolve_mapping_account('SALE_POS_REVENUE') returns 4100's UUID
@@ -41,14 +41,14 @@
 -- T33 : refund_order_rpc is dropped ; refund_order_rpc_v2 exists
 -- T34 : complete_order_with_payment is dropped ; complete_order_with_payment_v9 exists
 -- T35 : pay_existing_order is dropped ; pay_existing_order_v6 exists
--- T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1) : the only AFTER-INSERT trigger on stock_movements is tr_20_je_emit
+-- T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1) : inventaire exact des triggers du ledger
 -- T_F1_NO_UPDATE_INVARIANT (B1) : no AFTER-UPDATE trigger on stock_movements modifies columns
 
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(37);
+SELECT plan(38);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -430,8 +430,8 @@ SELECT is(
      WHERE tgrelid = 'stock_movements'::regclass
        AND tgenabled = 'O'
        AND NOT tgisinternal),
-  ARRAY['tr_20_je_emit','tr_update_product_cost_on_purchase']::TEXT,
-  'T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1): tr_20_je_emit + tr_update_product_cost_on_purchase (PR #103, asserted in purchasing_po) — no other trigger'
+  ARRAY['historical_import_stock_stamp','tr_20_je_emit','tr_update_product_cost_on_purchase']::TEXT,
+  'T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1): historical stamp, JE emission and purchase costing only'
 );
 
 -- ---------------------------------------------------------------------------
@@ -446,6 +446,17 @@ SELECT is(
        AND (tgtype & 16) = 16),
   0,
   'T_F1_NO_UPDATE_INVARIANT (B1): no AFTER-UPDATE trigger on stock_movements'
+);
+
+-- La datation historique precede l'append : aucun UPDATE du ledger.
+SELECT is(
+  (SELECT tgtype::INTEGER FROM pg_trigger
+   WHERE tgrelid='public.stock_movements'::regclass
+     AND tgname='historical_import_stock_stamp'
+     AND tgfoid='public._historical_import_stock_stamp_v1()'::regprocedure
+     AND tgenabled='O' AND NOT tgisinternal),
+  7,
+  'T_HISTORICAL_INSERT_STAMP: row-level BEFORE INSERT, never AFTER or UPDATE'
 );
 
 ROLLBACK;
