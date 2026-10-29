@@ -7,6 +7,7 @@ import type http from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, WebSocket, type RawData } from 'ws';
 import { isPrivateIpv4 } from '../ipGuard.js';
+import { isAllowedOrigin, ownOrigin } from '../originGuard.js';
 import { parseEnvelope, parseHello, parseCatchup, type HubEnvelope } from './envelope.js';
 import type { HubRingBuffer, HubBufferStats } from './ringBuffer.js';
 import type { DeviceRegistry } from '../security/deviceRegistry.js';
@@ -211,7 +212,9 @@ export function createHub(opts: HubOptions): HubHandle {
         socket.destroy();
         return;
       }
-      if (req.headers.origin && !opts.allowedOrigins.includes(req.headers.origin)) {
+      const encrypted = 'encrypted' in req.socket && req.socket.encrypted === true;
+      const own = ownOrigin(encrypted, req.headers.host);
+      if (!isAllowedOrigin(req.headers.origin, own, opts.allowedOrigins)) {
         socket.destroy();
         return;
       }
