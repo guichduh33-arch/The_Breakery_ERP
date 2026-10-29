@@ -34,7 +34,7 @@ describe('historical sales package boundary', () => {
     const p = pack(); p.batches[0]!.payload.stock_mode = 'legacy';
     expect(() => parseImportPackage(JSON.stringify(p), project)).toThrow(/financial batch/);
     const duplicate = pack(); duplicate.batches[1]!.payload.documents = duplicate.batches[0]!.payload.documents;
-    expect(() => parseImportPackage(JSON.stringify(duplicate), project)).toThrow(/source reference/);
+    expect(() => parseImportPackage(JSON.stringify(duplicate), project)).toThrow('source reference');
   });
   it('rejects duplicate idempotency keys and more than 100 documents', () => {
     const p = pack(); p.batches[1]!.client_key = p.batches[0]!.client_key;
