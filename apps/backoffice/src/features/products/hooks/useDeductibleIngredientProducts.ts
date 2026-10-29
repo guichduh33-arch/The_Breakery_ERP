@@ -1,18 +1,10 @@
 // apps/backoffice/src/features/products/hooks/useDeductibleIngredientProducts.ts
 //
-// Products selectable as `ingredients_to_deduct` on a modifier option: raw
-// materials (categories.category_type='raw_material') ∪ semi-finished products
-// (products.is_semi_finished). The server resolver
-// `_resolve_modifier_ingredients_v1` deducts any product_id, so the picker —
-// not the money-path — was the only thing keeping SFG out of modifier extras.
-// PostgREST cannot OR a product-level flag with a joined-category filter, so
-// the two populations are fetched in parallel and merged (dedup by id).
-//
-// Rows are structurally a `ModifierCostMaterial` (cost_price + unitOptions) so
-// the picker's material-cost display keeps working — SFG cost_price is the
-// production WAC.
-//
-// Spec: docs/superpowers/specs/2026-07-07-modifier-extras-sfg-ingredients-design.md
+// Ingrédients proposés : matières premières, semi-finis et produits finis
+// suivis en stock. Les populations sont fusionnées par identifiant, sans
+// changer la classification métier des produits ni leurs unités.
+// Le type de catégorie gouverne le classement : le drapeau produit historique
+// is_semi_finished diverge des catégories du catalogue de production.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -30,6 +22,7 @@ export interface DeductibleIngredientRow {
   cost_price:       number | null;
   unitOptions:      DeductibleUnitOption[];  // base ∪ alternatives (ordered)
   is_semi_finished: boolean;
+  is_finished?: boolean;
 }
 
 export const DEDUCTIBLE_INGREDIENTS_QUERY_KEY = [
@@ -78,7 +71,7 @@ export function useDeductibleIngredientProducts() {
     queryKey: DEDUCTIBLE_INGREDIENTS_QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const [raw, semi] = await Promise.all([
+      const [raw, semi, finished] = await Promise.all([
         supabase
           .from('products')
           .select(`${SELECT_COLUMNS}, categories!inner(category_type)`)
@@ -89,8 +82,17 @@ export function useDeductibleIngredientProducts() {
           .limit(1000),
         supabase
           .from('products')
-          .select(SELECT_COLUMNS)
-          .eq('is_semi_finished', true)
+          .select(`${SELECT_COLUMNS}, categories!inner(category_type)`)
+          .eq('categories.category_type', 'semi_finished')
+          .is('deleted_at', null)
+          .eq('is_active', true)
+          .order('name')
+          .limit(1000),
+        supabase
+          .from('products')
+          .select(`${SELECT_COLUMNS}, categories!inner(category_type)`)
+          .eq('categories.category_type', 'finished')
+          .eq('track_inventory', true)
           .is('deleted_at', null)
           .eq('is_active', true)
           .order('name')
@@ -98,14 +100,18 @@ export function useDeductibleIngredientProducts() {
       ]);
       if (raw.error) throw raw.error;
       if (semi.error) throw semi.error;
+      if (finished.error) throw finished.error;
 
       const byId = new Map<string, DeductibleIngredientRow>();
       for (const p of (raw.data ?? []) as unknown as RawProductRow[]) {
         byId.set(p.id, toRow(p, false));
       }
-      // Semi-finished wins on overlap so the picker groups it as SFG.
+      // Les groupes reflètent la catégorie, jamais le drapeau produit historique.
       for (const p of (semi.data ?? []) as unknown as RawProductRow[]) {
         byId.set(p.id, toRow(p, true));
+      }
+      for (const p of (finished.data ?? []) as unknown as RawProductRow[]) {
+        if (!byId.has(p.id)) byId.set(p.id, { ...toRow(p, false), is_finished: true });
       }
       return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
     },

@@ -9,6 +9,8 @@ vi.mock('../../hooks/useDeductibleIngredientProducts.js', () => ({
       { id: 'oat', name: 'Oat Milk', unit: 'ml', cost_price: 50, unitOptions: [{ code: 'ml', factor: 1 }, { code: 'L', factor: 1000 }], is_semi_finished: false },
       { id: 'sugar', name: 'Sugar', unit: 'g', cost_price: 10, unitOptions: [{ code: 'g', factor: 1 }], is_semi_finished: false },
       { id: 'mozza', name: 'Mozzarella Prep', unit: 'g', cost_price: 120, unitOptions: [{ code: 'g', factor: 1 }], is_semi_finished: true },
+      { id: 'mayo', name: 'Mayonnaise', unit: 'kg', cost_price: 100000, unitOptions: [{ code: 'kg', factor: 1 }, { code: 'gr', factor: 0.001 }], is_semi_finished: true },
+      { id: 'bread', name: 'Bread', unit: 'pcs', cost_price: 5000, unitOptions: [{ code: 'pcs', factor: 1 }], is_semi_finished: false, is_finished: true },
     ],
     isLoading: false,
   }),
@@ -57,8 +59,25 @@ describe('OptionIngredientPicker', () => {
     render(<OptionIngredientPicker value={value} onChange={vi.fn()} />);
     const select = screen.getByRole('combobox', { name: 'Ingredient' });
     const groups = select.querySelectorAll('optgroup');
-    expect([...groups].map((g) => g.label)).toEqual(['Raw materials', 'Semi-finished']);
+    expect([...groups].map((g) => g.label)).toEqual(['Raw materials', 'Semi-finished', 'Finished products (stock tracked)']);
     expect(screen.getByRole('option', { name: 'Mozzarella Prep' })).toBeInTheDocument();
+  });
+
+  it('loads existing SFG mayonnaise with its unit and cost without changing the draft', () => {
+    const onChange = vi.fn();
+    render(<OptionIngredientPicker value={[{ product_id: 'mayo', qty: 0.035, unit: 'kg' }]} onChange={onChange} />);
+    expect(screen.getByRole('combobox', { name: 'Ingredient' })).toHaveValue('mayo');
+    expect(screen.getByRole('combobox', { name: 'Unit' })).toHaveValue('kg');
+    expect(screen.getByTestId('option-material-cost')).toHaveTextContent('3.500');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('shows a stocked finished product separately from semi-finished ingredients', () => {
+    render(<OptionIngredientPicker value={[{ product_id: 'bread', qty: 1, unit: 'pcs' }]} onChange={vi.fn()} />);
+    const option = screen.getByRole('option', { name: 'Bread' });
+    expect(option.parentElement).toHaveAttribute('label', 'Finished products (stock tracked)');
+    expect(screen.getByRole('option', { name: 'Mayonnaise' }).parentElement).toHaveAttribute('label', 'Semi-finished');
+    expect(screen.getByRole('combobox', { name: 'Ingredient' })).toHaveValue('bread');
   });
 
   it('selecting a semi-finished product updates the row and its material cost (WAC)', () => {
