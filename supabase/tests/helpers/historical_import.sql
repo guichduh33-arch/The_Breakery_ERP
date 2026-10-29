@@ -28,7 +28,7 @@ INSERT INTO fiscal_periods(period_start,period_end,status,notes) VALUES
 UPDATE business_config SET allow_negative_stock=false WHERE id=1;
 UPDATE historical_fixture SET sequences_before=(SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY date),'[]') FROM journal_entry_sequences s WHERE date>='2097-01-01');
 UPDATE historical_fixture SET payload=jsonb_build_object(
- 'contract_version',1,'kind','sales','currency','IDR','source_system','pgtap-historical','batch_reference','sales-1',
+ 'contract_version',1,'kind','sales','currency','IDR','source_system','pgtap-historical-'||actor,'batch_reference','sales-1',
  'period_start','2097-01-01','period_end','2097-02-28',
  'source_files',jsonb_build_array(jsonb_build_object('sha256',repeat('a',64),'file_name','fictional.xlsx','sheet_name','Sales')),
  'documents',jsonb_build_array(jsonb_build_object('source_reference','SALE-1','source_sha256',repeat('a',64),'source_row',2,

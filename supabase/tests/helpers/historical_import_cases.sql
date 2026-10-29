@@ -22,10 +22,10 @@ UPDATE historical_fixture SET preview=preview_historical_import_v1(payload);
 UPDATE products SET min_stock_threshold=1 WHERE id=(SELECT product FROM historical_fixture);
 INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT apply_historical_import_v1(payload,preview->>'preview_hash',client_key) FROM historical_fixture$q$,
  '22023','historical_preview_stale','changed dependency invalidates review hash');
-INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_import_runs),3,'stale preview inserts no run');
+INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_test_runs),3,'stale preview inserts no run');
 INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT apply_historical_import_v1(jsonb_set(payload,'{documents,0,reconciled}','false'),preview->>'preview_hash',client_key) FROM historical_fixture$q$,
  '22023','historical_import_not_reconciled','unreconciled document rejects whole batch');
-INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_import_documents),2,'invalid batch inserts no partial document');
+INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_test_documents),2,'invalid batch inserts no partial document');
 UPDATE user_sessions SET ended_at=now() WHERE id=(auth.jwt()->>'session_id')::uuid;
 SET LOCAL ROLE authenticated;
 INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT preview_historical_import_v1(payload) FROM historical_fixture$q$,
@@ -46,9 +46,9 @@ SET LOCAL ROLE authenticated;
 UPDATE historical_fixture SET preview=preview_historical_import_v1(payload);
 UPDATE historical_fixture SET result=apply_historical_import_v1(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
-INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM order_payments WHERE order_id=(SELECT entity_id FROM historical_import_documents WHERE source_reference='SALE-EDGE')),2,
+INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM order_payments WHERE order_id=(SELECT entity_id FROM historical_test_documents WHERE source_reference='SALE-EDGE')),2,
  'split tender preserves two source payments');
-INSERT INTO historical_tap(result) SELECT is((SELECT sum(amount) FROM order_payments WHERE order_id=(SELECT entity_id FROM historical_import_documents WHERE source_reference='SALE-EDGE')),110::numeric,
+INSERT INTO historical_tap(result) SELECT is((SELECT sum(amount) FROM order_payments WHERE order_id=(SELECT entity_id FROM historical_test_documents WHERE source_reference='SALE-EDGE')),110::numeric,
  'split tender sums exactly to invoice');
 -- Corporate : meme taxe ticket, compte1132 et allocations B2B natives exactes.
 UPDATE historical_fixture SET payload=(SELECT payload FROM historical_payloads WHERE label='edge-sale'),client_key=gen_random_uuid();
@@ -63,7 +63,7 @@ INSERT INTO historical_tap(result) SELECT is((SELECT b2b_current_balance FROM cu
 INSERT INTO historical_tap(result) SELECT is((SELECT sum(l.debit-l.credit) FROM journal_entry_lines l JOIN accounts a ON a.id=l.account_id
  JOIN journal_entries j ON j.id=l.journal_entry_id WHERE a.code='1132' AND j.metadata->>'financial_import_run_id'=f.result->>'run_id'),80::numeric,
  'corporate recognition and collection use1132') FROM historical_fixture f;
-INSERT INTO historical_tap(result) SELECT is((SELECT amount_applied FROM b2b_payment_allocations WHERE invoice_id=(SELECT entity_id FROM historical_import_documents WHERE source_reference='CORP-1')),30::numeric,
+INSERT INTO historical_tap(result) SELECT is((SELECT amount_applied FROM b2b_payment_allocations WHERE invoice_id=(SELECT entity_id FROM historical_test_documents WHERE source_reference='CORP-1')),30::numeric,
  'corporate allocation is source-exact rather than FIFO');
 -- Absence de representabilite au centime : refus, aucune tolerance.
 UPDATE historical_fixture SET payload=(SELECT payload FROM historical_payloads WHERE label='purchase');
@@ -80,9 +80,9 @@ INSERT INTO historical_tap(result) SELECT is((_historical_import_plan_v1(payload
 UPDATE historical_fixture SET preview=preview_historical_import_v1(payload),client_key=gen_random_uuid();
 UPDATE historical_fixture SET result=apply_historical_import_v1(payload,preview->>'preview_hash',client_key);
 INSERT INTO historical_tap(result) SELECT is((SELECT (s.metadata->>'unit_cost_representation_delta')::numeric FROM stock_movements s
- JOIN historical_import_stock_effects e ON e.movement_id=s.id WHERE e.run_id=(f.result->>'run_id')::uuid),0.02::numeric,
+ JOIN historical_test_stock_effects e ON e.movement_id=s.id WHERE e.run_id=(f.result->>'run_id')::uuid),0.02::numeric,
  'representation delta is stamped before append to stock ledger') FROM historical_fixture f;
-INSERT INTO historical_tap(result) SELECT is((SELECT total FROM goods_receipt_notes WHERE po_id=(SELECT entity_id FROM historical_import_documents WHERE source_reference='PO-EDGE')),110::numeric,
+INSERT INTO historical_tap(result) SELECT is((SELECT total FROM goods_receipt_notes WHERE po_id=(SELECT entity_id FROM historical_test_documents WHERE source_reference='PO-EDGE')),110::numeric,
  'unit cost rounding changes no receipt invoice amount');
 INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v1(jsonb_set(jsonb_set(jsonb_set(payload,'{documents,0,source_reference}','"BAD-INVOICE"'),
  '{payments,0,allocations,0,document_reference}','"BAD-INVOICE"'),'{documents,0,lines,0,invoice_unit_cost}','19.99'))->'errors'
@@ -98,9 +98,9 @@ UPDATE historical_fixture SET payload=jsonb_set(payload,'{payments}','[]');
 UPDATE historical_fixture SET preview=preview_historical_import_v1(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'300 units with550000 exact invoice need no artificial adjustment line') FROM historical_fixture;
 UPDATE historical_fixture SET result=apply_historical_import_v1(payload,preview->>'preview_hash',client_key);
-INSERT INTO historical_tap(result) SELECT is((SELECT i.subtotal FROM purchase_order_items i JOIN purchase_orders p ON p.id=i.po_id WHERE p.import_reference='pgtap-historical:PO-EGG'),550000::numeric,
+INSERT INTO historical_tap(result) SELECT is((SELECT i.subtotal FROM purchase_order_items i JOIN purchase_orders p ON p.id=i.po_id WHERE p.import_reference=(SELECT payload->>'source_system' FROM historical_fixture)||':PO-EGG'),550000::numeric,
  'expanded unit price preserves exact generated line subtotal');
-INSERT INTO historical_tap(result) SELECT is((SELECT i.quantity FROM purchase_order_items i JOIN purchase_orders p ON p.id=i.po_id WHERE p.import_reference='pgtap-historical:PO-EGG'),300::numeric,
+INSERT INTO historical_tap(result) SELECT is((SELECT i.quantity FROM purchase_order_items i JOIN purchase_orders p ON p.id=i.po_id WHERE p.import_reference=(SELECT payload->>'source_system' FROM historical_fixture)||':PO-EGG'),300::numeric,
  'unit price precision never changes billed quantity');
 INSERT INTO historical_tap(result) SELECT is((SELECT numeric_scale::integer FROM information_schema.columns WHERE table_schema='public' AND table_name='stock_movements' AND column_name='unit_cost'),2,
  'stock ledger unit cost precision stays unchanged');
@@ -108,7 +108,7 @@ INSERT INTO historical_tap(result) SELECT is(_historical_import_timestamp_v1('"2
  'timestamp must match real Makassar business date');
 INSERT INTO historical_tap(result) SELECT is(_historical_import_timestamp_v1(NULL,date '2097-01-10','timestamp'),NULL::timestamptz,
  'known timestamp precision cannot be claimed without source timestamp');
-INSERT INTO historical_tap(result) SELECT is((SELECT time_precision FROM historical_import_payments WHERE source_reference='PAY-2'),'day',
+INSERT INTO historical_tap(result) SELECT is((SELECT time_precision FROM historical_test_payments WHERE source_reference='PAY-2'),'day',
  'source day-only receipt retains day precision without an invented observed time');
 -- Les groupes requis et suppléments exigent leur identité explicite.
 -- Bornes natives numeric(12,2) : refus au preview et aucune ecriture partielle.
@@ -127,9 +127,9 @@ INSERT INTO historical_tap(result) SELECT ok(preview->'errors' @> '[{"code":"sal
  'preview rejects addon amount at native numeric12,2 overflow boundary') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT apply_historical_import_v1(payload,preview->>'preview_hash',client_key) FROM historical_fixture$q$,
  '22023','historical_import_not_reconciled','unrepresentable addon never reaches order insert');
-INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::integer FROM historical_import_documents WHERE source_reference='PRICE-EDGE'),0,
+INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::integer FROM historical_test_documents WHERE source_reference='PRICE-EDGE'),0,
  'price boundary refusals leave no historical document');
-INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::integer FROM orders WHERE import_reference='pgtap-historical:PRICE-EDGE'),0,
+INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::integer FROM orders WHERE import_reference=(SELECT payload->>'source_system' FROM historical_fixture)||':PRICE-EDGE'),0,
  'price boundary refusals leave no native order');
 -- Vitrine : solde physique de fixture, double ledger date a l'INSERT et pas de bypass.
 UPDATE historical_fixture SET payload=(SELECT payload FROM historical_payloads WHERE label='edge-sale'),client_key=gen_random_uuid();
@@ -153,20 +153,20 @@ UPDATE historical_fixture SET result=apply_historical_import_v1(payload,preview-
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT quantity FROM display_stock WHERE product_id=f.product),1::numeric,
  'canonical sale decrements actual display fixture quantity exactly once') FROM historical_fixture f;
-INSERT INTO historical_tap(result) SELECT is((SELECT d.created_at FROM display_movements d JOIN historical_import_stock_effects e ON e.display_movement_id=d.id
+INSERT INTO historical_tap(result) SELECT is((SELECT d.created_at FROM display_movements d JOIN historical_test_stock_effects e ON e.display_movement_id=d.id
  WHERE e.run_id=(f.result->>'run_id')::uuid),timestamptz '2097-01-10 09:12:34+08','display ledger preserves exact source sale timestamp before append') FROM historical_fixture f;
-INSERT INTO historical_tap(result) SELECT ok((SELECT d.created_at=s.created_at AND e.time_precision='timestamp' FROM historical_import_stock_effects e
+INSERT INTO historical_tap(result) SELECT ok((SELECT d.created_at=s.created_at AND e.time_precision='timestamp' FROM historical_test_stock_effects e
  JOIN display_movements d ON d.id=e.display_movement_id JOIN stock_movements s ON s.id=e.movement_id WHERE e.run_id=(f.result->>'run_id')::uuid),
  'display and global stock share one prevalidated effect and source precision') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v1(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,
  'display sale replay returns first result') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::integer FROM display_movements d JOIN historical_import_stock_effects e ON e.display_movement_id=d.id
+INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::integer FROM display_movements d JOIN historical_test_stock_effects e ON e.display_movement_id=d.id
  WHERE e.run_id=(f.result->>'run_id')::uuid),1,'replay never appends a second display movement') FROM historical_fixture f;
 -- Un effet deja consomme ne permet pas un second miroir, meme dans un contexte prive valide de fixture.
 UPDATE historical_import_runs SET status='applying' WHERE id=(SELECT (result->>'run_id')::uuid FROM historical_fixture);
 SELECT set_config('breakery.historical_import_run',result->>'run_id',true) FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT throws_ok($q$INSERT INTO display_movements(product_id,movement_type,quantity,reference_type,reference_id,created_by)
- SELECT f.product,'sale',-1,'order',d.entity_id,f.actor FROM historical_fixture f JOIN historical_import_documents d ON d.source_reference='DISPLAY-1'$q$,
+ SELECT f.product,'sale',-1,'order',d.entity_id,f.actor FROM historical_fixture f JOIN historical_test_documents d ON d.source_reference='DISPLAY-1'$q$,
  'P0002','historical_display_effect_not_planned','consumed historical display effect cannot authorize a second append');
 SELECT set_config('breakery.historical_import_run','',true);
 UPDATE historical_import_runs SET status='applied' WHERE id=(SELECT (result->>'run_id')::uuid FROM historical_fixture);
