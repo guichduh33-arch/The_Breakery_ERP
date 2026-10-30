@@ -26,9 +26,9 @@ export async function printTabletTickets(qc: QueryClient, cart: TabletCart, clie
     const copies = offline ? qc.getQueryData<KotCopies>(KOT_COPIES_KEY) : await getKotCopies(qc);
     if (!copies) return failed(stage);
     stage = 'Kitchen ticket preparation failed';
-    const results = await Promise.all(entries.map(async ([role, items]) => {
-      if (copies[role] === 0) return true;
-      const result = await runPrintJob({ kind: 'prep', role, order_number: orderNumber,
+    async function print(role: PrepStation | 'waiter', items: typeof cart.items, count: number) {
+      if (count === 0) return true;
+      const result = await runPrintJob({ kind: role === 'waiter' ? 'waiter' : 'prep', role, order_number: orderNumber,
         ...(cart.tableNumber ? { table_number: cart.tableNumber } : {}),
         created_at: new Date().toISOString(), server_name: serverName,
         ...(additional ? { additional: true } : {}),
@@ -37,9 +37,15 @@ export async function printTabletTickets(qc: QueryClient, cart: TabletCart, clie
           modifiers: [...item.modifiers.map((m) => m.option_label),
             ...(item.combo_components ?? []).flatMap((component) => [component.name ?? 'Component',
               ...(component.modifiers ?? []).map((m) => `${component.name ?? 'Component'}: ${m.option_label}`)])] })),
-      }, printers.get(role), copies[role], undefined, `tablet:${clientUuid}:${role}`);
+      }, printers.get(role), count, undefined, `tablet:${clientUuid}:${role}`);
       return result.success;
-    }));
+    }
+    const results = await Promise.all(entries.map(([role, items]) => print(role, items, copies[role])));
+    // Un récapitulatif par envoi, indépendant des copies de préparation.
+    const waiterItems = cart.items.filter((item) => !item.is_cancelled);
+    if (printers.has('waiter') && waiterItems.length > 0) {
+      results.push(await print('waiter', waiterItems, 1));
+    }
     return results.every(Boolean) || failed('Check the saved print job in Printing');
   } catch { return failed(stage); }
 }
