@@ -99,7 +99,7 @@ export function useOpenOrders(enabled = true) {
   const query = useQuery<OpenOrdersPanel, Error>({
     queryKey: OPEN_ORDERS_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_dashboard_open_orders_v1');
+      const { data, error } = await supabase.rpc('get_dashboard_open_orders_v2');
       if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return data as unknown as OpenOrdersPanel;
     },

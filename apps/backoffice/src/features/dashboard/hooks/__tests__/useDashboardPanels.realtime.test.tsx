@@ -47,6 +47,7 @@ describe('dashboard open orders — suppressions distantes', () => {
     }, error: null });
     const { result, unmount } = renderHook(() => useOpenOrders(), { wrapper: wrapper(client) });
     await waitFor(() => expect(result.current.data?.open_total).toBe(45000));
+    expect(mock.rpc).toHaveBeenCalledWith('get_dashboard_open_orders_v2');
     const signal = mock.subscriptions.find(({ filter }) => filter.table === 'ui_invalidation_topics');
     expect(signal?.filter).toEqual({
       event: 'UPDATE', schema: 'public', table: 'ui_invalidation_topics', filter: 'topic=eq.orders',
