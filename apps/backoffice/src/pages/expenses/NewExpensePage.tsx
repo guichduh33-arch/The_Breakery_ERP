@@ -44,7 +44,8 @@ function DraftPage({ticket}: {ticket: string | undefined}): JSX.Element {
     const base = emptyExpenseFormValues();
     const seed = readExpenseDraftSeed(ticket);
     return seed ? {...base, category_id: seed.category_id, amount: seed.amount, vat_amount: seed.vat_amount,
-      payment_method: seed.payment_method, vendor_name: seed.vendor_name, description: seed.description} : base;
+      payment_method: seed.payment_method, vendor_name: seed.vendor_name, description: seed.description,
+      expense_term_id: seed.expense_term_id ?? '', remarks: seed.remarks ?? ''} : base;
   });
 
   useEffect(() => {
@@ -58,6 +59,7 @@ function DraftPage({ticket}: {ticket: string | undefined}): JSX.Element {
   async function save(): Promise<void> {
     setError(null);
     const payload: ExpenseCreationSnapshot = recovery.pending?.payload ?? {
+      expense_term_id: values.expense_term_id, remarks: values.remarks.trim(),
       category_id: values.category_id, amount: Number(values.amount),
       vat_amount: Number(values.vat_amount || '0'), payment_method: values.payment_method,
       description: values.description.trim(), expense_date: values.expense_date,

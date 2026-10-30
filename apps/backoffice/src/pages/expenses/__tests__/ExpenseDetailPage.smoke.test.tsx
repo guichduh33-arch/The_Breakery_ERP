@@ -18,6 +18,7 @@ const EXPENSE: ExpenseRow = {
   expense_number:   'EXP-202604-0001',
   expense_date:     '2026-04-17',
   description:      'Office supplies',
+    expense_term_id: null, remarks: 'October details',
   vendor_name:      'Acme Stationary',
   category_id:      'cat-1',
   amount:           250000,
@@ -136,6 +137,7 @@ describe('ExpenseDetailPage (Phase 5.A rewrite)', () => {
     fireEvent.click(duplicateBtn);
     const seed: unknown = JSON.parse((await screen.findByTestId('duplicate-seed')).textContent ?? 'null');
     expect(seed).toEqual({
+      expense_term_id: '', remarks: 'October details',
       category_id:    'cat-1',
       amount:         '250000',
       vat_amount:     '0',

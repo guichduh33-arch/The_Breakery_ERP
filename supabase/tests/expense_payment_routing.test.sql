@@ -12,6 +12,7 @@
 -- chevauchement AVANT d'atteindre la validation testée ici — le test mesurerait autre chose.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
+\ir helpers/expense_terms.sql
 SELECT plan(6);
 
 DO $$
@@ -35,9 +36,9 @@ BEGIN
 
   -- Dépense à crédit réglée par VIREMENT
   INSERT INTO expenses (expense_number, description, amount, expense_date, category_id,
-                        payment_method, status, created_by)
+                        payment_method, status, created_by, expense_term_id)
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing transfer', 100000,
-          CURRENT_DATE, v_cat, 'credit', 'approved', v_prof)
+          CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing transfer'))
   RETURNING id INTO v_exp;
   v_res := pay_expense_v4(v_exp, 'transfer');
   SELECT a.code INTO v_credit_code FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
@@ -46,9 +47,9 @@ BEGIN
 
   -- Même dépense réglée en ESPÈCES — contrôle positif : le chemin historique ne bouge pas.
   INSERT INTO expenses (expense_number, description, amount, expense_date, category_id,
-                        payment_method, status, created_by)
+                        payment_method, status, created_by, expense_term_id)
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing cash', 50000,
-          CURRENT_DATE, v_cat, 'credit', 'approved', v_prof)
+          CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing cash'))
   RETURNING id INTO v_exp;
   v_res := pay_expense_v4(v_exp, 'cash');
   SELECT a.code INTO v_credit_code FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
@@ -57,9 +58,9 @@ BEGIN
 
   -- Méthode inconnue : elle doit LEVER, pas retomber en silence sur la petite caisse.
   INSERT INTO expenses (expense_number, description, amount, expense_date, category_id,
-                        payment_method, status, created_by)
+                        payment_method, status, created_by, expense_term_id)
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing unknown', 1000,
-          CURRENT_DATE, v_cat, 'credit', 'approved', v_prof)
+          CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing unknown'))
   RETURNING id INTO v_exp;
   BEGIN
     PERFORM pay_expense_v4(v_exp, 'bitcoin');

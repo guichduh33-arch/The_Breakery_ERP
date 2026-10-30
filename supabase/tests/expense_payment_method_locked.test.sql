@@ -1,5 +1,6 @@
 -- Méthode comptabilisée figée ; règlement des crédits cohérent, sous rollback.
 BEGIN;
+\ir helpers/expense_terms.sql
 \ir helpers/pin_session.sql
 SELECT no_plan();
 CREATE TEMP TABLE ep_actor(auth_id uuid,profile_id uuid);
@@ -22,9 +23,9 @@ CREATE TEMP TABLE ep_cases(kind text PRIMARY KEY,id uuid,method text,je_id uuid,
 CREATE FUNCTION pg_temp.ep_make(p_kind text,p_method text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE v_id uuid;v_je uuid;
 BEGIN
- INSERT INTO expenses(expense_number,description,amount,expense_date,category_id,payment_method,status,created_by,vat_amount)
+ INSERT INTO expenses(expense_number,description,amount,expense_date,category_id,payment_method,status,created_by,vat_amount, expense_term_id)
  VALUES('EPM-'||gen_random_uuid(),'Expense method fixture',110000,CURRENT_DATE,
-  (SELECT id FROM ep_category),p_method,'approved',(SELECT profile_id FROM ep_actor),10000) RETURNING id INTO v_id;
+  (SELECT id FROM ep_category),p_method,'approved',(SELECT profile_id FROM ep_actor),10000, pg_temp.expense_term_fixture((SELECT id FROM ep_category), 'Expense method fixture')) RETURNING id INTO v_id;
  v_je:=public._emit_expense_je(v_id);
  INSERT INTO ep_cases VALUES(p_kind,v_id,p_method,v_je,
   (SELECT jsonb_agg(to_jsonb(l) ORDER BY l.id) FROM journal_entry_lines l WHERE journal_entry_id=v_je));

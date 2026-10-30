@@ -54,10 +54,24 @@ function renderForm(initial: ExpenseFormValues = emptyExpenseFormValues()) {
 }
 
 describe('ExpenseForm — smoke', () => {
+  it('finds a synonym and selects the canonical name and category', () => {
+    const view = renderForm();
+    fireEvent.change(screen.getByLabelText('Search expense terms'), {target: {value: 'PLN'}});
+    expect(screen.getByRole('option', {name: 'Electricity bill'})).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/^Expense term/i), {target: {value: 'term-1'}});
+    expect(view.getValues()).toMatchObject({expense_term_id: 'term-1', category_id: 'cat-1', description: 'Electricity bill'});
+    expect(screen.getByLabelText(/Description/i)).toHaveAttribute('readonly');
+  });
+  it('keeps remarks optional and separate from the standard description', () => {
+    const view = renderForm();
+    fireEvent.change(screen.getByLabelText('Remarks'), {target: {value: 'October electricity bill'}});
+    expect(view.getValues().remarks).toBe('October electricity bill');
+    expect(view.getValues().description).toBe('');
+  });
   it('renders all required fields', async () => {
     renderForm();
     // Category select renders after categories load.
-    expect(await screen.findByLabelText(/Category/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^Expense term/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Amount \(IDR\)/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/VAT amount/i)).toBeInTheDocument();
@@ -70,7 +84,7 @@ describe('ExpenseForm — smoke', () => {
     const { onSubmit } = renderForm();
     // Attendre le montage du picker (catégories asynchrones) pour que le
     // focus ait une cible.
-    const category = await screen.findByLabelText(/Category/i);
+    const category = await screen.findByLabelText(/^Expense term/i);
     const submit = screen.getByRole('button', { name: /Save as draft/i });
     expect(submit).not.toBeDisabled();
 
@@ -83,7 +97,8 @@ describe('ExpenseForm — smoke', () => {
     const amount = screen.getByLabelText(/^Amount \(IDR\)/i);
     expect(amount).toHaveAttribute('aria-invalid', 'true');
     expect(amount).toHaveAccessibleDescription('Must be > 0');
-    expect(screen.getByLabelText(/Description/i)).toHaveAccessibleDescription('Required');
+    expect(screen.getByLabelText(/Description/i)).toHaveAttribute('readonly');
+    expect(screen.getByLabelText(/Remarks/i)).not.toBeRequired();
 
     // Le focus est renvoyé au premier champ fautif (ordre visuel : catégorie).
     expect(category).toHaveFocus();
@@ -91,14 +106,15 @@ describe('ExpenseForm — smoke', () => {
 
   it('porte le requis sur les contrôles (pas seulement l’astérisque)', async () => {
     renderForm();
-    expect(await screen.findByLabelText(/Category/i)).toBeRequired();
+    expect(await screen.findByLabelText(/^Expense term/i)).toBeRequired();
     expect(screen.getByLabelText(/^Amount \(IDR\)/i)).toBeRequired();
-    expect(screen.getByLabelText(/Description/i)).toBeRequired();
+    expect(screen.getByLabelText(/Description/i)).toHaveAttribute('readonly');
     expect(screen.getByLabelText(/Vendor/i)).not.toBeRequired();
   });
 
   it('enables submit when all required fields are populated', () => {
     const values: ExpenseFormValues = {
+      expense_term_id: 'term-1', remarks: '',
       category_id: 'cat-1',
       amount: '850000',
       vat_amount: '0',
@@ -114,6 +130,7 @@ describe('ExpenseForm — smoke', () => {
 
   it('invokes onSubmit when the form is submitted with valid data', () => {
     const values: ExpenseFormValues = {
+      expense_term_id: 'term-1', remarks: '',
       category_id: 'cat-1',
       amount: '850000',
       vat_amount: '0',
@@ -128,3 +145,8 @@ describe('ExpenseForm — smoke', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 });
+
+vi.mock('@/features/expenses/hooks/useExpenseTerms.js', () => ({
+  useExpenseTerms: () => ({data: [{id: 'term-1',code: 'ELECTRICITY',name: 'Electricity bill',expense_term_id: 'term-1', remarks: '',
+      category_id: 'cat-1',category_name: 'Utilities',account_code: '6113',account_name: 'Utilities',is_active: true,is_available: true,is_used: false,aliases: ['PLN','Listrik']}],isLoading: false,isError: false,error: null}),
+}));
