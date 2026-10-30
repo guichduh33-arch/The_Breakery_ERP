@@ -155,8 +155,18 @@ SELECT is((SELECT jsonb_array_length(public.bank_reconciliation_list_v1(bank,NUL
 SELECT throws_ok('SELECT public.bank_reconciliation_list_v1(NULL,NULL,101)','22023','invalid_page_size','unbounded list size refused');
 SELECT is((SELECT jsonb_array_length(public.bank_reconciliation_detail_v2(rec,0,NULL,2)->'bank_lines') FROM bank_fixture),2,'bank detail paginates source rows');
 SELECT ok((SELECT public.bank_reconciliation_detail_v2(rec,0,NULL,2)->>'next_bank_after' IS NOT NULL FROM bank_fixture),'bank keyset cursor returned');
-SELECT ok((SELECT EXISTS(SELECT 1 FROM jsonb_array_elements(public.bank_reconciliation_clearing_v3(rec,NULL,100)->'items') x
- WHERE x->>'id'=(SELECT id::text FROM bank_gl WHERE label='card_refund10')) FROM bank_fixture),'clearing candidates preserve negative refund source');
+CREATE FUNCTION pg_temp.clearing_has(p_rec uuid,p_target uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE page jsonb;cursor_id uuid;
+BEGIN
+ LOOP
+  page:=public.bank_reconciliation_clearing_v3(p_rec,cursor_id,100);
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(page->'items') x WHERE x->>'id'=p_target::text) THEN RETURN true; END IF;
+  cursor_id:=(page->>'next_after')::uuid;
+  IF cursor_id IS NULL THEN RETURN false; END IF;
+ END LOOP;
+END $$;
+SELECT ok((SELECT pg_temp.clearing_has(rec,(SELECT id FROM bank_gl WHERE label='card_refund10')) FROM bank_fixture),
+ 'clearing candidates preserve negative refund source across all pages');
 SELECT throws_ok($q$SELECT public.bank_reconciliation_match_v2(rec,ARRAY[bank_ids[1]],ARRAY[(SELECT id FROM bank_gl WHERE label='bank25')],gen_random_uuid()) FROM bank_fixture$q$,
  '22023','match_amount_mismatch','no implicit amount tolerance');
 UPDATE bank_fixture SET match_result=public.bank_reconciliation_match_v2(rec,bank_ids[1:2],
