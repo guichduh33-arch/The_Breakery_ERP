@@ -31,6 +31,7 @@ import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDeta
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
 import { CountItemRow } from '@/features/inventory-opname/components/CountItemRow.js';
 import { AddItemForm } from '@/features/inventory-opname/components/AddItemForm.js';
+import { OpnameFileActions } from '@/features/inventory-opname/components/OpnameFileActions.js';
 import { ValidateOpnameDialog } from '@/features/inventory-opname/components/ValidateOpnameDialog.js';
 import { FinalizeOpnameDialog } from '@/features/inventory-opname/components/FinalizeOpnameDialog.js';
 import { CancelOpnameDialog } from '@/features/inventory-opname/components/CancelOpnameDialog.js';
@@ -46,6 +47,8 @@ export default function OpnameDetailPage(): JSX.Element {
   const [showFinalize, setShowFinalize] = useState<boolean>(false);
   const [showCancel,   setShowCancel  ] = useState<boolean>(false);
   const [editingItems, setEditingItems] = useState<ReadonlySet<string>>(new Set());
+  const [fileBusy, setFileBusy] = useState(false);
+  const [addBusy, setAddBusy] = useState(false);
   const onEditingChange = useCallback((itemId: string, blocked: boolean) => {
     setEditingItems((prev) => {
       if (prev.has(itemId) === blocked) return prev;
@@ -83,6 +86,7 @@ export default function OpnameDetailPage(): JSX.Element {
    * sur un comptage de plusieurs dizaines de lignes.
    */
   const blockReason = useMemo<string | null>(() => {
+    if (fileBusy || addBusy) return 'Wait for the current operation to finish.';
     if (counting && items.some((item) => editingItems.has(item.id))) return 'Save all changes and resolve any errors before validating.';
     if (items.length === 0) return 'Add at least one line before validating.';
     if (stats.pending > 0) {
@@ -91,7 +95,7 @@ export default function OpnameDetailPage(): JSX.Element {
         : `${String(stats.pending)} lines still uncounted — enter their quantities to continue.`;
     }
     return null;
-  }, [counting, editingItems, items, stats.pending]);
+  }, [addBusy, counting, editingItems, fileBusy, items, stats.pending]);
   if (detail.isLoading) {
     return <DetailPageSkeleton label="Loading stock count" data-testid="opname-detail-loading" />;
   }
@@ -185,7 +189,13 @@ export default function OpnameDetailPage(): JSX.Element {
       </section>
 
       {!locked && canCreate && (
-        <AddItemForm countId={d.id} />
+        <OpnameFileActions key={d.id} countId={d.id} items={items} disabled={addBusy || editingItems.size > 0 || showValidate || showCancel} onBusyChange={setFileBusy} />
+      )}
+      {!locked && canCreate && (
+        <fieldset disabled={fileBusy || showValidate || showCancel}>
+          <legend className="sr-only">Add a stock count item</legend>
+          <AddItemForm countId={d.id} onPendingChange={setAddBusy} />
+        </fieldset>
       )}
 
       {items.length === 0 ? (
@@ -221,7 +231,7 @@ export default function OpnameDetailPage(): JSX.Element {
             </thead>
             <tbody>
               {items.map((it) => (
-                <CountItemRow key={it.id} countId={d.id} item={it} revealed={revealed} locked={locked || !canCreate || showValidate} onEditingChange={onEditingChange} />
+                <CountItemRow key={`${it.id}:${String(it.counted_qty)}:${it.notes ?? ''}`} countId={d.id} item={it} revealed={revealed} locked={locked || !canCreate || showValidate || fileBusy} onEditingChange={onEditingChange} />
               ))}
             </tbody>
           </table>
@@ -256,7 +266,7 @@ export default function OpnameDetailPage(): JSX.Element {
         {/* Annuler reste offert en revue : c'est le SEUL recours si la
             révélation découvre une faute de frappe. */}
         {!terminal && canCreate && (
-          <Button variant="ghostDestructive" onClick={() => { setShowCancel(true); }}>
+          <Button variant="ghostDestructive" disabled={fileBusy} onClick={() => { setShowCancel(true); }}>
             <X className="h-4 w-4" aria-hidden /> Cancel count
           </Button>
         )}

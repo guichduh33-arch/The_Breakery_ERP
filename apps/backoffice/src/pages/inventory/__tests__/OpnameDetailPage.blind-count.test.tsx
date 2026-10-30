@@ -93,6 +93,8 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     fireEvent.change(screen.getByLabelText('Counted quantity for White Flour'), { target: { value: '10' } });
     expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeDisabled();
     expect(screen.getByText(/Save all changes/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download template' })).toBeDisabled();
+    expect(screen.getByLabelText('Import counts (.xlsx)')).toBeDisabled();
   });
 
   it('pendant le comptage, ne montre ni attendu, ni écart, ni total des écarts', () => {
@@ -122,6 +124,8 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     expect(screen.queryByLabelText('Counted quantity for White Flour')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('add-item-form')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Download template' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Import counts (.xlsx)')).not.toBeInTheDocument();
   });
 
   it('laisse Annuler accessible en revue — seul recours après la révélation', () => {
@@ -195,5 +199,12 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     expect(screen.getByTestId('cell-expected')).toBeInTheDocument();
     expect(screen.queryByLabelText('Counted quantity for White Flour')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Cancel/i })).not.toBeInTheDocument();
+  });
+
+  it('hides file operations without count creation permission', () => {
+    currentPerms = new Set(['inventory.read']);
+    renderPage();
+    expect(screen.queryByRole('button', { name: 'Download template' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Import counts (.xlsx)')).not.toBeInTheDocument();
   });
 });
