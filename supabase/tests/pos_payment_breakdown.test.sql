@@ -6,6 +6,7 @@
 -- Overview (paid+completed, non-B2B, non-historical, no test-product line).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 SELECT plan(8);
 

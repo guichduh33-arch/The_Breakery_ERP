@@ -37,6 +37,8 @@
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). pgtap pre-installed on V3 dev.
 
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -45,8 +47,8 @@ SELECT plan(10);
 -- ---------------------------------------------------------------------------
 -- Fixtures : 1 b2b customer (unlimited) + 1 tracked product (clone b2b_settlement)
 -- ---------------------------------------------------------------------------
-INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
-VALUES ('b2b53001-0000-0000-0000-000000000001','PGTAP INV C1','b2b','PT INV C1',NULL,0)
+INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance, category_id)
+VALUES ('b2b53001-0000-0000-0000-000000000001','PGTAP INV C1','b2b','PT INV C1',NULL,0, current_setting('fixture.customer_category')::uuid)
 ON CONFLICT (id) DO UPDATE SET b2b_credit_limit = NULL, b2b_current_balance = 0;
 
 INSERT INTO products (id, sku, name, category_id, retail_price, current_stock, min_stock_threshold)

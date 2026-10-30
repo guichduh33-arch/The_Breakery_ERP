@@ -38,6 +38,7 @@
 -- by refund_order_rpc_v2 itself. The shortcut is reverted by ROLLBACK.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

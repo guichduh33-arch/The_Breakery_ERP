@@ -19,6 +19,7 @@
 -- Runner : MCP execute_sql wrapped in BEGIN ... ROLLBACK.
 
 BEGIN;
+\ir helpers/customer_category.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -85,16 +86,16 @@ SELECT is(
 
 INSERT INTO public.customers
   (id, name, email, customer_type, loyalty_points, lifetime_points,
-   total_spent, total_visits, marketing_consent, birth_date)
+   total_spent, total_visits, marketing_consent, birth_date, category_id)
 VALUES
   ('aaaa1111-0000-0000-0000-000000000001', 'Cust A', 'a@test.local',
-   'retail'::customer_type, 0, 0, 0, 0, true,  current_date),
+   'retail'::customer_type, 0, 0, 0, 0, true,  current_date, current_setting('fixture.customer_category')::uuid),
   ('aaaa1111-0000-0000-0000-000000000002', 'Cust B', 'b@test.local',
-   'retail'::customer_type, 0, 0, 0, 0, false, current_date),
+   'retail'::customer_type, 0, 0, 0, 0, false, current_date, current_setting('fixture.customer_category')::uuid),
   ('aaaa1111-0000-0000-0000-000000000003', 'Cust C', NULL,
-   'retail'::customer_type, 0, 0, 0, 0, true,  current_date),
+   'retail'::customer_type, 0, 0, 0, 0, true,  current_date, current_setting('fixture.customer_category')::uuid),
   ('aaaa1111-0000-0000-0000-000000000004', 'Cust D', 'd@test.local',
-   'retail'::customer_type, 0, 0, 0, 0, true,  current_date - INTERVAL '37 days');
+   'retail'::customer_type, 0, 0, 0, 0, true,  current_date - INTERVAL '37 days', current_setting('fixture.customer_category')::uuid);
 
 -- ---------------------------------------------------------------------------
 -- T_MKT_04..07 : wrapper eligibility filter

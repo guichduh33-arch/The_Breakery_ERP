@@ -11,6 +11,7 @@
 -- on V3 dev. Convention ERRCODE alignée sur S26 cockpit family (P0003 forbidden).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

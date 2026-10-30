@@ -18,6 +18,7 @@
 -- on V3 dev.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

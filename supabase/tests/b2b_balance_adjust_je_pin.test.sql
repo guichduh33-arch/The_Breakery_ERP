@@ -9,14 +9,16 @@
 -- SUPER_ADMIN → a b2b.balance.adjust). PIN manager posé transaction-local.
 
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(4);
 
 SELECT set_config('request.jwt.claim.sub', (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
 UPDATE user_profiles SET pin_hash = hash_pin('112233'), locked_until=NULL, failed_login_attempts=0 WHERE employee_code='EMP000';
 
-INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
-VALUES ('ccc20001-0000-0000-0000-000000000001','T2 B2B Adjust','b2b','PT T2', 10000000, 100000)
+INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance, category_id)
+VALUES ('ccc20001-0000-0000-0000-000000000001','T2 B2B Adjust','b2b','PT T2', 10000000, 100000, current_setting('fixture.customer_category')::uuid)
 ON CONFLICT (id) DO NOTHING;
 UPDATE customers SET b2b_current_balance=100000 WHERE id='ccc20001-0000-0000-0000-000000000001';
 

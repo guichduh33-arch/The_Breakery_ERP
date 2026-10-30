@@ -15,6 +15,7 @@
 -- Runner : execute via MCP execute_sql under BEGIN..ROLLBACK envelope.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

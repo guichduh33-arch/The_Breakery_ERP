@@ -21,6 +21,7 @@
 --   Fixtures seedées : 01 SUPER_ADMIN, 02 CASHIER, 04 MANAGER (promu ADMIN pour T4).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

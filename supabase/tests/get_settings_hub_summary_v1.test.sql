@@ -3,6 +3,7 @@
 -- Exécution : MCP execute_sql, enveloppe BEGIN … ROLLBACK (pas de runner local).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(7);
 
 -- Privilèges : trio REVOKE + grant authenticated (défense en profondeur anon).

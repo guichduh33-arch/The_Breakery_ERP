@@ -13,6 +13,7 @@
 -- pos.sale.create et une session POS ouverte (réutilisée, jamais committée).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(6);
 SELECT set_config('request.jwt.claims',
   json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);

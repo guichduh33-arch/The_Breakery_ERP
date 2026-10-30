@@ -22,6 +22,7 @@
 -- the server contract. Append-no-duplicate is a CLIENT invariant (useFireToStations
 -- excludes lockedItemIds before the append RPC) covered by the POS smokes.
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 \ir helpers/session.sql
 

@@ -17,7 +17,6 @@ INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('anon','
 INSERT INTO historical_tap(result) SELECT ok(NOT has_function_privilege('authenticated','_historical_import_payment_v2(uuid,jsonb,jsonb)','EXECUTE'),'payment helper remains private');
 UPDATE fiscal_periods SET status='closed' WHERE period_start=date '2097-01-01';
 INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(payload)->'errors' @> '[{"code":"customer_advance_application_period_closed"}]','closed application period refused') FROM historical_fixture;
-SELECT jsonb_build_object('executed',(SELECT count(*) FROM historical_tap),
- 'failures',(SELECT coalesce(jsonb_agg(result),'[]') FROM historical_tap WHERE result LIKE 'not ok%'),
- 'tap_finish',(SELECT coalesce(jsonb_agg(result),'[]') FROM finish() result)) AS test_result;
+SELECT result FROM historical_tap ORDER BY id;
+SELECT * FROM finish();
 ROLLBACK;

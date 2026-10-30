@@ -5,6 +5,7 @@
 -- Run via MCP execute_sql (BEGIN..ROLLBACK) ou API-from-file.
 
 BEGIN;
+\ir helpers/customer_category.sql
 SELECT plan(6);
 
 DO $$
@@ -16,14 +17,14 @@ BEGIN
   UPDATE business_config SET store_credit_expiry_months = 6 WHERE id = 1;
 
   -- C1 : un crédit 10 000 expiré hier, jamais consommé.
-  INSERT INTO customers (name, customer_type) VALUES ('SC Expiry C1', 'retail') RETURNING id INTO v_c1;
+  INSERT INTO customers (name, customer_type, category_id) VALUES ('SC Expiry C1', 'retail', current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c1;
   PERFORM 1 FROM customers WHERE id = v_c1 FOR UPDATE;
   PERFORM _apply_store_credit_v1(v_c1, 10000, 'manager_grant', NULL, NULL,
                                  now() - interval '1 day', v_prof, NULL);
 
   -- C2 : crédit 10 000 expiré, partiellement consommé (spend 4 000) -> seule la
   -- part restante (6 000) doit expirer (FIFO).
-  INSERT INTO customers (name, customer_type) VALUES ('SC Expiry C2', 'retail') RETURNING id INTO v_c2;
+  INSERT INTO customers (name, customer_type, category_id) VALUES ('SC Expiry C2', 'retail', current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c2;
   PERFORM 1 FROM customers WHERE id = v_c2 FOR UPDATE;
   PERFORM _apply_store_credit_v1(v_c2, 10000, 'manager_grant', NULL, NULL,
                                  now() - interval '1 day', v_prof, NULL);
@@ -87,7 +88,7 @@ DO $$
 DECLARE v_c3 UUID; v_n INT; v_rows INT;
 BEGIN
   UPDATE business_config SET store_credit_expiry_months = 0 WHERE id = 1;
-  INSERT INTO customers (name, customer_type) VALUES ('SC Expiry C3', 'retail') RETURNING id INTO v_c3;
+  INSERT INTO customers (name, customer_type, category_id) VALUES ('SC Expiry C3', 'retail', current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c3;
   PERFORM 1 FROM customers WHERE id = v_c3 FOR UPDATE;
   PERFORM _apply_store_credit_v1(v_c3, 5000, 'manager_grant', NULL, NULL,
                                  now() - interval '1 day', current_setting('sce.prof')::uuid, NULL);

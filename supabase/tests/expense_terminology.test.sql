@@ -1,6 +1,11 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT no_plan();
+-- Catégories jetables : la configuration réelle peut désactiver UTILITIES/RENT.
+INSERT INTO expense_categories(code,name,account_id,is_active)
+ SELECT 'TEST_EXP_UTILITIES','Expense terms utilities fixture',id,true FROM accounts WHERE code='6113';
+INSERT INTO expense_categories(code,name,account_id,is_active)
+ SELECT 'TEST_EXP_RENT','Expense terms second category fixture',id,true FROM accounts WHERE code='6113';
 INSERT INTO roles(code,name,is_system) VALUES('TEST_EXP_TERM','Expense terms test',false);
 INSERT INTO auth.users(id) VALUES('ec310000-0000-4000-8000-000000000001');
 INSERT INTO user_profiles(id,auth_user_id,role_code,full_name,employee_code,is_active,pin_hash)
@@ -9,21 +14,21 @@ INSERT INTO user_profiles(id,auth_user_id,role_code,full_name,employee_code,is_a
 SELECT set_config('request.jwt.claim.sub','ec310000-0000-4000-8000-000000000001',true);
 SELECT throws_ok($$SELECT get_expense_terms_v1()$$,'42501','permission_denied','reader permission required');
 SELECT throws_ok($$SELECT save_expense_term_v1('TEST_TERM','Test term',
- (SELECT id FROM expense_categories WHERE code='UTILITIES'))$$,'42501','permission_denied','manager permission required');
+ (SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'))$$,'42501','permission_denied','manager permission required');
 INSERT INTO role_permissions(role_code,permission_code) VALUES
  ('TEST_EXP_TERM','expenses.categories.manage'),('TEST_EXP_TERM','expenses.create'),('TEST_EXP_TERM','expenses.read');
 SELECT lives_ok($$SELECT save_expense_term_v1('TEST_TERM','Unique test electricity',
- (SELECT id FROM expense_categories WHERE code='UTILITIES'),ARRAY['Test power bill','Test courant'])$$,'create standard term');
+ (SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'),ARRAY['Test power bill','Test courant'])$$,'create standard term');
 SELECT is((SELECT count(*)::int FROM expense_term_labels WHERE term_id=(SELECT id FROM expense_terms WHERE code='TEST_TERM')),3,'canonical name and aliases registered');
 SELECT throws_ok($$SELECT save_expense_term_v1('TEST_DUPLICATE',' TEST   POWER BILL ',
- (SELECT id FROM expense_categories WHERE code='UTILITIES'))$$,'23505',NULL,'case and spaces cannot duplicate a synonym');
+ (SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'))$$,'23505',NULL,'case and spaces cannot duplicate a synonym');
 SELECT is((SELECT count(*)::int FROM expense_terms WHERE code='TEST_DUPLICATE'),0,'failed duplicate does not leave a term');
 SELECT throws_ok($$SELECT save_expense_term_v1('TEST_DUPLICATE','Different name',
- (SELECT id FROM expense_categories WHERE code='RENT'),ARRAY['Unique test electricity'])$$,'23505',NULL,'alias cannot shadow a canonical name');
+ (SELECT id FROM expense_categories WHERE code='TEST_EXP_RENT'),ARRAY['Unique test electricity'])$$,'23505',NULL,'alias cannot shadow a canonical name');
 SELECT throws_ok($$SELECT save_expense_term_v1('TEST_INVALID','Invalid',gen_random_uuid())$$,
  '22023','expense_term_category_unavailable','unknown category rejected');
 SELECT throws_ok($$SELECT save_expense_term_v1('TEST_INVALID','Invalid',
- (SELECT id FROM expense_categories WHERE code='UTILITIES'),ARRAY[NULL::text])$$,
+ (SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'),ARRAY[NULL::text])$$,
  '22023','expense_term_invalid_alias','null aliases rejected');
 SELECT lives_ok($$SELECT create_expense_v4((SELECT category_id FROM expense_terms WHERE code='TEST_TERM'),
  1000,'cash','CLIENT TEXT IGNORED',CURRENT_DATE,0,NULL,NULL,'ec310000-0000-4000-8000-000000000003',
@@ -35,12 +40,12 @@ SELECT is((SELECT remarks FROM expenses WHERE idempotency_key='ec310000-0000-400
 SELECT is((SELECT actor_id FROM audit_logs WHERE action='expense.create' AND entity_id=
  (SELECT id FROM expenses WHERE idempotency_key='ec310000-0000-4000-8000-000000000003')),
  'ec310000-0000-4000-8000-000000000002'::uuid,'audit references profile');
-SELECT throws_ok($$SELECT create_expense_v4((SELECT id FROM expense_categories WHERE code='RENT'),
+SELECT throws_ok($$SELECT create_expense_v4((SELECT id FROM expense_categories WHERE code='TEST_EXP_RENT'),
  1000,'cash','Mismatch',CURRENT_DATE,0,NULL,NULL,gen_random_uuid(),
  (SELECT id FROM expense_terms WHERE code='TEST_TERM'))$$,'22023','expense_term_category_mismatch','category mismatch rejected');
-SELECT throws_ok($$SELECT create_expense_v4((SELECT id FROM expense_categories WHERE code='UTILITIES'),
+SELECT throws_ok($$SELECT create_expense_v4((SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'),
  1000,'cash','Free text',CURRENT_DATE)$$,'22023','expense_term_required','term required for new creation');
-SELECT throws_ok($$SELECT create_expense_v4((SELECT id FROM expense_categories WHERE code='UTILITIES'),
+SELECT throws_ok($$SELECT create_expense_v4((SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'),
  1000,'cash','Too long',CURRENT_DATE,0,NULL,NULL,gen_random_uuid(),
  (SELECT id FROM expense_terms WHERE code='TEST_TERM'),repeat('x',2001))$$,
  '22023','expense_remarks_too_long','remarks length validated by RPC');
@@ -48,7 +53,7 @@ SELECT throws_ok($$SELECT save_expense_term_v1('TEST_TERM','Renamed',
  (SELECT category_id FROM expense_terms WHERE code='TEST_TERM'),ARRAY[]::text[],true,
  (SELECT id FROM expense_terms WHERE code='TEST_TERM'))$$,'22023','expense_term_in_use','used name locked');
 SELECT throws_ok($$SELECT save_expense_term_v1('TEST_TERM','Unique test electricity',
- (SELECT id FROM expense_categories WHERE code='RENT'),ARRAY[]::text[],true,
+ (SELECT id FROM expense_categories WHERE code='TEST_EXP_RENT'),ARRAY[]::text[],true,
  (SELECT id FROM expense_terms WHERE code='TEST_TERM'))$$,'22023','expense_term_in_use','used category locked');
 SELECT lives_ok($$UPDATE expenses SET description='Another free name' WHERE
  idempotency_key='ec310000-0000-4000-8000-000000000003'$$,'direct update canonicalized');
@@ -73,7 +78,7 @@ SELECT throws_ok($$SELECT create_expense_v4((SELECT category_id FROM expense_ter
  1000,'cash','Inactive',CURRENT_DATE,0,NULL,NULL,gen_random_uuid(),
  (SELECT id FROM expense_terms WHERE code='TEST_TERM'))$$,'22023','expense_term_required','inactive rejected for new creation');
 SELECT lives_ok($$INSERT INTO expenses(expense_number,category_id,amount,payment_method,description,expense_date,is_historical_import)
- VALUES('TEST-TERM-HISTORICAL',(SELECT id FROM expense_categories WHERE code='UTILITIES'),1000,'cash','Original historical text',CURRENT_DATE,true)$$,
+ VALUES('TEST-TERM-HISTORICAL',(SELECT id FROM expense_categories WHERE code='TEST_EXP_UTILITIES'),1000,'cash','Original historical text',CURRENT_DATE,true)$$,
  'historical imports retain their original text');
 SELECT is((SELECT description FROM expenses WHERE expense_number='TEST-TERM-HISTORICAL'),'Original historical text','no historical rewrite');
 SELECT ok(NOT has_table_privilege('authenticated','public.expense_terms','INSERT'),'no direct term creation');

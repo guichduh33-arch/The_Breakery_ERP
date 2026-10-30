@@ -9,6 +9,7 @@
 -- permission check passes in the same transaction.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 SELECT plan(8);
 

@@ -41,6 +41,7 @@
 --   Guard: output must be finite (no infinite loop).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

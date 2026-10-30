@@ -6,6 +6,7 @@
 -- Run via MCP execute_sql under BEGIN/ROLLBACK. Cashier ...0002 has pos.sale.create + payments.process.
 -- Captures each assertion's TAP line into _cap and returns (failures, total, lines).
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 INSERT INTO pos_sessions (id, opened_by, opening_cash, status)
   VALUES ('00000000-0000-0000-0000-0000000cf002','00000000-0000-0000-0000-000000000002', 0, 'open');

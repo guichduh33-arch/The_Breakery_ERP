@@ -6,6 +6,7 @@
 -- in-scope order — that the reversals aggregation counts and sums correctly.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 \ir helpers/sales.sql
 SELECT plan(10);

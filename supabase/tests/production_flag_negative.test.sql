@@ -22,6 +22,7 @@
 -- réussie par transaction (en prod chaque appel = sa propre transaction).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(4);
 SELECT set_config('request.jwt.claims',
   json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);

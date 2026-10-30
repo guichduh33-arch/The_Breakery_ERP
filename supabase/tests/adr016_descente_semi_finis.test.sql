@@ -45,6 +45,7 @@
 --     donut (fini, pcs)                          <- pate_d 1 kg/pcs
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

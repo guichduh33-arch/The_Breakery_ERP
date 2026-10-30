@@ -13,6 +13,8 @@
 --   MANAGER (closes A3, ≠ A) = 00000000-0000-0000-0000-000000000004 (Manager Demo)
 --   Acting reports.read user  = 00000000-0000-0000-0000-000000000001 (Mamat/Owner)
 BEGIN;
+\ir helpers/legacy_users.sql
+SELECT plan(14);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -121,6 +123,7 @@ BEGIN
   INSERT INTO _r SELECT 'T14_anon_42501', v_denied;
 END $$;
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT ok(pass,name) FROM _r ORDER BY name;
 -- Expected: 14 rows, pass = true everywhere.
+SELECT * FROM finish();
 ROLLBACK;

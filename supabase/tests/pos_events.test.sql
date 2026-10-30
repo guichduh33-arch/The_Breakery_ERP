@@ -5,6 +5,7 @@
 -- (UPDATE/DELETE rejected), and manager device registration.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(9);
 
 -- Gate: anon (no auth.uid()) is denied.

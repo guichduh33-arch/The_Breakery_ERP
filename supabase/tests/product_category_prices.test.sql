@@ -3,6 +3,7 @@
 -- Auth: ADMIN identity (EMP000) via request.jwt.claims. Run via MCP BEGIN/ROLLBACK.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(9);
 

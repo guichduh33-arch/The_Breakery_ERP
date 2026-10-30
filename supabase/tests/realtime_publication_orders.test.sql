@@ -19,6 +19,7 @@
 -- Jumeau de realtime_publication_settings.test.sql (même patron temp-table).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK porté par ce fichier).
 BEGIN;
+SELECT plan(4);
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
@@ -71,11 +72,8 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t4_replica_identity_not_nothing', false);
 END $$;
 
--- Agrégat : 'ok N' si tout passe, sinon la liste des assertions en échec.
-SELECT CASE
-  WHEN (SELECT count(*) FROM _r WHERE NOT pass) = 0
-    THEN 'ok ' || (SELECT count(*) FROM _r)::text
-  ELSE 'FAIL: ' || (SELECT string_agg(name, ', ') FROM _r WHERE NOT pass)
-END AS result;
+-- Émettre chaque assertion, avec un plan vérifiable par le runner.
+SELECT ok(pass,name) FROM _r ORDER BY name;
 
+SELECT * FROM finish();
 ROLLBACK;

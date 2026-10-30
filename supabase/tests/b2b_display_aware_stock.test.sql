@@ -6,11 +6,13 @@
 -- Run via MCP execute_sql under BEGIN/ROLLBACK. Auth simulated via request.jwt.claim.sub (EMP000).
 -- The suite captures each assertion's TAP line into _cap and returns (failures, total, lines).
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
 SELECT plan(3);
 SELECT set_config('request.jwt.claim.sub', (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
 
-INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
-VALUES ('ccc40001-0000-0000-0000-000000000001','T4 B2B Unlimited','b2b','PT T4', NULL, 0)
+INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance, category_id)
+VALUES ('ccc40001-0000-0000-0000-000000000001','T4 B2B Unlimited','b2b','PT T4', NULL, 0, current_setting('fixture.customer_category')::uuid)
 ON CONFLICT (id) DO NOTHING;
 UPDATE customers SET b2b_credit_limit = NULL, b2b_current_balance = 0 WHERE id = 'ccc40001-0000-0000-0000-000000000001';
 

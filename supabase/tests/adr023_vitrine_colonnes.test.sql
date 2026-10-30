@@ -6,6 +6,7 @@
 -- curation, aux replays et aux écritures SQL directes.
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
+SELECT plan(7);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -111,6 +112,7 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t7_douze_accepte', false);
 END $$;
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT ok(pass,name) FROM _r ORDER BY name;
 
+SELECT * FROM finish();
 ROLLBACK;

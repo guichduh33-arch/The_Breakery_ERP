@@ -26,6 +26,7 @@
 -- data in the shared V3 dev DB. Run via MCP execute_sql (BEGIN..ROLLBACK).
 
 BEGIN;
+\ir helpers/customer_category.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -230,7 +231,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
-  INSERT INTO customers (name) VALUES ('GM Test B2B Customer') RETURNING id INTO v_cust;
+  INSERT INTO customers (name, category_id) VALUES ('GM Test B2B Customer', current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_cust;
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
   VALUES ('GM Test Product B2B', 'GM-TEST-B2B', v_cat, 5000, 'pcs', 2000)
   RETURNING id INTO v_prod;

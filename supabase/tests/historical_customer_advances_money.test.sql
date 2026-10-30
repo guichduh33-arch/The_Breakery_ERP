@@ -38,7 +38,6 @@ INSERT INTO historical_tap(result) SELECT is((SELECT count(*) FROM stock_movemen
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*) FROM display_movements),display_n,'no display movement') FROM ca_baseline;
 INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products WHERE id=product),10::numeric,'physical stock unchanged') FROM historical_fixture;
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT jsonb_build_object('executed',(SELECT count(*) FROM historical_tap),
- 'failures',(SELECT coalesce(jsonb_agg(result),'[]') FROM historical_tap WHERE result LIKE 'not ok%'),
- 'tap_finish',(SELECT coalesce(jsonb_agg(result),'[]') FROM finish() result)) AS test_result;
+SELECT result FROM historical_tap ORDER BY id;
+SELECT * FROM finish();
 ROLLBACK;

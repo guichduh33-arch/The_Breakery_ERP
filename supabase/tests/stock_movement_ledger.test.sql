@@ -7,6 +7,7 @@
 -- movement_amount + product_group, truncated flag, REVOKE (anon cannot execute).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(16);
 
 -- ── Fixtures ───────────────────────────────────────────────────────────────

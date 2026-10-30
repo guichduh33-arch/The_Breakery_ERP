@@ -27,6 +27,8 @@
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -49,10 +51,10 @@ BEGIN
   SELECT * INTO f FROM _ar_fix;
 
   INSERT INTO customers (id, name, customer_type, b2b_company_name,
-                         b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance)
+                         b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance, category_id)
   VALUES
-    (f.cust_a, 'PGTAP AR Alpha', 'b2b', 'PT Alpha PGTAP', NULL, 20000000, 480000),
-    (f.cust_b, 'PGTAP AR Beta',  'b2b', NULL,             15,   NULL,     290000);
+    (f.cust_a, 'PGTAP AR Alpha', 'b2b', 'PT Alpha PGTAP', NULL, 20000000, 480000, current_setting('fixture.customer_category')::uuid),
+    (f.cust_b, 'PGTAP AR Beta',  'b2b', NULL,             15,   NULL,     290000, current_setting('fixture.customer_category')::uuid);
 
   INSERT INTO orders (id, order_number, invoice_number, order_type, status,
                       subtotal, tax_amount, total, customer_id, created_at,

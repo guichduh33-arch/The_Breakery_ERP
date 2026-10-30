@@ -12,6 +12,7 @@
 -- is a real EXCLUDE constraint — a blind INSERT would fail if a prior test left
 -- a session open), else creates one.
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 DO $$
 DECLARE v_sess UUID;

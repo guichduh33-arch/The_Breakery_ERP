@@ -11,6 +11,7 @@
 -- plafond avec total=40000, la ligne annulee ne pese plus dans le calcul).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
+\ir helpers/customer_category.sql
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -42,18 +43,18 @@ BEGIN
     RETURNING id INTO v_prod;
 
   -- ── Customers ────────────────────────────────────────────────────────────
-  INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C1 (T1/T7/T8)', 'retail', 100000) RETURNING id INTO v_c1;
-  INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C2 (T2)', 'retail', 50000) RETURNING id INTO v_c2;
-  INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C3 (T3, sans plafond individuel)', 'retail', NULL) RETURNING id INTO v_c3;
-  INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C4 (T4)', 'retail', 100000) RETURNING id INTO v_c4;
-  INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C5 (T5)', 'retail', 100000) RETURNING id INTO v_c5;
-  INSERT INTO customers (name, customer_type, retail_credit_limit, deleted_at)
-    VALUES ('S62 Tab C6 (T6, inactive)', 'retail', 100000, now()) RETURNING id INTO v_c6;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, category_id)
+    VALUES ('S62 Tab C1 (T1/T7/T8)', 'retail', 100000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c1;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, category_id)
+    VALUES ('S62 Tab C2 (T2)', 'retail', 50000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c2;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, category_id)
+    VALUES ('S62 Tab C3 (T3, sans plafond individuel)', 'retail', NULL, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c3;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, category_id)
+    VALUES ('S62 Tab C4 (T4)', 'retail', 100000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c4;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, category_id)
+    VALUES ('S62 Tab C5 (T5)', 'retail', 100000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c5;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, deleted_at, category_id)
+    VALUES ('S62 Tab C6 (T6, inactive)', 'retail', 100000, now(), current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c6;
 
   -- ── T1: fired counter order, 50 000, under a 100 000 cap ────────────────
   INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via, session_id)
@@ -100,8 +101,8 @@ BEGIN
   -- ── T9: cancelled-line exclusion — 40 000 active + 60 000 CANCELLED, under
   --        a 50 000 cap. v3 summed both (100k, refused) ; v4 must sum only the
   --        active line (40k, allowed).
-  INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C9 (T9, cancelled line excluded)', 'retail', 50000) RETURNING id INTO v_c9;
+  INSERT INTO customers (name, customer_type, retail_credit_limit, category_id)
+    VALUES ('S62 Tab C9 (T9, cancelled line excluded)', 'retail', 50000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_c9;
   INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via, session_id)
     VALUES ('#S62T9', 'take_out', 'pending_payment', 0, 0, 0, 'pos', v_session) RETURNING id INTO v_o9;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)

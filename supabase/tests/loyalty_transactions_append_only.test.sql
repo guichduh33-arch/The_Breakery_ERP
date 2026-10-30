@@ -3,6 +3,7 @@
 -- Red baseline constaté en Task 0 : INSERT/UPDATE/DELETE = true pour authenticated.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
+\ir helpers/customer_category.sql
 SELECT plan(5);
 
 SELECT is(has_table_privilege('authenticated','public.loyalty_transactions','INSERT'), false,
@@ -32,7 +33,7 @@ BEGIN
     VALUES ('TST-S37-LT','S37 LoyaltySanity',v_cat,50000,10000,'pcs',10) RETURNING id INTO v_prod;
   SELECT id INTO v_sess FROM pos_sessions WHERE status='open' AND opened_by=v_prof ORDER BY opened_at DESC LIMIT 1;
   IF v_sess IS NULL THEN INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof,0,'open') RETURNING id INTO v_sess; END IF;
-  INSERT INTO customers (name, customer_type) VALUES ('S37 Loyalty Sanity','retail') RETURNING id INTO v_cust;
+  INSERT INTO customers (name, customer_type, category_id) VALUES ('S37 Loyalty Sanity','retail', current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_cust;
 
   v_res := complete_order_with_payment_v30(
     p_session_id := v_sess,

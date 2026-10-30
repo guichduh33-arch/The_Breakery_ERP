@@ -26,6 +26,7 @@
 -- Run via MCP execute_sql / runner API-from-file (BEGIN/ROLLBACK inclus).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

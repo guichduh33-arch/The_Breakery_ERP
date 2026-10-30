@@ -30,7 +30,6 @@ INSERT INTO display_stock(product_id,quantity) SELECT product,0 FROM historical_
 INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT _record_sale_stock_v1(product,1,gen_random_uuid(),actor,'Normal empty display guard','sale','orders','pcs',true)
  FROM historical_fixture$q$,'P0002',NULL,'normal sale helper still refuses empty display stock');
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT jsonb_build_object('executed',(SELECT count(*) FROM historical_tap),
- 'failures',(SELECT coalesce(jsonb_agg(result),'[]') FROM historical_tap WHERE result LIKE 'not ok%'),
- 'tap_finish',(SELECT coalesce(jsonb_agg(result),'[]') FROM finish() result)) AS test_result;
+SELECT result FROM historical_tap ORDER BY id;
+SELECT * FROM finish();
 ROLLBACK;

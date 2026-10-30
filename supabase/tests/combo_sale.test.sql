@@ -16,6 +16,7 @@
 --
 -- Cashier ...0002 has pos.sale.create. Fresh products + open session seeded in-tx.
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 INSERT INTO pos_sessions (id, opened_by, opening_cash, status)
   VALUES ('00000000-0000-0000-0000-0000000ce001','00000000-0000-0000-0000-000000000002', 0, 'open');

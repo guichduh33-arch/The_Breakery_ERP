@@ -38,13 +38,14 @@
 --      (T12).
 
 BEGIN;
+\ir helpers/pin_session.sql
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 SELECT plan(14);
 
-SELECT set_config('request.jwt.claims',
-  json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 
 DO $bootstrap$
 DECLARE

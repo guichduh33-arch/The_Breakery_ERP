@@ -65,6 +65,7 @@
 --   T20 record_production_v5 depth>5 raises recipe_depth_exceeded.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

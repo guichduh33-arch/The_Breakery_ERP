@@ -2,6 +2,7 @@
 -- Session 47 / Task A6 — void/refund restore COMPONENT stock for combo lines.
 -- Cashier ...0002 acts; MANAGER ...0004 authorizes. Fresh products + session in-tx.
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 INSERT INTO pos_sessions (id, opened_by, opening_cash, status)
   VALUES ('00000000-0000-0000-0000-0000000ce002','00000000-0000-0000-0000-000000000002', 0, 'open');

@@ -14,6 +14,7 @@
 --     silence et la serveuse croyait le plat parti en cuisine.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/session.sql
 -- Libère uniquement dans cette transaction la caisse du propriétaire fixture.
 -- Le ROLLBACK final restaure toute session existante, sans clôture durable.

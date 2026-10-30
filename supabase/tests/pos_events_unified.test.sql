@@ -16,6 +16,7 @@
 -- client-stream behaviour (filters, keyset, facets) is unchanged.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/sales.sql
 SELECT plan(8);
 

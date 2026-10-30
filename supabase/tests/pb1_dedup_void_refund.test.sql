@@ -10,6 +10,7 @@
 -- Run : execute_sql MCP sous BEGIN ... ROLLBACK.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/session.sql
 SELECT plan(4);
 

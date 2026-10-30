@@ -6,6 +6,7 @@
 -- by_category revenue exactly (shared line-level scope).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 SELECT plan(9);
 

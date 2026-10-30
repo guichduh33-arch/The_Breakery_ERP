@@ -9,20 +9,21 @@
 -- T_B2B_06: unknown customer raises customer_not_found
 
 BEGIN;
+\ir helpers/customer_category.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 SELECT plan(6);
 
 -- Fixtures
-INSERT INTO customers (id, name, customer_type)
+INSERT INTO customers (id, name, customer_type, category_id)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'B2B_TEST_RETAIL', 'retail');
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'B2B_TEST_RETAIL', 'retail', current_setting('fixture.customer_category')::uuid);
 
-INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance)
+INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance, category_id)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000002', 'B2B_TEST_UNLIMITED', 'b2b', 'PT Unlimited', NULL, 5000000),
-  ('aaaaaaaa-0000-0000-0000-000000000003', 'B2B_TEST_CAPPED',    'b2b', 'PT Capped',   1000000, 200000);
+  ('aaaaaaaa-0000-0000-0000-000000000002', 'B2B_TEST_UNLIMITED', 'b2b', 'PT Unlimited', NULL, 5000000, current_setting('fixture.customer_category')::uuid),
+  ('aaaaaaaa-0000-0000-0000-000000000003', 'B2B_TEST_CAPPED',    'b2b', 'PT Capped',   1000000, 200000, current_setting('fixture.customer_category')::uuid);
 
 -- T1: function exists
 SELECT has_function(

@@ -12,6 +12,7 @@
 -- Run via MCP execute_sql (BEGIN..ROLLBACK) ou API-from-file.
 
 BEGIN;
+\ir helpers/customer_category.sql
 SELECT plan(8);
 
 -- Baseline du compte 2220 (le compte naît au Lot 4 : baseline attendue 0, mais
@@ -50,8 +51,8 @@ BEGIN
     VALUES ('TST-SC-RECON', 'SC Recon Product', v_cat, 20000, 1000, true, false)
     RETURNING id INTO v_prod;
 
-  INSERT INTO customers (name, customer_type, loyalty_points, lifetime_points)
-    VALUES ('SC Recon Customer', 'retail', 2000, 2000) RETURNING id INTO v_cust;
+  INSERT INTO customers (name, customer_type, loyalty_points, lifetime_points, category_id)
+    VALUES ('SC Recon Customer', 'retail', 2000, 2000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_cust;
 
   SELECT id INTO v_sess FROM pos_sessions WHERE status='open' AND opened_by=v_prof ORDER BY opened_at DESC LIMIT 1;
   IF v_sess IS NULL THEN

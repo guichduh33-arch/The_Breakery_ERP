@@ -29,6 +29,7 @@
 -- get_low_stock_v1 -> get_low_stock_v2 ; get_product_dashboard_v2 -> _v3.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 SELECT plan(16);

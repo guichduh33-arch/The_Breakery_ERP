@@ -31,6 +31,7 @@
 --   delta_pct     = round(((150-100)/100)*100, 2) = 50.00
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

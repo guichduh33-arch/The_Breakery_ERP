@@ -6,6 +6,7 @@
 -- metadata, and that an OPEN session exposes null reconciliation volets.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 \ir helpers/session.sql
 SELECT plan(10);

@@ -23,7 +23,6 @@ INSERT INTO historical_tap(result) SELECT is((SELECT i.product_id FROM order_ite
 INSERT INTO historical_tap(result) SELECT is((SELECT i.name_snapshot FROM order_items i JOIN historical_import_documents d ON d.entity_id=i.order_id
  WHERE d.run_id=(f.result->>'run_id')::uuid),'Historical parent, original option','native line keeps source option text') FROM historical_fixture f;
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT jsonb_build_object('executed',(SELECT count(*) FROM historical_tap),
- 'failures',(SELECT coalesce(jsonb_agg(result),'[]') FROM historical_tap WHERE result LIKE 'not ok%'),
- 'tap_finish',(SELECT coalesce(jsonb_agg(result),'[]') FROM finish() result)) AS test_result;
+SELECT result FROM historical_tap ORDER BY id;
+SELECT * FROM finish();
 ROLLBACK;

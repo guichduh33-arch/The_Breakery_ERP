@@ -38,7 +38,6 @@ INSERT INTO historical_tap(result) SELECT ok((SELECT bool_and(total_debit=total_
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*) FROM historical_import_stock_effects WHERE run_id=(f.result->>'run_id')::uuid),0::bigint,'supplier advance creates no stock effect') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products WHERE id=f.raw_product),10::numeric,'supplier advance and receipt do not alter physical stock') FROM historical_fixture f;
 SET CONSTRAINTS ALL IMMEDIATE;
-SELECT jsonb_build_object('executed',(SELECT count(*) FROM historical_tap),
- 'failures',(SELECT coalesce(jsonb_agg(result),'[]') FROM historical_tap WHERE result LIKE 'not ok%'),
- 'tap_finish',(SELECT coalesce(jsonb_agg(result),'[]') FROM finish() result)) AS test_result;
+SELECT result FROM historical_tap ORDER BY id;
+SELECT * FROM finish();
 ROLLBACK;

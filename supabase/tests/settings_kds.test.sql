@@ -18,6 +18,7 @@
 -- Run via MCP execute_sql wrapped BEGIN/ROLLBACK.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(13);

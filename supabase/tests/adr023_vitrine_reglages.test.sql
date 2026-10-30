@@ -7,6 +7,7 @@
 -- disparu.
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
+SELECT plan(9);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -126,6 +127,7 @@ SELECT 't9_anciennes_versions_droppees', NOT EXISTS (
      AND p.proname IN ('set_setting_v12', 'get_settings_by_category_v9')
 );
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT ok(pass,name) FROM _r ORDER BY name;
 
+SELECT * FROM finish();
 ROLLBACK;

@@ -6,6 +6,7 @@
 -- Run via MCP execute_sql (BEGIN..ROLLBACK) ou API-from-file.
 
 BEGIN;
+\ir helpers/customer_category.sql
 SELECT plan(9);
 
 DO $$
@@ -27,8 +28,8 @@ BEGIN
     VALUES ('TST-SC-GATE', 'SC Gate Product', v_cat, 20000, 1000, true, false)
     RETURNING id INTO v_prod;
 
-  INSERT INTO customers (name, customer_type, loyalty_points)
-    VALUES ('SC Gate Customer', 'retail', 0) RETURNING id INTO v_cust;
+  INSERT INTO customers (name, customer_type, loyalty_points, category_id)
+    VALUES ('SC Gate Customer', 'retail', 0, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_cust;
 
   -- Seed du solde d'avoir via l'unique writer (50 000).
   PERFORM 1 FROM customers WHERE id = v_cust FOR UPDATE;

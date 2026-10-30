@@ -24,6 +24,7 @@
 --   MANAGER     : 00000000-0000-0000-0000-000000000004 (has perm)
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

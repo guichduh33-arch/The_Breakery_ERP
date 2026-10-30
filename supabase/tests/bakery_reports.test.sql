@@ -45,6 +45,7 @@
 -- Run via mcp execute_sql wrapped in BEGIN/ROLLBACK — self-cleaning.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

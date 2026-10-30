@@ -17,6 +17,7 @@
 --   in BEGIN/ROLLBACK so it leaves no side effects.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(10);
 

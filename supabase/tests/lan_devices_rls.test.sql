@@ -3,6 +3,7 @@
 -- sous RLS lan.devices.manage" (policies S13, migration 20260517000171).
 -- Runner : MCP execute_sql, enveloppe BEGIN..ROLLBACK portée par ce fichier.
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 SELECT plan(7);
 
@@ -21,9 +22,15 @@ BEGIN
   PERFORM set_config('breakery.lanrls_code', v_code, true);
 END $$;
 
--- ── En tant que CASHIER (pas lan.devices.manage) ────────────────────────────
-DO $$ BEGIN
-  PERFORM pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000002');
+-- ── Lecteur sans lan.devices.manage ─────────────────────────────────────────
+-- Le rôle jetable isole ce contrat de la matrice de droits du magasin.
+DO $$ DECLARE a uuid:=gen_random_uuid(); p uuid:=gen_random_uuid(); BEGIN
+  INSERT INTO roles(code,name,is_system) VALUES('PGTAP_LAN_READER','LAN read-only fixture',false);
+  INSERT INTO role_permissions(role_code,permission_code) VALUES('PGTAP_LAN_READER','lan.devices.read');
+  INSERT INTO auth.users(id) VALUES(a);
+  INSERT INTO user_profiles(id,auth_user_id,employee_code,full_name,role_code,is_active,pin_hash)
+    VALUES(p,a,'LAN-'||left(p::text,8),'LAN read-only fixture','PGTAP_LAN_READER',true,hash_pin('285741'));
+  PERFORM pg_temp.authenticate_pin(a);
 END $$;
 SET LOCAL ROLE authenticated;
 

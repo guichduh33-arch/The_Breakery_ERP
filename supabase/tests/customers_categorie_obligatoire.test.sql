@@ -7,6 +7,13 @@
 -- qui passe au rouge ne désigne pas le producteur : on teste ici les deux chemins
 -- qui en fabriquaient, plus la contrainte elle-même.
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
+\ir helpers/pin_session.sql
+-- Configurer un défaut jetable pour tester le contrat, sans dépendre du magasin.
+UPDATE customer_categories SET is_default=false WHERE is_default;
+UPDATE customer_categories SET is_default=true WHERE id=current_setting('fixture.customer_category')::uuid;
+SELECT plan(9);
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
 
@@ -18,17 +25,13 @@ BEGIN
   SELECT cc.id INTO v_default FROM customer_categories cc
    WHERE cc.is_default = true AND cc.deleted_at IS NULL LIMIT 1;
 
-  -- T1 : la catégorie par défaut est une PRÉCONDITION, pas une commodité.
-  --   `create_customer_v3` comme `import_customers_v2` s'appuient dessus ; sans
-  --   elle, toute création deviendrait impossible sous la contrainte. On la
-  --   surveille ici plutôt que d'ajouter une garde dans chaque RPC.
+  -- T1 : le parcours sans catégorie utilise l'unique défaut configuré dans la
+  --   fixture ; les autres tests peuvent créer leurs catégories explicitement.
   INSERT INTO _r SELECT 'T1_une_seule_categorie_par_defaut',
     (SELECT COUNT(*) FROM customer_categories WHERE is_default AND deleted_at IS NULL) = 1;
 
   -- T2 : une fiche VIVANTE créée sans catégorie reçoit le défaut — le trigger
-  --   remplit, il ne refuse pas. C'est ce qui permet aux vingt suites qui
-  --   insèrent en direct (b2b_*, store_credit_*, loyalty_*…) de continuer à
-  --   tourner sans connaître la règle.
+  --   remplit, il ne refuse pas ; le CHECK reste le dernier garde-fou.
   INSERT INTO customers (name, customer_type)
     VALUES ('CAT Orphelin Vivant', 'retail') RETURNING category_id INTO v_id;
   INSERT INTO _r SELECT 'T2_fiche_vivante_sans_categorie_recoit_le_defaut',
@@ -72,8 +75,7 @@ BEGIN
   SELECT up.auth_user_id INTO v_auth FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
      AND has_permission(up.auth_user_id, 'customers.create') LIMIT 1;
-  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+  PERFORM pg_temp.authenticate_pin(v_auth);
 
   -- T4 : catégorie ABSENTE -> la fiche reçoit le défaut, l'import aboutit.
   --   C'est le cas courant : un fichier nom/téléphone, sans colonne catégorie.
@@ -111,6 +113,7 @@ BEGIN
     AND NOT has_function_privilege('anon', 'public.import_customers_v2(jsonb,boolean,uuid)', 'EXECUTE');
 END $$;
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT ok(pass,name) FROM _r ORDER BY name;
 -- Attendu : 9 lignes, pass = true partout.
+SELECT * FROM finish();
 ROLLBACK;

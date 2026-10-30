@@ -20,6 +20,7 @@
 -- Capture des lignes TAP dans _cap et renvoie (failures, total, lines).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004',true);
 SELECT set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-000000000004')::text, true);
 

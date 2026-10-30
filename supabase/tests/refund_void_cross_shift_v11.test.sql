@@ -20,6 +20,7 @@
 -- il ne s'execute jamais sous ROLLBACK, c'est voulu.
 
 BEGIN;
+\ir helpers/customer_category.sql
 SELECT plan(14);
 
 -- ===== T1-T4 : versions =====
@@ -67,7 +68,7 @@ BEGIN
   VALUES (v_p1, 'PGTAP-6B-XS1', 'pgTAP lot6b cross-shift P1', v_cat, 25000, 100.000, true, true),
          (v_p2, 'PGTAP-6B-XS2', 'pgTAP lot6b cross-shift P2', v_cat, 30000, 100.000, true, true);
 
-  INSERT INTO customers (name) VALUES ('pgTAP lot6b cross-shift customer') RETURNING id INTO v_cust;
+  INSERT INTO customers (name, category_id) VALUES ('pgTAP lot6b cross-shift customer', current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_cust;
 
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_cashier_auth)::text, true);

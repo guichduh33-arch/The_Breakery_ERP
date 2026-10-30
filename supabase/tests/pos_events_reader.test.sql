@@ -5,6 +5,7 @@
 -- facets vs cursor-page sentinel.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(13);
 
 -- Gate: anon (no auth.uid()) is denied.

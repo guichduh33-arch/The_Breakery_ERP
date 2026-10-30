@@ -10,6 +10,7 @@
 -- produit et au rapport Top products de diverger.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 SELECT plan(11);
 

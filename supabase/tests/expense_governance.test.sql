@@ -26,6 +26,7 @@
 -- (step=1) is stable at assertion time.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/expense_terms.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;

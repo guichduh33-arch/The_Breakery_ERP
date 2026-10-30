@@ -6,6 +6,7 @@
 -- and category revenue is a positive composition over the same scope.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
 \ir helpers/sales.sql
 SELECT plan(10);

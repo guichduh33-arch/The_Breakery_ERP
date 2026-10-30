@@ -137,5 +137,5 @@ INSERT INTO audit_results SELECT is((SELECT (result->>'new_current_stock')::nume
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM stock_movements WHERE idempotency_key=(SELECT request_key FROM decrement_fixture)),0::bigint,'No-op creates no artificial ledger movement');
 INSERT INTO audit_results SELECT is((SELECT unit FROM stock_movements WHERE product_id=(SELECT product_id FROM decrement_fixture) AND movement_type='waste'),'kg','Fractional waste preserves base unit');
 INSERT INTO audit_results SELECT * FROM finish();
-SELECT array_agg(line) AS results FROM audit_results;
+SELECT line FROM audit_results;
 ROLLBACK;

@@ -19,6 +19,7 @@
 -- Wrapped in BEGIN ... ROLLBACK so live DB unchanged.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(9);
 
 -- ===== T1 : CASHIER without orders.read → 42501 =====

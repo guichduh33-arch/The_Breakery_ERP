@@ -11,6 +11,7 @@
 -- passait parce que le prix client n'était jamais confronté au catalogue.
 -- Prix résolu = base 50000 + 0 + 0 : le montant encaissé ne change pas.
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 
 INSERT INTO pos_sessions (id, opened_by, opening_cash, status)

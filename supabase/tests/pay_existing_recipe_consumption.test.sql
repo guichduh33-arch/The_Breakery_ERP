@@ -9,6 +9,7 @@
 -- pos.sale.create + payments.process. Captures TAP lines into _cap and
 -- returns (failures, total, lines).
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
 UPDATE business_config SET allow_negative_stock=true WHERE id=1;
 INSERT INTO pos_sessions (id, opened_by, opening_cash, status)

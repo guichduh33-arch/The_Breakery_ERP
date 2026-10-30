@@ -14,38 +14,32 @@
 -- Run via MCP execute_sql (BEGIN..ROLLBACK) ou API-from-file.
 
 BEGIN;
+\ir helpers/pin_session.sql
 SELECT plan(5);
 
 DO $$
 DECLARE
-  v_auth UUID; v_prof UUID; v_mgr_prof UUID;
+  v_auth UUID := gen_random_uuid(); v_prof UUID := gen_random_uuid(); v_mgr_prof UUID;
   v_cat UUID; v_prod UUID; v_sess UUID; v_promo UUID;
-  v_cust1 UUID; v_cust2 UUID;
+  v_cust1 UUID; v_cust2 UUID; v_customer_category UUID := gen_random_uuid();
 BEGIN
-  SELECT up.auth_user_id, up.id INTO v_auth, v_prof
-    FROM user_profiles up
-   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND has_permission(up.auth_user_id, 'pos.sale.create')
-   LIMIT 1;
-  IF v_auth IS NULL THEN RAISE EXCEPTION 'fixture: no user with pos.sale.create'; END IF;
-  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
-
-  SELECT up.id INTO v_mgr_prof
-    FROM user_profiles up
-   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND has_permission(up.auth_user_id, 'sales.discount')
-   LIMIT 1;
+  INSERT INTO auth.users(id) VALUES(v_auth);
+  INSERT INTO user_profiles(id,auth_user_id,employee_code,full_name,role_code,is_active,pin_hash)
+    VALUES(v_prof,v_auth,'PAR-'||left(v_prof::text,8),'Totals parity fixture','SUPER_ADMIN',true,hash_pin('285741'));
+  PERFORM pg_temp.authenticate_pin(v_auth);
+  v_mgr_prof := v_prof;
+  INSERT INTO customer_categories(id,name,slug)
+    VALUES(v_customer_category,'Totals parity fixture','parity-'||v_customer_category);
 
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
   INSERT INTO products (sku, name, category_id, retail_price, current_stock, track_inventory, is_display_item)
     VALUES ('TST-ADR013-PAR', 'ADR013 Parity Product', v_cat, 20000, 1000, true, false)
     RETURNING id INTO v_prod;
 
-  INSERT INTO customers (name, customer_type, loyalty_points)
-    VALUES ('ADR013 Parity Cust 1', 'retail', 2000) RETURNING id INTO v_cust1;
-  INSERT INTO customers (name, customer_type, loyalty_points)
-    VALUES ('ADR013 Parity Cust 2', 'retail', 2000) RETURNING id INTO v_cust2;
+  INSERT INTO customers (name, customer_type, loyalty_points,category_id)
+    VALUES ('ADR013 Parity Cust 1', 'retail', 2000,v_customer_category) RETURNING id INTO v_cust1;
+  INSERT INTO customers (name, customer_type, loyalty_points,category_id)
+    VALUES ('ADR013 Parity Cust 2', 'retail', 2000,v_customer_category) RETURNING id INTO v_cust2;
 
   SELECT id INTO v_sess FROM pos_sessions WHERE status='open' AND opened_by=v_prof ORDER BY opened_at DESC LIMIT 1;
   IF v_sess IS NULL THEN

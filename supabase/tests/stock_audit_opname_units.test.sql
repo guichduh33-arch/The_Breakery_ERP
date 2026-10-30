@@ -1,5 +1,6 @@
 -- Régressions : revue figée, notes effaçables, bornes de saisie, unités et signes.
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(18);
 
 CREATE FUNCTION pg_temp.stock_audit() RETURNS SETOF text LANGUAGE plpgsql AS $$

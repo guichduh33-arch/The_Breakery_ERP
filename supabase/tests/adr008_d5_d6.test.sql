@@ -62,13 +62,14 @@
 --                atteinte à depth = 5 en tant que FEUILLE (donc hors garde D5)
 
 BEGIN;
+\ir helpers/pin_session.sql
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 SELECT plan(11);
 
-SELECT set_config('request.jwt.claims',
-  json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);
+SELECT pg_temp.authenticate_pin('00000000-0000-0000-0000-000000000001');
 
 -- ---------------------------------------------------------------------------
 -- Bootstrap : section + catégorie actives.

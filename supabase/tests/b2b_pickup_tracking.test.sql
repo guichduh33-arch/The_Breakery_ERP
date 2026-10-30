@@ -1,4 +1,6 @@
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
 \ir helpers/catalog.sql
 CREATE TEMP TABLE pickup_checks (name text, passed boolean);
 DO $test$
@@ -14,8 +16,8 @@ BEGIN
  AND public.has_permission(auth_user_id,'b2b.payment.record') LIMIT 1;
  PERFORM set_config('request.jwt.claim.sub',v_uid::text,true);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',v_uid)::text,true);
- INSERT INTO public.customers(name,customer_type,b2b_credit_limit,b2b_current_balance)
- VALUES('Pickup regression fixture','b2b',NULL,0) RETURNING id INTO v_customer;
+ INSERT INTO public.customers(name,customer_type,b2b_credit_limit,b2b_current_balance, category_id)
+ VALUES('Pickup regression fixture','b2b',NULL,0, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_customer;
  SELECT id INTO STRICT v_product FROM public.products
  WHERE deleted_at IS NULL AND retail_price > 0 AND track_inventory AND current_stock > 3 LIMIT 1;
  v_result := public.create_b2b_order_v8(v_customer,

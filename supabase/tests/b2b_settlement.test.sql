@@ -51,6 +51,8 @@
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). pgtap pre-installed on V3 dev.
 
 BEGIN;
+\ir helpers/legacy_users.sql
+\ir helpers/customer_category.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -59,17 +61,17 @@ SELECT plan(17);
 -- ---------------------------------------------------------------------------
 -- Fixtures : 10 unlimited b2b customers + 1 capped + 1 tracked product
 -- ---------------------------------------------------------------------------
-INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance) VALUES
-  ('b2b52001-0000-0000-0000-000000000001','PGTAP S52 C1','b2b','PT C1',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000002','PGTAP S52 C2','b2b','PT C2',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000003','PGTAP S52 C3','b2b','PT C3',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000004','PGTAP S52 C4','b2b','PT C4',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000005','PGTAP S52 C5','b2b','PT C5',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000006','PGTAP S52 C6','b2b','PT C6',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000007','PGTAP S52 C7','b2b','PT C7',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000008','PGTAP S52 C8','b2b','PT C8',500000,0),
-  ('b2b52001-0000-0000-0000-000000000009','PGTAP S52 C9','b2b','PT C9',NULL,0),
-  ('b2b52001-0000-0000-0000-000000000010','PGTAP S52 C10','b2b','PT C10',NULL,0)
+INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_credit_limit, b2b_current_balance, category_id) VALUES
+  ('b2b52001-0000-0000-0000-000000000001','PGTAP S52 C1','b2b','PT C1',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000002','PGTAP S52 C2','b2b','PT C2',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000003','PGTAP S52 C3','b2b','PT C3',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000004','PGTAP S52 C4','b2b','PT C4',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000005','PGTAP S52 C5','b2b','PT C5',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000006','PGTAP S52 C6','b2b','PT C6',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000007','PGTAP S52 C7','b2b','PT C7',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000008','PGTAP S52 C8','b2b','PT C8',500000,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000009','PGTAP S52 C9','b2b','PT C9',NULL,0, current_setting('fixture.customer_category')::uuid),
+  ('b2b52001-0000-0000-0000-000000000010','PGTAP S52 C10','b2b','PT C10',NULL,0, current_setting('fixture.customer_category')::uuid)
 ON CONFLICT (id) DO NOTHING;
 
 UPDATE customers SET b2b_credit_limit=NULL, b2b_current_balance=0

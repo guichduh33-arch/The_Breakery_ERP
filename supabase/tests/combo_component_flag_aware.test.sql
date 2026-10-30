@@ -19,6 +19,7 @@
 -- Lancer via MCP execute_sql (enveloppe BEGIN … ROLLBACK portée par ce fichier).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 SELECT plan(5);
 SELECT set_config('request.jwt.claims',
   json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);

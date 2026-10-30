@@ -1,5 +1,9 @@
 \ir session.sql
 \ir catalog.sql
+-- Période de la fixture, indépendante des seules périodes exploitées en boutique.
+INSERT INTO fiscal_periods(period_start,period_end,status)
+SELECT '2026-06-01'::date,'2026-06-30'::date,'open'
+WHERE NOT EXISTS(SELECT 1 FROM fiscal_periods WHERE '2026-06-10'::date BETWEEN period_start AND period_end);
 -- Ventes dans la fenêtre des rapports ; aucune donnée persistante.
 INSERT INTO orders (id, order_number, order_type, status, subtotal, tax_amount, total,
                     session_id, created_at, paid_at)

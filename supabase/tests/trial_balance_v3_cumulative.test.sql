@@ -25,6 +25,7 @@
 -- reference_id=NULL est distinct).
 
 BEGIN;
+\ir helpers/legacy_users.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(7);
 

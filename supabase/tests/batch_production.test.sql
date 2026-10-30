@@ -29,6 +29,7 @@
 -- Runner : apply this body inside MCP execute_sql under a BEGIN .. ROLLBACK envelope.
 
 BEGIN;
+\ir helpers/legacy_users.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

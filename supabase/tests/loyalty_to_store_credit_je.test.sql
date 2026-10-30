@@ -6,6 +6,7 @@
 -- Run via MCP execute_sql (BEGIN..ROLLBACK) ou API-from-file.
 
 BEGIN;
+\ir helpers/customer_category.sql
 SELECT plan(6);
 
 DO $$
@@ -20,8 +21,8 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 
-  INSERT INTO customers (name, customer_type, loyalty_points, lifetime_points)
-    VALUES ('SC Convert Customer', 'retail', 2000, 2000) RETURNING id INTO v_cust;
+  INSERT INTO customers (name, customer_type, loyalty_points, lifetime_points, category_id)
+    VALUES ('SC Convert Customer', 'retail', 2000, 2000, current_setting('fixture.customer_category')::uuid) RETURNING id INTO v_cust;
   PERFORM set_config('scc.cust', v_cust::text, true);
   PERFORM set_config('scc.idem', gen_random_uuid()::text, true);
 END $$;

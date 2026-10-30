@@ -1,14 +1,20 @@
 -- Cash Wallets / Trésorerie — pgTAP suite.
 -- Run via MCP execute_sql against ikcyvlovptebroadgtvd, wrapped in BEGIN…ROLLBACK.
--- NOTE: write-path cases stub public.has_permission to TRUE inside the txn so the
--- SECURITY DEFINER RPC's gate passes for the test caller (auth.uid() is NULL under
--- execute_sql); ROLLBACK restores the real function.
+-- Acteur et rôle jetables : les vrais contrôles de droits restent exécutés.
 
 BEGIN;
+\ir helpers/pin_session.sql
 
--- Stub the permission gate for write-path cases (rolled back at COMMIT/ROLLBACK).
-CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
-RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
+INSERT INTO roles(code,name,is_system) VALUES('PGTAP_CASH','Cash wallets fixture',false);
+INSERT INTO role_permissions(role_code,permission_code) VALUES
+  ('PGTAP_CASH','accounting.cash.write'),('PGTAP_CASH','accounting.cash.read'),('PGTAP_CASH','accounting.cash.adjust');
+DO $$ DECLARE a uuid:=gen_random_uuid(); p uuid:=gen_random_uuid(); BEGIN
+  INSERT INTO auth.users(id) VALUES(a);
+  INSERT INTO user_profiles(id,auth_user_id,employee_code,full_name,role_code,is_active,pin_hash)
+    VALUES(p,a,'CASH-'||left(p::text,8),'Cash wallets fixture','PGTAP_CASH',true,hash_pin('285741'));
+  PERFORM set_config('cash.fixture_auth',a::text,true);
+  PERFORM pg_temp.authenticate_pin(a);
+END $$;
 
 SELECT plan(28);
 
@@ -19,7 +25,7 @@ SELECT is( (SELECT balance_type FROM accounts WHERE code='3110'), 'debit', '3110
 SELECT is( (SELECT code FROM accounts WHERE id = resolve_mapping_account('CASH_WALLET_SMALL_MONEY')), '1117', 'small-money mapping → 1117');
 SELECT is( (SELECT code FROM accounts WHERE id = resolve_mapping_account('OWNER_DRAWING')), '3110', 'owner-drawing mapping → 3110');
 SELECT ok( EXISTS(SELECT 1 FROM permissions WHERE code='accounting.cash.write'), 'cash.write permission exists');
-SELECT ok( EXISTS(SELECT 1 FROM role_permissions WHERE role_code='MANAGER' AND permission_code='accounting.cash.write'), 'MANAGER has cash.write');
+SELECT ok( has_permission(auth.uid(),'accounting.cash.write'), 'fixture caller has cash.write');
 
 -- ── Task 2: record_cash_wallet_movement_v2 ───────────────────────────────────────────
 DO $$
@@ -91,9 +97,9 @@ SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v2(date,date)
   'anon has no EXECUTE on get_cash_wallet_analysis_v2');
 
 -- ── Task 22: stricter accounting.cash.adjust gate (adjustments + boss withdrawal) ──
--- Re-stub: caller has cash.write but NOT cash.adjust.
-CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
-RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.adjust' $$;
+-- Le même acteur garde cash.write, mais perd cash.adjust.
+DELETE FROM role_permissions WHERE role_code='PGTAP_CASH' AND permission_code='accounting.cash.adjust';
+SELECT pg_temp.authenticate_pin(current_setting('cash.fixture_auth')::uuid);
 
 SELECT throws_ok(
   $q$ SELECT record_cash_wallet_movement_v2('adjustment_gain',5000,CURRENT_DATE,'over',
@@ -111,10 +117,10 @@ SELECT isnt(
 -- ── Lot 1 : les trois RPC de lecture refusent sans accounting.cash.read ───────
 -- Avant le bump 20260802000006 elles etaient SECURITY DEFINER sans aucun gate,
 -- donc tout utilisateur connecte lisait les soldes des coffres, le detail des
--- mouvements et les retraits du patron. Le stub renvoie false sur la seule
--- permission de lecture pour prouver que c'est bien elle qui commande.
-CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
-RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.read' $$;
+-- mouvements et les retraits du patron. Retirer la seule permission de lecture
+-- prouve que c'est bien elle qui commande.
+DELETE FROM role_permissions WHERE role_code='PGTAP_CASH' AND permission_code='accounting.cash.read';
+SELECT pg_temp.authenticate_pin(current_setting('cash.fixture_auth')::uuid);
 
 SELECT throws_ok(
   $q$ SELECT * FROM get_cash_wallet_balances_v2() $q$,
