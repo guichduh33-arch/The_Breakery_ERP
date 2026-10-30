@@ -37,7 +37,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle2, MapPin, Send } from 'lucide-react';
+import { CheckCircle2, MapPin, Send } from 'lucide-react';
 import type { RestaurantTable } from '@breakery/domain';
 import { Button, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
@@ -294,20 +294,9 @@ export function TabletOrderPage({
   if (view === 'floor-plan') {
     return (
       <div className="flex flex-col h-full min-h-0">
-        <div className="px-3 py-1 sm:px-6 sm:py-3 border-b border-border-subtle bg-bg-elevated flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="md"
-            className="h-11 min-h-11 sm:h-14 gap-2"
-            onClick={() => setView('menu')}
-            aria-label="Back to menu"
-          >
-            <ArrowLeft className="h-5 w-5" aria-hidden />
-            Back
-          </Button>
-        </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <FloorPlanView
+            onBack={() => setView('menu')}
             tables={tables}
             occupancy={occupancy}
             loading={tablesOverride === undefined && tablesQuery.isLoading}

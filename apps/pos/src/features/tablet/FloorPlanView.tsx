@@ -43,10 +43,10 @@
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Home, Trees, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, Home, Trees, MapPin } from 'lucide-react';
 import type { JSX } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
-import { cn } from '@breakery/ui';
+import { Button, cn } from '@breakery/ui';
 import { TableCell, type FloorPlanTable, type TableStatus } from '../floor-plan/TableCell';
 import { FloorCanvas } from '../floor-plan/FloorCanvas';
 import { bucketTablesBySection } from '../floor-plan/sections';
@@ -64,6 +64,7 @@ export interface AppendableOrderRef {
 }
 
 export interface FloorPlanViewProps {
+  onBack?: () => void;
   tables: RestaurantTable[];
   /** Map of tableName → occupied flag. */
   occupancy: Record<string, boolean>;
@@ -100,6 +101,7 @@ function toFloorPlanTable(
 }
 
 export function FloorPlanView({
+  onBack,
   tables,
   occupancy,
   selectedTable,
@@ -158,19 +160,19 @@ export function FloorPlanView({
       aria-label="Floor plan"
     >
       {/* Header */}
-      <header className="px-3 py-2 sm:px-6 sm:py-5 flex items-start gap-3 sm:gap-4 border-b border-border-subtle bg-bg-elevated shrink-0">
-        <div
-          aria-hidden
-          className="hidden sm:inline-flex h-12 w-12 items-center justify-center rounded-md bg-surface-4 text-text-secondary shrink-0"
-        >
-          <Users className="h-6 w-6" />
-        </div>
-        <div>
+      <header className="px-3 py-2 sm:px-4 flex items-center gap-3 border-b border-border-subtle bg-bg-elevated shrink-0">
+        {onBack && (
+          <Button variant="ghost" size="sm" className="min-h-11 shrink-0 gap-2" onClick={onBack} aria-label="Back to menu">
+            <ArrowLeft className="h-5 w-5" aria-hidden />
+            Back
+          </Button>
+        )}
+        <div className="min-w-0">
           {/* h2 (le h1 vit dans TabletLayout) ; casse de titre — les capitales
               codées dans le texte n'étaient ni la Capitale Espacée (12px/0.12em)
               ni un titre : un titre de 24 px qui crie. */}
-          <h2 className="font-sans font-semibold text-lg sm:text-2xl text-text-primary">{compact ? 'Tables' : 'Floor plan'}</h2>
-          <p className="text-text-secondary text-sm mt-1">
+          <h2 className="font-sans font-semibold text-lg text-text-primary">{compact ? 'Tables' : 'Floor plan'}</h2>
+          <p className="text-text-secondary text-xs">
             {subtitle ??
               (onAppendSelect !== undefined
                 ? 'Tap a free table to start an order, or a served table to add a round.'
@@ -181,7 +183,7 @@ export function FloorPlanView({
 
       {/* Section tabs */}
       <nav
-        className="px-3 py-2 sm:px-6 sm:py-4 flex items-center gap-2 sm:gap-3 overflow-x-auto border-b border-border-subtle bg-bg-elevated shrink-0"
+        className="px-3 py-2 sm:px-4 flex items-center gap-2 sm:gap-3 overflow-x-auto border-b border-border-subtle bg-bg-elevated shrink-0"
         aria-label="Floor sections"
       >
         {sections.map((s) => (
@@ -198,13 +200,14 @@ export function FloorPlanView({
 
       {/* Floor canvas */}
       <main
-        className="flex-1 min-h-0 overflow-auto p-3 sm:p-6"
+        className={cn('flex-1 min-h-0 p-3', compact ? 'overflow-auto' : 'overflow-hidden')}
         data-testid="tablet-floor-plan-canvas"
         aria-label={`Floor plan — ${visibleSection?.label ?? ''}`}
       >
         <div
           className={cn(
-            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-2 sm:p-8',
+            'rounded-xl border border-border-subtle bg-bg-elevated',
+            compact ? 'min-h-full p-2' : 'h-full min-h-0 p-3',
             // Audit 2026-08-24 (theming P2) — la trame était figée sur
             // l'ANCIEN or (#c9a557, retiré du thème) ; color-mix la fait
             // dériver du token vivant.
@@ -216,13 +219,13 @@ export function FloorPlanView({
             // l'écran accusait une salle non configurée. Un état neutre le
             // temps que les tables arrivent.
             <div
-              className="h-full min-h-[300px] grid place-items-center text-text-muted text-sm motion-safe:animate-pulse"
+              className="h-full grid place-items-center text-text-muted text-sm motion-safe:animate-pulse"
               aria-busy="true"
             >
               Loading tables…
             </div>
           ) : visible.length === 0 ? (
-            <div className="h-full min-h-[300px] grid place-items-center text-text-muted text-sm">
+            <div className="h-full grid place-items-center text-text-muted text-sm">
               No tables configured for this section.
             </div>
           ) : compact ? (
@@ -241,6 +244,7 @@ export function FloorPlanView({
           ) : (
             <FloorCanvas
               tables={visible}
+              fitToViewport
               gapClass="gap-8"
               renderTable={(t, fit) => (
                 <TableCell
@@ -249,6 +253,7 @@ export function FloorPlanView({
                   selected={selectedTable === t.name}
                   onTap={() => handleTap(t)}
                   fit={fit}
+                  compact
                 />
               )}
             />
@@ -257,7 +262,7 @@ export function FloorPlanView({
       </main>
 
       {/* Footer legend */}
-      <footer className="px-3 py-2 sm:px-6 sm:py-4 border-t border-border-subtle bg-bg-elevated shrink-0">
+      <footer className="px-3 py-2 sm:px-4 border-t border-border-subtle bg-bg-elevated shrink-0">
         {/* Critique 2026-08-24 — « Reserved » retiré : toFloorPlanTable ne
             produit jamais ce statut, la légende offrait une clé de lecture
             pour un état inexistant. */}
