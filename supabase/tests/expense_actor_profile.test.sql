@@ -11,7 +11,7 @@
 -- id = auth_user_id (comptes SEED historiques). Ce fichier construit deux profils au
 -- format create_user_v1 réel (id <> auth_user_id, cf.
 -- close_shift_v8_closed_by_profile.test.sql:27-40) — un créateur SUPER_ADMIN et un
--- approbateur ADMIN — et exerce les SEPT RPCs versionnées (create_expense_v3,
+-- approbateur ADMIN — et exerce les SEPT RPCs versionnées (create_expense_v4,
 -- submit_expense_v3, approve_expense_v5, reject_expense_v2, pay_expense,
 -- set_expense_threshold, delete_expense_threshold_v2) plus le helper interne
 -- _emit_expense_je (appelé en place par submit/approve).
@@ -25,7 +25,7 @@
 -- Couverture (T1-T10, certains Tn éclatés en sous-assertions Tna/Tnb quand plusieurs
 -- vérifications distinctes portent sur le même appel — pattern T14/T18 de
 -- expense_governance.test.sql) :
---   T1  : create_expense_v3 par le créateur SUPER_ADMIN → lives_ok (RED attendu : 23503
+--   T1  : create_expense_v4 par le créateur SUPER_ADMIN → lives_ok (RED attendu : 23503
 --         avant fix / "does not exist" avant migration).
 --   T2  : audit_logs.actor_id pour action='expense.create' = profil créateur (pas l'auth id).
 --   T3a : submit_expense_v3 sur ce même montant (bracket [0,100k) → auto-approve) → lives_ok.
@@ -51,6 +51,7 @@
 -- Run via MCP execute_sql, wrappé BEGIN ... ROLLBACK (aucune trace ne persiste).
 
 BEGIN;
+\ir helpers/expense_terms.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -88,13 +89,13 @@ DO $$ BEGIN PERFORM set_config('request.jwt.claim.sub', 'a7a70000-0000-0000-0000
 -- ============================================================================
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES (
   'a7a70000-0000-0000-0000-0000000000e2', 'EXP-ACTORPROF-002',
   'a7a70000-0000-0000-0000-0000000000c1', 500000, 0, 'cash',
   'ACTORPROF T4 one-step', CURRENT_DATE,
   'a7a70000-0000-0000-0000-0000000000b1', 'draft'
-);
+, pg_temp.expense_term_fixture('a7a70000-0000-0000-0000-0000000000c1', 'ACTORPROF T4 one-step'));
 
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e2');
 
@@ -103,29 +104,29 @@ SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e2');
 -- ============================================================================
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES (
   'a7a70000-0000-0000-0000-0000000000e3', 'EXP-ACTORPROF-003',
   'a7a70000-0000-0000-0000-0000000000c1', 500000, 0, 'cash',
   'ACTORPROF T5 reject', CURRENT_DATE,
   'a7a70000-0000-0000-0000-0000000000b1', 'draft'
-);
+, pg_temp.expense_term_fixture('a7a70000-0000-0000-0000-0000000000c1', 'ACTORPROF T5 reject'));
 
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e3');
 
 -- ============================================================================
--- T1 : create_expense_v3 par le créateur — la toute première écriture audit_logs du
+-- T1 : create_expense_v4 par le créateur — la toute première écriture audit_logs du
 -- module (la ligne qui plantait 23503 avant fix / "does not exist" avant migration).
 -- ============================================================================
 
 SELECT plan(14);
 
 SELECT lives_ok(
-  $$ SELECT create_expense_v3(
+  $$ SELECT create_expense_v4(
        'a7a70000-0000-0000-0000-0000000000c1'::uuid, 50000, 'cash',
        'ACTORPROF T1 create', CURRENT_DATE
-     ) $$,
-  'T1 : create_expense_v3 by profile.id <> auth_user_id creator lives (P0 regression)'
+     , p_expense_term_id => pg_temp.expense_term_fixture('a7a70000-0000-0000-0000-0000000000c1'::uuid, 'ACTORPROF T1 create')) $$,
+  'T1 : create_expense_v4 by profile.id <> auth_user_id creator lives (P0 regression)'
 );
 
 SELECT is(
@@ -195,13 +196,13 @@ SELECT is(
 -- approver (auto-approve bracket, so pay_expense emits the 2nd JE, credit path).
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES (
   'a7a70000-0000-0000-0000-0000000000e4', 'EXP-ACTORPROF-004',
   'a7a70000-0000-0000-0000-0000000000c1', 50000, 0, 'credit',
   'ACTORPROF T6 pay', CURRENT_DATE,
   'a7a70000-0000-0000-0000-0000000000b2', 'draft'
-);
+, pg_temp.expense_term_fixture('a7a70000-0000-0000-0000-0000000000c1', 'ACTORPROF T6 pay'));
 
 SELECT submit_expense_v3('a7a70000-0000-0000-0000-0000000000e4');
 SELECT pay_expense_v4('a7a70000-0000-0000-0000-0000000000e4', 'transfer');
@@ -279,7 +280,7 @@ SELECT is(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname IN (
-     'create_expense_v3', 'submit_expense_v3', 'approve_expense_v5',
+     'create_expense_v4', 'submit_expense_v3', 'approve_expense_v5',
      'reject_expense_v2', 'pay_expense_v4',
      'set_expense_threshold_v3', 'delete_expense_threshold_v2'
    )),

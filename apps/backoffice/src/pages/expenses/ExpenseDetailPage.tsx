@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Copy,
+  FileText,
   CreditCard,
   Receipt,
   Tag,
@@ -146,6 +147,8 @@ export default function ExpenseDetailPage(): JSX.Element {
       payment_method: expense!.payment_method as DuplicateExpenseSeed['payment_method'],
       vendor_name: expense!.vendor_name ?? '',
       description: expense!.description ?? '',
+      expense_term_id: expense!.expense_term_id ?? '',
+      remarks: expense!.remarks ?? '',
     };
     void beginDraft.begin(seed);
   }
@@ -230,6 +233,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             <SectionLabel as="h2" size="sm" className="text-gold">Details</SectionLabel>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <DetailRow icon={Calendar} label="Date" value={expense.expense_date} />
+              <DetailRow icon={FileText} label="Remarks" value={expense.remarks ?? '—'} />
               <DetailRow icon={Tag}      label="Category" value={category?.name ?? '—'} />
               <DetailRow icon={Building2} label="Vendor" value={expense.vendor_name ?? '—'} />
               <DetailRow icon={CreditCard} label="Payment method" value={expense.payment_method} mono />

@@ -2033,6 +2033,67 @@ export type Database = {
           },
         ]
       }
+      expense_term_labels: {
+        Row: {
+          label: string
+          label_key: string
+          term_id: string
+        }
+        Insert: {
+          label: string
+          label_key: string
+          term_id: string
+        }
+        Update: {
+          label?: string
+          label_key?: string
+          term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_term_labels_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "expense_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_terms: {
+        Row: {
+          category_id: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          category_id: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          category_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_terms_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -2048,6 +2109,7 @@ export type Database = {
           description: string
           expense_date: string
           expense_number: string
+          expense_term_id: string | null
           id: string
           idempotency_key: string | null
           is_historical_import: boolean
@@ -2059,6 +2121,7 @@ export type Database = {
           receipt_url: string | null
           rejected_at: string | null
           rejected_reason: string | null
+          remarks: string | null
           required_approval_steps_snapshot: Json | null
           status: string
           submitted_at: string | null
@@ -2081,6 +2144,7 @@ export type Database = {
           description: string
           expense_date?: string
           expense_number: string
+          expense_term_id?: string | null
           id?: string
           idempotency_key?: string | null
           is_historical_import?: boolean
@@ -2092,6 +2156,7 @@ export type Database = {
           receipt_url?: string | null
           rejected_at?: string | null
           rejected_reason?: string | null
+          remarks?: string | null
           required_approval_steps_snapshot?: Json | null
           status?: string
           submitted_at?: string | null
@@ -2114,6 +2179,7 @@ export type Database = {
           description?: string
           expense_date?: string
           expense_number?: string
+          expense_term_id?: string | null
           id?: string
           idempotency_key?: string | null
           is_historical_import?: boolean
@@ -2125,6 +2191,7 @@ export type Database = {
           receipt_url?: string | null
           rejected_at?: string | null
           rejected_reason?: string | null
+          remarks?: string | null
           required_approval_steps_snapshot?: Json | null
           status?: string
           submitted_at?: string | null
@@ -2153,6 +2220,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_expense_term_id_fkey"
+            columns: ["expense_term_id"]
+            isOneToOne: false
+            referencedRelation: "expense_terms"
             referencedColumns: ["id"]
           },
           {
@@ -8180,15 +8254,17 @@ export type Database = {
         }
         Returns: string
       }
-      create_expense_v3: {
+      create_expense_v4: {
         Args: {
           p_amount: number
           p_category_id: string
           p_description: string
           p_expense_date: string
+          p_expense_term_id?: string
           p_idempotency_key?: string
           p_payment_method: string
           p_receipt_url?: string
+          p_remarks?: string
           p_vat_amount?: number
           p_vendor_name?: string
         }
@@ -8606,6 +8682,10 @@ export type Database = {
       }
       get_display_stock_activity_v1: { Args: never; Returns: Json }
       get_expense_categories_admin_v1: { Args: never; Returns: Json }
+      get_expense_terms_v1: {
+        Args: { p_include_inactive?: boolean }
+        Returns: Json
+      }
       get_expenses_by_category_v1: {
         Args: {
           p_category_id?: string
@@ -9844,6 +9924,17 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
+      save_expense_term_v1: {
+        Args: {
+          p_aliases?: string[]
+          p_category_id: string
+          p_code: string
+          p_is_active?: boolean
+          p_name: string
+          p_term_id?: string
+        }
+        Returns: string
+      }
       search_customers_v4: {
         Args: { p_limit?: number; p_query: string }
         Returns: {

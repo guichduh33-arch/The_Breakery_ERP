@@ -23,6 +23,7 @@ export interface ExpenseCreationSnapshot {
   category_id: string; amount: number; vat_amount: number;
   payment_method: 'cash' | 'transfer' | 'card' | 'credit';
   description: string; expense_date: string; vendor_name?: string;
+  expense_term_id?: string; remarks?: string;
 }
 export type ExpenseReceiptSnapshot = {
   expenseId: string; expectedPath: string | null;
@@ -65,7 +66,9 @@ export function validPayload(operation: FinancialOperation, target: string, valu
   if (operation === 'bank_manage' || operation === 'bank_post' || operation === 'bank_finalize') return validBankPayload(operation, target, value);
   if (!isRecord(value)) return false;
   if (operation === 'expense_creation') {
-    return target === 'new' && exact(value, ['category_id','amount','vat_amount','payment_method','description','expense_date','vendor_name'])
+    return target === 'new' && exact(value, ['category_id','amount','vat_amount','payment_method','description','expense_date','vendor_name','expense_term_id','remarks'])
+      && (value.expense_term_id === undefined || uuid(value.expense_term_id))
+      && (value.remarks === undefined || (text(value.remarks) && value.remarks.length <= 2000))
       && uuid(value.category_id) && positive(value.amount) && finite(value.vat_amount)
       && value.vat_amount >= 0 && value.vat_amount <= value.amount
       && typeof value.payment_method === 'string' && ['cash','transfer','card','credit'].includes(value.payment_method)

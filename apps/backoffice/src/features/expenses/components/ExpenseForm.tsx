@@ -14,11 +14,13 @@ import { useState } from 'react';
 import { Input, Select } from '@breakery/ui';
 import { Button } from '@/components/BackofficeUi.js';
 import { FormField } from '@/components/FormField.js';
-import { CategoryPicker } from './CategoryPicker.js';
+import { ExpenseTermPicker } from './ExpenseTermPicker.js';
 import { toLocalDateStr } from '@breakery/domain';
 
 export interface ExpenseFormValues {
   category_id: string;
+  expense_term_id: string;
+  remarks: string;
   amount: string;       // string for the input, parsed at submit
   vat_amount: string;
   payment_method: 'cash' | 'transfer' | 'card' | 'credit';
@@ -29,6 +31,8 @@ export interface ExpenseFormValues {
 
 export const emptyExpenseFormValues = (): ExpenseFormValues => ({
   category_id: '',
+  expense_term_id: '',
+  remarks: '',
   amount: '',
   vat_amount: '0',
   payment_method: 'cash',
@@ -42,7 +46,7 @@ export const emptyExpenseFormValues = (): ExpenseFormValues => ({
 // draft) and `receipt_url` (never carried over — see ExpenseDetailPage).
 export type DuplicateExpenseSeed = Pick<
   ExpenseFormValues,
-  'category_id' | 'amount' | 'vat_amount' | 'payment_method' | 'vendor_name' | 'description'
+  'expense_term_id' | 'remarks' | 'category_id' | 'amount' | 'vat_amount' | 'payment_method' | 'vendor_name' | 'description'
 >;
 
 export interface ExpenseFormProps {
@@ -56,13 +60,13 @@ export interface ExpenseFormProps {
 
 // Ordre de focus au submit raté = ordre visuel du formulaire.
 const FIELD_DOM_IDS: Partial<Record<keyof ExpenseFormValues, string>> = {
-  category_id: 'exp-category',
+  expense_term_id: 'exp-term',
   expense_date: 'exp-date',
   amount: 'exp-amount',
   vat_amount: 'exp-vat',
-  description: 'exp-desc',
+  remarks: 'exp-remarks',
 };
-const FIELD_ORDER = ['category_id', 'expense_date', 'amount', 'vat_amount', 'description'] as const;
+const FIELD_ORDER = ['expense_term_id', 'expense_date', 'amount', 'vat_amount', 'remarks'] as const;
 
 export function ExpenseForm({
   value, onChange, onSubmit, onCancel, submitting, submitLabel,
@@ -70,10 +74,10 @@ export function ExpenseForm({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const errors: Partial<Record<keyof ExpenseFormValues, string>> = {};
-  if (value.category_id === '') errors.category_id = 'Required';
+  if (!value.expense_term_id || !value.category_id) errors.expense_term_id = 'Required';
+  if (value.remarks.length > 2000) errors.remarks = 'Maximum 2000 characters';
   const amountNum = Number.parseFloat(value.amount);
   if (Number.isNaN(amountNum) || amountNum <= 0) errors.amount = 'Must be > 0';
-  if (value.description.trim() === '') errors.description = 'Required';
   if (value.expense_date === '') errors.expense_date = 'Required';
   const vatNum = Number.parseFloat(value.vat_amount === '' ? '0' : value.vat_amount);
   if (Number.isNaN(vatNum) || vatNum < 0) errors.vat_amount = 'Must be >= 0';
@@ -100,7 +104,7 @@ export function ExpenseForm({
     e.preventDefault();
     if (hasErrors) {
       setTouched({
-        category_id: true, amount: true, description: true,
+        expense_term_id: true, remarks: true, amount: true,
         expense_date: true, vat_amount: true,
       });
       const firstFaulty = FIELD_ORDER.find((f) => errors[f] !== undefined);
@@ -115,11 +119,9 @@ export function ExpenseForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField id="exp-category" label="Category" required error={shown('category_id')}>
-          <CategoryPicker
-            value={value.category_id}
-            onChange={(id) => { patch({ category_id: id }); touch('category_id'); }}
-          />
+        <FormField id="exp-term" label="Expense term" required error={shown('expense_term_id')}>
+          <ExpenseTermPicker value={value.expense_term_id} disabled={submitting === true}
+            onSelect={term => { patch({ expense_term_id: term?.id ?? '', category_id: term?.category_id ?? '', description: term?.name ?? '' }); touch('expense_term_id'); }} />
         </FormField>
 
         <FormField id="exp-date" label="Date" required error={shown('expense_date')}>
@@ -176,14 +178,12 @@ export function ExpenseForm({
         </FormField>
       </div>
 
-      <FormField id="exp-desc" label="Description" required error={shown('description')}>
-        <Input
-          value={value.description}
-          onChange={(e) => patch({ description: e.target.value })}
-          onBlur={() => touch('description')}
-          placeholder="Short description (e.g. April electricity bill)"
-          maxLength={250}
-        />
+      <FormField id="exp-desc" label="Description">
+        <Input value={value.description} readOnly placeholder="Determined by the selected expense term" />
+      </FormField>
+      <FormField id="exp-remarks" label="Remarks" error={shown('remarks')}>
+        <Input value={value.remarks} onChange={e => patch({ remarks: e.target.value })}
+          onBlur={() => touch('remarks')} maxLength={2000} placeholder="Optional details, billing period or purpose" />
       </FormField>
 
       <div className="space-y-1">

@@ -1,4 +1,5 @@
 BEGIN;
+\ir helpers/expense_terms.sql
 \ir helpers/pin_session.sql
 SELECT no_plan();
 CREATE TEMP TABLE rd_actors(kind text PRIMARY KEY, auth_id uuid, profile_id uuid, session_id uuid);
@@ -21,9 +22,9 @@ WITH a AS (
  INSERT INTO public.expense_categories(code,name,account_id)
  SELECT 'RD-'||gen_random_uuid(),'Receipt fixture',id FROM a RETURNING id
 ), e AS (
- INSERT INTO public.expenses(expense_number,category_id,amount,payment_method,description,expense_date,created_by,status,receipt_url)
+ INSERT INTO public.expenses(expense_number,category_id,amount,payment_method,description,expense_date,created_by,status,receipt_url, expense_term_id)
  SELECT 'RD-'||gen_random_uuid(),c.id,100,'cash','Receipt fixture',CURRENT_DATE,a.profile_id,'submitted',
- 'expenses/historical/receipt.pdf' FROM c CROSS JOIN rd_actors a WHERE a.kind='creator' RETURNING id,receipt_url
+ 'expenses/historical/receipt.pdf', pg_temp.expense_term_fixture(c.id, 'Receipt fixture') FROM c CROSS JOIN rd_actors a WHERE a.kind='creator' RETURNING id,receipt_url
 ) INSERT INTO rd_expense SELECT id,receipt_url FROM e;
 GRANT SELECT ON rd_actors,rd_expense TO service_role,authenticated;
 SELECT ok(NOT has_function_privilege('anon','public.authorize_expense_receipt_download_v1(uuid,uuid)','EXECUTE'),
