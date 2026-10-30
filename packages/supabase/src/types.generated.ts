@@ -7878,7 +7878,7 @@ export type Database = {
         Returns: Json
       }
       bank_reconciliation_catalog_v1: { Args: never; Returns: Json }
-      bank_reconciliation_clearing_v2: {
+      bank_reconciliation_clearing_v3: {
         Args: {
           p_after?: string
           p_limit?: number
@@ -7924,7 +7924,7 @@ export type Database = {
         }
         Returns: Json
       }
-      bank_reconciliation_post_v4: {
+      bank_reconciliation_post_v5: {
         Args: {
           p_bank_gl_line_ids?: string[]
           p_bank_line_ids: string[]

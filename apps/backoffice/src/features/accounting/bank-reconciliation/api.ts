@@ -20,7 +20,7 @@ export const readBankList = (account: string, before: string | null) => read(sup
 export const readBankDetail = (reconciliationId: string, bankAfter: number, glAfter: string | null) => read(supabase.rpc('bank_reconciliation_detail_v2', {
   p_reconciliation_id: reconciliationId, p_bank_after: bankAfter, ...(glAfter ? { p_gl_after: glAfter } : {}), p_limit: 100,
 }),parseDetail);
-export const readBankClearing = (reconciliationId: string, after: string | null) => read(supabase.rpc('bank_reconciliation_clearing_v2', {
+export const readBankClearing = (reconciliationId: string, after: string | null) => read(supabase.rpc('bank_reconciliation_clearing_v3', {
   p_reconciliation_id: reconciliationId, ...(after ? { p_after: after } : {}), p_limit: 100,
 }), (data) => { const v = record(data); return { items: rows(v.items).map((g) => parseGlLine(g)), next: v.next_after == null ? null : id(v.next_after) }; });
 export const readBankSuggestions = (reconciliationId: string, after: number) => read(supabase.rpc('bank_reconciliation_suggestions_v1', {
@@ -66,7 +66,7 @@ export async function sendBankManage(payload: BankManageSnapshot, key: string, c
 }
 export async function sendBankPost(payload: BankPostSnapshot, key: string, pin: string, current: () => boolean) {
   assertCurrent(current);
-  return send(supabase.rpc('bank_reconciliation_post_v4', { p_reconciliation_id: payload.reconciliationId,
+  return send(supabase.rpc('bank_reconciliation_post_v5', { p_reconciliation_id: payload.reconciliationId,
     p_kind: payload.kind, p_bank_line_ids: payload.bankIds, p_clearing_line_ids: payload.clearingIds, p_bank_gl_line_ids: payload.bankGlIds,
     p_counter_account_id: payload.counterAccountId ?? null!, p_fee_amount: Number(payload.fee), p_entry_date: payload.date,
     p_description: payload.description, p_manager_pin: pin, p_idempotency_key: key,
