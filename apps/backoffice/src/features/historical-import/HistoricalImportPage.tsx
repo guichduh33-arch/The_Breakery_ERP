@@ -96,14 +96,14 @@ export default function HistoricalImportPage() {
         transport: {
           preview: async (payload) => {
             assertOperator();
-            const { data, error: rpcError } = await supabase.rpc('preview_historical_import_v3', { p_payload: payload });
+            const { data, error: rpcError } = await supabase.rpc('preview_historical_import_v4', { p_payload: payload });
             assertOperator();
             if (rpcError) throw new Error(rpcError.message);
             return previewValue(data);
           },
           apply: async (batch, previewHash) => {
             assertOperator();
-            const { data, error: rpcError } = await supabase.rpc('apply_historical_import_v3', {
+            const { data, error: rpcError } = await supabase.rpc('apply_historical_import_v4', {
               p_payload: batch.payload, p_preview_hash: previewHash, p_client_key: batch.client_key,
             });
             if (rpcError) throw new Error(rpcError.message);

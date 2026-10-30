@@ -5,7 +5,7 @@ SELECT no_plan();
 UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(jsonb_set(jsonb_set(payload,'{stock_mode}','"financial_only"'),
  '{documents,0,stock_mode}','"financial_only"'),'{allow_supplier_prepayments}','true'),'{payments,0,supplier_prepayment}','true');
 UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(payload,'{payments,0,payment_date}','"2097-01-09"'),'{payments,0,payment_timestamp}','"2097-01-09T17:18:19+08:00"');
-INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v3(payload)->'errors' @> '[{"code":"payment_precedes_document"}]','sales cannot opt into supplier advances') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(payload)->'errors' @> '[{"code":"payment_precedes_document"}]','sales cannot opt into supplier advances') FROM historical_fixture;
 UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(jsonb_set(payload,'{kind}','"purchases"'),'{documents}',jsonb_build_array(
  jsonb_build_object('source_reference','PO-ADV','source_sha256',repeat('a',64),'source_row',5,'reconciled',true,'stock_mode','financial_only',
  'document_date','2097-01-10','receipt_date','2097-01-24','supplier_id',supplier,'net_amount',98,'tax_amount',10,'total_amount',108,'discount_amount',0,
@@ -13,17 +13,17 @@ UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(jsonb_set(payload,'{ki
  'received_quantity',3.6,'received_unit','kg','line_total',108,'invoice_unit_cost',19.6,'invoice_net_amount',98,'acquisition_amount',108,'reconciled',true))))),
  '{payments,0,allocations}',jsonb_build_array(jsonb_build_object('document_reference','PO-ADV','amount',108)));
 UPDATE historical_fixture SET payload=jsonb_set(payload,'{payments,0,amount}','108');
-INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v3(payload-'allow_supplier_prepayments')->'errors' @> '[{"code":"payment_precedes_document"}]','batch opt-in is required') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v3(payload #- '{payments,0,supplier_prepayment}')->'errors' @> '[{"code":"payment_precedes_document"}]','payment opt-in is required') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v3(jsonb_set(payload,'{allow_supplier_prepayments}','"true"'))->'errors' @> '[{"code":"payment_precedes_document"}]','string true cannot enable supplier advances') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v3(jsonb_set(jsonb_set(payload,'{stock_mode}','"legacy"'),'{documents,0,stock_mode}','"legacy"'))->'errors' @> '[{"code":"payment_precedes_document"}]','legacy stock import keeps its date gate') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(payload-'allow_supplier_prepayments')->'errors' @> '[{"code":"payment_precedes_document"}]','batch opt-in is required') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(payload #- '{payments,0,supplier_prepayment}')->'errors' @> '[{"code":"payment_precedes_document"}]','payment opt-in is required') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(jsonb_set(payload,'{allow_supplier_prepayments}','"true"'))->'errors' @> '[{"code":"payment_precedes_document"}]','string true cannot enable supplier advances') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT ok(_historical_import_plan_v4(jsonb_set(jsonb_set(payload,'{stock_mode}','"legacy"'),'{documents,0,stock_mode}','"legacy"'))->'errors' @> '[{"code":"payment_precedes_document"}]','legacy stock import keeps its date gate') FROM historical_fixture;
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'explicit financial purchase accepts real advance date') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'supplier_prepayment_count','1'::jsonb,'preview counts one actual advance') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 INSERT INTO historical_tap(result) SELECT is(result->'supplier_prepayment_count','1'::jsonb,'result retains advance count') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v3(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'advance replay returns original result') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v4(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'advance replay returns original result') FROM historical_fixture;
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT paid_at FROM purchase_payments WHERE purchase_order_id=(SELECT entity_id FROM historical_import_documents WHERE run_id=(f.result->>'run_id')::uuid)),
  timestamptz '2097-01-09 17:18:19+08','native payment retains actual advance timestamp') FROM historical_fixture f;

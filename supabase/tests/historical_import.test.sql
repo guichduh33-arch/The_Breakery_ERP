@@ -10,7 +10,7 @@ INSERT INTO historical_tap(result) SELECT ok((SELECT bool_and(NOT has_table_priv
 INSERT INTO historical_tap(result) SELECT ok((SELECT bool_and(NOT has_function_privilege('anon',oid,'EXECUTE')) FROM pg_proc
  WHERE pronamespace='public'::regnamespace AND proname LIKE '%historical_import%'),'anon has no RPC or helper access through PUBLIC');
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'valid preview separates ticket tax and actual partial payment') FROM historical_fixture;
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_test_runs),0,'preview has no import writes');
@@ -21,7 +21,7 @@ INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products
 -- Le helper interne est prive meme pour un utilisateur ayant les droits metier.
 SET LOCAL ROLE authenticated;
 INSERT INTO historical_tap(result) SELECT throws_ok('SELECT public._historical_import_context_v1()','42501',NULL,'authenticated cannot create an import context');
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_test_runs),1,'one atomic import run');
 INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products WHERE id=f.product),9::numeric,'sale uses canonical stock helper once') FROM historical_fixture f;
@@ -40,8 +40,8 @@ INSERT INTO historical_tap(result) SELECT is((SELECT count(*) FROM notification_
 INSERT INTO historical_tap(result) SELECT ok((SELECT bool_and(total_debit=total_credit) FROM journal_entries WHERE metadata->>'financial_import_run_id'=f.result->>'run_id'),'all historical journal entries balance') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is((SELECT actor_id FROM audit_logs WHERE action='historical_import.applied' AND entity_id=(f.result->>'run_id')::uuid),f.actor,'audit actor is profile ID') FROM historical_fixture f;
 SET LOCAL ROLE authenticated;
-INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v3(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'replay returns first result before mutable preview state') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT apply_historical_import_v3(jsonb_set(payload,'{batch_reference}','"changed"'),preview->>'preview_hash',client_key) FROM historical_fixture$q$,
+INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v4(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'replay returns first result before mutable preview state') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT throws_ok($q$SELECT apply_historical_import_v4(jsonb_set(payload,'{batch_reference}','"changed"'),preview->>'preview_hash',client_key) FROM historical_fixture$q$,
  '22023','idempotency_payload_conflict','key with changed payload refused');
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM stock_movements WHERE product_id=f.product AND movement_type='sale'),1,'replay has no duplicate stock') FROM historical_fixture f;
@@ -60,8 +60,8 @@ UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(payload,'{batch_refere
  jsonb_build_object('source_reference','PAY-2','source_sha256',repeat('a',64),'source_row',4,'reconciled',true,'payment_date','2097-02-03',
   'amount',80,'method','card','allocations',jsonb_build_array(jsonb_build_object('document_reference','SALE-1','amount',80))))),client_key=gen_random_uuid();
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*)::int FROM historical_test_documents),1,'later settlement reuses source document');
 INSERT INTO historical_tap(result) SELECT is((SELECT status::text FROM orders WHERE financial_import_document_id IN (SELECT id FROM historical_test_documents)),'paid','final payment marks invoice paid');
@@ -84,9 +84,9 @@ UPDATE historical_fixture SET payload=jsonb_set(payload,'{payments}',jsonb_build
  'allocations',jsonb_build_array(jsonb_build_object('document_reference','PO-1','amount',108)))));
 INSERT INTO historical_payloads SELECT 'purchase',payload FROM historical_fixture;
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'purchase preview accepts real prepayment and measured net receipt') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT received_date FROM purchase_orders WHERE financial_import_document_id IN (SELECT id FROM historical_test_documents)),date '2097-01-24','actual receipt date retained');
 INSERT INTO historical_tap(result) SELECT is((SELECT order_date FROM purchase_orders WHERE financial_import_document_id IN (SELECT id FROM historical_test_documents)),date '2097-01-10','actual order date retained');

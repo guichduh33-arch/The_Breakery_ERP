@@ -53,7 +53,7 @@ describe('historical import page', () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('checkbox')); fireEvent.click(screen.getByRole('button', { name: 'Validate and import' }));
     await screen.findByRole('button', { name: 'Verify completed import' });
-    expect(mocks.rpc.mock.calls.map((call: unknown[]) => String(call[0]))).toEqual(['preview_historical_import_v3', 'apply_historical_import_v3']);
+    expect(mocks.rpc.mock.calls.map((call: unknown[]) => String(call[0]))).toEqual(['preview_historical_import_v4', 'apply_historical_import_v4']);
   });
   it('blocks double clicks while a preview is pending', async () => {
     let complete: (value: unknown) => void = () => undefined;
