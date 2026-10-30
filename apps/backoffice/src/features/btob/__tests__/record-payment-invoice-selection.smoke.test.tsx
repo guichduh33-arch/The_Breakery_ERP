@@ -143,7 +143,7 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v5', expect.objectContaining({
         p_customer_id:  'b1',
         p_invoice_ids:  ['inv-b', 'inv-a'],
       }));
@@ -168,7 +168,7 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v5', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));
@@ -189,7 +189,7 @@ describe('RecordB2bPaymentModal — invoice selection (S56 DEV-S52-03)', () => {
     fireEvent.change(screen.getByLabelText(/^method$/i), { target: { value: 'store_credit' } });
     fireEvent.click(screen.getByRole('button', { name: /record payment/i }));
 
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v4',
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v5',
       expect.objectContaining({ p_customer_id: 'b1', p_amount: 100000, p_method: 'store_credit' })));
     expect(await screen.findByTestId('rp-success')).toBeInTheDocument();
     expect(client.getQueryState(['customer-detail', 'b1'])?.isInvalidated).toBe(true);

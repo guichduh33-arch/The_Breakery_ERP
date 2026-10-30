@@ -27,6 +27,7 @@ export function readCashMovement(): CashMovementAttempt | null {
       || typeof input.amount !== 'number' || !Number.isFinite(input.amount) || input.amount <= 0
       || typeof input.reason !== 'string' || input.reason.trim().length < 3
       || typeof input.idempotency_key !== 'string' || !input.idempotency_key
+      || (input.counterparty_account_code !== undefined && (typeof input.counterparty_account_code !== 'string' || !input.counterparty_account_code))
       || typeof input.reason_code !== 'string' || !REASONS.has(input.reason_code)) throw new Error();
     return value as unknown as CashMovementAttempt;
   } catch {

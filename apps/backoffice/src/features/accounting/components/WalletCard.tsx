@@ -8,6 +8,8 @@ const LABELS: Record<string, string> = {
   '1110': 'Undeposited Funds',
   '1111': 'Petty Cash',
   '1117': 'Small Money',
+  '1118': 'Bank — Professional Expense Reserve',
+  '1119': 'Cash Drawer',
 };
 
 const idr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });

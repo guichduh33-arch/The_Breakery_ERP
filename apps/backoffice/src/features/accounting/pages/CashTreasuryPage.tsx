@@ -24,12 +24,13 @@ import { errorDetailText } from '@/components/errorDetailText.js';
 // période, ce qu'est exactement cette paire. Le reste de la spécification vient
 // du primitif `Input` (rayon 4 px, feuille blanche, anneau or).
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { CashJournalImport } from '../components/CashJournalImport.js';
 
-const SMALL_MONEY_FLOAT = 4_000_000;
+const SMALL_MONEY_FLOAT = 5_000_000;
 
 export default function CashTreasuryPage() {
   // La requête entière, plus seulement ses données : son échec n'était rendu
-  // NULLE PART. Un `get_cash_wallet_balances_v2` refusé (permission, réseau)
+  // NULLE PART. Un `get_cash_wallet_balances_v3` refusé (permission, réseau)
   // laissait la rangée de tuiles vide sous un titre « Cash Treasury », ce qui se
   // lit « aucun coffre » — l'écran affirmait alors qu'il n'y a pas d'argent.
   const walletsQuery = useCashWallets();
@@ -52,7 +53,7 @@ export default function CashTreasuryPage() {
 
   const ordered = useMemo(
     () =>
-      ['1110', '1111', '1117']
+      ['1119', '1110', '1111', '1117', '1118']
         .map((c) => wallets.find((w) => w.account_code === c))
         .filter(Boolean) as typeof wallets,
     [wallets],
@@ -166,11 +167,13 @@ export default function CashTreasuryPage() {
         />
       </Card>
 
-      {selectedWallet && (
+      {selectedWallet && ['1110','1111','1117'].includes(selectedWallet.account_code) && (
         <CashReconciliationPanel wallet={selectedWallet} />
       )}
 
       <CashAnalysisPanel start={start} end={end} />
+
+      <CashJournalImport />
 
       <RecordCashMovementModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>

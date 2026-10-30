@@ -155,8 +155,18 @@ SELECT is((SELECT jsonb_array_length(public.bank_reconciliation_list_v1(bank,NUL
 SELECT throws_ok('SELECT public.bank_reconciliation_list_v1(NULL,NULL,101)','22023','invalid_page_size','unbounded list size refused');
 SELECT is((SELECT jsonb_array_length(public.bank_reconciliation_detail_v2(rec,0,NULL,2)->'bank_lines') FROM bank_fixture),2,'bank detail paginates source rows');
 SELECT ok((SELECT public.bank_reconciliation_detail_v2(rec,0,NULL,2)->>'next_bank_after' IS NOT NULL FROM bank_fixture),'bank keyset cursor returned');
-SELECT ok((SELECT EXISTS(SELECT 1 FROM jsonb_array_elements(public.bank_reconciliation_clearing_v2(rec,NULL,100)->'items') x
- WHERE x->>'id'=(SELECT id::text FROM bank_gl WHERE label='card_refund10')) FROM bank_fixture),'clearing candidates preserve negative refund source');
+CREATE FUNCTION pg_temp.clearing_has(p_rec uuid,p_target uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE page jsonb;cursor_id uuid;
+BEGIN
+ LOOP
+  page:=public.bank_reconciliation_clearing_v3(p_rec,cursor_id,100);
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(page->'items') x WHERE x->>'id'=p_target::text) THEN RETURN true; END IF;
+  cursor_id:=(page->>'next_after')::uuid;
+  IF cursor_id IS NULL THEN RETURN false; END IF;
+ END LOOP;
+END $$;
+SELECT ok((SELECT pg_temp.clearing_has(rec,(SELECT id FROM bank_gl WHERE label='card_refund10')) FROM bank_fixture),
+ 'clearing candidates preserve negative refund source across all pages');
 SELECT throws_ok($q$SELECT public.bank_reconciliation_match_v2(rec,ARRAY[bank_ids[1]],ARRAY[(SELECT id FROM bank_gl WHERE label='bank25')],gen_random_uuid()) FROM bank_fixture$q$,
  '22023','match_amount_mismatch','no implicit amount tolerance');
 UPDATE bank_fixture SET match_result=public.bank_reconciliation_match_v2(rec,bank_ids[1:2],
@@ -174,7 +184,7 @@ SELECT throws_ok($q$SELECT public.bank_reconciliation_match_v2(rec,bank_ids[1:2]
  '22023','unique_match_lines_required','duplicate GL identifiers rejected');
 
 CREATE FUNCTION pg_temp.bank_post(p_fee numeric DEFAULT 3,p_pin text DEFAULT '285741') RETURNS jsonb LANGUAGE sql AS $$
- SELECT public.bank_reconciliation_post_v4(rec,ARRAY[bank_ids[3]],
+ SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[3]],
   ARRAY[(SELECT id FROM bank_gl WHERE label='card100'),(SELECT id FROM bank_gl WHERE label='card_refund10')],
   expense,p_fee,'2096-01-04','Actual card settlement',p_pin,'ba030000-0000-4000-a000-000000000001') FROM bank_fixture;
 $$;
@@ -209,14 +219,14 @@ SELECT public.bank_reconciliation_unmatch_v1((post_result->>'match_id')::uuid,'C
 SELECT is((SELECT count(*)::int FROM public.journal_entries j,bank_fixture f WHERE j.id=(f.post_result->>'je_id')::uuid),1,'unmatch never removes journal');
 SELECT is((SELECT count(*)::int FROM public.bank_reconciliation_clearing_claims WHERE gl_line_id IN(SELECT id FROM bank_gl)),2,'unmatch never releases clearing reservations');
 SELECT ok((pg_temp.bank_post()->>'idempotent_replay')::boolean,'replay after unmatch does not create a new journal');
-SELECT throws_ok($q$SELECT public.bank_reconciliation_post_v4(rec,ARRAY[bank_ids[3]],
+SELECT throws_ok($q$SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[3]],
  ARRAY[(SELECT id FROM bank_gl WHERE label='card100'),(SELECT id FROM bank_gl WHERE label='card_refund10')],
  expense,3,'2096-01-04','Actual card settlement','285741',gen_random_uuid()) FROM bank_fixture$q$,
  '22023','bank_line_unavailable_for_posting','source bank line cannot emit second journal after unmatch');
 SELECT public.bank_reconciliation_match_v2(rec,ARRAY[bank_ids[3]],ARRAY[(post_result->>'bank_gl_line_id')::uuid],gen_random_uuid()) FROM bank_fixture;
-INSERT INTO bank_results SELECT 'fee',public.bank_reconciliation_post_v4(rec,ARRAY[bank_ids[4]],'{}',expense,0,
+INSERT INTO bank_results SELECT 'fee',public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[4]],'{}',expense,0,
  '2096-01-05','Isolated actual bank fee','285741',gen_random_uuid(),'fee') FROM bank_fixture;
-INSERT INTO bank_results SELECT 'interest',public.bank_reconciliation_post_v4(rec,ARRAY[bank_ids[5]],'{}',income,0,
+INSERT INTO bank_results SELECT 'interest',public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[5]],'{}',income,0,
  '2096-01-06','Actual bank interest','285741',gen_random_uuid(),'interest') FROM bank_fixture;
 SELECT ok((SELECT (result->>'ok')::boolean FROM bank_results WHERE label='fee'),'isolated outgoing fee posts against explicit expense');
 SELECT ok((SELECT (result->>'ok')::boolean FROM bank_results WHERE label='interest'),'incoming interest posts against explicit income');

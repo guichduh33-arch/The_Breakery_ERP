@@ -54,7 +54,7 @@ DO $$ DECLARE c record; r jsonb; nonce uuid; amount numeric; BEGIN
 END $$;
 CREATE FUNCTION pg_temp.bsc_pay(p_name text, p_amount numeric, p_method payment_method,
   p_key uuid DEFAULT NULL, p_date timestamptz DEFAULT now()) RETURNS jsonb LANGUAGE sql AS $$
-  SELECT record_b2b_payment_v4(customer_id, p_amount, p_method, NULL, p_date, NULL, p_key,
+  SELECT record_b2b_payment_v5(customer_id, p_amount, p_method, NULL, p_date, NULL, p_key,
     ARRAY[invoice_id]) FROM bsc_customer WHERE name = p_name
 $$;
 CREATE FUNCTION pg_temp.bsc_state() RETURNS jsonb LANGUAGE sql AS $$
@@ -76,8 +76,8 @@ $$;
 CREATE TEMP TABLE bsc_before AS SELECT pg_temp.bsc_state() AS state;
 
 SELECT ok(to_regprocedure('public.record_b2b_payment_v3(uuid,numeric,payment_method,text,timestamptz,text,uuid,uuid[])') IS NULL
-  AND NOT has_function_privilege('anon', 'public.record_b2b_payment_v4(uuid,numeric,payment_method,text,timestamptz,text,uuid,uuid[])','EXECUTE')
-  AND has_function_privilege('authenticated', 'public.record_b2b_payment_v4(uuid,numeric,payment_method,text,timestamptz,text,uuid,uuid[])','EXECUTE'),
+  AND NOT has_function_privilege('anon', 'public.record_b2b_payment_v5(uuid,numeric,payment_method,text,timestamptz,text,uuid,uuid[])','EXECUTE')
+  AND has_function_privilege('authenticated', 'public.record_b2b_payment_v5(uuid,numeric,payment_method,text,timestamptz,text,uuid,uuid[])','EXECUTE'),
   'old signature removed, authenticated granted and anon/PUBLIC inheritance closed');
 SELECT throws_ok($$ SELECT pg_temp.bsc_pay('zero', 1000, 'store_credit') $$,
   'P0016', NULL, 'zero credit rejected');

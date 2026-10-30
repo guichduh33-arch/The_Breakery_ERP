@@ -4,7 +4,7 @@ import type { BankPostSnapshot } from '@/lib/bankAttemptSchema.js';
 const mockRpc = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: { code: string; message: string } | null }>>());
 vi.mock('@/lib/supabase.js',() => ({ supabase: { rpc: (...args: unknown[]) => mockRpc(...args) } }));
 vi.mock('@/stores/authStore.js',async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
-import { readBankCatalog, sendBankManage, sendBankPost } from '../api.js';
+import { readBankCatalog, readBankClearing, sendBankManage, sendBankPost } from '../api.js';
 import { parseDetail } from '../contracts.js';
 const rec = '11111111-1111-4111-8111-111111111111';
 const line = '22222222-2222-4222-8222-222222222222';
@@ -12,10 +12,17 @@ const match = '33333333-3333-4333-8333-333333333333';
 const post: BankPostSnapshot = { reconciliationId: rec,kind: 'net_fee',bankIds: [line],bankGlIds: [match],clearingIds: [],counterAccountId: match,fee: '2000.29',date: '2026-10-27',description: 'Actual fees on receipt' };
 describe('bank RPC boundary',() => {
   beforeEach(() => { mockRpc.mockReset(); resetFinancialSession(); });
+  it('reads historical clearing through the updated endpoint and preserves pagination',async () => {
+    mockRpc.mockResolvedValue({ data: { items: [],next_after: line },error: null });
+    await expect(readBankClearing(rec,match)).resolves.toEqual({ items: [],next: line });
+    expect(mockRpc).toHaveBeenCalledWith('bank_reconciliation_clearing_v3',{
+      p_reconciliation_id: rec,p_after: match,p_limit: 100,
+    });
+  });
   it('posts only the requested fees and passes PIN as an RPC argument, outside the durable payload',async () => {
     mockRpc.mockResolvedValue({ data: { ok: true,entry_id: line,je_id: rec,bank_gl_line_id: match,match_id: match },error: null });
     await sendBankPost(post,rec,'654321',() => true);
-    expect(mockRpc).toHaveBeenCalledWith('bank_reconciliation_post_v4',expect.objectContaining({ p_kind: 'net_fee',p_bank_gl_line_ids: [match],p_clearing_line_ids: [],p_fee_amount: 2000.29,p_manager_pin: '654321',p_idempotency_key: rec }));
+    expect(mockRpc).toHaveBeenCalledWith('bank_reconciliation_post_v5',expect.objectContaining({ p_kind: 'net_fee',p_bank_gl_line_ids: [match],p_clearing_line_ids: [],p_fee_amount: 2000.29,p_manager_pin: '654321',p_idempotency_key: rec }));
     expect(post).not.toHaveProperty('pin');
   });
   it('treats committed invalid PIN refusals as failures, and never invents success from a malformed response',async () => {
