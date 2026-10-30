@@ -13,16 +13,16 @@ UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(jsonb_set(payload,'{st
  '{documents,0,stock_mode}','"financial_only"'),'{documents,0,lines,0,name_snapshot}','"Original item - HOT, extra syrup"');
 UPDATE historical_fixture SET payload=(payload #- '{documents,0,stock_reconciled}') #- '{documents,0,stock_basis}';
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'financial sale accepts zero global and display stock without stock reconciliation') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'stock_effects','[]'::jsonb,'financial sale plans no stock effects') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->>'stock_basis','deferred_to_opening_opname','preview states stock is deferred') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'source_options_not_resolved_for_stock','true'::jsonb,'preview does not claim options are reconciled for stock') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v3(payload #- '{documents,0,stock_mode}')->'errors'
+INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v4(payload #- '{documents,0,stock_mode}')->'errors'
  @> '[{"code":"document_stock_mode_mismatch"}]','financial mode must be explicit on every document') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v3(jsonb_set(payload,'{stock_mode}','"legacy"'))->'errors'
+INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v4(jsonb_set(payload,'{stock_mode}','"legacy"'))->'errors'
  @> '[{"code":"document_stock_mode_mismatch"}]','mixed legacy and financial documents are refused') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products WHERE id=f.product),0::numeric,'sale leaves global stock at zero') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is((SELECT quantity FROM display_stock WHERE product_id=f.product),0::numeric,'sale leaves display stock at zero') FROM historical_fixture f;
@@ -40,8 +40,8 @@ INSERT INTO historical_tap(result) SELECT is((SELECT payload->>'stock_mode' FROM
 INSERT INTO historical_tap(result) SELECT is((SELECT payload->'stock_deferred' FROM audit_logs WHERE action='historical_import.document' AND entity_id=(SELECT id FROM historical_import_documents WHERE run_id=(f.result->>'run_id')::uuid)),
  'true'::jsonb,'document audit explicitly records deferred stock') FROM historical_fixture f;
 SET LOCAL ROLE authenticated;
-INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v3(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'financial replay returns the first result') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v3(jsonb_set(jsonb_set(jsonb_set(payload,'{stock_mode}','"legacy"'),'{documents,0,stock_mode}','"legacy"'),'{batch_reference}','"switch-mode"'))->'errors'
+INSERT INTO historical_tap(result) SELECT is(apply_historical_import_v4(payload,preview->>'preview_hash',client_key)->'idempotent_replay','true'::jsonb,'financial replay returns the first result') FROM historical_fixture;
+INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v4(jsonb_set(jsonb_set(jsonb_set(payload,'{stock_mode}','"legacy"'),'{documents,0,stock_mode}','"legacy"'),'{batch_reference}','"switch-mode"'))->'errors'
  @> '[{"code":"document_source_conflict"}]','same document cannot later reimport in stock mode') FROM historical_fixture;
 RESET ROLE;
 -- Groupes requis, recettes et choix courants ne decrivent pas les options source historiques.
@@ -51,18 +51,18 @@ UPDATE products SET track_inventory=false,is_display_item=false,deduct_stock=tru
 UPDATE historical_fixture SET client_key=gen_random_uuid(),payload=jsonb_set(jsonb_set(jsonb_set(payload,'{batch_reference}','"financial-no-recipe"'),
  '{documents,0,source_reference}','"SALE-NO-RECIPE"'),'{payments}','[]');
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'missing current recipe and required option do not invent historical stock') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v3(jsonb_set(payload,'{documents,0,lines,0,modifier_ids}',
+INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v4(jsonb_set(payload,'{documents,0,lines,0,modifier_ids}',
  '["00000000-0000-0000-0000-000000000001"]'))->'errors' @> '[{"code":"modifier_not_available_or_duplicate"}]','supplied modifier UUID must really exist') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 UPDATE products SET product_type='combo' WHERE id=(SELECT product FROM historical_fixture);
 UPDATE historical_fixture SET client_key=gen_random_uuid(),payload=jsonb_set(jsonb_set(payload,'{batch_reference}','"financial-combo"'),'{documents,0,source_reference}','"SALE-COMBO"');
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'confirmed combo SKU can retain source identity without invented components') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 -- Achats financiers : facture, reception datee, paiement et JE reels ; aucun mouvement/WAC.
 UPDATE products SET current_stock=0 WHERE id=(SELECT raw_product FROM historical_fixture);
@@ -75,12 +75,12 @@ UPDATE historical_fixture SET payload=jsonb_set(payload,'{payments}',jsonb_build
  'source_sha256',repeat('a',64),'source_row',6,'reconciled',true,'payment_date','2097-01-16','amount',108,'method','transfer',
  'allocations',jsonb_build_array(jsonb_build_object('document_reference','PO-FIN','amount',108)))));
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'financial purchase accepts real payment before receipt') FROM historical_fixture;
 INSERT INTO historical_tap(result) SELECT is(preview->'stock_effects','[]'::jsonb,'financial purchase plans no receipt stock') FROM historical_fixture;
-INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v3(jsonb_set(payload,'{payments,0,payment_date}','"2097-01-09"'))->'errors'
+INSERT INTO historical_tap(result) SELECT ok(preview_historical_import_v4(jsonb_set(payload,'{payments,0,payment_date}','"2097-01-09"'))->'errors'
  @> '[{"code":"payment_precedes_document"}]','payment before document remains blocked pending owner arbitration') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products WHERE id=f.raw_product),0::numeric,'financial purchase does not initialize physical stock') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is((SELECT cost_price FROM products WHERE id=f.raw_product),20::numeric,'financial purchase does not initialize WAC') FROM historical_fixture f;

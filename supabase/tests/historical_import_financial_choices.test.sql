@@ -14,9 +14,9 @@ INSERT INTO products(sku,name,parent_product_id,category_id,variant_axis,variant
 UPDATE historical_fixture SET payload=jsonb_set(jsonb_set(jsonb_set(payload,'{stock_mode}','"financial_only"'),
  '{documents,0,stock_mode}','"financial_only"'),'{documents,0,lines,0,name_snapshot}','"Historical parent, original option"');
 SET LOCAL ROLE authenticated;
-UPDATE historical_fixture SET preview=preview_historical_import_v3(payload);
+UPDATE historical_fixture SET preview=preview_historical_import_v4(payload);
 INSERT INTO historical_tap(result) SELECT is(preview->'errors','[]'::jsonb,'confirmed parent SKU needs no invented variant') FROM historical_fixture;
-UPDATE historical_fixture SET result=apply_historical_import_v3(payload,preview->>'preview_hash',client_key);
+UPDATE historical_fixture SET result=apply_historical_import_v4(payload,preview->>'preview_hash',client_key);
 RESET ROLE;
 INSERT INTO historical_tap(result) SELECT is((SELECT i.product_id FROM order_items i JOIN historical_import_documents d ON d.entity_id=i.order_id
  WHERE d.run_id=(f.result->>'run_id')::uuid),f.product,'native line keeps confirmed parent product ID') FROM historical_fixture f;
