@@ -1,0 +1,70 @@
+name: Validate Selective Bank Rehearsal
+
+on:
+  workflow_dispatch:
+    inputs:
+      approve_rehearsal_tests:
+        description: 'Run the complete pinned bank candidate SQL suite on V3 rehearsal, under rollback'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-rehearsal-connected-tests
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: Rehearsal
+    steps:
+      - name: Require master controller and explicit rehearsal approval
+        env:
+          APPROVED: ${{ inputs.approve_rehearsal_tests }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/master
+          test "$APPROVED" = true
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify the pinned source scope
+        run: node scripts/release/selective-bank.mjs > bank-source-identity.json
+
+      - uses: actions/checkout@v7
+        with:
+          ref: 5e4ab2b2aa5efad4e26dce4acc351c5774d65def
+          path: candidate
+          persist-credentials: false
+
+      - name: Ensure psql is available
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -q && sudo apt-get install -y postgresql-client
+          fi
+
+      - name: Run every SQL test from the exact candidate
+        env:
+          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
+          CANDIDATE_DIRECTORY: candidate
+        run: node scripts/release/rehearsal-pgtap.mjs
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bank-rehearsal-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            bank-source-identity.json
+            bank-rehearsal-proof.json
+          if-no-files-found: error
+          retention-days: 90
