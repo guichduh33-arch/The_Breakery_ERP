@@ -216,7 +216,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3" aria-busy="true" aria-label="Loading products">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3" aria-busy="true" aria-label="Loading products">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -225,7 +225,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
               >
                 {/* 4/3 comme la vraie carte (ProductCard) — un squelette carré
                     provoquait un saut de mise en page au chargement. */}
-                <div className="w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 max-sm:h-14 max-sm:aspect-auto bg-bg-input" />
+                <div className="w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 max-sm:h-10 max-sm:aspect-auto bg-bg-input" />
                 <div className="px-3 py-3 space-y-2">
                   <div className="h-4 w-3/4 rounded bg-bg-input" />
                   <div className="h-3 w-1/3 rounded bg-bg-input" />
@@ -247,7 +247,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
             size="md"
           />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 sm:gap-3">
             {filtered.map((p) => {
               const soldOut = p.is_sellable === false;
               const lots = lotsByProduct?.get(p.id);

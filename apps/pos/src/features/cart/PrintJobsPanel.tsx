@@ -1,18 +1,27 @@
 import { useState } from 'react';
+import { Printer } from 'lucide-react';
 import { Button, Sheet, SheetContent, SheetTitle, SheetDescription } from '@breakery/ui';
 import { usePrintJobs, runPrintJob } from '@/services/print/printJobs';
 import { useReceiptJobs, runReceiptJob } from '@/services/print/receiptJobs';
 import { useStationPrinters } from './hooks/useStationPrinters';
 
-export function PrintJobsPanel() {
+export function PrintJobsPanel({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const receipts = useReceiptJobs((s) => s.jobs);
   const jobs = usePrintJobs((s) => s.jobs);
   const { data: printers } = useStationPrinters();
   const unresolved = jobs.filter((job) => job.status !== 'confirmed').length + receipts.filter((job) => job.status !== 'confirmed').length;
+  const label = `Printing${unresolved > 0 ? ` · ${unresolved} to check` : ''}`;
   return <>
-    <Button variant="ghost" className="w-full justify-start min-h-11" onClick={() => setOpen(true)}>Printing {unresolved > 0 ? `· ${unresolved} to check` : ''}</Button>
+    <Button variant="ghost" size={compact ? 'icon' : 'md'}
+      className={compact ? 'relative h-11 min-h-11 w-11 shrink-0 px-0' : 'w-full justify-start min-h-11'}
+      aria-label={label} title={label} onClick={() => setOpen(true)}>
+      {compact ? <>
+        <Printer className="h-5 w-5" aria-hidden />
+        {unresolved > 0 && <span aria-hidden className="absolute top-0 right-0 min-w-4 h-4 px-1 rounded-full bg-gold text-gold-fg text-xs font-mono">{unresolved}</span>}
+      </> : label}
+    </Button>
     <Sheet open={open} onOpenChange={setOpen}><SheetContent className="theme-pos w-full sm:max-w-lg overflow-y-auto bg-bg-base text-text-primary">
       <SheetTitle>Printing</SheetTitle><SheetDescription>Orders are saved separately. Reprints are marked as duplicates.</SheetDescription>
       <div className="space-y-3 py-4">{jobs.length === 0 && receipts.length === 0 && <p>No print jobs on this terminal yet.</p>}

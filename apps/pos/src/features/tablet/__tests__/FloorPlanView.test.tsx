@@ -11,7 +11,7 @@
 //     table cells are h-28 / h-24 = ≥96px so always pass).
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { RestaurantTable } from '@breakery/domain';
 import { FloorPlanView } from '../FloorPlanView';
@@ -40,6 +40,38 @@ const TABLES: RestaurantTable[] = [
 ];
 
 describe('FloorPlanView', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows positioned and unplaced tables together on CS30 and preserves append actions', () => {
+    const listeners: (() => void)[] = [];
+    const media = {
+      matches: true,
+      addEventListener: vi.fn((_event: string, listener: () => void) => listeners.push(listener)),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('matchMedia', vi.fn(() => media));
+    const onTableSelect = vi.fn();
+    const onAppendSelect = vi.fn();
+    const order = { id: 'o1', order_number: 'ORD-1' };
+    const { unmount } = render(
+      <FloorPlanView
+        tables={[{ ...TABLES[0]!, grid_x: 4, grid_y: 7 }, TABLES[1]!]}
+        occupancy={{ T2: true }}
+        onTableSelect={onTableSelect}
+        onAppendSelect={onAppendSelect}
+        appendableByTable={{ T2: order }}
+      />,
+    );
+    expect(screen.getByTestId('tablet-compact-tables')).toBeInTheDocument();
+    expect(screen.queryByTestId('floor-grid')).toBeNull();
+    fireEvent.click(screen.getByTestId('floor-plan-cell-T1'));
+    expect(onTableSelect).toHaveBeenCalledWith('T1');
+    fireEvent.click(screen.getByTestId('floor-plan-cell-T2'));
+    expect(onAppendSelect).toHaveBeenCalledWith('T2', order);
+    unmount();
+    expect(media.removeEventListener).toHaveBeenCalledWith('change', listeners[0]);
+  });
+
   it('renders the header, both section tabs, and the floor canvas', () => {
     render(
       <FloorPlanView

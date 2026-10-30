@@ -6,7 +6,7 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -96,6 +96,15 @@ describe('TabletLayout header (LOT 6)', () => {
     const pill = screen.getByTestId('tablet-connection-pill');
     expect(pill).toHaveTextContent(/online/i);
     expect(pill).toHaveAttribute('data-connection-state', 'online');
+  });
+
+  it('opens the printing panel from the header without a separate toolbar', async () => {
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    const trigger = within(screen.getByRole('banner')).getByRole('button', { name: 'Printing' });
+    fireEvent.click(trigger);
+    expect(await screen.findByRole('heading', { name: 'Printing' })).toBeInTheDocument();
+    expect(screen.getByText('No print jobs on this terminal yet.')).toBeInTheDocument();
   });
 
   // Cloud coupé MAIS hub LAN debout : la commande part quand même en cuisine
