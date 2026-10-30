@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rehearsalEnvironment, tapVerdict } from './rehearsal-pgtap.mjs';
+import { rehearsalEnvironment, tapVerdict, psqlFailure, requireConnectionProbe } from './rehearsal-pgtap.mjs';
 import { BANK_RELEASE } from './selective-bank.mjs';
 
 test('répétition : refuser prod, dev, utilisateur ambigu et options de connexion', () => {
@@ -13,6 +13,27 @@ test('répétition : refuser prod, dev, utilisateur ambigu et options de connexi
     good.replace('pooler.supabase.com', 'pooler.supabase.com.attacker.test')]) {
     assert.throws(() => rehearsalEnvironment(bad));
   }
+});
+
+test('diagnostic psql : codes sûrs, jamais le stderr ni un secret', () => {
+  for (const [stderr, expected] of [
+    ['FATAL: password authentication failed for user private-fixture', 'AUTH_PASSWORD_REJECTED'],
+    ['FATAL: Tenant or user not found private-fixture', 'POOLER_TENANT_OR_USER_NOT_FOUND'],
+    ['could not translate host name private-fixture', 'NETWORK_DNS'],
+    ['ERROR: 42883 private-fixture', 'SQLSTATE_42883'],
+    ['unclassified private-fixture postgresql://secret', 'PSQL_EXECUTION_FAILED'],
+  ]) {
+    const result = psqlFailure({ stderr: Buffer.from(stderr) });
+    assert.equal(result, expected);
+    assert.ok(!result.includes('private-fixture'));
+    assert.ok(!result.includes('secret'));
+  }
+});
+
+test('sonde de connexion : échec immédiat avant les fichiers métier', () => {
+  assert.doesNotThrow(() => requireConnectionProbe(() => ({ status: 0, output: '1\n' }), {}));
+  assert.throws(() => requireConnectionProbe(() => ({ status: 1, output: '', failure: 'AUTH_PASSWORD_REJECTED' }), {}), /AUTH_PASSWORD_REJECTED/);
+  assert.throws(() => requireConnectionProbe(() => ({ status: 0, output: '' }), {}), /UNEXPECTED_PROBE_RESULT/);
 });
 test('pgTAP : assertions complètes, erreurs SQL, résumé agrégé et tout ignoré', () => {
   assert.equal(tapVerdict('1..2\nok 1 - first\nok 2 - second\n').passed, true);

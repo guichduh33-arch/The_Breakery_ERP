@@ -5,6 +5,31 @@ import { BANK_RELEASE } from './selective-bank.mjs';
 import { isMain } from '../agents/lib.mjs';
 import { digest } from './bundle-files.mjs';
 
+export function psqlFailure(error) {
+  const stderr = error.stderr?.toString() ?? '';
+  for (const [pattern, code] of [
+    [/password authentication failed/i, 'AUTH_PASSWORD_REJECTED'],
+    [/no password supplied/i, 'AUTH_PASSWORD_MISSING'],
+    [/tenant or user not found/i, 'POOLER_TENANT_OR_USER_NOT_FOUND'],
+    [/circuit breaker|too many authentication/i, 'POOLER_AUTH_RATE_LIMIT'],
+    [/could not translate host name|name or service not known/i, 'NETWORK_DNS'],
+    [/network is unreachable|no route to host/i, 'NETWORK_UNREACHABLE'],
+    [/connection timed out|timeout expired/i, 'NETWORK_TIMEOUT'],
+    [/SSL|certificate verify failed/i, 'TLS_CONNECTION_ERROR'],
+  ]) if (pattern.test(stderr)) return code;
+  const state = stderr.match(/(?:ERROR|FATAL):\s+([0-9A-Z]{5})(?:\s|:|$)/);
+  if (state) return `SQLSTATE_${state[1]}`;
+  if (error.code === 'ETIMEDOUT') return 'PROCESS_TIMEOUT';
+  return 'PSQL_EXECUTION_FAILED';
+}
+
+export function requireConnectionProbe(probe, env) {
+  const result = probe(env);
+  if (result.status !== 0 || result.output.trim() !== '1') {
+    throw new Error(`Connexion répétition refusée : ${result.failure ?? 'UNEXPECTED_PROBE_RESULT'}`);
+  }
+}
+
 export function rehearsalEnvironment(connection) {
   let url;
   try { url = new URL(connection); } catch { throw new Error('Connexion répétition manquante ou invalide.'); }
@@ -31,9 +56,10 @@ export function tapVerdict(output, status = 0) {
     skipped: assertions.filter((line) => /#\s*skip\b/i.test(line)).length };
 }
 
-export function runRehearsalSuite({ root, connection, run, sourceSha }) {
+export function runRehearsalSuite({ root, connection, run, probe, sourceSha }) {
   if (sourceSha !== BANK_RELEASE.candidate) throw new Error('SHA candidat incorrect.');
   const connectionEnv = rehearsalEnvironment(connection);
+  requireConnectionProbe(probe, connectionEnv);
   const directory = resolve(root, 'supabase/tests');
   if (!lstatSync(directory).isDirectory() || lstatSync(directory).isSymbolicLink()) throw new Error('Répertoire de tests invalide.');
   const files = readdirSync(directory).filter((f) => f.endsWith('.test.sql')).sort();
@@ -44,8 +70,10 @@ export function runRehearsalSuite({ root, connection, run, sourceSha }) {
     if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) throw new Error('Fichier SQL irrégulier.');
     const sql = readFileSync(path, 'utf8');
     if (!/^\s*BEGIN\s*;/im.test(sql) || !/^\s*ROLLBACK\s*;/im.test(sql)) throw new Error(`Rollback explicite absent : ${file}`);
-    const { output, status } = run(path, connectionEnv);
-    results.push({ file, sha256: digest(Buffer.from(sql)), ...tapVerdict(output, status) });
+    const { output, status, failure } = run(path, connectionEnv);
+    const verdict = tapVerdict(output, status);
+    results.push({ file, sha256: digest(Buffer.from(sql)), ...verdict,
+      failure: verdict.passed ? null : failure ?? 'TAP_VERDICT_FAILED' });
   }
   return { schemaVersion: 1, sourceSha, projectRef: BANK_RELEASE.rehearsal, results,
     passed: results.every((r) => r.passed), publicationAuthorized: false };
@@ -57,19 +85,23 @@ if (isMain(import.meta.url)) {
     const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
     if (execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd: root, encoding: 'utf8' }).trim())
       throw new Error('Checkout candidat non propre.');
-    const result = runRehearsalSuite({ root, connection: process.env.REHEARSAL_PGURL, sourceSha,
-      run: (path, connectionEnv) => {
+    const runPsql = (args, connectionEnv) => {
         // Aucun secret dans les arguments du processus ou les traces du runner.
         const env = { PATH: process.env.PATH, HOME: process.env.HOME, LANG: 'C.UTF-8', ...connectionEnv };
         try {
-          const output = execFileSync('psql', ['-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-f', path],
+          const output = execFileSync('psql', ['-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', ...args],
             { env, encoding: 'utf8', timeout: 120000, maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
-          console.log(`${path.split('/').at(-1)} : executed`);
           return { output, status: 0 };
         } catch (error) {
-          console.error(`${path.split('/').at(-1)} : SQL execution failed`);
-          return { output: error.stdout?.toString() ?? '', status: 1 };
+          return { output: error.stdout?.toString() ?? '', status: 1, failure: psqlFailure(error) };
         }
+    };
+    const result = runRehearsalSuite({ root, connection: process.env.REHEARSAL_PGURL, sourceSha,
+      probe: (env) => runPsql(['-c', 'SELECT 1;'], env),
+      run: (path, env) => {
+        const result = runPsql(['-f', path], env);
+        console.log(`${path.split('/').at(-1)} : ${result.status === 0 ? 'executed' : result.failure}`);
+        return result;
       },
     });
     writeFileSync('bank-rehearsal-proof.json', JSON.stringify(result, null, 2) + '\n');
