@@ -36,6 +36,7 @@ export interface TableCellProps {
    * instead of the fixed circle/pill shape (FloorCanvas 12×8).
    */
   fit?: boolean;
+  compact?: boolean;
 }
 
 const STATUS_COPY: Record<TableStatus, string> = {
@@ -44,7 +45,7 @@ const STATUS_COPY: Record<TableStatus, string> = {
   reserved: 'Reserved',
 };
 
-export function TableCell({ table, selected, onTap, fit = false }: TableCellProps): JSX.Element {
+export function TableCell({ table, selected, onTap, fit = false, compact = false }: TableCellProps): JSX.Element {
   const shape = table.shape ?? (table.seats >= 4 ? 'pill' : 'circle');
 
   // `amber-warn`/`green`/`text-muted` are bare tokens (no alpha outside
@@ -81,7 +82,7 @@ export function TableCell({ table, selected, onTap, fit = false }: TableCellProp
         surface,
         ring,
         fit
-          ? 'h-full w-full min-h-14 rounded-xl'
+          ? compact ? 'h-full w-full min-h-11 min-w-11 rounded-xl' : 'h-full w-full min-h-14 rounded-xl'
           : shape === 'circle'
             ? 'h-28 w-28 rounded-full'
             : 'h-24 w-44 rounded-[3rem]',
@@ -96,7 +97,7 @@ export function TableCell({ table, selected, onTap, fit = false }: TableCellProp
       </span>
       <span
         className={cn(
-          'mt-0.5 text-xs uppercase tracking-widest font-semibold',
+          compact ? 'sr-only' : 'mt-0.5 text-xs uppercase tracking-widest font-semibold',
           table.status === 'occupied' && 'text-amber-warn',
           table.status === 'reserved' && 'text-text-muted',
           table.status === 'available' && 'text-green',
