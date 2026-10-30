@@ -42,6 +42,15 @@ const TABLES: RestaurantTable[] = [
 describe('FloorPlanView', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it('returns to the menu from the floor-plan header without selecting a table', () => {
+    const onBack = vi.fn();
+    const onTableSelect = vi.fn();
+    render(<FloorPlanView tables={TABLES} occupancy={{}} onBack={onBack} onTableSelect={onTableSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Back to menu' }));
+    expect(onBack).toHaveBeenCalledOnce();
+    expect(onTableSelect).not.toHaveBeenCalled();
+  });
+
   it('shows positioned and unplaced tables together on CS30 and preserves append actions', () => {
     const listeners: (() => void)[] = [];
     const media = {
