@@ -6,7 +6,8 @@
 -- `role authenticated` + a request.jwt.claims sub, which the platform pooler
 -- allows for the seeded cashier. Wrapped in BEGIN/ROLLBACK: seeds a fired
 -- counter order, exercises the two RPCs, asserts via RAISE EXCEPTION, rolls back.
--- A clean run returns NO rows and NO error (any failed assertion raises).
+-- Deux assertions TAP rendent les groupes RPC et audit visibles au runner ;
+-- les assertions internes conservent leurs exceptions en cas d'échec.
 --
 -- 2026-09-05 (audit lot 1 P0 n°5, lot C) — repointe sur reopen_held_order_v3 :
 -- v1 renvoyait les lignes annulees (pas de filtre is_cancelled = false) et
@@ -24,18 +25,23 @@
 BEGIN;
 \ir helpers/legacy_users.sql
 \ir helpers/pin_session.sql
-\ir helpers/session.sql
+SELECT plan(2);
+INSERT INTO pos_sessions(id,opened_by,opening_cash,status)
+VALUES('f5430000-0000-4000-a000-000000000001','00000000-0000-0000-0000-000000000002',0,'open');
 
 DO $seed$
 DECLARE
   v_oid     uuid := '11111111-1111-4111-8111-111111111111';
-  v_pid     uuid;
+  v_pid     uuid := gen_random_uuid();
+  v_category uuid := gen_random_uuid();
   v_session uuid;
   v_cancelled_by uuid;
 BEGIN
-  SELECT id INTO v_pid FROM products WHERE is_active LIMIT 1;
-  SELECT id INTO v_cancelled_by FROM user_profiles WHERE deleted_at IS NULL LIMIT 1;
-  SELECT id INTO v_session FROM pos_sessions LIMIT 1;
+  INSERT INTO categories(id,name,slug) VALUES(v_category,'Reopen fixture','reopen-'||v_category);
+  INSERT INTO products(id,sku,name,category_id,retail_price,track_inventory)
+    VALUES(v_pid,'REOPEN-'||v_pid,'Reopen fixture',v_category,1000,false);
+  v_cancelled_by := '00000000-0000-0000-0000-000000000002';
+  v_session := 'f5430000-0000-4000-a000-000000000001';
 
   INSERT INTO orders (id, order_number, order_type, status, created_via, session_id,
                       is_held, sent_to_kitchen_at, subtotal, tax_amount, total)
@@ -130,6 +136,7 @@ END $rpc$;
 -- audit_logs has RLS that blocks the authenticated role from SELECT, so assert
 -- the trail back as the table owner.
 RESET ROLE;
+SELECT pass('Held order round-trip preserves the complete snapshot and idempotence');
 DO $audit$
 DECLARE v_cnt int;
 BEGIN
@@ -139,5 +146,6 @@ BEGIN
   IF v_cnt <> 3 THEN RAISE EXCEPTION 'FAIL: audit rows = % (expected 3)', v_cnt; END IF;
   RAISE NOTICE 'AUDIT PASS: order.held + deux order.reopened';
 END $audit$;
-
+SELECT pass('Hold and reopen append the expected audit events');
+SELECT * FROM finish();
 ROLLBACK;
