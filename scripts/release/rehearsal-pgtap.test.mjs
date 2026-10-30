@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
 import { rehearsalEnvironment, tapVerdict, psqlFailure, psqlFailureLocation, requireConnectionProbe, runRehearsalSuite } from './rehearsal-pgtap.mjs';
-import { BANK_RELEASE } from './selective-bank.mjs';
+import { BANK_RELEASE, BANK_SQL_TEST_SHA, BANK_SQL_TEST_COUNT } from './selective-bank.mjs';
 
 test('répétition : refuser prod, dev, utilisateur ambigu et options de connexion', () => {
   const ref = BANK_RELEASE.rehearsal;
@@ -81,21 +81,31 @@ test('runner : conserver les vrais refus SQL/TAP et la provenance malgré des r�
   const root = mkdtempSync(join(tmpdir(), 'rehearsal-verdict-'));
   try {
     mkdirSync(join(root, 'supabase/tests'), { recursive: true });
-    for (let i = 0; i < 180; i++) writeFileSync(join(root, `supabase/tests/${i}.test.sql`), 'BEGIN;\nROLLBACK;\n');
-    const proof = runRehearsalSuite({ root, sourceSha: BANK_RELEASE.candidate,
+    for (let i = 0; i < BANK_SQL_TEST_COUNT; i++) writeFileSync(join(root, `supabase/tests/${i}.test.sql`), 'BEGIN;\nROLLBACK;\n');
+    const proof = runRehearsalSuite({ root, sourceSha: BANK_SQL_TEST_SHA,
       connection: `postgresql://postgres:fixture@db.${BANK_RELEASE.rehearsal}.supabase.co/postgres`,
       probe: () => ({ status: 0, output: '1\n' }),
       run: (path) => basename(path) === '1.test.sql' ? { status: 1, output: '1..1\nok 1\n', failure: 'SQLSTATE_23503' }
         : basename(path) === '2.test.sql' ? { status: 0, output: '1..1\n1|1|not ok 1 - failed\n' }
         : { status: 0, output: '1..1\n0|1|ok 1 - passed\n' },
     });
-    assert.equal(proof.results.length, 180);
-    assert.equal(proof.results.filter((row) => row.passed).length, 178);
+    assert.equal(proof.results.length, BANK_SQL_TEST_COUNT);
+    assert.equal(proof.results.filter((row) => row.passed).length, BANK_SQL_TEST_COUNT - 2);
     assert.equal(proof.passed, false);
     assert.equal(proof.publicationAuthorized, false);
     assert.equal(proof.projectRef, BANK_RELEASE.rehearsal);
-    assert.equal(proof.sourceSha, BANK_RELEASE.candidate);
+    assert.equal(proof.sourceSha, BANK_SQL_TEST_SHA);
+    assert.equal(proof.applicationSourceSha, BANK_RELEASE.candidate);
     assert.equal(proof.results.find((row) => row.file === '1.test.sql').failure, 'SQLSTATE_23503');
     assert.deepEqual(proof.results.find((row) => row.file === '2.test.sql').failedAssertions, [1]);
+    rmSync(join(root, 'supabase/tests/0.test.sql'));
+    assert.throws(() => runRehearsalSuite({ root, sourceSha: BANK_SQL_TEST_SHA,
+      connection: `postgresql://postgres:fixture@db.${BANK_RELEASE.rehearsal}.supabase.co/postgres`,
+      probe: () => ({ status: 0, output: '1\n' }), run: () => assert.fail('No SQL after incomplete inventory'),
+    }), /Suite SQL incomplète/);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('runner : un SHA applicatif seul ne vaut pas la preuve des sources SQL approuvées', () => {
+  assert.throws(() => runRehearsalSuite({ sourceSha: BANK_RELEASE.candidate }), /sources SQL incorrect/);
 });

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       approve_rehearsal_tests:
-        description: 'Run the complete pinned bank candidate SQL suite on V3 rehearsal, under rollback'
+        description: 'Run all pinned SQL tests for the unchanged bank candidate on V3 rehearsal, under rollback'
         required: true
         type: boolean
         default: false
@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
-          ref: 5e4ab2b2aa5efad4e26dce4acc351c5774d65def
+          ref: eae0d2dfa3bb31e352d203c5598e3cf5f9cb63f3
           path: candidate
           persist-credentials: false
 
@@ -53,7 +53,7 @@ jobs:
             sudo apt-get update -q && sudo apt-get install -y postgresql-client
           fi
 
-      - name: Run every SQL test from the exact candidate
+      - name: Run every SQL test from the exact approved test source
         env:
           REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
           CANDIDATE_DIRECTORY: candidate

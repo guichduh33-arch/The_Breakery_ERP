@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { lstatSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { BANK_RELEASE } from './selective-bank.mjs';
-import { isMain } from '../agents/lib.mjs';
+import { BANK_RELEASE, BANK_SQL_TEST_SHA, BANK_SQL_TEST_COUNT, inspectBankTestSource } from './selective-bank.mjs';
+import { isMain, ROOT } from '../agents/lib.mjs';
 import { digest } from './bundle-files.mjs';
 
 export function psqlFailure(error) {
@@ -80,13 +80,13 @@ export function tapVerdict(output, status = 0) {
 }
 
 export function runRehearsalSuite({ root, connection, run, probe, sourceSha }) {
-  if (sourceSha !== BANK_RELEASE.candidate) throw new Error('SHA candidat incorrect.');
+  if (sourceSha !== BANK_SQL_TEST_SHA) throw new Error('SHA des sources SQL incorrect.');
   const connectionEnv = rehearsalEnvironment(connection);
   requireConnectionProbe(probe, connectionEnv);
   const directory = resolve(root, 'supabase/tests');
   if (!lstatSync(directory).isDirectory() || lstatSync(directory).isSymbolicLink()) throw new Error('Répertoire de tests invalide.');
   const files = readdirSync(directory).filter((f) => f.endsWith('.test.sql')).sort();
-  if (files.length < 180) throw new Error('Suite SQL incomplète.');
+  if (files.length !== BANK_SQL_TEST_COUNT) throw new Error('Suite SQL incomplète.');
   const results = [];
   for (const file of files) {
     const path = resolve(directory, file);
@@ -98,7 +98,8 @@ export function runRehearsalSuite({ root, connection, run, probe, sourceSha }) {
     results.push({ file, sha256: digest(Buffer.from(sql)), ...verdict,
       failure: verdict.passed ? null : failure ?? 'TAP_VERDICT_FAILED', location });
   }
-  return { schemaVersion: 1, sourceSha, projectRef: BANK_RELEASE.rehearsal, results,
+  return { schemaVersion: 2, sourceSha, applicationSourceSha: BANK_RELEASE.candidate,
+    projectRef: BANK_RELEASE.rehearsal, results,
     passed: results.every((r) => r.passed), publicationAuthorized: false };
 }
 
@@ -108,6 +109,9 @@ if (isMain(import.meta.url)) {
     const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
     if (execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd: root, encoding: 'utf8' }).trim())
       throw new Error('Checkout candidat non propre.');
+    inspectBankTestSource({ git: (args) => execFileSync('git', args, {
+      cwd: ROOT, maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'],
+    }) });
     const runPsql = (args, connectionEnv) => {
         // Aucun secret dans les arguments du processus ou les traces du runner.
         const env = { PATH: process.env.PATH, HOME: process.env.HOME, LANG: 'C.UTF-8', ...connectionEnv };
