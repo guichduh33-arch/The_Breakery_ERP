@@ -294,11 +294,11 @@ export function TabletOrderPage({
   if (view === 'floor-plan') {
     return (
       <div className="flex flex-col h-full min-h-0">
-        <div className="px-6 py-3 border-b border-border-subtle bg-bg-elevated flex items-center gap-4">
+        <div className="px-3 py-1 sm:px-6 sm:py-3 border-b border-border-subtle bg-bg-elevated flex items-center gap-4">
           <Button
             variant="ghost"
             size="md"
-            className="min-h-11 gap-2"
+            className="h-11 min-h-11 sm:h-14 gap-2"
             onClick={() => setView('menu')}
             aria-label="Back to menu"
           >

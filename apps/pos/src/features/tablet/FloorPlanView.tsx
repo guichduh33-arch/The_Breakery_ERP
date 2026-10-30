@@ -41,7 +41,7 @@
 // `table_sections.sort_order`. Legacy NULL-section tables fall back under
 // an "Interior" bucket. Replaces the S14 `sort_order >= 100` heuristic.
 
-import { useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Home, Trees, MapPin, Users } from 'lucide-react';
 import type { JSX } from 'react';
@@ -113,6 +113,17 @@ export function FloorPlanView({
   const [sectionKey, setSectionKey] = useState<string | null>(null);
   const visibleSection = sections.find((s) => s.key === sectionKey) ?? sections[0];
   const visible = visibleSection?.tables ?? [];
+  // CS30 : le plan positionné laisse les premières tables hors écran.
+  // Une seule représentation est montée pour garder des cibles uniques.
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia('(max-width: 639px), (max-height: 480px) and (max-width: 959px)');
+    const update = () => setCompact(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   const handleTap = useCallback(
     (table: RestaurantTable): void => {
@@ -142,15 +153,15 @@ export function FloorPlanView({
 
   return (
     <section
-      className="flex flex-col h-full bg-bg-base"
+      className="flex flex-col h-full min-h-0 min-w-0 bg-bg-base"
       data-testid="tablet-floor-plan"
       aria-label="Floor plan"
     >
       {/* Header */}
-      <header className="px-6 py-5 flex items-start gap-4 border-b border-border-subtle bg-bg-elevated">
+      <header className="px-3 py-2 sm:px-6 sm:py-5 flex items-start gap-3 sm:gap-4 border-b border-border-subtle bg-bg-elevated shrink-0">
         <div
           aria-hidden
-          className="h-12 w-12 inline-flex items-center justify-center rounded-md bg-surface-4 text-text-secondary shrink-0"
+          className="hidden sm:inline-flex h-12 w-12 items-center justify-center rounded-md bg-surface-4 text-text-secondary shrink-0"
         >
           <Users className="h-6 w-6" />
         </div>
@@ -158,7 +169,7 @@ export function FloorPlanView({
           {/* h2 (le h1 vit dans TabletLayout) ; casse de titre — les capitales
               codées dans le texte n'étaient ni la Capitale Espacée (12px/0.12em)
               ni un titre : un titre de 24 px qui crie. */}
-          <h2 className="font-sans font-semibold text-2xl text-text-primary">Floor plan</h2>
+          <h2 className="font-sans font-semibold text-lg sm:text-2xl text-text-primary">{compact ? 'Tables' : 'Floor plan'}</h2>
           <p className="text-text-secondary text-sm mt-1">
             {subtitle ??
               (onAppendSelect !== undefined
@@ -170,7 +181,7 @@ export function FloorPlanView({
 
       {/* Section tabs */}
       <nav
-        className="px-6 py-4 flex items-center gap-3 border-b border-border-subtle bg-bg-elevated"
+        className="px-3 py-2 sm:px-6 sm:py-4 flex items-center gap-2 sm:gap-3 overflow-x-auto border-b border-border-subtle bg-bg-elevated shrink-0"
         aria-label="Floor sections"
       >
         {sections.map((s) => (
@@ -187,13 +198,13 @@ export function FloorPlanView({
 
       {/* Floor canvas */}
       <main
-        className="flex-1 overflow-auto p-6"
+        className="flex-1 min-h-0 overflow-auto p-3 sm:p-6"
         data-testid="tablet-floor-plan-canvas"
         aria-label={`Floor plan — ${visibleSection?.label ?? ''}`}
       >
         <div
           className={cn(
-            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-8',
+            'min-h-full rounded-xl border border-border-subtle bg-bg-elevated p-2 sm:p-8',
             // Audit 2026-08-24 (theming P2) — la trame était figée sur
             // l'ANCIEN or (#c9a557, retiré du thème) ; color-mix la fait
             // dériver du token vivant.
@@ -214,6 +225,19 @@ export function FloorPlanView({
             <div className="h-full min-h-[300px] grid place-items-center text-text-muted text-sm">
               No tables configured for this section.
             </div>
+          ) : compact ? (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(96px,1fr))] gap-2" data-testid="tablet-compact-tables">
+              {visible.map((t) => (
+                <div key={t.id} className="h-20 min-w-0">
+                  <TableCell
+                    table={toFloorPlanTable(t, occupancy)}
+                    selected={selectedTable === t.name}
+                    onTap={() => handleTap(t)}
+                    fit
+                  />
+                </div>
+              ))}
+            </div>
           ) : (
             <FloorCanvas
               tables={visible}
@@ -233,7 +257,7 @@ export function FloorPlanView({
       </main>
 
       {/* Footer legend */}
-      <footer className="px-6 py-4 border-t border-border-subtle bg-bg-elevated">
+      <footer className="px-3 py-2 sm:px-6 sm:py-4 border-t border-border-subtle bg-bg-elevated shrink-0">
         {/* Critique 2026-08-24 — « Reserved » retiré : toFloorPlanTable ne
             produit jamais ce statut, la légende offrait une clé de lecture
             pour un état inexistant. */}
@@ -267,7 +291,7 @@ function SectionTab({
       data-testid={`tablet-floor-plan-section-${label.toLowerCase()}`}
       className={cn(
         // Tactile size: 44px minimum (min-h-11) with comfortable padding.
-        'min-h-11 inline-flex items-center gap-3 px-5 rounded-full border text-sm font-semibold uppercase tracking-widest',
+        'min-h-11 shrink-0 inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-5 rounded-full border text-sm font-semibold uppercase tracking-widest',
         'transition-colors duration-base motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
         active

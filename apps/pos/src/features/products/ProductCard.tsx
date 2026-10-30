@@ -110,7 +110,7 @@ function ProductCardImpl({
           : 'cursor-pointer [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:border-border-strong [@media(hover:hover)]:hover:bg-bg-overlay [@media(hover:hover)]:hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
       )}
     >
-      <div className={cn('relative w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 bg-bg-input overflow-hidden', compactOnMobile && 'max-sm:h-14 max-sm:aspect-auto')}>
+      <div className={cn('relative w-full aspect-[4/3] max-h-32 [@media(max-height:700px)]:max-h-24 bg-bg-input overflow-hidden', compactOnMobile && 'max-sm:h-10 max-sm:aspect-auto')}>
         {showImage ? (
           <img
             src={product.image_url ?? undefined}
@@ -125,13 +125,13 @@ function ProductCardImpl({
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center">
-            <BrandMark size="lg" className="opacity-50" />
+            <BrandMark size="lg" className={cn('opacity-50', compactOnMobile && 'max-sm:scale-50')} />
           </div>
         )}
 
         {/* Top-left cluster — in-cart count (most important), then promo/combo. */}
         {(inCart || promoActive || topLeftSlot) && (
-          <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5 z-10">
+          <div className={cn('absolute top-2 left-2 flex flex-col items-start gap-1.5 z-10', compactOnMobile && 'max-sm:top-1 max-sm:left-1 max-sm:flex-row max-sm:gap-1')}>
             {inCart && (
               <span
                 className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold font-mono tabular-nums"
@@ -167,7 +167,7 @@ function ProductCardImpl({
           <div className="absolute inset-0 grid place-items-center bg-backdrop z-20">
             <span
               id={`pc-overlay-${product.id}`}
-              className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red shadow-hairline"
+              className={cn('rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red shadow-hairline', compactOnMobile && 'max-sm:rotate-0 max-sm:px-1 max-sm:py-0.5 max-sm:text-xs max-sm:tracking-normal max-sm:border')}
             >
               {overlayLabel}
             </span>
@@ -182,7 +182,7 @@ function ProductCardImpl({
         )}
       </div>
 
-      <div className={cn('px-2.5 py-2 space-y-0.5', compactOnMobile && 'max-sm:px-2 max-sm:py-1.5')}>
+      <div className={cn('px-2.5 py-2 space-y-0.5', compactOnMobile && 'max-sm:px-1.5 max-sm:py-1')}>
         <div
           id={`pc-name-${product.id}`}
           className={cn('text-base leading-tight font-semibold text-text-primary line-clamp-3 min-h-[2.5em] break-words', compactOnMobile && 'max-sm:text-sm max-sm:line-clamp-2')}
@@ -197,7 +197,7 @@ function ProductCardImpl({
             <Currency
               amount={product.retail_price}
               emphasis="gold"
-              className="text-base font-mono font-bold tabular-nums"
+              className={cn('text-base font-mono font-bold tabular-nums', compactOnMobile && 'max-sm:text-sm')}
             />
           </span>
         )}
