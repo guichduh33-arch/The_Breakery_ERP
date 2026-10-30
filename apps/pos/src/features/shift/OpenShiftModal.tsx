@@ -75,7 +75,7 @@ function formatHeaderDate(d: Date): string {
 
 export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps) {
   const [step, setStep] = useState<Step>('pin');
-  const [amountStr, setAmountStr] = useState('');
+  const [amountStr, setAmountStr] = useState('500000');
   const [notes, setNotes] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(false);
@@ -153,7 +153,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
       toast.success('Shift opened');
       // Reset internal state for next mount.
       setStep('pin');
-      setAmountStr('');
+      setAmountStr('500000');
       setNotes('');
       setDenoms({});
     } catch (err) {
@@ -170,7 +170,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   function handleClose(): void {
     if (onClose) {
       setStep('pin');
-      setAmountStr('');
+      setAmountStr('500000');
       setNotes('');
       setPinError(null);
       setSubmitError(null);
@@ -250,6 +250,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
         {/* Step 2 — Cash */}
         {step === 'cash' && (
           <div className="space-y-5">
+            <p className="text-sm text-text-secondary">Opening float: Rp 500.000 from Small Money. At close, return the float to Small Money and deposit the remaining counted cash in Undeposited Funds.</p>
             {denomEnabled ? (
               <section className="space-y-2">
                 <SectionLabel as="div">Opening Cash — count by denomination</SectionLabel>

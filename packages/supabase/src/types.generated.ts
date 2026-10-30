@@ -964,6 +964,71 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_journal_import_rows: {
+        Row: {
+          corrects_je_id: string | null
+          created_at: string
+          created_by: string
+          entry_hash: string
+          expense_id: string | null
+          journal_entry_id: string
+          source_key: string
+          source_name: string
+          source_sha256: string
+        }
+        Insert: {
+          corrects_je_id?: string | null
+          created_at?: string
+          created_by: string
+          entry_hash: string
+          expense_id?: string | null
+          journal_entry_id: string
+          source_key: string
+          source_name: string
+          source_sha256: string
+        }
+        Update: {
+          corrects_je_id?: string | null
+          created_at?: string
+          created_by?: string
+          entry_hash?: string
+          expense_id?: string | null
+          journal_entry_id?: string
+          source_key?: string
+          source_name?: string
+          source_sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_journal_import_rows_corrects_je_id_fkey"
+            columns: ["corrects_je_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_journal_import_rows_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_journal_import_rows_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: true
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_journal_import_rows_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movement_idempotency_keys: {
         Row: {
           created_at: string
@@ -993,6 +1058,7 @@ export type Database = {
       cash_movements: {
         Row: {
           amount: number
+          counterparty_account_id: string | null
           created_at: string
           created_by: string | null
           direction: string
@@ -1004,6 +1070,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          counterparty_account_id?: string | null
           created_at?: string
           created_by?: string | null
           direction: string
@@ -1015,6 +1082,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          counterparty_account_id?: string | null
           created_at?: string
           created_by?: string | null
           direction?: string
@@ -1025,6 +1093,13 @@ export type Database = {
           session_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cash_movements_counterparty_account_id_fkey"
+            columns: ["counterparty_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cash_movements_session_id_fkey"
             columns: ["session_id"]
@@ -6387,6 +6462,58 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_cash_treasury: {
+        Row: {
+          issued_je_id: string | null
+          opening_float: number
+          returned_float: number | null
+          safe_deposit: number | null
+          session_id: string
+          settled_at: string | null
+          settlement_je_id: string | null
+        }
+        Insert: {
+          issued_je_id?: string | null
+          opening_float: number
+          returned_float?: number | null
+          safe_deposit?: number | null
+          session_id: string
+          settled_at?: string | null
+          settlement_je_id?: string | null
+        }
+        Update: {
+          issued_je_id?: string | null
+          opening_float?: number
+          returned_float?: number | null
+          safe_deposit?: number | null
+          session_id?: string
+          settled_at?: string | null
+          settlement_je_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_cash_treasury_issued_je_id_fkey"
+            columns: ["issued_je_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_cash_treasury_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_cash_treasury_settlement_je_id_fkey"
+            columns: ["settlement_je_id"]
+            isOneToOne: true
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_lots: {
         Row: {
           batch_number: string | null
@@ -7428,6 +7555,10 @@ export type Database = {
       }
       _cleanup: { Args: never; Returns: boolean }
       _contract_on: { Args: { "": string }; Returns: unknown }
+      _create_cash_import_expense_v2: {
+        Args: { p_entry: Json; p_je: string; p_profile: string }
+        Returns: string
+      }
       _current_profile_id: { Args: never; Returns: string }
       _currtest: { Args: never; Returns: number }
       _dashboard_cash_on_hand_v1: { Args: never; Returns: Json }
@@ -7453,6 +7584,16 @@ export type Database = {
       }
       _db_privs: { Args: never; Returns: unknown[] }
       _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
+      _emit_shift_cash_transfer_v1: {
+        Args: {
+          p_actor: string
+          p_date: string
+          p_kind: string
+          p_lines: Json
+          p_session: string
+        }
+        Returns: string
+      }
       _enqueue_notification_system_v1: {
         Args: {
           p_idempotency_key?: string
@@ -7836,6 +7977,10 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_cash_journal_import_v4: {
+        Args: { p_manager_pin: string; p_payload: Json; p_preview_hash: string }
+        Returns: Json
+      }
       apply_historical_import_v4: {
         Args: { p_client_key: string; p_payload: Json; p_preview_hash: string }
         Returns: Json
@@ -7878,7 +8023,7 @@ export type Database = {
         Returns: Json
       }
       bank_reconciliation_catalog_v1: { Args: never; Returns: Json }
-      bank_reconciliation_clearing_v2: {
+      bank_reconciliation_clearing_v3: {
         Args: {
           p_after?: string
           p_limit?: number
@@ -7924,7 +8069,7 @@ export type Database = {
         }
         Returns: Json
       }
-      bank_reconciliation_post_v4: {
+      bank_reconciliation_post_v5: {
         Args: {
           p_bank_gl_line_ids?: string[]
           p_bank_line_ids: string[]
@@ -8586,11 +8731,19 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_cash_movement_counterparties_v2: {
+        Args: never
+        Returns: {
+          code: string
+          is_cash: boolean
+          name: string
+        }[]
+      }
       get_cash_wallet_analysis_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_cash_wallet_balances_v2: {
+      get_cash_wallet_balances_v3: {
         Args: never
         Returns: {
           account_code: string
@@ -9624,6 +9777,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      preview_cash_journal_import_v3: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       preview_historical_import_v4: { Args: { p_payload: Json }; Returns: Json }
       receive_purchase_order_v5: {
         Args: {
@@ -9695,7 +9852,7 @@ export type Database = {
           has_drift: boolean
         }[]
       }
-      record_b2b_payment_v4: {
+      record_b2b_payment_v5: {
         Args: {
           p_amount: number
           p_customer_id: string
@@ -9712,9 +9869,10 @@ export type Database = {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
-      record_cash_movement_v2: {
+      record_cash_movement_v4: {
         Args: {
           p_amount: number
+          p_counterparty_account_code?: string
           p_direction: string
           p_idempotency_key?: string
           p_reason: string

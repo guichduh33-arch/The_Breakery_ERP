@@ -7,6 +7,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CashInOutModal } from '../components/CashInOutModal';
 import { readCashMovement } from '../hooks/cashMovementRecovery';
+import type * as CashMovementModule from '../hooks/useCashMovement';
+
+vi.mock('../hooks/useCashMovement', async (importOriginal) => ({
+  ...await importOriginal<typeof CashMovementModule>(),
+  useCashMovementCounterparties: () => ({ data: [{ code: '1110', name: 'Undeposited Funds', is_cash: true }], isError: false }),
+}));
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -24,6 +30,8 @@ function withQuery(node: React.ReactElement) {
 }
 
 function enterAmount(amount: string): void {
+  const account = screen.queryByLabelText('Counterparty account');
+  if (account && !(account as HTMLSelectElement).disabled) fireEvent.change(account, { target: { value: '1110' } });
   for (const ch of amount) {
     fireEvent.click(screen.getByRole('button', { name: ch }));
   }
@@ -57,6 +65,15 @@ describe('CashInOutModal', () => {
     expect(options).toEqual(['misc', 'apport_owner', 'bank_transfer', 'replenishment']);
   });
 
+  it('blocks a movement without a counterparty account', () => {
+    render(withQuery(<CashInOutModal open sessionId="s1" direction="in" onClose={vi.fn()} />));
+    enterAmount('10000');
+    fireEvent.change(screen.getByLabelText(/^reason$/i), { target: { value: 'top up' } });
+    fireEvent.change(screen.getByLabelText('Counterparty account'), { target: { value: '' } });
+    expect(screen.getByRole('button', { name: /record cash in/i })).toBeDisabled();
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
   // T2
   it('submits with apport_owner reason_code and an idempotency key', async () => {
     rpcMock.mockResolvedValue(successResult());
@@ -68,7 +85,7 @@ describe('CashInOutModal', () => {
     fireEvent.change(screen.getByLabelText(/^reason$/i), { target: { value: 'owner top-up' } });
     fireEvent.click(screen.getByRole('button', { name: /record cash in/i }));
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
-    expect(rpcMock).toHaveBeenCalledWith('record_cash_movement_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('record_cash_movement_v4', expect.objectContaining({
       p_reason_code: 'apport_owner',
       p_idempotency_key: expect.any(String) as unknown,
     }));
@@ -84,8 +101,9 @@ describe('CashInOutModal', () => {
     fireEvent.change(screen.getByLabelText(/^reason$/i), { target: { value: 'petty cash' } });
     fireEvent.click(screen.getByRole('button', { name: /record cash out/i }));
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
-    expect(rpcMock).toHaveBeenCalledWith('record_cash_movement_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('record_cash_movement_v4', expect.objectContaining({
       p_reason_code: 'misc',
+      p_counterparty_account_code: '1110',
     }));
   });
 
@@ -182,6 +200,31 @@ describe('CashInOutModal', () => {
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
     const secondArgs = rpcMock.mock.calls[1]![1] as { p_idempotency_key: string };
     expect(secondArgs.p_idempotency_key).not.toBe(firstArgs.p_idempotency_key);
+  });
+
+  it('allows classifying an old saved request only after the server proves it was never recorded', async () => {
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: 'ACK lost' } });
+    const first = render(withQuery(<CashInOutModal open sessionId="s1" direction="in" onClose={vi.fn()} />));
+    enterAmount('100000');
+    fireEvent.change(screen.getByLabelText(/^reason$/i), { target: { value: 'top up' } });
+    fireEvent.click(screen.getByRole('button', { name: /record cash in/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /resume cash in/i })).not.toBeDisabled());
+    const pending = readCashMovement()!;
+    delete pending.input.counterparty_account_code;
+    sessionStorage.setItem('breakery.cash-movement-attempt.v1', JSON.stringify(pending));
+    first.unmount();
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: '22023', message: 'counterparty_account_required' } });
+    render(withQuery(<CashInOutModal open sessionId="s1" direction="in" onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /resume cash in/i }));
+    await waitFor(() => expect(readCashMovement()).toBeNull());
+    expect(screen.getByLabelText('Counterparty account')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /record cash in/i })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Counterparty account'), { target: { value: '1110' } });
+    rpcMock.mockResolvedValueOnce(successResult());
+    fireEvent.click(screen.getByRole('button', { name: /record cash in/i }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(3));
+    expect(rpcMock.mock.calls[2]![1]).toMatchObject({ p_counterparty_account_code: '1110' });
+    expect((rpcMock.mock.calls[2]![1] as { p_idempotency_key: string }).p_idempotency_key).not.toBe(pending.input.idempotency_key);
   });
 
   it('interdit un nouveau mouvement quand la sauvegarde est corrompue', () => {

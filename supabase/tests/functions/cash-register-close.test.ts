@@ -1,6 +1,6 @@
 // supabase/tests/functions/cash-register-close.test.ts
 // Session 13 / Phase 3.C — Live integration tests for cash register flow.
-// S60 (12 D1.4) — repointed to record_cash_movement_v2 / close_shift_v3
+// S60 (12 D1.4) — repointed to record_cash_movement_v4 / close_shift_v3
 // (v1/v2 were dropped ; v3 additionally enforces the above-threshold variance
 // note server-side — see close_shift_note_enforced.test.sql for that guard).
 // S66 (12 D2.1) — repointed to close_shift_v4 (v3 dropped) puis S67 close_shift_v5 (v4 additionally
@@ -10,7 +10,7 @@
 // to a 2M float (30k = 1.5 % / 20k = 1 % : note-band only, no PIN needed).
 //
 // Covers:
-//   - record_cash_movement_v2 increments cash_in_total / cash_out_total
+//   - record_cash_movement_v4 increments cash_in_total / cash_out_total
 //   - close_shift_v5 with zero variance: no JE emitted
 //   - close_shift_v5 with positive variance: balanced JE through
 //     SHIFT_CASH_VARIANCE_INCOME mapping
@@ -53,24 +53,26 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     managerToken = m.token;
   });
 
-  it('record_cash_movement_v2 updates session totals', async () => {
+  it('record_cash_movement_v4 updates session totals', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 500_000);
 
-    const { data: cashIn, error: e1 } = await sb.rpc('record_cash_movement_v2', {
+    const { data: cashIn, error: e1 } = await sb.rpc('record_cash_movement_v4', {
       p_session_id: sessionId,
       p_direction: 'in',
       p_amount: 100_000,
       p_reason: 'Float top-up from safe',
+      p_reason_code: 'replenishment', p_counterparty_account_code: '1110', p_idempotency_key: crypto.randomUUID(),
     });
     expect(e1).toBeNull();
     expect(cashIn).toMatchObject({ cash_in_total: 100_000, cash_out_total: 0 });
 
-    const { data: cashOut, error: e2 } = await sb.rpc('record_cash_movement_v2', {
+    const { data: cashOut, error: e2 } = await sb.rpc('record_cash_movement_v4', {
       p_session_id: sessionId,
       p_direction: 'out',
       p_amount: 25_000,
       p_reason: 'Petty cash for groceries',
+      p_reason_code: 'replenishment', p_counterparty_account_code: '1111', p_idempotency_key: crypto.randomUUID(),
     });
     expect(e2).toBeNull();
     expect(cashOut).toMatchObject({ cash_in_total: 100_000, cash_out_total: 25_000 });
