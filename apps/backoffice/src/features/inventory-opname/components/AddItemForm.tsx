@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory-opname/components/AddItemForm.tsx
 // Session 13 / Phase 2.D — add a product line to an in-progress opname.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { ProductTypeahead } from '@/features/inventory/components/ProductTypeahead.js';
@@ -10,13 +10,18 @@ import { useAddOpnameItem } from '../hooks/useOpnameMutations.js';
 
 export interface AddItemFormProps {
   countId: string;
+  onPendingChange?: (pending: boolean) => void;
 }
 
-export function AddItemForm({ countId }: AddItemFormProps) {
+export function AddItemForm({ countId, onPendingChange }: AddItemFormProps) {
   const [product, setProduct] = useState<ProductTypeaheadRow | null>(null);
   const [expectedQty, setExpectedQty] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const addItem = useAddOpnameItem();
+  useEffect(() => {
+    onPendingChange?.(addItem.isPending);
+    return () => { onPendingChange?.(false); };
+  }, [addItem.isPending, onPendingChange]);
 
   function handleAdd() {
     if (product === null) {
