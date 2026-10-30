@@ -171,4 +171,3 @@ GRANT EXECUTE ON FUNCTION public.bank_reconciliation_post_v5(uuid,uuid[],uuid[],
 DROP FUNCTION public.bank_reconciliation_post_v4(uuid,uuid[],uuid[],uuid,numeric,date,text,text,uuid,text,uuid[]);
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
-
