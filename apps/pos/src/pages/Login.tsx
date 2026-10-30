@@ -146,18 +146,18 @@ export default function LoginPage(): JSX.Element {
   const dots = useMemo(() => Array.from({ length: PIN_MAX }), []);
 
   return (
-    <div className="theme-pos min-h-screen supports-[height:100dvh]:min-h-dvh bg-bg-base grid min-[860px]:grid-cols-[45%_1fr]">
+    <div className="theme-pos h-screen supports-[height:100dvh]:h-dvh overflow-y-auto bg-bg-base grid min-[860px]:grid-cols-[45%_1fr]">
       {/* Panneau de marque — surface-0 (le cran le plus profond), filet or
           décoratif ; l'or MÈNE l'œil, il ne remplit pas (arbitrage 2026-08-24). */}
-      <aside className="flex flex-col items-center justify-center gap-3 max-[859px]:max-h-28 max-[859px]:[&_img]:max-h-16 bg-surface-0 border-b border-border-subtle p-6 min-[860px]:border-b-0 min-[860px]:border-r min-[860px]:p-10">
+      <aside className="flex flex-col items-center justify-center gap-3 max-sm:max-h-20 max-sm:p-2 max-sm:gap-1 max-sm:[&_img]:max-h-12 max-[859px]:max-h-28 max-[859px]:[&_img]:max-h-16 bg-surface-0 border-b border-border-subtle p-6 min-[860px]:border-b-0 min-[860px]:border-r min-[860px]:p-10">
         <BrandLogo size="xl" showTagline />
-        <div className="w-[72px] border-t border-border-gold opacity-60" aria-hidden />
-        <p className="text-text-muted text-xs uppercase tracking-[0.2em]">Point of sale</p>
+        <div className="hidden sm:block w-[72px] border-t border-border-gold opacity-60" aria-hidden />
+        <p className="hidden sm:block text-text-muted text-xs uppercase tracking-[0.2em]">Point of sale</p>
       </aside>
-      <main id="main-content" aria-labelledby="login-heading" className="flex items-center justify-center p-6">
-        <div className="w-full max-w-sm flex flex-col items-center gap-4">
+      <main id="main-content" aria-labelledby="login-heading" className="flex items-center justify-center p-3 sm:p-6">
+        <div className="w-full max-w-sm flex flex-col items-center gap-3 sm:gap-4">
           <div className="text-center space-y-1.5">
-            <h1 id="login-heading" className="font-semibold text-2xl tracking-[0.18em] text-text-primary">
+            <h1 id="login-heading" className="font-semibold text-xl sm:text-2xl tracking-[0.1em] sm:tracking-[0.18em] text-text-primary">
               STAFF PIN ACCESS
             </h1>
             <p className="text-text-secondary text-sm">Enter your 6-digit PIN</p>
@@ -238,14 +238,14 @@ export default function LoginPage(): JSX.Element {
           {errorCopy && (
             <p role="alert" className="text-danger-as-text text-sm text-center -mt-2">{errorCopy}</p>
           )}
-          <div className="grid grid-cols-3 gap-3 w-full" role="group" aria-label="PIN numpad">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full" role="group" aria-label="PIN numpad">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => handleDigit(d)}
                 disabled={isLoading || !selectedUser}
-                className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
+                className="h-14 sm:h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
                 aria-label={d}
               >
                 {d}
@@ -256,7 +256,7 @@ export default function LoginPage(): JSX.Element {
               type="button"
               onClick={() => handleDigit('0')}
               disabled={isLoading || !selectedUser}
-              className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
+              className="h-14 sm:h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-xl font-semibold transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50"
               aria-label="0"
             >
               0
@@ -265,7 +265,7 @@ export default function LoginPage(): JSX.Element {
               type="button"
               onClick={handleBackspace}
               disabled={isLoading || pin.length === 0}
-              className="h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50 grid place-items-center"
+              className="h-14 sm:h-20 rounded-lg bg-bg-input border border-border-subtle text-text-primary transition-colors hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50 grid place-items-center"
               aria-label="Backspace"
             >
               <Delete className="h-5 w-5" aria-hidden />

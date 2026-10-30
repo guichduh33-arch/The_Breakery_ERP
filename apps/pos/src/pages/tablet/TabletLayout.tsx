@@ -89,7 +89,7 @@ export default function TabletLayout(): JSX.Element {
 
   return (
     <div className="h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden flex flex-col bg-bg-base">
-      <header className="h-10 sm:h-14 px-3 border-b border-border-subtle flex items-center justify-between gap-2 bg-bg-elevated shrink-0">
+      <header className="h-12 sm:h-14 px-3 border-b border-border-subtle flex items-center justify-between gap-2 bg-bg-elevated shrink-0">
         {/* Critique 2026-08-24 (a11y) — le h1 nommait la serveuse : le titre le
             plus fort de l'écran désignait l'élément le moins actionnable, et
             chaque vue en ajoutait un second. Le h1 de la surface est masqué
@@ -98,6 +98,7 @@ export default function TabletLayout(): JSX.Element {
         <TabletUserMenu />
 
         <div className="shrink-0 flex items-center gap-2">
+          <PrintJobsPanel compact />
           {/* Active table */}
           <span
             className="hidden sm:inline-flex items-center gap-1.5 h-9 px-2 whitespace-nowrap rounded-md bg-bg-input text-sm text-text-primary"
@@ -129,7 +130,6 @@ export default function TabletLayout(): JSX.Element {
       </header>
 
       <OfflineBanner connection={connection} />
-      <div className="shrink-0"><PrintJobsPanel /></div>
 
       {/* main : landmark manquant — la navigation par landmarks était
           impossible sur /tablet (a11y P2). */}
