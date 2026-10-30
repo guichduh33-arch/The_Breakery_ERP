@@ -12,7 +12,7 @@ const {rpc, readRow} = vi.hoisted(() => ({rpc: vi.fn(), readRow: vi.fn()}));
 vi.mock('@/lib/supabase.js', () => ({supabase: {rpc, from: () => ({select: () => ({eq: () => ({maybeSingle: readRow})})})}}));
 vi.mock('@/stores/authStore.js', async () => ({useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth}));
 const expenseId = '00000000-0000-4000-8000-000000000001';
-const payload = {category_id: '00000000-0000-4000-8000-000000000002', amount: 250000, vat_amount: 0,
+const payload = {expense_term_id: '00000000-0000-4000-8000-000000000003', remarks: 'October bill', category_id: '00000000-0000-4000-8000-000000000002', amount: 250000, vat_amount: 0,
   payment_method: 'cash' as const, description: 'Electricity bill', expense_date: '2026-10-26'};
 const scope = {environment: import.meta.env.VITE_SUPABASE_URL as string, profileId: 'profile-a'};
 const creationScope = {...scope, operation: 'expense_creation' as const, target: 'new'};
@@ -29,8 +29,14 @@ describe('expense creation durable recovery', () => {
     const view = mount(); await act(async () => {await view.result.current.save(payload);});
     expect(readExpenseDraftPointer(scope)).toEqual({version: 1, status: 'saved', expenseId});
     expect(readFinancialSlot(creationScope)?.status).toBe('resolved');
-    expect(rpc).toHaveBeenCalledWith('create_expense_v3', expect.objectContaining({p_description: 'Electricity bill'}));
+    expect(rpc).toHaveBeenCalledWith('create_expense_v4', expect.objectContaining({p_description: 'Electricity bill', p_expense_term_id: payload.expense_term_id, p_remarks: 'October bill'}));
     expect(JSON.stringify(rpc.mock.calls)).not.toContain('p_receipt_url');
+  });
+  it('still reads a legacy pending payload without the new fields', async () => {
+    const {expense_term_id: _term, remarks: _remarks, ...legacy} = payload;
+    const view = mount(); await act(async () => {await view.result.current.save(legacy);});
+    expect(readExpenseDraftPointer(scope)?.status).toBe('saved');
+    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty('p_expense_term_id');
   });
   it('replays a lost response after remount using the same key and snapshot', async () => {
     rpc.mockRejectedValueOnce(new TypeError('Response lost'));

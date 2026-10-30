@@ -75,6 +75,7 @@ export function useSaveExpenseCategory() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: EXPENSE_CATEGORIES_ADMIN_KEY }),
         qc.invalidateQueries({ queryKey: ['expense-categories'] }),
+        qc.invalidateQueries({ queryKey: ['expense-terms'] }),
       ]);
     },
   });

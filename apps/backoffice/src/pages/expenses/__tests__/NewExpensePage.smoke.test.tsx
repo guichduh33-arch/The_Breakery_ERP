@@ -41,6 +41,7 @@ vi.mock('@/stores/authStore.js', async () => ({useAuthStore: (await import('@/li
 beforeEach(() => {installFinancialBrowser(); resetFinancialSession();});
 
 const SEED: DuplicateExpenseSeed = {
+  expense_term_id: 'term-1', remarks: '',
   category_id:    'cat-1',
   amount:         '250000',
   vat_amount:     '0',
@@ -94,7 +95,7 @@ describe('NewExpensePage — duplicate prefill (S59 Task 6b)', () => {
   it('with duplicateFrom in navigation state, prefills category/amount/VAT/payment method/vendor/description', async () => {
     renderPage({ duplicateFrom: SEED });
     expect(await screen.findByLabelText(/^Amount \(IDR\)/i)).toHaveValue(250000);
-    expect(await screen.findByLabelText(/^Category/i)).toHaveValue('cat-1');
+    expect(await screen.findByLabelText(/^Expense term/i)).toHaveValue('term-1');
     expect(screen.getByLabelText(/Payment method/i)).toHaveValue('cash');
     expect(screen.getByLabelText(/Vendor/i)).toHaveValue('Acme Stationary');
     expect(screen.getByLabelText(/Description/i)).toHaveValue('Office supplies');
@@ -111,3 +112,8 @@ describe('NewExpensePage — duplicate prefill (S59 Task 6b)', () => {
     expect(await screen.findByRole('button', { name: /Save as draft/i })).toBeInTheDocument();
   });
 });
+
+vi.mock('@/features/expenses/hooks/useExpenseTerms.js', () => ({
+  useExpenseTerms: () => ({data: [{id: 'term-1',code: 'ELECTRICITY',name: 'Electricity bill',expense_term_id: 'term-1', remarks: '',
+      category_id: 'cat-1',category_name: 'Utilities',account_code: '6113',account_name: 'Utilities',is_active: true,is_available: true,is_used: false,aliases: ['PLN','Listrik']}],isLoading: false,isError: false,error: null}),
+}));

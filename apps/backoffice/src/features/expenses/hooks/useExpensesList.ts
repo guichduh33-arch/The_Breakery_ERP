@@ -52,7 +52,7 @@ export function useExpensesList(filters: ExpensesListFilters = {}) {
       }
       if (filters.search !== undefined && filters.search.trim() !== '') {
         const term = filters.search.trim().replace(/[%_]/g, '\\$&');
-        q = q.or(`description.ilike.%${term}%,vendor_name.ilike.%${term}%,expense_number.ilike.%${term}%`);
+        q = q.or(`description.ilike.%${term}%,vendor_name.ilike.%${term}%,remarks.ilike.%${term}%,expense_number.ilike.%${term}%`);
       }
 
       const { data, error } = await q;

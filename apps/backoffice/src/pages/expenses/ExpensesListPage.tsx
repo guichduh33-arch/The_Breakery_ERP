@@ -35,6 +35,7 @@ import { ListCounterStrip, type ListCounter } from '@/components/ListCounterStri
 import { useAuthStore } from '@/stores/authStore.js';
 import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
 import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
+import { ExpenseTermsTab } from '@/features/expenses/components/ExpenseTermsTab.js';
 import { ExpenseCategoriesTab } from '@/features/expenses/components/ExpenseCategoriesTab.js';
 import {
   useExpenseCategories,
@@ -99,7 +100,7 @@ export default function ExpensesListPage(): JSX.Element {
   const beginDraft = useBeginExpenseDraft();
   const canCreate = hasPermission('expenses.create') || hasPermission('expenses.manage');
 
-  const [tab, setTab]                     = useState<'expenses' | 'categories'>('expenses');
+  const [tab, setTab]                     = useState<'expenses' | 'categories' | 'terms'>('expenses');
   const [status, setStatus]               = useState<ExpenseFilterKey>('all');
   const [categoryId, setCategoryId]       = useState<string>('all');
   const [paymentMethod, setPaymentMethod] = useState<'all' | 'cash' | 'transfer' | 'card' | 'credit'>('all');
@@ -193,6 +194,11 @@ export default function ExpensesListPage(): JSX.Element {
       ),
     },
     {
+      id: 'remarks',
+      header: 'Remarks',
+      render: r => <span className="block max-w-xs truncate text-text-secondary" title={r.remarks ?? ''}>{r.remarks ?? '—'}</span>,
+    },
+    {
       id:    'amount',
       header: 'Amount',
       width: '140px',
@@ -245,6 +251,7 @@ export default function ExpensesListPage(): JSX.Element {
           <TabsTrigger value="expenses">
             <Receipt className="h-4 w-4" aria-hidden /> Expenses
           </TabsTrigger>
+          <TabsTrigger value="terms">Expense terms</TabsTrigger>
           <TabsTrigger value="categories">
             <Tag className="h-4 w-4" aria-hidden /> Categories
           </TabsTrigger>
@@ -355,6 +362,8 @@ export default function ExpensesListPage(): JSX.Element {
             />
           )}
         </TabsContent>
+
+        <TabsContent value="terms" className="mt-4"><ExpenseTermsTab /></TabsContent>
 
         <TabsContent value="categories" className="mt-4">
           <ExpenseCategoriesTab />

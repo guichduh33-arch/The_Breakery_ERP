@@ -26,6 +26,7 @@
 -- (step=1) is stable at assertion time.
 
 BEGIN;
+\ir helpers/expense_terms.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -64,17 +65,17 @@ ON CONFLICT DO NOTHING;
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000001', 'EXP-GOV28-001', 'aaaaaaaa-0000-0000-0000-000000000001',
    50000, 0, 'cash', 'T1 auto-approve', CURRENT_DATE,
-   (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft'),
+   (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft', pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T1 auto-approve')),
   ('eeeeeeee-0000-0000-0000-000000000002', 'EXP-GOV28-002', 'aaaaaaaa-0000-0000-0000-000000000001',
    500000, 0, 'transfer', 'T2 1-step', CURRENT_DATE,
-   (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft'),
+   (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft', pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T2 1-step')),
   ('eeeeeeee-0000-0000-0000-000000000003', 'EXP-GOV28-003', 'aaaaaaaa-0000-0000-0000-000000000001',
    2000000, 0, 'transfer', 'T3 2-step', CURRENT_DATE,
-   (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft');
+   (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft', pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T3 2-step'));
 
 SELECT submit_expense_v3('eeeeeeee-0000-0000-0000-000000000001');
 SELECT submit_expense_v3('eeeeeeee-0000-0000-0000-000000000002');
@@ -94,28 +95,28 @@ SELECT set_expense_threshold_v3(
 -- T11: 500k in T_GOV28_CAT → should get 2 steps (category-specific override)
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES ('eeeeeeee-0000-0000-0000-000000000011', 'EXP-GOV28-011', 'aaaaaaaa-0000-0000-0000-000000000001',
         500000, 0, 'transfer', 'T11', CURRENT_DATE,
-        (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft');
+        (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft', pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T11'));
 SELECT submit_expense_v3('eeeeeeee-0000-0000-0000-000000000011');
 
 -- T15: 100k boundary inclusive lower in T_GOV28_CAT
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES ('eeeeeeee-0000-0000-0000-000000000015', 'EXP-GOV28-015', 'aaaaaaaa-0000-0000-0000-000000000001',
         100000, 0, 'transfer', 'T15', CURRENT_DATE,
-        (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft');
+        (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), 'draft', pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T15'));
 SELECT submit_expense_v3('eeeeeeee-0000-0000-0000-000000000015');
 
 -- T16: legacy NULL snapshot (pre-S28 row inserted directly as submitted)
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status, submitted_at, submitted_by)
+                      description, expense_date, created_by, status, submitted_at, submitted_by, expense_term_id)
 VALUES ('eeeeeeee-0000-0000-0000-000000000016', 'EXP-GOV28-016', 'aaaaaaaa-0000-0000-0000-000000000001',
         500000, 0, 'transfer', 'T16', CURRENT_DATE,
         (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1),
         'submitted', now(),
-        (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1));
+        (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1), pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T16'));
 -- required_approval_steps_snapshot intentionally NULL (legacy pre-S28)
 
 SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
@@ -237,11 +238,11 @@ SELECT is(
 UPDATE pos_sessions SET status = 'closed' WHERE id = 'cccccccc-0000-0000-0000-000000000001';
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
-                      description, expense_date, created_by, status)
+                      description, expense_date, created_by, status, expense_term_id)
 VALUES ('eeeeeeee-0000-0000-0000-000000000013', 'EXP-GOV28-013', 'aaaaaaaa-0000-0000-0000-000000000001',
         30000, 0, 'cash', 'T13', CURRENT_DATE,
         (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1),
-        'approved');
+        'approved', pg_temp.expense_term_fixture('aaaaaaaa-0000-0000-0000-000000000001', 'T13'));
 
 UPDATE expenses
 SET status  = 'paid',

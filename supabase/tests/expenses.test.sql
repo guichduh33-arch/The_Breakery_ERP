@@ -13,12 +13,12 @@
 --   T_EXP_02 : catégorie autonome liée à son compte de charge actif
 --   T_EXP_03 : next_expense_number() formats and monotonic
 --   T_EXP_04 : RLS enabled on expenses + expense_categories
---   T_EXP_05 : create_expense_v3 happy path
+--   T_EXP_05 : create_expense_v4 happy path
 --   T_EXP_06 : submit_expense_v1 draft -> submitted
 --   T_EXP_07 : approve_expense_v1 (cash) emits balanced 2-line JE
 --   T_EXP_08 : approve_expense_v1 (credit + VAT) emits 2-line JE (VAT folded, S59 F-4)
 --   T_EXP_09 : pay_expense on credit-approved emits payment JE
---   T_EXP_10 : create_expense_v3 idempotency_key replay returns same id
+--   T_EXP_10 : create_expense_v4 idempotency_key replay returns same id
 --   T_EXP_11 : real _emit_expense_je(uuid) call, vat_amount>0 — balanced JE, 2 lines,
 --              no line on account 1151 (S59 F-4 fix, real RPC not a simulation)
 --
@@ -26,6 +26,7 @@
 --   Run via Supabase MCP execute_sql wrapped BEGIN ... ROLLBACK.
 
 BEGIN;
+\ir helpers/expense_terms.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -107,8 +108,8 @@ DECLARE
 BEGIN
   SELECT category_id INTO v_cat FROM pg_temp.expense_core_fixture;
   v_n1 := next_expense_number('2026-06-01');
-  INSERT INTO expenses (expense_number, category_id, amount, payment_method, description, expense_date)
-  VALUES (v_n1, v_cat, 1, 'cash', 't_exp_03 fixture', '2026-06-01');
+  INSERT INTO expenses (expense_number, category_id, amount, payment_method, description, expense_date, expense_term_id)
+  VALUES (v_n1, v_cat, 1, 'cash', 't_exp_03 fixture', '2026-06-01', pg_temp.expense_term_fixture(v_cat, 't_exp_03 fixture'));
   v_n2 := next_expense_number('2026-06-01');
   PERFORM set_config('test.n1', v_n1, false);
   PERFORM set_config('test.n2', v_n2, false);
@@ -161,9 +162,9 @@ BEGIN
   -- Direct insert (bypassing RLS as service_role) of a submitted expense.
   v_n := next_expense_number('2026-06-02');
   INSERT INTO expenses (expense_number, category_id, amount, vat_amount, payment_method,
-                        description, expense_date, status, created_by, submitted_by, submitted_at)
+                        description, expense_date, status, created_by, submitted_by, submitted_at, expense_term_id)
   VALUES (v_n, v_cat, 850000, 0, 'cash', 'T_EXP_07 utilities fixture', '2026-06-02',
-          'submitted', v_admin, v_admin, now())
+          'submitted', v_admin, v_admin, now(), pg_temp.expense_term_fixture(v_cat, 'T_EXP_07 utilities fixture'))
   RETURNING id INTO v_exp_id;
 
   -- Build the JE in the same way approve_expense_v1 does.
@@ -222,9 +223,9 @@ BEGIN
 
   v_n := next_expense_number('2026-06-03');
   INSERT INTO expenses (expense_number, category_id, amount, vat_amount, payment_method,
-                        description, expense_date, status, created_by, submitted_by, submitted_at)
+                        description, expense_date, status, created_by, submitted_by, submitted_at, expense_term_id)
   VALUES (v_n, v_cat, 1100000, 100000, 'credit', 'T_EXP_08 credit+VAT fixture', '2026-06-03',
-          'submitted', v_admin, v_admin, now())
+          'submitted', v_admin, v_admin, now(), pg_temp.expense_term_fixture(v_cat, 'T_EXP_08 credit+VAT fixture'))
   RETURNING id INTO v_exp_id;
 
   SELECT account_id INTO v_cat_acc FROM expense_categories WHERE id = v_cat;
@@ -301,15 +302,15 @@ BEGIN
   SELECT id INTO v_admin FROM user_profiles WHERE role_code IN ('SUPER_ADMIN','ADMIN') LIMIT 1;
 
   INSERT INTO expenses (expense_number, category_id, amount, payment_method,
-                        description, expense_date, status, created_by, idempotency_key)
+                        description, expense_date, status, created_by, idempotency_key, expense_term_id)
   VALUES (next_expense_number('2026-06-04'), v_cat, 1, 'cash', 'idempotency 1', '2026-06-04',
-          'draft', v_admin, v_key);
+          'draft', v_admin, v_key, pg_temp.expense_term_fixture(v_cat, 'idempotency 1'));
 
   BEGIN
     INSERT INTO expenses (expense_number, category_id, amount, payment_method,
-                          description, expense_date, status, created_by, idempotency_key)
+                          description, expense_date, status, created_by, idempotency_key, expense_term_id)
     VALUES (next_expense_number('2026-06-04'), v_cat, 2, 'cash', 'idempotency 2', '2026-06-04',
-            'draft', v_admin, v_key);
+            'draft', v_admin, v_key, pg_temp.expense_term_fixture(v_cat, 'idempotency 2'));
   EXCEPTION WHEN unique_violation THEN
     v_failed := true;
   END;
@@ -345,9 +346,9 @@ BEGIN
 
   v_n := next_expense_number('2026-06-05');
   INSERT INTO expenses (expense_number, category_id, amount, vat_amount, payment_method,
-                        description, expense_date, status, created_by, submitted_by, submitted_at)
+                        description, expense_date, status, created_by, submitted_by, submitted_at, expense_term_id)
   VALUES (v_n, v_cat, 1100000, 100000, 'credit', 'T_EXP_11 real _emit_expense_je fold-VAT fixture',
-          '2026-06-05', 'submitted', v_admin, v_admin, now())
+          '2026-06-05', 'submitted', v_admin, v_admin, now(), pg_temp.expense_term_fixture(v_cat, 'T_EXP_11 real _emit_expense_je fold-VAT fixture'))
   RETURNING id INTO v_exp_id;
 
   PERFORM set_config('request.jwt.claim.sub', v_admin_auth::TEXT, true);
