@@ -32,29 +32,29 @@ SELECT is(jsonb_array_length(get_kitchen_stations_v1()),1,'Only assigned station
 SELECT is(jsonb_array_length(get_kitchen_products_v1((SELECT section FROM kitchen_fixture))),1,'Assigned producible products');
 SELECT ok(NOT (get_kitchen_products_v1((SELECT section FROM kitchen_fixture))->0 ? 'cost_price'),'No product cost');
 SELECT throws_ok(format('SELECT get_kitchen_products_v1(%L)',(SELECT other_section FROM kitchen_fixture)), 'P0003','kitchen_section_forbidden','Foreign station refused');
-SELECT throws_ok(format('SELECT record_production_v7(%L,1,%L)',(SELECT product FROM kitchen_fixture),(SELECT section FROM kitchen_fixture)), 'P0003','forbidden','Direct unit production refused');
-SELECT throws_ok(format('SELECT record_batch_production_v9(%L::jsonb,%L::jsonb)',
+SELECT throws_ok(format('SELECT record_production_v8(%L,1,%L)',(SELECT product FROM kitchen_fixture),(SELECT section FROM kitchen_fixture)), 'P0003','forbidden','Direct unit production refused');
+SELECT throws_ok(format('SELECT record_batch_production_v10(%L::jsonb,%L::jsonb)',
   jsonb_build_object('section_id',(SELECT section FROM kitchen_fixture)),'[]'),'P0003','forbidden','Direct batch refused');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT request || jsonb_build_object('day',CURRENT_DATE-1) FROM kitchen_fixture)),'P0001','kitchen_today_only','Backdating refused');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT request || '{"force_negative":true}'::jsonb FROM kitchen_fixture)),'P0001','invalid_kitchen_request','Forcing refused');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(request,'{items,0,product_id}',to_jsonb(material)) FROM kitchen_fixture)), 'P0003','kitchen_product_forbidden','Foreign product refused');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(request,'{items,0,quantity_waste}','1') FROM kitchen_fixture)),'P0001','waste_reason_required','Waste needs reason');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(request,'{items,0,quantity_produced}','1000') FROM kitchen_fixture)),'P0002','insufficient_stock','Stock shortage blocks');
 SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product FROM kitchen_fixture)),0::numeric,'Failed submissions have no stock effect');
-UPDATE kitchen_fixture SET receipt=record_kitchen_production_v2(request);
+UPDATE kitchen_fixture SET receipt=record_kitchen_production_v3(request);
 SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product FROM kitchen_fixture)),12::numeric,'Alternative unit resolved server-side');
 SELECT is((SELECT current_stock FROM products WHERE id=(SELECT material FROM kitchen_fixture)),98.8::numeric,'Ingredients deducted');
 SELECT is((SELECT staff_id FROM production_records WHERE batch_id=(SELECT (receipt->>'batch_id')::uuid FROM kitchen_fixture)),
   (SELECT profile FROM kitchen_fixture),'Author is profile, not auth UUID');
 SELECT is((SELECT notes FROM production_records WHERE batch_id=(SELECT (receipt->>'batch_id')::uuid FROM kitchen_fixture)),'Chef note','Line note retained');
-SELECT is((record_kitchen_production_v2((SELECT request FROM kitchen_fixture))->>'idempotent_replay')::boolean,true,'Retry is idempotent');
+SELECT is((record_kitchen_production_v3((SELECT request FROM kitchen_fixture))->>'idempotent_replay')::boolean,true,'Retry is idempotent');
 SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product FROM kitchen_fixture)),12::numeric,'Retry does not duplicate stock');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(request,'{items,0,quantity_produced}','2') FROM kitchen_fixture)),'P0001','idempotency_payload_mismatch','Changed payload cannot reuse key');
 SELECT is(jsonb_array_length(get_kitchen_history_v1((SELECT section FROM kitchen_fixture),CURRENT_DATE)),1,'History includes production');
 SELECT is((get_kitchen_history_v1((SELECT section FROM kitchen_fixture),CURRENT_DATE)->0->>'author'),'Kitchen test','History includes author');
@@ -64,16 +64,16 @@ SET LOCAL ROLE authenticated;
 SELECT is((SELECT count(*)::integer FROM products WHERE id=(SELECT product FROM kitchen_fixture)),0,'Direct product reads cannot leak costs');
 SELECT is((SELECT count(*)::integer FROM production_records WHERE section_id=(SELECT section FROM kitchen_fixture)),0,'Direct records cannot leak other stations');
 RESET ROLE;
-SELECT ok(NOT has_function_privilege('anon','public.record_kitchen_production_v2(jsonb)','EXECUTE'),'Anonymous submission denied');
+SELECT ok(NOT has_function_privilege('anon','public.record_kitchen_production_v3(jsonb)','EXECUTE'),'Anonymous submission denied');
 SELECT ok(NOT has_function_privilege('authenticated','public._kitchen_context_v1(uuid,uuid)','EXECUTE'),'Private context not callable');
 SELECT throws_ok(format('SELECT set_user_kitchen_access_v1(%L,true,ARRAY[%L]::uuid[],%L)',
   (SELECT profile FROM kitchen_fixture),(SELECT section FROM kitchen_fixture),'test access'),'P0003','forbidden','Chef cannot grant access');
-SELECT throws_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(request || jsonb_build_object('idempotency_key',gen_random_uuid()),'{items,0,unit}','"invalid"') FROM kitchen_fixture)),
   'P0001','invalid_kitchen_unit','Unknown unit refused');
 -- Le lot historique reste utilisable sans accorder inventory.receive au chef.
 UPDATE products SET default_shelf_life_hours=24 WHERE id=(SELECT product FROM kitchen_fixture);
-SELECT lives_ok(format('SELECT record_kitchen_production_v2(%L::jsonb)',
+SELECT lives_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(jsonb_set(jsonb_set(jsonb_set(request || jsonb_build_object('idempotency_key',gen_random_uuid()),
     '{items,0,unit}','"pcs"'),'{items,0,quantity_waste}','1'),'{items,0,waste_reason}','"mis_baked"'),'{items,0,quantity_produced}','1')
     FROM kitchen_fixture)),'Production with waste and legacy shelf metadata succeeds');

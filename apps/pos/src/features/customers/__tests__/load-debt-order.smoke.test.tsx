@@ -77,7 +77,7 @@ describe('load-debt-order smoke', () => {
     });
 
     mocks.rpc.mockImplementation((name: string) => {
-      if (name === 'get_pos_order_snapshot_v2') {
+      if (name === 'get_pos_order_snapshot_v3') {
         return Promise.resolve({ data: {
           order_id: DEBT_ORDER.id, order_number: DEBT_ORDER.order_number,
           order_type: DEBT_ORDER.order_type, tableNumber: null,

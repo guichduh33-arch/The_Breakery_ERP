@@ -61,8 +61,8 @@ export function ProductSalesLinesDrawer({
 }: ProductSalesLinesDrawerProps): JSX.Element {
   const q = useProductSalesLines({ productId: product?.id ?? null, start, end });
 
-  const lines  = q.data?.pages.flatMap((p) => p.lines) ?? [];
-  const totals = q.data?.pages[0]?.totals;
+  const lines  = q.isError || q.isFetching ? [] : q.data?.pages.flatMap((p) => p.lines) ?? [];
+  const totals = q.isError || q.isFetching ? undefined : q.data?.pages[0]?.totals;
   const loaded = lines.length;
   const all    = totals?.lines ?? 0;
   const isEmpty = !q.isLoading && q.data !== undefined && all === 0;

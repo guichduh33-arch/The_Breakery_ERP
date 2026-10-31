@@ -92,7 +92,7 @@ export function useOrdersList(params: UseOrdersListParams) {
     queryKey: ['orders', 'list', params],
     queryFn: async ({ pageParam }) => {
       const cursor = pageParam as OrdersListCursor | null;
-      const { data, error } = await supabase.rpc('get_orders_list_v4', {
+      const { data, error } = await supabase.rpc('get_orders_list_v5', {
         p_start:   params.start,
         p_end:     params.end,
         p_filters: toJsonbFilters(params.filters),

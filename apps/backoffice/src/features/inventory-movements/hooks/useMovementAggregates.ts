@@ -3,7 +3,7 @@
 //
 // 2026-08-05 — bump v1 → v2. La v1 valorisait un mouvement au `unit_cost` STOCKÉ
 // (`COALESCE(sm.unit_cost, p.cost_price)`) alors que le tableau de la même page
-// (`get_stock_movement_ledger_v1`) le valorise au coût COURANT du produit. Une
+// (`get_stock_movement_ledger_v2`) le valorise au coût COURANT du produit. Une
 // unique ligne historique au `unit_cost` ×1000 pesait 47 % de la tuile
 // « Value moved ». La v2 aligne l'agrégat sur le tableau.
 //
@@ -53,7 +53,7 @@ export function useMovementAggregates(filters: AggregateFilters = {}) {
         nextDay.setUTCDate(nextDay.getUTCDate() + 1);
         args.p_date_end = `${nextDay.toISOString().slice(0, 10)}T00:00:00`;
       }
-      const { data, error } = await rpc()('get_movement_aggregates_v3', args);
+      const { data, error } = await rpc()('get_movement_aggregates_v4', args);
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

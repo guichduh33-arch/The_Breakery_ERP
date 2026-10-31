@@ -31,6 +31,7 @@ export interface NavLinkDef {
   /** Exact-match routing (react-router `end`) — pour les routes index. */
   end?: boolean;
   permission?: PermissionCode;
+  anyPermission?: readonly PermissionCode[];
 }
 
 export interface NavColumn {
@@ -188,7 +189,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/reports/daily-sales', label: 'Daily sales', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-hour', label: 'Sales by hour', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-category', label: 'Sales by category', permission: 'reports.sales.read' },
-          { to: '/backoffice/reports/sales-by-product', label: 'Sales by product', permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/sales-by-product', label: 'Sales by product', anyPermission: ['reports.sales.read', 'reports.product_sales.read'] },
           { to: '/backoffice/reports/sales-by-customer', label: 'Sales by customer', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-origin', label: 'Sales by origin', permission: 'reports.sales.read' },
           { to: '/backoffice/reports/combo-sales', label: 'Combo sales', permission: 'reports.sales.read' },
@@ -333,7 +334,8 @@ export function visibleDomains(
       .map((col) => ({
         label: col.label,
         links: col.links.filter(
-          (l) => l.permission === undefined || hasPermission(l.permission),
+          (l) => (l.permission === undefined || hasPermission(l.permission))
+            && (l.anyPermission === undefined || l.anyPermission.some(hasPermission)),
         ),
       }))
       .filter((col) => col.links.length > 0);

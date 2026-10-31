@@ -13,7 +13,7 @@
 //    JEU COMPLET, pas la page chargée.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { act, render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -74,6 +74,7 @@ const LINES_DATA = {
 };
 
 let salesPayload: unknown = SALES_DATA;
+let salesDenied = false;
 const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase.js', () => {
@@ -90,10 +91,10 @@ vi.mock('@/lib/supabase.js', () => {
       from: () => build(),
       rpc: (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_sales_by_product_v1') {
-          return Promise.resolve({ data: salesPayload, error: null });
+        if (fn === 'get_sales_by_product_v2') {
+          return Promise.resolve(salesDenied ? { data: null, error: { message: 'business_day_not_released' } } : { data: salesPayload, error: null });
         }
-        if (fn === 'get_product_sales_lines_v1') {
+        if (fn === 'get_product_sales_lines_v2') {
           return Promise.resolve({ data: LINES_DATA, error: null });
         }
         return Promise.resolve({ data: null, error: null });
@@ -116,13 +117,14 @@ Object.defineProperty(globalThis, 'ResizeObserver', {
 
 function renderPage(search = '?start=2026-06-01&end=2026-06-30') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const view = render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[`/backoffice/reports/sales-by-product${search}`]}>
         <SalesByProductPage />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, client: qc };
 }
 
 beforeEach(() => {
@@ -131,6 +133,7 @@ beforeEach(() => {
   mockRpc.mockReset();
   sessionStorage.clear();
   salesPayload = SALES_DATA;
+  salesDenied = false;
 });
 
 describe('SalesByProductPage smoke', () => {
@@ -142,10 +145,10 @@ describe('SalesByProductPage smoke', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Sales');
   });
 
-  it('calls get_sales_by_product_v1 with the business-day bounds', async () => {
+  it('calls get_sales_by_product_v2 with the business-day bounds', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_product_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_product_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start_date: string; p_end_date: string }])[1];
       expect(args.p_start_date).toBe('2026-06-01');
@@ -215,7 +218,7 @@ describe('SalesByProductPage smoke', () => {
 
     const drawer = await screen.findByTestId('product-sales-lines-drawer');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_product_id: string }])[1];
       expect(args.p_product_id).toBe('p2');
@@ -258,5 +261,18 @@ describe('SalesByProductPage smoke', () => {
       await screen.findByText(/No product was sold in the selected date range/i),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('sbp-product-detail')).toBeNull();
+  });
+  it('withholds cached rows, open drilldown and export after the day is locked', async () => {
+    const { client } = renderPage();
+    await screen.findAllByText('Croissant');
+    fireEvent.click(screen.getByTestId('open-lines-p2'));
+    await screen.findByTestId('lines-table');
+    salesDenied = true;
+    await act(async () => { await client.invalidateQueries({ queryKey: ['sales-by-product'] }); });
+    await waitFor(() => expect(screen.queryByTestId('open-lines-p2')).not.toBeInTheDocument());
+    expect(screen.queryByTestId('product-sales-lines-drawer')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Export/i })).toBeDisabled();
+    expect(screen.queryByTestId('sbp-product-detail')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Product sales are hidden until the owner releases every day in this period.');
   });
 });

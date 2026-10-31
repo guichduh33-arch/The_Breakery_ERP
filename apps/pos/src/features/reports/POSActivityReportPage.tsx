@@ -5,7 +5,7 @@
 //   * Sales   — the Lot G sales-event timeline (get_pos_activity_v1), gated
 //               reports.sales.read like the rest of the reports.
 //   * Journal — the full operational audit journal (pos_events via
-//               get_pos_events_v1): every operator manipulation on every
+//               get_pos_events_v2): every operator manipulation on every
 //               terminal, filterable, infinite-scroll, CSV. Gated
 //               reports.audit.read — the toggle only shows with that perm.
 //

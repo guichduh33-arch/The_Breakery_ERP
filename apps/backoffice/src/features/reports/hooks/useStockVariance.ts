@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useStockVariance.ts
 //
-// Wraps `get_stock_variance_v3(p_date_start, p_date_end)`.
+// Wraps `get_stock_variance_v4(p_date_start, p_date_end)`.
 //
 // Audit Reports 2026-08-01 lot C / D2 — bump v1 -> v2 : la v1 etait gatee sur
 // `inventory.read` alors que sa route exige `reports.inventory.read`. `reports.*`
@@ -62,7 +62,7 @@ export function useStockVariance(filters: StockVarianceFilters = {}) {
       if (filters.dateEnd !== undefined && filters.dateEnd !== '') {
         args.p_date_end = filters.dateEnd;
       }
-      const { data, error } = await supabase.rpc('get_stock_variance_v3', args);
+      const { data, error } = await supabase.rpc('get_stock_variance_v4', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
         product_id:   r.product_id,

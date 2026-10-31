@@ -63,7 +63,7 @@ SELECT is(_resolve_b2b_line_price_v1(
 DO $mk$
 DECLARE v_res jsonb;
 BEGIN
-  v_res := create_b2b_order_v8(
+  v_res := create_b2b_order_v9(
     p_customer_id => 'b2b69002-0000-0000-0000-000000000001',
     p_items => jsonb_build_array(jsonb_build_object(
       'product_id','b2b69001-0000-0000-0000-000000000001','quantity',1,'unit_price',999999)));

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useStockLevels.ts
 //
-// Lignes de la liste de stock (`get_stock_levels_v4`). Les filtres sont
+// Lignes de la liste de stock (`get_stock_levels_v5`). Les filtres sont
 // résolus côté serveur : l'aller-retour reste petit même à plusieurs milliers
 // de produits.
 //
@@ -32,7 +32,7 @@ export interface StockLevelRow {
   last_movement_at:     string | null;
 }
 
-/** Colonnes triables serveur — l'allowlist de get_stock_levels_v4. */
+/** Colonnes triables serveur — l'allowlist de get_stock_levels_v5. */
 export type StockSortKey = 'name' | 'sku' | 'category' | 'stock' | 'min' | 'value' | 'last_movement';
 
 export interface StockLevelsFilters {
@@ -92,7 +92,7 @@ export function useStockLevels(filters: StockLevelsFilters = {}) {
         args.p_sort_dir = filters.sort.dir;
       }
 
-      const { data, error } = await supabase.rpc('get_stock_levels_v4', args);
+      const { data, error } = await supabase.rpc('get_stock_levels_v5', args);
       if (error) throw error;
       return data ?? [];
     },

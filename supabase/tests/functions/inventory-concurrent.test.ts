@@ -1,140 +1,70 @@
-// supabase/tests/functions/inventory-concurrent.test.ts
-// Session 12 — T16: concurrency / row-lock serialization for adjust_stock_v2.
-//
-// adjust_stock_v2 acquires a FOR UPDATE lock on `products` before computing
-// the signed delta. Two parallel adjusts on the same product MUST therefore
-// serialize: one wins the lock, runs first, the second runs against the
-// updated current_stock. This test fires both calls via Promise.all and
-// asserts:
-//   - exactly 2 movement rows inserted (no dropped writes)
-//   - sum of deltas reflects the second adjust's view of stock
-//   - the audit_log has 2 rows (no silent lost update)
-//
-// We avoid testing a real adjust vs. a sale concurrency here because
-// complete_order_with_payment requires a POS session + cart construction —
-// out of scope for this single-table lock test.
+// Concurrence : déclaration unique, approbation unique et refus des comptes périmés.
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { SERVICE_KEY } from './_helpers/auth';
+import { stockDeclarationFixture, type StockDeclaration } from './_helpers/stockDeclarations';
 
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
-import { loginAs, jwtClient } from './_helpers/auth';
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency — adjust_stock_v2 row-lock serialization', () => {
-  let adminToken: string;
-  let productId:  string;
-
-  beforeAll(async () => {
-    adminToken = await loginAs('EMP000', '123456');
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productId = String(p!.id);
+describe.skipIf(!SERVICE_KEY)('inventory declaration concurrency', () => {
+  let fixture: Awaited<ReturnType<typeof stockDeclarationFixture>>;
+  beforeAll(async () => { fixture = await stockDeclarationFixture('ZZ-TEST-CONCURRENT-DECLARATION'); });
+  beforeEach(async () => { await fixture.reset(); });
+  afterAll(async () => { await fixture?.cleanup(); });
+  const adjust = (quantity: number) => ({
+    p_product_id: fixture.productId, p_new_qty: quantity,
+    p_reason: 'Concurrent independent recount', p_idempotency_key: crypto.randomUUID(),
   });
 
-  beforeEach(async () => {
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    await admin.from('products').update({ current_stock: 100 }).eq('id', productId);
-    // Wipe prior concurrent rows so we start clean.
-    await admin.from('stock_movements').delete()
-      .eq('product_id', productId)
-      .ilike('reason', 'concurrent T16%');
+  it('simultaneous retries create one declaration and no stock movement', async () => {
+    const request = adjust(150);
+    const results = await Promise.all([
+      fixture.declarant.rpc('adjust_stock_v4', request),
+      fixture.declarant.rpc('adjust_stock_v4', request),
+    ]);
+    expect(results.every(result => !result.error)).toBe(true);
+    const declarations = results.map(result => result.data as StockDeclaration);
+    expect(declarations[0]!.declaration_id).toBe(declarations[1]!.declaration_id);
+    expect(declarations.map(result => result.idempotent_replay).sort()).toEqual([false, true]);
+    expect(await fixture.currentStock()).toBe(100);
+    const movements = await fixture.admin.from('stock_movements').select('id', { count: 'exact', head: true })
+      .eq('reference_id', declarations[0]!.declaration_id).eq('reference_type', 'stock_declaration');
+    expect(movements.error).toBeNull();
+    expect(movements.count).toBe(0);
   });
 
-  it('T16: two parallel adjusts serialize via FOR UPDATE — no lost update', async () => {
-    // Two separate client instances → two distinct PostgREST connections,
-    // approximating two browser sessions. Both target the same product.
-    const sb1 = jwtClient(adminToken);
-    const sb2 = jwtClient(adminToken);
+  it('simultaneous approvals emit one movement', async () => {
+    const submitted = await fixture.declarant.rpc('adjust_stock_v4', adjust(150));
+    expect(submitted.error).toBeNull();
+    const id = (submitted.data as StockDeclaration).declaration_id;
+    const results = await Promise.all([
+      fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id }),
+      fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id }),
+    ]);
+    expect(results.every(result => !result.error)).toBe(true);
+    expect(results.map(result => (result.data as StockDeclaration).idempotent_replay).sort()).toEqual([false, true]);
+    expect(await fixture.currentStock()).toBe(150);
+    const movements = await fixture.admin.from('stock_movements').select('quantity')
+      .eq('reference_id', id).eq('reference_type', 'stock_declaration');
+    expect(movements.error).toBeNull();
+    expect(movements.data).toHaveLength(1);
+    expect(Number(movements.data![0]!.quantity)).toBe(50);
+  });
 
-    const [r1, r2] = await Promise.all([
-      sb1.rpc('adjust_stock_v2', {
-        p_product_id: productId,
-        p_new_qty: 150,
-        p_reason:  'concurrent T16 path A (150)',
-      }),
-      sb2.rpc('adjust_stock_v2', {
-        p_product_id: productId,
-        p_new_qty: 200,
-        p_reason:  'concurrent T16 path B (200)',
+  it('a loss approved first makes an older absolute count stale', async () => {
+    const [count, waste] = await Promise.all([
+      fixture.declarant.rpc('adjust_stock_v4', adjust(130)),
+      fixture.declarant.rpc('waste_stock_v4', {
+        p_product_id: fixture.productId, p_quantity: 10,
+        p_reason: 'Concurrent loss declaration', p_idempotency_key: crypto.randomUUID(),
       }),
     ]);
-
-    // Both calls must succeed (neither errors out due to lock contention —
-    // the lock just sequences them).
-    expect(r1.error, 'adjust A error').toBeNull();
-    expect(r2.error, 'adjust B error').toBeNull();
-
-    const data1 = r1.data as { new_current_stock: number; movement_id: string };
-    const data2 = r2.data as { new_current_stock: number; movement_id: string };
-    expect(data1.movement_id).toBeTruthy();
-    expect(data2.movement_id).toBeTruthy();
-    expect(data1.movement_id).not.toBe(data2.movement_id);
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: rows } = await admin.from('stock_movements')
-      .select('id, quantity, reason, created_at')
-      .eq('product_id', productId)
-      .ilike('reason', 'concurrent T16%')
-      .order('created_at', { ascending: true });
-    expect(rows).toHaveLength(2);
-
-    // Final on-hand must equal the LAST adjust's target (deterministic outcome).
-    // The "winner" of the lock race is whichever the planner picked first; either
-    // way the FINAL value equals the new_qty supplied by the second-to-run call.
-    const { data: prod } = await admin.from('products')
-      .select('current_stock').eq('id', productId).single();
-    const finalStock = Number(prod!.current_stock);
-    expect([150, 200]).toContain(finalStock);
-
-    // Conservation: sum of inserted deltas = finalStock - 100 (baseline).
-    const totalDelta = (rows ?? []).reduce((acc, r) => acc + Number(r.quantity), 0);
-    expect(totalDelta).toBe(finalStock - 100);
-
-    // Audit log: 2 rows, both pointing at our movement_ids.
-    const { count: auditCount } = await admin.from('audit_logs')
-      .select('*', { count: 'exact', head: true })
-      .in('entity_id', [data1.movement_id, data2.movement_id])
-      .eq('action', 'stock.movement');
-    expect(auditCount).toBe(2);
-  });
-
-  it('T16b: parallel adjust + waste preserve total quantity invariant', async () => {
-    // 100 baseline.
-    // path A: adjust to 130  (+30)
-    // path B: waste 10       (-10)
-    // Final accepted range: either {after A: 130 → -10 = 120} or
-    // {after B: 90 → +40 = 130}; both are consistent with conservation.
-    const sb1 = jwtClient(adminToken);
-    const sb2 = jwtClient(adminToken);
-
-    const [rA, rB] = await Promise.all([
-      sb1.rpc('adjust_stock_v2', {
-        p_product_id: productId,
-        p_new_qty: 130,
-        p_reason: 'concurrent T16 path A adjust',
-      }),
-      sb2.rpc('waste_stock_v2', {
-        p_product_id: productId,
-        p_quantity: 10,
-        p_reason: 'concurrent T16 path B waste',
-      }),
-    ]);
-    expect(rA.error, 'adjust error').toBeNull();
-    expect(rB.error, 'waste error').toBeNull();
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: prod } = await admin.from('products')
-      .select('current_stock').eq('id', productId).single();
-    const finalStock = Number(prod!.current_stock);
-
-    const { data: rows } = await admin.from('stock_movements')
-      .select('quantity, movement_type, reason').eq('product_id', productId)
-      .ilike('reason', 'concurrent T16%');
-    expect(rows).toHaveLength(2);
-    const sum = (rows ?? []).reduce((acc, r) => acc + Number(r.quantity), 0);
-    // 100 + sum(deltas) == final_stock — exact conservation, no lost update.
-    expect(100 + sum).toBe(finalStock);
+    expect(count.error).toBeNull();
+    expect(waste.error).toBeNull();
+    expect((await fixture.owner.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: (waste.data as StockDeclaration).declaration_id,
+    })).error).toBeNull();
+    const stale = await fixture.owner.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: (count.data as StockDeclaration).declaration_id,
+    });
+    expect(stale.error?.message).toMatch(/stale_stock_declaration/);
+    expect(await fixture.currentStock()).toBe(90);
   });
 });

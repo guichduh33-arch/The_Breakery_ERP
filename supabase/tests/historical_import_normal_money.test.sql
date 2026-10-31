@@ -8,7 +8,7 @@ WITH session AS (INSERT INTO pos_sessions(opened_by,opening_cash,status)
  SELECT actor,0,'open' FROM historical_fixture RETURNING id)
 INSERT INTO normal_money(session_id) SELECT id FROM session;
 UPDATE promotions SET is_active=false WHERE is_active;
-UPDATE normal_money SET result=complete_order_with_payment_v30(
+UPDATE normal_money SET result=complete_order_with_payment_v31(
  p_session_id:=session_id,p_order_type:='take_out',
  p_items:=(SELECT jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100,'modifiers','[]'::jsonb)) FROM historical_fixture),
  p_payment:=jsonb_build_object('method','cash','amount',100,'cash_received',100,'change_given',0),
@@ -17,7 +17,7 @@ INSERT INTO historical_tap(result) SELECT is((SELECT status::text FROM orders WH
 INSERT INTO historical_tap(result) SELECT is((SELECT current_stock FROM products WHERE id=f.product),9::numeric,'normal checkout still consumes global stock') FROM historical_fixture f;
 INSERT INTO historical_tap(result) SELECT is((SELECT sum(amount) FROM order_payments WHERE order_id=(n.result->>'order_id')::uuid),100::numeric,'normal checkout keeps exact real cash receipt') FROM normal_money n;
 INSERT INTO historical_tap(result) SELECT is((SELECT count(*) FROM journal_entries WHERE reference_type='sale' AND reference_id=(n.result->>'order_id')::uuid),1::bigint,'normal checkout still emits its sale JE exactly once') FROM normal_money n;
-UPDATE normal_money SET replay=complete_order_with_payment_v30(
+UPDATE normal_money SET replay=complete_order_with_payment_v31(
  p_session_id:=session_id,p_order_type:='take_out',
  p_items:=(SELECT jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100,'modifiers','[]'::jsonb)) FROM historical_fixture),
  p_payment:=jsonb_build_object('method','cash','amount',100,'cash_received',100,'change_given',0),

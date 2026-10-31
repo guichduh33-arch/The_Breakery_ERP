@@ -9,13 +9,13 @@
 //   - From a row dropdown: pass `initialProduct` — typeahead is locked.
 //   - From the toolbar:    pass `open` without initialProduct — typeahead is editable.
 
-import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
+import { useEffect, useId, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Dialog, DialogDescription, Input } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
 import { validateAdjust } from '@breakery/domain';
-import { formatStockQuantity as formatQuantity, parseStockQuantity } from '../stockQuantity.js';
+import { parseStockQuantity } from '../stockQuantity.js';
 import { useAdjustStock, AdjustStockError } from '../hooks/useAdjustStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
@@ -72,11 +72,6 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
   const isNewQtyValid = Number.isFinite(numericNewQty);
   const isReasonValid = reason.trim().length >= 3 && reason.trim().length <= MAX_REASON;
 
-  const delta = useMemo<number | null>(() => {
-    if (!isNewQtyValid || product === null) return null;
-    return numericNewQty - product.current_stock;
-  }, [isNewQtyValid, numericNewQty, product]);
-
   const canSubmit = product !== null && isNewQtyValid && isReasonValid && !adjustMut.isPending;
 
   function handleClose(): void {
@@ -111,15 +106,11 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
       });
       // La modale se refermait en silence : l'utilisateur n'avait aucune
       // confirmation que son comptage était enregistré, ni sous quel nom.
-      if (res.idempotent_replay === true) {
-        toast.info(`Already recorded — ${product.name} was not adjusted twice.`);
-      } else if (res.noop === true) {
-        toast.info(`${product.name} was already at ${formatQuantity(numericNewQty, product.unit)} — no movement recorded.`);
-      } else {
-        toast.success(
-          `Stock adjusted — ${product.name} is now ${formatQuantity(res.new_current_stock, product.unit)}.`,
-        );
-      }
+      const confirmation = res.status === 'pending'
+        ? `Declaration ${res.idempotent_replay ? 'already submitted' : 'submitted'} — ${product.name}. Owner approval is required before stock changes.`
+        : `Declaration already ${res.status} — ${product.name}. No new stock operation was recorded.`;
+      if (res.idempotent_replay) toast.info(confirmation);
+      else toast.success(confirmation);
       setAttemptLocked(false);
       onClose();
     } catch (err) {
@@ -160,10 +151,10 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent className="max-w-md">
         <DialogTitle>
-          Adjust stock {isLockedProduct && initialProduct !== undefined ? `— ${initialProduct.name}` : ''}
+          Declare stock count {isLockedProduct && initialProduct !== undefined ? `— ${initialProduct.name}` : ''}
         </DialogTitle>
         <DialogDescription className="sr-only">
-          Set the absolute on-hand quantity for this product. The delta is computed automatically.
+          Declare the physical quantity for independent owner approval. Stock stays unchanged until approval.
         </DialogDescription>
 
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
@@ -191,15 +182,6 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             </div>
           )}
 
-          {product !== null && (
-            <div className="text-sm text-text-secondary">
-              Current stock:{' '}
-              <span className="text-text-primary font-mono tabular-nums">
-                {formatQuantity(product.current_stock, product.unit)}
-              </span>{' '}
-              <span className="text-text-muted">({product.sku})</span>
-            </div>
-          )}
 
           <div className="space-y-1">
             <label htmlFor={newQtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -224,17 +206,6 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
             )}
           </div>
 
-          {delta !== null && product !== null && (
-            <div className="text-sm text-text-secondary">
-              Preview:{' '}
-              <span className="text-text-primary font-mono tabular-nums">
-                {formatQuantity(product.current_stock, product.unit)} → {formatQuantity(numericNewQty, product.unit)}
-              </span>{' '}
-              <span className={delta === 0 ? 'text-text-muted' : delta > 0 ? 'text-green' : 'text-red-as-text'}>
-                (Δ {delta > 0 ? '+' : ''}{formatQuantity(delta, product.unit)})
-              </span>
-            </div>
-          )}
 
           <div className="space-y-1">
             <label htmlFor={reasonId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -258,15 +229,14 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
           {/* Le registre est append-only : l'ajustement n'écrase pas le stock,
               il émet un mouvement d'écart. Le dire avant le bouton, pas après. */}
           <p className="rounded-md border border-border-subtle bg-surface-inert p-2 text-xs text-text-secondary">
-            Recorded as a permanent movement in your name. Corrections are made by a new
-            movement, never by editing this one.
+            Your declaration is recorded in your name. Stock changes only after independent owner approval.
           </p>
 
           </fieldset>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose} disabled={attemptLocked || adjustMut.isPending}>Cancel</Button>
             <Button type="submit" variant="ink" disabled={!canSubmit}>
-              {adjustMut.isPending ? 'Applying…' : attemptLocked ? 'Retry adjustment' : 'Apply'}
+              {adjustMut.isPending ? 'Submitting…' : attemptLocked ? 'Retry declaration' : 'Submit for approval'}
             </Button>
           </div>
         </form>

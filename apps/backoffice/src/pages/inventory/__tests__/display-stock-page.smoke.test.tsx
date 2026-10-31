@@ -26,7 +26,6 @@ const MOCK_STOCK: DisplayStockRow[] = [
     sku:          'PAS-CROI',
     unit:         'pcs',
     quantity:     12,
-    updated_at:   '2026-05-30T08:00:00Z',
   },
 ];
 

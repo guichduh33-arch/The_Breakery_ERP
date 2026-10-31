@@ -3,7 +3,7 @@
 // Lot F (campagne Reports 2026-08-15) — vague Inventory, page 1/10. Migrée sur
 // le socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
-// CE QUI NE CHANGE PAS : les montants viennent de `get_wastage_report_v2` —
+// CE QUI NE CHANGE PAS : les montants viennent de `get_wastage_report_v3` —
 // total, ventilation manuel/péremption et `by_product` sont servis tels quels.
 // Aucune perte n'est re-valorisée ici. La bannière de troncature (500 lignes de
 // détail côté serveur) reste, et elle continue de dire que le TOTAL, lui,

@@ -51,7 +51,7 @@ import { useInventoryReferenceData } from '@/features/inventory/hooks/useInvento
 
 const PAGE_SIZE = 50;
 
-// Colonne affichée → clé de l'allowlist serveur de `get_stock_levels_v4`. Le
+// Colonne affichée → clé de l'allowlist serveur de `get_stock_levels_v5`. Le
 // tri est SERVEUR : la page ne tient que 50 lignes sur plusieurs milliers, un
 // tri client ne trierait que la tranche déjà à l'écran et mentirait.
 // Les colonnes absentes de cet objet ne sont pas triables — `actions` n'a rien

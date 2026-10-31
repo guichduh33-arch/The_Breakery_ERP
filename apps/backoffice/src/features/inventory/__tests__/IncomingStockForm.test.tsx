@@ -56,6 +56,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: unknown) => {
+        if (fn === 'get_operational_products_v1') return Promise.resolve({ data: MOCK_PRODUCTS.map((p) => ({ ...p, track_inventory: true })), error: null });
         const out = mockRpc(fn, args) as RpcResult | undefined;
         return Promise.resolve(out ?? { data: { movement_id: 'm-1', product_id: 'p-1', new_current_stock: 110 }, error: null });
       },
@@ -151,7 +152,7 @@ describe('IncomingStockForm', () => {
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
 
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('record_incoming_stock_v2');
+    expect(call[0]).toBe('record_incoming_stock_v3');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
       p_quantity:   5,
@@ -198,5 +199,15 @@ describe('IncomingStockForm', () => {
     fireEvent.change(screen.getByLabelText(/Quantity received/i), { target: { value: '0.375' } });
     fireEvent.click(screen.getByRole('button', { name: /Record receipt/ }));
     expect(await screen.findByText(/Receipt already recorded.*1,375 pcs/)).toBeInTheDocument();
+  });
+  it('confirms a receipt whose stock result is hidden without inventing a zero', async () => {
+    mockRpc.mockReturnValue({ data: { movement_id: 'm', product_id: 'p-1', new_current_stock: null }, error: null });
+    renderForm();
+    await pickProduct();
+    fireEvent.change(screen.getByLabelText(/Quantity received/i), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Record receipt' }));
+    const confirmation = await screen.findByText(/Receipt recorded/);
+    expect(confirmation).not.toHaveTextContent(/On hand: 0|null/);
+    expect(confirmation).toHaveTextContent(/Stock quantity is hidden/i);
   });
 });

@@ -47,22 +47,21 @@ export function ValidateOpnameDialog({
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Reveal variances?</DialogTitle>
+          <DialogTitle>Submit count for owner review?</DialogTitle>
           <DialogDescription className="sr-only">
-            Confirm moving this count to review, which reveals expected quantities
-            and locks counted quantities.
+            Submit this count for independent owner review and lock counted quantities.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm text-text-secondary">
           <p>
-            This reveals the expected quantity and the variance for your{' '}
-            <strong className="font-mono">{countedItems}</strong> counted line(s).
+            Submit your{' '}
+            <strong className="font-mono">{countedItems}</strong> counted line(s). Expected quantities and variances remain restricted to the owner.
           </p>
           <p>
             <strong className="text-text-primary">Counted quantities are locked
             from then on.</strong> There is no way back to counting: if you spot a
-            typo once the variances are visible, the only option is to cancel this
+            typo after submission, the only option is to cancel this
             count and recount from scratch.
           </p>
 
@@ -79,7 +78,7 @@ export function ValidateOpnameDialog({
             disabled={blocked || validate.isPending}
             data-testid="confirm-validate"
           >
-            {validate.isPending ? 'Validating…' : 'Reveal & lock'}
+            {validate.isPending ? 'Submitting…' : 'Submit & lock'}
           </Button>
         </DialogFooter>
       </DialogContent>

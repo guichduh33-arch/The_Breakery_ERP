@@ -145,7 +145,7 @@ BEGIN
       p_source_code  := 'T1'
     );
     PERFORM pickup_tablet_order(v_order_id, current_setting('tcfp.sess')::uuid);
-    PERFORM pay_existing_order_v22(
+    PERFORM pay_existing_order_v23(
       p_order_id := v_order_id,
       p_payment  := '{"method":"cash","amount":48000,"cash_received":48000,"change_given":0}'::jsonb
     );

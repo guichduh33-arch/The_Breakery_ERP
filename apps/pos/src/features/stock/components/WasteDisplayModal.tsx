@@ -2,7 +2,7 @@
 //
 // POS display-stock isolation — modal de saisie d'une PERTE vitrine.
 // Remplace le window.prompt historique. Collecte quantité + raison, puis
-// délègue au callback onConfirm(qty, reason) (le parent câble waste_display_stock_v2).
+// délègue au callback onConfirm(qty, reason) (le parent câble waste_display_stock_v4).
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
@@ -69,8 +69,8 @@ export function WasteDisplayModal({
         </header>
 
         <p className="text-sm text-text-secondary">
-          <span className="text-text-primary font-semibold">{productName}</span> — deducts the display{' '}
-          <span className="text-text-primary">and</span> inventory (a waste movement is recorded).
+          <span className="text-text-primary font-semibold">{productName}</span> — the wasted quantity is removed from the display immediately.
+          {' '}Global stock changes after independent owner approval. Rejection does not restore the display quantity.
         </p>
 
         <section className="space-y-2">
@@ -134,7 +134,7 @@ export function WasteDisplayModal({
             disabled={!canConfirm}
             data-testid="waste-display-confirm"
           >
-            {isPending ? 'Saving…' : locked ? 'Retry same operation' : `Waste −${qty}`}
+            {isPending ? 'Submitting…' : locked ? 'Retry declaration' : 'Submit for approval'}
           </Button>
         </div>
       </div>

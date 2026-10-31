@@ -7,7 +7,7 @@
 //   (c) clicking Cancel opens the modal; reason < 3 chars keeps confirm disabled.
 //   (d) Record payment on an invoices-tab row calls onRecord(customer_id, [invoice_id]).
 // Session 68 — (e) Invoice PDF button: renders invoice_number, calls
-//   get_b2b_invoice_v1 then generate-pdf, opens the signed URL.
+//   get_b2b_invoice_v2 then generate-pdf, opens the signed URL.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -86,7 +86,7 @@ vi.mock('@/lib/supabase.js', () => {
       rpc:  (fn: string, args: unknown) => {
         const out = mockRpc(fn, args) as RpcResult | undefined;
         if (out !== undefined) return Promise.resolve(out);
-        if (fn === 'get_b2b_invoice_v1') return Promise.resolve({ data: GET_B2B_INVOICE_PAYLOAD, error: null });
+        if (fn === 'get_b2b_invoice_v2') return Promise.resolve({ data: GET_B2B_INVOICE_PAYLOAD, error: null });
         return Promise.resolve({
           data: {
             order_id: 'inv-1', order_number: 'B2B-0001',
@@ -197,7 +197,7 @@ describe('B2bInvoicesTab (S56 DEV-S52-03)', () => {
     expect(screen.getByTestId('inv-pdf-B2B-20260708-0001')).toBeEnabled();
   });
 
-  it('(e) Invoice PDF button renders invoice_number and downloads via get_b2b_invoice_v1 + generate-pdf', async () => {
+  it('(e) Invoice PDF button renders invoice_number and downloads via get_b2b_invoice_v2 + generate-pdf', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderTab();
     await waitFor(() => expect(screen.getByTestId('inv-pdf-B2B-20260708-0001')).toBeInTheDocument());
@@ -205,7 +205,7 @@ describe('B2bInvoicesTab (S56 DEV-S52-03)', () => {
 
     fireEvent.click(screen.getByTestId('inv-pdf-B2B-20260708-0001'));
 
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('get_b2b_invoice_v1', { p_order_id: 'inv-3' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('get_b2b_invoice_v2', { p_order_id: 'inv-3' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       'http://test.local/functions/v1/generate-pdf',
       expect.objectContaining({ method: 'POST' }),

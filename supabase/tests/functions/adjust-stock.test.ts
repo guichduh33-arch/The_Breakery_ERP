@@ -1,175 +1,103 @@
-// supabase/tests/functions/adjust-stock.test.ts
-// Session 12 — Live integration tests for adjust_stock_v2 RPC.
-// Pattern mirrors loyalty-adjust.test.ts: PIN-login → JWT-bearing client → rpc().
-//
-// Coverage:
-//   - Happy path (ADMIN sets new_qty, signed delta movement recorded)
-//   - Idempotency replay (same key returns idempotent_replay=true, single row)
-//   - Permission denied (MANAGER cannot adjust)
-//   - Negative qty rejected
-//   - Audit_log row created with actor_profile_id
-//   - Noop when new_qty == current_stock (no movement inserted)
+// Déclaration aveugle, approbation indépendante et rejeu sans seconde écriture.
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { SERVICE_KEY } from './_helpers/auth';
+import { stockDeclarationFixture, type StockApproval, type StockDeclaration } from './_helpers/stockDeclarations';
 
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
-import { loginAs, jwtClient } from './_helpers/auth';
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v2 RPC — integration', () => {
-  let adminToken:   string;
-  let managerToken: string;
-  let productId:    string;
-  let adminProfileId: string;
-
-  beforeAll(async () => {
-    adminToken   = await loginAs('EMP000', '123456');
-    managerToken = await loginAs('EMP003', '111111');
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-
-    // Seed product profile id for audit assertions
-    const { data: prof } = await admin.from('user_profiles').select('id')
-      .eq('employee_code', 'EMP000').single();
-    adminProfileId = String(prof!.id);
-
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productId = String(p!.id);
+describe.skipIf(!SERVICE_KEY)('stock adjustment declaration', () => {
+  let fixture: Awaited<ReturnType<typeof stockDeclarationFixture>>;
+  beforeAll(async () => { fixture = await stockDeclarationFixture('ZZ-TEST-ADJUST-DECLARATION'); });
+  beforeEach(async () => { await fixture.reset(50); });
+  afterAll(async () => { await fixture?.cleanup(); });
+  const args = (quantity: number, reason = 'Independent recount') => ({
+    p_product_id: fixture.productId, p_new_qty: quantity, p_reason: reason,
+    p_idempotency_key: crypto.randomUUID(),
   });
 
-  beforeEach(async () => {
-    // Reset product stock to a deterministic baseline before each test.
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    await admin.from('products').update({ current_stock: 50 }).eq('id', productId);
-  });
-
-  it('admin happy path: sets new_qty, records signed delta movement', async () => {
-    const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 75,
-      p_reason: 'Initial recount after physical audit',
-    }).returns<unknown>();
-    expect(error).toBeNull();
-    expect(data).not.toBeNull();
-    const result = data as { new_current_stock: number; movement_id: string; idempotent_replay: boolean };
+  it('changes stock and audits the Owner only after approval', async () => {
+    const submitted = await fixture.declarant.rpc('adjust_stock_v4', args(75));
+    expect(submitted.error).toBeNull();
+    const declaration = submitted.data as StockDeclaration;
+    expect(declaration.status).toBe('pending');
+    expect(submitted.data).not.toHaveProperty('new_current_stock');
+    expect(await fixture.currentStock()).toBe(50);
+    const approved = await fixture.owner.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: declaration.declaration_id,
+    });
+    expect(approved.error).toBeNull();
+    const result = approved.data as StockApproval;
     expect(Number(result.new_current_stock)).toBe(75);
-    expect(result.movement_id).toBeTruthy();
-    expect(result.idempotent_replay).toBe(false);
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: mvt } = await admin.from('stock_movements')
-      .select('quantity, movement_type, reason, created_by')
+    const movement = await fixture.admin.from('stock_movements').select('quantity,movement_type,created_by')
       .eq('id', result.movement_id).single();
-    expect(Number(mvt!.quantity)).toBe(25);
-    expect(mvt!.movement_type).toBe('adjustment');
-    expect(mvt!.reason).toBe('Initial recount after physical audit');
-    expect(mvt!.created_by).toBe(adminProfileId);
+    expect(movement.error).toBeNull();
+    expect(Number(movement.data!.quantity)).toBe(25);
+    expect(movement.data!.movement_type).toBe('adjustment');
+    const audit = await fixture.admin.from('audit_logs').select('actor_id')
+      .eq('entity_id', declaration.declaration_id).eq('action', 'stock.declaration_approved').single();
+    expect(audit.error).toBeNull();
+    expect(audit.data!.actor_id).toBe(movement.data!.created_by);
   });
 
-  it('admin: audit_logs row inserted with actor_id + metadata', async () => {
-    const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 60,
-      p_reason: 'Audit trail verification',
-    }).returns<unknown>();
-    expect(error).toBeNull();
-    const result = data as { movement_id: string };
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: audit } = await admin.from('audit_logs')
-      .select('action, entity_type, actor_id, metadata')
-      .eq('entity_id', result.movement_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    expect(audit?.action).toBe('stock.movement');
-    expect(audit?.entity_type).toBe('stock_movements');
-    expect(audit?.actor_id).toBe(adminProfileId);
-    const metadata = audit?.metadata as { movement_type: string; quantity: string; reason: string };
-    expect(metadata.movement_type).toBe('adjustment');
-    expect(metadata.reason).toBe('Audit trail verification');
+  it('replays declarations and approvals without emitting another movement', async () => {
+    const request = args(80);
+    const first = await fixture.declarant.rpc('adjust_stock_v4', request);
+    const replay = await fixture.declarant.rpc('adjust_stock_v4', request);
+    expect(first.error).toBeNull();
+    expect(replay.error).toBeNull();
+    const id = (first.data as StockDeclaration).declaration_id;
+    expect(replay.data).toMatchObject({ declaration_id: id, idempotent_replay: true });
+    const approved = await fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id });
+    const again = await fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id });
+    expect(approved.error).toBeNull();
+    expect(again.error).toBeNull();
+    expect(again.data).toMatchObject({ idempotent_replay: true });
+    const count = await fixture.admin.from('stock_movements').select('id', { count: 'exact', head: true })
+      .eq('reference_type', 'stock_declaration').eq('reference_id', id);
+    expect(count.error).toBeNull();
+    expect(count.count).toBe(1);
   });
 
-  it('idempotency: same key on retry returns idempotent_replay=true, single row', async () => {
-    const sb = jwtClient(adminToken);
-    const key = crypto.randomUUID();
-
-    const r1 = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 80,
-      p_reason: 'Idempotency first call',
-      p_idempotency_key: key,
+  it('does not let the declarant approve', async () => {
+    const submitted = await fixture.declarant.rpc('adjust_stock_v4', args(60));
+    expect(submitted.error).toBeNull();
+    const denied = await fixture.declarant.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: (submitted.data as StockDeclaration).declaration_id,
     });
-    expect(r1.error).toBeNull();
-    const data1 = r1.data as { movement_id: string; idempotent_replay: boolean };
-    expect(data1.idempotent_replay).toBe(false);
-
-    const r2 = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 80,
-      p_reason: 'Idempotency first call',
-      p_idempotency_key: key,
-    });
-    expect(r2.error).toBeNull();
-    const data2 = r2.data as { movement_id: string; idempotent_replay: boolean };
-    expect(data2.idempotent_replay).toBe(true);
-    expect(data2.movement_id).toBe(data1.movement_id);
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { count } = await admin.from('stock_movements')
-      .select('*', { count: 'exact', head: true })
-      .eq('idempotency_key', key);
-    expect(count).toBe(1);
-
-    // Cleanup so subsequent test runs are stable.
-    await admin.from('stock_movements').delete().eq('idempotency_key', key);
+    expect(denied.error?.message).toMatch(/owner_required/);
+    expect(await fixture.currentStock()).toBe(50);
   });
 
-  it('manager: forbidden (no inventory.adjust)', async () => {
-    const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 100,
-      p_reason: 'Manager attempting adjust',
+  it('rejects a stale absolute count after intervening stock activity', async () => {
+    const submitted = await fixture.declarant.rpc('adjust_stock_v4', args(60));
+    expect(submitted.error).toBeNull();
+    const incoming = await fixture.owner.rpc('record_incoming_stock_v3', {
+      p_product_id: fixture.productId, p_quantity: 2, p_reason: 'Intervening receipt',
+      p_idempotency_key: crypto.randomUUID(),
     });
-    expect(error?.message ?? '').toMatch(/forbidden/);
+    expect(incoming.error).toBeNull();
+    const approved = await fixture.owner.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: (submitted.data as StockDeclaration).declaration_id,
+    });
+    expect(approved.error?.message).toMatch(/stale_stock_declaration/);
+    expect(await fixture.currentStock()).toBe(52);
   });
 
-  it('admin: p_new_qty < 0 -> negative_qty_not_allowed', async () => {
-    const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: -5,
-      p_reason: 'Negative target should be rejected',
-    });
-    expect(error?.message ?? '').toMatch(/negative_qty_not_allowed/);
+  it('retains a no-op approval without a ledger movement', async () => {
+    const submitted = await fixture.declarant.rpc('adjust_stock_v4', args(50));
+    expect(submitted.error).toBeNull();
+    const id = (submitted.data as StockDeclaration).declaration_id;
+    const approved = await fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id });
+    expect(approved.error).toBeNull();
+    expect(Number((approved.data as StockApproval).new_current_stock)).toBe(50);
+    const count = await fixture.admin.from('stock_movements').select('id', { count: 'exact', head: true })
+      .eq('reference_id', id).eq('reference_type', 'stock_declaration');
+    expect(count.error).toBeNull();
+    expect(count.count).toBe(0);
   });
 
-  it('admin: no-op when new_qty == current_stock (no movement, noop=true)', async () => {
-    const sb = jwtClient(adminToken);
-    const { data, error } = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 50,    // baseline set in beforeEach
-      p_reason: 'Same value — noop expected',
-    }).returns<unknown>();
-    expect(error).toBeNull();
-    const result = data as { movement_id: string | null; noop?: boolean; new_current_stock: number };
-    expect(result.noop).toBe(true);
-    expect(result.movement_id).toBeNull();
-    expect(Number(result.new_current_stock)).toBe(50);
-  });
-
-  it('admin: short reason (<3 chars) is rejected upstream by record_stock_movement_v1', async () => {
-    const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('adjust_stock_v2', {
-      p_product_id: productId,
-      p_new_qty: 70,
-      p_reason: 'hi',
-    });
-    expect(error?.message ?? '').toMatch(/reason_required/);
+  it('validates quantity, reason and the required idempotency key', async () => {
+    expect((await fixture.declarant.rpc('adjust_stock_v4', args(-5))).error?.message).toMatch(/invalid_quantity/);
+    expect((await fixture.declarant.rpc('adjust_stock_v4', args(70, 'hi'))).error?.message).toMatch(/reason_required/);
+    const request = { ...args(70), p_idempotency_key: undefined };
+    expect((await fixture.declarant.rpc('adjust_stock_v4', request)).error?.message).toMatch(/idempotency_key_required/);
   });
 });

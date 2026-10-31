@@ -105,6 +105,7 @@ export type PermissionCode =
   | 'reports.read'
   | 'reports.export'
   | 'reports.sales.read'
+  | 'reports.product_sales.read'
   | 'reports.inventory.read'
   | 'reports.audit.read'
   | 'reports.financial.read'

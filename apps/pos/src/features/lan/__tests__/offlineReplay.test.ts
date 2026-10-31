@@ -80,7 +80,7 @@ describe('replayOfflineOutbox', () => {
   });
   it('replays fire then payment with the ORIGINAL keys, A4 flag on payment', async () => {
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v11') {
+      if (fn === 'fire_counter_order_v12') {
         return Promise.resolve({ data: { order_id: 'db-1', order_number: '#0042', idempotent_replay: false }, error: null });
       }
       return Promise.resolve({ data: { order_id: 'db-1' }, error: null });
@@ -92,9 +92,9 @@ describe('replayOfflineOutbox', () => {
     expect(res).toEqual({ replayed: 2, failed: 0 });
     expect(rpcMock).toHaveBeenCalledTimes(2);
     const [fireCall, payCall] = rpcMock.mock.calls;
-    expect(fireCall![0]).toBe('fire_counter_order_v11');
+    expect(fireCall![0]).toBe('fire_counter_order_v12');
     expect(fireCall![1]).toMatchObject({ p_client_uuid: 'root-1', p_session_id: 'sess-1', p_order_type: 'take_out' });
-    expect(payCall![0]).toBe('pay_existing_order_v22');
+    expect(payCall![0]).toBe('pay_existing_order_v23');
     expect(payCall![1]).toMatchObject({
       p_order_id: 'db-1',
       p_idempotency_key: 'idem-1',
@@ -122,7 +122,7 @@ describe('replayOfflineOutbox', () => {
 
   it('resolves an orphan payment (fire replayed in a previous run) via the idempotent fire lookup', async () => {
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v11') {
+      if (fn === 'fire_counter_order_v12') {
         return Promise.resolve({ data: { order_id: 'db-7', order_number: '#0007', idempotent_replay: true }, error: null });
       }
       return Promise.resolve({ data: {}, error: null });
@@ -136,7 +136,7 @@ describe('replayOfflineOutbox', () => {
     const res = await replayOfflineOutbox();
 
     expect(res.replayed).toBe(1);
-    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v11');
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v12');
     expect(rpcMock.mock.calls[0]![1]).toMatchObject({ p_client_uuid: 'root-7' });
     expect(rpcMock.mock.calls[1]![1]).toMatchObject({ p_order_id: 'db-7', p_idempotency_key: 'idem-7' });
   });
@@ -188,7 +188,7 @@ describe('replayOfflineOutbox', () => {
   it('chaos: two concurrent replays — the module lock makes the second a no-op', async () => {
     let releaseFire: (() => void) | undefined;
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v11') {
+      if (fn === 'fire_counter_order_v12') {
         // Fire suspendu tant que le test ne libère pas — le 2ᵉ replay démarre
         // pendant que le 1ᵉʳ draine encore.
         return new Promise((resolve) => {
@@ -207,15 +207,15 @@ describe('replayOfflineOutbox', () => {
     const res = await first;
     expect(res).toEqual({ replayed: 2, failed: 0 });
     // Chaque intent n'a été rejoué qu'UNE fois malgré les deux appels.
-    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'fire_counter_order_v11')).toHaveLength(1);
-    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'pay_existing_order_v22')).toHaveLength(1);
+    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'fire_counter_order_v12')).toHaveLength(1);
+    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'pay_existing_order_v23')).toHaveLength(1);
     expect(await getPendingIntents()).toEqual([]);
   });
 
   it('chaos: drain interrupted mid-run (payment fails) — the retry resumes with the SAME keys', async () => {
     // Run 1 : fire OK, paiement KO (coupure re-tombée en plein replay).
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v11') {
+      if (fn === 'fire_counter_order_v12') {
         return Promise.resolve({ data: { order_id: 'db-1', order_number: '#0042', idempotent_replay: false }, error: null });
       }
       return Promise.resolve({ data: null, error: { message: 'network_down' } });
@@ -231,7 +231,7 @@ describe('replayOfflineOutbox', () => {
     // le fire idempotent (même client_uuid racine) et rejoue la MÊME clé.
     rpcMock.mockClear();
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v11') {
+      if (fn === 'fire_counter_order_v12') {
         return Promise.resolve({ data: { order_id: 'db-1', order_number: '#0042', idempotent_replay: true }, error: null });
       }
       return Promise.resolve({ data: { order_id: 'db-1' }, error: null });
@@ -253,7 +253,7 @@ describe('replayOfflineOutbox', () => {
 
   it('replays a multi-tender payment via p_payments (never p_payment)', async () => {
     rpcMock.mockImplementation((fn: string) => {
-      if (fn === 'fire_counter_order_v11') {
+      if (fn === 'fire_counter_order_v12') {
         return Promise.resolve({ data: { order_id: 'db-9', order_number: '#0099', idempotent_replay: false }, error: null });
       }
       return Promise.resolve({ data: { order_id: 'db-9' }, error: null });
@@ -293,7 +293,7 @@ describe('replayOfflineOutbox', () => {
 
   it('replays a single non-cash tender via p_payments as well', async () => {
     rpcMock.mockImplementation((fn: string) =>
-      fn === 'fire_counter_order_v11'
+      fn === 'fire_counter_order_v12'
         ? Promise.resolve({ data: { order_id: 'db-8', order_number: '#0088', idempotent_replay: true }, error: null })
         : Promise.resolve({ data: {}, error: null }));
 
@@ -312,7 +312,7 @@ describe('replayOfflineOutbox', () => {
 
   it('a failed multi-tender replay traces the TOTAL amount, not the first tender', async () => {
     rpcMock.mockImplementation((fn: string) =>
-      fn === 'fire_counter_order_v11'
+      fn === 'fire_counter_order_v12'
         ? Promise.resolve({ data: { order_id: 'db-6', order_number: '#0066', idempotent_replay: true }, error: null })
         : Promise.resolve({ data: null, error: { message: 'boom' } }));
 

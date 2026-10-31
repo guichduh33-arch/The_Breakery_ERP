@@ -68,7 +68,7 @@ async function searchIngredientsFn(
   kind: 'raw' | 'semi_finished' | 'sub_recipe' | 'all',
 ): Promise<IngredientSearchResult[]> {
   try {
-    const { data, error } = await supabase.rpc('search_ingredients_v1', {
+    const { data, error } = await supabase.rpc('search_ingredients_v2', {
       p_query: query,
       p_kind:  kind,
       p_limit: 20,

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useRecipeBomFull.ts
 //
-// Session 39 — Wave B2 — Wraps recipe_bom_full_v3.
+// Session 39 — Wave B2 — Wraps recipe_bom_full_v4.
 // Gate: inventory.read (SECURITY DEFINER).
 // Returns 0 rows when the product has no recipe (purchase-driven WAC).
 //
@@ -30,7 +30,7 @@ export function useRecipeBomFull(productId: string) {
     enabled:  productId !== '',
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('recipe_bom_full_v3', {
+      const { data, error } = await supabase.rpc('recipe_bom_full_v4', {
         p_product_id: productId,
       });
       if (error) throw error;

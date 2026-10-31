@@ -46,7 +46,7 @@ vi.mock('@/lib/supabase.js', () => {
     };
     return chain;
   }
-  return { supabase: { from: (t: string) => buildChain(t) } };
+  return { supabase: { from: (t: string) => buildChain(t), rpc: () => Promise.resolve({ data: MOCK_PRODUCTS, error: null }) } };
 });
 
 function renderPage() {

@@ -25,7 +25,7 @@ export function usePOSReportsTopProducts(period: ReportsPeriod, limit = 25) {
   return useQuery<POSReportsTopProduct[]>({
     queryKey: ['pos-reports-top-products', period.startDate, period.endDate, limit],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_top_products_v1', {
+      const { data, error } = await supabase.rpc('get_pos_top_products_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -104,7 +104,7 @@ export function usePOSReportsActivity(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_margin_v1(p_start_date, p_end_date)`.
+// Source of truth: server RPC `get_pos_margin_v2(p_start_date, p_end_date)`.
 // Same order scope as the Overview (summary.revenue_ttc reconciles exactly);
 // margin math is line-level HT (net of item discounts) against CURRENT
 // products.cost_price — NOT a snapshot at sale time (Vague 3). Promo-gift

@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory-alerts/components/ProductionAlertsTab.tsx
 // Session 13 / Phase 2.D — Production alerts tab.
 //
-// Lecteur mince de get_production_suggestions_v1 (migration Phase 2.A). La RPC
+// Lecteur mince de get_production_suggestions_v2 (migration Phase 2.A). La RPC
 // peut ne pas exister ; on dégrade proprement vers une liste vide.
 //
 // Refonte design 2026-08-08 — DataTable partagé. La priorité passe d'un texte
@@ -19,7 +19,7 @@ import {
 } from '../hooks/useProductionSuggestions.js';
 import { ProductCell } from './ProductCell.js';
 
-// `get_production_suggestions_v1` ne renvoie PAS l'unité du produit : les trois
+// `get_production_suggestions_v2` ne renvoie PAS l'unité du produit : les trois
 // quantités de cet onglet passent donc `null` à `formatQuantity` (audit UX/UI
 // 2026-08-13). Elles gagnent les séparateurs de milliers id-ID et perdent les
 // zéros morts du `toFixed`, sans qu'on invente un « pcs » que la RPC ne dit pas.

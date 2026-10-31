@@ -9,7 +9,7 @@
 // Display stock is mutated from the POS side only — this hook is read-only.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 
 export function useProductDisplayStock(productId: string | null, enabled: boolean) {
   return useQuery<number | null>({
@@ -18,14 +18,8 @@ export function useProductDisplayStock(productId: string | null, enabled: boolea
     staleTime: 15_000,
     queryFn: async () => {
       if (productId === null || productId === '') return null;
-      const { data, error } = await supabase
-        .from('display_stock')
-        .select('quantity')
-        .eq('product_id', productId)
-        .maybeSingle();
-      if (error) throw error;
-      // No row yet (trigger not fired, or unsaved draft) → null = "not stocked".
-      return data === null ? null : Number(data.quantity);
+      const product = (await getOperationalProducts()).find((p) => p.id === productId);
+      return product?.display_stock?.quantity ?? null;
     },
   });
 }

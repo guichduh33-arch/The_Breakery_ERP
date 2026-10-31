@@ -62,13 +62,13 @@ beforeEach(() => {
 });
 
 describe('useWastageReport', () => {
-  it('appelle get_wastage_report_v2 avec les bornes metier', async () => {
+  it('appelle get_wastage_report_v3 avec les bornes metier', async () => {
     const { result } = renderHook(
       () => useWastageReport({ start: '2026-07-01', end: '2026-07-31' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_wastage_report_v2', {
+    expect(mockRpc).toHaveBeenCalledWith('get_wastage_report_v3', {
       p_date_start: '2026-07-01',
       p_date_end:   '2026-07-31',
     });

@@ -21,7 +21,7 @@ function product(value: unknown): boolean {
   return row(value) && text(value.id) && text(value.name) && typeof value.sku === 'string'
     && text(value.category_id) && number(value.retail_price) && value.retail_price >= 0
     && (value.wholesale_price === null || number(value.wholesale_price))
-    && ['finished', 'combo'].includes(String(value.product_type)) && number(value.current_stock)
+    && ['finished', 'combo'].includes(String(value.product_type)) && (value.current_stock === null || number(value.current_stock))
     && bool(value.is_active) && bool(value.is_favorite) && bool(value.has_variants)
     && bool(value.is_sellable) && bool(value.track_inventory)
     && (value.image_url === null || typeof value.image_url === 'string')
@@ -31,7 +31,11 @@ function variant(value: unknown): boolean {
   return row(value) && text(value.id) && text(value.name) && number(value.retail_price) && value.retail_price >= 0
     && text(value.variant_label) && ['flavor', 'size', 'format'].includes(String(value.variant_axis))
     && number(value.variant_sort_order) && bool(value.is_active) && bool(value.deduct_stock)
-    && (value.current_stock === null || number(value.current_stock));
+    && (value.current_stock === null || number(value.current_stock))
+    && (value.is_sellable === undefined || bool(value.is_sellable))
+    && (value.track_inventory === undefined || bool(value.track_inventory))
+    && (value.display_stock === undefined || value.display_stock === null
+      || (row(value.display_stock) && (value.display_stock.quantity === null || number(value.display_stock.quantity))));
 }
 function combo(value: unknown, id: unknown): boolean {
   return row(value) && value.combo_product_id === id && text(value.name) && number(value.base_price) && value.base_price >= 0

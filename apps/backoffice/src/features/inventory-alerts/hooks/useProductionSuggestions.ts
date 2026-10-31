@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-alerts/hooks/useProductionSuggestions.ts
 //
-// Lecteur de get_production_suggestions_v1.
+// Lecteur de get_production_suggestions_v2.
 //
 // Extrait de ProductionAlertsTab le 2026-08-08 : l'onglet et le compteur de son
 // en-tête lisent la même chose, et une clé de requête écrite à deux endroits
@@ -37,7 +37,7 @@ export function useProductionSuggestions() {
     retry: false,
     queryFn: async () => {
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_production_suggestions_v1', {});
+      const { data, error } = await rpc('get_production_suggestions_v2', {});
       if (error !== null) {
         if (/does not exist|undefined function/i.test(error.message)) return [];
         throw new Error(error.message);

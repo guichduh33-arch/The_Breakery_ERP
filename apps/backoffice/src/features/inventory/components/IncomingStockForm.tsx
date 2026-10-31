@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory/components/IncomingStockForm.tsx
 //
 // Inline form (NOT a modal) that records a free-form stock receipt via
-// `record_incoming_stock_v2`. Mirrors ReceiveModal's field setup but:
+// `record_incoming_stock_v3`. Mirrors ReceiveModal's field setup but:
 //   - supplier is OPTIONAL (first option = "No supplier (free-form receipt)")
 //   - lives on a standalone page, so it clears itself on success instead of
 //     closing a Dialog
@@ -129,7 +129,8 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         idempotencyKey,
       });
       resetForm();
-      setSuccessMsg(`${result.idempotent_replay === true ? 'Receipt already recorded' : 'Receipt recorded'} for ${productName}. On hand after receipt: ${formatQuantity(result.new_current_stock, product.unit)}.`);
+      const stockMessage = result.new_current_stock == null ? 'Stock quantity is hidden until daily sales are released.' : `On hand after receipt: ${formatQuantity(result.new_current_stock, product.unit)}.`;
+      setSuccessMsg(`${result.idempotent_replay === true ? 'Receipt already recorded' : 'Receipt recorded'} for ${productName}. ${stockMessage}`);
       if (successTimerRef.current !== null) clearTimeout(successTimerRef.current);
       successTimerRef.current = setTimeout(() => setSuccessMsg(null), 3000);
       onSuccess?.();
@@ -198,7 +199,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         />
         {product !== null && (
           <p className="text-text-muted text-xs">
-            Current stock: <span className="font-mono tabular-nums">{formatQuantity(product.current_stock, product.unit)}</span>
+            Current stock: <span className="font-mono tabular-nums">{product.current_stock === null ? 'Hidden' : formatQuantity(product.current_stock, product.unit)}</span>
           </p>
         )}
       </div>

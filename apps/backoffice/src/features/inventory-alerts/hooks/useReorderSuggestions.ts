@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/inventory-alerts/hooks/useReorderSuggestions.ts
-// Session 13 / Phase 2.D — get_reorder_suggestions_v1 wrapper.
+// Session 13 / Phase 2.D — get_reorder_suggestions_v2 wrapper.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -34,7 +34,7 @@ export function useReorderSuggestions(lookbackDays = 30, bufferDays = 14) {
     queryKey: [...REORDER_SUGGESTIONS_KEY, lookbackDays, bufferDays] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await rpc()('get_reorder_suggestions_v1', {
+      const { data, error } = await rpc()('get_reorder_suggestions_v2', {
         p_lookback_days: lookbackDays,
         p_buffer_days: bufferDays,
       });

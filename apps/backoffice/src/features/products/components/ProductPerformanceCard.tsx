@@ -90,7 +90,7 @@ export function ProductPerformanceCard({
       <div className="space-y-3.5" data-testid="product-performance">
         <Metric
           label="Units sold"
-          // `get_product_performance_v1` ne renvoie pas l'unité du produit : la
+          // `get_product_performance_v2` ne renvoie pas l'unité du produit : la
           // quantité vendue se formate donc sans suffixe — le libellé « Units
           // sold » dit déjà ce qu'on compte.
           value={formatQuantity(total.units_sold, null)}

@@ -19,13 +19,13 @@ SELECT plan(7);
 -- ── T1/T2 : l'invariant, asserté sur TOUT le schéma.
 SELECT is(
   (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public'
+    WHERE n.nspname IN ('public','stock_private')
       AND pg_get_functiondef(p.oid) ~* 'UPDATE\s+(public\.)?stock_movements'),
   0, 'T1 aucune fonction du schéma ne fait UPDATE sur stock_movements');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public'
+    WHERE n.nspname IN ('public','stock_private')
       AND pg_get_functiondef(p.oid) ~* 'DELETE\s+FROM\s+(public\.)?stock_movements'),
   0, 'T2 aucune fonction du schéma ne fait DELETE sur stock_movements');
 

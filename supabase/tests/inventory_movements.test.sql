@@ -1,5 +1,5 @@
 -- supabase/tests/inventory_movements.test.sql
--- Session 13 / Phase 2.D — pgTAP for get_stock_movements_v1 + aggregates.
+-- Session 13 / Phase 2.D — pgTAP for get_stock_movements_v3 + aggregates.
 -- Run via execute_sql with BEGIN ... ROLLBACK envelope.
 --
 -- T_MOV_01..07 :
@@ -18,24 +18,24 @@ SELECT plan(9);
 
 -- T_MOV_01
 SELECT is(
-  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_stock_movements_v1'),
+  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_stock_movements_v3'),
   1,
-  'T_MOV_01: get_stock_movements_v1 exists'
+  'T_MOV_01: get_stock_movements_v3 exists'
 );
 
 -- T_MOV_02
 SELECT throws_ok(
-  $$SELECT * FROM get_stock_movements_v1()$$,
+  $$SELECT * FROM get_stock_movements_v3()$$,
   'P0003',
   NULL,
-  'T_MOV_02: get_stock_movements_v1 forbids anonymous'
+  'T_MOV_02: get_stock_movements_v3 forbids anonymous'
 );
 
 -- T_MOV_03 — return signature
 SELECT is(
   (SELECT COUNT(*)::INT FROM information_schema.parameters
     WHERE specific_schema='public'
-      AND specific_name LIKE 'get_stock_movements_v1%'
+      AND specific_name LIKE 'get_stock_movements_v3%'
       AND parameter_mode='OUT'),
   22,
   'T_MOV_03: 22 OUT columns'
@@ -43,22 +43,22 @@ SELECT is(
 
 -- T_MOV_04 — prosrc contains the 200 cap (sanity check on hard cap)
 SELECT ok(
-  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v1') LIKE '%200%',
-  'T_MOV_04: get_stock_movements_v1 hard-caps limit at 200'
+  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v3') LIKE '%200%',
+  'T_MOV_04: get_stock_movements_v3 hard-caps limit at 200'
 );
 
 -- T_MOV_05
 SELECT is(
-  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_movement_aggregates_v3'),
+  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_movement_aggregates_v4'),
   1,
-  'T_MOV_05: get_movement_aggregates_v3 exists'
+  'T_MOV_05: get_movement_aggregates_v4 exists'
 );
 
 -- T_MOV_06 — aggregates returns JSONB
 SELECT is(
-  (SELECT prorettype::regtype::TEXT FROM pg_proc WHERE proname='get_movement_aggregates_v3'),
+  (SELECT prorettype::regtype::TEXT FROM pg_proc WHERE proname='get_movement_aggregates_v4'),
   'jsonb',
-  'T_MOV_06: get_movement_aggregates_v3 returns jsonb'
+  'T_MOV_06: get_movement_aggregates_v4 returns jsonb'
 );
 
 -- T_MOV_05b — la v1 est droppee (versioning monotone, migration 20260805000001)
@@ -69,16 +69,16 @@ SELECT is(
 );
 
 -- T_MOV_06b — l agregat valorise au cout COURANT du produit, pas au unit_cost
--- stocke du mouvement : aligne sur get_stock_movement_ledger_v1, et immunise
+-- stocke du mouvement : aligne sur get_stock_movement_ledger_v2, et immunise
 -- le rapport contre une valeur historique aberrante (incident du 2026-07-13).
 SELECT ok(
-  (SELECT prosrc FROM pg_proc WHERE proname='get_movement_aggregates_v3') NOT LIKE '%sm.unit_cost%',
-  'T_MOV_06b: get_movement_aggregates_v3 ne lit plus sm.unit_cost'
+  (SELECT prosrc FROM pg_proc WHERE proname='get_movement_aggregates_v4') NOT LIKE '%sm.unit_cost%',
+  'T_MOV_06b: get_movement_aggregates_v4 ne lit plus sm.unit_cost'
 );
 
 -- T_MOV_07 — ORDER BY DESC pattern
 SELECT ok(
-  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v1')
+  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v3')
     LIKE '%ORDER BY sm.created_at DESC, sm.id DESC%',
   'T_MOV_07: cursor-paginated ORDER BY (created_at DESC, id DESC)'
 );

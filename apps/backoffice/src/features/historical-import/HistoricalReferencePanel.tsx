@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Input } from '@breakery/ui';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/BackofficeUi.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 import { supabase, supabaseUrl } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { historicalProductPayload, parseReferencePackage } from './referencePackage.js';
@@ -40,8 +41,9 @@ export function HistoricalReferencePanel() {
     };
     const productLookup = async (ref: ProductReference) => {
       guard();
-      const q = await supabase.from('products').select('id,name,unit,category_id,product_type,deleted_at,is_active,visible_on_pos,available_for_sale,track_inventory,deduct_stock,is_display_item,current_stock,retail_price,cost_price').eq('sku', ref.sku).maybeSingle();
-      guard(); if (q.error) throw new Error(q.error.message);
+      const data = (await getOperationalProducts()).find((product) => product.sku === ref.sku) ?? null;
+      const q = { data };
+      guard();
       if (q.data && (q.data.deleted_at !== null || q.data.name !== ref.name || q.data.unit !== ref.unit
         || q.data.category_id !== ref.category_id || q.data.product_type !== ref.product_type)) throw new Error(`Existing SKU ${ref.sku} does not match this reference.`);
       return q.data;
@@ -60,7 +62,7 @@ export function HistoricalReferencePanel() {
       for (const ref of pack.products) {
         let record = await productLookup(ref);
         if (!record) {
-          guard(); const q = await supabase.rpc('create_product_v3', { p_payload: historicalProductPayload(ref) });
+          guard(); const q = await supabase.rpc('create_product_v4', { p_payload: historicalProductPayload(ref) });
           if (q.error && q.error.code !== '23505') throw new Error(q.error.message);
           if (!q.error && q.data && typeof q.data === 'object' && !Array.isArray(q.data)
             && Array.isArray(q.data.ignored_fields) && q.data.ignored_fields.length > 0) throw new Error(`Some reference fields were ignored for ${ref.sku}.`);

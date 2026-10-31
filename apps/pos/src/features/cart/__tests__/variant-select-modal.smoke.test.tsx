@@ -180,7 +180,19 @@ describe('VariantSelectModal', () => {
     fireEvent.click(tile);
     expect(onPick).toHaveBeenCalledTimes(disabled ? 0 : 1);
     if ((variant.track_inventory ?? variant.deduct_stock) && variant.display_stock) {
-      expect(tile).toHaveTextContent(`stock ${variant.display_stock.quantity}`);
+      expect(tile).toHaveTextContent(`Stock: ${variant.display_stock.quantity}`);
     }
+  });
+  it('uses server sellability for masked variants and never displays a false zero', async () => {
+    mockState.variants = mockVariants.map((v, i) => ({ ...v, current_stock: null, display_stock: { quantity: null }, is_sellable: i === 0 }));
+    const { VariantSelectModal } = await import('../VariantSelectModal');
+    const onPick = vi.fn();
+    const Wrapper = makeWrapper();
+    render(<Wrapper><VariantSelectModal open onOpenChange={vi.fn()} parent={{ id: 'p1', name: 'Croissant' }} onPick={onPick} /></Wrapper>);
+    expect(screen.getByTestId('variant-tile-v1')).toBeEnabled();
+    expect(screen.getByTestId('variant-tile-v2')).toBeDisabled();
+    expect(screen.getAllByText('Stock: Hidden')).toHaveLength(2);
+    fireEvent.click(screen.getByTestId('variant-tile-v1'));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ current_stock: null, is_sellable: true }));
   });
 });

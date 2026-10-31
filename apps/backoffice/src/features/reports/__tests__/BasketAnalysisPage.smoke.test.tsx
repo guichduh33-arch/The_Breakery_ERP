@@ -24,7 +24,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_basket_analysis_v3') {
+      if (fn === 'get_basket_analysis_v4') {
         return Promise.resolve({
           data: [
             {
@@ -86,7 +86,7 @@ describe('BasketAnalysisPage (smoke)', () => {
     expect(await screen.findByText('Croissant')).toBeInTheDocument();
     expect(screen.getByText('Latte')).toBeInTheDocument();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_basket_analysis_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_basket_analysis_v4');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string; p_top_n: number }])[1];
       expect(args.p_date_start).toBe('2026-06-01');
@@ -98,7 +98,7 @@ describe('BasketAnalysisPage (smoke)', () => {
   it('le plafond `top_n` reste porté par l’URL', async () => {
     renderPage('?start=2026-06-01&end=2026-06-07&top_n=25');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_basket_analysis_v3');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_basket_analysis_v4');
       expect((call as [string, { p_top_n: number }])[1].p_top_n).toBe(25);
     });
   });

@@ -40,7 +40,7 @@ vi.mock('@/lib/supabase.js', () => {
   return {
     supabase: {
       from: (t: string) => buildChain(t),
-      rpc:  () => Promise.resolve({ data: [], error: null }),
+      rpc: (fn: string) => Promise.resolve({ data: fn === 'get_operational_products_v1' ? [MOCK_PRODUCT] : [], error: null }),
     },
   };
 });

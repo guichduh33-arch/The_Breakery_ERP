@@ -67,7 +67,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_wastage_report_v2') {
+      if (fn === 'get_wastage_report_v3') {
         return Promise.resolve({ data: wastagePayload(), error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -100,7 +100,7 @@ function renderPage(search = '?start=2026-04-25&end=2026-05-25') {
 
 function wastageCalls(): { p_date_start: string; p_date_end: string }[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_wastage_report_v2')
+    .filter(([fn]) => fn === 'get_wastage_report_v3')
     .map(([, args]) => args as { p_date_start: string; p_date_end: string });
 }
 
@@ -131,7 +131,7 @@ describe('WastagePage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Wastage/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_wastage_report_v2 with business-date bounds', async () => {
+  it('calls get_wastage_report_v3 with business-date bounds', async () => {
     renderPage();
     await waitFor(() => {
       expect(wastageCalls().length).toBeGreaterThan(0);

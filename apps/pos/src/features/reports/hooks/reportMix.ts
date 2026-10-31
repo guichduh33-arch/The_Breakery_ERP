@@ -49,7 +49,7 @@ export function usePOSReportsMix(period: ReportsPeriod) {
   return useQuery<POSReportsMix>({
     queryKey: ['pos-reports-mix', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_order_type_category_mix_v1', {
+      const { data, error } = await supabase.rpc('get_pos_order_type_category_mix_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -83,7 +83,7 @@ export function usePOSReportsMix(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_top_products_v1(p_start_date, p_end_date)`.
+// Source of truth: server RPC `get_pos_top_products_v2(p_start_date, p_end_date)`.
 // Line-level aggregation over the SAME order scope as the Overview / Mix
 // (paid + completed retail, non-B2B, non-historical, no test-product line, WITA
 // date bucketing; excludes cancelled + promo-gift lines), so the product

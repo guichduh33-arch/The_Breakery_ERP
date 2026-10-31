@@ -8,15 +8,15 @@
 // section_stock (table droppée dans le même chantier).
 //
 // Covers :
-//   - create_opname_v2 happy path + idempotency (sans section).
-//   - add_opname_item_v2 auto-loads expected_qty from products.current_stock
-//     when p_expected_qty is omitted.
-//   - set_opname_count_v2 records counted_qty ; variance is GENERATED.
+//   - create_opname_v3 happy path + idempotency (sans section).
+//   - add_opname_item_v3 loads expected_qty server-side and masks it from the counter
+//     without a caller-supplied expected quantity.
+//   - set_opname_count_v3 records counted_qty ; variance is GENERATED.
 //   - validate_opname_v2 transitions counting → review (rejects with missing counts).
-//   - finalize_opname_v4 emits opname_in / opname_out stock_movements (sans
+//   - finalize_opname_v5 emits opname_in / opname_out stock_movements (sans
 //     section) + tr_20_je_emit posts a balanced JE for each non-zero variance row.
 //   - cancel_opname_v1 succeeds pre-finalize, refused post-finalize.
-//   - MANAGER allowed to create, ADMIN required to finalize.
+//   - MANAGER allowed to create, Owner required to finalize.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -64,11 +64,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     }
   });
 
-  it('T_OPN_LIVE_01: create_opname_v2 happy path + idempotent replay', async () => {
+  it('T_OPN_LIVE_01: create_opname_v3 happy path + idempotent replay', async () => {
     const sb = jwtClient(managerToken);
     const idemKey = crypto.randomUUID();
 
-    const { data: r1, error: e1 } = await rpc(sb)('create_opname_v2', {
+    const { data: r1, error: e1 } = await rpc(sb)('create_opname_v3', {
       p_notes: 'live test count',
       p_idempotency_key: idemKey,
     });
@@ -80,7 +80,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     createdCountIds.push(r1.count_id);
 
     // Replay with same key → idempotent_replay=true, same count_id.
-    const { data: r2, error: e2 } = await rpc(sb)('create_opname_v2', {
+    const { data: r2, error: e2 } = await rpc(sb)('create_opname_v3', {
       p_notes: 'live test count (replay)',
       p_idempotency_key: idemKey,
     });
@@ -89,42 +89,42 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     expect(r2.idempotent_replay).toBe(true);
   });
 
-  it('T_OPN_LIVE_02: add_opname_item_v2 auto-loads expected_qty from products.current_stock', async () => {
+  it('T_OPN_LIVE_02: add_opname_item_v3 loads expected_qty server-side and masks it from the counter', async () => {
     const sb = jwtClient(managerToken);
-    const { data: created } = await rpc(sb)('create_opname_v2', {
+    const { data: created } = await rpc(sb)('create_opname_v3', {
       p_idempotency_key: crypto.randomUUID(),
     });
     createdCountIds.push(created.count_id);
 
-    const { data: item, error } = await rpc(sb)('add_opname_item_v2', {
+    const { data: item, error } = await rpc(sb)('add_opname_item_v3', {
       p_count_id: created.count_id,
       p_product_id: productId,
-      // p_expected_qty omitted → auto-load from products.current_stock=100
+      // Attendu stocké côté serveur ; jamais renvoyé au compteur.
     });
     expect(error).toBeNull();
     expect(item.item_id).toBeTruthy();
-    expect(Number(item.expected_qty)).toBe(100);
+    expect(item.expected_qty).toBeNull();
     expect(item.unit).toBe('pcs');
   });
 
   it('T_OPN_LIVE_03: full cycle — set_count → validate → finalize → JE balanced', async () => {
-    const sb = jwtClient(adminToken); // ADMIN to allow finalize
+    const sb = jwtClient(adminToken); // Owner ouvre et approuve ; un autre acteur compte.
+    const counter = jwtClient(managerToken);
 
-    const { data: created } = await rpc(sb)('create_opname_v2', {
+    const { data: created } = await rpc(sb)('create_opname_v3', {
       p_notes: 'full-cycle',
       p_idempotency_key: crypto.randomUUID(),
     });
     const countId = created.count_id as string;
     createdCountIds.push(countId);
 
-    const { data: item } = await rpc(sb)('add_opname_item_v2', {
+    const { data: item } = await rpc(sb)('add_opname_item_v3', {
       p_count_id: countId,
       p_product_id: productId,
-      p_expected_qty: 100,
     });
 
     // Set counted_qty = 95 → variance = -5 (opname_out).
-    await rpc(sb)('set_opname_count_v2', {
+    await rpc(counter)('set_opname_count_v3', {
       p_count_item_id: item.item_id,
       p_counted_qty: 95,
     });
@@ -143,7 +143,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
 
     // Finalize.
-    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v4', {
+    const { data: finalized, error: fErr } = await rpc(sb)('finalize_opname_v5', {
       p_count_id: countId,
       p_idempotency_key: crypto.randomUUID(),
     });
@@ -171,7 +171,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .eq('reference_type', 'stock_movement');
     expect((jeAfter ?? 0) - (jeBefore ?? 0)).toBe(1);
 
-    // ADR-027 : finalize_opname_v4 émet ses mouvements sans section.
+    // ADR-027 : finalize_opname_v5 émet ses mouvements sans section.
     const { data: mvt } = await admin.from('stock_movements')
       .select('from_section_id, to_section_id')
       .eq('id', movementId)
@@ -180,7 +180,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     expect(mvt!.to_section_id).toBeNull();
 
     // Replay finalize → idempotent_replay=true.
-    const { data: replay } = await rpc(sb)('finalize_opname_v4', {
+    const { data: replay } = await rpc(sb)('finalize_opname_v5', {
       p_count_id: countId,
     });
     expect(replay.idempotent_replay).toBe(true);
@@ -189,15 +189,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
 
   it('T_OPN_LIVE_04: validate_opname_v2 raises missing_counts when counted_qty is NULL', async () => {
     const sb = jwtClient(managerToken);
-    const { data: created } = await rpc(sb)('create_opname_v2', {
+    const { data: created } = await rpc(sb)('create_opname_v3', {
       p_idempotency_key: crypto.randomUUID(),
     });
     createdCountIds.push(created.count_id);
 
-    await rpc(sb)('add_opname_item_v2', {
+    await rpc(sb)('add_opname_item_v3', {
       p_count_id: created.count_id,
       p_product_id: productId,
-      p_expected_qty: 100,
     });
     // No set_opname_count → validate should fail.
     const { error } = await rpc(sb)('validate_opname_v2', { p_count_id: created.count_id });
@@ -206,7 +205,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
 
   it('T_OPN_LIVE_05: cancel allowed before finalize, refused after', async () => {
     const sb = jwtClient(adminToken);
-    const { data: created } = await rpc(sb)('create_opname_v2', {
+    const { data: created } = await rpc(sb)('create_opname_v3', {
       p_idempotency_key: crypto.randomUUID(),
     });
     const countId = created.count_id as string;
@@ -225,21 +224,21 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
     expect(e2?.message ?? '').toMatch(/already_cancelled/);
   });
 
-  it('T_OPN_LIVE_06: MANAGER cannot finalize (ADMIN-only)', async () => {
+  it('T_OPN_LIVE_06: MANAGER cannot finalize (Owner-only)', async () => {
     const adminSb = jwtClient(adminToken);
     const managerSb = jwtClient(managerToken);
 
-    const { data: created } = await rpc(adminSb)('create_opname_v2', {
+    const { data: created } = await rpc(adminSb)('create_opname_v3', {
       p_idempotency_key: crypto.randomUUID(),
     });
     const countId = created.count_id as string;
     createdCountIds.push(countId);
 
-    await rpc(adminSb)('add_opname_item_v2', {
-      p_count_id: countId, p_product_id: productId, p_expected_qty: 100,
+    await rpc(adminSb)('add_opname_item_v3', {
+      p_count_id: countId, p_product_id: productId,
     });
 
-    const { error: fErr } = await rpc(managerSb)('finalize_opname_v4', { p_count_id: countId });
+    const { error: fErr } = await rpc(managerSb)('finalize_opname_v5', { p_count_id: countId });
     expect(fErr?.message ?? '').toMatch(/forbidden/);
   });
 });

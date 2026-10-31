@@ -108,6 +108,8 @@ describe('POSStockView', () => {
     for (const mutation of [receiveMutate, returnToKitchenMutate, wasteMutate, adjustMutate]) {
       mutation.mockResolvedValue({ product_id: 'p1', new_display_stock: 4, idempotent_replay: false });
     }
+    wasteMutate.mockResolvedValue({ declaration_id: 'w', status: 'pending', display_withdrawal_applied: true, idempotent_replay: false });
+    adjustMutate.mockResolvedValue({ product_id: 'p1', new_display_stock: null, effect_id: 'effect', idempotent_replay: false });
     productsState.current = { data: [], isLoading: false, isError: false };
   });
 
@@ -219,7 +221,7 @@ describe('POSStockView', () => {
     expect(toast.success).not.toHaveBeenCalled();
     const original: unknown = receiveMutate.mock.calls[0]?.[0];
     fireEvent.click(screen.getByRole('button', { name: 'Retry operation' }));
-    await waitFor(() => expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('6.375 pcs')));
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('operation recorded')));
     expect(receiveMutate.mock.calls[1]?.[0]).toEqual(original);
     expect(screen.getByLabelText(/Enter quantity/)).toHaveValue(0);
     expect(screen.queryByRole('button', { name: 'Retry operation' })).not.toBeInTheDocument();
@@ -279,5 +281,78 @@ describe('POSStockView', () => {
     expect(screen.getByText(/Read-only access/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Enter quantity/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Receive|Waste|Adjust|More actions/ })).not.toBeInTheDocument();
+  });
+  it.each(['card', 'list'])('shows masked stock without treating it as zero in %s view', (mode) => {
+    localStorage.setItem('pos-stock-view', mode);
+    productsState.current = { data: [row({ display_stock: null, is_sellable: true })], isLoading: false, isError: false };
+    renderView();
+    expect(screen.getByText('Hidden')).toBeInTheDocument();
+    expect(screen.getByText(/0 out/)).toBeInTheDocument();
+    expect(screen.getByText(/0 low/)).toBeInTheDocument();
+  });
+  it.each(['approved', 'rejected'] as const)('reports a replay already %s without pretending stock is unchanged', async (status) => {
+    wasteMutate.mockResolvedValue({ declaration_id: 'd', status, display_withdrawal_applied: true, idempotent_replay: true });
+    const { result } = renderHook(() => useDisplayStockGestures(true));
+    await act(async () => { expect(await result.current.submit('waste', row({ display_stock: null }), 0.5, 'Expired')).toBe(true); });
+    expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('already ' + status));
+    expect(vi.mocked(toast.info).mock.calls[0]?.[0]).not.toMatch(/unchanged|owner approval/);
+    expect(result.current.pending).toEqual([]);
+    expect(wasteMutate).toHaveBeenCalledTimes(1);
+  });
+  it('applies a display count immediately without requiring owner approval or exposing global stock', async () => {
+    const { result } = renderHook(() => useDisplayStockGestures(true));
+    await act(async () => { expect(await result.current.submit('adjust', row({ display_stock: null }), 3.5, 'Physical count')).toBe(true); });
+    expect(adjustMutate).toHaveBeenCalledWith(expect.objectContaining({ productId: 'p1', newQty: 3.5, reason: 'Physical count' }));
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('operation recorded'));
+    expect(vi.mocked(toast.success).mock.calls[0]?.[0]).not.toMatch(/owner approval|global|unchanged/);
+    expect(result.current.pending).toEqual([]);
+  });
+  it.each([undefined, ''])('keeps an unconfirmed display effect (%s) locked and retries the identical request', async (effectId) => {
+    adjustMutate.mockResolvedValueOnce({ product_id: 'p1', new_display_stock: null, effect_id: effectId, idempotent_replay: false });
+    adjustMutate.mockResolvedValueOnce({ product_id: 'p1', new_display_stock: null, effect_id: 'effect', idempotent_replay: true });
+    const { result } = renderHook(() => useDisplayStockGestures(true));
+    await act(async () => { expect(await result.current.submit('adjust', row(), 3.5, 'Physical count')).toBe(false); });
+    expect(result.current.pending).toHaveLength(1);
+    await act(async () => { expect(await result.current.submit('adjust', row(), 3.5, 'Physical count')).toBe(true); });
+    expect(adjustMutate.mock.calls[1]?.[0]).toEqual(adjustMutate.mock.calls[0]?.[0]);
+    expect(result.current.pending).toEqual([]);
+    expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('Already recorded'));
+  });
+  it('explains that a display count applies immediately without correcting global stock', async () => {
+    withProduct();
+    fireEvent.click(screen.getByRole('button', { name: 'Adjust' }));
+    expect(screen.getByText(/The display quantity changes immediately/)).toHaveTextContent('Global stock is unchanged.');
+    fireEvent.change(screen.getByLabelText('New quantity'), { target: { value: '3.5' } });
+    fireEvent.change(screen.getByLabelText(/Reason/), { target: { value: 'Physical count' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply display quantity' }));
+    await waitFor(() => expect(screen.queryByTestId('adjust-display-modal')).not.toBeInTheDocument());
+    expect(adjustMutate).toHaveBeenCalledTimes(1);
+  });
+  it('confirms the immediate display withdrawal while global approval remains pending', async () => {
+    withProduct();
+    fireEvent.click(screen.getByRole('button', { name: 'Waste' }));
+    expect(screen.getByText(/the wasted quantity is removed/)).toHaveTextContent('Rejection does not restore the display quantity.');
+    fireEvent.change(screen.getByLabelText(/Reason/), { target: { value: 'Expired' } });
+    fireEvent.click(screen.getByTestId('waste-display-confirm'));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('removed from the display. Global stock awaits owner approval.')));
+  });
+  it('keeps an unconfirmed withdrawal locked and reuses its key after a lost response', async () => {
+    wasteMutate.mockResolvedValueOnce({ declaration_id: 'w', status: 'pending', idempotent_replay: false });
+    wasteMutate.mockResolvedValueOnce({ declaration_id: 'w', status: 'rejected', display_withdrawal_applied: true, idempotent_replay: true });
+    const { result } = renderHook(() => useDisplayStockGestures(true));
+    await act(async () => { expect(await result.current.submit('waste', row(), 0.5, 'Expired')).toBe(false); });
+    expect(result.current.pending).toHaveLength(1);
+    expect(toast.success).not.toHaveBeenCalled();
+    await act(async () => { expect(await result.current.submit('waste', row(), 0.5, 'Expired')).toBe(true); });
+    expect(wasteMutate.mock.calls[1]?.[0]).toEqual(wasteMutate.mock.calls[0]?.[0]);
+    expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('Display quantity is not restored'));
+    expect(result.current.pending).toEqual([]);
+  });
+  it('does not claim immediate withdrawal for a pending legacy declaration', async () => {
+    wasteMutate.mockResolvedValue({ declaration_id: 'legacy', status: 'pending', display_withdrawal_applied: false, idempotent_replay: true });
+    const { result } = renderHook(() => useDisplayStockGestures(true));
+    await act(async () => { expect(await result.current.submit('waste', row(), 0.5, 'Expired')).toBe(true); });
+    expect(toast.info).toHaveBeenCalledWith(expect.stringContaining('Display withdrawal is pending'));
+    expect(vi.mocked(toast.info).mock.calls[0]?.[0]).not.toContain('removed from the display');
   });
 });

@@ -26,7 +26,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_sales_by_category_v3') {
+      if (fn === 'get_sales_by_category_v4') {
         return injectRpcError
           ? Promise.resolve({ data: null, error: new Error('RPC error: permission denied') })
           : Promise.resolve({ data: rows, error: null });
@@ -70,7 +70,7 @@ function renderPage(search = `?start=${START}&end=${END}`) {
 
 function boundsQueried(): { p_date_start: string; p_date_end: string }[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_sales_by_category_v3')
+    .filter(([fn]) => fn === 'get_sales_by_category_v4')
     .map(([, args]) => args as { p_date_start: string; p_date_end: string });
 }
 

@@ -6,7 +6,7 @@
 -- restant, celui de la commande déjà tirée en cuisine —
 -- hold_fired_order → reopen_held_order ; abandon réservé aux lignes non verrouillées.
 --
--- Le fixture monte la commande par la vraie porte (`fire_counter_order_v11`) et
+-- Le fixture monte la commande par la vraie porte (`fire_counter_order_v12`) et
 -- non par INSERT brut : c'est la seule façon de voir ce que la caisse écrit
 -- réellement (lignes verrouillées, envoyées en cuisine, total laissé à 0 par le
 -- fire — c'est le hold qui le renseigne pour la liste des additions).
@@ -59,7 +59,7 @@ BEGIN
   INSERT INTO pos_sessions (opened_by, opening_cash, status)
     VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
 
-  v_env := fire_counter_order_v11(
+  v_env := fire_counter_order_v12(
     p_client_uuid := gen_random_uuid(),
     p_session_id  := v_sess,
     p_items       := jsonb_build_array(jsonb_build_object(
@@ -103,7 +103,7 @@ SELECT ok(
 DO $reopen$
 DECLARE v_res JSONB;
 BEGIN
-  v_res := reopen_held_order_v6(current_setting('ho.order')::uuid);
+  v_res := reopen_held_order_v7(current_setting('ho.order')::uuid);
   PERFORM set_config('ho.reopen', v_res::text, false);
 END $reopen$;
 
@@ -120,7 +120,7 @@ SELECT ok(
   'T5: la reouverture reclame la commande (is_held=false) sans la supprimer');
 
 SELECT lives_ok(
-  $q$ SELECT reopen_held_order_v6(current_setting('ho.order')::uuid) $q$,
+  $q$ SELECT reopen_held_order_v7(current_setting('ho.order')::uuid) $q$,
   'T6: une commande caisse deja ouverte reste recuperable');
 
 -- ===========================================================================
@@ -187,7 +187,7 @@ SELECT ok(
   'T11: anon n''a pas EXECUTE sur hold_fired_order_v3');
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.reopen_held_order_v6(uuid,uuid)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.reopen_held_order_v7(uuid,uuid)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.discard_held_order_v3(uuid, text)', 'EXECUTE'),
   'T12: anon n''a pas EXECUTE sur les portes reprise et abandon');
 

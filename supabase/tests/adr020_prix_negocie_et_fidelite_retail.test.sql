@@ -166,7 +166,7 @@ BEGIN
      WHERE up.auth_user_id = current_setting('adr020d.actor')::uuid
     RETURNING id INTO v_session;
 
-  v_env := fire_counter_order_v11(
+  v_env := fire_counter_order_v12(
     p_client_uuid  := gen_random_uuid(),
     p_session_id   := v_session,
     p_items        := jsonb_build_array(jsonb_build_object(
@@ -182,7 +182,7 @@ BEGIN
   SELECT COALESCE(SUM(line_total), 0) INTO v_items FROM order_items WHERE order_id = v_order;
   SELECT s.total INTO v_total FROM _pb1_split_v1(v_items) s;
 
-  PERFORM pay_existing_order_v22(
+  PERFORM pay_existing_order_v23(
     p_order_id   := v_order,
     p_payment    := jsonb_build_object('method', 'cash', 'amount', v_total,
                                        'cash_received', v_total, 'change_given', 0),

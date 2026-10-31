@@ -25,7 +25,7 @@ UPDATE business_config SET allow_negative_stock=false;
 
 CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 DO $d$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v8('ccc40001-0000-0000-0000-000000000001',
+  v := create_b2b_order_v9('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40003-0000-0000-0000-000000000003','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('order', (v->>'order_id') IS NOT NULL);

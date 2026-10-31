@@ -193,7 +193,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
 
   return (
     <div className="space-y-6">
-      {/* ── Base unit (editable via set_product_base_unit_v2, guarded) ── */}
+      {/* ── Base unit (editable via set_product_base_unit_v3, guarded) ── */}
       <Card padding="md">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

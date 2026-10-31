@@ -103,7 +103,7 @@ CREATE OR REPLACE FUNCTION pg_temp.mk_invoice(p_cust UUID, p_qty NUMERIC, p_pric
 RETURNS UUID LANGUAGE plpgsql AS $$
 DECLARE v_res JSONB; v_id UUID;
 BEGIN
-  v_res := create_b2b_order_v8(
+  v_res := create_b2b_order_v9(
     p_customer_id => p_cust,
     p_items => jsonb_build_array(jsonb_build_object(
       'product_id','b2b52002-0000-0000-0000-000000000001','quantity',p_qty,'unit_price',p_price)));
@@ -307,7 +307,7 @@ BEGIN
   UPDATE customers SET b2b_current_balance=0 WHERE id='b2b52001-0000-0000-0000-000000000008';
 END $t10_setup$;
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v8(
+  $$ SELECT create_b2b_order_v9(
        p_customer_id=>'b2b52001-0000-0000-0000-000000000008',
        p_items=>jsonb_build_array(jsonb_build_object(
          'product_id','b2b52002-0000-0000-0000-000000000001','quantity',12,'unit_price',50000))) $$,

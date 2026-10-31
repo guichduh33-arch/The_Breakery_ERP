@@ -7,7 +7,7 @@
 // `reorder_variants_v2` is consistent with what the UI displays.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 
 export interface VariantRow {
   id:                 string;
@@ -44,17 +44,7 @@ export function useProductVariants(parentId: string | null | undefined) {
     staleTime: 30_000,
     queryFn: async () => {
       if (parentId === null || parentId === undefined || parentId === '') return [];
-      const { data, error } = await supabase
-        .from('products')
-        .select(
-          'id, name, sku, retail_price, cost_price, variant_label, variant_axis, variant_sort_order, is_active, current_stock, unit',
-        )
-        .eq('parent_product_id', parentId)
-        .is('deleted_at', null)
-        .order('variant_sort_order', { ascending: true });
-
-      if (error !== null) throw error;
-
+      const data = (await getOperationalProducts()).filter((p) => p.parent_product_id === parentId).sort((a,b) => a.variant_sort_order-b.variant_sort_order);
       const rows = (data ?? []) as VariantRowDb[];
       return rows.map((r) => ({
         id:                 r.id,

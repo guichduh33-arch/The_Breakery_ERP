@@ -4,7 +4,7 @@
 // socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
 // CE QUI NE CHANGE PAS : la marge reste celle de
-// `get_gross_margin_by_product_v1` — revenus, COGS et taux par produit, servis
+// `get_gross_margin_by_product_v2` — revenus, COGS et taux par produit, servis
 // tels quels. Le CAVEAT reste affiché : le COGS est valorisé au coût moyen
 // pondéré COURANT (`products.cost_price`), pas à un instantané pris au moment
 // de chaque vente. Une marge affichée ici bouge quand le prix fournisseur bouge,

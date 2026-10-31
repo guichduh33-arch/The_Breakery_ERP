@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useStockPosition.ts
 //
-// Query hook pour `get_stock_position_v1` — la photo du stock au soir du jour
+// Query hook pour `get_stock_position_v2` — la photo du stock au soir du jour
 // J. Reconstruction ARRIÈRE côté serveur (current_stock − Σ mouvements
 // postérieurs à J — robuste au stock initial jamais entré au ledger). La
 // valorisation est au WAC COURANT et le contrat l'étiquette (`valuation` =
@@ -75,7 +75,7 @@ export function useStockPosition(asOf?: string) {
     staleTime: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc(
-        'get_stock_position_v1',
+        'get_stock_position_v2',
         asOf !== undefined && asOf !== '' ? { p_as_of: asOf } : {},
       );
       if (error) throw error as Error;

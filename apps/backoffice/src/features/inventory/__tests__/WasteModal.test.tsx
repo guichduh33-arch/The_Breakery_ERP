@@ -1,11 +1,4 @@
-// apps/backoffice/src/features/inventory/__tests__/WasteModal.test.tsx
-// Session 12 — Unit tests for the WasteModal component.
-//
-// Contract:
-//   - Quantity > current_stock is rejected client-side (disabled submit + inline error)
-//   - Reason preset "Other" reveals a textarea (3+ chars required)
-//   - Submit calls waste_stock_v2 with productId, quantity (positive), reason, idempotencyKey
-
+// Validation, confidentialité et rejeu des déclarations de pertes.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -26,7 +19,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       const out = mockRpc(fn, args) as RpcResult | undefined;
-      return Promise.resolve(out ?? { data: { movement_id: 'm-1', new_current_stock: 95 }, error: null });
+      return Promise.resolve(out ?? { data: { declaration_id: 'd', status: 'pending', display_withdrawal_applied: false, idempotent_replay: false }, error: null });
     },
     from: () => emptyChain,
   },
@@ -88,13 +81,13 @@ describe('WasteModal', () => {
   });
 
   it('preserves decimal quantities and units in the payload and confirmation', async () => {
-    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 1.875 }, error: null });
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd', status: 'pending', display_withdrawal_applied: false, idempotent_replay: false }, error: null });
     renderModal({ ...STOCK_ROW, unit: 'kg', current_stock: 2 });
     fireEvent.change(screen.getByLabelText(/Quantity wasted.*kg/i), { target: { value: '0.125' } });
-    expect(screen.getByText(/2 kg → 1,875 kg/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Record waste' }));
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('waste_stock_v2', expect.objectContaining({ p_quantity: 0.125 })));
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('0,125 kg')));
+    expect(screen.queryByText(/2 kg →/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('submit_stock_declaration_v2', expect.objectContaining({ p_quantity: 0.125 })));
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('Owner approval')));
   });
 
   it('locks an uncertain waste and retries the same movement', async () => {
@@ -102,27 +95,27 @@ describe('WasteModal', () => {
     renderModal(STOCK_ROW);
     const quantity = screen.getByLabelText(/Quantity wasted/i);
     fireEvent.change(quantity, { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Record waste' }));
-    await screen.findByRole('button', { name: 'Retry waste' });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await screen.findByRole('button', { name: 'Retry declaration' });
     expect(quantity).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Retry waste' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry declaration' }));
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
     expect(mockRpc.mock.calls[1]).toEqual(mockRpc.mock.calls[0]);
   });
 
   it('Record waste button is disabled until qty within stock + preset selected', () => {
     renderModal(STOCK_ROW);
-    const submit = screen.getByRole('button', { name: /Record waste|Recording/i });
+    const submit = screen.getByRole('button', { name: /Submit for approval/i });
     expect(submit).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
     expect(submit).toBeEnabled();
   });
 
-  it('shows error message when qty > current_stock', () => {
+  it('accepts a declaration above any stale stock value without exposing availability', () => {
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '999' } });
-    expect(screen.getByText(/Cannot exceed current stock/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Record waste|Recording/i })).toBeDisabled();
+    expect(screen.queryByText(/Cannot exceed current stock/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit for approval' })).toBeEnabled();
   });
 
   it('Other preset reveals describe textarea (>= 3 chars required)', () => {
@@ -131,7 +124,7 @@ describe('WasteModal', () => {
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '2' } });
 
     // Submit disabled because the Describe textarea is empty
-    const submit = screen.getByRole('button', { name: /Record waste|Recording/i });
+    const submit = screen.getByRole('button', { name: /Submit for approval/i });
     expect(submit).toBeDisabled();
 
     const desc = screen.getByLabelText(/Describe/i);
@@ -140,15 +133,16 @@ describe('WasteModal', () => {
   });
 
   it('submits with positive quantity + preset reason + idempotencyKey', async () => {
-    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 22 }, error: null });
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd', status: 'pending', display_withdrawal_applied: false, idempotent_replay: false }, error: null });
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit for approval/i }));
 
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('waste_stock_v2');
+    expect(call[0]).toBe('submit_stock_declaration_v2');
     expect(call[1]).toMatchObject({
+      p_operation: 'waste',
       p_product_id: 'p-1',
       p_quantity:   3,
       p_reason:     'Expired',
@@ -160,50 +154,58 @@ describe('WasteModal', () => {
     mockRpc.mockReturnValue({ data: null, error: { message: 'insufficient_stock' } });
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '5' } });
-    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit for approval/i }));
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(/stock changed elsewhere/i);
+      expect(screen.getByRole('alert')).toHaveTextContent(/owner must review stock availability/i);
     });
   });
 
   // L'écran disait deux fois le stock actuel — « 40 (max: 40) » — sans jamais
   // dire ce qu'il resterait après le geste.
-  it('previews the resulting stock, not the current one twice', () => {
-    renderModal(STOCK_ROW);           // current_stock = 25
+  it('does not show stock or a resulting-stock preview', () => {
+    renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
-    expect(screen.getByText(/25 pcs → 22 pcs/)).toBeInTheDocument();
-    expect(screen.getByText(/−3/)).toBeInTheDocument();
+    expect(screen.queryByText(/25 pcs|22 pcs|−3/)).not.toBeInTheDocument();
   });
 
   // Le registre est append-only. L'interface doit le dire AVANT le bouton qui
   // produit l'écriture, sinon l'utilisateur cherche un « Edit » qui n'existe pas.
-  it('states the irreversibility before the submit button', () => {
+  it('states the approval requirement before submitting', () => {
     renderModal(STOCK_ROW);
-    expect(screen.getByText(/permanent movement in your name/i)).toBeInTheDocument();
-    expect(screen.getByText(/never by editing this one/i)).toBeInTheDocument();
+    expect(screen.getByText(/declaration is recorded in your name/i)).toBeInTheDocument();
+    expect(screen.getByText(/Stock changes only after independent owner approval/i)).toBeInTheDocument();
   });
 
-  it('confirms the recorded waste with the resulting on-hand', async () => {
-    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 22 }, error: null });
+  it('confirms the declaration without a stock result', async () => {
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd', status: 'pending', display_withdrawal_applied: false, idempotent_replay: false }, error: null });
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit for approval/i }));
 
     await waitFor(() => { expect(mockToast.success).toHaveBeenCalledTimes(1); });
-    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/3 pcs × Waste Sample.*On hand: 22 pcs/);
+    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/Declaration submitted.*Waste Sample.*Owner approval/);
   });
 
   // Un rejeu ne doit pas se présenter comme une seconde perte enregistrée.
   it('says a replay was not decremented twice', async () => {
     mockRpc.mockReturnValue({
-      data: { movement_id: 'm-1', new_current_stock: 22, idempotent_replay: true }, error: null,
+      data: { declaration_id: 'd', status: 'pending', display_withdrawal_applied: false, idempotent_replay: true }, error: null,
     });
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit for approval/i }));
 
     await waitFor(() => { expect(mockToast.info).toHaveBeenCalledTimes(1); });
-    expect(mockToast.info.mock.calls[0]?.[0]).toMatch(/not decremented twice/i);
+    expect(mockToast.info.mock.calls[0]?.[0]).toMatch(/already submitted/i);
     expect(mockToast.success).not.toHaveBeenCalled();
+  });
+  it.each(['approved', 'rejected'] as const)('reports an already %s declaration on replay', async (status) => {
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd', status, display_withdrawal_applied: false, idempotent_replay: true }, error: null });
+    renderModal(STOCK_ROW);
+    fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await waitFor(() => expect(mockToast.info).toHaveBeenCalledWith(expect.stringContaining('already ' + status)));
+    expect(mockToast.info.mock.calls[0]?.[0]).not.toMatch(/required|unchanged|22/);
+    expect(mockRpc).toHaveBeenCalledTimes(1);
   });
 });

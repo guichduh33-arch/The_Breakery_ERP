@@ -62,7 +62,7 @@ vi.mock('@/lib/supabase.js', () => {
       from: () => build(),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_gross_margin_by_product_v1') {
+        if (fn === 'get_gross_margin_by_product_v2') {
           return Promise.resolve({ data: marginPayload, error: null });
         }
         return Promise.resolve({ data: null, error: null });
@@ -113,10 +113,10 @@ describe('GrossMarginPage smoke', () => {
     expect(nav).toHaveTextContent('Financial');
   });
 
-  it('calls get_gross_margin_by_product_v1 with p_start_date and p_end_date', async () => {
+  it('calls get_gross_margin_by_product_v2 with p_start_date and p_end_date', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_gross_margin_by_product_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_gross_margin_by_product_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start_date: string; p_end_date: string }])[1];
       expect(args.p_start_date).toBe('2026-06-01');

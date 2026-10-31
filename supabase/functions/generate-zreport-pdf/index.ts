@@ -1,6 +1,6 @@
 // supabase/functions/generate-zreport-pdf/index.ts
 //
-// S29 Wave 3.B.3 — EF spécifique Z-Report : reads snapshot via get_zreport_snapshot_v1,
+// S29 Wave 3.B.3 — EF spécifique Z-Report : reads snapshot via get_zreport_snapshot_v2,
 // renders zreport template, uploads to zreports/<yyyy>/<mm>/<shift_id>_<ts>.pdf via service role,
 // updates z_reports.pdf_storage_path.
 //
@@ -75,7 +75,7 @@ serve(async (req) => {
   }
 
   // Fetch snapshot via user JWT — perm check (zreports.read) is enforced inside RPC
-  const { data: snapData, error: snapErr } = await userClient.rpc('get_zreport_snapshot_v1', {
+  const { data: snapData, error: snapErr } = await userClient.rpc('get_zreport_snapshot_v2', {
     p_zreport_id: body.zreport_id,
   });
   if (snapErr) {

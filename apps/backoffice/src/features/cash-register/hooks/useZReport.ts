@@ -27,7 +27,7 @@ export function useZReport(zreportId: string | undefined) {
     enabled:  !!zreportId,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_zreport_snapshot_v1', { p_zreport_id: zreportId! });
+      const { data, error } = await supabase.rpc('get_zreport_snapshot_v2', { p_zreport_id: zreportId! });
       if (error) throw error;
       return data as unknown as ZReportDetail;
     },

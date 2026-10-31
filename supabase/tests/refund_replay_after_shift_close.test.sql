@@ -68,7 +68,7 @@ PERFORM set_config('request.jwt.claims',
 jsonb_build_object('sub',c.auth_id,'role','authenticated')::text,true);
 INSERT INTO categories(id,name,slug)
 VALUES(category,'[TEST] Replay','pgtap-rrc-'||tag);
-made:=create_product_v3(jsonb_build_object(
+made:=create_product_v4(jsonb_build_object(
 'sku','ZZ-TEST-RRC-'||tag,'name','[TEST] Replay product',
 'category_id',category,'retail_price',22000,'cost_price',5000,'unit','pcs',
 'track_inventory',true,'deduct_stock',false,'is_display_item',false,
@@ -81,7 +81,7 @@ p_metadata:=jsonb_build_object('reference_type','test_fixture','reference_id',c.
 INSERT INTO pos_sessions(opened_by,opening_cash,status)
 VALUES(c.profile,100000,'open') RETURNING id INTO c.shift_id;
 SELECT total INTO sale_amount FROM _pb1_split_v1(44000);
-made:=complete_order_with_payment_v30(
+made:=complete_order_with_payment_v31(
 p_session_id:=c.shift_id,p_order_type:='take_out',
 p_items:=jsonb_build_array(jsonb_build_object(
 'product_id',c.product_id,'quantity',2,'unit_price',22000,'modifiers','[]'::jsonb)),

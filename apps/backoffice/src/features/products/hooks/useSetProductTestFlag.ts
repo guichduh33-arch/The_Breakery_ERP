@@ -2,7 +2,7 @@
 //
 // ADR-007 déc. 6 — wraps set_product_is_test_v2 (migration _205).
 // Écriture immédiate (pas de passage par le draft/Save du GeneralPanel) :
-// le flag est hors allowlist update_product_v3 à dessein — RPC dédiée,
+// le flag est hors allowlist update_product_v5 à dessein — RPC dédiée,
 // gate products.test_flag.update (ADMIN/SUPER_ADMIN).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';

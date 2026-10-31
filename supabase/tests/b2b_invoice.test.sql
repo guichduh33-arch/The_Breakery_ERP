@@ -1,5 +1,5 @@
 -- supabase/tests/b2b_invoice.test.sql
--- S68 — Facture PDF B2B : numérotation dédiée annuelle continue + get_b2b_invoice_v1.
+-- S68 — Facture PDF B2B : numérotation dédiée annuelle continue + get_b2b_invoice_v2.
 -- Exécuter via MCP execute_sql (envelope BEGIN … ROLLBACK). Docker retraité.
 --
 -- Bloc 1 (Task 1) : schéma numérotation + helper _next_b2b_invoice_number_v1.
@@ -37,7 +37,7 @@ ROLLBACK;
 BEGIN;
 SELECT plan(6);
 
-SELECT has_function('public', 'create_b2b_order_v8',
+SELECT has_function('public', 'create_b2b_order_v9',
   ARRAY['uuid','jsonb','text','date','uuid'], 'create_b2b_order existe');
 SELECT hasnt_function('public', 'create_b2b_order_v3',
   ARRAY['uuid','jsonb','text','date','uuid'], 'create_b2b_order_v3 droppée');
@@ -57,10 +57,10 @@ CREATE TEMP TABLE _r(name text PRIMARY KEY, val text) ON COMMIT DROP;
 DO $d$
 DECLARE v1 jsonb; v2 jsonb;
 BEGIN
-  v1 := create_b2b_order_v8('ccc68001-0000-0000-0000-000000000001',
+  v1 := create_b2b_order_v9('ccc68001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd68001-0000-0000-0000-000000000001','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
-  v2 := create_b2b_order_v8('ccc68001-0000-0000-0000-000000000001',
+  v2 := create_b2b_order_v9('ccc68001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd68001-0000-0000-0000-000000000001','quantity',1,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('inv1', v1->>'invoice_number');
@@ -122,10 +122,10 @@ SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2002B'), 'IN
 SELECT * FROM finish();
 ROLLBACK;
 
--- Bloc 4 (Task 4) : get_b2b_invoice_v1 shape + gate b2b.read + rejet non-B2B.
+-- Bloc 4 (Task 4) : get_b2b_invoice_v2 shape + gate b2b.read + rejet non-B2B.
 BEGIN;
 SELECT plan(7);
-SELECT has_function('public','get_b2b_invoice_v1', ARRAY['uuid'], 'get_b2b_invoice_v1 existe');
+SELECT has_function('public','get_b2b_invoice_v2', ARRAY['uuid'], 'get_b2b_invoice_v2 existe');
 
 SELECT set_config('request.jwt.claim.sub', (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
 INSERT INTO customers (id, name, customer_type, b2b_company_name, b2b_tax_id, b2b_payment_terms_days, phone, email, b2b_credit_limit, b2b_current_balance)
@@ -136,13 +136,13 @@ VALUES ('ddd68009-0000-0000-0000-000000000009','S68-RD','S68 Read',(SELECT id FR
 ON CONFLICT (id) DO NOTHING;
 CREATE TEMP TABLE _o(oid uuid) ON COMMIT DROP;
 DO $d$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v8('ccc68009-0000-0000-0000-000000000009',
+  v := create_b2b_order_v9('ccc68009-0000-0000-0000-000000000009',
         jsonb_build_array(jsonb_build_object('product_id','ddd68009-0000-0000-0000-000000000009','quantity',3,'unit_price',10000)),
         'Merci', NULL, gen_random_uuid());
   INSERT INTO _o VALUES ((v->>'order_id')::uuid);
 END $d$;
 CREATE TEMP TABLE _inv(j jsonb) ON COMMIT DROP;
-INSERT INTO _inv SELECT get_b2b_invoice_v1((SELECT oid FROM _o));
+INSERT INTO _inv SELECT get_b2b_invoice_v2((SELECT oid FROM _o));
 
 SELECT ok((SELECT (j ? 'invoice') AND (j ? 'customer') AND (j ? 'lines') AND (j ? 'payment') FROM _inv),
   'shape : clés invoice/customer/lines/payment présentes');
@@ -151,9 +151,9 @@ SELECT matches((SELECT j->'invoice'->>'invoice_number' FROM _inv), '^INV/[0-9]{4
 SELECT ok((SELECT jsonb_array_length(j->'lines') FROM _inv) >= 1, 'au moins une ligne');
 
 SELECT set_config('request.jwt.claim.sub', (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP001'), true);
-SELECT throws_ok(format('SELECT get_b2b_invoice_v1(%L)', (SELECT oid FROM _o)), 'P0003', NULL, 'sans b2b.read → P0003');
+SELECT throws_ok(format('SELECT get_b2b_invoice_v2(%L)', (SELECT oid FROM _o)), 'P0003', NULL, 'sans b2b.read → P0003');
 SELECT set_config('request.jwt.claim.sub', (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
-SELECT throws_ok(format('SELECT get_b2b_invoice_v1(%L)', COALESCE((SELECT id FROM orders WHERE order_type <> 'b2b' LIMIT 1), gen_random_uuid())),
+SELECT throws_ok(format('SELECT get_b2b_invoice_v2(%L)', COALESCE((SELECT id FROM orders WHERE order_type <> 'b2b' LIMIT 1), gen_random_uuid())),
   'P0002', NULL, 'commande non-B2B (ou introuvable) → P0002');
 
 SELECT * FROM finish();

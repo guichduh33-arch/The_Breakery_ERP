@@ -7,9 +7,9 @@
 //      absent sans purchasing.po.create (Q3 audit 2026-07-27 : receive_stock_v1
 //      droppée, la réception passe par l'achat direct compté /inventory/incoming)
 //   2. Row action menu n'offre plus « Receive stock »
-//   3. Open Waste → fill form → submit → waste_stock_v2 RPC called
+//   3. Open Waste → fill form → submit → submit_stock_declaration_v2 RPC called
 //   4. ADMIN role (re-render with elevated perms) → Adjust visible →
-//      open modal → submit → adjust_stock_v2 RPC called
+//      open modal → submit → submit_stock_declaration_v2 RPC called
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
@@ -116,16 +116,17 @@ vi.mock('@/lib/supabase.js', () => {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_stock_levels_v4') {
+        if (fn === 'get_stock_levels_v5') {
           return Promise.resolve({ data: MOCK_ROWS, error: null });
         }
-        if (fn === 'get_stock_counters_v1') {
+        if (fn === 'get_stock_counters_v2') {
           return Promise.resolve({
             data: [{ total_count: 2, low_count: 1, zero_count: 0, negative_count: 0, untracked_count: 0 }],
             error: null,
           });
         }
-        // Common shape for the three write RPCs.
+        if (fn === 'submit_stock_declaration_v2') return Promise.resolve({ data: { declaration_id: 'decl', status: 'pending', display_withdrawal_applied: false, idempotent_replay: false }, error: null });
+        // Les réceptions restent des écritures immédiates.
         return Promise.resolve({
           data: { movement_id: `mvt-${Date.now()}`, product_id: args.p_product_id, new_current_stock: 100, idempotent_replay: false },
           error: null,
@@ -201,7 +202,7 @@ describe('Inventory smoke E2E', () => {
     expect(w.getByRole('menuitem', { name: /Record waste/i })).toBeInTheDocument();
   });
 
-  it('MANAGER flow: open Waste from row → submit → waste_stock_v2 RPC fired', { timeout: 20_000 }, async () => {
+  it('MANAGER flow: open Waste from row → submit → submit_stock_declaration_v2 RPC fired', { timeout: 20_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Croissant'), { timeout: 15_000 });
@@ -215,12 +216,13 @@ describe('Inventory smoke E2E', () => {
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
 
     mockRpc.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /Record waste|Recording/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit for approval/i }));
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'waste_stock_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'submit_stock_declaration_v2');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
+        p_operation: 'waste',
         p_product_id: 'p-2',
         p_quantity:   3,
         p_reason:     'Expired',
@@ -228,7 +230,7 @@ describe('Inventory smoke E2E', () => {
     });
   });
 
-  it('ADMIN flow: Adjust button visible → submit → adjust_stock_v2 RPC fired', { timeout: 20_000 }, async () => {
+  it('ADMIN flow: Adjust button visible → submit → submit_stock_declaration_v2 RPC fired', { timeout: 20_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.adjust', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });
@@ -240,20 +242,21 @@ describe('Inventory smoke E2E', () => {
     fireEvent.click(w.getByRole('menuitem', { name: /Adjust stock/i }));
 
     // Modal content is rendered via Radix Portal — query the global screen.
-    await waitFor(() => screen.getByText(/Adjust stock — Americano/i));
+    await waitFor(() => screen.getByText(/Declare stock count — Americano/i));
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '40' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),
       { target: { value: 'Physical recount after audit' } });
 
     mockRpc.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /^Apply$|Applying/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit for approval/i }));
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'adjust_stock_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'submit_stock_declaration_v2');
       expect(call).toBeDefined();
       expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
+        p_operation: 'adjust',
         p_product_id: 'p-1',
-        p_new_qty:    40,
+        p_quantity:    40,
         p_reason:     'Physical recount after audit',
       });
     });

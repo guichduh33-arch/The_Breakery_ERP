@@ -5,7 +5,7 @@
 // can mount cleanly in JSDOM without a live supabase client.
 // Session 37 / C2 (BO-03) — T4: toast.error fires when loadItemsAndOpenEdit fails.
 //
-// T1 : default mount calls get_orders_list_v2 with empty filters.
+// T1 : default mount calls get_orders_list_v5 with empty filters.
 // T2 : URL params propagate into p_filters JSONB.
 // T3 : clicking the row date link navigates to /backoffice/orders/:id.
 // T4 (C2/BO-03) : toast.error fired when order_items fetch fails.
@@ -122,7 +122,7 @@ describe('OrdersListPage smoke', () => {
   it('T1 default mount calls RPC v4 with default range and empty filters', async () => {
     renderRoute('/backoffice/orders');
     await screen.findByText(/ORD-001/);
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v4', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v5', expect.objectContaining({
       p_filters: {},
     }));
   });
@@ -130,7 +130,7 @@ describe('OrdersListPage smoke', () => {
   it('T2 URL params propagate to RPC v4 filters', async () => {
     renderRoute('/backoffice/orders?payment_method=cash&customer_id=c-1&start=2026-05-01&end=2026-05-26');
     await screen.findByText(/ORD-001/);
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v4', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v5', expect.objectContaining({
       p_start: '2026-05-01',
       p_end: '2026-05-26',
       p_filters: { payment_method: 'cash', customer_id: 'c-1' },
@@ -167,11 +167,11 @@ describe('OrdersListPage smoke', () => {
     await screen.findByText(/ORD-001/);
     // Les lignes reçoivent le statut…
     const listFiltersMatcher: unknown = expect.objectContaining({ status: 'completed', payment_method: 'cash' });
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v4', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v5', expect.objectContaining({
       p_filters: listFiltersMatcher,
     }));
     // …les compteurs jamais : ils mesurent la fenêtre, pas le panier actif.
-    const countersCalls = rpcMock.mock.calls.filter((c) => c[0] === 'get_orders_counters_v2');
+    const countersCalls = rpcMock.mock.calls.filter((c) => c[0] === 'get_orders_counters_v3');
     expect(countersCalls.length).toBeGreaterThan(0);
     for (const call of countersCalls) {
       const args = call[1] as unknown as { p_filters: Record<string, unknown> };
@@ -198,7 +198,7 @@ describe('OrdersListPage smoke', () => {
   it('T7 counters failure renders dashes and an alert, never zeros', async () => {
     rpcMock.mockImplementation((name: unknown) =>
       Promise.resolve(
-        name === 'get_orders_counters_v2'
+        name === 'get_orders_counters_v3'
           ? { data: null, error: { message: 'counters down' } }
           : { data: { lines: [SAMPLE_ROW], next_cursor_val: null, next_cursor_id: null }, error: null },
       ),
@@ -219,7 +219,7 @@ describe('OrdersListPage smoke', () => {
     const b2bRow = { ...SAMPLE_ROW, id: 'o-2', order_number: 'B2B-001', status: 'paid', payment_method_primary: null };
     rpcMock.mockImplementation((name: unknown) =>
       Promise.resolve(
-        name === 'get_orders_counters_v2'
+        name === 'get_orders_counters_v3'
           ? { data: SAMPLE_COUNTERS, error: null }
           : { data: { lines: [b2bRow], next_cursor_val: null, next_cursor_id: null }, error: null },
       ),
@@ -239,7 +239,7 @@ describe('OrdersListPage smoke', () => {
     const mixedRow = { ...SAMPLE_ROW, id: 'o-3', order_number: 'ORD-MIX', payment_method_primary: 'mixed' };
     rpcMock.mockImplementation((name: unknown) =>
       Promise.resolve(
-        name === 'get_orders_counters_v2'
+        name === 'get_orders_counters_v3'
           ? { data: SAMPLE_COUNTERS, error: null }
           : { data: { lines: [mixedRow], next_cursor_val: null, next_cursor_id: null }, error: null },
       ),

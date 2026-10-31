@@ -2,7 +2,7 @@
 //
 // POS display-stock isolation — modal de CORRECTION du comptage vitrine.
 // Remplace le window.prompt historique. Saisit la nouvelle quantité absolue
-// + une raison (requise ≥ 3 chars, comme adjust_display_stock_v2), puis délègue
+// + une raison (requise ≥ 3 chars, comme adjust_display_stock_v5), puis délègue
 // au callback onConfirm(newQty, reason).
 
 import { useEffect, useRef, useState, type JSX } from 'react';
@@ -18,7 +18,7 @@ export interface AdjustDisplayModalProps {
   productName: string;
   unit: string;
   /** Quantité vitrine actuelle — sert de valeur initiale. */
-  currentQty: number;
+  currentQty: number | null;
   isPending: boolean;
   locked?: boolean;
   onConfirm: (newQty: number, reason: string) => Promise<boolean>;
@@ -34,22 +34,22 @@ export function AdjustDisplayModal({
   locked = false,
   onConfirm,
 }: AdjustDisplayModalProps): JSX.Element {
-  const [newQty, setNewQty] = useState<number | ''>(Math.max(0, currentQty));
+  const [newQty, setNewQty] = useState<number | ''>('');
   const [reason, setReason] = useState<string>('');
   const wasOpen = useRef(false);
 
   useEffect(() => {
     if (open && !wasOpen.current && !locked) {
-      setNewQty(Math.max(0, currentQty));
+      setNewQty('');
       setReason('');
     }
     wasOpen.current = open;
   }, [open, currentQty, locked]);
 
   const reasonOk = reason.trim().length >= MIN_REASON;
-  const unchanged = newQty === currentQty;
+  const unchanged = false;
   const canConfirm = newQty !== '' && isDisplayQuantity(newQty) && reasonOk && (!unchanged || locked) && !isPending;
-  const delta = Number(newQty) - currentQty;
+  const delta = currentQty === null ? null : Number(newQty) - currentQty;
 
   async function handleConfirm(): Promise<void> {
     if (!canConfirm) return;
@@ -71,9 +71,7 @@ export function AdjustDisplayModal({
         </header>
 
         <p className="text-sm text-text-secondary">
-          <span className="text-text-primary font-semibold">{productName}</span> — current display:{' '}
-          <span className="text-text-primary tabular-nums">{currentQty}</span> {unit}. Does not affect BO inventory.
-        </p>
+          <span className="text-text-primary font-semibold">{productName}</span> — declare the physical display count. Owner approval is required before stock changes.</p>
 
         <section className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-text-secondary">New quantity ({unit})</label>
@@ -110,7 +108,7 @@ export function AdjustDisplayModal({
           </div>
           {newQty !== '' && !unchanged && (
             <p className="text-xs text-text-muted tabular-nums">
-              Delta: {delta > 0 ? `+${delta}` : delta} {unit}
+              Delta: {delta === null ? 'Hidden' : delta > 0 ? `+${delta}` : delta} {unit}
             </p>
           )}
         </section>
@@ -130,6 +128,7 @@ export function AdjustDisplayModal({
           />
         </section>
 
+        <p className="text-xs text-text-secondary">The display quantity changes immediately and is recorded in your name. Global stock is unchanged.</p>
         <div className="grid grid-cols-2 gap-3">
           <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending || locked}>
             Cancel
@@ -141,7 +140,7 @@ export function AdjustDisplayModal({
             disabled={!canConfirm}
             data-testid="adjust-display-confirm"
           >
-            {isPending ? 'Saving…' : locked ? 'Retry same operation' : `Adjust to ${newQty}`}
+            {isPending ? 'Applying…' : locked ? 'Retry display update' : 'Apply display quantity'}
           </Button>
         </div>
       </div>

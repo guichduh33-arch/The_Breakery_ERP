@@ -174,9 +174,11 @@ function Protected({ children }: { children: React.ReactNode }) {
 // il faisait doublon avec un bloc permanent, et un toast n'est pas copiable.
 function PermissionGate({
   required,
+  any = false,
   children,
 }: {
   required: PermissionCode | readonly PermissionCode[];
+  any?: boolean;
   children: React.ReactNode;
 }) {
   // `PermissionCode` est une union de littéraux : le test sur `typeof` narrow
@@ -184,7 +186,7 @@ function PermissionGate({
   const codes: readonly PermissionCode[] = typeof required === 'string' ? [required] : required;
   // Par construction, un `false` ici est un refus GENUINE : quand un
   // PermissionGate rend, la réhydratation du boot est terminée (cf. <BootGate>).
-  const has = useAuthStore((s) => codes.every((code) => s.hasPermission(code)));
+  const has = useAuthStore((s) => any ? codes.some((code) => s.hasPermission(code)) : codes.every((code) => s.hasPermission(code)));
   return has ? <>{children}</> : <RouteDenied required={codes} />;
 }
 
@@ -758,7 +760,7 @@ export function AppRoutes() {
         <Route
           path="reports/sales-by-product"
           element={
-            <PermissionGate required="reports.sales.read">
+            <PermissionGate any required={['reports.sales.read', 'reports.product_sales.read']}>
               <SalesByProductPage />
             </PermissionGate>
           }

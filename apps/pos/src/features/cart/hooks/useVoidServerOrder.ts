@@ -4,7 +4,7 @@ import { isCartPaymentLocked } from '@/stores/cartPaymentGuard';
 // Session 37 B4 — server-side void for carts backed by a server orders row.
 //
 // S43 P0-3 update: useFireToStations now PERSISTS counter fires via
-// fire_counter_order_v1 (create/append) and sets pickedUpOrderId — so a FIRED
+// fire_counter_order_v12 (create/append) and sets pickedUpOrderId — so a FIRED
 // counter order has a server row and routes through the void-order EF exactly
 // like a tablet pickup (create_tablet_order_v2). Only a never-fired cart
 // (pickedUpOrderId === null, nothing persisted) is voided client-side.

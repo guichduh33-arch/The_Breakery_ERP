@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/hooks/useProductPerformance.ts
 //
 // Les ventes d'un produit sur une fenêtre de jours métier, câblées sur
-// `get_product_performance_v1`.
+// `get_product_performance_v2`.
 //
 // Pourquoi pas `useProductDashboard` : celui-là sert le STOCK. Son
 // `summary.units_sold` somme les mouvements `sale` ET `production_out` — donc
@@ -84,14 +84,14 @@ export function useProductPerformance(
     },
     queryFn: async () => {
       if (productId === null) return null;
-      const { data, error } = await supabase.rpc('get_product_performance_v1', {
+      const { data, error } = await supabase.rpc('get_product_performance_v2', {
         p_product_id: productId,
         p_days:       days,
       });
       if (error !== null) throw Object.assign(new Error(error.message), { code: error.code });
       if (!isEnvelope(data)) {
         throw Object.assign(
-          new Error('unexpected get_product_performance_v1 payload'),
+          new Error('unexpected get_product_performance_v2 payload'),
           { code: PAYLOAD_ERROR_CODE },
         );
       }

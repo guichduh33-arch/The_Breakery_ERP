@@ -1,18 +1,6 @@
-// apps/backoffice/src/features/inventory/hooks/useAdjustStock.ts
-//
-// Calls `adjust_stock_v2` RPC (session 12). Surfaces RPC errors as a typed
-// enum so the modal can map them to inline form errors. Pattern mirrors
-// useAdjustLoyaltyPoints.ts.
-//
-// Server-side errors observed:
-//   P0003 'forbidden'                 — missing inventory.adjust
-//   ''    'negative_qty_not_allowed'  — guarded client-side but defended
-//   P0002 'product_not_found'         — product deleted or invalid id
-//   ''    'reason_required'           — reason blank or < 3 chars
-
+// Soumet un comptage absolu pour approbation indépendante ; aucun stock ne change ici.
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { StockMovementRpcResult } from '@breakery/domain';
-import { supabase } from '@/lib/supabase.js';
+import { submitStockDeclaration, type StockDeclarationResult } from '../stockDeclaration.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
 
 export type AdjustStockErrorCode =
@@ -50,17 +38,13 @@ function classify(message: string): AdjustStockErrorCode {
 
 export function useAdjustStock() {
   const qc = useQueryClient();
-  return useMutation<StockMovementRpcResult, AdjustStockError, AdjustStockArgs>({
+  return useMutation<StockDeclarationResult, AdjustStockError, AdjustStockArgs>({
     mutationFn: async ({ productId, newQty, reason, idempotencyKey }) => {
-      const { data, error } = await supabase.rpc('adjust_stock_v2', {
-        p_product_id:      productId,
-        p_new_qty:         newQty,
-        p_reason:          reason,
-        p_idempotency_key: idempotencyKey,
-      });
-      if (error) throw new AdjustStockError(classify(error.message), error.message);
-      if (data === null) throw new AdjustStockError('unknown', 'Empty RPC response');
-      return data as unknown as StockMovementRpcResult;
+      try { return await submitStockDeclaration('adjust', productId, newQty, reason, idempotencyKey); }
+      catch (error) {
+        const message = error instanceof Error ? error.message : 'Declaration failed';
+        throw new AdjustStockError(classify(message), message);
+      }
     },
     onSuccess: () => invalidateStockQueries(qc),
   });

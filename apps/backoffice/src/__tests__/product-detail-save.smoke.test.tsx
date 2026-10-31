@@ -2,7 +2,7 @@
 //
 // Session 27 / Wave 3 — Smoke test for the ProductDetail save flow.
 // Verifies the page transitions from "no dirty" → "dirty" → "saved" and
-// calls update_product_v4 with the patch.
+// calls update_product_v5 with the patch.
 
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -65,6 +65,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (t: string) => buildChain(t),
       rpc: (...args: unknown[]) => {
+        if (args[0] === 'get_operational_products_v1') return Promise.resolve({ data: [MOCK_PRODUCT], error: null });
         const override = rpcSpy(...args) as Promise<unknown> | undefined;
         return override ?? Promise.resolve({
           data: { product: { ...MOCK_PRODUCT, name: 'Affogato Deluxe' }, ignored_fields: response.ignored },
@@ -113,7 +114,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
   it('locks the draft while its save is pending', async () => {
     let resolveSave!: (value: unknown) => void;
     const pending = new Promise((resolve) => { resolveSave = resolve; });
-    rpcSpy.mockImplementation((name: string) => name === 'update_product_v4' ? pending : undefined);
+    rpcSpy.mockImplementation((name: string) => name === 'update_product_v5' ? pending : undefined);
     renderDetail();
     fireEvent.change(await screen.findByLabelText('Product name'), { target: { value: 'Affogato Deluxe' } });
     fireEvent.click(screen.getByTestId('product-detail-save'));
@@ -163,7 +164,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     fireEvent.change(await screen.findByLabelText('Retail price (IDR)'), { target: { value: '-1' } });
     fireEvent.click(screen.getByTestId('product-detail-save'));
     expect(await screen.findByText(/Enter a name, a SKU/)).toBeInTheDocument();
-    expect(rpcSpy).not.toHaveBeenCalledWith('update_product_v4', expect.anything());
+    expect(rpcSpy).not.toHaveBeenCalledWith('update_product_v5', expect.anything());
   });
   it('disables Save Changes when nothing is dirty', async () => {
     renderDetail();
@@ -172,7 +173,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     expect(btn).toBeDisabled();
   });
 
-  it('saves an edited min_stock_threshold through update_product_v4 (audit M7)', async () => {
+  it('saves an edited min_stock_threshold through update_product_v5 (audit M7)', async () => {
     rpcSpy.mockClear();
     renderDetail();
     expect(await screen.findByText('Affogato')).toBeInTheDocument();
@@ -200,7 +201,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith(
-        'update_product_v4',
+        'update_product_v5',
         expect.objectContaining({
           p_product_id: 'p-1',
           p_patch: expect.objectContaining({ min_stock_threshold: 12 }) as unknown,
@@ -209,7 +210,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     });
   });
 
-  it('enables Save when a field changes, then calls update_product_v4', async () => {
+  it('enables Save when a field changes, then calls update_product_v5', async () => {
     rpcSpy.mockClear();
     renderDetail();
     expect(await screen.findByText('Affogato')).toBeInTheDocument();
@@ -227,7 +228,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith(
-        'update_product_v4',
+        'update_product_v5',
         expect.objectContaining({
           p_product_id: 'p-1',
           p_patch: expect.objectContaining({ name: 'Affogato Deluxe' }) as unknown,

@@ -10,7 +10,7 @@
 // the VariantSelectModal, mirroring the parent-grid filter in useProducts.ts.
 
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { getOperationalProducts } from '@/lib/operationalProducts';
 import { useSaleQueryEnabled } from '@/features/lan/hooks/useSaleQueryEnabled';
 
 export interface POSVariantRow {
@@ -23,38 +23,27 @@ export interface POSVariantRow {
   is_active: boolean;
   current_stock: number | null;
   deduct_stock: boolean;
+  is_sellable?: boolean;
   // Champs additifs : les anciens snapshots hors ligne restent lisibles.
   track_inventory?: boolean;
-  display_stock?: { quantity: number } | null;
+  display_stock?: { quantity: number | null } | null;
 }
 
-interface DisplayStock { quantity: number }
+interface DisplayStock { quantity: number | null }
 export function normalizeVariantStock<T extends { display_stock?: DisplayStock | DisplayStock[] | null }>(row: T):
   Omit<T, 'display_stock'> & { display_stock: DisplayStock | null } {
   const { display_stock, ...rest } = row;
   return { ...rest, display_stock: Array.isArray(display_stock) ? display_stock[0] ?? null : display_stock ?? null };
 }
 
-type RawVariant = Omit<POSVariantRow, 'display_stock'> & { display_stock?: DisplayStock | DisplayStock[] | null };
 
 export function productVariantsOptions(parentId: string | null | undefined) {
   return queryOptions({
     queryKey: ['pos-product-variants', parentId],
     enabled: !!parentId,
     queryFn: async (): Promise<POSVariantRow[]> => {
-      const { data, error } = await supabase
-        .from('products')
-        .select(
-          'id, name, retail_price, variant_label, variant_axis, variant_sort_order, is_active, current_stock, deduct_stock, track_inventory, display_stock(quantity)',
-        )
-        .eq('parent_product_id', parentId!)
-        .eq('is_active', true)
-        .eq('visible_on_pos', true)
-        .is('deleted_at', null)
-        .order('variant_sort_order', { ascending: true });
-
-      if (error) throw error;
-      return ((data ?? []) as unknown as RawVariant[]).map(normalizeVariantStock);
+      return (await getOperationalProducts()).filter((p) => p.parent_product_id === parentId && p.is_active && p.visible_on_pos)
+        .sort((a, b) => a.variant_sort_order - b.variant_sort_order) as POSVariantRow[];
     },
   });
 }
