@@ -34,6 +34,6 @@ test('libpq routing overrides and weakened TLS are refused', () => {
     assert.throws(() => resolveDbTestTarget({ DB_TEST_TARGET: 'rehearsal', REHEARSAL_PGURL: rehearsal + '?' + query }));
   }
   assert.equal(resolveDbTestTarget({ DB_TEST_TARGET: 'rehearsal',
-    REHEARSAL_PGURL: rehearsal + '?sslmode=require&connect_timeout=15' }).target, 'rehearsal');
+    REHEARSAL_PGURL: rehearsal + '?sslmode=require&connect_timeout=15&options=-c%20jit%3Don' }).target, 'rehearsal');
   assert.throws(() => resolveDbTestTarget({ DB_TEST_TARGET: 'rehearsal', REHEARSAL_PGURL: rehearsal.replace(':5432/', ':6543/') }));
 });

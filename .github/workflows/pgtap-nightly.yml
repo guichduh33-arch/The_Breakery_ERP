@@ -45,6 +45,7 @@ jobs:
             echo "::error::Selected cloud DB connection is not set" >&2
             exit 1
           fi
+          psql "$PGURL" -X -v ON_ERROR_STOP=1 -qAt -c 'SET ROLE postgres' -c 'SELECT current_user' || exit 1
           fail_count=0
           fail_list=""
           shopt -s nullglob

@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-const rpc = vi.fn();
+const rpc = vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>();
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 
 import { useCashWallets } from '../hooks/useCashWallets.js';
