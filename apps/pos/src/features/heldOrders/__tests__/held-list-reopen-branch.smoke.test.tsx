@@ -1,8 +1,7 @@
 // ADR-022 déc. 4 — il n'y a plus de branchement « draft vs sent » : la voie
 // brouillon (hold_order → restore_held_order) est supprimée, et la liste ne
-// présente que des commandes envoyées en cuisine. Ce fichier vérifie donc
-// l'inverse de ce qu'il vérifiait : que TOUTE ligne listée part en réouverture,
-// et qu'aucun badge « Draft » ne subsiste.
+// présente que des commandes envoyées en cuisine. Les commandes waiter
+// entrantes passent par la prise en charge ; les autres par la réouverture.
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -19,6 +18,7 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
     data: [
       { id: 'order-5', order_number: '#0005', table_number: '7', notes: null, total: 0, created_at: '2026-06-25T10:00:00Z', status: 'pending_payment', sent_to_kitchen_at: '2026-06-25T09:59:00Z' },
       { id: 'order-6', order_number: '#0006', table_number: null, notes: null, total: 50000, created_at: '2026-06-25T10:01:00Z', status: 'pending_payment', sent_to_kitchen_at: '2026-06-25T10:00:30Z' },
+      { id: 'waiter-order', order_number: '#0007', table_number: '8', notes: null, total: 30000, created_at: '2026-06-25T10:02:00Z', status: 'pending_payment', created_via: 'tablet', sent_to_kitchen_at: '2026-06-25T10:02:00Z' },
     ],
     isLoading: false,
     refetch,
@@ -139,7 +139,15 @@ describe('HeldOrdersModal — toute commande en attente est une commande envoyé
 
   it('n’affiche que des badges « Sent », plus aucun « Draft »', () => {
     render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
-    expect(screen.getAllByText(/^sent$/i)).toHaveLength(2);
+    expect(screen.getAllByText(/^sent$/i)).toHaveLength(3);
     expect(screen.queryByText(/^draft$/i)).not.toBeInTheDocument();
+  });
+
+  it('transmet la provenance waiter pour prendre en charge depuis On hold', async () => {
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /restore held order #0007/i }));
+    await waitFor(() => expect(reopenMutate).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'waiter-order', status: 'pending_payment', created_via: 'tablet',
+    })));
   });
 });
