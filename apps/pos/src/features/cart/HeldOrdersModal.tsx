@@ -32,7 +32,6 @@ import { useCartStore } from '@/stores/cartStore';
 import { useHeldOrdersQuery, type HeldOrderRow } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { useReopenHeldOrder } from '@/features/heldOrders/hooks/useReopenHeldOrder';
 import { CancelUnpaidOrderModal } from './CancelUnpaidOrderModal';
-import { useHeldOrdersRealtime } from '@/features/heldOrders/hooks/useHeldOrdersRealtime';
 import { AttachTabCustomerButton } from '@/features/heldOrders/components/AttachTabCustomerButton';
 
 interface HeldOrdersModalProps {
@@ -148,8 +147,6 @@ function HeldOrderCard({
 }
 
 export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.Element {
-  useHeldOrdersRealtime(open);
-
   const { data, isLoading, isError, refetch } = useHeldOrdersQuery();
   const allRows = data ?? [];
   const cartHasItems = useCartStore((s) => s.cart.items.length > 0);
@@ -170,14 +167,16 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   const restoringRef = useRef(false);
   const [restoring, setRestoring] = useState(false);
 
-  // ADR-022 déc. 4 — plus de branchement : toute ligne listée est une commande
-  // envoyée en cuisine, donc une réouverture.
+  // Une commande waiter entrante est prise en charge ; une commande déjà
+  // reprise par la caisse suit la réouverture habituelle.
   async function doRestore(row: HeldOrderRow): Promise<void> {
     if (restoringRef.current) return;
     restoringRef.current = true;
     setRestoring(true);
     try {
-      const orderId = await reopen.mutateAsync(row.id);
+      const orderId = await reopen.mutateAsync(
+        row.created_via === 'tablet' && row.status === 'pending_payment' ? row : row.id,
+      );
       if (cancelAfterRestore.current) {
         setCancelOrderId(orderId);
         setCancelOpen(true);
