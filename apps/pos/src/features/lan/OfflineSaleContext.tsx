@@ -80,6 +80,10 @@ export function OfflineSaleContext() {
         else clearSaleSnapshot(storage);
       } else clearSaleSnapshot(storage);
     }
+    if (!cloudOnline && !auth.isLocked && (pathname === '/pos' || pathname === '/pos/')) {
+      const activeShift = useShiftStore.getState().current;
+      if (activeShift) restoreSaleSnapshot(storage, client, identity, { onlyMissing: true, expectedShiftId: activeShift.id });
+    }
     const save = () => {
       const current = useAuthStore.getState();
       if (!useCloudStatusStore.getState().cloudOnline || !current.cloudValidated) {
@@ -107,7 +111,7 @@ export function OfflineSaleContext() {
     });
     save();
     return () => { unsubscribeQueries(); unsubscribeShift(); };
-  }, [client, terminal, cloudOnline, auth.cloudValidated, auth.bootstrapStatus, auth.isAuthenticated, auth.user, auth.sessionToken, auth.localSession, auth.isLocked]);
+  }, [client, terminal, pathname, cloudOnline, auth.cloudValidated, auth.bootstrapStatus, auth.isAuthenticated, auth.user, auth.sessionToken, auth.localSession, auth.isLocked]);
 
   // L'identité change aussi à la déconnexion : ne conserver aucun ancien manifeste.
   useEffect(() => useAuthStore.subscribe((state, previous) => {
@@ -117,7 +121,7 @@ export function OfflineSaleContext() {
   }), []);
 
   return auth.isAuthenticated && !auth.isLocked && localSessionValid(auth.localSession, auth.sessionToken, auth.user?.id)
-    ? pathname.startsWith('/pos') ? <PreloadSale />
+    ? (pathname === '/pos' || pathname === '/pos/') ? <PreloadSale />
       : pathname.startsWith('/tablet') ? <TabletOptionsPreload /> : null
     : null;
 }
