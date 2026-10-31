@@ -45,6 +45,9 @@ jobs:
         run: node scripts/ci/db-gate.mjs classify
 
   pgtap:
+    concurrency:
+      group: cloud-pgtap-${{ vars.V3_DB_TEST_TARGET || 'dev' }}
+      cancel-in-progress: false
     needs: classify
     if: needs.classify.outputs.applicable == 'true'
     runs-on: ubuntu-latest
@@ -65,10 +68,10 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Select cloud DB test target
+        if: vars.V3_DB_TEST_TARGET != 'rehearsal'
         env:
           DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
           DEV_PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
-          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
         run: node scripts/ci/db-test-target.mjs
 
       # Same psql approach as pgtap-nightly.yml — keep the two in sync.
@@ -82,6 +85,7 @@ jobs:
           psql --version
 
       - name: Run pgTAP suite via pooler
+        if: vars.V3_DB_TEST_TARGET != 'rehearsal'
         id: pgtap
         env:
           # Plancher de fichiers attendus. Un glob cassé, un checkout partiel ou
@@ -112,11 +116,7 @@ jobs:
             # `|| rc=$?` keeps the runner's implicit `bash -e` from killing
             # the loop on the first failing file.
             rc=0
-            fixture_args=()
-            if [ "${{ vars.V3_DB_TEST_TARGET }}" = rehearsal ]; then
-              fixture_args=(-c 'BEGIN' -f supabase/tests/helpers/rehearsal_suite.sql)
-            fi
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -c 'SET search_path=public,extensions,pg_temp' "${fixture_args[@]}" -f "$f" 2>&1) || rc=$?
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -c 'SET search_path=public,extensions,pg_temp' -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             # Lot 1.B — le compteur `not ok` en debut de ligne ne suffit pas.
@@ -136,6 +136,14 @@ jobs:
             exit 1
           fi
           echo "All ${#files[@]} pgTAP files passed."
+
+      - name: Run rehearsal pgTAP with renewable credentials
+        if: vars.V3_DB_TEST_TARGET == 'rehearsal'
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          REHEARSAL_MANAGEMENT_TOKEN: ${{ secrets.V3_REHEARSAL_MANAGEMENT_TOKEN }}
+          PGTAP_MIN_FILES: '180'
+        run: node scripts/ci/rehearsal-db.mjs --suite
 
   db-gate:
     if: ${{ always() }}

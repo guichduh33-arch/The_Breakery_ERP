@@ -11,16 +11,19 @@ on:
 
 jobs:
   pgtap:
+    concurrency:
+      group: cloud-pgtap-${{ vars.V3_DB_TEST_TARGET || 'dev' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
 
       - name: Select cloud DB test target
+        if: vars.V3_DB_TEST_TARGET != 'rehearsal'
         env:
           DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
           DEV_PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
-          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
         run: node scripts/ci/db-test-target.mjs
 
       # Quota 2026-07 — le runner ubuntu-latest embarque déjà un client psql
@@ -38,6 +41,7 @@ jobs:
       # exit code, so suites failed silently for weeks (fiche 23 "filet troué" —
       # 15 files / ~34 red assertions invisible in a "green-looking" job).
       - name: Run pgTAP suite via pooler
+        if: vars.V3_DB_TEST_TARGET != 'rehearsal'
         id: pgtap
         run: |
           set -uo pipefail
@@ -54,11 +58,7 @@ jobs:
             # `|| rc=$?` keeps the runner's implicit `bash -e` from killing the
             # whole loop on the first failing file (a bare assignment would).
             rc=0
-            fixture_args=()
-            if [ "${{ vars.V3_DB_TEST_TARGET }}" = rehearsal ]; then
-              fixture_args=(-c 'BEGIN' -f supabase/tests/helpers/rehearsal_suite.sql)
-            fi
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -c 'SET search_path=public,extensions,pg_temp' "${fixture_args[@]}" -f "$f" 2>&1) || rc=$?
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -c 'SET search_path=public,extensions,pg_temp' -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             # Lot 1.B — miroir de pgtap-pr.yml : 17 suites rendent leurs
@@ -76,6 +76,14 @@ jobs:
             exit 1
           fi
           echo "All pgTAP files passed."
+
+      - name: Run rehearsal pgTAP with renewable credentials
+        if: vars.V3_DB_TEST_TARGET == 'rehearsal'
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          REHEARSAL_MANAGEMENT_TOKEN: ${{ secrets.V3_REHEARSAL_MANAGEMENT_TOKEN }}
+          PGTAP_MIN_FILES: '180'
+        run: node scripts/ci/rehearsal-db.mjs --suite
 
       - name: Comment on tracking issue (failure)
         if: failure() && vars.PGTAP_TRACKING_ISSUE != '' && vars.PGTAP_TRACKING_ISSUE != '0'
@@ -107,10 +115,10 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Select cloud DB test target
+        if: vars.V3_DB_TEST_TARGET != 'rehearsal'
         env:
           DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
           DEV_PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
-          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
         run: node scripts/ci/db-test-target.mjs
 
       # Quota 2026-07 — psql préinstallé sur le runner (voir job pgtap) ;
@@ -142,20 +150,27 @@ jobs:
       # trailing whitespace, then compare. Everything else (tables, partitions,
       # functions, ordering) must match byte-for-byte or the check fails.
       - name: Check types.generated.ts drift
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          REHEARSAL_MANAGEMENT_TOKEN: ${{ secrets.V3_REHEARSAL_MANAGEMENT_TOKEN }}
         run: |
           set -uo pipefail
-          if [ -z "${PGURL:-}" ]; then
+          if [ "$DB_TEST_TARGET" = rehearsal ]; then
+            node scripts/ci/rehearsal-db.mjs --types || exit 1
+            regenerated="$RUNNER_TEMP/types_regen_api.ts"
+          elif [ -z "${PGURL:-}" ]; then
             echo "::warning::Selected cloud DB connection not set — skipping types drift check."
             exit 0
+          else
+            supabase gen types typescript --db-url "$PGURL" --schema public > /tmp/types_regen_cli.ts || exit 1
+            regenerated=/tmp/types_regen_cli.ts
           fi
-          supabase gen types typescript --db-url "$PGURL" --schema public \
-            > /tmp/types_regen_cli.ts
           normalize() {
             sed '/^  \/\/ Allows to automatically instantiate/,/^  }$/d' "$1" \
               | sed -e 's/[[:space:]]*$//' | awk 'NF {p=1} p' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'
           }
           normalize packages/supabase/src/types.generated.ts > /tmp/types_committed.norm
-          normalize /tmp/types_regen_cli.ts                  > /tmp/types_regen.norm
+          normalize "$regenerated"                       > /tmp/types_regen.norm
           if ! diff -u /tmp/types_committed.norm /tmp/types_regen.norm; then
             echo "::error::types.generated.ts is stale relative to the live DB schema."
             echo "Run generate_typescript_types via MCP, write to packages/supabase/src/types.generated.ts verbatim, and commit."
@@ -172,16 +187,23 @@ jobs:
       # actual schema is intact. A hard gate is infeasible without a name→version
       # mapping. Vérifier manuellement le projet annoncé par le sélecteur.
       - name: Check schema_migrations drift (informational)
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          REHEARSAL_MANAGEMENT_TOKEN: ${{ secrets.V3_REHEARSAL_MANAGEMENT_TOKEN }}
         run: |
           set -uo pipefail
-          if [ -z "${PGURL:-}" ]; then
+          if [ "$DB_TEST_TARGET" != rehearsal ] && [ -z "${PGURL:-}" ]; then
             echo "::warning::Selected cloud DB connection not set — skipping schema drift check."
             exit 0
           fi
           local_count=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
-          cloud_count=$(psql "$PGURL" -t -c \
-            "SELECT count(*) FROM supabase_migrations.schema_migrations;" \
-            2>/dev/null | tr -d ' ' || echo "error")
+          if [ "$DB_TEST_TARGET" = rehearsal ]; then
+            cloud_count=$(node scripts/ci/rehearsal-db.mjs --migration-count || echo error)
+          else
+            cloud_count=$(psql "$PGURL" -t -c \
+              "SELECT count(*) FROM supabase_migrations.schema_migrations;" \
+              2>/dev/null | tr -d ' ' || echo "error")
+          fi
           echo "Local migration files : $local_count"
           echo "Cloud schema_migrations rows: $cloud_count (clock-assigned; baseline ~400 dropped)"
           if [ "$cloud_count" = "error" ]; then

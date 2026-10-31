@@ -12,8 +12,9 @@ export function resolveDbTestTarget(env) {
   try { url = new URL(connection); } catch { throw new Error('Invalid DB connection URL.'); }
   const ref = projects[target];
   const user = decodeURIComponent(url.username);
+  const allowedUsers = ['postgres.' + ref, 'cli_login_postgres.' + ref];
   const pooler = url.hostname.endsWith('.pooler.supabase.com')
-    && ['postgres.' + ref, 'cli_login_postgres.' + ref].includes(user);
+    && allowedUsers.includes(user);
   const direct = url.hostname === `db.${ref}.supabase.co` && user === 'postgres';
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || (!pooler && !direct)
     || !['', '5432'].includes(url.port) || url.hash
@@ -40,7 +41,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     if (!process.env.GITHUB_ENV) throw new Error('GitHub environment output is required.');
     console.log(`::add-mask::${selected.connection}`);
     appendFileSync(process.env.GITHUB_ENV,
-      `PGURL=${selected.connection}\nPGOPTIONS=-c jit=on\n`);
+      `PGURL=${selected.connection}\nPGOPTIONS=\n`);
     console.log(`Cloud DB tests: ${selected.target} (${selected.ref}).`);
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
