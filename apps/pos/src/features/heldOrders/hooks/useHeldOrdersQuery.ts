@@ -12,6 +12,7 @@ export interface HeldOrderRow {
   created_at: string;
   status: string;
   created_via?: string;
+  active_items_count?: number;
   sent_to_kitchen_at: string | null;
 }
 
@@ -31,7 +32,7 @@ export function useHeldOrdersQuery() {
     queryFn: async (): Promise<HeldOrderRow[]> => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, table_number, notes, total, created_at, status, created_via, sent_to_kitchen_at')
+        .select('id, order_number, table_number, notes, total, created_at, status, created_via, sent_to_kitchen_at, order_items(is_cancelled)')
         .or(`and(status.eq.pending_payment,created_via.in.(pos,tablet))${sessionId ? `,and(status.eq.draft,created_via.eq.tablet,session_id.eq.${sessionId})` : ''}`)
         .order('created_at', { ascending: false })
         // Audit 2026-08-24 (perf P1) — sans borne, cette requête rapatriait
@@ -40,7 +41,10 @@ export function useHeldOrdersQuery() {
         // largement les ardoises vivantes d'une journée de service.
         .limit(100);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map(({ order_items, ...row }) => ({
+        ...row,
+        active_items_count: (order_items ?? []).filter((item) => !item.is_cancelled).length,
+      }));
     },
   });
 }

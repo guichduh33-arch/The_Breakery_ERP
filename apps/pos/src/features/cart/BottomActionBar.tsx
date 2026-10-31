@@ -37,8 +37,6 @@ import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManager
 import { CancelUnpaidOrderModal } from './CancelUnpaidOrderModal';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
 import { useDineInTableGuard } from '@/features/tables/hooks/useDineInTableGuard';
-import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
-import { usePendingTabletOrders } from '@/features/inbox/hooks/usePendingTabletOrders';
 import { SendToKitchenButton } from './SendToKitchenButton';
 import { PrintBillButton } from './PrintBillButton';
 import { HeldOrdersModal } from './HeldOrdersModal';
@@ -101,7 +99,6 @@ export function BottomActionBar({
   const discount = useApplyCartDiscount();
   const { presets: posPresets } = usePOSPresets();
   const verifyManagerPin = useVerifyManagerPin();
-  const pendingTablet = usePendingTabletOrders().data?.length ?? 0;
 
   const [heldOpen, setHeldOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
@@ -252,14 +249,14 @@ export function BottomActionBar({
           aria-disabled={heldCount === 0}
           onClick={() => {
             if (heldCount === 0) {
-              toast.info('No held orders — send an order to the kitchen, then tap Hold to park it here.');
+              toast.info('No orders on hold. Waiter orders appear here after they are sent to the kitchen.');
               return;
             }
             setHeldOpen(true);
           }}
         >
           <Clock className="h-4 w-4" aria-hidden />
-          <span>Held Orders</span>
+          <span>On hold</span>
           {heldCount > 0 && (
             <span
               className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
@@ -326,12 +323,12 @@ export function BottomActionBar({
           >
             <MoreHorizontal className="h-4 w-4" aria-hidden />
             <span>More</span>
-            {pendingTablet > 0 && (
+            {heldCount > 0 && (
               <span
                 className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-gold-fg text-xs font-bold"
-                aria-label={`${pendingTablet} pending tablet order${pendingTablet === 1 ? '' : 's'}`}
+                aria-label={`${heldCount} order${heldCount === 1 ? '' : 's'} on hold`}
               >
-                {pendingTablet}
+                {heldCount}
               </span>
             )}
           </button>
@@ -347,12 +344,11 @@ export function BottomActionBar({
             >
               {/* Self-contained buttons restyled as menu rows (own their modals). */}
               <div className="min-[1100px]:hidden">
-                <button type="button" className={MENU_ITEM} onClick={() => { setMoreOpen(false); setHeldOpen(true); }}><Clock className="h-4 w-4" aria-hidden />Held Orders ({heldCount})</button>
+                <button type="button" className={MENU_ITEM} onClick={() => { setMoreOpen(false); setHeldOpen(true); }}><Clock className="h-4 w-4" aria-hidden />On hold ({heldCount})</button>
                 <button type="button" className={MENU_ITEM} onClick={() => { setMoreOpen(false); onOpenCustomerSearch?.(); }}><User className="h-4 w-4" aria-hidden />{attachedCustomer?.name ?? 'Customer'}</button>
                 <TableSelectorButton variant="ghost" className={MENU_ITEM} />
               </div>
               <PrintJobsPanel />
-              <TabletInboxButton className={MENU_ITEM} />
               <PrintBillButton variant="ghost" className={cn(MENU_ITEM, 'justify-start')} />
               <button
                 type="button"

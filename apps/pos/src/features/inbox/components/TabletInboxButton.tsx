@@ -1,9 +1,7 @@
 // apps/pos/src/features/inbox/components/TabletInboxButton.tsx
 //
-// Pending tablet-orders inbox. Self-contained (query + modal owned here) so
-// hosts only need to render it — same pattern as TableSelectorButton /
-// SendToKitchenButton. Mounted in BottomActionBar (left group); the original
-// CartActionsBar slot was retired with the POS redesign.
+// Ancienne inbox autonome (requête et modale locales). La barre caisse utilise
+// désormais l'accès unique On hold pour les commandes caisse et waiter.
 import { useState, type JSX } from 'react';
 import { TabletSmartphone } from 'lucide-react';
 import { usePendingTabletOrders } from '../hooks/usePendingTabletOrders';

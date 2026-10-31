@@ -28,6 +28,7 @@ export function useCloseCancelledTabletOrder() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['pending-tablet-orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['held-orders'] });
       void queryClient.invalidateQueries({ queryKey: ['table_occupancy'] });
       toast.success('Order closed');
     },

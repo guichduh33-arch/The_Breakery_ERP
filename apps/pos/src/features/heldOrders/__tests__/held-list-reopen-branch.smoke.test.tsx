@@ -7,10 +7,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const { reopenMutate, refetch, toastError } = vi.hoisted(() => ({
+const { reopenMutate, refetch, toastError, closeCancelled } = vi.hoisted(() => ({
   reopenMutate: vi.fn().mockResolvedValue('order-5'),
   refetch: vi.fn(),
   toastError: vi.fn(),
+  closeCancelled: vi.fn(),
 }));
 
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
@@ -19,6 +20,7 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
       { id: 'order-5', order_number: '#0005', table_number: '7', notes: null, total: 0, created_at: '2026-06-25T10:00:00Z', status: 'pending_payment', sent_to_kitchen_at: '2026-06-25T09:59:00Z' },
       { id: 'order-6', order_number: '#0006', table_number: null, notes: null, total: 50000, created_at: '2026-06-25T10:01:00Z', status: 'pending_payment', sent_to_kitchen_at: '2026-06-25T10:00:30Z' },
       { id: 'waiter-order', order_number: '#0007', table_number: '8', notes: null, total: 30000, created_at: '2026-06-25T10:02:00Z', status: 'pending_payment', created_via: 'tablet', sent_to_kitchen_at: '2026-06-25T10:02:00Z' },
+      { id: 'cancelled-waiter', order_number: '#0008', table_number: '9', notes: null, total: 0, created_at: '2026-06-25T10:03:00Z', status: 'pending_payment', created_via: 'tablet', active_items_count: 0, sent_to_kitchen_at: '2026-06-25T10:03:00Z' },
     ],
     isLoading: false,
     refetch,
@@ -26,6 +28,9 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
 }));
 vi.mock('@/features/heldOrders/hooks/useReopenHeldOrder', () => ({ useReopenHeldOrder: () => ({ mutateAsync: reopenMutate }) }));
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersRealtime', () => ({ useHeldOrdersRealtime: () => undefined }));
+vi.mock('@/features/inbox/hooks/useCloseCancelledTabletOrder', () => ({
+  useCloseCancelledTabletOrder: () => ({ mutate: closeCancelled, isPending: false }),
+}));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: toastError } }));
 vi.mock('@/features/cart/CancelUnpaidOrderModal', () => ({
   CancelUnpaidOrderModal: ({ open, orderId, onClose }: { open: boolean; orderId: string | null; onClose: () => void }) =>
@@ -139,7 +144,7 @@ describe('HeldOrdersModal — toute commande en attente est une commande envoyé
 
   it('n’affiche que des badges « Sent », plus aucun « Draft »', () => {
     render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
-    expect(screen.getAllByText(/^sent$/i)).toHaveLength(3);
+    expect(screen.getAllByText(/^sent$/i)).toHaveLength(4);
     expect(screen.queryByText(/^draft$/i)).not.toBeInTheDocument();
   });
 
@@ -149,5 +154,13 @@ describe('HeldOrdersModal — toute commande en attente est une commande envoyé
     await waitFor(() => expect(reopenMutate).toHaveBeenCalledWith(expect.objectContaining({
       id: 'waiter-order', status: 'pending_payment', created_via: 'tablet',
     })));
+  });
+
+  it('conserve la cloture des commandes waiter entierement annulees sans reprise', () => {
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
+    expect(screen.queryByRole('button', { name: /restore held order #0008/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /close cancelled order #0008/i }));
+    expect(closeCancelled).toHaveBeenCalledWith('cancelled-waiter');
+    expect(reopenMutate).not.toHaveBeenCalled();
   });
 });
