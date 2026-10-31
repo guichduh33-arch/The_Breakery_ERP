@@ -14,12 +14,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const { holdFiredMutate } = vi.hoisted(() => ({
+const { holdFiredMutate, heldState } = vi.hoisted(() => ({
   holdFiredMutate: vi.fn().mockResolvedValue(undefined),
+  heldState: { rows: [] as { id: string }[] },
 }));
 
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
-  useHeldOrdersQuery: () => ({ data: [], isLoading: false }),
+  useHeldOrdersQuery: () => ({ data: heldState.rows, isLoading: false }),
 }));
 vi.mock('@/features/cart/hooks/useHoldFiredOrder', () => ({
   useHoldFiredOrder: () => ({ mutateAsync: holdFiredMutate, isPending: false }),
@@ -49,10 +50,12 @@ vi.mock('@/features/cart/hooks/useVoidServerOrder', () => ({
 }));
 // Stub the heavy child buttons/modals so we only exercise BottomActionBar logic.
 vi.mock('@/features/tables/components/TableSelectorButton', () => ({ TableSelectorButton: () => null }));
-vi.mock('@/features/inbox/components/TabletInboxButton', () => ({ TabletInboxButton: () => null }));
+vi.mock('@/features/inbox/components/TabletInboxButton', () => ({ TabletInboxButton: () => <button>Tablet orders</button> }));
 vi.mock('@/features/cart/SendToKitchenButton', () => ({ SendToKitchenButton: () => null }));
 vi.mock('@/features/cart/PrintBillButton', () => ({ PrintBillButton: () => null }));
-vi.mock('@/features/cart/HeldOrdersModal', () => ({ HeldOrdersModal: () => null }));
+vi.mock('@/features/cart/HeldOrdersModal', () => ({
+  HeldOrdersModal: ({ open }: { open: boolean }) => open ? <div role="dialog" aria-label="On hold orders" /> : null,
+}));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
 
 import { BottomActionBar } from '@/features/cart/BottomActionBar';
@@ -73,6 +76,7 @@ const REOPENED_ITEM = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  heldState.rows = [];
 });
 
 function seedReopenedFiredOrder(extraUnfired = false) {
@@ -127,6 +131,18 @@ describe('BottomActionBar — re-hold a reopened fired order', () => {
     // Lot 2 harden — le menu n'est plus un role=menu (ARIA honnête) : on
     // scope la recherche au groupe « More actions » pour garder l'assertion.
     const menu = screen.getByRole('group', { name: /more actions/i });
-    expect(within(menu).queryByRole('button', { name: /hold/i })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: /^hold$/i })).toBeNull();
+  });
+
+  it('dirige les commandes waiter vers On hold sans entree Tablet orders concurrente', () => {
+    seedReopenedFiredOrder();
+    heldState.rows = [{ id: 'waiter-1' }, { id: 'waiter-2' }];
+    render(wrap(<BottomActionBar />));
+    fireEvent.click(screen.getByRole('button', { name: /more/i }));
+    const menu = screen.getByRole('group', { name: /more actions/i });
+    expect(within(menu).queryByRole('button', { name: /tablet orders/i })).toBeNull();
+    fireEvent.click(within(menu).getByRole('button', { name: 'On hold (2)' }));
+    expect(screen.getByRole('dialog', { name: 'On hold orders' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /more actions/i })).toBeNull();
   });
 });

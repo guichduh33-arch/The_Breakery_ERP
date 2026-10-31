@@ -33,6 +33,7 @@ import { useHeldOrdersQuery, type HeldOrderRow } from '@/features/heldOrders/hoo
 import { useReopenHeldOrder } from '@/features/heldOrders/hooks/useReopenHeldOrder';
 import { CancelUnpaidOrderModal } from './CancelUnpaidOrderModal';
 import { AttachTabCustomerButton } from '@/features/heldOrders/components/AttachTabCustomerButton';
+import { useCloseCancelledTabletOrder } from '@/features/inbox/hooks/useCloseCancelledTabletOrder';
 
 interface HeldOrdersModalProps {
   open: boolean;
@@ -57,6 +58,9 @@ function HeldOrderCard({
   onDelete: () => void;
   restoring: boolean;
 }): JSX.Element {
+  const closeCancelled = useCloseCancelledTabletOrder();
+  const allCancelled = row.created_via === 'tablet' && row.status === 'pending_payment'
+    && row.active_items_count === 0;
   return (
     <article
       className="rounded-xl border border-border-subtle bg-bg-elevated overflow-hidden"
@@ -110,6 +114,14 @@ function HeldOrderCard({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {allCancelled ? (
+            <button type="button" disabled={restoring || closeCancelled.isPending}
+              onClick={() => closeCancelled.mutate(row.id)}
+              aria-label={`Close cancelled order ${row.order_number}`}
+              className="h-touch-min px-4 rounded-md border border-border-subtle text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-50">
+              Close order
+            </button>
+          ) : <>
           <AttachTabCustomerButton orderId={row.id} />
           <button
             type="button"
@@ -140,6 +152,7 @@ function HeldOrderCard({
             <RotateCcw className="h-4 w-4" aria-hidden />
             Restore
           </button>
+          </>}
         </div>
       </footer>
     </article>
@@ -235,9 +248,9 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
               <Clock className="h-5 w-5 text-text-secondary shrink-0" aria-hidden />
               <div className="min-w-0">
                 <h2 className="font-bold text-xl text-text-primary">
-                  Active Orders
+                  On hold
                 </h2>
-                <SectionLabel size="xs">Manage held orders</SectionLabel>
+                <SectionLabel size="xs">Cashier and waiter orders</SectionLabel>
               </div>
             </div>
 
@@ -309,8 +322,8 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                   No orders held
                 </SectionLabel>
                 <p className="text-xs text-text-muted max-w-sm">
-                  Send an order to the kitchen, then tap “Hold” to park it here —
-                  useful for table-hopping or split flows.
+                  Waiter orders appear here after they are sent to the kitchen.
+                  Orders parked at the cashier appear in the same list.
                 </p>
               </div>
             ) : (

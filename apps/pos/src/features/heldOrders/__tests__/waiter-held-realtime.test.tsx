@@ -28,9 +28,11 @@ describe('On hold reste abonne quand la liste est fermee', () => {
     }
     const first = renderHook(() => useHeldOrdersQuery(), { wrapper });
     await waitFor(() => expect(first.result.current.data).toEqual([]));
-    mocks.limit.mockResolvedValue({ data: [{ id: 'incoming-waiter' }], error: null });
+    mocks.limit.mockResolvedValue({ data: [{ id: 'incoming-waiter', order_items: [
+      { is_cancelled: false }, { is_cancelled: true },
+    ] }], error: null });
     act(() => mocks.callbacks[0]!());
-    await waitFor(() => expect(first.result.current.data).toEqual([{ id: 'incoming-waiter' }]));
+    await waitFor(() => expect(first.result.current.data).toEqual([{ id: 'incoming-waiter', active_items_count: 1 }]));
     first.unmount();
     const second = renderHook(() => useHeldOrdersQuery(), { wrapper });
     expect(mocks.channel.mock.calls).toHaveLength(2);
