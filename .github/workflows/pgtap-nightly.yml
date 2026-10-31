@@ -54,7 +54,11 @@ jobs:
             # `|| rc=$?` keeps the runner's implicit `bash -e` from killing the
             # whole loop on the first failing file (a bare assignment would).
             rc=0
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -f "$f" 2>&1) || rc=$?
+            fixture_args=()
+            if [ "${{ vars.V3_DB_TEST_TARGET }}" = rehearsal ]; then
+              fixture_args=(-c 'BEGIN' -f supabase/tests/helpers/rehearsal_suite.sql)
+            fi
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -c 'SET search_path=public,extensions,pg_temp' "${fixture_args[@]}" -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             # Lot 1.B — miroir de pgtap-pr.yml : 17 suites rendent leurs
