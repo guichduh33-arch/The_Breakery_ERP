@@ -21,7 +21,7 @@ SELECT ok((SELECT position('public._bank_replay' IN prosrc)<position('FROM publi
  AND position('FROM public.fiscal_periods' IN prosrc)<position('bank-account:' IN prosrc)
  AND position('bank-account:' IN prosrc)<position('FROM public.journal_entries j' IN prosrc)
  AND position('FROM public.journal_entries j' IN prosrc)<position('public.create_manual_je_v2' IN prosrc)
- FROM pg_proc WHERE oid='public.bank_reconciliation_post_v5(uuid,uuid[],uuid[],uuid,numeric,date,text,text,uuid,text,uuid[])'::regprocedure),
+ FROM pg_proc WHERE oid='public.bank_reconciliation_post_v4(uuid,uuid[],uuid[],uuid,numeric,date,text,text,uuid,text,uuid[])'::regprocedure),
  'post order is profile then replay then fiscal then account then source journal then emitter');
 SELECT ok((SELECT position('public._bank_actor' IN prosrc)<position('LOCK TABLE public.journal_entries' IN prosrc)
  FROM pg_proc WHERE oid='public.bank_reconciliation_finalize_v3(uuid,jsonb,uuid)'::regprocedure),

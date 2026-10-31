@@ -71,8 +71,8 @@ BEGIN
                                          'aaaa2222-2222-2222-2222-222222222222',NULL);
 END $$;
 
-SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v3() WHERE account_code='1110'), 'balances include 1110');
-SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v3() WHERE account_code='1117'), 'balances include 1117');
+SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v2() WHERE account_code='1110'), 'balances include 1110');
+SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v2() WHERE account_code='1117'), 'balances include 1117');
 SELECT cmp_ok(
   (SELECT count(*)::int FROM get_cash_wallet_ledger_v3('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'petty ledger returns at least the transfer row');
@@ -117,7 +117,7 @@ CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
 RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.read' $$;
 
 SELECT throws_ok(
-  $q$ SELECT * FROM get_cash_wallet_balances_v3() $q$,
+  $q$ SELECT * FROM get_cash_wallet_balances_v2() $q$,
   '42501', NULL, 'balances refuse sans accounting.cash.read');
 SELECT throws_ok(
   $q$ SELECT * FROM get_cash_wallet_ledger_v3('1110', CURRENT_DATE-1, CURRENT_DATE+1) $q$,

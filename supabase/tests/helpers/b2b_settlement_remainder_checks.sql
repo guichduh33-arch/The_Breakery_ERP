@@ -30,7 +30,7 @@ BEGIN
       AND description = 'B2B payment received from customer ' || v_cust::text;
 
   BEGIN
-    PERFORM record_b2b_payment_v5(
+    PERFORM record_b2b_payment_v4(
       p_customer_id => v_cust, p_amount => 150000, p_method => 'cash'::payment_method);
   EXCEPTION WHEN OTHERS THEN
     IF SQLSTATE = 'P0011' THEN
@@ -54,7 +54,7 @@ BEGIN
   THEN 'true' ELSE 'false' END, false);
 END $t15$;
 SELECT ok(current_setting('breakery.t15')::boolean,
-  'T15: remainder refused — record_b2b_payment_v5 raises P0011 payment_not_fully_allocated; JE/payment/balance cache all rolled back (audit lot1 P0#4)');
+  'T15: remainder refused — record_b2b_payment_v4 raises P0011 payment_not_fully_allocated; JE/payment/balance cache all rolled back (audit lot1 P0#4)');
 
 -- ===========================================================================
 -- T16 — contrat de payload : allocated_total / unallocated (nouvelles clés v3)
@@ -73,7 +73,7 @@ BEGIN
   PERFORM pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-13'::timestamptz);
   UPDATE customers SET b2b_current_balance = 100000 WHERE id = v_cust;
 
-  v_res := record_b2b_payment_v5(
+  v_res := record_b2b_payment_v4(
     p_customer_id => v_cust, p_amount => 100000, p_method => 'cash'::payment_method);
 
   PERFORM set_config('breakery.t16', CASE WHEN
@@ -82,7 +82,7 @@ BEGIN
   THEN 'true' ELSE 'false' END, false);
 END $t16$;
 SELECT ok(current_setting('breakery.t16')::boolean,
-  'T16: payload contract — record_b2b_payment_v5 returns allocated_total=100000, unallocated=0 on a clean full settlement');
+  'T16: payload contract — record_b2b_payment_v4 returns allocated_total=100000, unallocated=0 on a clean full settlement');
 
 -- ===========================================================================
 -- T17 — FIFO sert toujours une facture b2b_pending PARTIELLEMENT réglée
@@ -102,9 +102,9 @@ BEGIN
   v_inv := pg_temp.mk_invoice(v_cust, 2, 50000, '2026-06-14'::timestamptz);
   UPDATE customers SET b2b_current_balance = 100000 WHERE id = v_cust;
 
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id => v_cust, p_amount => 40000, p_method => 'cash'::payment_method);
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id => v_cust, p_amount => 60000, p_method => 'cash'::payment_method);
 
   PERFORM set_config('breakery.t17', CASE WHEN

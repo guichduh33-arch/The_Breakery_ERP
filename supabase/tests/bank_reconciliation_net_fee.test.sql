@@ -32,11 +32,11 @@ DO $$ DECLARE a uuid:=gen_random_uuid();p uuid:=gen_random_uuid();b uuid;inc uui
 END $$;
 CREATE FUNCTION pg_temp.net_post(p_key uuid DEFAULT 'be010000-0000-4000-a000-000000000001',p_fee numeric DEFAULT 2000,
  p_pin text DEFAULT '285741',p_bank_index integer DEFAULT 1) RETURNS jsonb LANGUAGE sql AS $$
- SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[p_bank_index]],'{}',expense,p_fee,'2097-01-05',
+ SELECT public.bank_reconciliation_post_v4(rec,ARRAY[bank_ids[p_bank_index]],'{}',expense,p_fee,'2097-01-05',
   'Actual fee for banked B2B payment',p_pin,p_key,'net_fee',gl_ids) FROM net_fixture;
 $$;
 SELECT ok(to_regprocedure('public.bank_reconciliation_post_v1(uuid,uuid[],uuid[],uuid,numeric,date,text,text,uuid,text)') IS NULL,'old post signature dropped atomically');
-SELECT ok(NOT has_function_privilege('anon','public.bank_reconciliation_post_v5(uuid,uuid[],uuid[],uuid,numeric,date,text,text,uuid,text,uuid[])','EXECUTE'),
+SELECT ok(NOT has_function_privilege('anon','public.bank_reconciliation_post_v4(uuid,uuid[],uuid[],uuid,numeric,date,text,text,uuid,text,uuid[])','EXECUTE'),
  'net fee endpoint denies anon including PUBLIC inheritance');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.bank_reconciliation_net_fee_claims'::regclass)
  AND NOT has_table_privilege('authenticated','public.bank_reconciliation_net_fee_claims','SELECT,INSERT,UPDATE,DELETE'),
@@ -44,7 +44,7 @@ SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.bank_reconcilia
 SELECT throws_ok('SELECT pg_temp.net_post(p_fee:=1999)','22023','net_fee_amount_mismatch','net fee exact signed gross minus actual fee');
 SELECT throws_ok('SELECT pg_temp.net_post(p_fee:=2000.001)','22023','amount_requires_two_decimals','net fee fractions of cent refused');
 SELECT throws_ok('SELECT pg_temp.net_post(p_fee:=0)','22023','net_fee_sources_required','zero fee cannot emit adjustment');
-SELECT throws_ok($q$SELECT public.bank_reconciliation_post_v5(rec,ARRAY[bank_ids[1]],'{}',income,2000,'2097-01-05',
+SELECT throws_ok($q$SELECT public.bank_reconciliation_post_v4(rec,ARRAY[bank_ids[1]],'{}',income,2000,'2097-01-05',
  'Wrong expense account','285741',gen_random_uuid(),'net_fee',gl_ids) FROM net_fixture$q$,
  '22023','explicit_counter_account_required','net fee counterparty must be explicit postable expense');
 SELECT is(pg_temp.net_post(p_pin:='999999')->>'error','invalid_pin','invalid net fee PIN is committable refusal');

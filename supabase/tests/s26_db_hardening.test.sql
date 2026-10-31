@@ -83,7 +83,7 @@ SELECT ok(
 );
 
 -- ============================================================================
--- Wave 1.F : record_cash_movement_v4 + drop v1 + mappings
+-- Wave 1.F : record_cash_movement_v2 + drop v1 + mappings
 -- ============================================================================
 
 SELECT ok(
@@ -99,9 +99,9 @@ SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'record_cash_movement_v4'
+    WHERE n.nspname = 'public' AND p.proname = 'record_cash_movement_v2'
   ),
-  'T8: record_cash_movement_v4 exists'
+  'T8: record_cash_movement_v2 exists'
 );
 
 SELECT ok(

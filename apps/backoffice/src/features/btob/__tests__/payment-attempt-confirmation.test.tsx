@@ -78,7 +78,7 @@ describe('B2B durable resolution requires a matching payment ledger', () => {
       const { send } = setup(amount);
       await act(async () => { await expect(send()).resolves.toMatchObject({ allocated_total: amount }); });
       expect(transport.ledger).toHaveBeenCalledTimes(1);
-      expect(transport.rpc).toHaveBeenCalledWith('record_b2b_payment_v5', expect.objectContaining({ p_amount: amount }));
+      expect(transport.rpc).toHaveBeenCalledWith('record_b2b_payment_v4', expect.objectContaining({ p_amount: amount }));
       expect(readFinancialSlot(scope)?.status).toBe('resolved');
     },
   );

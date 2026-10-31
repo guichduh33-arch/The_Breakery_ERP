@@ -1,8 +1,10 @@
-// Chaque mouvement de tiroir possède une contrepartie comptable explicite.
+// apps/pos/src/features/shift/hooks/useCashMovement.ts
+// Session 26 / Wave 1.F — bumped to record_cash_movement_v2.
+// Adds optional `reason_code` to trigger JE emission (apport_owner / bank_transfer).
+// `replenishment` and `misc` (or null) keep the legacy behavior (no JE).
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/stores/authStore';
 
 export type CashMovementReasonCode =
   | 'apport_owner'
@@ -16,7 +18,6 @@ export interface CashMovementInput {
   amount:           number;
   reason:           string;
   reason_code?:     CashMovementReasonCode;
-  counterparty_account_code?: string;
   idempotency_key?: string;
 }
 
@@ -41,7 +42,6 @@ export function useCashMovement() {
         p_reason:           string;
         p_idempotency_key?: string;
         p_reason_code?:     CashMovementReasonCode;
-        p_counterparty_account_code?: string;
       } = {
         p_session_id: input.session_id,
         p_direction:  input.direction,
@@ -50,8 +50,7 @@ export function useCashMovement() {
       };
       if (input.idempotency_key !== undefined) args.p_idempotency_key = input.idempotency_key;
       if (input.reason_code !== undefined)     args.p_reason_code     = input.reason_code;
-      if (input.counterparty_account_code !== undefined) args.p_counterparty_account_code = input.counterparty_account_code;
-      const { data, error } = await supabase.rpc('record_cash_movement_v4', args);
+      const { data, error } = await supabase.rpc('record_cash_movement_v2', args);
       if (error) throw Object.assign(new Error(error.message), { details: error });
       const result = data as unknown as CashMovementResult | null;
       if (typeof result?.movement_id !== 'string' || !result.movement_id || result.session_id !== input.session_id
@@ -63,22 +62,6 @@ export function useCashMovement() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['pos_sessions'] });
       void qc.invalidateQueries({ queryKey: ['cash_movements'] });
-    },
-  });
-}
-
-export function useCashMovementCounterparties(enabled: boolean) {
-  const userId = useAuthStore((s) => s.user?.id);
-  return useQuery({
-    queryKey: ['cash-movement-counterparties', userId], enabled,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cash_movement_counterparties_v2');
-      if (error) throw new Error(error.message);
-      if (!Array.isArray(data) || data.some((a) => typeof a.code !== 'string'
-        || typeof a.name !== 'string' || typeof a.is_cash !== 'boolean')) {
-        throw new Error('Accounting accounts unavailable');
-      }
-      return data;
     },
   });
 }

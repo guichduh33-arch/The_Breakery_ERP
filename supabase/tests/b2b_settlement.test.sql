@@ -134,7 +134,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000001',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000001',2,50000,'2026-06-10'::timestamptz);
-  v_res := record_b2b_payment_v5(
+  v_res := record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000001', p_amount=>100000, p_method=>'cash'::payment_method);
   SELECT outstanding, paid_at, order_status INTO v_inv1_out, v_inv1_paid, v_inv1_status
     FROM view_b2b_invoices WHERE invoice_id = v_inv1;
@@ -161,7 +161,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000002',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000002',1,50000,'2026-06-10'::timestamptz);
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000002', p_amount=>150000, p_method=>'cash'::payment_method);
   PERFORM set_config('breakery.t3', CASE WHEN
     (SELECT status FROM orders WHERE id=v_inv1)='paid'
@@ -182,7 +182,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000003',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000003',2,50000,'2026-06-10'::timestamptz);
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000003', p_amount=>100000, p_method=>'cash'::payment_method,
     p_invoice_ids=>ARRAY[v_inv2]);
   PERFORM set_config('breakery.t4', CASE WHEN
@@ -204,7 +204,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv1 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000004',2,50000,'2026-06-01'::timestamptz);
   v_inv2 := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000004',2,50000,'2026-06-10'::timestamptz);
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000004', p_amount=>150000, p_method=>'cash'::payment_method,
     p_invoice_ids=>ARRAY[v_inv2]);
   PERFORM set_config('breakery.t5', CASE WHEN
@@ -224,7 +224,7 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid; v_inv UUID;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000005',2,50000,'2026-06-05'::timestamptz);
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000005', p_amount=>40000, p_method=>'cash'::payment_method);
   PERFORM set_config('breakery.t6', CASE WHEN
     (SELECT outstanding FROM view_b2b_invoices WHERE invoice_id=v_inv)=60000
@@ -288,7 +288,7 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid; v_inv UUID;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000007',2,50000,'2026-06-08'::timestamptz);
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000007', p_amount=>50000, p_method=>'cash'::payment_method);
   PERFORM set_config('breakery.t9_inv', v_inv::text, false);
 END $t9_setup$;
@@ -325,7 +325,7 @@ BEGIN
   v_inv := pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000009',2,50000,'2026-06-09'::timestamptz);
   SELECT has_drift, derived_balance INTO v_drift1, v_derived1
     FROM reconcile_b2b_balance_v1('b2b52001-0000-0000-0000-000000000009');
-  PERFORM record_b2b_payment_v5(
+  PERFORM record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000009', p_amount=>100000, p_method=>'cash'::payment_method);
   SELECT has_drift, derived_balance INTO v_drift2, v_derived2
     FROM reconcile_b2b_balance_v1('b2b52001-0000-0000-0000-000000000009');
@@ -345,7 +345,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_cashier);
 END $t12_setup$;
 SELECT throws_ok(
-  $$ SELECT record_b2b_payment_v5(
+  $$ SELECT record_b2b_payment_v4(
        p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>1000, p_method=>'cash'::payment_method) $$,
   'P0003', NULL,
   'T12: CASHIER lacking b2b.payment.record raises P0003 permission_denied');
@@ -360,10 +360,10 @@ DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   PERFORM pg_temp.mk_invoice('b2b52001-0000-0000-0000-000000000010',2,50000,'2026-06-11'::timestamptz);
-  v_r1 := record_b2b_payment_v5(
+  v_r1 := record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>30000, p_method=>'cash'::payment_method,
     p_idempotency_key=>v_key);
-  v_r2 := record_b2b_payment_v5(
+  v_r2 := record_b2b_payment_v4(
     p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>30000, p_method=>'cash'::payment_method,
     p_idempotency_key=>v_key);
   SELECT COUNT(*) INTO v_pay_count FROM b2b_payments WHERE idempotency_key=v_key;
@@ -386,7 +386,7 @@ DECLARE v_caught BOOLEAN := FALSE;
 BEGIN
   BEGIN
     SET LOCAL ROLE anon;
-    PERFORM record_b2b_payment_v5(
+    PERFORM record_b2b_payment_v4(
       p_customer_id=>'b2b52001-0000-0000-0000-000000000010', p_amount=>1, p_method=>'cash'::payment_method);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := TRUE;
   END;
@@ -394,7 +394,7 @@ BEGIN
   PERFORM set_config('breakery.t14', CASE WHEN v_caught THEN 'true' ELSE 'false' END, false);
 END $t14$;
 SELECT ok(current_setting('breakery.t14')::boolean,
-  'T14: anon EXECUTE record_b2b_payment_v5 → insufficient_privilege');
+  'T14: anon EXECUTE record_b2b_payment_v4 → insufficient_privilege');
 
 -- ===========================================================================
 \ir helpers/b2b_settlement_remainder_checks.sql

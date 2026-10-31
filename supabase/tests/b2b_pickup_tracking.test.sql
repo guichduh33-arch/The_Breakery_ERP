@@ -35,16 +35,16 @@ BEGIN
  INSERT INTO pickup_checks SELECT 'repeat collection is idempotent',b2b_delivered_at=v_time
  AND (SELECT count(*) FROM public.audit_logs WHERE entity_id=v_first AND action='b2b.order.delivered')=1
  FROM public.orders WHERE id=v_first;
- PERFORM public.record_b2b_payment_v5(v_customer,v_total/2,'transfer',p_invoice_ids=>ARRAY[v_first],p_idempotency_key=>gen_random_uuid());
+ PERFORM public.record_b2b_payment_v4(v_customer,v_total/2,'transfer',p_invoice_ids=>ARRAY[v_first],p_idempotency_key=>gen_random_uuid());
  INSERT INTO pickup_checks SELECT 'partial payment preserves delivery and balance',b2b_delivered_at=v_time AND outstanding=v_total/2 AND paid_at IS NULL
  FROM public.view_b2b_invoices WHERE invoice_id=v_first;
- PERFORM public.record_b2b_payment_v5(v_customer,v_total/2,'transfer',p_invoice_ids=>ARRAY[v_first],p_idempotency_key=>gen_random_uuid());
+ PERFORM public.record_b2b_payment_v4(v_customer,v_total/2,'transfer',p_invoice_ids=>ARRAY[v_first],p_idempotency_key=>gen_random_uuid());
  INSERT INTO pickup_checks SELECT 'full payment preserves delivery',b2b_delivered_at=v_time AND outstanding=0 AND paid_at IS NOT NULL AND order_status='paid'
  FROM public.view_b2b_invoices WHERE invoice_id=v_first;
  v_result := public.create_b2b_order_v8(v_customer,
  jsonb_build_array(jsonb_build_object('product_id',v_product,'quantity',1)),NULL,CURRENT_DATE+1,gen_random_uuid());
  v_second := (v_result->>'order_id')::uuid;
- PERFORM public.record_b2b_payment_v5(v_customer,(v_result->>'total')::numeric,'transfer',p_invoice_ids=>ARRAY[v_second],p_idempotency_key=>gen_random_uuid());
+ PERFORM public.record_b2b_payment_v4(v_customer,(v_result->>'total')::numeric,'transfer',p_invoice_ids=>ARRAY[v_second],p_idempotency_key=>gen_random_uuid());
  INSERT INTO pickup_checks SELECT 'prepayment does not confirm pickup',paid_at IS NOT NULL AND b2b_delivered_at IS NULL FROM public.orders WHERE id=v_second;
  PERFORM public.update_b2b_pickup_v1(v_second,NULL,true);
  INSERT INTO pickup_checks SELECT 'paid order can be collected',paid_at IS NOT NULL AND status='paid' AND b2b_delivered_at IS NOT NULL FROM public.orders WHERE id=v_second;
