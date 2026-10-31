@@ -6,6 +6,8 @@ import { useShiftStore } from '@/stores/shiftStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import type { ReopenOrderPayload } from '@/stores/cartStore';
 import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
+import { fetchOrderSnapshot } from '@/features/inbox/hooks/fetchOrderSnapshot';
+import type { HeldOrderRow } from './useHeldOrdersQuery';
 
 /**
  * Reprend une commande envoyée en attente ou une commande caisse déjà ouverte.
@@ -17,16 +19,29 @@ export function useReopenHeldOrder() {
   return useMutation({
     // Un rejet de la garde panier ne doit jamais relancer la reprise avec un nouvel état.
     retry: false,
-    mutationFn: async (orderId: string): Promise<string> => {
+    mutationFn: async (order: string | Pick<HeldOrderRow, 'id' | 'status' | 'created_via'>): Promise<string> => {
       if (isCartPaymentLocked()) throw new Error('Resume the saved payment first');
       const before = useCartStore.getState();
+      if (before.pickedUpOrderId) throw new Error('Finish the current order first');
+      const orderId = typeof order === 'string' ? order : order.id;
+      const needsPickup = typeof order !== 'string' && order.created_via === 'tablet' && order.status === 'pending_payment';
       const sessionId = useShiftStore.getState().current?.id;
-      const { data, error } = await supabase.rpc('reopen_held_order_v6', {
-        p_order_id: orderId,
-        ...(sessionId ? { p_session_id: sessionId } : {}),
-      });
-      if (error) throw error;
-      const payload = data as unknown as ReopenOrderPayload;
+      let payload: ReopenOrderPayload;
+      if (needsPickup) {
+        if (!sessionId) throw new Error('Open a shift before picking up a waiter order');
+        const { error } = await supabase.rpc('pickup_tablet_order', {
+          p_order_id: orderId, p_session_id: sessionId,
+        });
+        if (error) throw error;
+        payload = await fetchOrderSnapshot(orderId);
+      } else {
+        const { data, error } = await supabase.rpc('reopen_held_order_v6', {
+          p_order_id: orderId,
+          ...(sessionId ? { p_session_id: sessionId } : {}),
+        });
+        if (error) throw error;
+        payload = data as unknown as ReopenOrderPayload;
+      }
 
       if (useCartStore.getState().cart !== before.cart || useCartStore.getState().pickedUpOrderId !== before.pickedUpOrderId || isCartPaymentLocked()) throw new Error('The current order changed — open the held order again');
       useCartStore.getState().reopenOrder(payload);
@@ -62,6 +77,7 @@ export function useReopenHeldOrder() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['held-orders'] });
+      void qc.invalidateQueries({ queryKey: ['pending-tablet-orders'] });
     },
   });
 }

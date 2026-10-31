@@ -10,6 +10,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: {
   from: () => ({ select: () => ({ or: mocks.or }) }),
 } }));
 vi.mock('@/features/audit/emitPosEvent', () => ({ emitPosEvent: vi.fn() }));
+vi.mock('../hooks/useHeldOrdersRealtime', () => ({ useHeldOrdersRealtime: vi.fn() }));
 import { useHeldOrdersQuery } from '../hooks/useHeldOrdersQuery';
 import { useReopenHeldOrder } from '../hooks/useReopenHeldOrder';
 import { useHoldFiredOrder } from '@/features/cart/hooks/useHoldFiredOrder';
@@ -22,6 +23,7 @@ beforeEach(() => {
   mocks.limit.mockResolvedValue({ data: [], error: null });
   mocks.rpc.mockResolvedValue({ data: null, error: null });
   useShiftStore.setState({ current: { id: 'session-current', opened_at: '', opening_cash: 0 } });
+  useCartStore.setState({ pickedUpOrderId: null });
 });
 describe('tablette reprise : portee session', () => {
   it('transmet la session au hold', async () => {
@@ -37,13 +39,13 @@ describe('tablette reprise : portee session', () => {
     expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v6', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
     expect(useCartStore.getState().cart).toBe(cart);
   });
-  it('liste seulement les tablettes reprises dans la session', async () => {
+  it('liste les commandes waiter entrantes et les tablettes reprises dans la session', async () => {
     renderHook(() => useHeldOrdersQuery(), { wrapper });
-    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(status.eq.pending_payment,created_via.eq.pos),and(status.eq.draft,created_via.eq.tablet,session_id.eq.session-current)'));
+    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(status.eq.pending_payment,created_via.in.(pos,tablet)),and(status.eq.draft,created_via.eq.tablet,session_id.eq.session-current)'));
   });
-  it('ne liste aucune tablette sans session', async () => {
+  it('affiche les commandes entrantes sans session sans inclure les tablettes deja reprises', async () => {
     useShiftStore.setState({ current: null });
     renderHook(() => useHeldOrdersQuery(), { wrapper });
-    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(status.eq.pending_payment,created_via.eq.pos)'));
+    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(status.eq.pending_payment,created_via.in.(pos,tablet))'));
   });
 });
