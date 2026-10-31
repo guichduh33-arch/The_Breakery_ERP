@@ -1,7 +1,7 @@
 // apps/pos/src/features/discounts/managerPinHolder.ts
 //
 // S37 SEC-01 — transient in-memory holder for the manager PIN captured by the
-// discount-authorization modal. complete_order_with_payment_v11 re-validates the
+// discount-authorization modal. complete_order_with_payment_v31 re-validates the
 // PIN server-side at checkout time, so the POS must carry it from authorization
 // to checkout. Module-scoped on purpose:
 //   - NEVER persisted (no localStorage / no Zustand persist),

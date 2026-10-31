@@ -376,7 +376,7 @@ export function usePaymentFlowLogic() {
       // ADR-013 D13 — la tentative est soldée (un retry réussi lève le flag
       // posé par l'échec retryable précédent) ; reset() régénérera la clé.
       // S43 P0-3 — printOnly: the order already exists in the DB (created by
-      // complete_order_with_payment_v11 / paid via pay_existing_order_v7).
+      // complete_order_with_payment_v31 / paid via pay_existing_order_v23).
       // Persisting here would mint an orphan order or append to a paid one.
 
       // S44 D4 — points and balance come from the server envelope (the DB

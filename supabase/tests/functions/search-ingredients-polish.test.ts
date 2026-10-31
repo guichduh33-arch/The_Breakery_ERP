@@ -1,5 +1,5 @@
 // supabase/tests/functions/search-ingredients-polish.test.ts
-// Session 16 / Phase 2.A — live RPC smoke for search_ingredients_v1 polish.
+// Session 16 / Phase 2.A — live RPC smoke for search_ingredients_v2 polish.
 //
 // Coverage :
 //   - is_semi_finished flag drives kind='semi_finished' classification.
@@ -12,7 +12,7 @@
 // (no shared sandbox helpers exist in this repo as of Session 16).
 //
 // ADR-016 (20260729000002) bumped upsert_recipe_v1 -> _v2 (renamed
-// mechanically below). This suite tests search_ingredients_v1 ranking, not
+// mechanically below). This suite tests search_ingredients_v2 ranking, not
 // the production/BOM cascade, so the "stop at stocked intermediate" rule
 // does not apply here.
 
@@ -77,7 +77,7 @@ interface SearchRow {
   has_recipe: boolean;
 }
 
-describeLive('search_ingredients_v1 polish', () => {
+describeLive('search_ingredients_v2 polish', () => {
   let managerToken: string;
   let admin: SupabaseClient;
   let semiId: string;
@@ -113,7 +113,7 @@ describeLive('search_ingredients_v1 polish', () => {
 
   it('returns is_semi_finished via the maintained flag', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('search_ingredients_v1', {
+    const { data, error } = await mgr.rpc('search_ingredients_v2', {
       p_query: 'PolishedSemiPainChoc',
       p_kind:  'semi_finished',
       p_limit: 5,
@@ -125,7 +125,7 @@ describeLive('search_ingredients_v1 polish', () => {
 
   it('matches misspelled query via pg_trgm similarity', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('search_ingredients_v1', {
+    const { data, error } = await mgr.rpc('search_ingredients_v2', {
       p_query: 'croisant',
       p_kind:  'all',
       p_limit: 10,
@@ -137,7 +137,7 @@ describeLive('search_ingredients_v1 polish', () => {
 
   it('ranks exact match first even when trigram score for another row is high', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('search_ingredients_v1', {
+    const { data, error } = await mgr.rpc('search_ingredients_v2', {
       p_query: 'PolishedLeafCroisant',
       p_kind:  'all',
       p_limit: 5,

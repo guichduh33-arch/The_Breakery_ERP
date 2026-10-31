@@ -1,3 +1,4 @@
+import { validSaleData } from '../offlineSaleValidation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { getStationMap } from '@/features/cart/hooks/useStationMap';
@@ -143,4 +144,22 @@ describe('sale snapshot', () => {
       expect(target.getQueryCache().getAll()).toHaveLength(0);
     },
   );
+  it('restores masked catalogue and variant stock without converting quantities to zero', () => {
+    const source = completeCache();
+    const products = source.getQueryData<Record<string, unknown>[]>(['products'])!;
+    source.setQueryData(['products'], products.map((p) => ({ ...p, current_stock: null, display_stock: { quantity: null }, is_sellable: true })));
+    const variants = source.getQueryData<Record<string, unknown>[]>(['pos-product-variants', 'coffee'])!;
+    source.setQueryData(['pos-product-variants', 'coffee'], variants.map((v) => ({ ...v, current_stock: null, display_stock: { quantity: null }, is_sellable: true })));
+    expect(saveSaleSnapshot(sessionStorage, source, identity, shift)).toBe(true);
+    const target = new QueryClient();
+    expect(restoreSaleSnapshot(sessionStorage, target, identity)).toEqual(shift);
+    expect(target.getQueryData(['products'])).toEqual(expect.arrayContaining([expect.objectContaining({ current_stock: null, is_sellable: true })]));
+    expect(target.getQueryData(['pos-product-variants', 'coffee'])).toEqual(expect.arrayContaining([expect.objectContaining({ current_stock: null, display_stock: { quantity: null } })]));
+  });
+  it.each([{ is_sellable: 'false' }, { track_inventory: 'true' }, { display_stock: { quantity: '0' } }, { display_stock: [] }])('rejects malformed additive variant fields: %j', (invalid) => {
+    const variant = { id: 'v', name: 'Large', retail_price: 40000, variant_label: 'Large', variant_axis: 'size',
+      variant_sort_order: 0, is_active: true, current_stock: null, deduct_stock: true };
+    expect(validSaleData(['pos-product-variants', 'parent'], [{ ...variant, ...invalid }])).toBe(false);
+    expect(validSaleData(['pos-product-variants', 'parent'], [variant])).toBe(true);
+  });
 });

@@ -1,17 +1,10 @@
-// apps/backoffice/src/features/inventory/components/WasteModal.tsx
-//
-// Records a shrinkage event. Product is pre-selected from the row that
-// opened the modal, or selectable via typeahead when launched from the
-// toolbar. Quantity is capped at the current on-hand because the server
-// will refuse `insufficient_stock` anyway.
-
+// Déclare une perte sans révéler le stock théorique ; seul le propriétaire approuve.
 import { useEffect, useId, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Dialog, DialogDescription, Input, Select } from '@breakery/ui';
 import { Button, DialogContent, DialogTitle } from '@/components/BackofficeUi.js';
-import { validateWaste } from '@breakery/domain';
-import { formatStockQuantity as formatQuantity, parseStockQuantity } from '../stockQuantity.js';
+import { parseStockQuantity } from '../stockQuantity.js';
 import { useWasteStock, WasteStockError } from '../hooks/useWasteStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
 import type { ProductTypeaheadRow } from '../hooks/useProductsForInventory.js';
@@ -71,8 +64,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
 
   const numericQty = parseStockQuantity(qty) ?? Number.NaN;
   const isQtyPositive = Number.isFinite(numericQty) && numericQty > 0;
-  const isQtyWithinStock = product !== null ? numericQty <= product.current_stock : false;
-  const isQtyValid = isQtyPositive && isQtyWithinStock;
+  const isQtyValid = isQtyPositive && numericQty <= 9999999.999;
 
   const finalReason = preset === 'Other' ? otherReason.trim() : preset;
   const isReasonValid = finalReason.length >= 3 && finalReason.length <= MAX_REASON;
@@ -89,18 +81,6 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
     e.preventDefault();
     if (!canSubmit || product === null) return;
 
-    const v = validateWaste({
-      productId:     product.id,
-      quantity:      numericQty,
-      reason:        finalReason,
-      currentStock:  product.current_stock,
-      idempotencyKey,
-    });
-    if (!v.ok) {
-      setFormError(`Invalid input: ${v.error}.`);
-      return;
-    }
-
     setFormError(null);
     setAttemptLocked(true);
     try {
@@ -114,13 +94,11 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
       // confirmait que la perte était enregistrée, ni ce qu'il restait. Mains
       // occupées, session interrompue, l'utilisateur ressaisissait — et la clé
       // d'idempotence ne l'en protège pas, une réouverture en régénérant une neuve.
-      if (res.idempotent_replay === true) {
-        toast.info(`Already recorded — ${product.name} was not decremented twice.`);
-      } else {
-        toast.success(
-          `Waste recorded — ${formatQuantity(numericQty, product.unit)} × ${product.name}. On hand: ${formatQuantity(res.new_current_stock, product.unit)}.`,
-        );
-      }
+      const confirmation = res.status === 'pending'
+        ? `Declaration ${res.idempotent_replay ? 'already submitted' : 'submitted'} — ${product.name}. Owner approval is required before stock changes.`
+        : `Declaration already ${res.status} — ${product.name}. No new stock operation was recorded.`;
+      if (res.idempotent_replay) toast.info(confirmation);
+      else toast.success(confirmation);
       setAttemptLocked(false);
       onClose();
     } catch (err) {
@@ -140,7 +118,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             setFormError('Quantity must be greater than zero.');
             break;
           case 'insufficient_stock':
-            setFormError(`Only ${formatQuantity(product.current_stock, product.unit)} in stock — stock changed elsewhere. Refresh and retry.`);
+            setFormError('The owner must review stock availability before approval.');
             void qc.invalidateQueries({ queryKey: STOCK_LEVELS_QUERY_KEY });
             break;
           case 'product_not_found':
@@ -165,7 +143,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           Record waste {isLockedProduct && initialProduct !== undefined ? `— ${initialProduct.name}` : ''}
         </DialogTitle>
         <DialogDescription className="sr-only">
-          Decrement stock for shrinkage, expiry, or damage. The quantity is removed from on-hand.
+          Declare shrinkage, expiry, or damage for independent owner approval. Stock stays unchanged until approval.
         </DialogDescription>
 
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
@@ -193,14 +171,6 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             </div>
           )}
 
-          {product !== null && (
-            <div className="text-sm text-text-secondary">
-              Current stock:{' '}
-              <span className="font-mono tabular-nums text-text-primary">
-                {formatQuantity(product.current_stock, product.unit)}
-              </span>
-            </div>
-          )}
 
           <div className="space-y-1">
             <label htmlFor={qtyId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -211,7 +181,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
               type="number"
               inputMode="decimal"
               min={0}
-              {...(product !== null ? { max: product.current_stock } : {})}
+              max={9999999.999}
               step="0.001"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
@@ -222,9 +192,9 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             {qty !== '' && !isQtyPositive && (
               <p id={qtyErrId} className="text-red-as-text text-xs">Quantity must be &gt; 0.</p>
             )}
-            {qty !== '' && isQtyPositive && product !== null && !isQtyWithinStock && (
+            {qty !== '' && isQtyPositive && !isQtyValid && (
               <p id={qtyErrId} className="text-red-as-text text-xs">
-                Cannot exceed current stock ({formatQuantity(product.current_stock, product.unit)}).
+                Quantity exceeds the supported limit.
               </p>
             )}
           </div>
@@ -232,15 +202,6 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           {/* Aperçu de la CONSÉQUENCE, symétrique de celui de l'ajustement.
               L'écran disait auparavant deux fois le stock actuel — « 40 (max:
               40) » — sans jamais dire ce qu'il resterait après le geste. */}
-          {product !== null && isQtyValid && (
-            <div className="text-sm text-text-secondary">
-              After this:{' '}
-              <span className="font-mono tabular-nums text-text-primary">
-                {formatQuantity(product.current_stock, product.unit)} → {formatQuantity(product.current_stock - numericQty, product.unit)}
-              </span>{' '}
-              <span className="font-mono tabular-nums text-red-as-text">(−{formatQuantity(numericQty, product.unit)})</span>
-            </div>
-          )}
 
           <div className="space-y-1">
             <label htmlFor={presetId} className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
@@ -284,15 +245,14 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
               AVANT le bouton qui produit l'écriture, pas après — c'est un geste
               comptable nominatif qui touche l'argent. */}
           <p className="rounded-md border border-border-subtle bg-surface-inert p-2 text-xs text-text-secondary">
-            Recorded as a permanent movement in your name. Corrections are made by a new
-            movement, never by editing this one.
+            Your declaration is recorded in your name. Stock changes only after independent owner approval.
           </p>
 
           </fieldset>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={handleClose} disabled={attemptLocked || wasteMut.isPending}>Cancel</Button>
             <Button type="submit" variant="ink" disabled={!canSubmit}>
-              {wasteMut.isPending ? 'Recording…' : attemptLocked ? 'Retry waste' : 'Record waste'}
+              {wasteMut.isPending ? 'Submitting…' : attemptLocked ? 'Retry declaration' : 'Submit for approval'}
             </Button>
           </div>
         </form>

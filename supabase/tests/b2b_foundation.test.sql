@@ -113,7 +113,7 @@ BEGIN
   -- cache seul, reliquat jeté).
   UPDATE customers SET b2b_current_balance = 0
    WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
-  PERFORM create_b2b_order_v8(
+  PERFORM create_b2b_order_v9(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000003',
     p_items       => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -121,7 +121,7 @@ BEGIN
       'unit_price', 50000
     ))
   );
-  v_result := record_b2b_payment_v5(
+  v_result := record_b2b_payment_v4(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount      => 50000,
     p_method      => 'cash'::payment_method
@@ -156,13 +156,13 @@ BEGIN
    WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
   SELECT COUNT(*) INTO v_count_before FROM b2b_payments
     WHERE idempotency_key = v_key;
-  v_r1 := record_b2b_payment_v5(
+  v_r1 := record_b2b_payment_v4(
     p_customer_id    => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount         => 10000,
     p_method         => 'cash'::payment_method,
     p_idempotency_key => v_key
   );
-  v_r2 := record_b2b_payment_v5(
+  v_r2 := record_b2b_payment_v4(
     p_customer_id    => 'b2bf0001-0000-0000-0000-000000000003',
     p_amount         => 10000,
     p_method         => 'cash'::payment_method,
@@ -192,7 +192,7 @@ BEGIN
    WHERE id = 'b2bf0001-0000-0000-0000-000000000004';
 END $t6_setup$;
 SELECT throws_ok(
-  $$ SELECT record_b2b_payment_v5(
+  $$ SELECT record_b2b_payment_v4(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
        p_amount      => 200000,
        p_method      => 'cash'::payment_method
@@ -210,7 +210,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 END $t7_setup$;
 SELECT throws_ok(
-  $$ SELECT record_b2b_payment_v5(
+  $$ SELECT record_b2b_payment_v4(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000001',
        p_amount      => 1000,
        p_method      => 'cash'::payment_method
@@ -327,7 +327,7 @@ BEGIN
   UPDATE products SET current_stock = 100.000
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
-  v_result := create_b2b_order_v8(
+  v_result := create_b2b_order_v9(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_items       => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -368,7 +368,7 @@ BEGIN
 END $t12_setup$;
 
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v8(
+  $$ SELECT create_b2b_order_v9(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
        p_items       => jsonb_build_array(jsonb_build_object(
          'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -398,7 +398,7 @@ BEGIN
   UPDATE products SET current_stock = 100.000
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
-  v_r1 := create_b2b_order_v8(
+  v_r1 := create_b2b_order_v9(
     p_customer_id     => 'b2bf0001-0000-0000-0000-000000000002',
     p_items           => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -408,7 +408,7 @@ BEGIN
     p_idempotency_key => v_key
   );
 
-  v_r2 := create_b2b_order_v8(
+  v_r2 := create_b2b_order_v9(
     p_customer_id     => 'b2bf0001-0000-0000-0000-000000000002',
     p_items           => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -474,7 +474,7 @@ BEGIN
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
   BEGIN
-    PERFORM create_b2b_order_v8(
+    PERFORM create_b2b_order_v9(
       p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
       p_items       => jsonb_build_array(jsonb_build_object(
         'product_id', 'b2bf0002-0000-0000-0000-000000000001',

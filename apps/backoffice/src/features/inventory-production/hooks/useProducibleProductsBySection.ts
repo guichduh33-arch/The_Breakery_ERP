@@ -9,6 +9,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 
 export interface ProducibleUnitOption {
   code: string;
@@ -23,7 +24,7 @@ export interface ProducibleProduct {
   /** Base (stock) unit — conversions and the RPC quantity are in this unit. */
   unit: string;
   product_type: string;
-  current_stock: number;
+  current_stock: number | null;
   /** Base unit first, then any alternative units. */
   units: ProducibleUnitOption[];
 }
@@ -41,24 +42,19 @@ export function useProducibleProductsBySection(sectionId: string | null) {
       const { data: links, error: linkErr } = await supabase
         .from('product_sections')
         .select('product_id')
-        .eq('section_id', sectionId as string);
+        .eq('section_id', sectionId!);
       if (linkErr) throw linkErr;
-      const linkedIds = Array.from(new Set((links ?? []).map((l) => l.product_id as string)));
+      const linkedIds = Array.from(new Set((links ?? []).map((l) => l.product_id)));
       if (linkedIds.length === 0) return [];
 
       // 2. producible products among them.
-      const { data: prods, error: prodErr } = await supabase
-        .from('products')
-        .select('id, sku, name, unit, current_stock, product_type')
-        .in('id', linkedIds)
-        .in('product_type', ['finished', 'semi_finished'])
-        .eq('is_active', true)
-        .is('deleted_at', null)
-        .order('name');
-      if (prodErr) throw prodErr;
-      const prodRows = prods ?? [];
+      const linked = new Set(linkedIds);
+      const prodRows = (await getOperationalProducts())
+        .filter((p) => linked.has(p.id) && ['finished', 'semi_finished'].includes(p.product_type)
+          && p.is_active && p.deleted_at === null)
+        .sort((a, b) => a.name.localeCompare(b.name));
       if (prodRows.length === 0) return [];
-      const prodIds = prodRows.map((p) => p.id as string);
+      const prodIds = prodRows.map((p) => p.id);
 
       // 3. active recipes → only products that can actually be produced.
       const { data: recs, error: recErr } = await supabase
@@ -68,7 +64,7 @@ export function useProducibleProductsBySection(sectionId: string | null) {
         .eq('is_active', true)
         .is('deleted_at', null);
       if (recErr) throw recErr;
-      const withRecipe = new Set((recs ?? []).map((r) => r.product_id as string));
+      const withRecipe = new Set((recs ?? []).map((r) => r.product_id));
 
       // 4. alternative units (base unit is added first, below).
       const { data: alts, error: altErr } = await supabase
@@ -80,24 +76,24 @@ export function useProducibleProductsBySection(sectionId: string | null) {
       if (altErr) throw altErr;
       const altsByProduct = new Map<string, ProducibleUnitOption[]>();
       for (const a of alts ?? []) {
-        const pid = a.product_id as string;
+        const pid = a.product_id;
         const list = altsByProduct.get(pid) ?? [];
-        list.push({ code: a.code as string, factor_to_base: Number(a.factor_to_base) });
+        list.push({ code: a.code, factor_to_base: Number(a.factor_to_base) });
         altsByProduct.set(pid, list);
       }
 
       return prodRows
-        .filter((p) => withRecipe.has(p.id as string))
+        .filter((p) => withRecipe.has(p.id))
         .map((p): ProducibleProduct => {
-          const base: ProducibleUnitOption = { code: p.unit as string, factor_to_base: 1 };
-          const extra = (altsByProduct.get(p.id as string) ?? []).filter((u) => u.code !== p.unit);
+          const base: ProducibleUnitOption = { code: p.unit, factor_to_base: 1 };
+          const extra = (altsByProduct.get(p.id) ?? []).filter((u) => u.code !== p.unit);
           return {
-            id: p.id as string,
-            sku: p.sku as string,
-            name: p.name as string,
-            unit: p.unit as string,
-            product_type: p.product_type as string,
-            current_stock: Number(p.current_stock),
+            id: p.id,
+            sku: p.sku,
+            name: p.name,
+            unit: p.unit,
+            product_type: p.product_type,
+            current_stock: p.current_stock,
             units: [base, ...extra],
           };
         });

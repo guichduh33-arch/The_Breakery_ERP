@@ -3,7 +3,7 @@
 // Session 14 / Phase 4.B — Single product fetch for the detail page.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 import type { ProductRow } from '../types.js';
 
 interface ProductRowDb {
@@ -16,7 +16,7 @@ interface ProductRowDb {
   cost_price:       number;
   product_type:     string;
   image_url:        string | null;
-  current_stock:    number;
+  current_stock:    number | null;
   min_stock_threshold: number;
   unit:             string;
   is_active:        boolean;
@@ -49,25 +49,8 @@ export function useProductDetail(productId: string | null) {
     staleTime: 30_000,
     queryFn: async () => {
       if (productId === null || productId === '') return null;
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          id, sku, name, category_id,
-          retail_price, wholesale_price, cost_price,
-          product_type, image_url,
-          current_stock, min_stock_threshold, unit,
-          is_active, is_favorite,
-          description, visible_on_pos, available_for_sale,
-          track_inventory, deduct_stock, is_semi_finished,
-          target_gross_margin_pct, default_shelf_life_hours, is_display_item, is_test,
-          parent_product_id, variant_label, variant_axis, variant_sort_order,
-          dispatch_stations,
-          categories:categories ( name, category_type )
-        `)
-        .eq('id', productId)
-        .is('deleted_at', null)
-        .maybeSingle();
-      if (error) throw error;
+      const data = (await getOperationalProducts()).find((p) => p.id === productId) ?? null;
+
       if (data === null) return null;
       const r = data as ProductRowDb;
       const category = Array.isArray(r.categories) ? r.categories[0] ?? null : r.categories;
@@ -83,7 +66,7 @@ export function useProductDetail(productId: string | null) {
         cost_price:          Number(r.cost_price),
         product_type:        (r.product_type === 'combo' ? 'combo' : 'finished'),
         image_url:           r.image_url,
-        current_stock:       Number(r.current_stock),
+        current_stock:       r.current_stock === null ? null : Number(r.current_stock),
         min_stock_threshold: Number(r.min_stock_threshold),
         unit:                r.unit,
         is_active:           r.is_active,

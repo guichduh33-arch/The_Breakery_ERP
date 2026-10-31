@@ -75,7 +75,7 @@ export function useWastageReport(params: UseWastageReportParams) {
     queryFn:  async () => {
       // v2 est dans les types générés : plus besoin du `(supabase as any)` qui
       // traînait depuis S30 et qui empilait 13 erreurs no-unsafe-* sur ce hook.
-      const { data, error } = await supabase.rpc('get_wastage_report_v2', {
+      const { data, error } = await supabase.rpc('get_wastage_report_v3', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

@@ -2,7 +2,7 @@
 // Session 15 — Phase 3.B — RecipeDuplicateModal render + error display + confirm path.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecipeDuplicateModal } from '../components/RecipeDuplicateModal.js';
 
@@ -21,7 +21,7 @@ const RECIPE_PRODUCT_ROWS = [
 let rpcImpl: (fn: string, args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 vi.mock('@/lib/supabase.js', () => {
-  type RpcResult = { data: unknown; error: { message: string } | null };
+  interface RpcResult { data: unknown; error: { message: string } | null }
   function buildChain(table: string) {
     const tableData: RpcResult =
       table === 'products' ? { data: PRODUCT_ROWS, error: null } :
@@ -45,7 +45,9 @@ vi.mock('@/lib/supabase.js', () => {
   return {
     supabase: {
       from: (t: string) => buildChain(t),
-      rpc: (fn: string, args: unknown) => rpcImpl(fn, args),
+      rpc: (fn: string, args: unknown) => fn === 'get_operational_products_v1'
+        ? Promise.resolve({ data: PRODUCT_ROWS.map((p) => ({ ...p, product_type: 'finished', is_active: true, deleted_at: null })), error: null })
+        : rpcImpl(fn, args),
     },
   };
 });
@@ -97,7 +99,7 @@ describe('RecipeDuplicateModal smoke', () => {
 
   it('lists only products without active recipes (filters source and tgt-2)', async () => {
     renderModal();
-    const select = await waitFor(() => screen.getByTestId('duplicate-target-select') as HTMLSelectElement);
+    const select = await waitFor(() => screen.getByTestId<HTMLSelectElement>('duplicate-target-select'));
     // Wait for useFinishedProducts to resolve
     await waitFor(() => {
       const opts = Array.from(select.options).map((o) => o.value);
@@ -114,16 +116,14 @@ describe('RecipeDuplicateModal smoke', () => {
       error: { message: 'target_has_active_recipes' },
     });
     renderModal();
-    const select = await waitFor(() => screen.getByTestId('duplicate-target-select') as HTMLSelectElement);
+    const select = await waitFor(() => screen.getByTestId<HTMLSelectElement>('duplicate-target-select'));
     await waitFor(() => {
       expect(Array.from(select.options).map((o) => o.value)).toContain('tgt-1');
     });
     fireEvent.change(select, { target: { value: 'tgt-1' } });
     const confirm = screen.getByTestId('duplicate-confirm');
     expect(confirm).not.toBeDisabled();
-    await act(async () => {
-      fireEvent.click(confirm);
-    });
+    fireEvent.click(confirm);
     await waitFor(() => {
       const err = screen.getByTestId('duplicate-error');
       expect(err).toHaveAttribute('data-error-code', 'target_has_active_recipes');
@@ -141,14 +141,12 @@ describe('RecipeDuplicateModal smoke', () => {
       error: null,
     });
     const { onSuccess } = renderModal();
-    const select = await waitFor(() => screen.getByTestId('duplicate-target-select') as HTMLSelectElement);
+    const select = await waitFor(() => screen.getByTestId<HTMLSelectElement>('duplicate-target-select'));
     await waitFor(() => {
       expect(Array.from(select.options).map((o) => o.value)).toContain('tgt-1');
     });
     fireEvent.change(select, { target: { value: 'tgt-1' } });
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('duplicate-confirm'));
-    });
+    fireEvent.click(screen.getByTestId('duplicate-confirm'));
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalledWith('tgt-1');
     });

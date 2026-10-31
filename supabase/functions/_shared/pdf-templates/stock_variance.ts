@@ -1,5 +1,5 @@
 // supabase/functions/_shared/pdf-templates/stock_variance.ts
-// ADR-027 — Stock Variance = démarque constatée (get_stock_variance_v3).
+// ADR-027 — Stock Variance = démarque constatée (get_stock_variance_v4).
 // Table: Product | Opening | In | Out | Wasted | Corrected | Closing — sorted by
 // (|corrected| + |wasted|) desc, comme le rapport à l'écran. `Out` agrège les
 // sorties de vente et la consommation de production (signées négatives).

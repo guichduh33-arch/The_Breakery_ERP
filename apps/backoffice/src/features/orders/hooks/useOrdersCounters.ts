@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/orders/hooks/useOrdersCounters.ts
 //
-// Agrégats de la liste des commandes (`get_orders_counters_v2`). ADR-025,
+// Agrégats de la liste des commandes (`get_orders_counters_v3`). ADR-025,
 // amendée après review PR #367 :
 //   · RÉGLÉ = paiement enregistré OU statut paid/completed — les règlements
 //     B2B n'écrivent jamais dans order_payments ;
@@ -50,7 +50,7 @@ export const ORDERS_COUNTERS_QUERY_KEY = ['orders', 'list', 'counters'] as const
 function parseCell(raw: unknown, key: string): OrdersCounterCell {
   const cell = raw as { count?: unknown; amount?: unknown } | null | undefined;
   if (cell == null || typeof cell.count !== 'number' || typeof cell.amount !== 'number') {
-    throw new Error(`get_orders_counters_v2: unexpected shape for "${key}"`);
+    throw new Error(`get_orders_counters_v3: unexpected shape for "${key}"`);
   }
   return { count: cell.count, amount: cell.amount };
 }
@@ -64,7 +64,7 @@ export function useOrdersCounters(params: UseOrdersCountersParams) {
     placeholderData: keepPreviousData,
     enabled: Boolean(params.start && params.end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_orders_counters_v2', {
+      const { data, error } = await supabase.rpc('get_orders_counters_v3', {
         p_start:   params.start,
         p_end:     params.end,
         p_filters: toJsonbFilters(params.filters),

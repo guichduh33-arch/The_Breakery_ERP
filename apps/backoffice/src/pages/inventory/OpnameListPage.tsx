@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { StockDeclarationsPanel } from '@/features/inventory/components/StockDeclarationsPanel.js';
 
 const STATUS_OPTIONS: readonly { value: '' | OpnameStatus; label: string }[] = [
   { value: '',          label: 'All statuses' },
@@ -56,6 +57,7 @@ function aggregateRows(rows: readonly OpnameListRow[]): OpnameKpi {
 }
 
 const COLUMNS: readonly DataTableColumn<OpnameListRow>[] = [
+  { id: 'business_day', header: 'Business day', render: (r) => r.business_day },
   {
     id: 'count_number',
     header: 'Count #',
@@ -207,6 +209,7 @@ export default function OpnameListPage(): JSX.Element {
         />
       )}
 
+      <StockDeclarationsPanel />
       {createOpen && (
         <CreateOpnameModal
           onCreated={(id) => {

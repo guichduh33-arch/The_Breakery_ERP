@@ -1,6 +1,6 @@
 -- supabase/tests/sales_by_product.test.sql
--- Rapport « Sales by Product » — pgTAP pour get_sales_by_product_v1 et son
--- drill-down get_product_sales_lines_v1 (14 assertions T1–T14).
+-- Rapport « Sales by Product » — pgTAP pour get_sales_by_product_v2 et son
+-- drill-down get_product_sales_lines_v2 (14 assertions T1–T14).
 --
 -- CE QUE CETTE SUITE PROTÈGE EN PRIORITÉ : les deux RPC partagent un périmètre
 -- qui doit rester STRICTEMENT le même. Si l'une exclut une ligne que l'autre
@@ -8,16 +8,16 @@
 -- n'a aucun moyen de savoir laquelle des deux ment. T13 est cette assertion, et
 -- c'est celle à ne jamais retirer.
 --
---   T1  : get_sales_by_product_v1 MANAGER happy path — 5-key JSONB
---   T2  : get_sales_by_product_v1 CASHIER denied (42501)
+--   T1  : get_sales_by_product_v2 MANAGER happy path — 5-key JSONB
+--   T2  : get_sales_by_product_v2 CASHIER denied (42501)
 --   T3  : end < start raises P0001
 --   T4  : clamp 366 jours — la borne de DÉBUT est rognée, la fin demandée tient
 --   T5  : summary.revenue == SUM(by_product.revenue) — la ventilation referme
 --   T6  : counter.revenue + b2b.revenue == summary.revenue — le canal referme
 --   T7  : summary.unattributed porte order_discount ET promotion_total
 --   T8  : ligne annulée et cadeau promo EXCLUS, remise de ligne comptée (fixture)
---   T9  : get_product_sales_lines_v1 MANAGER happy path — 4 clés de page
---   T10 : get_product_sales_lines_v1 CASHIER denied (42501)
+--   T9  : get_product_sales_lines_v2 MANAGER happy path — 4 clés de page
+--   T10 : get_product_sales_lines_v2 CASHIER denied (42501)
 --   T11 : curseur malformé → P0001 (jamais un retour silencieux à la page 1)
 --   T12 : p_limit=1 rend 1 ligne et un next_cursor quand il en reste
 --   T13 : lines.totals.revenue == by_product[ce produit].revenue — MÊME PÉRIMÈTRE
@@ -37,7 +37,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(14);
 
 -- ============================================================
--- A. get_sales_by_product_v1 — garde, bornes, invariants
+-- A. get_sales_by_product_v2 — garde, bornes, invariants
 -- ============================================================
 
 -- T1 happy path : MANAGER, JSONB à 5 clés
@@ -45,13 +45,13 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_product_v1('2026-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2026-01-01', '2026-12-31');
   v_ok := (v_r ? 'period') AND (v_r ? 'timezone') AND (v_r ? 'generated_at')
       AND (v_r ? 'summary') AND (v_r ? 'by_product');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_sales_by_product_v1 MANAGER happy path returns 5-key JSONB');
+  'T1: get_sales_by_product_v2 MANAGER happy path returns 5-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -59,13 +59,13 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_sales_by_product_v1('2026-01-01', '2026-12-31');
+    PERFORM get_sales_by_product_v2('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_sales_by_product_v1 CASHIER raises 42501');
+  'T2: get_sales_by_product_v2 CASHIER raises 42501');
 
 -- T3 bornes inversées → P0001
 DO $$
@@ -73,7 +73,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_sales_by_product_v1('2026-12-31', '2026-01-01');
+    PERFORM get_sales_by_product_v2('2026-12-31', '2026-01-01');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -86,7 +86,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_product_v1('2020-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2020-01-01', '2026-12-31');
   v_ok := ((v_r->'period'->>'start')::date = '2026-12-31'::date - 366)
       AND ((v_r->'period'->>'end')::date   = '2026-12-31'::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
@@ -99,7 +99,7 @@ DO $$
 DECLARE v_r JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_product_v1('2026-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2026-01-01', '2026-12-31');
   SELECT COALESCE(SUM((p->>'revenue')::numeric), 0)
     INTO v_sum FROM jsonb_array_elements(v_r->'by_product') p;
   v_ok := (v_sum = (v_r->'summary'->>'revenue')::numeric);
@@ -108,12 +108,12 @@ END $$;
 SELECT ok(current_setting('breakery.t5')::boolean,
   'T5: SUM(by_product.revenue) equals summary.revenue');
 
--- T6 le canal referme le total (l'écart assumé avec get_pos_top_products_v1)
+-- T6 le canal referme le total (l'écart assumé avec get_pos_top_products_v2)
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_product_v1('2026-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2026-01-01', '2026-12-31');
   v_ok := ((v_r->'summary'->'counter'->>'revenue')::numeric
          + (v_r->'summary'->'b2b'->>'revenue')::numeric
          = (v_r->'summary'->>'revenue')::numeric);
@@ -127,7 +127,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_sales_by_product_v1('2026-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2026-01-01', '2026-12-31');
   v_ok := (v_r->'summary'->'unattributed' ? 'order_discount')
       AND (v_r->'summary'->'unattributed' ? 'promotion_total');
   PERFORM set_config('breakery.t7', v_ok::text, false);
@@ -152,7 +152,7 @@ BEGIN
   SELECT id INTO v_uid FROM user_profiles WHERE deleted_at IS NULL LIMIT 1;
 
   -- Base de comparaison : ce que le produit pèse AVANT la fixture.
-  v_r := get_sales_by_product_v1('2026-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2026-01-01', '2026-12-31');
   SELECT COALESCE((p->>'qty')::numeric, 0) INTO v_qty_before
     FROM jsonb_array_elements(v_r->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -170,7 +170,7 @@ BEGIN
     (v_oid, v_pid, 'Cancelled', 10000, 1, 10000, true,  now(), v_uid, 'fixture', false, 0),
     (v_oid, v_pid, 'Gift',      10000, 1, 10000, false, NULL,  NULL,  NULL,      true,  0);
 
-  v_r := get_sales_by_product_v1('2026-01-01', '2026-12-31');
+  v_r := get_sales_by_product_v2('2026-01-01', '2026-12-31');
   SELECT p INTO v_row
     FROM jsonb_array_elements(v_r->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -184,7 +184,7 @@ SELECT ok(current_setting('breakery.t8')::boolean,
   'T8: cancelled line and promo gift excluded, line discount counted');
 
 -- ============================================================
--- B. get_product_sales_lines_v1 — garde, curseur, réconciliation
+-- B. get_product_sales_lines_v2 — garde, curseur, réconciliation
 -- ============================================================
 
 -- Le produit le plus vendu de la fenêtre sert de sujet aux T9–T14 : c'est celui
@@ -210,12 +210,12 @@ DECLARE v_r JSONB; v_pid uuid; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
-  v_r := get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31');
+  v_r := get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31');
   v_ok := (v_r ? 'lines') AND (v_r ? 'totals') AND (v_r ? 'next_cursor') AND (v_r ? 'has_more');
   PERFORM set_config('breakery.t9', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t9')::boolean,
-  'T9: get_product_sales_lines_v1 returns lines/totals/next_cursor/has_more');
+  'T9: get_product_sales_lines_v2 returns lines/totals/next_cursor/has_more');
 
 -- T10 garde : CASHIER → 42501
 DO $$
@@ -224,13 +224,13 @@ BEGIN
   SELECT pid INTO v_pid FROM _sbp_subject;
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31');
+    PERFORM get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t10', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t10')::boolean,
-  'T10: get_product_sales_lines_v1 CASHIER raises 42501');
+  'T10: get_product_sales_lines_v2 CASHIER raises 42501');
 
 -- T11 curseur malformé : on REFUSE. Servir la page 1 en silence ferait boucler
 -- le défilement sans fin.
@@ -240,7 +240,7 @@ BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
   BEGIN
-    PERFORM get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31', 100, 'not-a-cursor');
+    PERFORM get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31', 100, 'not-a-cursor');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t11', v_caught::text, false);
@@ -254,7 +254,7 @@ DECLARE v_r JSONB; v_pid uuid; v_n INT; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT pid, n INTO v_pid, v_n FROM _sbp_subject;
-  v_r := get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31', 1);
+  v_r := get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31', 1);
   v_ok := (jsonb_array_length(v_r->'lines') = 1)
       AND (CASE WHEN v_n > 1 THEN (v_r->>'has_more')::boolean ELSE true END);
   PERFORM set_config('breakery.t12', v_ok::text, false);
@@ -268,8 +268,8 @@ DECLARE v_agg JSONB; v_lines JSONB; v_pid uuid; v_prod NUMERIC; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT pid INTO v_pid FROM _sbp_subject;
-  v_agg   := get_sales_by_product_v1('2026-01-01', '2026-12-31');
-  v_lines := get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31');
+  v_agg   := get_sales_by_product_v2('2026-01-01', '2026-12-31');
+  v_lines := get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31');
   SELECT (p->>'revenue')::numeric INTO v_prod
     FROM jsonb_array_elements(v_agg->'by_product') p
    WHERE (p->>'product_id')::uuid = v_pid;
@@ -288,11 +288,11 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT pid, n INTO v_pid, v_n FROM _sbp_subject;
-  v_p1  := get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31', 1);
+  v_p1  := get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31', 1);
   v_cur := v_p1->>'next_cursor';
   v_last := (v_p1->'lines'->0)->>'id';
   IF v_n > 1 AND v_cur IS NOT NULL THEN
-    v_p2 := get_product_sales_lines_v1(v_pid, '2026-01-01', '2026-12-31', 1, v_cur);
+    v_p2 := get_product_sales_lines_v2(v_pid, '2026-01-01', '2026-12-31', 1, v_cur);
     v_ok := (jsonb_array_length(v_p2->'lines') = 1)
         AND (((v_p2->'lines'->0)->>'id') <> v_last);
   ELSE

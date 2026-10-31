@@ -49,6 +49,9 @@ export interface ReportShellProps {
 /** Traduit les erreurs de garde en langage humain — un code ne dit pas à un
  *  gérant ce qu'il doit en conclure. */
 function errorText(error: Error): string {
+  if (error.message.includes('business_day_locked') || error.message.includes('business_day_not_released')) {
+    return 'Product sales are locked for this period. The owner must release each business day after register closing and independent stock counting.';
+  }
   if (error.message === 'permission_denied' || error.message.includes('42501')) {
     return 'You do not have permission to view this report.';
   }

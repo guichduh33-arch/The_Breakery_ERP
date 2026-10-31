@@ -1,129 +1,70 @@
-// supabase/tests/functions/waste-stock.test.ts
-// Session 12 — Live integration tests for waste_stock_v2 RPC.
-//
-// Coverage:
-//   - Happy path (MANAGER, qty within stock, negative movement recorded)
-//   - Insufficient_stock when qty > on-hand (P0002)
-//   - Reason required (short / empty rejected)
-//   - Idempotency replay
-//   - quantity <= 0 rejected
+// La disponibilité se vérifie à l'approbation ; la déclaration ne déduit rien.
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { SERVICE_KEY } from './_helpers/auth';
+import { stockDeclarationFixture, type StockApproval, type StockDeclaration } from './_helpers/stockDeclarations';
 
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
-import { loginAs, jwtClient } from './_helpers/auth';
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v2 RPC — integration', () => {
-  let managerToken: string;
-  let productId:    string;
-
-  beforeAll(async () => {
-    managerToken = await loginAs('EMP003', '111111');
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productId = String(p!.id);
+describe.skipIf(!SERVICE_KEY)('stock waste declaration', () => {
+  let fixture: Awaited<ReturnType<typeof stockDeclarationFixture>>;
+  beforeAll(async () => { fixture = await stockDeclarationFixture('ZZ-TEST-WASTE-DECLARATION'); });
+  beforeEach(async () => { await fixture.reset(); });
+  afterAll(async () => { await fixture?.cleanup(); });
+  const args = (quantity: number, reason = 'Damaged inventory') => ({
+    p_product_id: fixture.productId, p_quantity: quantity, p_reason: reason,
+    p_idempotency_key: crypto.randomUUID(),
   });
 
-  beforeEach(async () => {
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    await admin.from('products').update({ current_stock: 100 }).eq('id', productId);
-  });
-
-  it('manager happy path: decrement stock + insert negative movement', async () => {
-    const sb = jwtClient(managerToken);
-    const { data, error } = await sb.rpc('waste_stock_v2', {
-      p_product_id: productId,
-      p_quantity:   8,
-      p_reason:     'Expired stock thrown out',
-    }).returns<unknown>();
-    expect(error).toBeNull();
-    const result = data as { movement_id: string; new_current_stock: number };
+  it('records the negative movement only after independent approval', async () => {
+    const submitted = await fixture.declarant.rpc('waste_stock_v4', args(8));
+    expect(submitted.error).toBeNull();
+    expect(await fixture.currentStock()).toBe(100);
+    const approved = await fixture.owner.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: (submitted.data as StockDeclaration).declaration_id,
+    });
+    expect(approved.error).toBeNull();
+    const result = approved.data as StockApproval;
     expect(Number(result.new_current_stock)).toBe(92);
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: mvt } = await admin.from('stock_movements')
-      .select('quantity, movement_type, reason')
+    const movement = await fixture.admin.from('stock_movements').select('quantity,movement_type')
       .eq('id', result.movement_id).single();
-    // Caller supplies positive qty; the RPC negates internally for the ledger row.
-    expect(Number(mvt!.quantity)).toBe(-8);
-    expect(mvt!.movement_type).toBe('waste');
-    expect(mvt!.reason).toBe('Expired stock thrown out');
+    expect(movement.error).toBeNull();
+    expect(Number(movement.data!.quantity)).toBe(-8);
+    expect(movement.data!.movement_type).toBe('waste');
   });
 
-  it('manager: qty > current_stock → insufficient_stock', async () => {
-    const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('waste_stock_v2', {
-      p_product_id: productId,
-      p_quantity:   500,  // baseline is 100
-      p_reason:     'Should fail: not enough on hand',
+  it('accepts a blind declaration and rejects excess stock on approval', async () => {
+    const submitted = await fixture.declarant.rpc('waste_stock_v4', args(500));
+    expect(submitted.error).toBeNull();
+    expect(submitted.data).toMatchObject({ status: 'pending' });
+    const approved = await fixture.owner.rpc('approve_stock_declaration_v3', {
+      p_declaration_id: (submitted.data as StockDeclaration).declaration_id,
     });
-    expect(error?.message ?? '').toMatch(/insufficient_stock/);
+    expect(approved.error?.message).toMatch(/insufficient_stock/);
+    expect(await fixture.currentStock()).toBe(100);
   });
 
-  it('manager: reason missing/short → reason_required (from record_stock_movement_v1)', async () => {
-    const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('waste_stock_v2', {
-      p_product_id: productId,
-      p_quantity:   1,
-      p_reason:     'no',
-    });
-    expect(error?.message ?? '').toMatch(/reason_required/);
+  it('replays an approved loss without a second deduction', async () => {
+    const request = args(5);
+    const submitted = await fixture.declarant.rpc('waste_stock_v4', request);
+    expect(submitted.error).toBeNull();
+    const id = (submitted.data as StockDeclaration).declaration_id;
+    expect((await fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id })).error).toBeNull();
+    const replay = await fixture.declarant.rpc('waste_stock_v4', request);
+    expect(replay.error).toBeNull();
+    expect(replay.data).toMatchObject({ declaration_id: id, status: 'approved', idempotent_replay: true });
+    const again = await fixture.owner.rpc('approve_stock_declaration_v3', { p_declaration_id: id });
+    expect(again.error).toBeNull();
+    expect(again.data).toMatchObject({ idempotent_replay: true });
+    expect(await fixture.currentStock()).toBe(95);
   });
 
-  it('idempotency: same key on retry returns idempotent_replay=true, single row', async () => {
-    const sb = jwtClient(managerToken);
-    const key = crypto.randomUUID();
-
-    const r1 = await sb.rpc('waste_stock_v2', {
-      p_product_id: productId,
-      p_quantity:   5,
-      p_reason:     'Waste idempotency',
-      p_idempotency_key: key,
-    });
-    expect(r1.error).toBeNull();
-    const id1 = (r1.data as { movement_id: string }).movement_id;
-
-    const r2 = await sb.rpc('waste_stock_v2', {
-      p_product_id: productId,
-      p_quantity:   5,
-      p_reason:     'Waste idempotency',
-      p_idempotency_key: key,
-    });
-    expect(r2.error).toBeNull();
-    const result2 = r2.data as { movement_id: string; idempotent_replay: boolean };
-    expect(result2.movement_id).toBe(id1);
-    expect(result2.idempotent_replay).toBe(true);
-
-    const admin = createClient(SUPABASE_URL, SERVICE);
-    const { count } = await admin.from('stock_movements')
-      .select('*', { count: 'exact', head: true })
-      .eq('idempotency_key', key);
-    expect(count).toBe(1);
-    await admin.from('stock_movements').delete().eq('idempotency_key', key);
-  });
-
-  it('manager: quantity <= 0 → quantity_must_be_positive', async () => {
-    const sb = jwtClient(managerToken);
-    for (const qty of [0, -3]) {
-      const { error } = await sb.rpc('waste_stock_v2', {
-        p_product_id: productId,
-        p_quantity:   qty,
-        p_reason:     'Non-positive qty should be rejected',
-      });
-      expect(error?.message ?? '', `qty=${qty}`).toMatch(/quantity_must_be_positive/);
+  it('validates reason and positive quantity', async () => {
+    expect((await fixture.declarant.rpc('waste_stock_v4', args(1, 'no'))).error?.message).toMatch(/reason_required/);
+    for (const quantity of [0, -3]) {
+      expect((await fixture.declarant.rpc('waste_stock_v4', args(quantity))).error?.message).toMatch(/invalid_quantity/);
     }
   });
 
-  it('manager: nonexistent product_id → product_not_found', async () => {
-    const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('waste_stock_v2', {
-      p_product_id: '00000000-0000-0000-0000-000000000000',
-      p_quantity:   1,
-      p_reason:     'Bogus product id',
-    });
-    expect(error?.message ?? '').toMatch(/product_not_found/);
+  it('rejects an unknown product', async () => {
+    const rejected = await fixture.declarant.rpc('waste_stock_v4', { ...args(1), p_product_id: crypto.randomUUID() });
+    expect(rejected.error?.message).toMatch(/product_not_found/);
   });
 });

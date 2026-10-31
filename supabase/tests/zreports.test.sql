@@ -353,7 +353,7 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege('anon', 'sign_zreport_v3(uuid, text)', 'execute')
   AND NOT has_function_privilege('anon', 'void_zreport_v3(uuid, text, text)', 'execute')
-  AND NOT has_function_privilege('anon', 'get_zreport_snapshot_v1(uuid)', 'execute'),
+  AND NOT has_function_privilege('anon', 'get_zreport_snapshot_v2(uuid)', 'execute'),
   'T14: anon cannot EXECUTE sign/void/get_snapshot zreport RPCs'
 );
 

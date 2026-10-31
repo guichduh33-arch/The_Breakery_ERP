@@ -65,7 +65,7 @@ describe('payment → actual fire hook → durable print journal', () => {
     usePaymentStore.getState().beginAttempt({ ...value, state: 'confirmed', result: paid });
     const http = vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
       const address = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url;
-      if (!address.endsWith('/rest/v1/rpc/get_pos_order_snapshot_v2')) throw new Error('Unexpected payment write');
+      if (!address.endsWith('/rest/v1/rpc/get_pos_order_snapshot_v3')) throw new Error('Unexpected payment write');
       return Promise.resolve(new Response(JSON.stringify({ order_id: 'order', order_type: 'take_out',
         customerId: null, tableNumber: null, notes: null, items: [
           { id: 'coffee-row', product_id: 'coffee', name: 'Paid coffee', quantity: 1, unit_price: 25000,

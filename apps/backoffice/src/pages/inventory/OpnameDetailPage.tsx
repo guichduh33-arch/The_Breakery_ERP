@@ -35,12 +35,14 @@ import { OpnameFileActions } from '@/features/inventory-opname/components/Opname
 import { ValidateOpnameDialog } from '@/features/inventory-opname/components/ValidateOpnameDialog.js';
 import { FinalizeOpnameDialog } from '@/features/inventory-opname/components/FinalizeOpnameDialog.js';
 import { CancelOpnameDialog } from '@/features/inventory-opname/components/CancelOpnameDialog.js';
+import { ReleaseBusinessDay } from '@/features/inventory-opname/components/ReleaseBusinessDay.js';
 
 export default function OpnameDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const detail = useOpnameDetail(id ?? null);
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canFinalize = hasPermission('inventory.opname.finalize');
+  const isOwner = useAuthStore((s) => s.user?.role_code === 'SUPER_ADMIN');
+  const canFinalize = isOwner && hasPermission('inventory.opname.finalize');
   const canCreate   = hasPermission('inventory.opname.create');
 
   const [showValidate, setShowValidate] = useState<boolean>(false);
@@ -64,9 +66,9 @@ export default function OpnameDetailPage(): JSX.Element {
   /** Phase comptage : rien de l'attendu ne doit filtrer à l'écran. */
   const counting = status === 'draft' || status === 'counting';
   /** L'attendu et les écarts sont visibles (revue, finalisé, annulé). */
-  const revealed = status !== undefined && !counting;
+  const revealed = isOwner && status !== undefined && !counting;
   /** Plus aucune saisie : la revue fige les chiffres comptés. */
-  const locked   = revealed;
+  const locked   = status !== undefined && !counting;
   /** Inventaire clos — plus rien à annuler. */
   const terminal = status === 'finalized' || status === 'cancelled';
   const stats     = useMemo(() => {
@@ -181,7 +183,7 @@ export default function OpnameDetailPage(): JSX.Element {
               <EyeOff className="h-3.5 w-3.5" aria-hidden /> Blind count
             </div>
             <p className="mt-2 text-sm text-text-secondary">
-              Expected quantities and variances stay hidden until you validate.
+              Expected quantities and variances are restricted to the owner. Submitting locks your count for independent review.
               Record what you actually see on the shelf.
             </p>
           </div>
@@ -250,8 +252,8 @@ export default function OpnameDetailPage(): JSX.Element {
           `blind-count` l'a attrapé au premier essai. */}
       {counting && canCreate && (
         <p className="text-sm text-text-secondary">
-          Revealing the variances ends the blind count and locks every counted
-          quantity. The count cannot be reopened.
+          Submitting locks every counted quantity for independent owner review.
+          The count cannot be reopened.
         </p>
       )}
 
@@ -284,12 +286,12 @@ export default function OpnameDetailPage(): JSX.Element {
             {...(blockReason !== null ? { 'aria-describedby': 'opname-block-reason' } : {})}
           >
             <CheckCircle2 className="h-4 w-4" aria-hidden />
-            Validate &amp; reveal variances
+            Submit &amp; lock count
           </Button>
         )}
         {/* `review` UNIQUEMENT. Offrir Finaliser pendant le comptage rendait la
             révélation facultative : on postait le JE définitif sans avoir vu les
-            écarts. Le serveur refuse désormais aussi (finalize_opname_v4). */}
+            écarts. Le serveur refuse désormais aussi (finalize_opname_v5). */}
         {d.status === 'review' && canFinalize && (
           <Button
             variant="ink"
@@ -309,6 +311,7 @@ export default function OpnameDetailPage(): JSX.Element {
         </div>
       )}
 
+      {isOwner && d.status === 'finalized' && <ReleaseBusinessDay key={d.id} countId={d.id} businessDay={d.business_day} />}
       {showValidate && (
         <ValidateOpnameDialog
           countId={d.id}

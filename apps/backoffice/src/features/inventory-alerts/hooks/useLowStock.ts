@@ -32,7 +32,7 @@ export function useLowStock() {
     queryKey: LOW_STOCK_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await rpc()('get_low_stock_v2');
+      const { data, error } = await rpc()('get_low_stock_v3');
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

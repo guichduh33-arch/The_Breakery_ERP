@@ -44,27 +44,27 @@ BEGIN
   FOREACH path IN ARRAY ARRAY['complete','existing','b2b'] LOOP
    k:=gen_random_uuid(); expected:=CASE WHEN mode='legacy' THEN 2.002 ELSE 4 END;
    IF path='existing' THEN
-    result:=fire_counter_order_v11(p_client_uuid:=gen_random_uuid(),p_session_id:=f.session_id,p_items:=items,p_order_type:='dine_in',p_table_number:='COMPAT-'||left(k::text,8));
+    result:=fire_counter_order_v12(p_client_uuid:=gen_random_uuid(),p_session_id:=f.session_id,p_items:=items,p_order_type:='dine_in',p_table_number:='COMPAT-'||left(k::text,8));
     oid:=(result->>'order_id')::uuid;
     IF (SELECT recipe_consumption_revision FROM orders WHERE id=oid) IS NOT NULL THEN RAISE EXCEPTION 'fire marked sale prematurely'; END IF;
     IF mode='legacy' THEN result:=pg_temp.pay_order_before_units(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k);
-    ELSE result:=pay_existing_order_v22(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k); END IF;
+    ELSE result:=pay_existing_order_v23(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k); END IF;
    ELSIF path='b2b' THEN
     IF mode='legacy' THEN result:=pg_temp.create_b2b_before_units(f.customer_id,items,NULL,NULL,k);
-    ELSE result:=create_b2b_order_v8(f.customer_id,items,NULL,NULL,k); END IF;
+    ELSE result:=create_b2b_order_v9(f.customer_id,items,NULL,NULL,k); END IF;
     oid:=(result->>'order_id')::uuid;
    ELSE
     IF mode='legacy' THEN result:=pg_temp.complete_order_before_units(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k);
-    ELSE result:=complete_order_with_payment_v30(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k); END IF;
+    ELSE result:=complete_order_with_payment_v31(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k); END IF;
     oid:=(result->>'order_id')::uuid;
    END IF;
    SELECT recipe_consumption_revision INTO marker FROM orders WHERE id=oid;
    INSERT INTO unit_compat_tap SELECT is(marker,CASE WHEN mode='legacy' THEN NULL::smallint ELSE 2::smallint END,mode||' '||path||' revision');
    INSERT INTO unit_compat_tap SELECT is((SELECT -sum(quantity) FROM stock_movements WHERE reference_id=oid AND movement_type='sale'),expected,mode||' '||path||' exact consumption');
    SELECT count(*) INTO count_before FROM stock_movements WHERE reference_id=oid;
-   IF path='existing' THEN replay:=pay_existing_order_v22(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k);
-   ELSIF path='b2b' THEN replay:=create_b2b_order_v8(f.customer_id,items,NULL,NULL,k);
-   ELSE replay:=complete_order_with_payment_v30(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k); END IF;
+   IF path='existing' THEN replay:=pay_existing_order_v23(p_order_id:=oid,p_payment:=pay,p_idempotency_key:=k);
+   ELSIF path='b2b' THEN replay:=create_b2b_order_v9(f.customer_id,items,NULL,NULL,k);
+   ELSE replay:=complete_order_with_payment_v31(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=items,p_payment:=pay,p_idempotency_key:=k); END IF;
    INSERT INTO unit_compat_tap SELECT is((replay->>'order_id')::uuid,oid,mode||' '||path||' replay original order');
    INSERT INTO unit_compat_tap SELECT is((SELECT recipe_consumption_revision FROM orders WHERE id=oid),marker,mode||' '||path||' replay keeps revision');
    INSERT INTO unit_compat_tap SELECT is((SELECT count(*) FROM stock_movements WHERE reference_id=oid),count_before,mode||' '||path||' replay no movements');
@@ -134,7 +134,7 @@ BEGIN
  SELECT count(*) INTO before_count FROM stock_movements WHERE product_id=f.material;
  UPDATE products SET current_stock=0 WHERE id=f.material;
  BEGIN
-  PERFORM complete_order_with_payment_v30(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=jsonb_build_array(jsonb_build_object('product_id',f.root,'quantity',4,'unit_price',2000)),p_payment:='{"method":"cash","amount":8000,"cash_received":8000}',p_idempotency_key:=k);
+  PERFORM complete_order_with_payment_v31(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=jsonb_build_array(jsonb_build_object('product_id',f.root,'quantity',4,'unit_price',2000)),p_payment:='{"method":"cash","amount":8000,"cash_received":8000}',p_idempotency_key:=k);
  EXCEPTION WHEN OTHERS THEN failed:=SQLSTATE='P0002' AND (lower(SQLERRM) LIKE '%insufficient stock%' OR lower(SQLERRM) LIKE '%insufficient_stock%'); END;
  INSERT INTO unit_compat_tap SELECT ok(failed AND NOT EXISTS(SELECT 1 FROM orders WHERE idempotency_key=k),'failed consumption leaves no order or marker');
  INSERT INTO unit_compat_tap SELECT is((SELECT count(*) FROM stock_movements WHERE product_id=f.material),before_count,'failed consumption leaves no movement');
@@ -152,7 +152,7 @@ BEGIN
  SELECT * INTO f FROM unit_compat_fixture;
  SELECT count(*) INTO before_count FROM stock_movements WHERE product_id=f.material;
  BEGIN
-  PERFORM complete_order_with_payment_v30(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=jsonb_build_array(jsonb_build_object('product_id',f.root,'quantity',4,'unit_price',2000)),p_payment:='{"method":"cash","amount":8000,"cash_received":8000}',p_idempotency_key:=k);
+  PERFORM complete_order_with_payment_v31(p_session_id:=f.session_id,p_order_type:='take_out',p_items:=jsonb_build_array(jsonb_build_object('product_id',f.root,'quantity',4,'unit_price',2000)),p_payment:='{"method":"cash","amount":8000,"cash_received":8000}',p_idempotency_key:=k);
  EXCEPTION WHEN OTHERS THEN failed:=SQLERRM='compatibility_after_consumption'; END;
  INSERT INTO unit_compat_tap SELECT ok(failed AND NOT EXISTS(SELECT 1 FROM orders WHERE idempotency_key=k),'failure after consumption rolls back order and revision');
  INSERT INTO unit_compat_tap SELECT is((SELECT count(*) FROM stock_movements WHERE product_id=f.material),before_count,'failure after consumption rolls back movements');

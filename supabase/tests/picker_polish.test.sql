@@ -4,7 +4,7 @@
 -- Runner (Docker retired) — apply the whole file via MCP execute_sql in one
 -- shot ; the BEGIN..ROLLBACK envelope guarantees no leak.
 --
--- search_ingredients_v1 is SECURITY DEFINER and gated by has_permission(uid,
+-- search_ingredients_v2 is SECURITY DEFINER and gated by has_permission(uid,
 -- 'inventory.read'). We spoof JWT.sub to the seed admin (EMP000) so the
 -- permission check passes in the same transaction.
 
@@ -12,7 +12,7 @@ BEGIN;
 
 SELECT plan(8);
 
--- Bootstrap : pick the seed admin so search_ingredients_v1 sees a valid uid.
+-- Bootstrap : pick the seed admin so search_ingredients_v2 sees a valid uid.
 DO $bootstrap$
 DECLARE
   v_admin_uid   UUID;
@@ -106,22 +106,22 @@ SELECT ok(
 
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM search_ingredients_v1('TestPainChocoMaster', 'semi_finished', 20)
+    SELECT 1 FROM search_ingredients_v2('TestPainChocoMaster', 'semi_finished', 20)
      WHERE product_id = current_setting('test.semi')::uuid
   ),
-  'T6 — search_ingredients_v1 returns semi product under kind=semi_finished'
+  'T6 — search_ingredients_v2 returns semi product under kind=semi_finished'
 );
 
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM search_ingredients_v1('croisant', 'all', 20)
+    SELECT 1 FROM search_ingredients_v2('croisant', 'all', 20)
      WHERE product_id = current_setting('test.leaf')::uuid
   ),
   'T7 — trigram similarity matches misspelled query'
 );
 
 SELECT is(
-  (SELECT product_id FROM search_ingredients_v1('TestLeafCroisant', 'all', 5) LIMIT 1),
+  (SELECT product_id FROM search_ingredients_v2('TestLeafCroisant', 'all', 5) LIMIT 1),
   current_setting('test.leaf')::uuid,
   'T8 — exact name match wins rank 0'
 );

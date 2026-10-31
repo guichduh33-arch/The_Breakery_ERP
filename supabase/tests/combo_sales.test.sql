@@ -1,5 +1,5 @@
 -- supabase/tests/combo_sales.test.sql
--- Rapport « Ventes de combos » — pgTAP pour get_combo_sales_v1 (12 assertions).
+-- Rapport « Ventes de combos » — pgTAP pour get_combo_sales_v2 (12 assertions).
 --
 -- CE QUE CETTE SUITE PROTÈGE EN PRIORITÉ : une ligne combo est identifiée par
 -- combo_components NON NULL — une ligne annulée ou un cadeau promo n'entre
@@ -99,14 +99,14 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   v_ok := (v_r ? 'period') AND (v_r ? 'period_prev') AND (v_r ? 'timezone')
       AND (v_r ? 'generated_at') AND (v_r ? 'summary')
       AND (v_r ? 'by_day') AND (v_r ? 'by_combo') AND (v_r ? 'component_picks');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_combo_sales_v1 MANAGER happy path returns 8-key JSONB');
+  'T1: get_combo_sales_v2 MANAGER happy path returns 8-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -114,13 +114,13 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_combo_sales_v1('2027-01-01', '2027-01-31');
+    PERFORM get_combo_sales_v2('2027-01-01', '2027-01-31');
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_combo_sales_v1 CASHIER raises 42501');
+  'T2: get_combo_sales_v2 CASHIER raises 42501');
 
 -- T3 bornes inversées → P0001
 DO $$
@@ -128,7 +128,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_combo_sales_v1('2027-01-31', '2027-01-01');
+    PERFORM get_combo_sales_v2('2027-01-31', '2027-01-01');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -141,7 +141,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2020-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2020-01-01', '2027-01-31');
   v_ok := ((v_r->'period'->>'start')::date = '2027-01-31'::date - 366)
       AND ((v_r->'period'->>'end')::date   = '2027-01-31'::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
@@ -154,7 +154,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'combo_revenue')::numeric = 260000)
       AND ((v_r->'summary'->>'combo_qty')::numeric = 3)
       AND ((v_r->'summary'->>'combo_orders')::int = 2);
@@ -168,7 +168,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'gross_sales')::numeric = 394000);
   PERFORM set_config('breakery.t6', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -180,7 +180,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'avg_ticket_with')::numeric = 138000)
       AND ((v_r->'summary'->>'avg_ticket_without')::numeric = 39333);
   PERFORM set_config('breakery.t7', COALESCE(v_ok, false)::text, false);
@@ -193,7 +193,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'combo_revenue')::numeric = 260000);  -- pas 310k
   PERFORM set_config('breakery.t8', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -205,7 +205,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'combo_qty')::numeric = 3)  -- pas 4
       AND ((v_r->'summary'->>'combo_orders')::int = 2);   -- O5 n'est pas une commande combo
   PERFORM set_config('breakery.t9', COALESCE(v_ok, false)::text, false);
@@ -219,7 +219,7 @@ DECLARE v_r JSONB; v_c JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _cs_fix;
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   SELECT c INTO v_c FROM jsonb_array_elements(v_r->'by_combo') c
    WHERE (c->>'product_id')::uuid = f.combo1;
   v_ok := (v_c->>'name' = 'PGTAP Combo Breakfast')
@@ -237,7 +237,7 @@ DECLARE v_r JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _cs_fix;
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   SELECT bool_and(CASE (p->>'product_id')::uuid
            WHEN f.k1 THEN (p->>'qty')::numeric = 3   -- 1×1 (O1) + 1×2 (O2)
            WHEN f.k2 THEN (p->>'qty')::numeric = 3
@@ -254,7 +254,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v1('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
   SELECT (SUM((d->>'revenue')::numeric) = (v_r->'summary'->>'combo_revenue')::numeric)
      AND (SUM((d->>'qty')::numeric) = (v_r->'summary'->>'combo_qty')::numeric)
      AND ((v_r->'summary'->>'combo_revenue_prev')::numeric = 45000)

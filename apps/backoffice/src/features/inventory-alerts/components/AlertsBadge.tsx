@@ -3,7 +3,7 @@
 //
 // Sum of :
 //   - get_low_stock row count (global — l'unique mode depuis l'ADR-027)
-//   - get_reorder_suggestions_v1 row count
+//   - get_reorder_suggestions_v2 row count
 //
 // Clicks → /backoffice/inventory/alerts.
 

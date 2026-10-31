@@ -4,7 +4,7 @@
 -- Covers migrations 20260519000120..000122 :
 --   - production_schedules table + RLS + unique constraint
 --   - enforce_production_schedule_lifecycle trigger
---   - suggest_production_schedule_v1 RPC
+--   - suggest_production_schedule_v2 RPC
 --   - inventory.production.schedule permission seed
 --
 -- Coverage matrix :
@@ -12,7 +12,7 @@
 --   T2 — Duplicate (date, slot, recipe_id) rejected by UNIQUE.
 --   T3 — Illegal transition scheduled -> completed rejected (P0001).
 --   T4 — Legal scheduled -> started -> completed succeeds + completed_record_id can be set.
---   T5 — suggest_production_schedule_v1(target) returns jsonb envelope with 'suggestions'.
+--   T5 — suggest_production_schedule_v2(target) returns jsonb envelope with 'suggestions'.
 --   T6 — Non-MANAGER (CASHIER) calling INSERT is blocked by RLS.
 --
 -- Runner : execute via MCP execute_sql under BEGIN..ROLLBACK envelope.
@@ -182,7 +182,7 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T5 — suggest_production_schedule_v1 returns a jsonb envelope.
+-- T5 — suggest_production_schedule_v2 returns a jsonb envelope.
 -- ---------------------------------------------------------------------------
 DO $t5$
 DECLARE
@@ -190,7 +190,7 @@ DECLARE
   v_keys TEXT;
   v_arr_type TEXT;
 BEGIN
-  v_payload := suggest_production_schedule_v1(CURRENT_DATE);
+  v_payload := suggest_production_schedule_v2(CURRENT_DATE);
   SELECT string_agg(k, ',' ORDER BY k) INTO v_keys
     FROM jsonb_object_keys(v_payload) AS k;
   v_arr_type := jsonb_typeof(v_payload->'suggestions');
@@ -201,7 +201,7 @@ END $t5$;
 SELECT is(
   current_setting('ps.t5_arr'),
   'array',
-  'T5: suggest_production_schedule_v1 returns jsonb envelope with suggestions array'
+  'T5: suggest_production_schedule_v2 returns jsonb envelope with suggestions array'
 );
 
 -- ---------------------------------------------------------------------------

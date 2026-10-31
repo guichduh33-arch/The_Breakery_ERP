@@ -1,6 +1,6 @@
 // apps/pos/src/features/cart/hooks/useFireToStations.ts
 // Session 34 — real per-station prep-ticket printing.
-// Session 43 — P0-3 : persist the order via fire_counter_order_v1 BEFORE
+// Session 43 — P0-3 : persist the order via fire_counter_order_v12 BEFORE
 // printing. The DB is the source of truth — a print failure no longer leaves
 // items "unsent" (re-firing them would duplicate the DB lines).
 import { beginOrderSend, finishOrderSend } from '@/stores/orderSendGuard';
@@ -57,8 +57,8 @@ export interface FireContext {
   tableNumber?: string;
   /**
    * S43 P0-3 — post-payment auto-fire (usePaymentFlowLogic): the order ALREADY
-   * exists in the DB — created server-side by complete_order_with_payment_v11
-   * (direct pay) or just paid via pay_existing_order_v7 (pickup / fired order).
+   * exists in the DB — created server-side by complete_order_with_payment_v31
+   * (direct pay) or just paid via pay_existing_order_v23 (pickup / fired order).
    * Persisting here would mint an orphan `pending_payment` order (direct pay)
    * or append against a PAID order → P0002 (pickup). When true: skip the RPC
    * and setPickedUpOrderId, just seal (markLocked+markPrinted) and print per
@@ -174,7 +174,7 @@ export function useFireToStations(): UseFireToStationsResult {
       const tableNo =
         saved?.tableNumber ?? tableNumber ?? useCartStore.getState().cart.tableNumber ?? undefined;
 
-      // 2. P0-3 — persist FIRST via fire_counter_order_v1. ALL unprinted
+      // 2. P0-3 — persist FIRST via fire_counter_order_v12. ALL unprinted
       //    non-cancelled items go to the RPC, including station-'none' ones:
       //    they must exist on the DB order for payment, even though they
       //    print nowhere. Skipped in printOnly mode (post-payment auto-fire):
@@ -321,7 +321,7 @@ export function useFireToStations(): UseFireToStationsResult {
             const currentAuth = useAuthStore.getState();
             if ((currentAuth.user?.id ?? '') !== actorId || (currentAuth.sessionToken ?? null) !== actorToken
               || useShiftStore.getState().current?.id !== sessionId) throw new Error('Your session changed — resume the saved order send');
-            const { data, error } = await supabase.rpc('fire_counter_order_v11', attempt.args);
+            const { data, error } = await supabase.rpc('fire_counter_order_v12', attempt.args);
             if (error) {
               if (!saved && isDefiniteFireRefusal(error)) clearCounterFire();
               throw Object.assign(new Error(error.message), { details: error });
@@ -421,7 +421,7 @@ export function useFireToStations(): UseFireToStationsResult {
           const printer = printersMap?.get(role);
 
           // Build the identifier: caller-supplied order_number if known, else
-          // the REAL order number minted by fire_counter_order_v1 (always
+          // the REAL order number minted by fire_counter_order_v12 (always
           // caller-supplied in printOnly mode — nothing was persisted here).
           const orderLabel = orderNumber ?? persistedOrderNumber ?? '';
 

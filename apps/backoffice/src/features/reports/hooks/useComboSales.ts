@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useComboSales.ts
 //
-// Query hook pour `get_combo_sales_v1` — les ventes de combos. Une ligne
+// Query hook pour `get_combo_sales_v2` — les ventes de combos. Une ligne
 // combo = combo_components non NULL (pricing serveur ADR-017) ; le prix
 // affiché est le prix effectif TOTAL payé (arbitrage — pas de ventilation
 // base/surcharges). L'uplift (panier avec vs sans combo) et la part du CA se
@@ -82,7 +82,7 @@ export function useComboSales(params: UseComboSalesParams) {
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_combo_sales_v1', {
+      const { data, error } = await supabase.rpc('get_combo_sales_v2', {
         p_start_date: start,
         p_end_date:   end,
       });

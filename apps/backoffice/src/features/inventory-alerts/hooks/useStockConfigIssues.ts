@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/inventory-alerts/hooks/useStockConfigIssues.ts
-// Audit 2026-07-08 — get_stock_config_issues_v2 wrapper.
+// Audit 2026-07-08 — get_stock_config_issues_v3 wrapper.
 // Produits dont les flags track_inventory/deduct_stock + recette ne déduisent
 // pas le stock attendu à la vente.
 
@@ -42,7 +42,7 @@ export function useStockConfigIssues() {
     queryKey: STOCK_CONFIG_ISSUES_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await rpc()('get_stock_config_issues_v2');
+      const { data, error } = await rpc()('get_stock_config_issues_v3');
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

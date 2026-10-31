@@ -14,7 +14,8 @@ export type ProductTypeFilter = 'all' | 'finished' | 'semi-finished' | 'raw' | '
 /** Session 27c — Variant-grouping filter for the catalog list. */
 export type ProductVariantFilter = 'all' | 'standalone' | 'parents' | 'variants';
 
-export interface ProductRow extends Product {
+export interface ProductRow extends Omit<Product, 'current_stock'> {
+  current_stock: number | null;
   cost_price: number;
   unit: string;
   min_stock_threshold: number;
@@ -25,7 +26,7 @@ export interface ProductRow extends Product {
    * the old SKU-prefix heuristic was unreliable (only RAW/CON/HAS/SFG matched).
    */
   category_type: string | null;
-  // Session 27 — editable fields surfaced by update_product_v3
+  // Session 27 — editable fields surfaced by update_product_v5
   description: string | null;
   visible_on_pos: boolean;
   available_for_sale: boolean;

@@ -144,7 +144,7 @@ DECLARE
   v_msg TEXT := '';
 BEGIN
   BEGIN
-    r := fire_counter_order_v11(
+    r := fire_counter_order_v12(
       p_client_uuid := '00000000-0000-0000-0000-0000000e5c01'::uuid,
       p_session_id  := current_setting('ccsp.sess')::uuid,
       p_items       := pg_temp.ccsp_combo_line(),
@@ -162,7 +162,7 @@ SELECT ok(
   AND (SELECT combo_components IS NOT NULL FROM order_items
         WHERE order_id = current_setting('ccsp.order1')::uuid
           AND product_id = '00000000-0000-0000-0000-0000000e5001'),
-  'T1: fire_counter_order_v11 accepte un combo valide et persiste combo_components - recu: ' || current_setting('ccsp.order1_msg'));
+  'T1: fire_counter_order_v12 accepte un combo valide et persiste combo_components - recu: ' || current_setting('ccsp.order1_msg'));
 
 SELECT is(
   (SELECT unit_price::int FROM order_items
@@ -210,7 +210,7 @@ DO $pay$
 DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM pay_existing_order_v22(
+    PERFORM pay_existing_order_v23(
       p_order_id := current_setting('ccsp.order1')::uuid,
       p_payment  := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb
     );
@@ -221,7 +221,7 @@ BEGIN
 END $pay$;
 
 SELECT ok(current_setting('ccsp.pay1_pass')::boolean,
-  'T4: pay_existing_order_v22(cash 50000) accepte le montant facture par la caisse (refuse sous v7 : total 48000) - recu: ' || current_setting('ccsp.pay1_msg'));
+  'T4: pay_existing_order_v23(cash 50000) accepte le montant facture par la caisse (refuse sous v7 : total 48000) - recu: ' || current_setting('ccsp.pay1_msg'));
 
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000e5f02'), 99,
   'T5a: composant Large deduit -1 au paiement');
@@ -241,7 +241,7 @@ SELECT is(
 -- deux passaient en silence.
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT fire_counter_order_v11(
+  $q$ SELECT fire_counter_order_v12(
         p_client_uuid := '00000000-0000-0000-0000-0000000e5c06'::uuid,
         p_session_id  := current_setting('ccsp.sess')::uuid,
         p_items       := jsonb_build_array(jsonb_build_object(
@@ -255,7 +255,7 @@ SELECT throws_ok(
   'T6: composant hors groupes -> combo_invalid_component (check_violation), p_tolerate_unsellable=false');
 
 SELECT throws_ok(
-  $q$ SELECT fire_counter_order_v11(
+  $q$ SELECT fire_counter_order_v12(
         p_client_uuid := '00000000-0000-0000-0000-0000000e5c07'::uuid,
         p_session_id  := current_setting('ccsp.sess')::uuid,
         p_items       := jsonb_build_array(jsonb_build_object(
@@ -281,7 +281,7 @@ DECLARE
   v_msg TEXT := '';
 BEGIN
   BEGIN
-    r := fire_counter_order_v11(
+    r := fire_counter_order_v12(
       p_client_uuid := '00000000-0000-0000-0000-0000000e5c08'::uuid,
       p_session_id  := current_setting('ccsp.sess')::uuid,
       p_items       := jsonb_build_array(jsonb_build_object(
@@ -337,7 +337,7 @@ DECLARE
   v_msg TEXT := '';
 BEGIN
   BEGIN
-    r := fire_counter_order_v11(
+    r := fire_counter_order_v12(
       p_client_uuid := '00000000-0000-0000-0000-0000000e5c09'::uuid,
       p_session_id  := current_setting('ccsp.sess')::uuid,
       p_items       := jsonb_build_array(jsonb_build_object(
@@ -368,8 +368,8 @@ SELECT hasnt_function('public', 'fire_counter_order_v7',
 
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.fire_counter_order_v11(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text,uuid,uuid,boolean)', 'EXECUTE'),
-  'T11: anon n''a pas EXECUTE sur fire_counter_order_v11');
+    'public.fire_counter_order_v12(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean,text,uuid,uuid,boolean)', 'EXECUTE'),
+  'T11: anon n''a pas EXECUTE sur fire_counter_order_v12');
 
 SELECT * FROM finish();
 ROLLBACK;

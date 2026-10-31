@@ -7,7 +7,7 @@
 //     moyen, part du CA (le CA par type resomme exactement au CA Overview).
 //   * Category performance — CA & quantité par catégorie produit (hors lignes
 //     annulées / cadeaux promo), avec part du CA catégories.
-// Source serveur unique : get_pos_order_type_category_mix_v1. Export CSV.
+// Source serveur unique : get_pos_order_type_category_mix_v2. Export CSV.
 
 import { type JSX } from 'react';
 import { PieChart, ShoppingBag } from 'lucide-react';

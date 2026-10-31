@@ -59,7 +59,7 @@ BEGIN
   RETURNING id INTO v_sess;
 
   -- Local day 2031-04-16, 00:15 local — falls on 2031-04-15 in UTC for any
-  -- positive-offset tz (same construction as get_gross_margin_by_product_v1's
+  -- positive-offset tz (same construction as get_gross_margin_by_product_v2's
   -- T2 fixture, gross_margin_by_product.test.sql).
   v_paid_at := ('2031-04-16 00:15:00')::timestamp AT TIME ZONE v_tz;
 

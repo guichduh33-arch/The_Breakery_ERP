@@ -111,20 +111,11 @@ describe('useCatalogRealtime — query invalidation', () => {
     return invalidateSpy;
   }
 
-  it('a products event refreshes products, variants, combos and modifiers', () => {
-    const invalidateSpy = mountWithSpy();
-    const handler = handlersRef.current.get('products');
-    expect(handler).toBeDefined();
-    handler?.({});
-
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['products'] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pos-product-variants'] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['display', 'showcase-products'] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['combo-config'] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['product-modifiers'] });
-    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['categories'] });
+  it('subscribes only to categories and opaque invalidation signals, never product payloads', () => {
+    mountWithSpy();
+    expect([...handlersRef.current.keys()].sort()).toEqual(['categories', 'ui_invalidation_topics']);
+    expect(handlersRef.current.has('products')).toBe(false);
   });
-
   it('a categories event invalidates the nav AND the grid (dispatch_station embed)', () => {
     const invalidateSpy = mountWithSpy();
     const handler = handlersRef.current.get('categories');

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useRefundsReport.ts
 //
-// Query hook pour `get_refunds_report_v1` — remboursements & voids d'une plage
+// Query hook pour `get_refunds_report_v2` — remboursements & voids d'une plage
 // de jours métier. La RPC renvoie les événements EN ENTIER (un remboursement
 // est rare, le clamp 366 j borne le volume) : les ventilations par jour, motif
 // et méthode se recalculent dans la page depuis ces lignes — elles ne peuvent
@@ -114,7 +114,7 @@ export function useRefundsReport(params: UseRefundsReportParams) {
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_refunds_report_v1', {
+      const { data, error } = await supabase.rpc('get_refunds_report_v2', {
         p_start_date: start,
         p_end_date:   end,
       });

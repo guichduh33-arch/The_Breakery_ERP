@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByProduct.ts
 //
-// Query hook pour `get_sales_by_product_v1` — le détail des produits vendus sur
+// Query hook pour `get_sales_by_product_v2` — le détail des produits vendus sur
 // une fenêtre de jours métier, ventilé comptoir / B2B.
 //
 // Deux réserves que la RPC porte et que la page DOIT afficher (elles ne se
@@ -84,7 +84,9 @@ export function useSalesByProduct(params: UseSalesByProductParams) {
   const { start, end, categoryId } = params;
   return useQuery<SalesByProductData, Error>({
     queryKey: ['sales-by-product', start, end, categoryId ?? null],
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
     enabled: Boolean(start && end),
     queryFn: async () => {
       // `exactOptionalPropertyTypes` : on omet l'arg optionnel plutôt que de
@@ -95,8 +97,12 @@ export function useSalesByProduct(params: UseSalesByProductParams) {
       };
       if (categoryId) args.p_category_id = categoryId;
 
-      const { data, error } = await supabase.rpc('get_sales_by_product_v1', args);
-      if (error) throw error as Error;
+      const { data, error } = await supabase.rpc('get_sales_by_product_v2', args);
+      if (error) {
+        throw new Error(error.message.includes('business_day_not_released')
+          ? 'Product sales are hidden until the owner releases every day in this period.'
+          : error.message);
+      }
 
       const r        = (data ?? {}) as Record<string, unknown>;
       const period   = (r.period  ?? {}) as Record<string, unknown>;

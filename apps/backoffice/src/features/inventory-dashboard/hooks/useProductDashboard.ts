@@ -67,7 +67,7 @@ export function useProductDashboard(productId: string | null, days = 30) {
     queryFn: async () => {
       if (productId === null) return null;
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_product_dashboard_v3', {
+      const { data, error } = await rpc('get_product_dashboard_v4', {
         p_product_id: productId, p_days: days,
       });
       if (error !== null) throw new Error(error.message);

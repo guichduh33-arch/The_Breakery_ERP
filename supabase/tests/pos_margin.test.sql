@@ -1,4 +1,4 @@
--- pgTAP — get_pos_margin_v1 (Reports POS refonte, dernier lot — Margin/COGS).
+-- pgTAP — get_pos_margin_v2 (Reports POS refonte, dernier lot — Margin/COGS).
 -- Run via MCP execute_sql inside BEGIN … ROLLBACK (Docker retired).
 -- Verifies: financial gate (anon + sales-only caller), date guards, envelope,
 -- exact reconciliation with the Overview (shared scope), internal sums,
@@ -11,7 +11,7 @@ SELECT plan(13);
 
 -- ── T1 : anon (no auth.uid()) is denied ────────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_margin_v1('2026-05-01','2026-07-12') $$,
+  $$ SELECT get_pos_margin_v2('2026-05-01','2026-07-12') $$,
   '42501', NULL, 'T1: anon / no-perm caller is denied');
 
 -- ── T2 : caller WITHOUT reports.financial.read is denied ───────────────────
@@ -25,7 +25,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 END $$;
 SELECT throws_ok(
-  $$ SELECT get_pos_margin_v1('2026-05-01','2026-07-12') $$,
+  $$ SELECT get_pos_margin_v2('2026-05-01','2026-07-12') $$,
   '42501', NULL, 'T2: caller without reports.financial.read is denied');
 
 -- ── Impersonate a user holding BOTH financial.read and sales.read ──────────
@@ -41,22 +41,22 @@ END $$;
 
 -- ── T3/T4 : date guards ─────────────────────────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_margin_v1(NULL, '2026-07-12') $$, 'P0001', NULL,
+  $$ SELECT get_pos_margin_v2(NULL, '2026-07-12') $$, 'P0001', NULL,
   'T3: NULL start date raises P0001');
 SELECT throws_ok(
-  $$ SELECT get_pos_margin_v1('2026-07-12','2026-05-01') $$, 'P0001', NULL,
+  $$ SELECT get_pos_margin_v2('2026-07-12','2026-05-01') $$, 'P0001', NULL,
   'T4: start > end raises invalid_date_range');
 
 -- ── T5/T6 : envelope + timezone ─────────────────────────────────────────────
-WITH r AS (SELECT get_pos_margin_v1('2026-05-01','2026-07-12') AS j)
+WITH r AS (SELECT get_pos_margin_v2('2026-05-01','2026-07-12') AS j)
 SELECT ok((SELECT j ? 'timezone' AND j ? 'summary' AND j ? 'by_product' AND j ? 'by_category' FROM r),
           'T5: envelope exposes timezone/summary/by_product/by_category');
-WITH r AS (SELECT get_pos_margin_v1('2026-05-01','2026-07-12') AS j)
+WITH r AS (SELECT get_pos_margin_v2('2026-05-01','2026-07-12') AS j)
 SELECT is((SELECT j->>'timezone' FROM r), 'Asia/Makassar',
           'T6: timezone is the business tz (WITA)');
 
 -- ── T7 : summary.revenue_ttc ≡ Overview revenue (shared scope, exact) ──────
-WITH m AS (SELECT get_pos_margin_v1('2026-05-01','2026-07-12') AS j),
+WITH m AS (SELECT get_pos_margin_v2('2026-05-01','2026-07-12') AS j),
 o AS (SELECT get_pos_sales_overview_v1('2026-05-01','2026-07-12') AS j)
 SELECT is(
   (SELECT (j->'summary'->>'revenue_ttc')::numeric FROM m),
@@ -64,13 +64,13 @@ SELECT is(
   'T7: summary.revenue_ttc reconciles exactly with Overview revenue');
 
 -- ── T8/T9 : internal sums ───────────────────────────────────────────────────
-WITH r AS (SELECT get_pos_margin_v1('2026-05-01','2026-07-12') AS j)
+WITH r AS (SELECT get_pos_margin_v2('2026-05-01','2026-07-12') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((p->>'revenue_ht')::numeric),0)
      FROM r, jsonb_array_elements(j->'by_product') p),
   (SELECT (j->'summary'->>'revenue_ht')::numeric FROM r),
   'T8: sum(by_product.revenue_ht) = summary.revenue_ht');
-WITH r AS (SELECT get_pos_margin_v1('2026-05-01','2026-07-12') AS j)
+WITH r AS (SELECT get_pos_margin_v2('2026-05-01','2026-07-12') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((p->>'cogs')::numeric),0)
      FROM r, jsonb_array_elements(j->'by_product') p),
@@ -105,7 +105,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'PM Test Product 1', 2500, 3, 7500);
 
-  v_res := get_pos_margin_v1('2031-03-15', '2031-03-15');
+  v_res := get_pos_margin_v2('2031-03-15', '2031-03-15');
   SELECT e INTO v_line FROM jsonb_array_elements(v_res->'by_product') e
     WHERE (e->>'product_id')::uuid = v_prod;
   v_ok := v_line IS NOT NULL
@@ -143,7 +143,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total, is_promo_gift)
   VALUES (v_ord, v_gift, 'PM Test Gift', 1500, 2, 999, true);
 
-  v_res := get_pos_margin_v1('2031-03-17', '2031-03-17');
+  v_res := get_pos_margin_v2('2031-03-17', '2031-03-17');
   SELECT e INTO v_line FROM jsonb_array_elements(v_res->'by_product') e
     WHERE (e->>'product_id')::uuid = v_gift;
   v_ok := v_line IS NOT NULL
@@ -178,7 +178,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_nc, 'PM Test NoCost', 2000, 1, 2000);
 
-  v_res := get_pos_margin_v1('2031-03-19', '2031-03-19');
+  v_res := get_pos_margin_v2('2031-03-19', '2031-03-19');
   SELECT e INTO v_line FROM jsonb_array_elements(v_res->'by_product') e
     WHERE (e->>'product_id')::uuid = v_nc;
   v_ok := v_line IS NOT NULL
@@ -190,8 +190,8 @@ SELECT ok(current_setting('breakery.pm_t12')::boolean,
   'T12: zero-cost product has cogs 0 and increments products_without_cost');
 
 -- ── T13 : anon has no EXECUTE (REVOKE trio effective) ───────────────────────
-SELECT ok(NOT has_function_privilege('anon', 'public.get_pos_margin_v1(date,date)', 'EXECUTE'),
-  'T13: anon cannot EXECUTE get_pos_margin_v1');
+SELECT ok(NOT has_function_privilege('anon', 'public.get_pos_margin_v2(date,date)', 'EXECUTE'),
+  'T13: anon cannot EXECUTE get_pos_margin_v2');
 
 SELECT * FROM finish();
 ROLLBACK;

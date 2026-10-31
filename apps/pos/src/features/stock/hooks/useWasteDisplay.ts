@@ -1,8 +1,7 @@
 // apps/pos/src/features/stock/hooks/useWasteDisplay.ts
 //
-// POS display-stock isolation — closure gesture "Perte".
-// Wraps `waste_display_stock_v2` (gate display.manage): writes off vitrine
-// stock as waste (also decrements BO stock — returns new_bo_stock).
+// Retire immédiatement la perte de la vitrine ; son effet global attend l'Owner.
+// La même clé conserve le retrait initial lors d'une réponse perdue.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -40,7 +39,7 @@ export function useWasteDisplay() {
       if (args.reason !== undefined && args.reason.trim() !== '') {
         rpcArgs.p_reason = args.reason.trim();
       }
-      const { data, error } = await supabase.rpc('waste_display_stock_v2', rpcArgs);
+      const { data, error } = await supabase.rpc('waste_display_stock_v4', rpcArgs);
       if (error) throw new DisplayGestureError(classify(error.message), error.message);
       return data;
     },

@@ -1,7 +1,7 @@
 // apps/pos/src/features/reports/hooks/usePosEventsJournal.ts
 //
 // S72 Lot 4 — infinite-scrolling reader for the POS operational audit journal
-// (pos_events). Backed by `get_pos_events_v1`: keyset-paginated (occurred_at
+// (pos_events). Backed by `get_pos_events_v2`: keyset-paginated (occurred_at
 // DESC, id DESC), WITA business-date window, filters by event types / device /
 // operator / ticket. Page 1 carries the true total + the device/operator
 // facets for the filter dropdowns; cursor pages skip those scans (total = -1
@@ -96,7 +96,7 @@ export function usePosEventsJournal(period: ReportsPeriod, filters: PosJournalFi
     ],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
-      const { data, error } = await supabase.rpc('get_pos_events_v1', {
+      const { data, error } = await supabase.rpc('get_pos_events_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
         ...(filters.eventTypes ? { p_event_types: filters.eventTypes } : {}),

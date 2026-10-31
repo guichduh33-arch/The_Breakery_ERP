@@ -1,6 +1,6 @@
 // supabase/functions/_shared/pdf-templates/b2b_invoice.ts
 // S68 — B2B commercial invoice (NON-PKP : AUCUNE ligne PB1/taxe).
-// data = sortie de get_b2b_invoice_v1 (invoice / customer / lines / payment).
+// data = sortie de get_b2b_invoice_v2 (invoice / customer / lines / payment).
 import { rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 import { drawFooter, drawHeader, formatIDR, type LayoutContext } from '../pdf-layout.ts';
 

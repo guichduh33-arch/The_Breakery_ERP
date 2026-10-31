@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useStockCounters.ts
 //
-// Agrégats de la liste de stock (`get_stock_counters_v1`). ADR-024 déc. 1-2.
+// Agrégats de la liste de stock (`get_stock_counters_v2`). ADR-024 déc. 1-2.
 //
 // Deux propriétés portent tout l'intérêt de cette séparation :
 //   · les compteurs existent même quand la liste ne ramène AUCUNE ligne, donc
@@ -54,7 +54,7 @@ export function useStockCounters(filters: StockCountersFilters = {}) {
         args.p_search = filters.search.trim();
       }
 
-      const { data, error } = await supabase.rpc('get_stock_counters_v1', args);
+      const { data, error } = await supabase.rpc('get_stock_counters_v2', args);
       if (error) throw error;
       // La RPC rend toujours exactement une ligne, y compris sur un catalogue
       // vide (les agrégats d'un ensemble vide valent 0). Le repli couvre le

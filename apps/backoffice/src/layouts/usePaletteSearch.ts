@@ -1,8 +1,8 @@
 // apps/backoffice/src/layouts/usePaletteSearch.ts
 //
 // Audit UX/UI 2026-08-13 (lot 4) — la palette Ctrl+K cherche désormais des
-// ENTITÉS, pas seulement des pages : commandes (RPC search_orders_v1, gate
-// orders.read), produits (get_stock_levels_v4 p_search, gate inventory.read),
+// ENTITÉS, pas seulement des pages : commandes (RPC search_orders_v2, gate
+// orders.read), produits (get_stock_levels_v5 p_search, gate inventory.read),
 // clients (PostgREST nom/téléphone/email — le seul chemin couvrant l'email),
 // fournisseurs (PostgREST nom/code). Chaque section est gatée côté client par
 // la permission que le serveur exigera de toute façon (defense-in-depth : le
@@ -73,7 +73,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
     enabled: active && canOrders,
     staleTime: 30_000,
     queryFn: async (): Promise<PaletteHit[]> => {
-      const { data, error } = await supabase.rpc('search_orders_v1', {
+      const { data, error } = await supabase.rpc('search_orders_v2', {
         p_query: term,
         p_limit: SECTION_LIMIT,
       });
@@ -99,7 +99,7 @@ export function usePaletteSearch(rawTerm: string, open: boolean): UsePaletteSear
     enabled: active && canProducts,
     staleTime: 30_000,
     queryFn: async (): Promise<PaletteHit[]> => {
-      const { data, error } = await supabase.rpc('get_stock_levels_v4', {
+      const { data, error } = await supabase.rpc('get_stock_levels_v5', {
         p_search: term,
         p_limit: SECTION_LIMIT,
         p_offset: 0,

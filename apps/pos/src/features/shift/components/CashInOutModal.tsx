@@ -5,7 +5,7 @@ import { useRef, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal, Select } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { toast } from 'sonner';
-import { useCashMovement, useCashMovementCounterparties, type CashMovementReasonCode } from '../hooks/useCashMovement';
+import { useCashMovement, type CashMovementReasonCode } from '../hooks/useCashMovement';
 import { useAuthStore } from '@/stores/authStore';
 import { counterFireScope, isDefiniteFireRefusal } from '@/features/cart/hooks/counterFireRecovery';
 import { clearCashMovement, readCashMovement, resumeCashMovement, saveCashMovement, type CashMovementAttempt } from '../hooks/cashMovementRecovery';
@@ -19,13 +19,13 @@ export interface CashInOutModalProps {
 }
 
 const REASON_CODE_OPTIONS: { value: CashMovementReasonCode; label: string }[] = [
-  { value: 'misc',           label: 'Miscellaneous' },
-  { value: 'apport_owner',   label: 'Owner cash injection' },
-  { value: 'bank_transfer',  label: 'Bank transfer' },
-  { value: 'replenishment',  label: 'Transfer between cash accounts' },
+  { value: 'misc',           label: 'Miscellaneous — no journal entry' },
+  { value: 'apport_owner',   label: 'Owner cash injection — posts JE 1110/3100' },
+  { value: 'bank_transfer',  label: 'Bank transfer — posts JE 1110↔1112' },
+  { value: 'replenishment',  label: 'Float rotation — no journal entry' },
 ];
 
-
+const POSTS_JE: ReadonlySet<CashMovementReasonCode> = new Set(['apport_owner', 'bank_transfer']);
 
 export function CashInOutModal({
   open,
@@ -41,10 +41,6 @@ export function CashInOutModal({
   const [amountStr, setAmountStr] = useState(recovery.attempt ? String(recovery.attempt.input.amount) : '');
   const [reason, setReason] = useState(recovery.attempt?.input.reason ?? '');
   const [reasonCode, setReasonCode] = useState<CashMovementReasonCode>(recovery.attempt?.input.reason_code ?? 'misc');
-  const [counterparty, setCounterparty] = useState(recovery.attempt?.input.counterparty_account_code ?? '');
-  const needsCounterparty = reasonCode === 'misc' || reasonCode === 'replenishment';
-  const accounts = useCashMovementCounterparties(open && needsCounterparty && !recovery.attempt);
-  const accountOptions = (accounts.data ?? []).filter((a) => reasonCode !== 'replenishment' || a.is_cash);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const mut = useCashMovement();
@@ -69,10 +65,6 @@ export function CashInOutModal({
       toast.error('Reason is required (min 3 characters).');
       return;
     }
-    if (!recovery.attempt && needsCounterparty && !accountOptions.some((a) => a.code === counterparty)) {
-      toast.error('Select the account on the other side of this cash movement.');
-      return;
-    }
     submittingRef.current = true;
     setSubmitting(true);
     let resumingUncertain = false;
@@ -85,7 +77,6 @@ export function CashInOutModal({
       const attempt = saved ?? saveCashMovement({ version: 1,
         scope: await counterFireScope(auth.user?.id ?? '', auth.sessionToken, sessionId),
         input: { session_id: sessionId, direction, amount, reason: reason.trim(), reason_code: reasonCode,
-          ...(needsCounterparty ? { counterparty_account_code: counterparty } : {}),
           idempotency_key: crypto.randomUUID() },
       });
       setRecovery({ attempt, error: null });
@@ -105,15 +96,12 @@ export function CashInOutModal({
       setAmountStr('');
       setReason('');
       setReasonCode('misc');
-      setCounterparty('');
       resetAndClose();
     } catch (err) {
-      const details = (err as { details?: { code?: string; message?: string } } | null)?.details;
+      const details = (err as { details?: { code?: string } } | null)?.details;
       // Un refus de reprise (droits retirés, session fermée…) ne prouve pas
       // l'absence du premier mouvement dont l'accusé a été perdu.
-      // Ce refus intervient après la lecture idempotente : il prouve qu'aucun mouvement n'existe.
-      const confirmedMissingCounterparty = details?.code === '22023' && ['counterparty_account_required', 'transfer_requires_cash_counterparty'].includes(details.message ?? '');
-      if ((!resumingUncertain || confirmedMissingCounterparty) && details && isDefiniteFireRefusal(details)) {
+      if (!resumingUncertain && details && isDefiniteFireRefusal(details)) {
         clearCashMovement();
         setRecovery({ attempt: null, error: null });
       }
@@ -178,22 +166,11 @@ export function CashInOutModal({
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </Select>
-          {(
+          {POSTS_JE.has(reasonCode) && (
             <p className="text-xs text-gold">This will post a journal entry.</p>
           )}
         </section>
 
-        {needsCounterparty && <section className="space-y-2">
-          <label htmlFor="cash_counterparty" className="text-xs uppercase tracking-wide text-text-secondary">Counterparty account</label>
-          <Select id="cash_counterparty" value={counterparty} onChange={(e) => setCounterparty(e.target.value)}>
-            <option value="">Select an account</option>
-            {recovery.attempt && counterparty && !accountOptions.some((a) => a.code === counterparty)
-              && <option value={counterparty}>{counterparty}</option>}
-            {accountOptions.map((a) => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)}
-          </Select>
-          {accounts.isError && <p role="alert" className="text-red-as-text">Accounts unavailable. Retry when connected.</p>}
-          <p className="text-xs text-text-secondary">Choose where cash comes from or where it goes. Record expenses in the office Expenses workflow, paid from Petty Cash.</p>
-        </section>}
         </fieldset>
         <div className="grid grid-cols-2 gap-3">
           <Button variant="secondary" size="lg" onClick={resetAndClose} disabled={submitting || mut.isPending}>
@@ -202,8 +179,7 @@ export function CashInOutModal({
           <Button
             variant="gold"
             size="lg"
-            disabled={submitting || mut.isPending || recovery.error !== null || amount <= 0 || reason.trim().length < 3
-              || (!recovery.attempt && needsCounterparty && !accountOptions.some((a) => a.code === counterparty))}
+            disabled={submitting || mut.isPending || recovery.error !== null || amount <= 0 || reason.trim().length < 3}
             onClick={() => { void handleSubmit(); }}
           >
             {submitting || mut.isPending ? 'Recording…' : recovery.attempt ? `Resume ${title}` : `Record ${title}`}

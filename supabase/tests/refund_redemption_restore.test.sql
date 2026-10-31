@@ -34,7 +34,7 @@ BEGIN
     VALUES(customer,'Refund redemption fixture','retail',customer_category,10000,0);
   INSERT INTO public.products(id,sku,name,category_id,retail_price,current_stock,track_inventory,is_display_item,product_type,deduct_stock)
     VALUES(product,'RR-'||product,'Refund redemption fixture',category,100000,0,false,false,'finished',false);
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100000,'modifiers','[]'::jsonb)),
     p_payment:=jsonb_build_object('method','cash','amount',90000,'cash_received',90000,'change_given',0),
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=1000);
@@ -62,7 +62,7 @@ BEGIN
       '[{"method":"cash","amount":90000}]','Duplicate return rejected',profile,gen_random_uuid(),actor);
   EXCEPTION WHEN check_violation THEN refused:=true; END;
   INSERT INTO redemption_checks VALUES('another key cannot refund the same quantity again',refused);
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',3,'unit_price',100000,'modifiers','[]'::jsonb)),
     p_payment:=jsonb_build_object('method','cash','amount',290000,'cash_received',290000,'change_given',0),
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=1000);
@@ -86,7 +86,7 @@ BEGIN
     ('fractional returns also remove every earned point',(SELECT loyalty_points=10000 FROM public.customers WHERE id=customer)),
     ('fractional returns reset earned lifetime points',(SELECT lifetime_points=0 FROM public.customers WHERE id=customer)),
     ('fractional returns reset customer net spending',(SELECT total_spent=0 FROM public.customers WHERE id=customer));
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100000,'modifiers','[]'::jsonb)),
     p_payment:=jsonb_build_object('method','cash','amount',100000,'cash_received',100000,'change_given',0),
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=0);
@@ -117,7 +117,7 @@ BEGIN
     ('void succeeds once the earned points are available',(SELECT loyalty_points=0 FROM public.customers WHERE id=customer)),
     ('void reverses customer net spending',(SELECT total_spent=0 FROM public.customers WHERE id=customer));
   UPDATE public.customers SET loyalty_points=10000 WHERE id=customer;
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100000,'modifiers','[]'::jsonb)),
     p_payment:=jsonb_build_object('method','cash','amount',90000,'cash_received',90000,'change_given',0),
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=1000);
@@ -133,7 +133,7 @@ BEGIN
       WHERE order_id=test_order AND transaction_type='refund' AND points_balance_after<0));
   -- La quantité SQL persistée et la base de calcul doivent partager les mêmes trois décimales.
   UPDATE public.customers SET loyalty_points=10000 WHERE id=customer;
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'modifiers','[]'::jsonb)),
     p_payment:='{"method":"cash","amount":90000,"cash_received":90000,"change_given":0}',
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=1000);
@@ -149,7 +149,7 @@ BEGIN
   INSERT INTO redemption_checks VALUES('normalized fractional returns restore every point',
     (result->>'pts_restored')::integer=666 AND (SELECT sum(loyalty_points_restored)=1000 FROM public.refunds WHERE order_id=precise_order));
   UPDATE public.products SET retail_price=10000 WHERE id=product;
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'modifiers','[]'::jsonb)),
     p_payment:='{"method":"cash","amount":9000,"cash_received":9000,"change_given":0}',
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=100);
@@ -167,14 +167,14 @@ BEGIN
   replay:=public.refund_order_rpc_v14(points_order,jsonb_build_array(jsonb_build_object('order_item_id',test_item,'qty',0.001)),
     '[]','Final return restores remaining point',profile,points_key,actor);
   INSERT INTO redemption_checks VALUES('points-only return replay keeps the initial result',(replay-'idempotent_replay')=points_result);
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'modifiers','[]'::jsonb)),
     p_payment:='{"method":"cash","amount":9000,"cash_received":9000,"change_given":0}',
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=100);
   void_redeemed_order:=(paid->>'order_id')::uuid;
   PERFORM public.void_order_rpc_v13(void_redeemed_order,'Void restores redemption books',profile,actor,gen_random_uuid());
   UPDATE public.products SET retail_price=100000 WHERE id=product;
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'modifiers','[]'::jsonb)),
     p_payment:='{"method":"cash","amount":90000,"cash_received":90000,"change_given":0}',
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=1000);
@@ -192,7 +192,7 @@ BEGIN
     (SELECT sum(total)=90000 AND sum(tax_refunded)=8200 AND sum(loyalty_points_restored)=1000 FROM public.refunds WHERE order_id=tax_points_order));
   UPDATE public.customer_categories SET loyalty_enabled=false WHERE id=customer_category;
   UPDATE public.customers SET loyalty_points=2000 WHERE id=customer;
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100000,'modifiers','[]'::jsonb)),
     p_payment:=jsonb_build_object('method','cash','amount',90000,'cash_received',90000,'change_given',0),
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=1000);
@@ -204,7 +204,7 @@ BEGIN
   INSERT INTO redemption_checks VALUES
     ('disabled earning still restores existing redeemed points',earned=0 AND (SELECT loyalty_points=2000 FROM public.customers WHERE id=customer)),
     ('refund updates spending even when no points were earned',(SELECT total_spent=0 FROM public.customers WHERE id=customer));
-  paid:=public.complete_order_with_payment_v30(p_session_id:=shift,p_order_type:='take_out',
+  paid:=public.complete_order_with_payment_v31(p_session_id:=shift,p_order_type:='take_out',
     p_items:=jsonb_build_array(jsonb_build_object('product_id',product,'quantity',1,'unit_price',100000,'modifiers','[]'::jsonb)),
     p_payment:=jsonb_build_object('method','cash','amount',100000,'cash_received',100000,'change_given',0),
     p_idempotency_key:=gen_random_uuid(),p_customer_id:=customer,p_loyalty_points_redeemed:=0);

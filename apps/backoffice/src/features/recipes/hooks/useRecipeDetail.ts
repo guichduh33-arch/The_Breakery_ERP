@@ -15,10 +15,10 @@ export interface BomRow {
   material_name: string;
   material_unit: string;
   qty_per_unit: number;
-  current_stock: number;
+  current_stock: number | null;
   cost_price: number;
   // recipe qty converted into the material's stock unit + the resulting line cost,
-  // both computed server-side (recipe_bom_full_v3) with unit conversion applied.
+  // both computed server-side (recipe_bom_full_v4) with unit conversion applied.
   // ADR-016 : un semi-fini suivi en stock est une ligne terminale valorisée à
   // son propre coût, pas un nœud déplié jusqu'aux matières.
   qty_in_base: number;
@@ -62,7 +62,7 @@ export function useRecipeDetail(productId: string | undefined) {
         .eq('product_id', productId)
         .order('version_number', { ascending: false });
 
-      const { data: bomRaw, error: bomErr } = await supabase.rpc('recipe_bom_full_v3', {
+      const { data: bomRaw, error: bomErr } = await supabase.rpc('recipe_bom_full_v4', {
         p_product_id: productId,
         p_max_depth: 5,
       });
@@ -70,7 +70,7 @@ export function useRecipeDetail(productId: string | undefined) {
       const bom = ((bomRaw ?? []) as BomRow[]).map((r) => ({
         ...r,
         qty_per_unit: Number(r.qty_per_unit ?? 0),
-        current_stock: Number(r.current_stock ?? 0),
+        current_stock: r.current_stock === null ? null : Number(r.current_stock),
         cost_price: Number(r.cost_price ?? 0),
         qty_in_base: Number(r.qty_in_base ?? 0),
         line_cost: Number(r.line_cost ?? 0),

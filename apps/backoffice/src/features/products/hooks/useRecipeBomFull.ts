@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/products/hooks/useRecipeBomFull.ts
 //
-// Session 39 — Wave B2 — Wraps recipe_bom_full_v3.
+// Session 39 — Wave B2 — Wraps recipe_bom_full_v4.
 // Gate: inventory.read (SECURITY DEFINER).
 // Returns 0 rows when the product has no recipe (purchase-driven WAC).
 //
@@ -16,7 +16,7 @@ export interface BomLine {
   material_unit: string;
   recipe_unit:   string;
   qty_per_unit:  number;
-  current_stock: number;
+  current_stock: number | null;
   cost_price:    number;
   // recipe qty converted into the material's stock unit (e.g. 284 gr → 0.284 kg)
   qty_in_base:   number;
@@ -30,7 +30,7 @@ export function useRecipeBomFull(productId: string) {
     enabled:  productId !== '',
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('recipe_bom_full_v3', {
+      const { data, error } = await supabase.rpc('recipe_bom_full_v4', {
         p_product_id: productId,
       });
       if (error) throw error;

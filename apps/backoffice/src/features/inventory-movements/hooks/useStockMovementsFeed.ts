@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/inventory-movements/hooks/useStockMovementsFeed.ts
-// Session 13 / Phase 2.D — wrapper around get_stock_movements_v1 RPC (cursor paginated).
+// Session 13 / Phase 2.D — wrapper around get_stock_movements_v3 RPC (cursor paginated).
 //
 // ADR-027 — le filtre `p_section_id` de la RPC devient VESTIGIAL : le stock est
 // global, l'UI ne le propose plus et ce wrapper ne le passe plus. Les colonnes
@@ -75,7 +75,7 @@ export function useStockMovementsFeed(filters: MovementsFilters = {}) {
         args.p_cursor = pageParam.cursor;
         args.p_cursor_id = pageParam.cursorId;
       }
-      const { data, error } = await rpc()('get_stock_movements_v1', args);
+      const { data, error } = await rpc()('get_stock_movements_v3', args);
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

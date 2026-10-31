@@ -67,8 +67,8 @@ export default function POSStockView(): JSX.Element {
     let out = 0;
     let low = 0;
     for (const r of rows) {
-      if (r.display_stock <= 0) out++;
-      else if (r.min_stock_threshold > 0 && r.display_stock <= r.min_stock_threshold) low++;
+      if (r.is_sellable === false || (r.display_stock !== null && r.display_stock <= 0)) out++;
+      else if (r.display_stock !== null && r.min_stock_threshold > 0 && r.display_stock <= r.min_stock_threshold) low++;
     }
     return { out, low, total: rows.length };
   }, [rows]);

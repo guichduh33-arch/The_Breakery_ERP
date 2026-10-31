@@ -3,7 +3,7 @@
 -- total facture (v_items_total, SUM(line_total)) ET deduit le stock de vente
 -- SANS filtrer is_cancelled = false. Une ligne annulee (cancel_order_item_rpc_v6,
 -- ADR-010) reste donc facturee et deduite au paiement d'une commande deja
--- envoyee en cuisine (fire_counter_order_v11 -> toutes les lignes sont
+-- envoyee en cuisine (fire_counter_order_v12 -> toutes les lignes sont
 -- is_locked = true). v19 filtre is_cancelled = false comme le fait deja
 -- cancel_order_item_rpc_v6 pour orders.subtotal/tax/total (recalc correct a
 -- l'annulation, incorrect au paiement).
@@ -32,11 +32,11 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
   ('00000000-0000-0000-0000-0000000e1901','C-CANC-A','Lot C Item A','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',5000,'finished',10,true,true,'pcs'),
   ('00000000-0000-0000-0000-0000000e1902','C-CANC-B','Lot C Item B','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',3000,'finished',10,true,true,'pcs');
 
--- Fire dine-in (both lines land is_locked = true, per fire_counter_order_v11).
+-- Fire dine-in (both lines land is_locked = true, per fire_counter_order_v12).
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v11(
+  r := fire_counter_order_v12(
     p_client_uuid := '00000000-0000-0000-0000-0000000e19bb'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf019',
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000e1901","quantity":1,"unit_price":5000,"modifiers":[]},
@@ -74,7 +74,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v22(
+  r := pay_existing_order_v23(
     p_order_id := current_setting('c19.order_id')::uuid,
     p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb);
   PERFORM set_config('c19.pay_status', 'ok', false);
@@ -110,9 +110,9 @@ INSERT INTO _cap SELECT ok(
 
 INSERT INTO _cap SELECT ok(
   NOT has_function_privilege('anon',
-    'public.pay_existing_order_v22(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
+    'public.pay_existing_order_v23(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
     'execute'),
-  'T6: anon lacks EXECUTE on pay_existing_order_v22 (defense-in-depth REVOKE pair)');
+  'T6: anon lacks EXECUTE on pay_existing_order_v23 (defense-in-depth REVOKE pair)');
 
 INSERT INTO _cap SELECT hasnt_function('public', 'pay_existing_order_v18',
   ARRAY['uuid','jsonb','uuid','integer','uuid','numeric','text','numeric','text','uuid','uuid','jsonb','jsonb','boolean'],

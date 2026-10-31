@@ -158,7 +158,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_order_type_category_mix_v1(p_start_date,
+// Source of truth: server RPC `get_pos_order_type_category_mix_v2(p_start_date,
 // p_end_date)`. Same order scope as the Overview, so the order-type revenue
 // sums back to Overview revenue exactly. Two breakdowns:
 //   * byOrderType — order-level (dine_in / take_out / delivery): revenue TTC,

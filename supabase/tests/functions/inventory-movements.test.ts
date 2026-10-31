@@ -2,9 +2,9 @@
 // Session 13 / Phase 2.D — Vitest live RPC tests for the movements ledger view.
 //
 // Covers :
-//   - get_stock_movements_v1 returns rows respecting filters + cursor pagination.
-//   - get_movement_aggregates_v3 returns one row per movement_type with totals.
-//   - 200-row hard cap on get_stock_movements_v1.
+//   - get_stock_movements_v3 returns rows respecting filters + cursor pagination.
+//   - get_movement_aggregates_v4 returns one row per movement_type with totals.
+//   - 200-row hard cap on get_stock_movements_v3.
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -15,7 +15,7 @@ function rpc(sb: SupabaseClient) {
   return sb.rpc.bind(sb) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements — get_stock_movements_v1 + aggregates', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements — get_stock_movements_v3 + aggregates', () => {
   let managerToken: string;
 
   beforeAll(async () => {
@@ -24,7 +24,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements —
 
   it('T_MOV_LIVE_01: returns rows + columns shape', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_stock_movements_v1', { p_limit: 5 });
+    const { data, error } = await rpc(sb)('get_stock_movements_v3', { p_limit: 5 });
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
     if (data.length > 0) {
@@ -40,12 +40,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements —
 
   it('T_MOV_LIVE_02: cursor pagination — second page has older rows', async () => {
     const sb = jwtClient(managerToken);
-    const { data: page1, error: e1 } = await rpc(sb)('get_stock_movements_v1', { p_limit: 5 });
+    const { data: page1, error: e1 } = await rpc(sb)('get_stock_movements_v3', { p_limit: 5 });
     expect(e1).toBeNull();
     if (page1.length < 2) return; // not enough data, skip
 
     const last = page1[page1.length - 1];
-    const { data: page2, error: e2 } = await rpc(sb)('get_stock_movements_v1', {
+    const { data: page2, error: e2 } = await rpc(sb)('get_stock_movements_v3', {
       p_limit: 5,
       p_cursor: last.created_at,
       p_cursor_id: last.id,
@@ -61,21 +61,21 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements —
 
   it('T_MOV_LIVE_03: 200-row hard cap', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_stock_movements_v1', { p_limit: 5000 });
+    const { data, error } = await rpc(sb)('get_stock_movements_v3', { p_limit: 5000 });
     expect(error).toBeNull();
     expect(data.length).toBeLessThanOrEqual(200);
   });
 
-  it('T_MOV_LIVE_04: get_movement_aggregates_v3 returns array', async () => {
+  it('T_MOV_LIVE_04: get_movement_aggregates_v4 returns array', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_movement_aggregates_v3', {});
+    const { data, error } = await rpc(sb)('get_movement_aggregates_v4', {});
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
   });
 
   it('T_MOV_LIVE_05: movement_type filter works', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_stock_movements_v1', {
+    const { data, error } = await rpc(sb)('get_stock_movements_v3', {
       p_movement_type: 'sale',
       p_limit: 10,
     });

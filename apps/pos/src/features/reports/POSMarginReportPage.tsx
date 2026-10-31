@@ -4,7 +4,7 @@
 // vente (snapshot COGS = Vague 3) : caveat permanent affiché. Périmètre ≡
 // Overview (revenue_ttc réconcilie exactement) ; cadeaux-promo comptés en COGS
 // avec revenue 0 ; badge d'alerte si des produits vendus n'ont pas de coût.
-// Source serveur unique : get_pos_margin_v1, gaté reports.financial.read
+// Source serveur unique : get_pos_margin_v2, gaté reports.financial.read
 // (PAS reports.sales.read — les coûts ne sont pas pour tout lecteur de ventes).
 
 import { type JSX } from 'react';

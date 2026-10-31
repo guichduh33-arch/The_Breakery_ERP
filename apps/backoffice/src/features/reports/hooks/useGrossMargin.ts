@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useGrossMargin.ts
 //
-// S57 P2.6 — Query hook for get_gross_margin_by_product_v1 RPC.
+// S57 P2.6 — Query hook for get_gross_margin_by_product_v2 RPC.
 // Gross margin per product/category over a date window.
 // Caveat: COGS uses the CURRENT WAC (products.cost_price), not a snapshot
 // captured at sale time — surfaced in the page UI.
@@ -72,7 +72,7 @@ export function useGrossMargin(params: UseGrossMarginParams) {
         p_end_date:   end,
       };
       if (categoryId) args.p_category_id = categoryId;
-      const { data, error } = await supabase.rpc('get_gross_margin_by_product_v1', args);
+      const { data, error } = await supabase.rpc('get_gross_margin_by_product_v2', args);
       if (error) throw error as Error;
       const r = (data ?? {}) as Record<string, unknown>;
       const period  = (r.period  ?? {}) as Record<string, unknown>;

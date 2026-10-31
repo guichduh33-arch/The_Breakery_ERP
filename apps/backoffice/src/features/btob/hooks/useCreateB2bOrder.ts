@@ -128,7 +128,7 @@ export function useCreateB2bOrder() {
       if (args.deliveryDate !== undefined && args.deliveryDate     !== '') rpcArgs.p_delivery_date = args.deliveryDate;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('create_b2b_order_v8', rpcArgs as any);
+      const { data, error } = await supabase.rpc('create_b2b_order_v9', rpcArgs as any);
       if (error) {
         const code = classify(error.message);
         // Supabase exposes Postgres DETAIL on `error.details` (snake_case differs by SDK version);

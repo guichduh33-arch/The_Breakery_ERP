@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useRecordIncomingStock.ts
 //
-// Calls `record_incoming_stock_v2` RPC (session 12 — Phase 2). Records a
+// Calls `record_incoming_stock_v4` RPC (session 12 — Phase 2). Records a
 // positive stock movement for a free-form receipt that isn't tied to a
 // purchase order. Supplier is OPTIONAL: when omitted, the server records
 // the receipt without supplier attribution. unit_cost + reason are also
@@ -17,6 +17,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockMovementRpcResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
+
+type ReceiptResult = Omit<StockMovementRpcResult, 'new_current_stock'> & { new_current_stock: number | null };
 
 export type RecordIncomingStockErrorCode =
   | 'idempotency_conflict'
@@ -56,7 +58,7 @@ function classify(message: string): RecordIncomingStockErrorCode {
 
 export function useRecordIncomingStock() {
   const qc = useQueryClient();
-  return useMutation<StockMovementRpcResult, RecordIncomingStockError, RecordIncomingStockArgs>({
+  return useMutation<ReceiptResult, RecordIncomingStockError, RecordIncomingStockArgs>({
     mutationFn: async (args) => {
       const rpcArgs: {
         p_product_id:       string;
@@ -74,10 +76,10 @@ export function useRecordIncomingStock() {
       if (args.unitCost   !== undefined) rpcArgs.p_unit_cost   = args.unitCost;
       if (args.reason     !== undefined && args.reason.trim() !== '') rpcArgs.p_reason = args.reason.trim();
 
-      const { data, error } = await supabase.rpc('record_incoming_stock_v2', rpcArgs);
+      const { data, error } = await supabase.rpc('record_incoming_stock_v4', rpcArgs);
       if (error) throw new RecordIncomingStockError(classify(error.message), error.message);
       if (data === null) throw new RecordIncomingStockError('unknown', 'Empty RPC response');
-      return data as unknown as StockMovementRpcResult;
+      return data as unknown as ReceiptResult;
     },
     onSuccess: () => invalidateStockQueries(qc),
   });

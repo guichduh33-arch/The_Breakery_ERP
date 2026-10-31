@@ -11,7 +11,7 @@ import type { OpnameStatus } from './useOpnameList.js';
 export interface OpnameItemRow {
   id:           string;
   product_id:   string;
-  expected_qty: number;
+  expected_qty: number | null;
   counted_qty:  number | null;
   variance:     number | null;
   unit:         string;
@@ -23,6 +23,7 @@ export interface OpnameItemRow {
 export interface OpnameDetail {
   id:             string;
   count_number:   string;
+  business_day:   string;
   section_id:     string | null;
   status:         OpnameStatus;
   started_at:     string;
@@ -46,17 +47,15 @@ export function useOpnameDetail(countId: string | null) {
       if (countId === null) return null;
       const { data: header, error: hErr } = await supabase
         .from('inventory_counts')
-        .select('id, count_number, section_id, status, started_at, finalized_at, cancelled_at, cancel_reason, notes, section:sections(code, name)')
+        .select('id, count_number, business_day, section_id, status, started_at, finalized_at, cancelled_at, cancel_reason, notes, section:sections(code, name)')
         .eq('id', countId)
         .single();
       if (hErr !== null) throw hErr;
       if (header === null) return null;
 
-      const { data: items, error: iErr } = await supabase
-        .from('inventory_count_items')
-        .select('id, product_id, expected_qty, counted_qty, variance, unit, notes, movement_id, product:products(sku, name)')
-        .eq('count_id', countId)
-        .order('created_at', { ascending: true });
+      const { data: items, error: iErr } = await supabase.rpc('get_opname_items_v1', {
+        p_count_id: countId,
+      });
       if (iErr !== null) throw iErr;
 
       return {

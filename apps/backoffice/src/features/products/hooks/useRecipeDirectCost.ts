@@ -1,11 +1,11 @@
 // apps/backoffice/src/features/products/hooks/useRecipeDirectCost.ts
 //
-// Wraps recipe_direct_cost_v1 — the DIRECT (depth-1) recipe-line costing used by
+// Wraps recipe_direct_cost_v2 — the DIRECT (depth-1) recipe-line costing used by
 // the product Costing tab so the breakdown matches the Recipe tab. Les lignes de
 // semi-finis y sont valorisées à leur propre cost_price (qui agrège déjà leurs
 // sous-ingrédients) au lieu d'être dépliées jusqu'aux matières.
 //
-// Depuis ADR-016, recipe_bom_full_v2 applique la même règle aux semi-finis
+// Depuis ADR-016, recipe_bom_full_v4 applique la même règle aux semi-finis
 // SUIVIS EN STOCK ; il ne déplie plus que les intermédiaires non suivis. La
 // différence entre les deux se réduit donc à ces derniers.
 //
@@ -16,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import type { BomLine } from './useRecipeBomFull.js';
 
-// recipe_direct_cost_v1 is not yet in the generated types (cloud schema lags the
+// recipe_direct_cost_v2 is not yet in the generated types (cloud schema lags the
 // local migration ledger), so the bound rpc is cast — same pattern as
 // useProductAnalytics.
 type RpcFn = (
@@ -30,7 +30,7 @@ export function useRecipeDirectCost(productId: string) {
     staleTime: 30_000,
     queryFn: async () => {
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('recipe_direct_cost_v1', {
+      const { data, error } = await rpc('recipe_direct_cost_v2', {
         p_product_id: productId,
       });
       if (error !== null) throw new Error(error.message);

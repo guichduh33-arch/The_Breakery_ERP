@@ -45,13 +45,32 @@ export function useDisplayStockGestures(canManage: boolean) {
       const result = a.kind === 'adjust'
         ? await adjust.mutateAsync({ productId: a.product.id, newQty: a.quantity, reason: a.reason, idempotencyKey: a.idempotencyKey })
         : await (a.kind === 'receive' ? receive : a.kind === 'return' ? returned : waste).mutateAsync(args);
-      if (typeof result !== 'object' || result === null || Array.isArray(result)
-        || result.product_id !== a.product.id || typeof result.new_display_stock !== 'number'
-        || !Number.isFinite(result.new_display_stock)) throw new Error('Unconfirmed response');
+      const declaration = a.kind === 'waste';
+      if (typeof result !== 'object' || result === null || Array.isArray(result)) throw new Error('Unconfirmed response');
+      const declarationStatus = typeof result.status === 'string' ? result.status : '';
+      if (declaration) {
+        if (typeof result.declaration_id !== 'string' || !['pending','approved','rejected'].includes(declarationStatus)
+          || typeof result.display_withdrawal_applied !== 'boolean' || typeof result.idempotent_replay !== 'boolean') throw new Error('Unconfirmed declaration');
+      } else if (result.product_id !== a.product.id ||
+        (result.new_display_stock !== null && (typeof result.new_display_stock !== 'number' || !Number.isFinite(result.new_display_stock)))) {
+        throw new Error('Unconfirmed response');
+      }
+      if (a.kind === 'adjust' && (typeof result.effect_id !== 'string' || result.effect_id.length === 0
+        || typeof result.idempotent_replay !== 'boolean')) throw new Error('Unconfirmed display update');
       attempts.current.delete(a.product.id);
       setCompleted((previous) => ({ ...previous, [a.product.id]: (previous[a.product.id] ?? 0) + 1 }));
       const replay = typeof result === 'object' && result !== null && !Array.isArray(result) && result.idempotent_replay === true;
-      const confirmation = `${a.product.name}: display stock ${result.new_display_stock} ${a.product.unit}.`;
+      const confirmation = declaration
+        ? result.display_withdrawal_applied
+          ? declarationStatus === 'pending'
+            ? `${a.product.name}: removed from the display. Global stock awaits owner approval.`
+            : declarationStatus === 'rejected'
+              ? `${a.product.name}: declaration already rejected. Display quantity is not restored; global stock approval was rejected.`
+              : `${a.product.name}: declaration already approved. Display quantity was removed; global stock is approved.`
+          : declarationStatus === 'pending'
+            ? `${a.product.name}: previous declaration awaits owner approval. Display withdrawal is pending.`
+            : `${a.product.name}: declaration already ${declarationStatus}. No new stock operation was recorded.`
+        : `${a.product.name}: operation recorded.`;
       if (replay) toast.info(`Already recorded — ${confirmation}`);
       else toast.success(`Recorded — ${confirmation}`);
       return true;

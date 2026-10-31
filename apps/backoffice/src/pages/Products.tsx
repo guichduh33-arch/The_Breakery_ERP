@@ -62,7 +62,7 @@ const PRODUCT_SORTS: Record<string, (r: ProductRow) => string | number> = {
   category: (r) => r.category_name ?? '',
   cost:     (r) => r.cost_price,
   retail:   (r) => r.retail_price,
-  stock:    (r) => r.current_stock,
+  stock:    (r) => r.current_stock ?? '',
 };
 
 function matchesCounter(r: ProductRow, counter: ProductCounter): boolean {

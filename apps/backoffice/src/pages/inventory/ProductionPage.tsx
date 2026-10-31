@@ -9,7 +9,7 @@
 //
 // Products are strictly filtered per station via product_sections (assign them
 // in the product editor → Stations tab). Submitting calls
-// record_batch_production_v7; the entry's date/time may be backdated.
+// record_batch_production_v10; the entry's date/time may be backdated.
 //
 // Mise en conformité de shell 2026-08-19 — trois défauts d'un même bloc :
 //

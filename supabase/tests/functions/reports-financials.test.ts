@@ -1,7 +1,7 @@
 // supabase/tests/functions/reports-financials.test.ts
 // Session 13 / Phase 6.A — Live integration tests for the financial /
 // market-basket report RPCs (get_profit_loss_v1, get_balance_sheet_v1,
-// get_cash_flow_v3, get_basket_analysis_v3).
+// get_cash_flow_v3, get_basket_analysis_v4).
 //
 // Coverage:
 //   - All 4 RPCs callable as an authenticated admin.
@@ -11,7 +11,7 @@
 //     unbalanced from old test data, we still verify the field exists).
 //   - get_cash_flow_v3 réconcilie : operating + investing + financing retombe
 //     exactement sur cash_end - cash_start (identité de la partie double).
-//   - get_basket_analysis_v3 returns an array on a 30-day window.
+//   - get_basket_analysis_v4 returns an array on a 30-day window.
 //
 // Pattern mirrors `reports-sales.test.ts`: PIN-login → JWT-bearing client → rpc().
 // Requires env vars: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
@@ -122,12 +122,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — financial R
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_basket_analysis_v3 returns an array on a 30-day window',
+    'get_basket_analysis_v4 returns an array on a 30-day window',
     async () => {
       const sb = jwtClient(adminToken);
       const end   = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_basket_analysis_v3', {
+      const { data, error } = await sb.rpc('get_basket_analysis_v4', {
         p_date_start: start,
         p_date_end:   end,
         p_top_n:      5,

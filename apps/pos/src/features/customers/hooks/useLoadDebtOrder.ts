@@ -5,13 +5,13 @@
 //
 // Mirror of `usePickupTabletOrder` (apps/pos/src/features/inbox/hooks/
 // usePickupTabletOrder.ts): loads the persisted order_items into the cart and
-// sets `pickedUpOrderId`, which routes `useCheckout` to `pay_existing_order_v13`.
+// sets `pickedUpOrderId`, which routes `useCheckout` to `pay_existing_order_v23`.
 // Unlike the tablet pickup, this order was already counter-fired (fully
 // printed) — every line is marked BOTH locked AND printed so useCheckout's
 // append guard (`isCounterFired && unsynced.length > 0`) sees zero unsynced
 // items and skips straight to payment instead of re-firing the whole order.
 //
-// Does NOT call `reopen_held_order_v2` or `pickup_tablet_order` — those gates
+// Does NOT call `reopen_held_order_v7` or `pickup_tablet_order` — those gates
 // don't apply to a plain counter ardoise (no held/tablet claim to make).
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';

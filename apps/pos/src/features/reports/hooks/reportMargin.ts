@@ -78,7 +78,7 @@ export function usePOSReportsMargin(period: ReportsPeriod) {
   return useQuery<POSReportsMargin>({
     queryKey: ['pos-reports-margin', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_margin_v1', {
+      const { data, error } = await supabase.rpc('get_pos_margin_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });

@@ -129,13 +129,13 @@ export function RecipeDetailPage(): JSX.Element {
                     </td>
                     {/* La quantité s'affiche DANS l'unité de la colonne voisine :
                         `qty_in_base` est la quantité de recette convertie dans
-                        l'unité de stock de la matière (serveur, recipe_bom_full_v2).
+                        l'unité de stock de la matière (serveur, recipe_bom_full_v4).
                         `qty_per_unit` est en unité de RECETTE — rendu à côté de
                         `material_unit`, il annonçait 115 kg pour 115 gr. */}
                     <td className={NUM_CELL}>{formatQuantity(r.qty_in_base, null)}</td>
                     <td className="px-3 py-2">{r.material_unit}</td>
                     <td className={NUM_CELL}>{fmtIdr(r.cost_price)}</td>
-                    <td className={NUM_CELL}>{formatQuantity(r.current_stock, r.material_unit)}</td>
+                    <td className={NUM_CELL}>{r.current_stock === null ? 'Hidden' : formatQuantity(r.current_stock, r.material_unit)}</td>
                     <td className={NUM_CELL}>{fmtIdr(r.line_cost)}</td>
                     <td className={NUM_CELL}>{fmtShare(Number(r.line_cost ?? 0), costBase)}</td>
                   </tr>

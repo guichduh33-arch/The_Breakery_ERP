@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-movements/hooks/useStockLedger.ts
 // 2026-06-18 — stock-card ledger feed for both BO stock-movement pages.
-// Single (non-paginated) query over get_stock_movement_ledger_v1: the full filtered
+// Single (non-paginated) query over get_stock_movement_ledger_v3: the full filtered
 // date range with a server-side running balance + cap. ref_no / type label are
 // synthesized in the table via @breakery/domain.
 //
@@ -21,8 +21,8 @@ export interface StockLedgerLine {
   unit:            string | null;
   incoming_qty:    number;
   outgoing_qty:    number;
-  beginning_qty:   number;
-  balance_qty:     number;
+  beginning_qty:   number | null;
+  balance_qty:     number | null;
   price:           number;
   movement_amount: number;
   reference_type:  string | null;
@@ -54,7 +54,7 @@ export function useStockLedger(params: UseStockLedgerParams) {
     queryFn: async () => {
       const { data, error } = await (supabase as unknown as {
         rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
-      }).rpc('get_stock_movement_ledger_v1', {
+      }).rpc('get_stock_movement_ledger_v3', {
         p_start:         params.start,
         p_end:           params.end,
         p_product_id:    params.productId    ?? null,

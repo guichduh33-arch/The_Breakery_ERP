@@ -28,7 +28,7 @@ vi.mock('@/stores/authStore.js', () => ({
 }));
 
 const SECTION_ROW = { id: 's-1', code: 'KIT', name: 'Kitchen', kind: 'kitchen', display_order: 1 };
-const PRODUCT_ROW = { id: 'bag-1', sku: 'BAG-1', name: 'Test Baguette', unit: 'pcs', current_stock: 10, cost_price: 1500 };
+const PRODUCT_ROW = { id: 'bag-1', sku: 'BAG-1', name: 'Test Baguette', unit: 'pcs', current_stock: 10, cost_price: 1500, product_type: 'finished', is_active: true, deleted_at: null };
 
 interface RpcResult { data: unknown; error: { message: string; details?: string } | null }
 interface ChainResult { data: unknown; error: unknown }
@@ -82,6 +82,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: unknown) => {
+        if (fn === 'get_operational_products_v1') return Promise.resolve({ data: [PRODUCT_ROW], error: null });
         const out = mockRpc(fn, args) as RpcResult | undefined;
         if (out !== undefined) return Promise.resolve(out);
         return Promise.resolve({ data: null, error: null });

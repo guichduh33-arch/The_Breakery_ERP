@@ -3,8 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-const rpc = vi.fn();
-vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: (...a: unknown[]): unknown => rpc(...a) } }));
+const rpc = vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>();
+vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 
 import { useCashWallets } from '../hooks/useCashWallets.js';
 
@@ -26,6 +26,6 @@ describe('useCashWallets', () => {
     const { result } = renderHook(() => useCashWallets(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(3);
-    expect(rpc).toHaveBeenCalledWith('get_cash_wallet_balances_v3');
+    expect(rpc).toHaveBeenCalledWith('get_cash_wallet_balances_v2');
   });
 });

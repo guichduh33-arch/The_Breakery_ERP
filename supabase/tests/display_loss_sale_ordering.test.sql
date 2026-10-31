@@ -1,0 +1,30 @@
+-- Les deux ordres sérialisés vente/perte conservent les quantités ; aucune vente métier persistée.
+BEGIN;
+\ir helpers/display_loss_fixture.sql
+SELECT _record_sale_stock_v1((SELECT id FROM loss_products WHERE kind='sale_first'),9,gen_random_uuid(),(SELECT id FROM loss_actors WHERE kind='cashier'),'Transactional sale before loss');
+SELECT pg_temp.authenticate_pin((SELECT uid FROM loss_actors WHERE kind='cashier'));
+SET LOCAL ROLE authenticated;
+INSERT INTO loss_results(tap) SELECT throws_ok(format('SELECT waste_display_stock_v4(%L,2,%L,%L)',id,'Loss after sale',key),'P0001','insufficient_display_stock','Sale first prevents loss from overdrawing shelf') FROM loss_products WHERE kind='sale_first';
+INSERT INTO loss_payload SELECT 'sale_first',waste_display_stock_v4(id,1,'Last remaining item loss',key) FROM loss_products WHERE kind='sale_first';
+INSERT INTO loss_payload SELECT 'loss_first',waste_display_stock_v4(id,2,'Loss before sale',key) FROM loss_products WHERE kind='loss_first';
+RESET ROLE;
+INSERT INTO loss_results(tap) SELECT is((SELECT quantity FROM display_stock WHERE product_id=(SELECT id FROM loss_products WHERE kind='sale_first')),0::numeric,'Sale nine plus loss one exhausts shelf without overdraft');
+INSERT INTO loss_results(tap) SELECT is((SELECT current_stock FROM products WHERE id=(SELECT id FROM loss_products WHERE kind='sale_first')),1::numeric,'Global loss remains deferred after sale');
+INSERT INTO loss_results(tap) SELECT throws_ok(format('SELECT _record_sale_stock_v1(%L,9,%L,%L,%L)',(SELECT id FROM loss_products WHERE kind='loss_first'),gen_random_uuid(),(SELECT id FROM loss_actors WHERE kind='cashier'),'Oversized sale after loss'),'P0002',NULL,'Loss first prevents selling withdrawn items');
+SELECT _record_sale_stock_v1((SELECT id FROM loss_products WHERE kind='loss_first'),8,gen_random_uuid(),(SELECT id FROM loss_actors WHERE kind='cashier'),'Transactional sale after loss');
+INSERT INTO loss_results(tap) SELECT is((SELECT quantity FROM display_stock WHERE product_id=(SELECT id FROM loss_products WHERE kind='loss_first')),0::numeric,'Loss two plus sale eight exhausts shelf');
+INSERT INTO loss_results(tap) SELECT is((SELECT current_stock FROM products WHERE id=(SELECT id FROM loss_products WHERE kind='loss_first')),2::numeric,'Sale reduces global while loss remains pending');
+SELECT pg_temp.authenticate_pin((SELECT uid FROM loss_actors WHERE kind='owner'));
+SET LOCAL ROLE authenticated;
+SELECT approve_stock_declaration_v3((SELECT (value->>'declaration_id')::uuid FROM loss_payload WHERE name='sale_first'));
+SELECT approve_stock_declaration_v3((SELECT (value->>'declaration_id')::uuid FROM loss_payload WHERE name='loss_first'));
+RESET ROLE;
+INSERT INTO loss_results(tap) SELECT is((SELECT current_stock FROM products WHERE id=(SELECT id FROM loss_products WHERE kind='sale_first')),0::numeric,'Delayed approval closes global balance for sale-first order');
+INSERT INTO loss_results(tap) SELECT is((SELECT current_stock FROM products WHERE id=(SELECT id FROM loss_products WHERE kind='loss_first')),0::numeric,'Delayed approval succeeds after shelf is exhausted by sale');
+INSERT INTO loss_results(tap) SELECT is((SELECT quantity FROM display_stock WHERE product_id=(SELECT id FROM loss_products WHERE kind='loss_first')),0::numeric,'Approval never subtracts again from empty shelf');
+INSERT INTO loss_results(tap) SELECT is((SELECT sum(quantity) FROM display_movements WHERE product_id=(SELECT id FROM loss_products WHERE kind='loss_first')),-10::numeric,'Shelf ledger conserves initial quantity');
+INSERT INTO loss_results(tap) SELECT is((SELECT sum(quantity) FROM stock_movements WHERE product_id=(SELECT id FROM loss_products WHERE kind='loss_first')),-10::numeric,'Global ledger conserves sale plus approved loss');
+INSERT INTO loss_results(tap) SELECT is((SELECT count(*) FROM stock_movements WHERE product_id=(SELECT id FROM loss_products WHERE kind='loss_first') AND movement_type='sale'),1::bigint,'Rejected oversized sale leaves no ledger movement');
+INSERT INTO loss_results(tap) SELECT * FROM finish();
+SELECT count(*) FILTER(WHERE tap LIKE 'not ok%') failures,jsonb_agg(tap ORDER BY seq) lines FROM loss_results;
+ROLLBACK;

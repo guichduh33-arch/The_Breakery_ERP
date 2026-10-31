@@ -33,7 +33,7 @@ export interface StockLedgerTableProps {
 // à côté, qui n'ont jamais cessé d'y être.
 const qtyFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
 
-function fmtQty(n: number): string    { return qtyFmt.format(n); }
+function fmtQty(n: number | null): string { return n === null ? 'Hidden' : qtyFmt.format(n); }
 // `price` et `movement_amount` sont de l'argent : ils prennent la source unique,
 // qui porte la devise et refuse les décimales — le rupiah n'en a pas.
 function fmtAmt(n: number): string    { return formatCurrency(n); }

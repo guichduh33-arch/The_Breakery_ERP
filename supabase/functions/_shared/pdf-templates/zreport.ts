@@ -8,7 +8,7 @@ import { rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 import { drawFooter, drawHeader, formatIDR, type LayoutContext } from '../pdf-layout.ts';
 
 export interface ZReportSnapshotData {
-  // Snapshot shape from get_zreport_snapshot_v1 (which embeds the z_reports.snapshot JSONB)
+  // Snapshot shape from get_zreport_snapshot_v2 (which embeds the z_reports.snapshot JSONB)
   shift_id:               string;
   session_number?:        string | null;
   opened_at:              string;

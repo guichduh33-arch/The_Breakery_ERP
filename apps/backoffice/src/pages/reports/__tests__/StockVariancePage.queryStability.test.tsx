@@ -21,7 +21,7 @@
 // cumules sur la periode, et une fenetre reduite a une seule journee les ramene
 // tous a zero — l'ecran cesserait de mesurer quoi que ce soit.
 //
-// ADR-027 — la page lit `get_stock_variance_v3` et n'emet plus de
+// ADR-027 — la page lit `get_stock_variance_v4` et n'emet plus de
 // `p_section_id` : le stock est global, le filtre de section a disparu.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -36,7 +36,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_stock_variance_v3') {
+      if (fn === 'get_stock_variance_v4') {
         return Promise.resolve({
           data: [{
             product_id:   'p-1',
@@ -75,7 +75,7 @@ function renderPage(search = '') {
 }
 
 function varianceCalls(): number {
-  return mockRpc.mock.calls.filter(([fn]) => fn === 'get_stock_variance_v3').length;
+  return mockRpc.mock.calls.filter(([fn]) => fn === 'get_stock_variance_v4').length;
 }
 
 beforeEach(() => {
@@ -106,7 +106,7 @@ describe('StockVariancePage — stabilite de la queryKey (R-01)', () => {
     renderPage();
     await screen.findByText('Matcha Powder');
 
-    const calls = mockRpc.mock.calls.filter(([fn]) => fn === 'get_stock_variance_v3');
+    const calls = mockRpc.mock.calls.filter(([fn]) => fn === 'get_stock_variance_v4');
     const bounds = calls.map(([, args]) => {
       const a = args as { p_date_start?: string; p_date_end?: string };
       return `${a.p_date_start ?? ''}|${a.p_date_end ?? ''}`;
@@ -126,7 +126,7 @@ describe('StockVariancePage — stabilite de la queryKey (R-01)', () => {
   it('interroge la fenetre selectionnee, bornes distinctes', async () => {
     renderPage('?start=2026-05-01&end=2026-05-14');
     await screen.findByText('Matcha Powder');
-    const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_variance_v3');
+    const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_variance_v4');
     const args = call![1] as { p_date_start: string; p_date_end: string };
     // Les bornes sont des TIMESTAMPTZ : on les repasse en date METIER avant de
     // les comparer. Un `slice(0,10)` sur l'UTC rendrait la veille pour la borne
@@ -143,7 +143,7 @@ describe('StockVariancePage — stabilite de la queryKey (R-01)', () => {
     renderPage();
     await screen.findByText('Matcha Powder');
     const args = mockRpc.mock.calls
-      .find(([fn]) => fn === 'get_stock_variance_v3')![1] as Record<string, unknown>;
+      .find(([fn]) => fn === 'get_stock_variance_v4')![1] as Record<string, unknown>;
     expect(args).not.toHaveProperty('p_section_id');
   });
 
@@ -158,7 +158,7 @@ describe('StockVariancePage — stabilite de la queryKey (R-01)', () => {
     renderPage();
     await screen.findByText('Matcha Powder');
     const args = mockRpc.mock.calls
-      .find(([fn]) => fn === 'get_stock_variance_v3')![1] as {
+      .find(([fn]) => fn === 'get_stock_variance_v4')![1] as {
         p_date_start: string; p_date_end: string;
       };
     expect(toLocalDateStr(new Date(args.p_date_start))).toBe('2026-07-01');

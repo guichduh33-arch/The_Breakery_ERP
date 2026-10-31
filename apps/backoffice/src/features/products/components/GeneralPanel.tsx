@@ -37,9 +37,8 @@ interface Props {
   /** Called when any field changes. */
   onChange?: (patch: Partial<ProductRow>) => void;
   /**
-   * Vitrine counter for this product (display_stock). `null` = no row / not
-   * stocked yet, `undefined` = not provided. Drives the M7 "needs stocking"
-   * banner: a display-case item with a 0/empty counter is unsellable at the POS.
+   * Quantité vitrine autorisée ; null signifie masquée ou indisponible.
+   * Une alerte de stock vide exige une quantité connue.
    */
   displayStockQty?: number | null;
 }
@@ -172,7 +171,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
       {/* ───────────── Right column ───────────── */}
       <div className="space-y-6">
         {/* La carte « Performance (30d) » affichait `0%`, `0` et `—` en dur ;
-            le distill l'a retirée, `get_product_performance_v1` la ramène sur
+            le distill l'a retirée, `get_product_performance_v2` la ramène sur
             du vrai. Elle est montée dans deux variantes plutôt que gardée par
             un booléen interne : sans `reports.sales.read` (que CASHIER et
             waiter n'ont pas), c'est la version restreinte qui rend, et elle
@@ -254,14 +253,14 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               disabled={readOnly}
               onChange={(v) => update('is_display_item', v)}
             />
-            {draft.is_display_item === true && (displayStockQty ?? 0) <= 0 && (
+            {draft.is_display_item === true && displayStockQty != null && displayStockQty <= 0 && (
               <div
                 role="alert"
                 data-testid="display-stock-warning"
                 className="rounded-md border border-gold px-3 py-2 text-xs text-text-secondary"
               >
                 <span className="font-semibold text-gold">
-                  Display-case counter at {displayStockQty ?? 0}.
+                  Display-case counter at {displayStockQty}.
                 </span>{' '}
                 The POS cannot sell this product until the counter is stocked from the
                 POS Display Stock screen (Cafe Stock in the side menu). The back-office
@@ -317,7 +316,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               <label htmlFor="product-current-stock" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">Current stock</label>
               <Input
                 id="product-current-stock"
-                value={draft.current_stock}
+                value={draft.current_stock ?? 'Hidden'}
                 disabled
                 className="mt-1.5 font-mono"
               />

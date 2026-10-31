@@ -39,7 +39,7 @@ export interface IngredientSearchResult {
   name:          string;
   unit:          string;
   cost_price:    number;
-  current_stock: number;
+  current_stock: number | null;
   kind:          'raw' | 'semi_finished' | 'sub_recipe';
   has_recipe:    boolean;
 }
@@ -424,7 +424,7 @@ export function IngredientPicker({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-text-primary">{row.name}</p>
                       <p className="truncate text-xs text-text-secondary">
-                        {row.sku} · {row.unit} · stock {row.current_stock}
+                        {row.sku} · {row.unit} · stock {row.current_stock ?? 'Hidden'}
                       </p>
                     </div>
                     <Badge variant={kindBadgeVariant(row.kind)}>

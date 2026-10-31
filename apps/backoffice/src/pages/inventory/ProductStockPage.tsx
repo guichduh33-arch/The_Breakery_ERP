@@ -88,7 +88,7 @@ export default function ProductStockPage(): JSX.Element {
   const a = analytics.data;
   const valueAtCost = d
     ? Math.round(Number(d.product.value_at_cost) || 0)
-    : Math.round(p.current_stock * p.cost_price);
+    : p.current_stock === null ? null : Math.round(p.current_stock * p.cost_price);
 
   return (
     <div className="space-y-6">
@@ -148,12 +148,12 @@ export default function ProductStockPage(): JSX.Element {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
         <KpiTile
           label="Current stock"
-          value={p.track_inventory || p.is_display_item ? formatQuantity(p.current_stock, p.unit) : 'Not tracked'}
+          value={p.track_inventory || p.is_display_item ? p.current_stock === null ? 'Hidden' : formatQuantity(p.current_stock, p.unit) : 'Not tracked'}
         />
         <KpiTile
           label="Value at cost"
-          value={formatIdrShort(valueAtCost)}
-          valueTitle={formatIdr(valueAtCost)}
+          value={valueAtCost === null ? 'Hidden' : formatIdrShort(valueAtCost)}
+          {...(valueAtCost === null ? {} : { valueTitle: formatIdr(valueAtCost) })}
         />
         {/* Les deux tuiles de vente passent une CHAÎNE déjà formatée par
             `formatQuantity` : sans elle le séparateur de milliers dépendrait du

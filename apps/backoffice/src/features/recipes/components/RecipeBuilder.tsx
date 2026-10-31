@@ -68,7 +68,7 @@ async function searchIngredientsFn(
   kind: 'raw' | 'semi_finished' | 'sub_recipe' | 'all',
 ): Promise<IngredientSearchResult[]> {
   try {
-    const { data, error } = await supabase.rpc('search_ingredients_v1', {
+    const { data, error } = await supabase.rpc('search_ingredients_v2', {
       p_query: query,
       p_kind:  kind,
       p_limit: 20,
@@ -80,7 +80,7 @@ async function searchIngredientsFn(
       name:          r.name,
       unit:          r.unit,
       cost_price:    Number(r.cost_price),
-      current_stock: Number(r.current_stock),
+      current_stock: r.current_stock === null ? null : Number(r.current_stock),
       kind:          r.kind as IngredientSearchResult['kind'],
       has_recipe:    Boolean(r.has_recipe),
     }));

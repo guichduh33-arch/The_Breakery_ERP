@@ -1,114 +1,35 @@
-// apps/pos/src/features/products/__tests__/useProducts.visible-on-pos.test.ts
-//
-// La grille respecte visible_on_pos ; les enfants actifs même masqués
-// conservent le statut de groupe du parent.
-
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
-
-interface Chain {
-  is: (...args: unknown[]) => Chain;
-  eq: (...args: unknown[]) => Chain;
-  not: (...args: unknown[]) => Chain;
-  order: (...args: unknown[]) => Promise<{ data: unknown[]; error: null }>;
-  then: Promise<{ data: unknown[]; error: null }>['then'];
-}
-
-function makeChain(data: unknown[]): Chain {
-  const result = Promise.resolve({ data, error: null });
-  const chain: Chain = {
-    is: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    not: vi.fn(() => chain),
-    order: vi.fn(() => result),
-    then: result.then.bind(result),
-  };
-  return chain;
-}
-
-const selectMock = vi.fn();
-const fromMock = vi.fn();
-
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: (...args: unknown[]) => fromMock(...args) as unknown,
-  },
-}));
-
+const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: mocks.rpc } }));
 import { useProducts } from '../hooks/useProducts';
-
+const product = { id: 'p1', sku: 'CR', name: 'Croissant', category_id: null, retail_price: 25000,
+  current_stock: null, is_active: true, visible_on_pos: true, parent_product_id: null,
+  categories: null, display_stock: { quantity: null }, is_sellable: true, has_variants: false };
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return createElement(QueryClientProvider, { client: qc }, children);
+  return createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
 }
-
-const VISIBLE_PRODUCT = {
-  id: 'p1',
-  sku: 'CR',
-  name: 'Croissant',
-  category_id: 'cat-1',
-  retail_price: 25_000,
-  wholesale_price: null,
-  product_type: 'finished',
-  image_url: null,
-  current_stock: 10,
-  is_active: true,
-  is_favorite: false,
-  parent_product_id: null,
-  track_inventory: false,
-  categories: null,
-  display_stock: null,
-};
-
-let productsChain: Chain;
-let variantsChain: Chain;
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  // Step 1 (parents/standalones) resolves with the "visible" fixture only —
-  // a product with visible_on_pos:false is expected to never reach this
-  // array in production because the server-side .eq() excludes it.
-  productsChain = makeChain([VISIBLE_PRODUCT]);
-  variantsChain = makeChain([]);
-
-  let callCount = 0;
-  fromMock.mockImplementation(() => {
-    callCount += 1;
-    const chain = callCount === 1 ? productsChain : variantsChain;
-    return { select: (...args: unknown[]) => (selectMock(...args), chain) };
-  });
+beforeEach(() => { mocks.rpc.mockReset(); mocks.rpc.mockResolvedValue({ data: [product], error: null }); });
+it('excludes hidden, inactive and child products while preserving masked sellability', async () => {
+  mocks.rpc.mockResolvedValue({ data: [product, { ...product, id: 'hidden', visible_on_pos: false },
+    { ...product, id: 'inactive', is_active: false }, { ...product, id: 'child', parent_product_id: 'p1' }], error: null });
+  const { result } = renderHook(() => useProducts(), { wrapper });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(result.current.data).toHaveLength(1);
+  expect(result.current.data?.[0]).toMatchObject({ id: 'p1', current_stock: null, is_sellable: true });
+  expect(mocks.rpc).toHaveBeenCalledWith('get_operational_products_v1');
 });
-
-describe('useProducts — visible_on_pos (session 59, 05 D1.1)', () => {
-  it('filters the parent/standalone query on visible_on_pos = true (in addition to is_active)', async () => {
-    const { result } = renderHook(() => useProducts(), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(productsChain.eq).toHaveBeenCalledWith('is_active', true);
-    expect(productsChain.eq).toHaveBeenCalledWith('visible_on_pos', true);
-    expect(result.current.data).toHaveLength(1);
-    expect(result.current.data?.[0]?.name).toBe('Croissant');
-  });
-
-  it('keeps a parent grouped when all its active children are hidden', async () => {
-    variantsChain = makeChain([{ parent_product_id: VISIBLE_PRODUCT.id }]);
-    const { result } = renderHook(() => useProducts(), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(variantsChain.eq).toHaveBeenCalledWith('is_active', true);
-    expect(variantsChain.eq).not.toHaveBeenCalledWith('visible_on_pos', true);
-    expect(variantsChain.is).toHaveBeenCalledWith('deleted_at', null);
-    expect(result.current.data?.[0]?.has_variants).toBe(true);
-  });
-
-  it('still excludes is_active = false as before (non-regression)', async () => {
-    const { result } = renderHook(() => useProducts(), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    // Both eq('is_active', true) calls happened before/independently of the
-    // new visible_on_pos filter — the fix is additive, not a replacement.
-    expect(productsChain.eq).toHaveBeenCalledWith('is_active', true);
-  });
+it('keeps a parent grouped when its active variants are hidden', async () => {
+  mocks.rpc.mockResolvedValue({ data: [{ ...product, has_variants: true }], error: null });
+  const { result } = renderHook(() => useProducts(), { wrapper });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(result.current.data?.[0]?.has_variants).toBe(true);
+});
+it('propagates catalogue refusal instead of publishing an empty catalogue', async () => {
+  mocks.rpc.mockResolvedValue({ data: null, error: { message: 'forbidden' } });
+  const { result } = renderHook(() => useProducts(), { wrapper });
+  await waitFor(() => expect(result.current.isError).toBe(true));
+  expect(result.current.data).toBeUndefined();
 });

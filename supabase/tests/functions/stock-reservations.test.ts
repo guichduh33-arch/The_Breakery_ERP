@@ -2,7 +2,7 @@
 // Session 13 / Phase 3.C — Live integration tests for stock_reservations RPCs.
 //
 // Covers:
-//   - reservation_hold_v1 happy path + reduces available
+//   - reservation_hold_v2 happy path + reduces available
 //   - reservation_release_v1 restores available
 //   - reservation_consume_v1 transitions held -> consumed
 //   - Idempotent replay (same idempotency_key returns same reservation_id)
@@ -40,7 +40,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs
       .select('available_quantity').eq('product_id', productId).single();
     const initialAvail = Number(before!.available_quantity);
 
-    const { data: hold, error } = await sb.rpc('reservation_hold_v1', {
+    const { data: hold, error } = await sb.rpc('reservation_hold_v2', {
       p_product_id: productId,
       p_quantity: 5,
       p_holder_type: 'cart',
@@ -64,7 +64,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs
   it('release restores available_quantity', async () => {
     const sb = jwtClient(cashierToken);
 
-    const { data: hold } = await sb.rpc('reservation_hold_v1', {
+    const { data: hold } = await sb.rpc('reservation_hold_v2', {
       p_product_id: productId,
       p_quantity: 3,
       p_holder_type: 'cart',
@@ -89,7 +89,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs
 
   it('consume transitions held -> consumed', async () => {
     const sb = jwtClient(cashierToken);
-    const { data: hold } = await sb.rpc('reservation_hold_v1', {
+    const { data: hold } = await sb.rpc('reservation_hold_v2', {
       p_product_id: productId,
       p_quantity: 2,
       p_holder_type: 'tablet',
@@ -114,8 +114,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs
       p_expires_at: futureIso(),
       p_idempotency_key: key,
     };
-    const { data: first } = await sb.rpc('reservation_hold_v1', args);
-    const { data: second } = await sb.rpc('reservation_hold_v1', args);
+    const { data: first } = await sb.rpc('reservation_hold_v2', args);
+    const { data: second } = await sb.rpc('reservation_hold_v2', args);
     expect((first as { reservation_id: string }).reservation_id)
       .toBe((second as { reservation_id: string }).reservation_id);
     expect(second).toMatchObject({ idempotent_replay: true });
@@ -129,7 +129,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs
     const sb = jwtClient(cashierToken);
     const { data: stock } = await sb.from('v_product_available_stock')
       .select('available_quantity').eq('product_id', productId).single();
-    const { error } = await sb.rpc('reservation_hold_v1', {
+    const { error } = await sb.rpc('reservation_hold_v2', {
       p_product_id: productId,
       p_quantity: Number(stock!.available_quantity) + 9999,
       p_holder_type: 'cart',

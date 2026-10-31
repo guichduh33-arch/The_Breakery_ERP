@@ -155,7 +155,7 @@ export function useDisplayStockActivity(enabled = true) {
   const query = useQuery<DisplayStockPanel, Error>({
     queryKey: DISPLAY_STOCK_ACTIVITY_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_display_stock_activity_v1');
+      const { data, error } = await supabase.rpc('get_display_stock_activity_v2');
       if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return data as unknown as DisplayStockPanel;
     },

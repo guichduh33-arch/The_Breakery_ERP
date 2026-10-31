@@ -3,9 +3,9 @@
 //
 // Coverage:
 //   - get_sales_by_hour_v1 returns 24 zero-filled rows for today.
-//   - get_sales_by_category_v3 runs and is non-error on a 7-day window.
+//   - get_sales_by_category_v4 runs and is non-error on a 7-day window.
 //   - get_sales_by_staff_v3 runs and is non-error on a 7-day window.
-//   - get_stock_variance_v3 (ADR-027 : démarque constatée, sans filtre
+//   - get_stock_variance_v4 (ADR-027 : démarque constatée, sans filtre
 //     section) emits one row per tracked product with either a movement in
 //     the default 30-day window or a non-zero current stock.
 //
@@ -47,12 +47,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs 
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_sales_by_category_v3 runs on a 7-day window without error',
+    'get_sales_by_category_v4 runs on a 7-day window without error',
     async () => {
       const sb = jwtClient(adminToken);
       const end   = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_sales_by_category_v3', {
+      const { data, error } = await sb.rpc('get_sales_by_category_v4', {
         p_date_start: start,
         p_date_end:   end,
       });
@@ -81,10 +81,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs 
     // supprimé = une ligne", mais "un produit SUIVI avec, sur la fenêtre par
     // défaut (30j), soit un mouvement, soit un stock courant non nul". La
     // fenêtre est recalculée côté client (clock skew négligeable sur 30j).
-    'get_stock_variance_v3 emits one row per tracked product with a movement in the window or a non-zero stock',
+    'get_stock_variance_v4 emits one row per tracked product with a movement in the window or a non-zero stock',
     async () => {
       const sb = jwtClient(adminToken);
-      const { data, error } = await sb.rpc('get_stock_variance_v3', {});
+      const { data, error } = await sb.rpc('get_stock_variance_v4', {});
       expect(error).toBeNull();
       expect(Array.isArray(data)).toBe(true);
 

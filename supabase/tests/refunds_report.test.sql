@@ -1,5 +1,5 @@
 -- supabase/tests/refunds_report.test.sql
--- Rapport « Refunds & Voids » — pgTAP pour get_refunds_report_v1 (12 assertions).
+-- Rapport « Refunds & Voids » — pgTAP pour get_refunds_report_v2 (12 assertions).
 --
 -- CE QUE CETTE SUITE PROTÈGE EN PRIORITÉ : les trois flux ne se mélangent pas
 -- (void + partiel = remboursé ; les lignes annulées avant paiement ne sont
@@ -37,14 +37,14 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2026-01-01', '2026-12-31');
+  v_r := get_refunds_report_v2('2026-01-01', '2026-12-31');
   v_ok := (v_r ? 'period') AND (v_r ? 'period_prev') AND (v_r ? 'timezone')
       AND (v_r ? 'generated_at') AND (v_r ? 'summary') AND (v_r ? 'events')
       AND (v_r ? 'cancelled_by_product');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_refunds_report_v1 MANAGER happy path returns 7-key JSONB');
+  'T1: get_refunds_report_v2 MANAGER happy path returns 7-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -52,13 +52,13 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_refunds_report_v1('2026-01-01', '2026-12-31');
+    PERFORM get_refunds_report_v2('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_refunds_report_v1 CASHIER raises 42501');
+  'T2: get_refunds_report_v2 CASHIER raises 42501');
 
 -- T3 bornes inversées → P0001
 DO $$
@@ -66,7 +66,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_refunds_report_v1('2026-12-31', '2026-01-01');
+    PERFORM get_refunds_report_v2('2026-12-31', '2026-01-01');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -79,7 +79,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2020-01-01', '2026-12-31');
+  v_r := get_refunds_report_v2('2020-01-01', '2026-12-31');
   v_ok := ((v_r->'period'->>'start')::date = '2026-12-31'::date - 366)
       AND ((v_r->'period'->>'end')::date   = '2026-12-31'::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
@@ -92,7 +92,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2026-01-01', '2026-12-31');
+  v_r := get_refunds_report_v2('2026-01-01', '2026-12-31');
   v_ok := ((v_r->'summary'->>'void_amount')::numeric
          + (v_r->'summary'->>'partial_amount')::numeric
          = (v_r->'summary'->>'refunded')::numeric);
@@ -139,7 +139,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'refunded')::numeric = 145000)
       AND ((v_r->'summary'->>'refund_count')::int = 2)
       AND ((v_r->'summary'->>'void_count')::int = 1)
@@ -155,7 +155,7 @@ DO $$
 DECLARE v_r JSONB; v_fam1 TEXT; v_fam2 TEXT;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   SELECT e->>'reason_family' INTO v_fam1
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   SELECT e->>'reason_family' INTO v_fam2
@@ -171,7 +171,7 @@ DO $$
 DECLARE v_r JSONB; v_e JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   SELECT e INTO v_e
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   SELECT COALESCE(SUM((p->>'amount')::numeric), 0) INTO v_sum
@@ -187,7 +187,7 @@ DO $$
 DECLARE v_r JSONB; v_e JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   SELECT e INTO v_e
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   v_ok := (v_e->'refunded_by'->>'name') IS NOT NULL
@@ -202,7 +202,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   v_ok := ((v_r->'summary'->>'gross_sales')::numeric = 250000);
   PERFORM set_config('breakery.t10', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -215,7 +215,7 @@ DECLARE v_r JSONB; v_row JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _rr_fix;
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   SELECT p INTO v_row
     FROM jsonb_array_elements(v_r->'cancelled_by_product') p
    WHERE (p->>'product_id')::uuid = f.pid;
@@ -233,7 +233,7 @@ DO $$
 DECLARE v_r JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  v_r := get_refunds_report_v2('2027-01-01', '2027-01-31');
   SELECT COALESCE(SUM((e->>'total')::numeric), 0) INTO v_sum
     FROM jsonb_array_elements(v_r->'events') e;
   v_ok := (v_sum = (v_r->'summary'->>'refunded')::numeric);

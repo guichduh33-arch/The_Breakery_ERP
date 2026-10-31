@@ -77,7 +77,7 @@ BEGIN
   END IF;
   PERFORM set_config('request.jwt.claim.sub', v_cashier_id::text, true);
   BEGIN
-    PERFORM get_orders_counters_v2('2024-01-15', '2024-01-15', '{}'::jsonb);
+    PERFORM get_orders_counters_v3('2024-01-15', '2024-01-15', '{}'::jsonb);
   EXCEPTION WHEN SQLSTATE '42501' THEN
     v_status := CASE WHEN SQLERRM LIKE 'Permission denied%'
                      THEN 'pass' ELSE 'fail_wrong_42501: ' || SQLERRM END;
@@ -101,7 +101,7 @@ END $$;
 DO $$
 DECLARE v_c JSONB;
 BEGIN
-  SELECT get_orders_counters_v2('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_c;
+  SELECT get_orders_counters_v3('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_c;
   PERFORM set_config('breakery.t2_pass',
     CASE WHEN (v_c->'total'->>'count')::int = 7 AND (v_c->'total'->>'amount')::numeric = 215000
          THEN 'pass' ELSE 'fail_' || (v_c->'total')::text END, false);
@@ -130,8 +130,8 @@ SELECT ok(COALESCE(current_setting('breakery.t5_pass', true), 'missing') = 'pass
 DO $$
 DECLARE v_without JSONB; v_with JSONB;
 BEGIN
-  SELECT get_orders_counters_v2('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_without;
-  SELECT get_orders_counters_v2('2024-01-15', '2024-01-15', jsonb_build_object('status', 'completed')) INTO v_with;
+  SELECT get_orders_counters_v3('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_without;
+  SELECT get_orders_counters_v3('2024-01-15', '2024-01-15', jsonb_build_object('status', 'completed')) INTO v_with;
   PERFORM set_config('breakery.t6_pass',
     CASE WHEN v_without = v_with THEN 'pass' ELSE 'fail_status_applied' END, false);
 END $$;
@@ -144,9 +144,9 @@ DECLARE
   v_c JSONB; v_page JSONB; v_s TEXT; v_counter INT; v_lines INT;
   v_status TEXT := 'pass';
 BEGIN
-  SELECT get_orders_counters_v2('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_c;
+  SELECT get_orders_counters_v3('2024-01-15', '2024-01-15', '{}'::jsonb) INTO v_c;
   FOR v_s IN SELECT unnest(enum_range(NULL::order_status))::text LOOP
-    SELECT get_orders_list_v4('2024-01-15', '2024-01-15',
+    SELECT get_orders_list_v5('2024-01-15', '2024-01-15',
       jsonb_build_object('status', v_s), 200, NULL, NULL) INTO v_page;
     v_lines := jsonb_array_length(v_page->'lines');
     v_counter := COALESCE((v_c->'by_status'->v_s->>'count')::int, 0);
@@ -168,7 +168,7 @@ DECLARE
 BEGIN
   LOOP
     -- v4 : positions 5-6 = p_sort/p_dir ; le curseur (texte, id) suit.
-    SELECT get_orders_list_v4('2024-01-15', '2024-01-15', '{}'::jsonb, 2, 'created_at', 'desc', v_cursor, v_cursor_id) INTO v_page;
+    SELECT get_orders_list_v5('2024-01-15', '2024-01-15', '{}'::jsonb, 2, 'created_at', 'desc', v_cursor, v_cursor_id) INTO v_page;
     FOR l IN SELECT * FROM jsonb_array_elements(v_page->'lines') LOOP
       v_ids := v_ids || (l->>'id');
     END LOOP;
@@ -192,7 +192,7 @@ SELECT ok(COALESCE(current_setting('breakery.t8_pass', true), 'missing') = 'pass
 DO $$
 DECLARE v_c JSONB;
 BEGIN
-  SELECT get_orders_counters_v2('2020-01-01', '2020-01-02', '{}'::jsonb) INTO v_c;
+  SELECT get_orders_counters_v3('2020-01-01', '2020-01-02', '{}'::jsonb) INTO v_c;
   PERFORM set_config('breakery.t9_pass',
     CASE WHEN (v_c->'total'->>'count')::int = 0
           AND (v_c->'total'->>'amount')::numeric = 0

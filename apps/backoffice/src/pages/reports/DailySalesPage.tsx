@@ -93,8 +93,8 @@ const MAX_SESSIONS = 8;
 
 /**
  * Périmètre des deux cartes bâties sur les LIGNES de commande — « Revenue by
- * category » (`get_sales_by_category_v3`) et « Top products »
- * (`get_gross_margin_by_product_v1`).
+ * category » (`get_sales_by_category_v4`) et « Top products »
+ * (`get_gross_margin_by_product_v2`).
  *
  * Elles somment `order_items.line_total` HORS TAXE et brut des remises posées
  * au niveau de la COMMANDE, là où la bande de KPI somme `orders.total`. Leur
@@ -102,8 +102,8 @@ const MAX_SESSIONS = 8;
  * rien à voir avec celui qu'explique la carte Payments.
  *
  * CE QUE CETTE PHRASE NE DIT PAS, ET POURQUOI. Elle ne mentionne pas le B2B.
- * Relevé du 2026-08-21 : ni `get_sales_by_category_v3` ni
- * `get_gross_margin_by_product_v1` ne porte de filtre `order_type` — les
+ * Relevé du 2026-08-21 : ni `get_sales_by_category_v4` ni
+ * `get_gross_margin_by_product_v2` ne porte de filtre `order_type` — les
  * commandes B2B y entreront donc dès qu'elles porteront des lignes. Si elles
  * n'y pèsent rien sur la base de développement, c'est que les quinze qui s'y
  * trouvent ont été insérées directement par des fixtures, en contournant

@@ -6,14 +6,14 @@
 // the RPC complains.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 
 export interface B2bOrderProductOption {
   id:            string;
   sku:           string;
   name:          string;
   price:         number;
-  current_stock: number;
+  current_stock: number | null;
   track_inventory: boolean;
   unit:          string | null;
 }
@@ -25,18 +25,11 @@ export function useProductsForB2bOrder() {
     queryKey: B2B_ORDER_PRODUCTS_QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        // `price` is an alias of the real column retail_price (products has no `price`
-        // column) — used only as the client-side prefill fallback; the server (v5) is
-        // authoritative and resolves negotiated > category > retail regardless.
-        .select('id, sku, name, price:retail_price, current_stock, track_inventory, unit')
-        .is('deleted_at', null)
-        .eq('is_active', true)
-        .order('name', { ascending: true })
-        .limit(500);
-      if (error) throw error;
-      return data ?? [];
+      return (await getOperationalProducts())
+        .filter((p) => p.is_active && p.deleted_at === null)
+        .sort((a, b) => a.name.localeCompare(b.name)).slice(0, 500)
+        .map((p) => ({ id: p.id, sku: p.sku, name: p.name, price: p.retail_price,
+          current_stock: p.current_stock, track_inventory: p.track_inventory, unit: p.unit }));
     },
   });
 }

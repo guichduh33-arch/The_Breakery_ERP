@@ -21,6 +21,7 @@ function makeDetail(status: OpnameStatus): OpnameDetail {
   return {
     id:            'op-1',
     count_number:  'OPN-2026-0001',
+    business_day: '2026-08-10',
     section_id:    's-1',
     status,
     started_at:    '2026-08-10T02:00:00Z',
@@ -61,9 +62,11 @@ vi.mock('@/features/inventory-opname/components/AddItemForm.js', () => ({
 }));
 
 let currentPerms = new Set<string>();
+let role = 'SUPER_ADMIN';
+vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: () => Promise.resolve({ data: { released: false }, error: null }) } }));
 vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: (p: string) => currentPerms.has(p) }),
+  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean; user: { id: string; role_code: string } }) => unknown) =>
+    sel({ hasPermission: (p: string) => currentPerms.has(p), user: { id: 'owner', role_code: role } }),
 }));
 
 function renderPage() {
@@ -84,6 +87,7 @@ function renderPage() {
 describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   beforeEach(() => {
     validateMutate.mockReset();
+    role = 'SUPER_ADMIN';
     currentPerms = new Set(['inventory.read', 'inventory.opname.create', 'inventory.opname.finalize']);
     detail = makeDetail('counting');
   });
@@ -91,7 +95,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   it('blocks reveal immediately when an already-counted quantity is edited', () => {
     renderPage();
     fireEvent.change(screen.getByLabelText('Counted quantity for White Flour'), { target: { value: '10' } });
-    expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Submit & lock/i })).toBeDisabled();
     expect(screen.getByText(/Save all changes/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download template' })).toBeDisabled();
     expect(screen.getByLabelText('Import counts (.xlsx)')).toBeDisabled();
@@ -137,7 +141,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   it('ne valide qu\'après confirmation, en annonçant qu\'il n\'y a pas de retour', () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /Validate & reveal variances/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit & lock/i }));
     expect(validateMutate).not.toHaveBeenCalled();
 
     expect(screen.getByText(/no way back to counting/i)).toBeInTheDocument();
@@ -164,7 +168,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     renderPage();
 
     expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Submit & lock/i })).toBeInTheDocument();
 
     // Et il réapparaît une fois la révélation faite.
     detail = makeDetail('review');
@@ -187,7 +191,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
 
     // Un bouton désactivé n'est pas focalisable : la raison doit lui être liée
     // par `aria-describedby`, pas seulement posée à côté.
-    const validate = screen.getByRole('button', { name: /Validate & reveal variances/i });
+    const validate = screen.getByRole('button', { name: /Submit & lock/i });
     expect(validate).toBeDisabled();
     expect(validate.getAttribute('aria-describedby')).toBe(reason.id);
   });
@@ -206,5 +210,17 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     renderPage();
     expect(screen.queryByRole('button', { name: 'Download template' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Import counts (.xlsx)')).not.toBeInTheDocument();
+  });
+  it.each(['review', 'finalized'] as const)('keeps theoretical quantities hidden from Admin during %s', (status) => {
+    role = 'ADMIN';
+    detail = makeDetail(status);
+    detail.items[0]!.expected_qty = null;
+    detail.items[0]!.variance = null;
+    renderPage();
+    expect(screen.queryByTestId('cell-expected')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cell-variance')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Counted quantity for White Flour')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Release daily sales' })).not.toBeInTheDocument();
   });
 });

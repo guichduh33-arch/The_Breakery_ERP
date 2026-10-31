@@ -16,6 +16,7 @@ export type OpnameStatus = 'draft' | 'counting' | 'review' | 'finalized' | 'canc
 export interface OpnameListRow {
   id:             string;
   count_number:   string;
+  business_day:   string;
   section_id:     string | null;
   status:         OpnameStatus;
   started_at:     string;
@@ -46,7 +47,7 @@ export function useOpnameList(filters: OpnameListFilters = {}) {
     queryFn: async () => {
       let query = supabase
         .from('inventory_counts')
-        .select('id, count_number, section_id, status, started_at, finalized_at, cancelled_at, notes, created_at, section:sections(code, name)');
+        .select('id, count_number, business_day, section_id, status, started_at, finalized_at, cancelled_at, notes, created_at, section:sections(code, name)');
 
       if (filters.status !== undefined) {
         query = query.eq('status', filters.status);

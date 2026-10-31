@@ -5,7 +5,7 @@
 // manipulation on every terminal (cart gestures, kitchen, payment, drawer,
 // session), newest first, with:
 //   * family filter chips (cart / kitchen / payment / control / session)
-//   * device + operator selects (facets from page 1 of get_pos_events_v1)
+//   * device + operator selects (facets from page 1 of get_pos_events_v2)
 //   * per-ticket timeline: clicking a ticket ref narrows to that order_id
 //   * control signals (manual drawer, payment failures, reprints, voids,
 //     discounts) highlighted — the fraud read

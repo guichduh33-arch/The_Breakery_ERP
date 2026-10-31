@@ -92,7 +92,7 @@ describe('GeneralPanel — display-item toggle [Wave 6 / Task 23]', () => {
     expect(screen.getByTestId('display-stock-warning')).toBeInTheDocument();
   });
 
-  it('shows the vitrine warning when flagged and the counter row is missing (null)', () => {
+  it('does not interpret a hidden vitrine quantity as empty', () => {
     render(
       <MemoryRouter>
         <GeneralPanel
@@ -103,7 +103,7 @@ describe('GeneralPanel — display-item toggle [Wave 6 / Task 23]', () => {
         />
       </MemoryRouter>,
     );
-    expect(screen.getByTestId('display-stock-warning')).toBeInTheDocument();
+    expect(screen.queryByTestId('display-stock-warning')).not.toBeInTheDocument();
   });
 
   it('hides the vitrine warning once the counter is stocked (> 0)', () => {

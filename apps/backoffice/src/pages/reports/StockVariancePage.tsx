@@ -12,7 +12,7 @@
 //
 // SIGNALEMENT LEVÉ (ADR-027) — l'ancien écran comparait deux termes qui ne
 // vivaient pas dans le même temps : un `expected` déduit des mouvements de la
-// FENÊTRE contre un `current_qty` pris à l'INSTANT présent. `get_stock_variance_v3`
+// FENÊTRE contre un `current_qty` pris à l'INSTANT présent. `get_stock_variance_v4`
 // résout cela en servant une OUVERTURE reconstruite à la borne basse et une
 // CLÔTURE calculée à la borne haute : `closing = opening + stock_in + sold +
 // consumed + wasted + corrected + other` est une identité comptable, vraie sur

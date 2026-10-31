@@ -36,7 +36,7 @@ describe('tablette reprise : portee session', () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: 'P0002' } });
     const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
     await expect(result.current.mutateAsync('tablet-id')).rejects.toMatchObject({ code: 'P0002' });
-    expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v6', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
+    expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v7', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
     expect(useCartStore.getState().cart).toBe(cart);
   });
   it('liste les commandes waiter entrantes et les tablettes reprises dans la session', async () => {

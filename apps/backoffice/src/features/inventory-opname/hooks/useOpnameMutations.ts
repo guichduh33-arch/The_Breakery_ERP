@@ -26,11 +26,12 @@ function rpc(): RpcFn {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// create_opname_v2
+// create_opname_v3
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CreateOpnameArgs {
   notes?: string | undefined;
+  businessDay: string;
 }
 
 export interface CreateOpnameResult {
@@ -46,8 +47,9 @@ export function useCreateOpname() {
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<CreateOpnameResult, Error, CreateOpnameArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('create_opname_v2', {
+      const { data, error } = await rpc()('create_opname_v3', {
         p_idempotency_key: idemKey.current,
+        p_business_day: args.businessDay,
         ...(args.notes !== undefined && args.notes.trim() !== '' ? { p_notes: args.notes.trim() } : {}),
       });
       if (error !== null) throw new Error(error.message);
@@ -61,13 +63,12 @@ export function useCreateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// add_opname_item_v2
+// add_opname_item_v3
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AddOpnameItemArgs {
   countId:     string;
   productId:   string;
-  expectedQty?: number | undefined;
   notes?:      string | undefined;
 }
 
@@ -75,10 +76,9 @@ export function useAddOpnameItem() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, AddOpnameItemArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('add_opname_item_v2', {
+      const { data, error } = await rpc()('add_opname_item_v3', {
         p_count_id: args.countId,
         p_product_id: args.productId,
-        ...(args.expectedQty !== undefined ? { p_expected_qty: args.expectedQty } : {}),
         ...(args.notes !== undefined && args.notes.trim() !== '' ? { p_notes: args.notes.trim() } : {}),
       });
       if (error !== null) throw new Error(error.message);
@@ -91,7 +91,7 @@ export function useAddOpnameItem() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// set_opname_count_v1
+// set_opname_count_v3
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface SetOpnameCountArgs {
@@ -105,7 +105,7 @@ export function useSetOpnameCount() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, SetOpnameCountArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await rpc()('set_opname_count_v2', {
+      const { data, error } = await rpc()('set_opname_count_v3', {
         p_count_item_id: args.countItemId,
         p_counted_qty: args.countedQty,
         ...(args.notes !== undefined ? { p_notes: args.notes.trim() } : {}),
@@ -139,7 +139,7 @@ export function useValidateOpname() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// finalize_opname_v4
+// finalize_opname_v5
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface FinalizeOpnameResult {
@@ -154,13 +154,13 @@ export interface FinalizeOpnameResult {
 
 export function useFinalizeOpname() {
   const qc = useQueryClient();
-  // Idempotency key held across retries; rotated on success. finalize_opname_v4
+  // Idempotency key held across retries; rotated on success. finalize_opname_v5
   // n'accepte QUE le statut `review` — la révélation par validate_opname_v1 est
   // le seul chemin depuis le comptage — mais une clé stable rend le rejeu explicite.
   const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<FinalizeOpnameResult, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
-      const { data, error } = await rpc()('finalize_opname_v4', {
+      const { data, error } = await rpc()('finalize_opname_v5', {
         p_count_id: countId,
         p_idempotency_key: idemKey.current,
       });
