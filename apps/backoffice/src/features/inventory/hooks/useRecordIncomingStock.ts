@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useRecordIncomingStock.ts
 //
-// Calls `record_incoming_stock_v3` RPC (session 12 — Phase 2). Records a
+// Calls `record_incoming_stock_v4` RPC (session 12 — Phase 2). Records a
 // positive stock movement for a free-form receipt that isn't tied to a
 // purchase order. Supplier is OPTIONAL: when omitted, the server records
 // the receipt without supplier attribution. unit_cost + reason are also
@@ -76,7 +76,7 @@ export function useRecordIncomingStock() {
       if (args.unitCost   !== undefined) rpcArgs.p_unit_cost   = args.unitCost;
       if (args.reason     !== undefined && args.reason.trim() !== '') rpcArgs.p_reason = args.reason.trim();
 
-      const { data, error } = await supabase.rpc('record_incoming_stock_v3', rpcArgs);
+      const { data, error } = await supabase.rpc('record_incoming_stock_v4', rpcArgs);
       if (error) throw new RecordIncomingStockError(classify(error.message), error.message);
       if (data === null) throw new RecordIncomingStockError('unknown', 'Empty RPC response');
       return data as unknown as ReceiptResult;

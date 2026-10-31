@@ -27,7 +27,7 @@ beforeEach(() => {
     lockedItemIds: [], printedItemIds: [], attachedCustomer: null,
     appliedPromotions: [], dismissedPromotionIds: new Set(), isOffline: false });
   rpc.mockImplementation((name: string) => Promise.resolve({
-    data: name === 'get_pos_order_snapshot_v2' ? snapshot : null, error: null,
+    data: name === 'get_pos_order_snapshot_v3' ? snapshot : null, error: null,
   }));
 });
 
@@ -36,7 +36,7 @@ describe('commandes waiter dans On hold', () => {
     const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
     await result.current.mutateAsync(incoming);
     expect(rpc).toHaveBeenNthCalledWith(1, 'pickup_tablet_order', { p_order_id: incoming.id, p_session_id: 'shift-1' });
-    expect(rpc).toHaveBeenNthCalledWith(2, 'get_pos_order_snapshot_v2', { p_order_id: incoming.id });
+    expect(rpc).toHaveBeenNthCalledWith(2, 'get_pos_order_snapshot_v3', { p_order_id: incoming.id });
     expect(rpc).toHaveBeenCalledWith('pickup_tablet_order', { p_order_id: incoming.id, p_session_id: 'shift-1' });
     expect(useCartStore.getState().pickedUpOrderId).toBe(incoming.id);
     expect(useCartStore.getState().lockedItemIds).toEqual(['line-1']);

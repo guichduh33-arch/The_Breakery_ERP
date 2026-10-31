@@ -20,7 +20,7 @@
 --   T6  adjust_stock_v4: p_new_qty < 0 rejected
 --   T7  receive_stock_v1 est DROPPÉE (Q3 audit 2026-07-27 — réception valorisée
 --       via le flux PO/achat direct uniquement)
---   T8  record_incoming_stock_v3 existe toujours (entrées non-achat conservées)
+--   T8  record_incoming_stock_v4 existe toujours (entrées non-achat conservées)
 --   T9  waste_stock_v4: qty > on-hand -> insufficient_stock (P0002)
 --   T10 waste_stock_v4: happy path (current_stock decremented, movement negative)
 --   T11 RLS: direct INSERT into stock_movements blocked for `authenticated`
@@ -28,12 +28,12 @@
 --   T13 Row-lock serialization: two adjusts on same row sum correctly (no lost update)
 --   T14 void_order_rpc + complete_order regression (sale_void restores stock)
 --   T15 record_stock_movement_v1: REVOKE EXECUTE enforced on `authenticated` role
---   T16 record_incoming_stock_v3: CASHIER -> forbidden (P0003)
---   T17 record_incoming_stock_v3: MANAGER + qty 0 -> quantity_must_be_positive
---   T18 record_incoming_stock_v3: MANAGER happy path (no supplier) — movement row +
+--   T16 record_incoming_stock_v4: CASHIER -> forbidden (P0003)
+--   T17 record_incoming_stock_v4: MANAGER + qty 0 -> quantity_must_be_positive
+--   T18 record_incoming_stock_v4: MANAGER happy path (no supplier) — movement row +
 --       current_stock bump + audit row
---   T19 record_incoming_stock_v3: MANAGER + soft-deleted supplier -> P0002
---   T20 record_incoming_stock_v3: idempotent replay (same key, identical args)
+--   T19 record_incoming_stock_v4: MANAGER + soft-deleted supplier -> P0002
+--   T20 record_incoming_stock_v4: idempotent replay (same key, identical args)
 --   T21 get_stock_counters_v2: total independent of the page window, and readable on an empty result
 --   T22 get_stock_levels_v5: search is case-insensitive (ILIKE) — upper/lower both match
 --   T23 get_stock_levels_v5: p_category_id filter returns only matching products
@@ -69,7 +69,7 @@ INSERT INTO suppliers (id, code, name, is_active)
 VALUES ('11111111-2222-3333-4444-666666666666'::uuid, 'PGTAP-INACT', 'pgTAP Inactive', false)
 ON CONFLICT (id) DO NOTHING;
 
--- Soft-deleted supplier fixture for T19 (record_incoming_stock_v3).
+-- Soft-deleted supplier fixture for T19 (record_incoming_stock_v4).
 INSERT INTO suppliers (id, code, name, is_active, deleted_at)
 VALUES (
   '11111111-2222-3333-4444-777777777777'::uuid,
@@ -283,16 +283,16 @@ SELECT ok(
   'T7: receive_stock_v1 is dropped (valued receipts go through the PO flow)');
 
 -- =========================================================================
--- T8 — record_incoming_stock_v3 existe toujours (entrées non-achat : stock
+-- T8 — record_incoming_stock_v4 existe toujours (entrées non-achat : stock
 -- initial d'un site migré, etc. — conservée par décision Q3).
 -- =========================================================================
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v3'
+    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v4'
   ),
-  'T8: record_incoming_stock_v3 still exists (non-purchase entries kept)');
+  'T8: record_incoming_stock_v4 still exists (non-purchase entries kept)');
 
 -- =========================================================================
 -- T9 — waste_stock_v4 with qty > on-hand -> insufficient_stock P0002
@@ -513,7 +513,7 @@ SELECT ok(
 );
 
 -- =========================================================================
--- T16 — record_incoming_stock_v3 from CASHIER (no inventory.receive) -> P0003
+-- T16 — record_incoming_stock_v4 from CASHIER (no inventory.receive) -> P0003
 -- =========================================================================
 DO $$
 DECLARE v_cashier UUID;
@@ -526,7 +526,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v3(
+  $$ SELECT record_incoming_stock_v4(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        1.000,
        NULL, NULL, 'T16 cashier should fail'
@@ -549,10 +549,10 @@ BEGIN
 END $$;
 
 -- =========================================================================
--- T17 — record_incoming_stock_v3 with quantity = 0 -> quantity_must_be_positive
+-- T17 — record_incoming_stock_v4 with quantity = 0 -> quantity_must_be_positive
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v3(
+  $$ SELECT record_incoming_stock_v4(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        0,
        NULL, NULL, 'T17 zero qty'
@@ -563,7 +563,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T18 — record_incoming_stock_v3 MANAGER happy path (no supplier, qty 5):
+-- T18 — record_incoming_stock_v4 MANAGER happy path (no supplier, qty 5):
 --       stock_movements row with movement_type='incoming' and supplier_id IS NULL,
 --       products.current_stock increased by 5, one new audit_logs row.
 -- =========================================================================
@@ -584,7 +584,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v3(
+  SELECT record_incoming_stock_v4(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     5.000,
     NULL, NULL, 'T18 free-form receipt'
@@ -612,10 +612,10 @@ SELECT ok(current_setting('breakery.t18_pass')::boolean,
   'T18: MANAGER + no supplier + qty 5.000 yields incoming movement, +5 stock, 1 audit row');
 
 -- =========================================================================
--- T19 — record_incoming_stock_v3 with soft-deleted supplier -> P0002
+-- T19 — record_incoming_stock_v4 with soft-deleted supplier -> P0002
 -- =========================================================================
 SELECT throws_ok(
-  $$ SELECT record_incoming_stock_v3(
+  $$ SELECT record_incoming_stock_v4(
        '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
        3.000,
        '11111111-2222-3333-4444-777777777777'::uuid,
@@ -627,7 +627,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T20 — record_incoming_stock_v3 idempotent replay (same idempotency_key):
+-- T20 — record_incoming_stock_v4 idempotent replay (same idempotency_key):
 --       second call returns idempotent_replay=true, only ONE stock_movements
 --       row exists for that key, current_stock only bumped once.
 -- =========================================================================
@@ -651,7 +651,7 @@ BEGIN
   SELECT current_stock INTO v_before FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v3(
+  SELECT record_incoming_stock_v4(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -659,7 +659,7 @@ BEGIN
   SELECT current_stock INTO v_after_first FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
-  SELECT record_incoming_stock_v3(
+  SELECT record_incoming_stock_v4(
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
     7.000,
     NULL, NULL, 'T20 first', v_key
@@ -682,7 +682,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t20$;
 SELECT ok(current_setting('breakery.t20_pass')::boolean,
-  'T20: record_incoming_stock_v3 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
+  'T20: record_incoming_stock_v4 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
 
 -- =========================================================================
 -- T21 — ADR-024 déc. 1 : le total ne voyage plus sur les lignes. Il vient de

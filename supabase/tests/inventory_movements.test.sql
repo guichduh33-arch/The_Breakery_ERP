@@ -69,7 +69,7 @@ SELECT is(
 );
 
 -- T_MOV_06b — l agregat valorise au cout COURANT du produit, pas au unit_cost
--- stocke du mouvement : aligne sur get_stock_movement_ledger_v2, et immunise
+-- stocke du mouvement : aligne sur get_stock_movement_ledger_v3, et immunise
 -- le rapport contre une valeur historique aberrante (incident du 2026-07-13).
 SELECT ok(
   (SELECT prosrc FROM pg_proc WHERE proname='get_movement_aggregates_v4') NOT LIKE '%sm.unit_cost%',

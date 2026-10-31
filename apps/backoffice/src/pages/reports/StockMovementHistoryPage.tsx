@@ -16,7 +16,7 @@
 // une surface partagée hors périmètre. Le tri de colonne de cette page est donc
 // celui du tableau, déjà en place.
 //
-// DE MÊME POUR LE FEED : `useStockLedger` (`get_stock_movement_ledger_v2`) est
+// DE MÊME POUR LE FEED : `useStockLedger` (`get_stock_movement_ledger_v3`) est
 // partagé avec la page Inventory. On ne le touche pas.
 //
 // CE QUI NE CHANGE PAS : le filtre par type de mouvement, en URL-state (R-17) ;

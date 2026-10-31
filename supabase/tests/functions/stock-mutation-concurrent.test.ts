@@ -19,8 +19,8 @@ describe.skipIf(!SERVICE_KEY)('stock receipt concurrent replay', () => {
       p_reason: 'Concurrent receipt test', p_idempotency_key: key,
     };
     const results = await Promise.all([
-      fixture.owner.rpc('record_incoming_stock_v3', args),
-      fixture.owner.rpc('record_incoming_stock_v3', args),
+      fixture.owner.rpc('record_incoming_stock_v4', args),
+      fixture.owner.rpc('record_incoming_stock_v4', args),
     ]);
     expect(results.every(result => !result.error)).toBe(true);
     const data = results.map(result => result.data as {

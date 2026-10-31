@@ -40,7 +40,7 @@ export function useIngredientSearch(
         name:          r.name,
         unit:          r.unit,
         cost_price:    Number(r.cost_price),
-        current_stock: Number(r.current_stock),
+        current_stock: r.current_stock === null ? null : Number(r.current_stock),
         kind:          (r.kind as IngredientSearchResult['kind']),
         has_recipe:    Boolean(r.has_recipe),
       }));

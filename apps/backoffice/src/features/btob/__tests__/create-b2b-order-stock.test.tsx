@@ -5,7 +5,7 @@ import { CreateB2bOrderModal } from '../components/CreateB2bOrderModal.js';
 
 const { rpc, select, product } = vi.hoisted(() => ({
   rpc: vi.fn(), select: vi.fn(),
-  product: { id: 'mini', sku: 'MINI', name: 'Mini Chocolatine', price: 5000, current_stock: 0, track_inventory: false, deduct_stock: true, unit: 'pcs' },
+  product: { id: 'mini', sku: 'MINI', name: 'Mini Chocolatine', retail_price: 5000, current_stock: 0, track_inventory: false, deduct_stock: true, unit: 'pcs', is_active: true, deleted_at: null },
 }));
 vi.mock('../hooks/useB2bCustomers.js', () => ({ useB2bCustomers: () => ({ data: [
   { id: 'customer', name: 'Hotel', b2b_company_name: 'Hotel', b2b_current_balance: 0, b2b_credit_limit: null },
@@ -38,12 +38,15 @@ describe('B2B stock validation', () => {
   beforeEach(() => {
     product.track_inventory = false;
     rpc.mockReset(); select.mockClear();
-    rpc.mockResolvedValue({ data: { order_id: 'order' }, error: null });
+    rpc.mockImplementation((fn: string) => Promise.resolve({
+      data: fn === 'get_operational_products_v1' ? [{ ...product }] : { order_id: 'order' }, error: null,
+    }));
   });
 
   it('submits an untracked recipe product with zero own stock', async () => {
     const close = await fillOrder();
-    expect(select).toHaveBeenCalledWith(expect.stringContaining('track_inventory'));
+    expect(rpc).toHaveBeenCalledWith('get_operational_products_v1');
+    expect(select).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Quantity for line 1')).toHaveAttribute('aria-invalid', 'false');
     expect(screen.queryByText(/Only .* in stock/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Create B2B order' }));
@@ -56,11 +59,13 @@ describe('B2B stock validation', () => {
     await fillOrder();
     expect(screen.getByLabelText('Quantity for line 1')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByRole('button', { name: 'Create B2B order' })).toBeDisabled();
-    expect(rpc).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalledWith('create_b2b_order_v9', expect.anything());
   });
 
   it('shows server rejection when recipe components are insufficient', async () => {
-    rpc.mockResolvedValue({ data: null, error: { message: 'insufficient_stock for recipe material' } });
+    rpc.mockImplementation((fn: string) => Promise.resolve(fn === 'get_operational_products_v1'
+      ? { data: [{ ...product }], error: null }
+      : { data: null, error: { message: 'insufficient_stock for recipe material' } }));
     const close = await fillOrder();
     fireEvent.click(screen.getByRole('button', { name: 'Create B2B order' }));
     expect(await screen.findByText(/Insufficient stock for one of the products/)).toBeInTheDocument();

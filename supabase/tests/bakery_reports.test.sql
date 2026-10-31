@@ -24,9 +24,9 @@
 --   T7  : get_pb1_report_v3 happy month — 8-key JSONB
 --   T8  : get_pb1_report_v3 CASHIER denied (42501)
 --   T9  : get_pb1_report_v3 month=13 raises 22023
---   T10 : get_stock_movements_v4 returns lines[] + next_cursor
---   T11 : get_stock_movements_v4 movement_type filter returns only matching rows
---   T12 : get_stock_movements_v4 p_limit=999 clamps to <= 200
+--   T10 : get_stock_movements_v5 returns lines[] + next_cursor
+--   T11 : get_stock_movements_v5 movement_type filter returns only matching rows
+--   T12 : get_stock_movements_v5 p_limit=999 clamps to <= 200
 --
 -- S57 B-D4 sweep : T10-T12 repointed v1 -> v2 (pre-existing staleness found
 -- while executing this suite, unrelated to S57's own scope — v1 (6-arg,
@@ -314,7 +314,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_stock_movements_v4(
+  v_result := get_stock_movements_v5(
     '2026-01-01'::text, '2026-12-31'::text,
     NULL::uuid, NULL::text, 50::int, NULL::text
   );
@@ -326,7 +326,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t10_pass')::boolean,
-  'T10: get_stock_movements_v4 returns lines[] + next_cursor'
+  'T10: get_stock_movements_v5 returns lines[] + next_cursor'
 );
 
 -- T11 filter movement_type=waste returns only waste rows
@@ -337,7 +337,7 @@ DECLARE
   v_line      JSONB;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_stock_movements_v4(
+  v_result := get_stock_movements_v5(
     '2026-01-01'::text, '2026-12-31'::text,
     NULL::uuid, 'waste'::text, 50::int, NULL::text
   );
@@ -351,7 +351,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t11_pass')::boolean,
-  'T11: get_stock_movements_v4 movement_type=waste filter returns only waste rows'
+  'T11: get_stock_movements_v5 movement_type=waste filter returns only waste rows'
 );
 
 -- T12 p_limit=999 clamps to <= 200
@@ -362,7 +362,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_stock_movements_v4(
+  v_result := get_stock_movements_v5(
     '2026-01-01'::text, '2026-12-31'::text,
     NULL::uuid, NULL::text, 999::int, NULL::text
   );
@@ -373,7 +373,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_movements_v4 p_limit=999 clamps to <= 200 rows'
+  'T12: get_stock_movements_v5 p_limit=999 clamps to <= 200 rows'
 );
 
 -- ============================================================

@@ -69,7 +69,7 @@ describe.skipIf(!SERVICE_KEY)('stock adjustment declaration', () => {
   it('rejects a stale absolute count after intervening stock activity', async () => {
     const submitted = await fixture.declarant.rpc('adjust_stock_v4', args(60));
     expect(submitted.error).toBeNull();
-    const incoming = await fixture.owner.rpc('record_incoming_stock_v3', {
+    const incoming = await fixture.owner.rpc('record_incoming_stock_v4', {
       p_product_id: fixture.productId, p_quantity: 2, p_reason: 'Intervening receipt',
       p_idempotency_key: crypto.randomUUID(),
     });

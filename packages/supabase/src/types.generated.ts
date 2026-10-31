@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -961,6 +961,57 @@ export type Database = {
           tax_rate?: number
           timezone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      business_day_releases: {
+        Row: {
+          count_id: string
+          day: string
+          released_at: string
+          released_by: string
+        }
+        Insert: {
+          count_id: string
+          day: string
+          released_at?: string
+          released_by: string
+        }
+        Update: {
+          count_id?: string
+          day?: string
+          released_at?: string
+          released_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_day_releases_count_id_fkey"
+            columns: ["count_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_day_releases_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_day_visibility_config: {
+        Row: {
+          activated_on: string
+          id: boolean
+        }
+        Insert: {
+          activated_on?: string
+          id?: boolean
+        }
+        Update: {
+          activated_on?: string
+          id?: boolean
         }
         Relationships: []
       }
@@ -2828,6 +2879,7 @@ export type Database = {
       inventory_count_items: {
         Row: {
           count_id: string
+          counted_by: string | null
           counted_qty: number | null
           created_at: string
           expected_qty: number
@@ -2841,6 +2893,7 @@ export type Database = {
         }
         Insert: {
           count_id: string
+          counted_by?: string | null
           counted_qty?: number | null
           created_at?: string
           expected_qty?: number
@@ -2854,6 +2907,7 @@ export type Database = {
         }
         Update: {
           count_id?: string
+          counted_by?: string | null
           counted_qty?: number | null
           created_at?: string
           expected_qty?: number
@@ -2871,6 +2925,13 @@ export type Database = {
             columns: ["count_id"]
             isOneToOne: false
             referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_counted_by_fkey"
+            columns: ["counted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2905,6 +2966,7 @@ export type Database = {
       }
       inventory_counts: {
         Row: {
+          business_day: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -2923,6 +2985,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_day?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -2941,6 +3004,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_day?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -6387,6 +6451,103 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_declarations: {
+        Row: {
+          baseline_quantity: number
+          declared_at: string
+          declared_by: string
+          display_withdrawal_applied: boolean
+          id: string
+          idempotency_key: string
+          operation: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason: string | null
+          result: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          baseline_quantity: number
+          declared_at?: string
+          declared_by: string
+          display_withdrawal_applied?: boolean
+          id?: string
+          idempotency_key: string
+          operation: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason?: string | null
+          result?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          baseline_quantity?: number
+          declared_at?: string
+          declared_by?: string
+          display_withdrawal_applied?: boolean
+          id?: string
+          idempotency_key?: string
+          operation?: string
+          product_id?: string
+          quantity?: number
+          reason?: string
+          rejection_reason?: string | null
+          result?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_declarations_declared_by_fkey"
+            columns: ["declared_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_lots: {
         Row: {
           batch_number: string | null
@@ -7153,45 +7314,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pg_all_foreign_keys: {
-        Row: {
-          fk_columns: unknown[] | null
-          fk_constraint_name: unknown
-          fk_schema_name: unknown
-          fk_table_name: unknown
-          fk_table_oid: unknown
-          is_deferrable: boolean | null
-          is_deferred: boolean | null
-          match_type: string | null
-          on_delete: string | null
-          on_update: string | null
-          pk_columns: unknown[] | null
-          pk_constraint_name: unknown
-          pk_index_name: unknown
-          pk_schema_name: unknown
-          pk_table_name: unknown
-          pk_table_oid: unknown
-        }
-        Relationships: []
-      }
-      tap_funky: {
-        Row: {
-          args: string | null
-          is_definer: boolean | null
-          is_strict: boolean | null
-          is_visible: boolean | null
-          kind: unknown
-          langoid: unknown
-          name: unknown
-          oid: unknown
-          owner: unknown
-          returns: string | null
-          returns_set: boolean | null
-          schema: unknown
-          volatility: string | null
-        }
-        Relationships: []
-      }
       v_product_available_stock: {
         Row: {
           available_quantity: number | null
@@ -7426,10 +7548,7 @@ export type Database = {
         }
         Returns: Json
       }
-      _cleanup: { Args: never; Returns: boolean }
-      _contract_on: { Args: { "": string }; Returns: unknown }
       _current_profile_id: { Args: never; Returns: string }
-      _currtest: { Args: never; Returns: number }
       _dashboard_cash_on_hand_v1: { Args: never; Returns: Json }
       _dashboard_cost_mtd_v2: {
         Args: { p_today: string; p_tz: string }
@@ -7451,7 +7570,6 @@ export type Database = {
         Args: { p_today: string; p_tz: string }
         Returns: Json
       }
-      _db_privs: { Args: never; Returns: unknown[] }
       _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
       _enqueue_notification_system_v1: {
         Args: {
@@ -7466,10 +7584,6 @@ export type Database = {
         Args: { p_method: string }
         Returns: string
       }
-      _extensions: { Args: never; Returns: unknown[] }
-      _get: { Args: { "": string }; Returns: number }
-      _get_latest: { Args: { "": string }; Returns: number[] }
-      _get_note: { Args: { "": string }; Returns: string }
       _historical_import_actor_v1: { Args: { p_kind: string }; Returns: string }
       _historical_import_context_v1: { Args: never; Returns: string }
       _historical_import_date_v1: { Args: { p_value: Json }; Returns: string }
@@ -7528,7 +7642,6 @@ export type Database = {
         Args: { p_value: Json }
         Returns: number
       }
-      _is_verbose: { Args: never; Returns: boolean }
       _kitchen_assert_section_v1: {
         Args: { p_section_id: string }
         Returns: string
@@ -7576,8 +7689,6 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
-      _prokind: { Args: { p_oid: unknown }; Returns: unknown }
-      _query: { Args: { "": string }; Returns: string }
       _read_expense_creation_v1: {
         Args: { p_key: string; p_profile: string }
         Returns: string
@@ -7651,7 +7762,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      _refine_vol: { Args: { "": string }; Returns: string }
       _refresh_recipe_margin: {
         Args: { p_cost: number; p_product_id: string }
         Returns: undefined
@@ -7739,7 +7849,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      _retval: { Args: { "": string }; Returns: string }
       _revoke_user_sessions_v1: {
         Args: { p_profile_id: string }
         Returns: number
@@ -7756,9 +7865,6 @@ export type Database = {
         Args: { p_change_note: string; p_product_id: string; p_profile: string }
         Returns: string
       }
-      _table_privs: { Args: never; Returns: unknown[] }
-      _temptypes: { Args: { "": string }; Returns: string }
-      _todo: { Args: never; Returns: string }
       _try_complete_order_v1: {
         Args: { p_order_id: string }
         Returns: undefined
@@ -7771,7 +7877,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      add_display_stock_v2: {
+      add_display_stock_v3: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -7780,13 +7886,8 @@ export type Database = {
         }
         Returns: Json
       }
-      add_opname_item_v2: {
-        Args: {
-          p_count_id: string
-          p_expected_qty?: number
-          p_notes?: string
-          p_product_id: string
-        }
+      add_opname_item_v3: {
+        Args: { p_count_id: string; p_notes?: string; p_product_id: string }
         Returns: Json
       }
       add_order_item_v6: {
@@ -7809,7 +7910,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_display_stock_v2: {
+      adjust_display_stock_v5: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -7827,7 +7928,7 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_stock_v2: {
+      adjust_stock_v4: {
         Args: {
           p_idempotency_key?: string
           p_new_qty: number
@@ -7843,6 +7944,14 @@ export type Database = {
       approve_expense_v5: {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
+      }
+      approve_stock_declaration_v3: {
+        Args: { p_declaration_id: string }
+        Returns: Json
+      }
+      assert_business_days_visible_v1: {
+        Args: { p_end: string; p_start: string }
+        Returns: undefined
       }
       attach_tab_customer_v4: {
         Args: { p_customer_id: string; p_order_id: string }
@@ -7964,6 +8073,8 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
+      can_view_business_day_v1: { Args: { p_day: string }; Returns: boolean }
+      can_view_order_v1: { Args: { p_order_id: string }; Returns: boolean }
       cancel_b2b_order_v3: {
         Args: {
           p_idempotency_key?: string
@@ -8086,43 +8197,7 @@ export type Database = {
         }
         Returns: Json
       }
-      col_is_null:
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              schema_name: unknown
-              table_name: unknown
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              table_name: unknown
-            }
-            Returns: string
-          }
-      col_not_null:
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              schema_name: unknown
-              table_name: unknown
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: unknown
-              description?: string
-              table_name: unknown
-            }
-            Returns: string
-          }
-      complete_order_with_payment_v30: {
+      complete_order_with_payment_v31: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8173,7 +8248,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v8: {
+      create_b2b_order_v9: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -8279,15 +8354,19 @@ export type Database = {
         }
         Returns: Json
       }
-      create_opname_v2: {
-        Args: { p_idempotency_key?: string; p_notes?: string }
+      create_opname_v3: {
+        Args: {
+          p_business_day?: string
+          p_idempotency_key?: string
+          p_notes?: string
+        }
         Returns: Json
       }
       create_pos_events_partition_v1: {
         Args: { p_month: string }
         Returns: string
       }
-      create_product_v3: { Args: { p_payload: Json }; Returns: Json }
+      create_product_v4: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v2: {
         Args: {
           p_expected_date?: string
@@ -8447,27 +8526,10 @@ export type Database = {
         Returns: Json
       }
       delete_variant_v2: { Args: { p_variant_id: string }; Returns: string }
-      diag:
-        | {
-            Args: { msg: unknown }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { msg: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-      diag_test_name: { Args: { "": string }; Returns: string }
       discard_held_order_v3: {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined
       }
-      do_tap:
-        | { Args: never; Returns: string[] }
-        | { Args: { "": string }; Returns: string[] }
       duplicate_recipe_v1: {
         Args: {
           p_idempotency_key?: string
@@ -8514,16 +8576,11 @@ export type Database = {
           phone: string
         }[]
       }
-      fail:
-        | { Args: never; Returns: string }
-        | { Args: { "": string }; Returns: string }
-      finalize_opname_v4: {
+      finalize_opname_v5: {
         Args: { p_count_id: string; p_idempotency_key?: string }
         Returns: Json
       }
-      findfuncs: { Args: { "": string }; Returns: string[] }
-      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v11: {
+      fire_counter_order_v12: {
         Args: {
           p_client_uuid: string
           p_customer_id?: string
@@ -8540,7 +8597,6 @@ export type Database = {
         }
         Returns: Json
       }
-      format_type_string: { Args: { "": string }; Returns: string }
       get_ar_aging_v1: { Args: never; Returns: Json }
       get_audit_logs_v4: {
         Args: {
@@ -8564,10 +8620,10 @@ export type Database = {
         }[]
       }
       get_b2b_dashboard_counters_v1: { Args: never; Returns: Json }
-      get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
+      get_b2b_invoice_v2: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_v3: { Args: { p_as_of_date: string }; Returns: Json }
-      get_basket_analysis_v3: {
+      get_basket_analysis_v4: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
           co_occurrence_count: number
@@ -8582,6 +8638,7 @@ export type Database = {
           support_pair: number
         }[]
       }
+      get_business_day_visibility_v1: { Args: { p_day: string }; Returns: Json }
       get_cash_flow_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
@@ -8620,7 +8677,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_combo_sales_v1: {
+      get_combo_sales_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -8673,14 +8730,14 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_dashboard_action_queue_v1: { Args: never; Returns: Json }
+      get_dashboard_action_queue_v2: { Args: never; Returns: Json }
       get_dashboard_open_orders_v2: { Args: never; Returns: Json }
       get_dashboard_overview_v4: { Args: never; Returns: Json }
       get_discounts_loyalty_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_display_stock_activity_v1: { Args: never; Returns: Json }
+      get_display_stock_activity_v2: { Args: never; Returns: Json }
       get_expense_categories_admin_v1: { Args: never; Returns: Json }
       get_expense_terms_v1: {
         Args: { p_include_inactive?: boolean }
@@ -8729,7 +8786,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_gross_margin_by_product_v1: {
+      get_gross_margin_by_product_v2: {
         Args: {
           p_category_id?: string
           p_end_date: string
@@ -8754,7 +8811,7 @@ export type Database = {
         Returns: Json
       }
       get_lan_registry_v1: { Args: never; Returns: Json }
-      get_low_stock_v2: {
+      get_low_stock_v3: {
         Args: never
         Returns: {
           current_qty: number
@@ -8771,7 +8828,7 @@ export type Database = {
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
-      get_movement_aggregates_v3: {
+      get_movement_aggregates_v4: {
         Args: {
           p_date_end?: string
           p_date_start?: string
@@ -8785,11 +8842,13 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_orders_counters_v2: {
+      get_operational_products_v1: { Args: never; Returns: Json }
+      get_opname_items_v1: { Args: { p_count_id: string }; Returns: Json }
+      get_orders_counters_v3: {
         Args: { p_end: string; p_filters?: Json; p_start: string }
         Returns: Json
       }
-      get_orders_list_v4: {
+      get_orders_list_v5: {
         Args: {
           p_cursor_id?: string
           p_cursor_val?: string
@@ -8839,7 +8898,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_pos_events_v1: {
+      get_pos_events_v2: {
         Args: {
           p_actor_id?: string
           p_cursor?: string
@@ -8852,12 +8911,12 @@ export type Database = {
         }
         Returns: Json
       }
-      get_pos_margin_v1: {
+      get_pos_margin_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_order_snapshot_v2: { Args: { p_order_id: string }; Returns: Json }
-      get_pos_order_type_category_mix_v1: {
+      get_pos_order_snapshot_v3: { Args: { p_order_id: string }; Returns: Json }
+      get_pos_order_type_category_mix_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -8877,7 +8936,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_top_products_v1: {
+      get_pos_top_products_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -8893,19 +8952,19 @@ export type Database = {
         }
         Returns: Json
       }
-      get_product_analytics_v2: {
+      get_product_analytics_v3: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_dashboard_v3: {
+      get_product_dashboard_v4: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_performance_v1: {
+      get_product_performance_v2: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_sales_lines_v1: {
+      get_product_sales_lines_v2: {
         Args: {
           p_cursor?: string
           p_end_date: string
@@ -8923,7 +8982,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_production_suggestions_v1: {
+      get_production_suggestions_v2: {
         Args: {
           p_lookback_days?: number
           p_priority_high?: number
@@ -8997,11 +9056,11 @@ export type Database = {
         }
         Returns: Json
       }
-      get_refunds_report_v1: {
+      get_refunds_report_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_reorder_suggestions_v1: {
+      get_reorder_suggestions_v2: {
         Args: { p_buffer_days?: number; p_lookback_days?: number }
         Returns: {
           avg_daily_usage: number
@@ -9018,7 +9077,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_sales_by_category_v3: {
+      get_sales_by_category_v4: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           category_id: string
@@ -9048,7 +9107,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_sales_by_product_v1: {
+      get_sales_by_product_v2: {
         Args: {
           p_category_id?: string
           p_end_date: string
@@ -9079,7 +9138,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_config_issues_v2: {
+      get_stock_config_issues_v3: {
         Args: never
         Returns: {
           category_name: string
@@ -9094,7 +9153,7 @@ export type Database = {
           track_inventory: boolean
         }[]
       }
-      get_stock_counters_v1: {
+      get_stock_counters_v2: {
         Args: { p_category_id?: string; p_search?: string }
         Returns: {
           low_count: number
@@ -9104,7 +9163,8 @@ export type Database = {
           zero_count: number
         }[]
       }
-      get_stock_levels_v4: {
+      get_stock_declarations_v1: { Args: never; Returns: Json }
+      get_stock_levels_v5: {
         Args: {
           p_bucket?: Database["public"]["Enums"]["stock_bucket"]
           p_category_id?: string
@@ -9128,7 +9188,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_stock_movement_ledger_v1: {
+      get_stock_movement_ledger_v3: {
         Args: {
           p_end: string
           p_limit?: number
@@ -9139,7 +9199,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stock_movements_v1: {
+      get_stock_movements_v3: {
         Args: {
           p_cursor?: string
           p_cursor_id?: string
@@ -9175,7 +9235,7 @@ export type Database = {
           unit_cost: number
         }[]
       }
-      get_stock_movements_v2: {
+      get_stock_movements_v5: {
         Args: {
           p_cursor?: string
           p_end: string
@@ -9186,8 +9246,8 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stock_position_v1: { Args: { p_as_of?: string }; Returns: Json }
-      get_stock_variance_v3: {
+      get_stock_position_v2: { Args: { p_as_of?: string }; Returns: Json }
+      get_stock_variance_v4: {
         Args: { p_date_end?: string; p_date_start?: string }
         Returns: {
           closing: number
@@ -9216,11 +9276,11 @@ export type Database = {
         Args: { p_user_profile_id: string }
         Returns: Json
       }
-      get_wastage_report_v2: {
+      get_wastage_report_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_zreport_snapshot_v1: { Args: { p_zreport_id: string }; Returns: Json }
+      get_zreport_snapshot_v2: { Args: { p_zreport_id: string }; Returns: Json }
       grant_store_credit_v1: {
         Args: {
           p_amount: number
@@ -9240,7 +9300,6 @@ export type Database = {
         Args: { p_perm: string; p_profile_id: string }
         Returns: boolean
       }
-      has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
       hold_fired_order_v3: {
         Args: { p_order_id: string; p_session_id?: string }
@@ -9294,14 +9353,12 @@ export type Database = {
         }
         Returns: Json
       }
-      in_todo: { Args: never; Returns: boolean }
       is_authenticated: { Args: never; Returns: boolean }
-      is_empty: { Args: { "": string }; Returns: string }
+      is_business_owner_v1: { Args: never; Returns: boolean }
       is_pin_session_active_v1: {
         Args: { p_auth_user_id: string; p_session_id: string }
         Returns: boolean
       }
-      isnt_empty: { Args: { "": string }; Returns: string }
       kds_bump_item_v2: {
         Args: { p_idempotency_key?: string; p_order_item_id: string }
         Returns: {
@@ -9454,7 +9511,6 @@ export type Database = {
         }[]
       }
       list_recipes_v1: { Args: { p_product_id: string }; Returns: Json[] }
-      lives_ok: { Args: { "": string }; Returns: string }
       logout_user_session_v1: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: boolean
@@ -9526,14 +9582,8 @@ export type Database = {
       next_count_number: { Args: never; Returns: string }
       next_expense_number: { Args: { p_date?: string }; Returns: string }
       next_journal_entry_number: { Args: { p_date: string }; Returns: string }
-      no_plan: { Args: never; Returns: boolean[] }
       notify_birthday_customers_v2: { Args: never; Returns: number }
-      num_failed: { Args: never; Returns: number }
-      os_name: { Args: never; Returns: string }
-      pass:
-        | { Args: never; Returns: string }
-        | { Args: { "": string }; Returns: string }
-      pay_existing_order_v22: {
+      pay_existing_order_v23: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -9556,9 +9606,6 @@ export type Database = {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
       }
-      pg_version: { Args: never; Returns: string }
-      pg_version_num: { Args: never; Returns: number }
-      pgtap_version: { Args: never; Returns: number }
       pick_notifications_batch_v2: {
         Args: { p_limit?: number }
         Returns: {
@@ -9633,7 +9680,7 @@ export type Database = {
         }
         Returns: Json
       }
-      recipe_bom_full_v3: {
+      recipe_bom_full_v4: {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: {
           cost_price: number
@@ -9661,7 +9708,7 @@ export type Database = {
           version_number: number
         }[]
       }
-      recipe_direct_cost_v1: {
+      recipe_direct_cost_v2: {
         Args: { p_product_id: string }
         Returns: {
           cost_price: number
@@ -9708,7 +9755,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v9: {
+      record_batch_production_v10: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -9734,7 +9781,7 @@ export type Database = {
         }
         Returns: string
       }
-      record_incoming_stock_v2: {
+      record_incoming_stock_v4: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -9745,7 +9792,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_kitchen_production_v2: { Args: { p_request: Json }; Returns: Json }
+      record_kitchen_production_v3: { Args: { p_request: Json }; Returns: Json }
       record_pin_failure_v1: {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
@@ -9764,7 +9811,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v7: {
+      record_production_v8: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
@@ -9837,12 +9884,20 @@ export type Database = {
         Args: { p_expense_id: string; p_reason: string }
         Returns: undefined
       }
+      reject_stock_declaration_v1: {
+        Args: { p_declaration_id: string; p_reason: string }
+        Returns: Json
+      }
+      release_business_day_v1: {
+        Args: { p_count_id: string; p_day: string }
+        Returns: Json
+      }
       release_expired_reservations: { Args: never; Returns: number }
       remove_order_item_v4: {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v6: {
+      reopen_held_order_v7: {
         Args: { p_order_id: string; p_session_id?: string }
         Returns: Json
       }
@@ -9874,7 +9929,7 @@ export type Database = {
         Args: { p_reservation_id: string }
         Returns: Json
       }
-      reservation_hold_v1: {
+      reservation_hold_v2: {
         Args: {
           p_expires_at: string
           p_holder_id?: string
@@ -9907,7 +9962,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
-      return_display_to_kitchen_v2: {
+      return_display_to_kitchen_v3: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -9921,9 +9976,6 @@ export type Database = {
         Returns: Json
       }
       round_idr: { Args: { amount: number }; Returns: number }
-      runtests:
-        | { Args: never; Returns: string[] }
-        | { Args: { "": string }; Returns: string[] }
       save_expense_term_v1: {
         Args: {
           p_aliases?: string[]
@@ -9956,7 +10008,7 @@ export type Database = {
           updated_at: string
         }[]
       }
-      search_ingredients_v1: {
+      search_ingredients_v2: {
         Args: { p_kind?: string; p_limit?: number; p_query?: string }
         Returns: {
           cost_price: number
@@ -9969,7 +10021,7 @@ export type Database = {
           unit: string
         }[]
       }
-      search_orders_v1: {
+      search_orders_v2: {
         Args: { p_limit?: number; p_query: string }
         Returns: {
           created_at: string
@@ -10045,7 +10097,7 @@ export type Database = {
         }
         Returns: string
       }
-      set_opname_count_v2: {
+      set_opname_count_v3: {
         Args: {
           p_count_item_id: string
           p_counted_qty: number
@@ -10053,7 +10105,7 @@ export type Database = {
         }
         Returns: Json
       }
-      set_product_base_unit_v2: {
+      set_product_base_unit_v3: {
         Args: { p_new_unit: string; p_product_id: string }
         Returns: Json
       }
@@ -10132,9 +10184,6 @@ export type Database = {
         Args: { p_manager_pin: string; p_zreport_id: string }
         Returns: Json
       }
-      skip:
-        | { Args: { "": string }; Returns: string }
-        | { Args: { how_many: number; why: string }; Returns: string }
       soft_delete_customer: {
         Args: { p_customer_id: string; p_reason?: string }
         Returns: undefined
@@ -10144,20 +10193,20 @@ export type Database = {
         Args: { p_expense_id: string; p_idempotency_key?: string }
         Returns: Json
       }
-      suggest_production_schedule_v1: {
+      submit_stock_declaration_v2: {
+        Args: {
+          p_idempotency_key: string
+          p_operation: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: Json
+      }
+      suggest_production_schedule_v2: {
         Args: { p_target_date: string }
         Returns: Json
       }
-      throws_ok: { Args: { "": string }; Returns: string }
-      todo:
-        | { Args: { how_many: number }; Returns: boolean[] }
-        | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] }
-        | { Args: { how_many: number; why: string }; Returns: boolean[] }
-      todo_end: { Args: never; Returns: boolean[] }
-      todo_start:
-        | { Args: never; Returns: boolean[] }
-        | { Args: { "": string }; Returns: boolean[] }
       touch_user_session_v1: {
         Args: { p_session_id: string }
         Returns: boolean
@@ -10272,7 +10321,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_product_v4: {
+      update_product_v5: {
         Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }
@@ -10432,7 +10481,7 @@ export type Database = {
         Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }
-      waste_display_stock_v2: {
+      waste_display_stock_v4: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -10441,7 +10490,7 @@ export type Database = {
         }
         Returns: Json
       }
-      waste_stock_v2: {
+      waste_stock_v4: {
         Args: {
           p_idempotency_key?: string
           p_product_id: string
@@ -10563,9 +10612,7 @@ export type Database = {
       z_report_status: "draft" | "signed" | "voided"
     }
     CompositeTypes: {
-      _time_trial_type: {
-        a_time: number | null
-      }
+      [_ in never]: never
     }
   }
 }

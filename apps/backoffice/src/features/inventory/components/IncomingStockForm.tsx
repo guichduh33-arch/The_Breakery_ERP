@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory/components/IncomingStockForm.tsx
 //
 // Inline form (NOT a modal) that records a free-form stock receipt via
-// `record_incoming_stock_v3`. Mirrors ReceiveModal's field setup but:
+// `record_incoming_stock_v4`. Mirrors ReceiveModal's field setup but:
 //   - supplier is OPTIONAL (first option = "No supplier (free-form receipt)")
 //   - lives on a standalone page, so it clears itself on success instead of
 //     closing a Dialog

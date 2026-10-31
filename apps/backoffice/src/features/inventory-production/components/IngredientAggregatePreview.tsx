@@ -41,7 +41,7 @@ interface BomLeafRow {
   material_name: string;
   material_unit: string;
   qty_per_unit:  number;
-  current_stock: number;
+  current_stock: number | null;
   cost_price:    number;
   // recipe qty already converted into the material's stock unit (material_unit),
   // so it can be compared against current_stock directly (both in material_unit).
@@ -53,12 +53,13 @@ interface AggregatedRow {
   materialName: string;
   materialUnit: string;
   totalQty:     number;
-  available:    number;
-  sufficient:   boolean;
-  shortfall:    number;
+  available:    number | null;
+  sufficient:   boolean | null;
+  shortfall:    number | null;
 }
 
-function fmt(n: number): string {
+function fmt(n: number | null): string {
+  if (n === null) return 'Hidden';
   if (!Number.isFinite(n)) return '–';
   // Locale métier, comme les soixante-trois autres appels du back-office.
   // `en-US` ici rendait « 1,234.56 » à côté d'un « Rp 1.234 » de la même carte.
@@ -93,7 +94,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
   const bomDataUpdatedKeys = bomQueries.map((q) => q.dataUpdatedAt).join(',');
 
   const rows: AggregatedRow[] = useMemo(() => {
-    const acc = new Map<string, { name: string; unit: string; totalQty: number; available: number }>();
+    const acc = new Map<string, { name: string; unit: string; totalQty: number; available: number | null }>();
     validRows.forEach((row, i) => {
       const bom = bomQueries[i]?.data;
       if (!bom) return;
@@ -107,6 +108,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
         const existing = acc.get(leaf.material_id);
         if (existing) {
           existing.totalQty += need;
+          if (leaf.current_stock === null) existing.available = null;
         } else {
           acc.set(leaf.material_id, {
             name: leaf.material_name, unit: leaf.material_unit,
@@ -117,21 +119,21 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
     });
     return Array.from(acc.entries())
       .map(([materialId, x]) => {
-        const shortfall = Math.max(0, x.totalQty - x.available);
+        const shortfall = x.available === null ? null : Math.max(0, x.totalQty - x.available);
         return {
           materialId, materialName: x.name, materialUnit: x.unit,
           totalQty: x.totalQty, available: x.available,
-          sufficient: shortfall === 0, shortfall,
+          sufficient: shortfall === null ? null : shortfall === 0, shortfall,
         };
       })
       .sort((a, b) => {
-        if (a.sufficient !== b.sufficient) return a.sufficient ? 1 : -1;
+        if ((a.sufficient === false) !== (b.sufficient === false)) return a.sufficient === false ? -1 : 1;
         return a.materialName.localeCompare(b.materialName);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validRows, bomDataUpdatedKeys]);
 
-  const anyShortage = rows.some((r) => !r.sufficient);
+  const anyShortage = rows.some((r) => r.sufficient === false);
 
   return (
     <div data-testid="ingredient-aggregate-preview"
@@ -186,7 +188,9 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
                       {fmt(r.available)} {r.materialUnit}
                     </td>
                     <td className="py-1.5 text-right">
-                      {r.sufficient ? (
+                      {r.sufficient === null ? (
+                        <span className="text-text-secondary" data-testid="status-unknown">Unknown</span>
+                      ) : r.sufficient ? (
                         <span className="text-success" data-testid="status-ok">OK</span>
                       ) : (
                         <span className="text-red" data-testid="status-short">

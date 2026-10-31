@@ -3,7 +3,7 @@
 //
 // 2026-08-05 — bump v1 → v2. La v1 valorisait un mouvement au `unit_cost` STOCKÉ
 // (`COALESCE(sm.unit_cost, p.cost_price)`) alors que le tableau de la même page
-// (`get_stock_movement_ledger_v2`) le valorise au coût COURANT du produit. Une
+// (`get_stock_movement_ledger_v3`) le valorise au coût COURANT du produit. Une
 // unique ligne historique au `unit_cost` ×1000 pesait 47 % de la tuile
 // « Value moved ». La v2 aligne l'agrégat sur le tableau.
 //

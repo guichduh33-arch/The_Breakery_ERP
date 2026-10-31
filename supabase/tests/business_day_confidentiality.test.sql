@@ -1,6 +1,7 @@
 -- Contrôle antifraude : assertions exécutées sous rôle réel, transaction annulée.
 BEGIN;
 \ir helpers/pin_session.sql
+\ir helpers/antifraud_actors.sql
 SELECT no_plan();
 CREATE TEMP TABLE guard_results(seq serial, tap text);
 CREATE TEMP TABLE guard_ids AS SELECT gen_random_uuid() product_id, gen_random_uuid() variant_id, gen_random_uuid() count_product_id,gen_random_uuid() display_product_id,gen_random_uuid() display_key,
@@ -9,7 +10,8 @@ CREATE TEMP TABLE guard_ids AS SELECT gen_random_uuid() product_id, gen_random_u
  gen_random_uuid() register_id, gen_random_uuid() register_profile_id;
 CREATE TEMP TABLE guard_actors AS
  SELECT DISTINCT ON(role_code) id,auth_user_id,role_code FROM user_profiles
- WHERE role_code IN ('SUPER_ADMIN','ADMIN','CASHIER') AND is_active AND deleted_at IS NULL
+ WHERE id IN(SELECT id FROM antifraud_test_actors)
+ AND role_code IN ('SUPER_ADMIN','ADMIN','CASHIER') AND is_active AND deleted_at IS NULL
  AND auth_user_id IS NOT NULL ORDER BY role_code,id;
 CREATE TEMP TABLE guard_existing_open_sessions AS SELECT id FROM pos_sessions WHERE status='open';
 CREATE TEMP TABLE guard_payload(name text PRIMARY KEY,value jsonb);

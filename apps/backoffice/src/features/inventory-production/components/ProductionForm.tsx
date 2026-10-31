@@ -93,7 +93,7 @@ export default function ProductionForm(): JSX.Element {
 
   // Stock snapshot map (material_id → current_stock).
   const stockMap = useMemo(() => {
-    const map: Record<string, number> = {};
+    const map: Record<string, number | null> = {};
     for (const p of products.data ?? []) map[p.id] = p.current_stock;
     return map;
   }, [products.data]);
@@ -101,8 +101,14 @@ export default function ProductionForm(): JSX.Element {
   const feasibility = useMemo(() => {
     if (recipes.data === undefined || recipes.data.length === 0) return null;
     if (!Number.isFinite(qtyForFeasibility) || qtyForFeasibility <= 0) return null;
+    const knownStock: Record<string, number> = {};
+    for (const ingredient of recipes.data) {
+      const available = stockMap[ingredient.material_id];
+      if (available === null || available === undefined) return null;
+      knownStock[ingredient.material_id] = available;
+    }
     try {
-      return checkFeasibility(recipes.data, qtyForFeasibility, stockMap, numericWaste);
+      return checkFeasibility(recipes.data, qtyForFeasibility, knownStock, numericWaste);
     } catch {
       return null;
     }
@@ -263,7 +269,7 @@ export default function ProductionForm(): JSX.Element {
             >
               <option value="">— select —</option>
               {(products.data ?? []).map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.unit}) — stock {p.current_stock}</option>
+                <option key={p.id} value={p.id}>{p.name} ({p.unit}) — stock {p.current_stock ?? 'Hidden'}</option>
               ))}
             </Select>
           </div>

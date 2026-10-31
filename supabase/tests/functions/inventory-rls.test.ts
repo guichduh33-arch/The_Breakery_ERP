@@ -207,7 +207,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
 
   it('anon CANNOT invoke any inventory RPC', async () => {
     const sb = createClient(SUPABASE_URL, ANON);
-    for (const fn of ['get_stock_levels_v5', 'get_stock_counters_v2', 'adjust_stock_v4', 'record_incoming_stock_v3', 'waste_stock_v4']) {
+    for (const fn of ['get_stock_levels_v5', 'get_stock_counters_v2', 'adjust_stock_v4', 'record_incoming_stock_v4', 'waste_stock_v4']) {
       const args =
         fn === 'get_stock_levels_v5'   ? { p_bucket: 'all', p_limit: 1, p_offset: 0 } :
         fn === 'get_stock_counters_v2' ? {} :

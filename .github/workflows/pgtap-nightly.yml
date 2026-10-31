@@ -12,9 +12,16 @@ on:
 jobs:
   pgtap:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select cloud DB test target
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          DEV_PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
+        run: node scripts/ci/db-test-target.mjs
 
       # Quota 2026-07 — le runner ubuntu-latest embarque déjà un client psql
       # (le job E2E l'utilise tel quel depuis S71). L'ajout du dépôt pgdg +
@@ -32,12 +39,10 @@ jobs:
       # 15 files / ~34 red assertions invisible in a "green-looking" job).
       - name: Run pgTAP suite via pooler
         id: pgtap
-        env:
-          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
         run: |
           set -uo pipefail
           if [ -z "${PGURL:-}" ]; then
-            echo "::error::V3_DEV_PG_POOLER_URL secret is not set" >&2
+            echo "::error::Selected cloud DB connection is not set" >&2
             exit 1
           fi
           fail_count=0
@@ -48,7 +53,7 @@ jobs:
             # `|| rc=$?` keeps the runner's implicit `bash -e` from killing the
             # whole loop on the first failing file (a bare assignment would).
             rc=0
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             # Lot 1.B — miroir de pgtap-pr.yml : 17 suites rendent leurs
@@ -88,13 +93,20 @@ jobs:
 
 
   # S50 — Drift checks (types.generated.ts + schema_migrations).
-  # Both steps use V3_DEV_PG_POOLER_URL secret; they skip with a warning if
-  # the secret is absent rather than blocking the entire nightly run.
+  # Les deux contrôles utilisent la même cible cloud que pgTAP.
+  # Le sélecteur refuse une connexion absente ou une cible différente.
   drift-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+
+      - name: Select cloud DB test target
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          DEV_PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
+        run: node scripts/ci/db-test-target.mjs
 
       # Quota 2026-07 — psql préinstallé sur le runner (voir job pgtap) ;
       # seule la CLI supabase reste à télécharger.
@@ -109,7 +121,7 @@ jobs:
             https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
             | tar xz -C /usr/local/bin supabase
 
-      # Regenerate types against the live dev DB and check for uncommitted drift.
+      # Régénérer les types sur la cible sélectionnée et vérifier leur dérive.
       # Uses --db-url (pooler connection string) — no SUPABASE_ACCESS_TOKEN required.
       # If the regen produces a diff, it means a migration was applied on the cloud
       # but types.generated.ts was not committed. Fail hard so it's visible.
@@ -125,12 +137,10 @@ jobs:
       # trailing whitespace, then compare. Everything else (tables, partitions,
       # functions, ordering) must match byte-for-byte or the check fails.
       - name: Check types.generated.ts drift
-        env:
-          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
         run: |
           set -uo pipefail
           if [ -z "${PGURL:-}" ]; then
-            echo "::warning::V3_DEV_PG_POOLER_URL secret not set — skipping types drift check."
+            echo "::warning::Selected cloud DB connection not set — skipping types drift check."
             exit 0
           fi
           supabase gen types typescript --db-url "$PGURL" --schema public \
@@ -155,14 +165,12 @@ jobs:
       # do NOT map 1:1 to local file name-block prefixes. Additionally, ~400 rows
       # were dropped by 'supabase migration repair' (max tracked: 20260629000012);
       # actual schema is intact. A hard gate is infeasible without a name→version
-      # mapping. Verify manually with: supabase migration list --project-ref ikcyvlovptebroadgtvd
+      # mapping. Vérifier manuellement le projet annoncé par le sélecteur.
       - name: Check schema_migrations drift (informational)
-        env:
-          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
         run: |
           set -uo pipefail
           if [ -z "${PGURL:-}" ]; then
-            echo "::warning::V3_DEV_PG_POOLER_URL not set — skipping schema drift check."
+            echo "::warning::Selected cloud DB connection not set — skipping schema drift check."
             exit 0
           fi
           local_count=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
@@ -176,7 +184,7 @@ jobs:
           elif [ "$cloud_count" -lt "$local_count" ]; then
             echo "::warning::Drift: $local_count local files vs $cloud_count cloud rows."
             echo "Some migrations may not be applied. Verify with MCP list_migrations or"
-            echo "'supabase migration list --project-ref ikcyvlovptebroadgtvd'."
+            echo "'supabase migration list' sur la cible annoncée par le sélecteur."
             echo "(Known baseline: ~400 rows dropped by migration repair — see CLAUDE.md)"
           else
             echo "schema_migrations count parity OK (approximate — see known limitations above)."

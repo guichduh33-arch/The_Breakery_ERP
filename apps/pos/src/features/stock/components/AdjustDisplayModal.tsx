@@ -71,7 +71,7 @@ export function AdjustDisplayModal({
         </header>
 
         <p className="text-sm text-text-secondary">
-          <span className="text-text-primary font-semibold">{productName}</span> — declare the physical display count. Owner approval is required before stock changes.</p>
+          <span className="text-text-primary font-semibold">{productName}</span> — apply the physical display count immediately. This correction is audited and does not change global stock.</p>
 
         <section className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-text-secondary">New quantity ({unit})</label>

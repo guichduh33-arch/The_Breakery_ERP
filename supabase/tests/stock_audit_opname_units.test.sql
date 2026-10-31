@@ -34,8 +34,8 @@ BEGIN
   RETURN NEXT throws_ok(format('SELECT set_opname_count_v3(%L, 4)', v_item), 'P0001', 'set_count_not_allowed_in_status', 'Écriture après révélation refusée');
   RETURN NEXT is((SELECT counted_qty FROM inventory_count_items WHERE id = v_item), 0::numeric, 'Refus sans modification du comptage');
 
-  PERFORM record_incoming_stock_v3(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
-  PERFORM record_incoming_stock_v3(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
+  PERFORM record_incoming_stock_v4(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
+  PERFORM record_incoming_stock_v4(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
   PERFORM pg_temp.approved_adjustment(v_product, 12, 'Audit positive', gen_random_uuid());
   PERFORM pg_temp.approved_adjustment(v_product, 11, 'Audit negative', gen_random_uuid());
   v_json := get_movement_aggregates_v4(p_product_id := v_product, p_movement_type := 'adjustment');

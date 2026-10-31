@@ -36,7 +36,9 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (table: string) => makeChain(table),
       rpc: (fn: string, args: unknown) =>
-        Promise.resolve(mockRpc(fn, args) as { data: unknown; error: unknown }),
+        Promise.resolve(fn === 'get_operational_products_v1'
+          ? resolvers.products!()
+          : mockRpc(fn, args) as { data: unknown; error: unknown }),
     },
   };
 });
@@ -93,7 +95,7 @@ describe('Aperçu de faisabilité dans ProductionEntryCard', () => {
     );
     resolvers.product_sections = () => ({ data: [{ product_id: 'p-bag' }], error: null });
     resolvers.products = () => ({
-      data: [{ id: 'p-bag', sku: 'SKU-BAG', name: 'Baguette', unit: 'pcs', current_stock: 0, product_type: 'finished' }],
+      data: [{ id: 'p-bag', sku: 'SKU-BAG', name: 'Baguette', unit: 'pcs', current_stock: 0, product_type: 'finished', is_active: true, deleted_at: null }],
       error: null,
     });
     resolvers.recipes = () => ({ data: [{ product_id: 'p-bag' }], error: null });

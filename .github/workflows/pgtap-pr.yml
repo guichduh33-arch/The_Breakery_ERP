@@ -64,6 +64,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Select cloud DB test target
+        env:
+          DB_TEST_TARGET: ${{ vars.V3_DB_TEST_TARGET }}
+          DEV_PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+          REHEARSAL_PGURL: ${{ secrets.V3_REHEARSAL_PG_POOLER_URL }}
+        run: node scripts/ci/db-test-target.mjs
+
       # Same psql approach as pgtap-nightly.yml — keep the two in sync.
       # Quota 2026-07 — psql préinstallé sur le runner ubuntu-latest ; on
       # n'ajoute plus le dépôt pgdg (~1-2 min économisées par run).
@@ -77,7 +84,6 @@ jobs:
       - name: Run pgTAP suite via pooler
         id: pgtap
         env:
-          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
           # Plancher de fichiers attendus. Un glob cassé, un checkout partiel ou
           # un déplacement de répertoire rendrait sinon le job VERT À VIDE — le
           # mode de panne le plus coûteux d'un gate, puisqu'il ne se voit pas.
@@ -86,7 +92,7 @@ jobs:
         run: |
           set -uo pipefail
           if [ -z "${PGURL:-}" ]; then
-            echo "::error::V3_DEV_PG_POOLER_URL secret is not set" >&2
+            echo "::error::Selected cloud DB connection is not set" >&2
             exit 1
           fi
           shopt -s nullglob
@@ -105,7 +111,7 @@ jobs:
             # `|| rc=$?` keeps the runner's implicit `bash -e` from killing
             # the loop on the first failing file.
             rc=0
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -c 'SET ROLE postgres' -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             # Lot 1.B — le compteur `not ok` en debut de ligne ne suffit pas.

@@ -1,7 +1,7 @@
 import { appendFileSync, readFileSync } from 'node:fs';
 import { git, isMain, ROOT } from '../agents/lib.mjs';
 
-const DB_PATH = /^(supabase\/(migrations|functions|tests)\/|\.github\/workflows\/pgtap-pr\.yml$|scripts\/ci\/db-gate(?:\.test)?\.mjs$)/;
+const DB_PATH = /^(supabase\/(migrations|functions|tests)\/|\.github\/workflows\/pgtap-(?:pr|nightly)\.yml$|scripts\/ci\/db-(?:gate|test-target)(?:\.test)?\.mjs$)/;
 const sha = (value) => /^[a-f0-9]{40}$/.test(value ?? '');
 
 // -z évite les ambiguïtés des noms contenant espaces, tabulations ou retours ligne.

@@ -2,7 +2,7 @@
 //
 // La fenêtre de RENDU du grand livre de stock (2026-08-18).
 //
-// La RPC `get_stock_movement_ledger_v2` rend jusqu'à 5 000 lignes d'un coup, et
+// La RPC `get_stock_movement_ledger_v3` rend jusqu'à 5 000 lignes d'un coup, et
 // ce tableau les peignait toutes : onze cellules par ligne, ~55 000 nœuds DOM
 // sur l'écran que le responsable stock ouvre le plus, depuis un portable de
 // boutique. Le rendu est désormais borné à 200 lignes, déroulables par
