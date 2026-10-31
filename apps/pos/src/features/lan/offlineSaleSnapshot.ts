@@ -61,13 +61,19 @@ export function clearSaleSnapshot(storage: Storage): void {
   try { storage.removeItem(SALE_SNAPSHOT_KEY); } catch { /* Stockage indisponible : aucune reprise. */ }
 }
 
-/** Le caller doit avoir validé l'authentification locale et le reload du même onglet. */
-export function restoreSaleSnapshot(storage: Storage, client: QueryClient, identity: SaleIdentity): ActiveShift | null {
+/** Authentification locale validée par l'appelant : au démarrage, reload du même onglet ;
+ * au retour hors ligne, seules les données absentes de la même caisse active sont restaurées. */
+export function restoreSaleSnapshot(storage: Storage, client: QueryClient, identity: SaleIdentity, options?: { onlyMissing: true; expectedShiftId: string }): ActiveShift | null {
   try {
     const snapshot = JSON.parse(storage.getItem(SALE_SNAPSHOT_KEY) ?? 'null') as Snapshot | null;
     if (snapshot?.version !== 1 || !validShift(snapshot.shift)
       || !snapshot.identity || Object.keys(identity).some((key) => snapshot.identity[key as keyof SaleIdentity] !== identity[key as keyof SaleIdentity])
       || !Array.isArray(snapshot.entries)) return null;
+    if (options) {
+      if (snapshot.shift.id !== options.expectedShiftId) return null;
+      const knownShift = client.getQueryData<ActiveShift | null>(['pos_sessions', 'current', identity.user]);
+      if (knownShift !== undefined && knownShift?.id !== options.expectedShiftId) return null;
+    }
     // Valider le manifeste avant de toucher le cache consommé par les écrans.
     const entries = new Map(snapshot.entries.map((entry) => [JSON.stringify(entry.key), entry]));
     if (entries.size !== snapshot.entries.length) return null;
@@ -80,8 +86,15 @@ export function restoreSaleSnapshot(storage: Storage, client: QueryClient, ident
       const entry = entries.get(JSON.stringify(key));
       if (!entry?.updatedAt || !validSaleData(key, entry.data) || !Number.isFinite(entry.updatedAt) || entry.updatedAt <= 0) return null;
     }
-    for (const entry of entries.values()) client.setQueryData(entry.key, entry.data, { updatedAt: entry.updatedAt });
-    client.setQueryData(['pos_sessions', 'current', identity.user], snapshot.shift, { updatedAt: 1 });
+    for (const entry of entries.values()) {
+      if (!options?.onlyMissing || client.getQueryData(entry.key) === undefined) {
+        client.setQueryData(entry.key, entry.data, { updatedAt: entry.updatedAt });
+      }
+    }
+    const shiftKey = ['pos_sessions', 'current', identity.user];
+    if (!options?.onlyMissing || client.getQueryData(shiftKey) === undefined) {
+      client.setQueryData(shiftKey, snapshot.shift, { updatedAt: 1 });
+    }
     return snapshot.shift;
   } catch { return null; }
 }
