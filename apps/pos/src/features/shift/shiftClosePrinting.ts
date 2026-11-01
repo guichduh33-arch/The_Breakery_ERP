@@ -6,12 +6,13 @@ import { getStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { runPrintJob } from '@/services/print/printJobs';
 
 const LAST_REPORT = 'breakery.last-shift-report.v1';
-export function rememberClosedShift(sessionId: string) {
-  localStorage.setItem(LAST_REPORT, JSON.stringify({ sessionId, actor: useAuthStore.getState().user?.id }));
+export function rememberClosedShift(sessionId: string, actor = useAuthStore.getState().user?.id) {
+  if (!actor) return;
+  localStorage.setItem(`${LAST_REPORT}:${actor}`, JSON.stringify({ sessionId, actor }));
 }
 export function lastClosedShift(actor: string | undefined): string | null {
   try {
-    const saved = JSON.parse(localStorage.getItem(LAST_REPORT) ?? 'null') as { sessionId: string; actor: string } | null;
+    const saved = JSON.parse(localStorage.getItem(`${LAST_REPORT}:${actor}`) ?? localStorage.getItem(LAST_REPORT) ?? 'null') as { sessionId: string; actor: string } | null;
     return saved?.actor === actor && typeof saved?.sessionId === 'string' ? saved.sessionId : null;
   } catch { return null; }
 }

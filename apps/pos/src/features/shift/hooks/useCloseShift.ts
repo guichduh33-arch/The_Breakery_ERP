@@ -18,6 +18,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
+import { useAuthStore } from '@/stores/authStore';
 import { rememberClosedShift, printClosedShift } from '../shiftClosePrinting';
 import { toast } from 'sonner';
 
@@ -65,6 +66,10 @@ export function useCloseShift() {
 
   return useMutation({
     mutationFn: async (input: CloseShiftInput): Promise<CloseShiftResult> => {
+      const owner = useAuthStore.getState().user?.id;
+      const token = useAuthStore.getState().sessionToken;
+      const sameOperator = () => useAuthStore.getState().user?.id === owner
+        && useAuthStore.getState().sessionToken === token;
       const args: {
         p_session_id:      string;
         p_counted_cash:    number;
@@ -130,17 +135,19 @@ export function useCloseShift() {
       }
       const result = data as unknown as CloseShiftResult;
       try {
-        rememberClosedShift(input.session_id);
-        const printed = await printClosedShift(input.session_id, qc);
-        if (!printed.success) toast.warning('Shift closed. Report print unconfirmed — check Printing before reprinting.');
+        if (owner) rememberClosedShift(input.session_id, owner);
+        if (sameOperator()) {
+          const printed = await printClosedShift(input.session_id, qc);
+          if (!printed.success) toast.warning('Shift closed. Report print unconfirmed — check Printing before reprinting.');
+        }
       } catch {
-        toast.warning('Shift closed. Report printing failed — use Print last closing report to retry.');
+        if (sameOperator()) toast.warning('Shift closed. Report printing failed — use Print last closing report to retry.');
       }
 
       // S29 Wave 6.D — fire-and-forget PDF generation. We await it but DO NOT throw
       // on failure; the draft z_reports row already exists in DB, the manager can
       // retry generation from BO Z-Reports page.
-      if (result.zreport_id) {
+      if (result.zreport_id && sameOperator()) {
         try {
           await supabase.functions.invoke('generate-zreport-pdf', {
             body:    { zreport_id: result.zreport_id },
@@ -153,8 +160,8 @@ export function useCloseShift() {
 
       return result;
     },
-    onSuccess: () => {
-      clearShift();
+    onSuccess: (_result, input) => {
+      if (useShiftStore.getState().current?.id === input.session_id) clearShift();
       void qc.invalidateQueries({ queryKey: ['pos_sessions'] });
     },
   });

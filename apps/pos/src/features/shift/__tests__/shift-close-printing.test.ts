@@ -7,7 +7,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock('@/stores/authStore', () => ({ useAuthStore: { getState: () => ({ user: { id: mocks.actor, full_name: 'Cashier A' } }) } }));
 vi.mock('@/services/print/printService', () => ({ printStationTicket: mocks.send }));
 vi.mock('@/features/cart/hooks/useStationPrinters', () => ({ getStationPrinters: mocks.printers }));
-import { buildShiftCloseTicket, printClosedShift } from '../shiftClosePrinting';
+import { buildShiftCloseTicket, lastClosedShift, printClosedShift, rememberClosedShift } from '../shiftClosePrinting';
 const saved = { shift_id: 'closed-shift', closed_at: '2026-11-02T00:00:00Z',
   totals_by_payment_method: { cash: 30000, edc: 20000, qris: 20000, transfer: 20000 },
   receipts_total: 90000, outstanding_collections_total: 90000, opening_cash: 0,
@@ -21,6 +21,12 @@ beforeEach(() => {
   mocks.send.mockResolvedValue({ success: true });
 });
 describe('shift closing print recovery', () => {
+  it('keeps each cashier report when a previous close response arrives late', () => {
+    rememberClosedShift('shift-b', 'actor-b');
+    rememberClosedShift('shift-a', 'actor-a');
+    expect(lastClosedShift('actor-b')).toBe('shift-b');
+    expect(lastClosedShift('actor-a')).toBe('shift-a');
+  });
   it('prints automatically once on the cashier printer, even on close retry', async () => {
     const qc = new QueryClient();
     await printClosedShift('closed-shift', qc);
