@@ -151,6 +151,7 @@ INSERT INTO outstanding_results SELECT is((public.get_shift_close_preview_v1(cur
  100::numeric,'partial refund reduces current drawer once');
 INSERT INTO outstanding_results SELECT is((SELECT current_stock FROM products WHERE id=current_setting('out.product')::uuid),99::numeric,'partial refund restores exact quantity');
 
+SET CONSTRAINTS ALL IMMEDIATE;
 INSERT INTO outstanding_results SELECT * FROM finish();
 SELECT jsonb_agg(result) FROM outstanding_results;
 ROLLBACK;

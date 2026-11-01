@@ -91,6 +91,15 @@ afterEach(() => {
 // =====================================================================
 
 describe('S55 useVoidOrder — manager-pin header + idempotency wiring', () => {
+  it('directs a prior-day Outstanding return to Refund', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'outstanding_prior_day_requires_refund' }), { status: 422 }));
+    const { useVoidOrder } = await import('../hooks/useVoidOrder');
+    const { result } = renderHook(() => useVoidOrder(), { wrapper: makeWrapper() });
+    await act(async () => {
+      await expect(result.current.mutateAsync({ orderId: 'order-1', reason: 'Customer return', managerPin: '987654' }))
+        .rejects.toThrow('Use Refund for an Outstanding ticket from an earlier business day. The original sale must be kept.');
+    });
+  });
   it('explains when unavailable points block a void', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response(
       JSON.stringify({ error: 'loyalty_points_unavailable' }), { status: 422 }));

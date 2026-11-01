@@ -138,6 +138,7 @@ serve(async (req) => {
     // Lot 6b (v10) — cross-shift : void refusé si un paiement cash existe.
     if (error.code === 'P0016') return jsonResponse({ error: 'cash_void_requires_open_session' }, 422);
     if (error.code === 'P0020') return jsonResponse({ error: 'loyalty_points_unavailable' }, 422);
+    if (error.code === '23514' && error.message?.includes('outstanding_prior_day_requires_refund')) return jsonResponse({ error: 'outstanding_prior_day_requires_refund' }, 422);
     if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
     return jsonResponse(logAndRedact('void-order', error.message ?? error), 500);
   }
