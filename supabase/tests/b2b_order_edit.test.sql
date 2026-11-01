@@ -119,6 +119,11 @@ BEGIN
 END $test$;
 INSERT INTO edit_checks VALUES('anon cannot execute',NOT has_function_privilege('anon','public.edit_b2b_order_v2(uuid,jsonb,text,timestamptz,uuid)','EXECUTE'));
 INSERT INTO edit_checks VALUES('authenticated cannot write idempotency ledger',NOT has_table_privilege('authenticated','public.b2b_order_edit_keys','INSERT'));
+INSERT INTO edit_checks VALUES('authenticated cannot read saved edit requests',NOT has_table_privilege('authenticated','public.b2b_order_edit_keys','SELECT'));
+INSERT INTO edit_checks SELECT 'recovery ledger has the restrictive PIN gate',EXISTS(
+ SELECT 1 FROM pg_policy WHERE polrelid='public.b2b_order_edit_keys'::regclass
+ AND polname='pin_session_required' AND NOT polpermissive AND polcmd='*'
+ AND pg_get_expr(polqual,polrelid) LIKE '%request_has_active_pin_session_v1%');
 SELECT plan((SELECT count(*)::integer FROM edit_checks));
 SELECT ok(passed,name) FROM edit_checks;
 SELECT * FROM finish();
