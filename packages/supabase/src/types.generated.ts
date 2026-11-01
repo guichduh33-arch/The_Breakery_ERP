@@ -14,6 +14,55 @@ export type Database = {
   }
   public: {
     Tables: {
+      b2b_order_edit_keys: {
+        Row: {
+          actor_id: string
+          created_at: string
+          idempotency_key: string
+          order_id: string
+          request: Json
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          idempotency_key: string
+          order_id: string
+          request: Json
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          idempotency_key?: string
+          order_id?: string
+          request?: Json
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_order_edit_keys_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_order_edit_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_order_edit_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       accounting_mappings: {
         Row: {
           account_code: string
@@ -7474,6 +7523,16 @@ export type Database = {
       }
     }
     Functions: {
+      edit_b2b_order_v2: {
+        Args: {
+          p_expected_updated_at: string
+          p_idempotency_key: string
+          p_items: Json
+          p_notes: string
+          p_order_id: string
+        }
+        Returns: Json
+      }
       _apply_store_credit_v1: {
         Args: {
           p_created_by: string

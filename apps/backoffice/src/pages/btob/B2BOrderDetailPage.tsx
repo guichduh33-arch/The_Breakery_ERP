@@ -10,6 +10,7 @@ import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
 import { B2bOrderItemsPanel } from '@/features/btob/components/B2bOrderItemsPanel.js';
 import { B2bOrderStatus } from '@/features/btob/components/B2bOrderStatus.js';
 import { B2bPickupDialog } from '@/features/btob/components/B2bPickupDialog.js';
+import { EditB2bOrderDialog } from '@/features/btob/components/EditB2bOrderDialog.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 import {
   B2B_INVOICES_QUERY_KEY,
@@ -26,6 +27,7 @@ export default function B2BOrderDetailPage(): JSX.Element {
   const canPay = useAuthStore((s) => s.hasPermission('b2b.payment.record'));
   const [pickup, setPickup] = useState<'schedule' | 'deliver' | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const invoiceIds = useMemo(() => (orderId ? [orderId] : []), [orderId]);
   const query = useQuery({
     queryKey: [...B2B_INVOICES_QUERY_KEY, 'detail', orderId],
@@ -42,6 +44,9 @@ export default function B2BOrderDetailPage(): JSX.Element {
   });
   const order = query.data;
   const pendingPayment = useHasPendingFinancial('payment', order?.customer_id ?? '');
+  const pendingEdit = useHasPendingFinancial('b2bEdit', orderId ?? '');
+  const editable = order?.order_status === 'b2b_pending' && !order.b2b_delivered_at
+    && !order.paid_at && Number(order.amount_paid) === 0;
   const date = (value: string | null | undefined): string =>
     value ? formatDateShortWita(value) : '—';
   return (
@@ -95,7 +100,12 @@ export default function B2BOrderDetailPage(): JSX.Element {
             ))}
           </section>
           <section className="rounded-md border border-border-subtle bg-bg-elevated p-6">
-            <h2 className="mb-4 text-lg font-semibold">Order items</h2>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h2 className="text-lg font-semibold">Order items</h2>
+              {(editable || pendingEdit) && <Button variant="secondary" disabled={!canPickup || pendingPayment}
+                onClick={() => { setEditOpen(true); }}>{pendingEdit ? 'Check pending edit' : 'Edit order'}</Button>}
+            </div>
+            {!editable && !pendingEdit && <p className="mb-4 text-sm text-text-muted">Order items can only be edited before collection and any payment.</p>}
             <B2bOrderItemsPanel
               orderId={order.invoice_id}
               orderTotal={Number(order.invoice_total)}
@@ -157,6 +167,8 @@ export default function B2BOrderDetailPage(): JSX.Element {
               }}
             />
           )}
+          {editOpen && <EditB2bOrderDialog orderId={order.invoice_id} orderNumber={order.order_number}
+            onClose={() => { setEditOpen(false); }} />}
           {paymentOpen && (
             <RecordB2bPaymentModal
               open
