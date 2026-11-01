@@ -31,7 +31,14 @@ export type ExpenseReceiptSnapshot = {
   kind: 'attach'; mime: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
   size: number; sha256: string;
 });
+export interface B2bEditSnapshot {
+  orderId: string;
+  items: { id?: string; product_id: string; quantity: number }[];
+  notes: string;
+  expectedUpdatedAt: string;
+}
 export interface FinancialPayloads {
+  b2bEdit: B2bEditSnapshot;
   bank_manage: BankManageSnapshot;
   bank_post: BankPostSnapshot;
   bank_finalize: BankFinalizeSnapshot;
@@ -65,6 +72,14 @@ const optionalText = (v: Record<string, unknown>, key: string) => v[key] === und
 export function validPayload(operation: FinancialOperation, target: string, value: unknown): boolean {
   if (operation === 'bank_manage' || operation === 'bank_post' || operation === 'bank_finalize') return validBankPayload(operation, target, value);
   if (!isRecord(value)) return false;
+  if (operation === 'b2bEdit') {
+    return exact(value, ['orderId', 'items', 'notes', 'expectedUpdatedAt']) && value.orderId === target
+      && text(value.notes) && typeof value.expectedUpdatedAt === 'string' && Number.isFinite(Date.parse(value.expectedUpdatedAt))
+      && Array.isArray(value.items) && value.items.length > 0 && value.items.length <= 500
+      && value.items.every((item: unknown) => isRecord(item) && exact(item, ['id', 'product_id', 'quantity'])
+        && (item.id === undefined || uuid(item.id)) && uuid(item.product_id) && positive(item.quantity)
+        && item.quantity <= 9999999.999 && Math.abs(item.quantity * 1000 - Math.round(item.quantity * 1000)) < 0.000001);
+  }
   if (operation === 'expense_creation') {
     return target === 'new' && exact(value, ['category_id','amount','vat_amount','payment_method','description','expense_date','vendor_name','expense_term_id','remarks'])
       && (value.expense_term_id === undefined || uuid(value.expense_term_id))

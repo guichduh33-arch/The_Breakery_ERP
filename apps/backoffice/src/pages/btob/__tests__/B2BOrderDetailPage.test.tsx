@@ -7,12 +7,15 @@ import { financialTestAuth, installFinancialBrowser, resetFinancialSession } fro
 import { runFinancialAttempt } from '@/lib/pendingFinancialAttempts.js';
 
 const { state, rpc } = vi.hoisted(() => ({
-  state: { delivered: false, paid: false, missing: false, error: false, allowed: true },
+  state: { delivered: false, paid: false, partial: false, missing: false, error: false, allowed: true },
   rpc: vi.fn(),
 }));
 vi.mock('@/stores/authStore.js', async () => ({ useAuthStore: (await import('@/lib/__tests__/financialAttemptTestUtils.js')).financialTestAuth }));
 vi.mock('@/features/btob/components/B2bOrderItemsPanel.js', () => ({
   B2bOrderItemsPanel: ({ orderId }: { orderId: string }) => <div>Items for {orderId}</div>,
+}));
+vi.mock('@/features/btob/components/EditB2bOrderDialog.js', () => ({
+  EditB2bOrderDialog: () => <div role="dialog">Edit B2B items</div>,
 }));
 vi.mock('@/features/btob/components/RecordB2bPaymentModal.js', () => ({
   RecordB2bPaymentModal: ({ initialInvoiceIds }: { initialInvoiceIds: string[] }) => (
@@ -37,7 +40,9 @@ vi.mock('@/lib/supabase.js', () => ({
                 invoice_date: '2026-09-10',
                 pickup_date: '2026-09-15',
                 invoice_total: 100,
-                amount_paid: state.paid ? 100 : 0,
+                amount_paid: state.paid ? 100 : state.partial ? 25 : 0,
+                order_status: state.paid ? 'paid' : 'b2b_pending',
+                paid_at: state.paid ? '2026-09-15' : null,
                 outstanding: state.paid ? 0 : 100,
                 b2b_delivered_at: state.delivered ? '2026-09-15' : null,
               },
@@ -69,6 +74,7 @@ describe('B2B order detail', () => {
     Object.assign(state, {
       delivered: false,
       paid: false,
+      partial: false,
       missing: false,
       error: false,
       allowed: true,
@@ -105,6 +111,18 @@ describe('B2B order detail', () => {
     setup();
     expect(await screen.findByRole('button', { name: 'Mark delivered' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Record payment' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Edit order' })).toBeDisabled();
+  });
+  it('opens editing for an unpaid and uncollected order', async () => {
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit order' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Edit B2B items');
+  });
+  it.each(['paid', 'partial', 'delivered'] as const)('does not offer editing after %s', async (flag) => {
+    state[flag] = true;
+    setup();
+    await screen.findByRole('heading', { name: 'BO-001' });
+    expect(screen.queryByRole('button', { name: 'Edit order' })).not.toBeInTheDocument();
   });
   it('shows a missing order without offering actions', async () => {
     state.missing = true;
