@@ -1,4 +1,4 @@
--- supabase/tests/search_orders_v1.test.sql
+-- supabase/tests/search_orders_v2.test.sql
 -- Audit UX/UI 2026-08-13, lot 4 — recherche de commandes de la palette globale.
 -- Runs via psql (pgtap-pr.yml) ou MCP execute_sql, BEGIN ... ROLLBACK.
 -- Patron : orders_counters_v2.test.sql (seed transactionnel, jwt simulé par
@@ -24,12 +24,12 @@ END $$;
 
 -- ===== T1 : privilèges — anon n'a pas EXECUTE, authenticated l'a =====
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.search_orders_v1(text,integer)', 'EXECUTE'),
-  'T1: anon has no EXECUTE on search_orders_v1'
+  NOT has_function_privilege('anon', 'public.search_orders_v2(text,integer)', 'EXECUTE'),
+  'T1: anon has no EXECUTE on search_orders_v2'
 );
 SELECT ok(
-  has_function_privilege('authenticated', 'public.search_orders_v1(text,integer)', 'EXECUTE'),
-  'T2: authenticated has EXECUTE on search_orders_v1'
+  has_function_privilege('authenticated', 'public.search_orders_v2(text,integer)', 'EXECUTE'),
+  'T2: authenticated has EXECUTE on search_orders_v2'
 );
 
 -- ===== T3 : gate négatif — CASHIER sans orders.read =====
@@ -44,7 +44,7 @@ BEGIN
   END IF;
   PERFORM set_config('request.jwt.claim.sub', v_cashier_id::text, true);
   BEGIN
-    PERFORM search_orders_v1('UXL4', 10);
+    PERFORM search_orders_v2('UXL4', 10);
   EXCEPTION WHEN SQLSTATE '42501' THEN
     v_status := CASE WHEN SQLERRM LIKE 'permission denied%'
                      THEN 'pass' ELSE 'fail_wrong_42501: ' || SQLERRM END;
@@ -69,7 +69,7 @@ DO $$
 DECLARE v_found BOOLEAN;
 BEGIN
   SELECT EXISTS (
-    SELECT 1 FROM search_orders_v1('0005', 10) r WHERE r.order_number = 'UXL4-0005A'
+    SELECT 1 FROM search_orders_v2('0005', 10) r WHERE r.order_number = 'UXL4-0005A'
   ) INTO v_found;
   PERFORM set_config('breakery.t4_pass', CASE WHEN v_found THEN 'pass' ELSE 'fail_not_found' END, false);
 END $$;
@@ -82,7 +82,7 @@ SELECT ok(
 DO $$
 DECLARE v_count INT;
 BEGIN
-  SELECT count(*) FROM search_orders_v1('7', 10) INTO v_count;
+  SELECT count(*) FROM search_orders_v2('7', 10) INTO v_count;
   PERFORM set_config('breakery.t5_pass', CASE WHEN v_count = 0 THEN 'pass' ELSE 'fail_' || v_count END, false);
 END $$;
 SELECT ok(
@@ -94,7 +94,7 @@ SELECT ok(
 DO $$
 DECLARE v_count INT;
 BEGIN
-  SELECT count(*) FROM search_orders_v1('UXL4', 500) INTO v_count;
+  SELECT count(*) FROM search_orders_v2('UXL4', 500) INTO v_count;
   PERFORM set_config('breakery.t6_pass', CASE WHEN v_count <= 20 THEN 'pass' ELSE 'fail_' || v_count END, false);
 END $$;
 SELECT ok(

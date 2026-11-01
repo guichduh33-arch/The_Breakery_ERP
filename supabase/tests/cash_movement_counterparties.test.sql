@@ -53,7 +53,7 @@ SELECT throws_ok(format('SELECT record_cash_movement_v4(%L,''in'',100000,''Top u
 SELECT lives_ok(format('SELECT record_cash_movement_v4(%L,''out'',25000,''Office petty cash'',%L,''misc'',''1111'')',
  current_setting('cmcp.session'),gen_random_uuid()),'cash can move to office Petty Cash');
 SELECT is((SELECT cash_out_total FROM pos_sessions WHERE id=current_setting('cmcp.session')::uuid),25000::numeric,'cash transfer reduces expectation');
-SELECT lives_ok(format('SELECT close_shift_v10(%L,575000,''Matched cash with classified movements'')',
+SELECT lives_ok(format('SELECT close_shift_v11(%L,575000,''Matched cash with classified movements'')',
  current_setting('cmcp.session')),'shift closes with actual movements');
 SELECT is((SELECT returned_float FROM shift_cash_treasury WHERE session_id=current_setting('cmcp.session')::uuid),500000::numeric,'float returned in full');
 SELECT is((SELECT safe_deposit FROM shift_cash_treasury WHERE session_id=current_setting('cmcp.session')::uuid),75000::numeric,'remaining cash deposited');

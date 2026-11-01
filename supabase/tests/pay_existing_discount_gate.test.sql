@@ -10,7 +10,7 @@ SELECT plan(7);
 DO $$
 DECLARE
   v_auth UUID; v_prof UUID; v_mgr_prof UUID; v_weak_prof UUID;
-  v_cat UUID; v_prod UUID;
+  v_cat UUID; v_prod UUID; v_session UUID;
   v_o1 UUID; v_o2 UUID; v_o3 UUID; v_o4 UUID; v_o5 UUID; v_o6 UUID;
   v_nonce4 UUID;
 BEGIN
@@ -38,9 +38,14 @@ BEGIN
   INSERT INTO products (sku,name,category_id,retail_price,cost_price,unit,current_stock)
     VALUES ('TST-D9-PE','D9 PayExisting',v_cat,20000,7000,'pcs',100) RETURNING id INTO v_prod;
 
-  -- 6 draft orders style tablet (session_id NULL autorisé pour created_via='tablet').
-  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via)
-    SELECT '#D9-'||g, 'dine_in','draft',20000,0,20000,'tablet'
+  SELECT id INTO v_session FROM pos_sessions WHERE opened_by=v_prof AND status='open';
+  IF v_session IS NULL THEN
+    INSERT INTO pos_sessions(opened_by,opening_cash,status) VALUES(v_prof,0,'open') RETURNING id INTO v_session;
+  END IF;
+
+  -- Caisse receveuse explicite avant les contrôles de remise.
+  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via, session_id)
+    SELECT '#D9-'||g, 'dine_in','draft',20000,0,20000,'tablet',v_session
       FROM generate_series(1,6) g;
 
   -- Récupère les 6 ids déterministes par order_number.
@@ -72,42 +77,42 @@ END $$;
 
 -- T1 : discount > 0 sans authorizer → P0014 (ADR-013 Lot 3 : ERRCODE dédié, ex-P0001)
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v22(
+  $$ SELECT pay_existing_order_v24(
        p_order_id := current_setting('breakery.v_o1')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
-       p_discount_amount := 3000) $$,
+       p_discount_amount := 3000, p_idempotency_key := gen_random_uuid()) $$,
   'P0014', NULL, 'T1 discount sans authorizer → P0014');
 
 -- T2 : authorizer sans sales.discount → P0003
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v22(
+  $$ SELECT pay_existing_order_v24(
        p_order_id := current_setting('breakery.v_o2')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000,
-       p_discount_authorized_by := current_setting('breakery.v_weak')::uuid) $$,
+       p_discount_authorized_by := current_setting('breakery.v_weak')::uuid, p_idempotency_key := gen_random_uuid()) $$,
   'P0003', NULL, 'T2 authorizer sans sales.discount → P0003');
 
 -- T3 : authorizer VALIDE mais AUCUN nonce (E1 clos) → P0003 'Invalid manager PIN'
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v22(
+  $$ SELECT pay_existing_order_v24(
        p_order_id := current_setting('breakery.v_o3')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000,
-       p_discount_authorized_by := current_setting('breakery.v_mgr')::uuid) $$,
+       p_discount_authorized_by := current_setting('breakery.v_mgr')::uuid, p_idempotency_key := gen_random_uuid()) $$,
   'P0003', 'Invalid manager PIN for discount authorization',
   'T3 authorizer valide SANS nonce → refusé P0003 (E1 clos)');
 
 -- T4 : nonce valide → succès + total réel + audit pin_gated=true + nonce consommé.
 DO $$ DECLARE v_res JSONB; v_audit INT; v_consumed TIMESTAMPTZ;
 BEGIN
-  v_res := pay_existing_order_v22(
+  v_res := pay_existing_order_v24(
     p_order_id := current_setting('breakery.v_o4')::uuid,
     p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',20000,'change_given',3000),
     p_discount_amount := 3000,
     p_discount_type := 'fixed_amount',
     p_discount_reason := 'pgTAP T4',
     p_discount_authorized_by := current_setting('breakery.v_mgr')::uuid,
-    p_discount_auth_id := current_setting('breakery.v_nonce4')::uuid);
+    p_discount_auth_id := current_setting('breakery.v_nonce4')::uuid, p_idempotency_key := gen_random_uuid());
   SELECT count(*) INTO v_audit FROM audit_logs
    WHERE action = 'order.discount_applied' AND entity_id = current_setting('breakery.v_o4')::uuid
      AND (metadata->>'pin_gated')::boolean = true;
@@ -124,13 +129,13 @@ SELECT is(current_setting('breakery.t4_consumed'), 'true', 'T6 nonce consommé (
 -- T7 : offline_replay bypass — discount SANS nonce mais p_offline_replay=true → succès.
 DO $$ DECLARE v_res JSONB;
 BEGIN
-  v_res := pay_existing_order_v22(
+  v_res := pay_existing_order_v24(
     p_order_id := current_setting('breakery.v_o5')::uuid,
     p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
     p_discount_amount := 3000,
     p_discount_reason := 'pgTAP T7 offline',
     p_discount_authorized_by := current_setting('breakery.v_mgr')::uuid,
-    p_offline_replay := true);
+    p_offline_replay := true, p_idempotency_key := gen_random_uuid());
   PERFORM set_config('breakery.t7_ok', ((v_res->>'total')::numeric = 17000)::text, true);
 END $$;
 SELECT is(current_setting('breakery.t7_ok'), 'true', 'T7 offline_replay bypass le nonce → succès');

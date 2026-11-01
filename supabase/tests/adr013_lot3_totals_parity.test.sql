@@ -74,7 +74,7 @@ BEGIN
   INSERT INTO discount_authorizations (manager_profile_id)
     VALUES (current_setting('par.mgr')::uuid) RETURNING id INTO v_nonce;
   SELECT s.total INTO v_expected FROM _pb1_split_v1(40500) s;
-  v_res := complete_order_with_payment_v30(
+  v_res := complete_order_with_payment_v31(
     p_session_id := current_setting('par.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -111,7 +111,7 @@ SELECT ok(
 
 -- T4 — garde étagée D11 : redemption (16000) > post-promo (15000) → message dédié.
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v30(
+  SELECT complete_order_with_payment_v31(
     p_session_id := current_setting('par.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(

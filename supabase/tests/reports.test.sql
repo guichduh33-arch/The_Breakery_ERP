@@ -5,8 +5,8 @@
 --   T_RPT_01..03  Materialised views exist + are populated + have unique indexes.
 --   T_RPT_04..05  Refresh wrapper functions exist and run.
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
---   T_RPT_07      get_sales_by_category_v3 returns 0 rows on empty data, accepts date range.
---   T_RPT_08      get_stock_variance_v3 (ADR-027 : démarque constatée, sans
+--   T_RPT_07      get_sales_by_category_v4 returns 0 rows on empty data, accepts date range.
+--   T_RPT_08      get_stock_variance_v4 (ADR-027 : démarque constatée, sans
 --                 section) returns one row per tracked product with either a
 --                 movement in the default 30-day window or a non-zero stock.
 --   T_RPT_09      get_audit_logs_v4 cursor pagination (limit clamp at 200).
@@ -76,12 +76,12 @@ SELECT is(
 -- T_RPT_07 — sales-by-category date range
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_sales_by_category_v3(CURRENT_DATE - 7, CURRENT_DATE)$$,
-  'T_RPT_07 — get_sales_by_category_v3 accepts a date range'
+  $$SELECT * FROM public.get_sales_by_category_v4(CURRENT_DATE - 7, CURRENT_DATE)$$,
+  'T_RPT_07 — get_sales_by_category_v4 accepts a date range'
 );
 
 -- ============================================================
--- T_RPT_08 — ADR-027 : démarque constatée. get_stock_variance_v3() n'émet
+-- T_RPT_08 — ADR-027 : démarque constatée. get_stock_variance_v4() n'émet
 -- plus une ligne par produit non supprimé — la sémantique devient : un produit
 -- SUIVI (track_inventory=true) avec, sur la fenêtre par défaut (30 jours), soit
 -- un mouvement de stock, soit un stock courant non nul. `now()` est stable dans
@@ -89,7 +89,7 @@ SELECT lives_ok(
 -- calculée par le RPC coïncident.
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v3()),
+  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v4()),
   (SELECT COUNT(*)::INT FROM products p
     WHERE p.deleted_at IS NULL
       AND p.track_inventory = true
@@ -102,7 +102,7 @@ SELECT is(
         OR p.current_stock <> 0
       )
   ),
-  'T_RPT_08 — get_stock_variance_v3 emits one row per tracked product with a movement in the default window or a non-zero stock'
+  'T_RPT_08 — get_stock_variance_v4 emits one row per tracked product with a movement in the default window or a non-zero stock'
 );
 
 -- ============================================================

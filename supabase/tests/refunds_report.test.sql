@@ -1,5 +1,5 @@
 -- supabase/tests/refunds_report.test.sql
--- Rapport « Refunds & Voids » — pgTAP pour get_refunds_report_v1 (12 assertions).
+-- Rapport « Refunds & Voids » — pgTAP pour get_refunds_report_v2 (12 assertions).
 --
 -- CE QUE CETTE SUITE PROTÈGE EN PRIORITÉ : les trois flux ne se mélangent pas
 -- (void + partiel = remboursé ; les lignes annulées avant paiement ne sont
@@ -22,10 +22,12 @@
 --
 -- Utilisateurs seedés : MANAGER 00000000-0000-0000-0000-000000000004,
 -- CASHIER 00000000-0000-0000-0000-000000000002.
--- Fenêtre de fixture : janvier 2027 (vide en dev, période préc. déc. 2026 vide).
+-- Fenêtre de fixture : janvier 2025 (vide en dev, période préc. déc. 2026 vide).
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/released_report_days.sql
+SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 \ir helpers/session.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
@@ -37,14 +39,16 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2026-01-01', '2026-12-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2026-01-01', CURRENT_DATE);
   v_ok := (v_r ? 'period') AND (v_r ? 'period_prev') AND (v_r ? 'timezone')
       AND (v_r ? 'generated_at') AND (v_r ? 'summary') AND (v_r ? 'events')
       AND (v_r ? 'cancelled_by_product');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_refunds_report_v1 MANAGER happy path returns 7-key JSONB');
+  'T1: get_refunds_report_v2 MANAGER happy path returns 7-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -52,13 +56,13 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_refunds_report_v1('2026-01-01', '2026-12-31');
+    PERFORM get_refunds_report_v2('2026-01-01', CURRENT_DATE);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_refunds_report_v1 CASHIER raises 42501');
+  'T2: get_refunds_report_v2 CASHIER raises 42501');
 
 -- T3 bornes inversées → P0001
 DO $$
@@ -66,7 +70,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_refunds_report_v1('2026-12-31', '2026-01-01');
+    PERFORM get_refunds_report_v2(CURRENT_DATE, '2026-01-01');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -79,9 +83,11 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2020-01-01', '2026-12-31');
-  v_ok := ((v_r->'period'->>'start')::date = '2026-12-31'::date - 366)
-      AND ((v_r->'period'->>'end')::date   = '2026-12-31'::date);
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2020-01-01', CURRENT_DATE);
+  v_ok := ((v_r->'period'->>'start')::date = CURRENT_DATE::date - 366)
+      AND ((v_r->'period'->>'end')::date   = CURRENT_DATE::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t4')::boolean,
@@ -92,7 +98,9 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2026-01-01', '2026-12-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2026-01-01', CURRENT_DATE);
   v_ok := ((v_r->'summary'->>'void_amount')::numeric
          + (v_r->'summary'->>'partial_amount')::numeric
          = (v_r->'summary'->>'refunded')::numeric);
@@ -101,7 +109,7 @@ END $$;
 SELECT ok(current_setting('breakery.t5')::boolean,
   'T5: void_amount + partial_amount equals summary.refunded');
 
--- Fixture T6–T12 : une commande payée (jan 2027), un remboursement partiel
+-- Fixture T6–T12 : une commande payée (jan 2025), un remboursement partiel
 -- (100k, 2 méthodes), un void (45k), une ligne annulée avant paiement (15k).
 CREATE TEMP TABLE _rr_fix ON COMMIT DROP AS
 SELECT gen_random_uuid() AS oid, gen_random_uuid() AS rid_partial, gen_random_uuid() AS rid_void,
@@ -114,21 +122,21 @@ DECLARE f RECORD;
 BEGIN
   SELECT * INTO f FROM _rr_fix;
   INSERT INTO orders (id, order_number, order_type, status, subtotal, tax_amount, total, paid_at, session_id)
-  VALUES (f.oid, '#PGTAP-RR', 'take_out', 'paid', 227273, 22727, 250000, '2027-01-10T10:00:00+08', f.sid);
+  VALUES (f.oid, '#PGTAP-RR', 'take_out', 'paid', 227273, 22727, 250000, '2025-01-10T10:00:00+08', f.sid);
 
   -- Ligne annulée AVANT paiement — friction, pas de sortie d'argent.
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total,
                            is_cancelled, cancelled_at, cancelled_by, cancelled_reason)
   VALUES (f.oid, f.pid, 'Cancelled fixture', 15000, 1, 15000,
-          true, '2027-01-13T09:00:00+08', f.uid, 'erreur de saisie');
+          true, '2025-01-13T09:00:00+08', f.uid, 'erreur de saisie');
 
   INSERT INTO refunds (id, refund_number, order_id, session_id, total, tax_refunded, reason,
                        refunded_by, authorized_by, is_full_void, created_at)
   VALUES
     (f.rid_partial, 'RF-PGTAP-1', f.oid, f.sid, 100000, 9091, 'Erreur de saisie caissier',
-     f.uid, f.uid, false, '2027-01-12T10:00:00+08'),
+     f.uid, f.uid, false, '2025-01-12T10:00:00+08'),
     (f.rid_void,    'RF-PGTAP-2', f.oid, f.sid, 45000, 4091, 'double payment detected',
-     f.uid, f.uid, true,  '2027-01-14T15:00:00+08');
+     f.uid, f.uid, true,  '2025-01-14T15:00:00+08');
 
   INSERT INTO refund_payments (refund_id, method, amount)
   VALUES (f.rid_partial, 'cash', 60000), (f.rid_partial, 'qris', 40000);
@@ -139,7 +147,9 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'refunded')::numeric = 145000)
       AND ((v_r->'summary'->>'refund_count')::int = 2)
       AND ((v_r->'summary'->>'void_count')::int = 1)
@@ -155,7 +165,9 @@ DO $$
 DECLARE v_r JSONB; v_fam1 TEXT; v_fam2 TEXT;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   SELECT e->>'reason_family' INTO v_fam1
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   SELECT e->>'reason_family' INTO v_fam2
@@ -171,7 +183,9 @@ DO $$
 DECLARE v_r JSONB; v_e JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   SELECT e INTO v_e
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   SELECT COALESCE(SUM((p->>'amount')::numeric), 0) INTO v_sum
@@ -187,7 +201,9 @@ DO $$
 DECLARE v_r JSONB; v_e JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   SELECT e INTO v_e
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   v_ok := (v_e->'refunded_by'->>'name') IS NOT NULL
@@ -202,7 +218,9 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'gross_sales')::numeric = 250000);
   PERFORM set_config('breakery.t10', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -215,7 +233,9 @@ DECLARE v_r JSONB; v_row JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _rr_fix;
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   SELECT p INTO v_row
     FROM jsonb_array_elements(v_r->'cancelled_by_product') p
    WHERE (p->>'product_id')::uuid = f.pid;
@@ -233,7 +253,9 @@ DO $$
 DECLARE v_r JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_refunds_report_v1('2027-01-01', '2027-01-31');
+  PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
+
+  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
   SELECT COALESCE(SUM((e->>'total')::numeric), 0) INTO v_sum
     FROM jsonb_array_elements(v_r->'events') e;
   v_ok := (v_sum = (v_r->'summary'->>'refunded')::numeric);
