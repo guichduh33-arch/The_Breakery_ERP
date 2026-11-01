@@ -7,6 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CloseShiftModal, type CloseShiftModalProps } from '../components/CloseShiftModal';
+import { openCashDrawer } from '@/services/print/printService';
+
+vi.mock('@/services/print/printService', () => ({ openCashDrawer: vi.fn() }));
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -89,10 +92,34 @@ function countAndConfirm(amount: string): void {
 
 describe('CloseShiftModal', () => {
   beforeEach(() => {
+    vi.mocked(openCashDrawer).mockReset().mockResolvedValue({ success: true });
     rpcMock.mockReset();
     storeMock.clear.mockReset();
     mockDenomEnabled.mockReset().mockReturnValue(false);
     mockEnabledMethods.mockReset().mockReturnValue(new Set(['cash', 'card', 'qris', 'edc']));
+  });
+
+  it('opens the drawer on demand before counting without closing the shift', async () => {
+    renderModal();
+    expect(openCashDrawer).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Open cash drawer' }));
+    expect(screen.getByRole('button', { name: 'Opening drawer…' })).toBeDisabled();
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Open cash drawer' })).toBeEnabled());
+    expect(openCashDrawer).toHaveBeenCalledTimes(1);
+    expect(rpcMock.mock.calls.some(([fn]) => String(fn).startsWith('close_shift'))).toBe(false);
+    expect(screen.queryByText(/expected cash/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the count and allows retry when the drawer connection fails', async () => {
+    vi.mocked(openCashDrawer).mockResolvedValueOnce({ success: false, error: 'HTTP 503' });
+    renderModal();
+    fireEvent.change(screen.getByTestId('counted-cash-input'), { target: { value: '123000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open cash drawer' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not open cash drawer');
+    expect(screen.getByTestId('counted-cash-input')).toHaveValue('123000');
+    fireEvent.click(screen.getByRole('button', { name: 'Open cash drawer' }));
+    await vi.waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(openCashDrawer).toHaveBeenCalledTimes(2);
   });
 
   it('hides expected cash and variance during the blind count (LOT 4)', () => {

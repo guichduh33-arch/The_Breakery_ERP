@@ -40,6 +40,7 @@ import { Volume2, VolumeX, WifiOff } from 'lucide-react';
 import { SectionLabel } from '@breakery/ui';
 
 import { ErrorState } from '@/components/ErrorState';
+import { DeviceSyncButton } from '@/features/sync/DeviceSyncButton';
 import { useKdsStore, type KdsStation, type KdsStationFilter } from '@/stores/kdsStore';
 import { useOfflineMode } from '@/features/lan/offlineMode';
 import { useKdsOfflineStore } from './kdsOfflineStore';
@@ -148,6 +149,7 @@ export function KdsBoard({
             </SectionLabel>
           </div>
           <div className="flex items-center gap-3">
+            <DeviceSyncButton />
             <button
               type="button"
               onClick={() => setAlarmMuted(!alarmMuted)}

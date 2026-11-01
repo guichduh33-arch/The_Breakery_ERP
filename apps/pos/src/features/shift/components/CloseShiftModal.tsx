@@ -21,6 +21,7 @@ import { sumDenominations } from '@breakery/domain';
 import { useCloseShift } from '../hooks/useCloseShift';
 import { useDenominationCountEnabled } from '../hooks/useDenominationCountEnabled';
 import { DenominationGrid } from './DenominationGrid';
+import { OpenCashDrawerButton } from './OpenCashDrawerButton';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { VarianceWarningBadge, shouldShowWarning } from './VarianceWarningBadge';
@@ -195,7 +196,7 @@ export function CloseShiftModal({
       {/* max-h + scroll : sur un écran tablette (~800px) le contenu (numpad +
           notes + footer) dépasse le viewport et le bouton Close devenait
           inatteignable (constaté à l'audit POS 2026-06-12). */}
-      <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6 max-h-[92vh] overflow-y-auto">
+      <div className="m-auto min-h-0 bg-bg-overlay rounded-xl p-4 sm:p-8 max-w-md w-full shadow-modal space-y-6 max-h-[92dvh] overflow-y-auto">
         <header className="flex items-center justify-between">
           <h2 className="font-semibold text-2xl">Close Shift</h2>
           {/* Variance badge is part of the reveal — never shown during the
@@ -209,6 +210,8 @@ export function CloseShiftModal({
             />
           )}
         </header>
+
+        {step === 'count' && <OpenCashDrawerButton />}
 
         {step === 'count' && (
           <p className="text-xs text-text-secondary">
