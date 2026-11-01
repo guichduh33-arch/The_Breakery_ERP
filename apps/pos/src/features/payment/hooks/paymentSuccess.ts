@@ -1,5 +1,6 @@
 import type { AppliedPromotion, CartItem, PaymentMethod, PaymentResultLine } from '@breakery/domain';
 export interface PaymentSuccessState {
+  outstandingDue?: number;
   orderNumber: string;
   orderId?: string;
   total: number;

@@ -85,7 +85,12 @@ export function useCheckout() {
       const liveCart = useCartStore.getState();
       const cartState = input.context ? { ...input.context, cart: input.cart } : liveCart;
       const { customerId, loyaltyPointsToRedeem, tableNumber, cartDiscount } = cartState.cart;
-      const { pickedUpOrderId, appliedPromotions } = cartState;
+      let { pickedUpOrderId } = cartState;
+      const { appliedPromotions } = cartState;
+      const outstanding = input.context?.outstanding === true;
+      if (outstanding && (!customerId || !Array.isArray(input.payment) || input.payment.length > 0)) {
+        throw new Error('Outstanding requires a customer and no payment tenders');
+      }
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
       // (complete_order_with_payment_v13 / pay_existing_order_v22). The client no
@@ -100,7 +105,7 @@ export function useCheckout() {
         ...(ap.scope_line_id ? { scope_line_id: ap.scope_line_id } : {}),
       }));
 
-      if (pickedUpOrderId) {
+      if (pickedUpOrderId || outstanding) {
         // Toute commande reprise peut recevoir de nouvelles lignes locales.
         // Le paiement ne lit que les lignes persistées : envoyer les nouvelles
         // avant d'encaisser, sans renvoyer les identifiants serveur existants.
@@ -126,6 +131,7 @@ export function useCheckout() {
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
           const authorizationId = unsynced.some((i) => i.discount) ? await savedDiscountAuthorization(input.context, 'appendDiscountAuthId') : undefined;
+          const sourceCode = input.context?.sourceCode ?? getOrderSourceCode();
           const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v11', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
@@ -140,7 +146,10 @@ export function useCheckout() {
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
             })) as unknown as Json,
-            p_order_id: pickedUpOrderId,
+            ...(pickedUpOrderId ? { p_order_id: pickedUpOrderId } : {}),
+            p_order_type: input.cart.order_type,
+            ...(sourceCode ? { p_source_code: sourceCode } : {}),
+            ...(tableNumber ? { p_table_number: tableNumber } : {}),
             ...(customerId ? { p_customer_id: customerId } : {}),
             ...(authorizationId ? { p_discount_auth_id: authorizationId } : {}),
             // ADR-022 déc. 3 — appel d'appoint du checkout : on pousse au serveur
@@ -162,7 +171,11 @@ export function useCheckout() {
           if (appended && typeof appended === 'object' && 'items' in appended) {
             useCartStore.getState().applyOrderSnapshot(appended as unknown as OrderSnapshot);
           }
+          if (!pickedUpOrderId && appended && typeof appended === 'object' && 'order_id' in appended && typeof appended.order_id === 'string') {
+            pickedUpOrderId = appended.order_id;
+          }
         }
+        if (!pickedUpOrderId) throw new Error('Order confirmation unavailable');
 
         // Session 11 — tablet pay_existing_order v5 supports multi-tender. We forward
         // either p_payment (single) or p_payments (array). Server raises if both are
@@ -179,8 +192,8 @@ export function useCheckout() {
           p_discount_amount: cartDiscount?.amount ?? 0,
           // S44 P0-C(2) — no p_loyalty_multiplier: v9 resolves it server-side.
         };
-        if (singlePayment) args.p_payment = singlePayment;
-        if (arrayPayments) args.p_payments = arrayPayments;
+        if (singlePayment && !outstanding) args.p_payment = singlePayment;
+        if (arrayPayments && !outstanding) args.p_payments = arrayPayments;
         if (customerId) args.p_customer_id = customerId;
         if (idempotencyKey) args.p_idempotency_key = idempotencyKey;
         if (cartDiscount?.type) args.p_discount_type = cartDiscount.type;
@@ -205,13 +218,17 @@ export function useCheckout() {
 
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v22', args as PayExistingOrderArgs);
+        const { error, data } = outstanding
+          ? await supabase.rpc('defer_pos_order_v2', { ...args, p_customer_id: customerId!,
+            p_session_id: sessionId, p_idempotency_key: idempotencyKey } as Database['public']['Functions']['defer_pos_order_v2']['Args'])
+          : await supabase.rpc('pay_existing_order_v22', args as PayExistingOrderArgs);
         if (error) {
           const giftCode = ['promo_gift_requires_configuration', 'promo_gift_unavailable']
             .find((code) => error.message.startsWith(`${code}:`));
           throw Object.assign(new Error(error.message), { details: { ...error, ...(giftCode ? { error: giftCode } : {}) } });
         }
         const envelope = data as unknown as {
+          outstanding_due?: number;
           order_id: string;
           order_number: string;
           subtotal: number;
@@ -232,6 +249,7 @@ export function useCheckout() {
         return {
           ok: true,
           order_id: envelope.order_id ?? pickedUpOrderId,
+          ...(envelope.outstanding_due !== undefined ? { outstanding_due: envelope.outstanding_due } : {}),
           order_number: envelope.order_number ?? '',
           total: envelope.total ?? 0,
           tax_amount: envelope.tax_amount ?? 0,

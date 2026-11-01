@@ -9,6 +9,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: { rpc } }));
 
 import { useReopenHeldOrder } from '../hooks/useReopenHeldOrder';
 import { useCartStore } from '@/stores/cartStore';
+import { useShiftStore } from '@/stores/shiftStore';
 
 function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>;
@@ -16,6 +17,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  useShiftStore.setState({ current: { id: 'receiving-shift', opened_at: '', opening_cash: 0 } });
   useCartStore.setState({
     cart: { items: [], order_type: 'take_out' },
     lockedItemIds: [],
@@ -29,12 +31,26 @@ beforeEach(() => {
 });
 
 describe('useReopenHeldOrder', () => {
+  it('preserves the cart when the receiving shift changes while resuming', async () => {
+    const before = useCartStore.getState().cart;
+    let finish!: (value: unknown) => void;
+    rpc.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
+    const pending = result.current.mutateAsync('previous-shift-ticket');
+    const rejection = expect(pending).rejects.toThrow('The shift changed');
+    await waitFor(() => expect(rpc).toHaveBeenCalledOnce());
+    act(() => useShiftStore.setState({ current: null }));
+    finish({ data: { order_id: 'previous-shift-ticket', customerId: null, items: [] }, error: null });
+    await rejection;
+    expect(useCartStore.getState().cart).toBe(before);
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+  });
   it('calls the recoverable order RPC and propagates refusal without replacing the cart', async () => {
     const before = useCartStore.getState().cart;
     rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0002', message: 'order_not_available_for_reopen' } });
     const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
     await expect(result.current.mutateAsync('closed-order')).rejects.toMatchObject({ code: 'P0002' });
-    expect(rpc).toHaveBeenCalledWith('reopen_held_order_v6', { p_order_id: 'closed-order' });
+    expect(rpc).toHaveBeenCalledWith('reopen_held_order_v9', { p_order_id: 'closed-order', p_session_id: 'receiving-shift' });
     expect(useCartStore.getState().cart).toBe(before);
     expect(useCartStore.getState().pickedUpOrderId).toBeNull();
   });
@@ -151,7 +167,7 @@ describe('useReopenHeldOrder', () => {
 
   it('restores customer badge via get_customer_v3 when customerId present', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v6') {
+      if (name === 'reopen_held_order_v9') {
         return Promise.resolve({
           data: {
             order_id: 'order-6',
@@ -186,7 +202,7 @@ describe('useReopenHeldOrder', () => {
 
   it('keeps customerId even if customer lookup fails (best-effort badge)', async () => {
     rpc.mockImplementation((name: string) => {
-      if (name === 'reopen_held_order_v6') {
+      if (name === 'reopen_held_order_v9') {
         return Promise.resolve({
           data: {
             order_id: 'order-7',

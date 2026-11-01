@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentMethod } from '@breakery/domain';
 import { supabaseUrl } from '@/lib/supabase';
 import { getAccessToken } from '@/lib/accessToken';
+import { useRef } from 'react';
+import { useShiftStore } from '@/stores/shiftStore';
 
 interface VoidArgs {
   orderId: string;
@@ -31,8 +33,12 @@ export interface VoidResponse {
 
 export function useVoidOrder() {
   const qc = useQueryClient();
+  const attempts = useRef(new Map<string, string | null>());
   return useMutation({
     mutationFn: async ({ orderId, reason, managerPin, idempotencyKey }: VoidArgs): Promise<VoidResponse> => {
+      const key = idempotencyKey ?? orderId;
+      if (!attempts.current.has(key)) attempts.current.set(key, useShiftStore.getState().current?.id ?? null);
+      const sessionId = attempts.current.get(key);
       const accessToken = await getAccessToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -46,7 +52,7 @@ export function useVoidOrder() {
       const res = await fetch(`${supabaseUrl}/functions/v1/void-order`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ order_id: orderId, reason }),
+        body: JSON.stringify({ order_id: orderId, reason, source: 'pos', session_id: sessionId }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as VoidResponse;

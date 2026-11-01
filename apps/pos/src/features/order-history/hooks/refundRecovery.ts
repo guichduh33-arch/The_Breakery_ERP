@@ -3,6 +3,8 @@ import type { PaymentMethod } from '@breakery/domain';
 import { createFinancialAttempts, type FinancialAttemptScope, type FinancialAttemptSlot } from '@breakery/utils';
 
 export interface RefundSnapshot {
+  source?: 'pos';
+  sessionId?: string | null;
   orderId: string;
   lines: { order_item_id: string; qty: number }[];
   tenders: { method: PaymentMethod; amount: number; reference?: string }[];
@@ -17,7 +19,9 @@ const positive = (v: unknown) => finite(v) && v > 0;
 const exact = (v: Record<string, unknown>, keys: string[]) => Object.keys(v).every((key) => keys.includes(key));
 const uuid = (v: unknown) => typeof v === 'string' && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(v);
 export function validRefundPayload(_operation: 'refund', target: string, v: unknown): boolean {
-  return isRecord(v) && exact(v, ['orderId', 'lines', 'tenders', 'reason']) && v.orderId === target
+  return isRecord(v) && exact(v, ['orderId', 'lines', 'tenders', 'reason', 'source', 'sessionId']) && v.orderId === target
+    && (v.source === undefined || v.source === 'pos')
+    && (v.sessionId === undefined || v.sessionId === null || uuid(v.sessionId))
     && typeof v.reason === 'string' && v.reason.length <= 10000 && v.reason.trim().length >= 3
     && Array.isArray(v.lines) && v.lines.length > 0 && v.lines.length <= 1000
     && v.lines.every((line: unknown) => isRecord(line) && exact(line, ['order_item_id', 'qty']) && identifier(line.order_item_id) && positive(line.qty))

@@ -22,6 +22,7 @@ export type HubStatusSource = Pick<HubHandle, 'presence' | 'bufferStats' | 'toke
 export type CloudSyncStatusSource = Pick<CloudSyncHandle, 'status'>;
 
 export interface AppDeps {
+  releaseSha?: string;
   registry: DeviceRegistry;
   config: BridgeConfig;
   send: typeof sendToPrinter;
@@ -67,6 +68,7 @@ function isValidPrinterTarget(target: PrinterTarget): boolean {
 }
 
 export function createApp({
+  releaseSha,
   config,
   send,
   kick,
@@ -139,7 +141,7 @@ export function createApp({
   });
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', version: process.env.npm_package_version ?? 'dev' });
+    res.json({ status: 'ok', version: process.env.npm_package_version ?? 'dev', release_sha: releaseSha ?? null });
   });
 
   // Spec 006x lot 1 — état du hub pour le panneau BO « Hub » (LanDevicesPage).
@@ -195,6 +197,11 @@ export function createApp({
       return;
     }
     const { printer, ...payload } = body;
+    if (body.kind === 'shift_close' && (body.role !== 'cashier' || !Array.isArray(body.report_lines)
+      || !body.report_lines.every((line) => typeof line.label === 'string' && Number.isFinite(line.amount)))) {
+      res.status(400).json({ success: false, error: 'invalid_shift_report' });
+      return;
+    }
     send(printer, (p) => renderStationTicket(p, payload))
       .then(() => res.json({ success: true }))
       .catch((err: Error) => res.status(502).json({ success: false, error: err.message }));

@@ -36,6 +36,8 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const VALID_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit', 'gopay', 'ovo', 'dana'];
 
 interface RefundOrderPayload {
+  source?: 'pos' | 'backoffice';
+  session_id?: string | null;
   order_id: string;
   lines: Array<{ order_item_id: string; qty: number }>;
   tenders: Array<{ method: string; amount: number; reference?: string }>;
@@ -96,6 +98,11 @@ serve(async (req) => {
   if (!body.order_id || !UUID_REGEX.test(body.order_id)) {
     return jsonResponse({ error: 'invalid_order_id' }, 400);
   }
+  if ((body.source !== undefined && !['pos','backoffice'].includes(body.source))
+    || (body.session_id != null && !UUID_REGEX.test(body.session_id))
+    || (body.source === 'backoffice' && body.session_id != null)) {
+    return jsonResponse({ error: 'invalid_refund_source' }, 400);
+  }
   if (!Array.isArray(body.lines) || body.lines.length === 0) {
     return jsonResponse({ error: 'no_lines' }, 400);
   }
@@ -137,7 +144,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('refund_order_rpc_v14', {
+  const { data, error } = await admin.rpc('refund_order_rpc_v15', {
     p_order_id:            body.order_id,
     p_lines:               body.lines,
     p_tenders:             body.tenders,
@@ -145,11 +152,14 @@ serve(async (req) => {
     p_authorized_by:       mgr.manager_profile_id,
     p_idempotency_key:     idempotencyKey,
     p_acting_auth_user_id: actingAuthUserId,
+    p_refund_source: body.source ?? null,
+    p_session_id: body.session_id ?? null,
   });
 
   if (error) {
     // Log serveur complet ; réponses client sans message brut (ADR-013 D15/M5).
     console.error('[refund-order] rpc error', error);
+    if (error.code === 'P0001' && error.message?.includes('no_open_shift')) return jsonResponse({ error: 'no_open_shift' }, 422);
     if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated' }, 401);
     if (error.code === 'P0002') return jsonResponse({ error: 'not_found' }, 404);
     if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied' }, 403);

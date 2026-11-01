@@ -17,6 +17,7 @@ import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { toast } from 'sonner';
 
 export interface SuccessModalProps {
+  outstandingDue?: number;
   open: boolean;
   orderNumber: string;
   receiptId?: string;
@@ -149,11 +150,12 @@ function buildReceiptPayload(
     },
     payment: {
       method: props.paymentMethod,
-      amount: props.total,
-      ...(props.paymentMethod === 'cash'
+      amount: props.outstandingDue === undefined ? props.total : 0,
+      ...(props.paymentMethod === 'cash' && props.outstandingDue === undefined
         ? { cash_received: props.cashReceived, change_given: props.changeGiven ?? 0 }
         : {}),
     },
+    ...(props.outstandingDue !== undefined ? { outstanding_due: props.outstandingDue } : {}),
     ...(props.tenders && props.tenders.length > 1 ? { payments: props.tenders } : {}),
     ...(props.pointsEarned && props.pointsEarned > 0 ? {
       loyalty: {
@@ -236,7 +238,7 @@ export function SuccessModal(props: SuccessModalProps) {
   // Split-brand redesign — also carries tax included, the customer's name and
   // the loyalty outcome so the display mirrors the receipt's payment details.
   useEffect(() => {
-    if (!open) return;
+    if (!open || props.outstandingDue !== undefined) return;
     broadcastPaymentComplete({
       total,
       change: changeGiven,
@@ -275,7 +277,7 @@ export function SuccessModal(props: SuccessModalProps) {
       // includes a cash tender even when paymentMethod (first tender only) isn't
       // 'cash'. Previously the call was gated solely on the autoOpenDrawer
       // setting, so every card/QRIS sale opened the drawer.
-      const needsDrawer = props.tenders?.some((t) => t.method === 'cash') ?? (props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0);
+      const needsDrawer = props.outstandingDue === undefined && (props.tenders?.some((t) => t.method === 'cash') ?? (props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0));
       const drawerTask = autoOpenDrawer && needsDrawer
         ? openCashDrawer()
         : Promise.resolve({ success: true } as const);
@@ -304,7 +306,7 @@ export function SuccessModal(props: SuccessModalProps) {
     <FullScreenModal
       open={open}
       onOpenChange={() => { /* must click action */ }}
-      accessibleTitle={props.offline ? 'Payment recorded offline' : 'Payment successful'}
+      accessibleTitle={props.outstandingDue !== undefined ? 'Outstanding saved' : props.offline ? 'Payment recorded offline' : 'Payment successful'}
     >
       <div
         className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300"
@@ -322,13 +324,13 @@ export function SuccessModal(props: SuccessModalProps) {
           </div>
         </div>
         <div className="space-y-1">
-          <h2 className="font-bold text-2xl">{props.offline ? 'Payment recorded' : 'Payment successful!'}</h2>
+          <h2 className="font-bold text-2xl">{props.outstandingDue !== undefined ? 'Outstanding saved' : props.offline ? 'Payment recorded' : 'Payment successful!'}</h2>
           {props.offline ? (
             <p className="text-warning text-sm" data-testid="success-offline-note">
               Offline — will sync when the connection returns · {orderNumber}
             </p>
           ) : (
-            <p className="text-text-secondary text-sm">Order completed · {orderNumber}</p>
+            <p className="text-text-secondary text-sm">{props.outstandingDue !== undefined ? 'Payment due' : 'Order completed'} · {orderNumber}</p>
           )}
           {customerName && <p className="text-text-secondary text-xs">{customerName}</p>}
         </div>

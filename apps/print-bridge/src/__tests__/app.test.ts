@@ -83,6 +83,11 @@ beforeEach(() => {
 });
 
 describe('GET /health', () => {
+  it('reports the identity injected by the packaged server', async () => {
+    const res = await request(createApp({ registry: testRegistry(), config: loadConfig({}), send, kick,
+      releaseSha: 'a'.repeat(40) })).get('/health');
+    expect(body(res).release_sha).toBe('a'.repeat(40));
+  });
   it('200 ok', async () => {
     const res = await request(app()).get('/health');
     expect(res.status).toBe(200);

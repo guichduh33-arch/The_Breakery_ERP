@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByTable.ts
 //
-// Query hook pour `get_sales_by_table_v1` — les ventes par table de salle.
+// Query hook pour `get_sales_by_table_v2` — les ventes par table de salle.
 // Périmètre : dine-in canoniques AVEC table (une dine-in sans table est un
 // cas non autorisé — arbitrage 2026-08-17 — et n'entre pas). La heatmap
 // arrive en format long (table × jour ISO, commandes ET CA) ; l'affichage
@@ -76,7 +76,7 @@ export function useSalesByTable(params: UseSalesByTableParams) {
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_sales_by_table_v1', {
+      const { data, error } = await supabase.rpc('get_sales_by_table_v2', {
         p_start_date: start,
         p_end_date:   end,
       });

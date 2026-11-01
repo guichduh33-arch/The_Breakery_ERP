@@ -1,0 +1,81 @@
+name: Package Shop Production
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Full tested master SHA'
+        required: true
+        type: string
+      approve_release:
+        description: 'V3 production schema and shop release validated'
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+concurrency:
+  group: shop-production-package
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    environment: Production
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ inputs.sha }}
+      RELEASE_APPROVED: ${{ inputs.approve_release }}
+      RELEASE_ENABLED: ${{ vars.RELEASE_ENABLED }}
+      SUPABASE_PROJECT_REF_PRODUCTION: ${{ vars.SUPABASE_PROJECT_REF_PRODUCTION }}
+    steps:
+      - name: Require protected master release
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -ne 'refs/heads/master' -or $env:RELEASE_APPROVED -ne 'true' -or $env:RELEASE_ENABLED -ne 'true' -or $env:RELEASE_SHA -notmatch '^[a-f0-9]{40}$') { throw 'Protected master release required' }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: node --test scripts/release/verify-shop.test.mjs
+      - name: Build production POS and bridge together
+        env:
+          VITE_SUPABASE_URL: https://yjhhhmjgsmyzyymvixot.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_PRODUCTION }}
+        shell: pwsh
+        run: |
+          if (!$env:VITE_SUPABASE_ANON_KEY) { throw 'Production public API key required' }
+          pnpm --filter @breakery/app-pos build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm --filter @breakery/print-bridge build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Require exact SHA CI and pgTAP and assemble portable runtime
+        run: node scripts/release/package-shop.mjs
+      - name: Test PowerShell syntax and re-extracted archive
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd '.release-manifests/shop-package/install-shop.ps1'),[ref]$null,[ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'Invalid installer PowerShell' }
+          Compress-Archive -Path .release-manifests/shop-package/* -DestinationPath .release-manifests/shop-release.zip
+          Expand-Archive -Path .release-manifests/shop-release.zip -DestinationPath .release-manifests/shop-extracted
+          node .release-manifests/shop-extracted/verify-shop.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/release/smoke-shop.mjs .release-manifests/shop-extracted
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          (Get-FileHash .release-manifests/shop-release.zip -Algorithm SHA256).Hash.ToLower() | Set-Content .release-manifests/shop-release.zip.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: shop-release-${{ inputs.sha }}-${{ github.run_attempt }}
+          path: |
+            .release-manifests/shop-release.zip
+            .release-manifests/shop-release.zip.sha256
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90

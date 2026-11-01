@@ -166,7 +166,7 @@ describe('StaffPerformancePage (smoke)', () => {
   });
 
   it('surfaces a role="alert" error element when RPC fails', () => {
-    seed({ isLoading: false, error: new Error('RPC error: get_staff_performance_v1 denied'), data: undefined });
+    seed({ isLoading: false, error: new Error('RPC error: get_staff_performance_v2 denied'), data: undefined });
     renderPage();
     expect(screen.getByRole('alert').textContent).toMatch(/RPC error/i);
     expect(screen.queryByTestId('staff-performance-table')).toBeNull();

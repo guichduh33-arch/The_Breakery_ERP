@@ -9,7 +9,7 @@
 //     l'or est une encre de SENS (nav active, liens, prix retail), jamais une
 //     série. Le graphe passe par `PairedBarsChart`, qui trace la série normée
 //     de `chartColors.ts` et sa comparaison sur le cran pâle de la même rampe.
-//  2. LA JOURNÉE RESTE UNE JOURNÉE. `get_sales_by_hour_v3` prend UNE date : le
+//  2. LA JOURNÉE RESTE UNE JOURNÉE. `get_sales_by_hour_v4` prend UNE date : le
 //     rapport lit le DERNIER jour de la fenêtre unifiée, et le dit dans sa
 //     ligne méta — un rapport horaire agrégé sur 28 jours ne veut rien dire.
 //     La comparaison est donc la veille, pas la fenêtre précédente.

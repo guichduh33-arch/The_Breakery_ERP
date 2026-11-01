@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByOrigin.ts
 //
-// Query hook pour `get_sales_by_origin_v1` — les ventes par origine de
+// Query hook pour `get_sales_by_origin_v2` — les ventes par origine de
 // commande (P comptoir / T1-T2 tablettes / BO back-office, le B2B sort
 // structurellement en BO). L'origine est lue dans le numéro source-codé
 // (2026-08-16) ; les commandes pré-numérotation sont EXCLUES (arbitrage) —
@@ -69,7 +69,7 @@ export function useSalesByOrigin(params: UseSalesByOriginParams) {
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_sales_by_origin_v1', {
+      const { data, error } = await supabase.rpc('get_sales_by_origin_v2', {
         p_start_date: start,
         p_end_date:   end,
       });

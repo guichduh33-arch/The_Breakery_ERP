@@ -102,7 +102,7 @@ export function useRefundOrder() {
       const res = await fetch(`${supabaseUrl}/functions/v1/refund-order`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ order_id: orderId, lines, tenders, reason }),
+        body: JSON.stringify({ order_id: orderId, lines, tenders, reason, source: 'backoffice' }),
       });
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => null);

@@ -18,6 +18,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
+import { rememberClosedShift, printClosedShift } from '../shiftClosePrinting';
+import { toast } from 'sonner';
 
 export interface CloseShiftInput {
   session_id:    string;
@@ -84,7 +86,7 @@ export function useCloseShift() {
       if (input.counted_qris !== undefined)     args.p_counted_qris = input.counted_qris;
       if (input.counted_card !== undefined)     args.p_counted_card = input.counted_card;
       if (input.denominations !== undefined)    args.p_denominations = input.denominations;
-      const { data, error } = await supabase.rpc('close_shift_v10', args);
+      const { data, error } = await supabase.rpc('close_shift_v13', args);
       // Un refus retourné permet au serveur de commiter le compteur PIN.
       if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
         throw new Error('Invalid manager PIN');
@@ -127,6 +129,13 @@ export function useCloseShift() {
         throw new Error(error.message);
       }
       const result = data as unknown as CloseShiftResult;
+      try {
+        rememberClosedShift(input.session_id);
+        const printed = await printClosedShift(input.session_id, qc);
+        if (!printed.success) toast.warning('Shift closed. Report print unconfirmed — check Printing before reprinting.');
+      } catch {
+        toast.warning('Shift closed. Report printing failed — use Print last closing report to retry.');
+      }
 
       // S29 Wave 6.D — fire-and-forget PDF generation. We await it but DO NOT throw
       // on failure; the draft z_reports row already exists in DB, the manager can

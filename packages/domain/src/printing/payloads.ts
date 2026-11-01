@@ -19,6 +19,7 @@ export interface StationTicketItem {
 }
 
 export interface StationTicketPayload {
+  report_lines?: { label: string; amount: number }[];
   duplicate?: boolean;
   kind: PrintKind;
   role: PrinterRole;
@@ -34,6 +35,7 @@ export interface StationTicketPayload {
 }
 
 export interface ReceiptPayload {
+  outstanding_due?: number;
   business: { name: string; address: string; phone?: string; tax_id?: string };
   order: {
     id?: string;

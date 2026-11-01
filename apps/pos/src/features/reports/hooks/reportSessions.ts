@@ -21,6 +21,7 @@ export interface POSReportsSession {
   closedAt: string | null;
   openingCash: number;
   salesTotal: number;
+  receiptsTotal?: number;
   orderCount: number;
   refundsTotal: number;
   voidsTotal: number;
@@ -38,6 +39,7 @@ export interface POSReportsSessionsSummary {
   openCount: number;
   closedCount: number;
   salesTotal: number;
+  receiptsTotal?: number;
   voidsTotal: number;
   cashVarianceTotal: number;
   cashShortCount: number;
@@ -67,6 +69,7 @@ interface RawSession {
   closed_at: string | null;
   opening_cash: number | string;
   sales_total: number | string;
+  receipts_total?: number | string;
   order_count: number | string;
   refunds_total: number | string;
   voids_total: number | string;
@@ -85,6 +88,7 @@ interface SessionsPayload {
     open_count: number | string;
     closed_count: number | string;
     sales_total: number | string;
+  receipts_total?: number | string;
     voids_total: number | string;
     cash_variance_total: number | string;
     cash_short_count: number | string;
@@ -110,7 +114,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
   return useQuery<POSReportsSessions>({
     queryKey: ['pos-reports-sessions', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_sessions_report_v1', {
+      const { data, error } = await supabase.rpc('get_pos_sessions_report_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -124,6 +128,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
           openCount: Number(s.open_count),
           closedCount: Number(s.closed_count),
           salesTotal: Number(s.sales_total),
+          receiptsTotal: Number(s.receipts_total ?? 0),
           voidsTotal: Number(s.voids_total),
           cashVarianceTotal: Number(s.cash_variance_total),
           cashShortCount: Number(s.cash_short_count),
@@ -140,6 +145,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
           closedAt: r.closed_at,
           openingCash: Number(r.opening_cash),
           salesTotal: Number(r.sales_total),
+          receiptsTotal: Number(r.receipts_total ?? 0),
           orderCount: Number(r.order_count),
           refundsTotal: Number(r.refunds_total),
           voidsTotal: Number(r.voids_total),
@@ -158,7 +164,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_order_type_category_mix_v1(p_start_date,
+// Source of truth: server RPC `get_pos_order_type_category_mix_v3(p_start_date,
 // p_end_date)`. Same order scope as the Overview, so the order-type revenue
 // sums back to Overview revenue exactly. Two breakdowns:
 //   * byOrderType — order-level (dine_in / take_out / delivery): revenue TTC,

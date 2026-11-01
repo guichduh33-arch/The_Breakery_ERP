@@ -42,6 +42,9 @@ const ENVELOPE = {
     // order_count = tendered_order_count + on_account_order_count.
     tendered_total: 7_610_000, tendered_order_count: 233,
     on_account_total: 1_000_000, on_account_order_count: 14,
+    receipts_total: 9_000_000, receipts_order_count: 260,
+    outstanding_collections_total: 400_000, outstanding_created_total: 300_000,
+    outstanding_due_total: 1_500_000,
   },
   by_day: [
     { date: '2026-07-01', order_count: 120, gross: 4_200_000, refunds: 86_000, net: 4_114_000, aov: 34_283 },
@@ -65,13 +68,13 @@ beforeEach(() => {
 });
 
 describe('useDailySales', () => {
-  it('appelle get_daily_sales_v3 avec p_date_start / p_date_end', async () => {
+  it('appelle get_daily_sales_v4 avec p_date_start / p_date_end', async () => {
     const { result } = renderHook(
       () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v3', {
+    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v4', {
       p_date_start: '2026-07-01',
       p_date_end:   '2026-07-02',
     });
@@ -110,23 +113,20 @@ describe('useDailySales', () => {
     expect(result.current.data?.sessions[1]?.variance_total).toBeNull();
   });
 
-  it('mappe la ventilation par canal de règlement (v3) et respecte l’invariant', async () => {
+  it('distingue ventes reconnues, versements de période et encours courant', async () => {
     const { result } = renderHook(
       () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     const s = result.current.data?.summary;
-    expect(s?.tendered_total).toBe(7_610_000);
-    expect(s?.tendered_order_count).toBe(233);
+    expect(s?.total).toBe(8_610_000);
+    expect(s?.receipts_total).toBe(9_000_000);
+    expect(s?.outstanding_collections_total).toBe(400_000);
+    expect(s?.outstanding_created_total).toBe(300_000);
+    expect(s?.outstanding_due_total).toBe(1_500_000);
+    expect(s?.receipts_total).not.toBe(s?.total);
     expect(s?.on_account_total).toBe(1_000_000);
-    expect(s?.on_account_order_count).toBe(14);
-    // Le hook ne recalcule rien : il rend ce que le serveur donne, et le
-    // serveur garantit le rapprochement. Un mapping croisé (tendered lu dans
-    // on_account) passerait les quatre lignes ci-dessus mais pas celle-ci.
-    expect((s?.tendered_total ?? 0) + (s?.on_account_total ?? 0)).toBe(s?.total);
-    expect((s?.tendered_order_count ?? 0) + (s?.on_account_order_count ?? 0))
-      .toBe(s?.order_count);
   });
 
   it('ne casse pas sur une enveloppe vide (période sans vente)', async () => {

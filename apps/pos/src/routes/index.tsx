@@ -36,7 +36,7 @@ const POSProductsReportPage = lazy(() => import('@/features/reports/POSProductsR
 const POSMarginReportPage = lazy(() => import('@/features/reports/POSMarginReportPage'));
 const POSActivityReportPage = lazy(() => import('@/features/reports/POSActivityReportPage'));
 const POSSettingsPage = lazy(() => import('@/features/settings/POSSettingsPage'));
-const CustomerDebtsPanel = lazy(() => import('@/features/customers/CustomerDebtsPanel'));
+const CustomerDebtsPanel = lazy(() => import('@/features/outstanding/OutstandingPage'));
 
 function Protected({ children }: { children: ReactNode }) {
   const isAuth = useAuthStore((s) => s.isAuthenticated);

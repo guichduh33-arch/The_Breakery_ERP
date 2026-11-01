@@ -304,7 +304,7 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     // ADR-009 déc. 4 — close_shift bumped to v7 (paid|completed readers).
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v10', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v13', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));

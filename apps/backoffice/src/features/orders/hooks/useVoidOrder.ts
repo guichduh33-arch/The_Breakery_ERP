@@ -44,7 +44,7 @@ export function useVoidOrder() {
       const res = await fetch(`${supabaseUrl}/functions/v1/void-order`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ order_id: orderId, reason }),
+        body: JSON.stringify({ order_id: orderId, reason, source: 'backoffice' }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as VoidResponse;

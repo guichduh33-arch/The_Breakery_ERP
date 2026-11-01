@@ -104,6 +104,13 @@ async function renderAndGetReceipt(props: SuccessModalProps): Promise<ReceiptPay
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('SuccessModal — receipt reflects the real payment method', () => {
+  it('outstanding is printed as unpaid with no money received or drawer opening', async () => {
+    const payload = await renderAndGetReceipt(buildProps({ outstandingDue: 55000, changeGiven: 0, cashReceived: 0, tenders: [] }));
+    expect(payload.outstanding_due).toBe(55000);
+    expect(payload.payment.amount).toBe(0);
+    expect(payload.payment.cash_received).toBeUndefined();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     useReceiptJobs.setState({ jobs: [] });
     vi.stubEnv('VITE_PRINT_MOCK', '1');

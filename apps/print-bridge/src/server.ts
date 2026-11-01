@@ -14,6 +14,10 @@ import { startCloudSync } from './hub/cloudSync.js';
 import { reachablePrinterCodes } from './hub/printerPresence.js';
 
 const config = loadConfig();
+const identityPath = new URL('./release-identity.json', import.meta.url);
+const releaseIdentity: unknown = fs.existsSync(identityPath) ? JSON.parse(fs.readFileSync(identityPath, 'utf8')) : null;
+const releaseSha = typeof releaseIdentity === 'object' && releaseIdentity !== null && 'sha' in releaseIdentity
+  && typeof releaseIdentity.sha === 'string' && /^[a-f0-9]{40}$/.test(releaseIdentity.sha) ? releaseIdentity.sha : undefined;
 if (!config.tlsCert || !config.tlsKey || config.allowedOrigins.length === 0)
   throw new Error('HTTPS certificate, key and allowed origins are required');
 if (config.hubCloudUrl && !config.hubCloudUrl.startsWith('https://'))
@@ -37,6 +41,7 @@ const cloudSync =
       })
     : undefined;
 const app = createApp({
+  ...(releaseSha ? { releaseSha } : {}),
   config,
   send: sendToPrinter,
   kick: kickDrawer,

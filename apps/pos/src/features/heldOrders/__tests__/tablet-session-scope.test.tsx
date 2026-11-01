@@ -25,7 +25,7 @@ beforeEach(() => {
   useShiftStore.setState({ current: { id: 'session-current', opened_at: '', opening_cash: 0 } });
   useCartStore.setState({ pickedUpOrderId: null });
 });
-describe('tablette reprise : portee session', () => {
+describe('tablette reprise : changement de shift', () => {
   it('transmet la session au hold', async () => {
     const { result } = renderHook(() => useHoldFiredOrder(), { wrapper });
     await result.current.mutateAsync('tablet-id');
@@ -36,16 +36,24 @@ describe('tablette reprise : portee session', () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: 'P0002' } });
     const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
     await expect(result.current.mutateAsync('tablet-id')).rejects.toMatchObject({ code: 'P0002' });
-    expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v6', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
+    expect(mocks.rpc).toHaveBeenCalledWith('reopen_held_order_v9', { p_order_id: 'tablet-id', p_session_id: 'session-current' });
     expect(useCartStore.getState().cart).toBe(cart);
   });
-  it('liste les commandes waiter entrantes et les tablettes reprises dans la session', async () => {
-    renderHook(() => useHeldOrdersQuery(), { wrapper });
-    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(status.eq.pending_payment,created_via.in.(pos,tablet)),and(status.eq.draft,created_via.eq.tablet,session_id.eq.session-current)'));
+  it('refuse la reprise d un ancien ticket sans shift ouvert avant tout appel serveur', async () => {
+    const cart = useCartStore.getState().cart;
+    useShiftStore.setState({ current: null });
+    const { result } = renderHook(() => useReopenHeldOrder(), { wrapper });
+    await expect(result.current.mutateAsync('previous-shift-ticket')).rejects.toThrow('Open a shift');
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(useCartStore.getState().cart).toBe(cart);
   });
-  it('affiche les commandes entrantes sans session sans inclure les tablettes deja reprises', async () => {
+  it('liste les commandes envoyees impayees de tous les shifts', async () => {
+    renderHook(() => useHeldOrdersQuery(), { wrapper });
+    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(outstanding_at.is.null,status.eq.pending_payment,created_via.in.(pos,tablet)),and(outstanding_at.is.null,status.eq.draft,created_via.eq.tablet,sent_to_kitchen_at.not.is.null)'));
+  });
+  it('conserve les tickets visibles pendant la fermeture du shift', async () => {
     useShiftStore.setState({ current: null });
     renderHook(() => useHeldOrdersQuery(), { wrapper });
-    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(status.eq.pending_payment,created_via.in.(pos,tablet))'));
+    await waitFor(() => expect(mocks.or).toHaveBeenCalledWith('and(outstanding_at.is.null,status.eq.pending_payment,created_via.in.(pos,tablet)),and(outstanding_at.is.null,status.eq.draft,created_via.eq.tablet,sent_to_kitchen_at.not.is.null)'));
   });
 });

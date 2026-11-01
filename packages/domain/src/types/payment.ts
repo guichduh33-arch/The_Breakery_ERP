@@ -39,6 +39,7 @@ export interface PaymentResultLine {
 }
 
 export interface PaymentResult {
+  outstanding_due?: number;
   ok: true;
   order_id: string;
   order_number: string;

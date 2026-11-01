@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { subscribeFinancialAttempts } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useShiftStore } from '@/stores/shiftStore';
 import { pendingFinancialTargets, readFinancialSlot, runFinancialAttempt, type RefundSnapshot } from './refundRecovery';
 
 export function captureRefundSession() {
@@ -41,7 +42,10 @@ export function useRefundAttempt(target: string, open: boolean) {
     if (!scope || !current()) throw new Error('Sign in with refund permission before continuing.');
     setBusy(true);
     try {
-      return await runFinancialAttempt({ scope, expectedRevision: observed.current.revision, payload, current,
+      const existing = readFinancialSlot(scope);
+      const frozen = existing?.status === 'pending' ? existing.payload
+        : { ...payload, source: 'pos' as const, sessionId: useShiftStore.getState().current?.id ?? null };
+      return await runFinancialAttempt({ scope, expectedRevision: observed.current.revision, payload: frozen, current,
         send: (value, key) => send(value, key, current),
         onRevision: (revision) => { if (current()) observed.current.revision = revision; } });
     } finally { if (current()) { setBusy(false); refresh(); } }

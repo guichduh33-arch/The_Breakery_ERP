@@ -90,10 +90,10 @@ vi.mock('@/lib/supabase.js', () => {
       from: () => build(),
       rpc: (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_sales_by_product_v1') {
+        if (fn === 'get_sales_by_product_v3') {
           return Promise.resolve({ data: salesPayload, error: null });
         }
-        if (fn === 'get_product_sales_lines_v1') {
+        if (fn === 'get_product_sales_lines_v3') {
           return Promise.resolve({ data: LINES_DATA, error: null });
         }
         return Promise.resolve({ data: null, error: null });
@@ -142,10 +142,10 @@ describe('SalesByProductPage smoke', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Sales');
   });
 
-  it('calls get_sales_by_product_v1 with the business-day bounds', async () => {
+  it('calls get_sales_by_product_v3 with the business-day bounds', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_product_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_product_v3');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start_date: string; p_end_date: string }])[1];
       expect(args.p_start_date).toBe('2026-06-01');
@@ -215,7 +215,7 @@ describe('SalesByProductPage smoke', () => {
 
     const drawer = await screen.findByTestId('product-sales-lines-drawer');
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_product_sales_lines_v3');
       expect(call).toBeDefined();
       const args = (call as [string, { p_product_id: string }])[1];
       expect(args.p_product_id).toBe('p2');
