@@ -32,7 +32,7 @@ export function files(root, prefix = '') {
 }
 export function verifyShop(root, expectedSha) {
   const manifest = JSON.parse(readFileSync(regularPath(root, 'release.json'), 'utf8'));
-  if (manifest.version !== 1 || manifest.projectRef !== PRODUCTION_REF || !/^[a-f0-9]{40}$/.test(manifest.sha)
+  if (manifest.version !== 1 || typeof manifest.installable !== 'boolean' || manifest.projectRef !== PRODUCTION_REF || !/^[a-f0-9]{40}$/.test(manifest.sha)
     || (expectedSha && manifest.sha !== expectedSha) || manifest.platform !== 'win32-x64'
     || !Array.isArray(manifest.files) || !manifest.files.length) throw new Error('Wrong shop release identity');
   const actual = files(root).filter((path) => path !== 'release.json');
@@ -55,6 +55,12 @@ export function verifyShop(root, expectedSha) {
   }
   if (refs.size !== 1 || !refs.has(PRODUCTION_REF)) throw new Error('POS bundle target mismatch');
   return manifest;
+}
+export function requireInstallable(manifest) {
+  if (!manifest.installable || !Array.isArray(manifest.proofs)
+    || !['ci.yml', 'pgtap-pr.yml'].every((name) => manifest.proofs.some((p) => p.workflow === name
+      && p.sha === manifest.sha && Number.isSafeInteger(p.runId) && p.runId > 0
+      && Number.isSafeInteger(p.runAttempt) && p.runAttempt > 0))) throw new Error('Verified production release proofs required; validation packages cannot be installed');
 }
 export async function verifyServed(root, origin) {
   const manifest = verifyShop(root);
@@ -84,7 +90,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     if (major !== 22 || minor < 12) throw new Error('Node 22.12 or newer in the Node 22 series required');
     const root = dirname(fileURLToPath(import.meta.url));
     const manifest = verifyShop(root, process.env.RELEASE_SHA);
-    if (process.argv[2] === '--served' && process.argv[3]) await verifyServed(root, process.argv[3]);
+    if (process.argv[2] === '--install' && process.argv.length === 3) requireInstallable(manifest);
+    else if (process.argv[2] === '--served' && process.argv[3]) await verifyServed(root, process.argv[3]);
     else if (process.argv[2] === '--installed' && process.argv[3]) verifyInstalled(root, process.argv[3]);
     else if (process.argv.length > 2) throw new Error('Invalid verification arguments');
     console.log(JSON.stringify({ verified: true, sha: manifest.sha, projectRef: manifest.projectRef }));

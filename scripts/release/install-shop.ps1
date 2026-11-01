@@ -55,7 +55,7 @@ try {
   }
   $lock = [IO.File]::Open((Join-Path $config.releasesDir '.shop-update.lock'),'OpenOrCreate','ReadWrite','None')
   $env:NODE_EXTRA_CA_CERTS = $config.caCertificate
-  & $config.nodePath (Join-Path $root 'verify-shop.mjs')
+  & $config.nodePath (Join-Path $root 'verify-shop.mjs') --install
   if ($LASTEXITCODE -ne 0) { throw 'Package verification failed' }
   $release = Get-Content -LiteralPath (Join-Path $root 'release.json') -Raw | ConvertFrom-Json
   $destination = Join-Path $config.releasesDir $release.sha

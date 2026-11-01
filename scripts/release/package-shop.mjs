@@ -30,7 +30,7 @@ export function copyRuntime(sourcePackage, destination, ancestors = []) {
   }
 }
 
-export async function packageShop(root, output, proof) {
+export async function packageShop(root, output, proof, validationOnly = false) {
   if (proof.projectRef !== PRODUCTION_REF || git(['rev-parse', 'HEAD']) !== proof.sha
     || git(['status', '--porcelain', '--untracked-files=normal'])) throw new Error('A clean verified production SHA is required');
   if (existsSync(output)) throw new Error('Package destination must be new');
@@ -51,7 +51,7 @@ export async function packageShop(root, output, proof) {
   if (files(output).some((path) => /\.(node|dll|exe)$/i.test(path))) throw new Error('Unreviewed native runtime dependency');
   // Cette garde refuse clés privées, env et tokens service-role dans TOUS les fichiers du paquet.
   const entries = inventory(dirname(output), output);
-  const manifest = { version: 1, sha: proof.sha, projectRef: PRODUCTION_REF, platform: 'win32-x64', node: '22.x',
+  const manifest = { version: 1, installable: !validationOnly, sha: proof.sha, projectRef: PRODUCTION_REF, platform: 'win32-x64', node: '22.x',
     lockfileSha256: hash(readFileSync(join(root, 'pnpm-lock.yaml'))), proofs: proof.proofs,
     backendContracts: ['defer_pos_order', 'settle_pos_outstanding', 'close_shift', 'refund-order', 'void-order'],
     files: entries };

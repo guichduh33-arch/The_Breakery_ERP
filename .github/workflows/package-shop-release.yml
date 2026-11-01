@@ -1,5 +1,7 @@
 name: Package Shop Production
 on:
+  pull_request:
+    branches: [master]
   workflow_dispatch:
     inputs:
       sha:
@@ -19,7 +21,41 @@ concurrency:
   group: shop-production-package
   cancel-in-progress: false
 jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v6
+      - run: pnpm install --frozen-lockfile
+      - run: node --test scripts/release/verify-shop.test.mjs
+      - name: Build a non-installable validation bundle without production credentials
+        env:
+          VITE_SUPABASE_URL: https://yjhhhmjgsmyzyymvixot.supabase.co
+          VITE_SUPABASE_ANON_KEY: validation-only-no-api-access
+        shell: pwsh
+        run: |
+          pnpm --filter @breakery/app-pos build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm --filter @breakery/print-bridge build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/release/validate-shop.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd '.release-manifests/shop-validation/install-shop.ps1'),[ref]$null,[ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'Invalid installer PowerShell' }
+          Compress-Archive -Path .release-manifests/shop-validation/* -DestinationPath .release-manifests/shop-validation.zip
+          Expand-Archive -Path .release-manifests/shop-validation.zip -DestinationPath .release-manifests/shop-validation-extracted
+          node scripts/release/smoke-shop.mjs .release-manifests/shop-validation-extracted
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   package:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
     runs-on: windows-latest
     timeout-minutes: 30
     environment: Production
