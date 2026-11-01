@@ -29,6 +29,7 @@ export interface OutstandingOrdersPanelProps {
   search: string; onSearch: (value: string) => void;
   page: number; onPage: (page: number) => void;
   canSettle: boolean; disabledReason?: string; sessionId: string | null; storageKey: string;
+  isCurrent: () => boolean;
   onSettle: (request: OutstandingPaymentRequest) => Promise<void>;
 }
 
@@ -63,6 +64,7 @@ export function OutstandingOrdersPanel(p: OutstandingOrdersPanelProps) {
       if (!navigator.locks?.request) throw new Error('Secure payment locking unavailable — use a supported terminal');
       await navigator.locks.request(p.storageKey, { mode: 'exclusive', ifAvailable: true }, async (lock) => {
         if (!lock) throw new Error('A payment is being confirmed in another tab');
+        if (!p.isCurrent()) throw new Error('Your session changed. Reopen outstanding tickets before continuing.');
         const saved = readSaved(p.storageKey);
         if (saved && saved.idempotencyKey !== request.idempotencyKey) {
           setPending(saved); throw new Error('Resume the saved payment before recording another receipt');
@@ -79,10 +81,13 @@ export function OutstandingOrdersPanel(p: OutstandingOrdersPanelProps) {
         setPending(active);
         try {
           await p.onSettle(active);
+          if (!p.isCurrent()) throw new Error('Your session changed. Resume the saved payment to confirm its result.');
           clear(); setSelected(null); setAmount('');
         } catch (e) {
           const code = (e as { code?: string }).code;
-          if (code && ['23514', 'P0001', 'P0003'].includes(code)) clear();
+          // Un refus d'accès au rejeu ne prouve pas que le premier envoi a échoué.
+          if (p.isCurrent() && code && ['23514', 'P0001', 'P0003'].includes(code)
+            && !(saved && code === 'P0003')) clear();
           throw e;
         }
       });

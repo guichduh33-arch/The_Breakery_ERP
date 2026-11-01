@@ -6,7 +6,7 @@ const props: OutstandingOrdersPanelProps = {
   rows: [{ order_id: 'order-1', order_number: 'P-001', customer_name: 'Customer A', created_at: '2026-11-01T00:00:00Z',
     total: 100000, paid: 30000, due: 70000, total_count: 1 }],
   loading: false, search: '', onSearch: vi.fn(), page: 0, onPage: vi.fn(),
-  canSettle: true, sessionId: 'receiving-shift', storageKey: 'outstanding-test', onSettle: vi.fn(),
+  canSettle: true, sessionId: 'receiving-shift', storageKey: 'outstanding-test', onSettle: vi.fn(), isCurrent: () => true,
 };
 beforeEach(() => {
   localStorage.clear();
@@ -20,6 +20,26 @@ beforeEach(() => {
   } });
 });
 describe('outstanding settlement recovery', () => {
+  it('keeps an unconfirmed receipt when its replay is denied before ledger lookup', async () => {
+    const request = { orderId: 'order-1', orderNumber: 'P-001', method: 'cash', amount: 10000,
+      idempotencyKey: 'original-key', sessionId: 'receiving-shift' };
+    localStorage.setItem(props.storageKey, JSON.stringify(request));
+    render(<OutstandingOrdersPanel {...props} onSettle={() => Promise.reject(Object.assign(new Error('Permission denied'), { code: 'P0003' }))} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Resume saved payment' }));
+    await screen.findByText('Permission denied');
+    expect(JSON.parse(localStorage.getItem(props.storageKey)!)).toEqual(request);
+  });
+  it('retains the durable request if the operator changes while confirmation is in flight', async () => {
+    let current = true;
+    let finish!: () => void;
+    render(<OutstandingOrdersPanel {...props} isCurrent={() => current} onSettle={() => new Promise<void>((resolve) => { finish = resolve; })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settle P-001' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Record payment' }));
+    await waitFor(() => expect(finish).toBeDefined());
+    current = false; finish();
+    await screen.findByText('Your session changed. Resume the saved payment to confirm its result.');
+    expect(localStorage.getItem(props.storageKey)).not.toBeNull();
+  });
   it('saves before sending and resumes the same key after a lost response and reload', async () => {
     const requests: OutstandingPaymentRequest[] = [];
     const first = render(<OutstandingOrdersPanel {...props} onSettle={(request) => {

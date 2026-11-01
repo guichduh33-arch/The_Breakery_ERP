@@ -12,10 +12,15 @@ export default function OutstandingPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const actor = useAuthStore((s) => s.user?.id);
+  const token = useAuthStore((s) => s.sessionToken);
   const canPay = useAuthStore((s) => s.hasPermission('payments.process'));
   const sessionId = useShiftStore((s) => s.current?.id ?? null);
   const offline = useOfflineMode();
   const qc = useQueryClient();
+  const isCurrent = () => {
+    const state = useAuthStore.getState();
+    return !!actor && !!token && state.user?.id === actor && state.sessionToken === token && !state.isLocked && state.isAuthenticated;
+  };
   const list = useQuery({ queryKey: ['outstanding-orders', actor, search, page],
     enabled: !!actor && !offline, refetchInterval: 15_000,
     queryFn: async () => {
@@ -25,6 +30,7 @@ export default function OutstandingPage() {
     },
   });
   async function settle(request: OutstandingPaymentRequest) {
+    if (!isCurrent()) throw new Error('Your session changed. Reopen outstanding tickets.');
     assertTerminalPaymentAllowed();
     if (offline) throw new Error('Reconnect before collecting an outstanding payment');
     if (!request.sessionId) throw new Error('Open a shift before collecting payment');
@@ -33,6 +39,7 @@ export default function OutstandingPage() {
       p_idempotency_key: request.idempotencyKey, p_session_id: request.sessionId,
       ...(request.expectedPaid !== undefined ? { p_expected_paid: request.expectedPaid } : {}),
     });
+    if (!isCurrent()) throw new Error('Your session changed. Resume the saved payment to confirm its result.');
     if (error) throw Object.assign(new Error(error.message), { code: error.code });
     await qc.invalidateQueries({ queryKey: ['outstanding-orders'] });
     void qc.invalidateQueries({ queryKey: ['shift-close-summary'] });
@@ -43,7 +50,7 @@ export default function OutstandingPage() {
     <OutstandingOrdersPanel key={actor} rows={list.data ?? []} loading={list.isLoading}
       {...(list.error ? { loadError: list.error.message } : {})}
       search={search} onSearch={(value) => { setSearch(value); setPage(0); }} page={page} onPage={setPage}
-      canSettle={!!actor && canPay && !!sessionId && !offline} sessionId={sessionId}
+      canSettle={!!actor && canPay && !!sessionId && !offline} sessionId={sessionId} isCurrent={isCurrent}
       disabledReason={offline ? 'Reconnect before collecting payment.' : !sessionId ? 'Open a shift to collect payment.' : 'Payment permission is required.'}
       storageKey={`breakery.outstanding-pos.v1:${actor}`} onSettle={settle} />
   </main>;
