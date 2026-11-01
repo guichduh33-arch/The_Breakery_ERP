@@ -15,6 +15,7 @@ import { PosEventOutboxMount } from './features/audit/PosEventOutboxMount';
 import { HubPresenceMount } from './features/lan/HubPresenceMount';
 import { SettingsRealtimeMount } from './components/SettingsRealtimeMount';
 import { CatalogRealtimeMount } from './components/CatalogRealtimeMount';
+import { DeviceSyncMount } from './features/sync/DeviceSyncMount';
 import { useAuthStore, sessionRevocations } from './stores/authStore';
 import { startCloudSession } from './features/auth/cloudSession';
 import { OfflineSaleContext } from './features/lan/OfflineSaleContext';
@@ -118,6 +119,7 @@ export default function App() {
         {/* ADR-011 déc. 3 — push < 2 s des changements catalogue BO
             (products/categories) vers comptoir + tablette. */}
         <CatalogRealtimeMount />
+        <DeviceSyncMount />
         {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
         <IdleWarningToast />
         <SessionRevocationNotice />
