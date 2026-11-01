@@ -1,5 +1,5 @@
 -- supabase/tests/stock_position.test.sql
--- Rapport « Position de stock à date » — pgTAP pour get_stock_position_v1
+-- Rapport « Position de stock à date » — pgTAP pour get_stock_position_v2
 -- (12 assertions).
 --
 -- CE QUE CETTE SUITE PROTÈGE EN PRIORITÉ : la reconstruction est ARRIÈRE —
@@ -30,6 +30,7 @@
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/released_report_days.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -69,19 +70,20 @@ BEGIN
     (f.f1, 'sale',      -5, 'kg', NULL,            'orders',       gen_random_uuid(), now() - interval '1 day',  f.uid);
 END $$;
 
+SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 -- T1 happy path : 7 clés
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   v_ok := (v_r ? 'as_of') AND (v_r ? 'timezone') AND (v_r ? 'generated_at')
       AND (v_r ? 'valuation') AND (v_r ? 'summary')
       AND (v_r ? 'by_category') AND (v_r ? 'products');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_stock_position_v1 MANAGER happy path returns 7-key JSONB');
+  'T1: get_stock_position_v2 MANAGER happy path returns 7-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -89,27 +91,27 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_stock_position_v1();
+    PERFORM get_stock_position_v2();
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_stock_position_v1 CASHIER raises 42501');
+  'T2: get_stock_position_v2 CASHIER raises 42501');
 
 -- T3 as_of futur → P0001
 DO $$
 DECLARE v_caught BOOLEAN := false;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_stock_position_v1((now() AT TIME ZONE 'Asia/Makassar')::date + 1);
+    PERFORM get_stock_position_v2((now() AT TIME ZONE 'Asia/Makassar')::date + 1);
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t3')::boolean,
-  'T3: a future as_of raises P0001');
+  'T3: Owner: a future as_of raises P0001');
 
 -- T4 reconstruction arrière à J-3
 DO $$
@@ -117,7 +119,7 @@ DECLARE v_r JSONB; v_p JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _sp_fix;
-  v_r := get_stock_position_v1((now() AT TIME ZONE 'Asia/Makassar')::date - 3);
+  v_r := get_stock_position_v2((now() AT TIME ZONE 'Asia/Makassar')::date - 3);
   SELECT p INTO v_p FROM jsonb_array_elements(v_r->'products') p
    WHERE (p->>'product_id')::uuid = f.f1;
   v_ok := ((v_p->>'qty')::numeric = 85);
@@ -132,7 +134,7 @@ DECLARE v_r JSONB; v_p JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _sp_fix;
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   SELECT p INTO v_p FROM jsonb_array_elements(v_r->'products') p
    WHERE (p->>'product_id')::uuid = f.f1;
   v_ok := ((v_p->>'qty')::numeric = 100);
@@ -147,7 +149,7 @@ DECLARE v_r JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _sp_fix;
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   v_ok := NOT EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_r->'products') p
     WHERE (p->>'product_id')::uuid IN (f.f2, f.f3, f.f4));
@@ -162,7 +164,7 @@ DECLARE v_r JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _sp_fix;
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   SELECT bool_and(CASE (p->>'product_id')::uuid
            WHEN f.f5 THEN p->>'status' = 'below_threshold'
            WHEN f.f6 THEN p->>'status' = 'negative'
@@ -180,7 +182,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   SELECT SUM((p->>'value')::numeric) = (v_r->'summary'->>'total_value')::numeric
     INTO v_ok FROM jsonb_array_elements(v_r->'products') p;
   PERFORM set_config('breakery.t8', COALESCE(v_ok, false)::text, false);
@@ -193,7 +195,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   SELECT (SUM((c->>'value')::numeric) = (v_r->'summary'->>'total_value')::numeric)
      AND (SUM((c->>'refs')::int) = (v_r->'summary'->>'refs_tracked')::int)
     INTO v_ok FROM jsonb_array_elements(v_r->'by_category') c;
@@ -207,7 +209,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   v_ok := (v_r->>'valuation' = 'current_wac')
       AND ((v_r->>'as_of')::date = (now() AT TIME ZONE (v_r->>'timezone'))::date);
   PERFORM set_config('breakery.t10', COALESCE(v_ok, false)::text, false);
@@ -220,7 +222,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_stock_position_v1();
+  v_r := get_stock_position_v2();
   v_ok := ((v_r->'summary'->>'refs_below_threshold')::int >= 1)
       AND ((v_r->'summary'->>'refs_negative')::int >= 1)
       AND ((v_r->'summary'->>'refs_at_zero')::int >= 1);
@@ -235,7 +237,7 @@ DECLARE v_r JSONB; v_p JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _sp_fix;
-  v_r := get_stock_position_v1((now() AT TIME ZONE 'Asia/Makassar')::date - 3);
+  v_r := get_stock_position_v2((now() AT TIME ZONE 'Asia/Makassar')::date - 3);
   SELECT p INTO v_p FROM jsonb_array_elements(v_r->'products') p
    WHERE (p->>'product_id')::uuid = f.f1;
   v_ok := ((v_p->>'value')::numeric = 170000)

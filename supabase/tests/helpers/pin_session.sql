@@ -1,6 +1,6 @@
 -- Fixture PIN réservée au propriétaire de la transaction, jamais à un client.
 -- À inclure après BEGIN ; le ROLLBACK supprime sessions et fonction temporaire.
-CREATE FUNCTION pg_temp.authenticate_pin(p_auth_user_id uuid)
+CREATE OR REPLACE FUNCTION pg_temp.authenticate_pin(p_auth_user_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY INVOKER
 SET search_path = pg_catalog, public
 AS $$

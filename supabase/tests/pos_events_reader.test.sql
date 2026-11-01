@@ -1,4 +1,4 @@
--- pgTAP — S72 Lot 4 : get_pos_events_v1 (audit-journal reader).
+-- pgTAP — S72 Lot 4 : get_pos_events_v2 (audit-journal reader).
 -- Run via MCP execute_sql inside a BEGIN … ROLLBACK envelope (Docker retired).
 -- Verifies: auth gate, date guards, invalid cursor, page shape, type/order
 -- filters, keyset pagination (no overlap, next_cursor lifecycle), page-1
@@ -9,7 +9,7 @@ SELECT plan(13);
 
 -- Gate: anon (no auth.uid()) is denied.
 SELECT throws_ok(
-  $$ SELECT get_pos_events_v1('2026-07-11','2026-07-11') $$, '42501', NULL,
+  $$ SELECT get_pos_events_v2('2026-07-11','2026-07-11') $$, '42501', NULL,
   'anon / no-auth caller is denied');
 
 -- Impersonate the owner (ADMIN — has reports.audit.read).
@@ -18,13 +18,13 @@ SELECT set_config('request.jwt.claims',
 
 -- Guards.
 SELECT throws_ok(
-  $$ SELECT get_pos_events_v1(NULL,'2026-07-11') $$, 'P0001', NULL,
+  $$ SELECT get_pos_events_v2(NULL,'2026-07-11') $$, 'P0001', NULL,
   'null start date rejected');
 SELECT throws_ok(
-  $$ SELECT get_pos_events_v1('2026-07-12','2026-07-11') $$, 'P0001', NULL,
+  $$ SELECT get_pos_events_v2('2026-07-12','2026-07-11') $$, 'P0001', NULL,
   'inverted date range rejected');
 SELECT throws_ok(
-  $$ SELECT get_pos_events_v1('2026-07-11','2026-07-11', NULL,NULL,NULL,NULL, 10, 'garbage-cursor') $$,
+  $$ SELECT get_pos_events_v2('2026-07-11','2026-07-11', NULL,NULL,NULL,NULL, 10, 'garbage-cursor') $$,
   'P0001', NULL, 'malformed cursor rejected');
 
 -- Seed 3 events on one device (WITA morning of 2026-07-11).
@@ -36,35 +36,35 @@ SELECT record_pos_events_v1('tap-device-lot4-01', $J$[
 
 -- Full page: 3 events newest-first, true total, no next cursor.
 SELECT is(
-  (get_pos_events_v1('2026-07-11','2026-07-11')->>'total_count')::int >= 3, true,
+  (get_pos_events_v2('2026-07-11','2026-07-11')->>'total_count')::int >= 3, true,
   'page 1 reports the true total (>= 3 seeded)');
 SELECT is(
-  (get_pos_events_v1('2026-07-11','2026-07-11',
+  (get_pos_events_v2('2026-07-11','2026-07-11',
      ARRAY['order_opened','item_added','cash_drawer_opened'], NULL,NULL,NULL)
    ->'events'->0->>'event_type'),
   'cash_drawer_opened', 'events are newest-first');
 
 -- Type filter.
 SELECT is(
-  jsonb_array_length(get_pos_events_v1('2026-07-11','2026-07-11',
+  jsonb_array_length(get_pos_events_v2('2026-07-11','2026-07-11',
      ARRAY['cash_drawer_opened'], NULL,NULL,NULL)->'events'),
   1, 'type filter narrows to the drawer event');
 
 -- Order filter.
 SELECT is(
-  jsonb_array_length(get_pos_events_v1('2026-07-11','2026-07-11',
+  jsonb_array_length(get_pos_events_v2('2026-07-11','2026-07-11',
      NULL, NULL, NULL, 'bbbb2222-0000-0000-0000-000000000001')->'events'),
   2, 'order filter returns the 2 ticket events');
 
 -- Keyset pagination: limit 2 (of >= 3) → next_cursor; page 2 has no overlap.
 CREATE TEMP TABLE _p1 ON COMMIT DROP AS
-  SELECT get_pos_events_v1('2026-07-11','2026-07-11',
+  SELECT get_pos_events_v2('2026-07-11','2026-07-11',
     ARRAY['order_opened','item_added','cash_drawer_opened'], NULL,NULL,NULL, 2, NULL) AS r;
 SELECT is(jsonb_array_length((SELECT r FROM _p1)->'events'), 2, 'limit caps page 1 at 2 events');
 SELECT isnt((SELECT r FROM _p1)->>'next_cursor', NULL, 'page 1 exposes a next_cursor');
 
 CREATE TEMP TABLE _p2 ON COMMIT DROP AS
-  SELECT get_pos_events_v1('2026-07-11','2026-07-11',
+  SELECT get_pos_events_v2('2026-07-11','2026-07-11',
     ARRAY['order_opened','item_added','cash_drawer_opened'], NULL,NULL,NULL, 2,
     (SELECT r->>'next_cursor' FROM _p1)) AS r;
 SELECT is(

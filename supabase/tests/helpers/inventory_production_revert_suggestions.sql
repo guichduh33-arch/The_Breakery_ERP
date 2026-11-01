@@ -8,6 +8,7 @@ BEGIN
   IF v_mgr IS NULL THEN
     RAISE EXCEPTION 'T_PROD_13: missing required actor fixture';
   END IF;
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   BEGIN
@@ -53,10 +54,11 @@ BEGIN
   -- yields exactly 1 production_in + 1 production_out = 2 movements to reverse.
   UPDATE recipes SET is_active = false, deleted_at = now() WHERE product_id = v_bag AND is_active;
 
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
-  v_result := record_production_v7(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+  v_result := record_production_v8(v_bag, 50, v_section, NULL, 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
   PERFORM set_config('role','postgres',true);
   PERFORM pg_temp.authenticate_pin(v_adm);
@@ -79,7 +81,7 @@ END $$;
 SELECT ok(current_setting('breakery.t_prod_14_pass') = 'yes',
   'T_PROD_14: ADMIN reverts → stock restored + balanced ledger');
 -- ---------------------------------------------------------------------------
--- T_PROD_15 — get_production_suggestions_v1 returns row for product with
+-- T_PROD_15 — get_production_suggestions_v2 returns row for product with
 -- recent sales + active recipe + low stock
 -- ---------------------------------------------------------------------------
 DO $$
@@ -100,6 +102,7 @@ BEGIN
   -- Ensure: low stock + active recipe + recent sales injected via direct INSERT.
   UPDATE products SET current_stock=2 WHERE id=v_bag;
   UPDATE products SET current_stock=100 WHERE id=v_flo;
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
@@ -117,13 +120,14 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total, created_at)
   VALUES (v_test_order, v_bag, 'Baguette', 5000, 10, 50000, now() - INTERVAL '1 day');
 
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
-  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v1(7, 3, 7) WHERE product_id = v_bag;
+  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v2(7, 3, 7) WHERE product_id = v_bag;
   PERFORM set_config('role','postgres',true);
 
   PERFORM set_config('breakery.t_prod_15_pass',
     CASE WHEN v_count = 1 THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_15_pass') = 'yes',
-  'T_PROD_15: get_production_suggestions_v1 returns row for low-stock product');
+  'T_PROD_15: get_production_suggestions_v2 returns row for low-stock product');

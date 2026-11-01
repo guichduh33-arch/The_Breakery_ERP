@@ -43,7 +43,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.waiter_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.waiter_claims'),true);
 
-SELECT set_config('wa.order',create_tablet_order_v10(
+SELECT set_config('wa.order',create_tablet_order_v11(
   current_setting('wa.key')::uuid,current_setting('wa.waiter')::uuid,'AUDIT-7','dine_in',
   jsonb_build_array(jsonb_build_object('product_id',current_setting('wa.product'),'quantity',1,'unit_price',1,'modifiers','[]'::jsonb)),
   'Integration note')::text,true);
@@ -51,7 +51,7 @@ SELECT set_config('wa.order',create_tablet_order_v10(
 SELECT is((SELECT waiter_id FROM orders WHERE id=current_setting('wa.order')::uuid),current_setting('wa.waiter')::uuid,'serveur réel attribué à la commande');
 SELECT is((SELECT notes FROM orders WHERE id=current_setting('wa.order')::uuid),'Integration note','note cuisine persistée');
 SELECT ok((SELECT sent_to_kitchen_at IS NOT NULL FROM orders WHERE id=current_setting('wa.order')::uuid),'commande envoyée en cuisine dès la création');
-SELECT is(create_tablet_order_v10(current_setting('wa.key')::uuid,current_setting('wa.waiter')::uuid,'AUDIT-7','dine_in',
+SELECT is(create_tablet_order_v11(current_setting('wa.key')::uuid,current_setting('wa.waiter')::uuid,'AUDIT-7','dine_in',
   jsonb_build_array(jsonb_build_object('product_id',current_setting('wa.product'),'quantity',1,'unit_price',1,'modifiers','[]'::jsonb))),
   current_setting('wa.order')::uuid,'réponse perdue : même clé, même commande');
 
@@ -63,21 +63,21 @@ SELECT throws_ok(format('SELECT pickup_tablet_order(%L::uuid,%L::uuid)',current_
 
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.waiter_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.waiter_claims'),true);
-SELECT lives_ok(format($q$SELECT create_tablet_order_v10(gen_random_uuid(),%L::uuid,'AUDIT-7','dine_in',
+SELECT lives_ok(format($q$SELECT create_tablet_order_v11(gen_random_uuid(),%L::uuid,'AUDIT-7','dine_in',
   jsonb_build_array(jsonb_build_object('product_id',%L,'quantity',1,'unit_price',1,'modifiers','[]'::jsonb)),NULL,%L::uuid)$q$,
   current_setting('wa.waiter'),current_setting('wa.product'),current_setting('wa.order')),'ajout après reprise accepté');
 
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.cashier_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.cashier_claims'),true);
 SELECT is((SELECT count(*)::int FROM order_items WHERE order_id=current_setting('wa.order')::uuid),2,'caisse voit les deux tournées');
-SELECT lives_ok(format($q$SELECT pay_existing_order_v22(p_order_id:=%L::uuid,p_idempotency_key:=gen_random_uuid(),
+SELECT lives_ok(format($q$SELECT pay_existing_order_v24(p_order_id:=%L::uuid,p_idempotency_key:=gen_random_uuid(),
  p_payments:=jsonb_build_array(jsonb_build_object('method','cash','amount',(SELECT sum(line_total) FROM order_items WHERE order_id=%L::uuid),
  'cash_received',(SELECT sum(line_total) FROM order_items WHERE order_id=%L::uuid))))$q$,
  current_setting('wa.order'),current_setting('wa.order'),current_setting('wa.order')),'paiement autorisé en caisse');
 
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.bo_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.bo_claims'),true);
-SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v4(
+SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v5(
   (current_date-1)::text,(current_date+1)::text,'{}'::jsonb,200)->'lines') row
   WHERE row->>'id'=current_setting('wa.order')),'commande accessible par la RPC de liste du back-office');
 SELECT ok((SELECT o.status='paid' AND o.total=(SELECT sum(amount) FROM order_payments WHERE order_id=o.id)

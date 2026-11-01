@@ -47,7 +47,7 @@ BEGIN
   SELECT current_stock INTO v_stock_before FROM products      WHERE id=v_prod;
   SELECT count(*)      INTO v_dm_before    FROM display_movements WHERE product_id=v_prod;
 
-  v_res := create_b2b_order_v8(v_cust,
+  v_res := create_b2b_order_v9(v_cust,
              jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 2)),
              NULL, NULL, gen_random_uuid());
   v_order := (v_res->>'order_id')::uuid;

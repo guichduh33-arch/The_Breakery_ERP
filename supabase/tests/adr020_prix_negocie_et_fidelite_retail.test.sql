@@ -161,12 +161,16 @@ DECLARE
   v_total   NUMERIC;
   v_env     JSONB;
 BEGIN
-  INSERT INTO pos_sessions (opened_by, opening_cash, status)
-    SELECT up.id, 0, 'closed' FROM user_profiles up
-     WHERE up.auth_user_id = current_setting('adr020d.actor')::uuid
-    RETURNING id INTO v_session;
+  SELECT ps.id INTO v_session FROM pos_sessions ps JOIN user_profiles up ON up.id=ps.opened_by
+   WHERE up.auth_user_id=current_setting('adr020d.actor')::uuid AND ps.status='open';
+  IF v_session IS NULL THEN
+    INSERT INTO pos_sessions (opened_by, opening_cash, status)
+      SELECT up.id,0,'open' FROM user_profiles up
+       WHERE up.auth_user_id=current_setting('adr020d.actor')::uuid
+      RETURNING id INTO v_session;
+  END IF;
 
-  v_env := fire_counter_order_v11(
+  v_env := fire_counter_order_v12(
     p_client_uuid  := gen_random_uuid(),
     p_session_id   := v_session,
     p_items        := jsonb_build_array(jsonb_build_object(
@@ -182,11 +186,11 @@ BEGIN
   SELECT COALESCE(SUM(line_total), 0) INTO v_items FROM order_items WHERE order_id = v_order;
   SELECT s.total INTO v_total FROM _pb1_split_v1(v_items) s;
 
-  PERFORM pay_existing_order_v22(
+  PERFORM pay_existing_order_v24(
     p_order_id   := v_order,
     p_payment    := jsonb_build_object('method', 'cash', 'amount', v_total,
                                        'cash_received', v_total, 'change_given', 0),
-    p_customer_id := p_customer);
+    p_customer_id := p_customer, p_idempotency_key := gen_random_uuid());
 
   PERFORM set_config('adr020d.order_' || p_tag, v_order::text, true);
 END $$;
