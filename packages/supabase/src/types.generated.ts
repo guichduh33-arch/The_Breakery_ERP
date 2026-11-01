@@ -10282,6 +10282,10 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
+      get_product_dashboard_v6: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
       get_product_performance_v3: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
