@@ -1,5 +1,5 @@
 -- supabase/tests/inventory_movements.test.sql
--- Session 13 / Phase 2.D — pgTAP for get_stock_movements_v5 + aggregates.
+-- Session 13 / Phase 2.D — pgTAP for get_stock_movements_v3 + aggregates.
 -- Run via execute_sql with BEGIN ... ROLLBACK envelope.
 --
 -- T_MOV_01..07 :
@@ -18,24 +18,24 @@ SELECT plan(9);
 
 -- T_MOV_01
 SELECT is(
-  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_stock_movements_v5'),
+  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_stock_movements_v3'),
   1,
-  'T_MOV_01: get_stock_movements_v5 exists'
+  'T_MOV_01: get_stock_movements_v3 exists'
 );
 
 -- T_MOV_02
 SELECT throws_ok(
-  $$SELECT * FROM get_stock_movements_v5()$$,
+  $$SELECT * FROM get_stock_movements_v3()$$,
   'P0003',
   NULL,
-  'T_MOV_02: get_stock_movements_v5 forbids anonymous'
+  'T_MOV_02: get_stock_movements_v3 forbids anonymous'
 );
 
 -- T_MOV_03 — return signature
 SELECT is(
   (SELECT COUNT(*)::INT FROM information_schema.parameters
     WHERE specific_schema='public'
-      AND specific_name LIKE 'get_stock_movements_v5%'
+      AND specific_name LIKE 'get_stock_movements_v3%'
       AND parameter_mode='OUT'),
   22,
   'T_MOV_03: 22 OUT columns'
@@ -43,8 +43,8 @@ SELECT is(
 
 -- T_MOV_04 — prosrc contains the 200 cap (sanity check on hard cap)
 SELECT ok(
-  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v5') LIKE '%200%',
-  'T_MOV_04: get_stock_movements_v5 hard-caps limit at 200'
+  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v3') LIKE '%200%',
+  'T_MOV_04: get_stock_movements_v3 hard-caps limit at 200'
 );
 
 -- T_MOV_05
@@ -78,7 +78,7 @@ SELECT ok(
 
 -- T_MOV_07 — ORDER BY DESC pattern
 SELECT ok(
-  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v5')
+  (SELECT prosrc FROM pg_proc WHERE proname='get_stock_movements_v3')
     LIKE '%ORDER BY sm.created_at DESC, sm.id DESC%',
   'T_MOV_07: cursor-paginated ORDER BY (created_at DESC, id DESC)'
 );

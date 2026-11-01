@@ -45,6 +45,8 @@
 -- Run via mcp execute_sql wrapped in BEGIN/ROLLBACK — self-cleaning.
 
 BEGIN;
+\ir helpers/released_report_days.sql
+SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -61,7 +63,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_wastage_report_v3('2026-01-01', '2026-12-31');
+  v_result := get_wastage_report_v3('2026-01-01', CURRENT_DATE::text);
   v_ok := (v_result ? 'period')
       AND (v_result ? 'summary')
       AND (v_result ? 'by_product')
@@ -82,7 +84,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_wastage_report_v3('2026-01-01', '2026-12-31');
+    PERFORM get_wastage_report_v3('2026-01-01', CURRENT_DATE::text);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -167,7 +169,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_payments_by_method_v3('2026-01-01', '2026-12-31');
+  v_result := get_payments_by_method_v3('2026-01-01', CURRENT_DATE::text);
   v_ok := (v_result ? 'period')
       AND (v_result ? 'summary')
       AND (v_result ? 'by_method')
@@ -187,7 +189,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_payments_by_method_v3('2026-01-01', '2026-12-31');
+    PERFORM get_payments_by_method_v3('2026-01-01', CURRENT_DATE::text);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -207,7 +209,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_payments_by_method_v3('2026-01-01', '2026-12-31');
+  v_result := get_payments_by_method_v3('2026-01-01', CURRENT_DATE::text);
   v_by_day := v_result->'by_day';
   -- If empty array, shape test passes vacuously
   v_ok := (jsonb_array_length(v_by_day) = 0)
@@ -315,7 +317,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   v_result := get_stock_movements_v5(
-    '2026-01-01'::text, '2026-12-31'::text,
+    '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, NULL::text, 50::int, NULL::text
   );
   v_ok := (v_result ? 'lines')
@@ -338,7 +340,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   v_result := get_stock_movements_v5(
-    '2026-01-01'::text, '2026-12-31'::text,
+    '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, 'waste'::text, 50::int, NULL::text
   );
   FOR v_line IN SELECT * FROM jsonb_array_elements(v_result->'lines') LOOP
@@ -363,7 +365,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   v_result := get_stock_movements_v5(
-    '2026-01-01'::text, '2026-12-31'::text,
+    '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, NULL::text, 999::int, NULL::text
   );
   v_count := jsonb_array_length(v_result->'lines');
@@ -387,7 +389,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_perishable_turnover_v1('2026-01-01', '2026-12-31');
+  v_result := get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
   v_ok := (v_result ? 'period')
       AND (v_result ? 'by_product')
       AND jsonb_typeof(v_result->'by_product') = 'array';
@@ -408,7 +410,7 @@ DECLARE
   v_all_in_range BOOLEAN := true;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_perishable_turnover_v1('2026-01-01', '2026-12-31');
+  v_result := get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
   FOR v_row IN SELECT * FROM jsonb_array_elements(v_result->'by_product') LOOP
     v_score := (v_row->>'velocity_score')::int;
     IF v_score IS NULL OR v_score < 1 OR v_score > 5 THEN
@@ -430,7 +432,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_perishable_turnover_v1('2026-01-01', '2026-12-31');
+    PERFORM get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;

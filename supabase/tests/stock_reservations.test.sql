@@ -87,7 +87,7 @@ SELECT throws_ok(
       'bbbbbbbb-0000-0000-0000-000000000001'::UUID, 999, 'cart',
       now() + interval '10 minutes') $$,
   'P0002',
-  'insufficient_available_stock',
+  'stock_operation_rejected',
   'T_RSV_05: insufficient available stock raises insufficient_available_stock');
 
 -- ---------------------------------------------------------------------------

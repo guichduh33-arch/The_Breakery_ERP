@@ -2,6 +2,7 @@
 -- pgTAP — 4 RPCs gestes vitrine + isolation BO + REVOKE pairs.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). Valide les RPC déjà appliquées sur le cloud.
 BEGIN;
+\ir helpers/approved_stock_declaration.sql
 SELECT plan(20);
 
 -- ── Fixtures : un user avec display.manage, une catégorie, un produit display (cost_price>0), un non-display.
@@ -11,7 +12,7 @@ DECLARE
 BEGIN
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof
     FROM user_profiles up
-   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+   WHERE up.role_code='SUPER_ADMIN' AND up.is_active AND up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
      AND has_permission(up.auth_user_id, 'display.manage')
    LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
@@ -72,7 +73,7 @@ DO $$ DECLARE disp_before NUMERIC; disp_after NUMERIC; cs_before NUMERIC; cs_aft
 BEGIN
   SELECT quantity INTO disp_before FROM display_stock WHERE product_id = current_setting('breakery.t_disp')::uuid;
   SELECT current_stock INTO cs_before FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
-  PERFORM waste_display_stock_v4(current_setting('breakery.t_disp')::uuid, 2, 'spoiled', gen_random_uuid());
+  PERFORM pg_temp.approved_display_waste(current_setting('breakery.t_disp')::uuid, 2, 'spoiled', gen_random_uuid());
   SELECT quantity INTO disp_after FROM display_stock WHERE product_id = current_setting('breakery.t_disp')::uuid;
   SELECT current_stock INTO cs_after FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
   SELECT count(*) INTO je_count FROM journal_entries je
@@ -92,7 +93,7 @@ DO $$ DECLARE cs NUMERIC;
 BEGIN
   UPDATE products SET current_stock = 1 WHERE id = current_setting('breakery.t_disp')::uuid;
   PERFORM add_display_stock_v3(current_setting('breakery.t_disp')::uuid, 10, 'top up', gen_random_uuid());
-  PERFORM waste_display_stock_v4(current_setting('breakery.t_disp')::uuid, 5, 'over', gen_random_uuid());
+  PERFORM pg_temp.approved_display_waste(current_setting('breakery.t_disp')::uuid, 5, 'over', gen_random_uuid());
   SELECT current_stock INTO cs FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
   PERFORM set_config('breakery.t8', (cs < 0)::text, true);
 END $$;
@@ -100,20 +101,20 @@ SELECT is(current_setting('breakery.t8'), 'true', 'T8 waste allows current_stock
 
 -- T9 : adjust happy → display_stock = new_qty
 SELECT is(
-  (adjust_display_stock_v5(current_setting('breakery.t_disp')::uuid, 42, 'recount', gen_random_uuid())->>'new_display_stock')::numeric,
+  (pg_temp.immediate_display_adjustment(current_setting('breakery.t_disp')::uuid, 42, 'recount', gen_random_uuid())->>'new_display_stock')::numeric,
   42::numeric, 'T9 adjust sets display_stock to new_qty');
 
 -- T10 : adjust reason requis (>= 3 chars)
 SELECT throws_ok(
-  $$ SELECT adjust_display_stock_v5(current_setting('breakery.t_disp')::uuid, 10, 'x', gen_random_uuid()) $$,
+  $$ SELECT pg_temp.immediate_display_adjustment(current_setting('breakery.t_disp')::uuid, 10, 'x', gen_random_uuid()) $$,
   'P0001', 'reason_required', 'T10 adjust requires reason >= 3 chars');
 
--- T11 : isolation — seul waste crée des stock_movements (reference_type='display_waste').
+-- T11 : isolation — seul waste crée des stock_movements (reference_type='stock_declaration').
 --        add/return/adjust n'en créent aucun → tous les sm du produit sont des display_waste.
 DO $$ DECLARE total INT; waste_sm INT;
 BEGIN
   SELECT count(*) INTO total    FROM stock_movements WHERE product_id = current_setting('breakery.t_disp')::uuid;
-  SELECT count(*) INTO waste_sm FROM stock_movements WHERE product_id = current_setting('breakery.t_disp')::uuid AND reference_type = 'display_waste';
+  SELECT count(*) INTO waste_sm FROM stock_movements WHERE product_id = current_setting('breakery.t_disp')::uuid AND reference_type = 'stock_declaration';
   PERFORM set_config('breakery.t11', (total = waste_sm AND total > 0)::text, true);
 END $$;
 SELECT is(current_setting('breakery.t11'), 'true', 'T11 only waste writes stock_movements (add/return/adjust isolated)');

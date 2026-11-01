@@ -119,7 +119,7 @@ SELECT ok(
 SELECT ok(
   (SELECT prosrc LIKE '%Invalid tender count%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v24'),
+   WHERE n.nspname = 'stock_private' AND p.proname = 'pay_existing_order_v23'),
   'pay_existing_order_v24 enforces the 1..5 tender bound');
 
 -- 13: p_offline_replay force allow_negative MAIS ne bypasse PAS le gate
@@ -129,7 +129,7 @@ SELECT ok(
       AND prosrc LIKE '%v_allow_negative := true%'
       AND prosrc LIKE '%Insufficient store credit%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v24'),
+   WHERE n.nspname = 'stock_private' AND p.proname = 'pay_existing_order_v23'),
   'offline replay forces allow_negative but the store-credit gate still fires');
 
 -- 14: defense-in-depth — anon n'exécute aucune des 3 fonctions.

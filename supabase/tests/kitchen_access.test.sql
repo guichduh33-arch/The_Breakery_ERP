@@ -44,7 +44,7 @@ SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
 SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
   (SELECT jsonb_set(request,'{items,0,quantity_waste}','1') FROM kitchen_fixture)),'P0001','waste_reason_required','Waste needs reason');
 SELECT throws_ok(format('SELECT record_kitchen_production_v3(%L::jsonb)',
-  (SELECT jsonb_set(request,'{items,0,quantity_produced}','1000') FROM kitchen_fixture)),'P0002','insufficient_stock','Stock shortage blocks');
+  (SELECT jsonb_set(request,'{items,0,quantity_produced}','1000') FROM kitchen_fixture)),'P0002','stock_operation_rejected','Stock shortage blocks without revealing confidential stock');
 SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product FROM kitchen_fixture)),0::numeric,'Failed submissions have no stock effect');
 UPDATE kitchen_fixture SET receipt=record_kitchen_production_v3(request);
 SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product FROM kitchen_fixture)),12::numeric,'Alternative unit resolved server-side');

@@ -1,5 +1,6 @@
 -- Régressions : revue figée, notes effaçables, bornes de saisie, unités et signes.
 BEGIN;
+\ir helpers/approved_stock_declaration.sql
 SELECT plan(18);
 
 CREATE FUNCTION pg_temp.stock_audit() RETURNS SETOF text LANGUAGE plpgsql AS $$
@@ -35,8 +36,8 @@ BEGIN
 
   PERFORM record_incoming_stock_v4(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
   PERFORM record_incoming_stock_v4(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
-  PERFORM adjust_stock_v4(v_product, 12, 'Audit positive', gen_random_uuid());
-  PERFORM adjust_stock_v4(v_product, 11, 'Audit negative', gen_random_uuid());
+  PERFORM pg_temp.approved_adjustment(v_product, 12, 'Audit positive', gen_random_uuid());
+  PERFORM pg_temp.approved_adjustment(v_product, 11, 'Audit negative', gen_random_uuid());
   v_json := get_movement_aggregates_v4(p_product_id := v_product, p_movement_type := 'adjustment');
   RETURN NEXT is(jsonb_array_length(v_json), 2, 'Ajustements positifs et négatifs séparés');
   RETURN NEXT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(v_json) r WHERE r->>'unit' = 'pcs' AND (r->>'direction')::int = 1 AND (r->>'qty_total')::numeric = 2), 'Entrée classée par signe');

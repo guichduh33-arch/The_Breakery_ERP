@@ -1,5 +1,6 @@
 -- Audit stock : effets metier, rejeu durable, cloisonnement des droits.
 BEGIN;
+\ir helpers/approved_stock_declaration.sql
 \ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 CREATE TEMP TABLE audit_results(line text);
@@ -17,27 +18,27 @@ INSERT INTO products(id,sku,name,category_id,retail_price,cost_price,unit,curren
 SELECT product_id,'AUDIT-' || product_id,'Stock audit fixture',
  (SELECT id FROM categories LIMIT 1),0,0,'pcs',0 FROM stock_fixture;
 SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM primary_actor));
-INSERT INTO stock_results SELECT 'noop',public.adjust_stock_v4(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
+INSERT INTO stock_results SELECT 'noop',pg_temp.approved_adjustment(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
 SELECT public.record_incoming_stock_v4(product_id,5,NULL,NULL,'Audit receipt',NULL) FROM stock_fixture;
-INSERT INTO stock_results SELECT 'noop_replay',public.adjust_stock_v4(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
+INSERT INTO stock_results SELECT 'noop_replay',pg_temp.approved_adjustment(product_id,0,'Audit noop',noop_key) FROM stock_fixture;
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM stock_fixture)),5::numeric,'No-op replay preserves subsequent receipt');
 INSERT INTO audit_results SELECT is((SELECT result->>'new_current_stock' FROM stock_results WHERE name='noop_replay'),'0.000','No-op replay returns original stock');
 INSERT INTO audit_results SELECT ok((SELECT (result->>'idempotent_replay')::boolean FROM stock_results WHERE name='noop_replay'),'No-op result is durable');
-INSERT INTO stock_results SELECT 'waste',public.waste_stock_v4(product_id,5,'Audit waste',waste_key) FROM stock_fixture;
-INSERT INTO stock_results SELECT 'waste_replay',public.waste_stock_v4(product_id,5,'Audit waste',waste_key) FROM stock_fixture;
+INSERT INTO stock_results SELECT 'waste',pg_temp.approved_waste(product_id,5,'Audit waste',waste_key) FROM stock_fixture;
+INSERT INTO stock_results SELECT 'waste_replay',pg_temp.approved_waste(product_id,5,'Audit waste',waste_key) FROM stock_fixture;
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM stock_fixture)),0::numeric,'Waste retry succeeds after stock exhausted');
 INSERT INTO audit_results SELECT is((SELECT result->>'movement_id' FROM stock_results WHERE name='waste'),(SELECT result->>'movement_id' FROM stock_results WHERE name='waste_replay'),'Waste retry returns original movement');
 INSERT INTO audit_results SELECT throws_ok(
- format('SELECT public.waste_stock_v4(%L,4,%L,%L)',product_id,'Audit waste',waste_key),
+ format('SELECT pg_temp.approved_waste(%L,4,%L,%L)',product_id,'Audit waste',waste_key),
  '22023','idempotency_conflict','Changed quantity cannot reuse key') FROM stock_fixture;
 INSERT INTO audit_results SELECT throws_ok(
- format('SELECT public.adjust_stock_v4(%L,5,%L,%L)',product_id,'Audit waste',waste_key),
+ format('SELECT pg_temp.approved_adjustment(%L,5,%L,%L)',product_id,'Audit waste',waste_key),
  '22023','idempotency_conflict','Other operation cannot reuse key') FROM stock_fixture;
 INSERT INTO audit_results SELECT throws_ok(
- format('SELECT public.waste_stock_v4(%L,5,%L,%L)',product_id,'Changed reason',waste_key),
+ format('SELECT pg_temp.approved_waste(%L,5,%L,%L)',product_id,'Changed reason',waste_key),
  '22023','idempotency_conflict','Changed reason cannot reuse key') FROM stock_fixture;
 INSERT INTO stock_results SELECT 'incoming',public.record_incoming_stock_v4(product_id,3,NULL,NULL,'Audit durable receipt',incoming_key) FROM stock_fixture;
-SELECT public.waste_stock_v4(product_id,1,'Audit intervening waste',NULL) FROM stock_fixture;
+SELECT pg_temp.approved_waste(product_id,1,'Audit intervening waste',NULL) FROM stock_fixture;
 INSERT INTO stock_results SELECT 'incoming_replay',public.record_incoming_stock_v4(product_id,3,NULL,NULL,'Audit durable receipt',incoming_key) FROM stock_fixture;
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM stock_fixture)),2::numeric,'Incoming retry preserves intervening waste');
 INSERT INTO audit_results SELECT is((SELECT (result->>'new_current_stock')::numeric FROM stock_results WHERE name='incoming_replay'),3::numeric,'Incoming retry returns original stock');
@@ -63,7 +64,7 @@ SELECT pg_temp.authenticate_pin((SELECT auth_user_id FROM primary_actor));
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM stock_fixture)),2::numeric,'Actor conflict leaves stock unchanged');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM stock_movements WHERE idempotency_key=(SELECT incoming_key FROM stock_fixture)),1::bigint,'Actor conflict leaves ledger unchanged');
 INSERT INTO audit_results SELECT throws_ok(
- format('SELECT public.adjust_stock_v4(%L,NULL,%L,NULL)',product_id,'Audit invalid'),
+ format('SELECT pg_temp.approved_adjustment(%L,NULL,%L,NULL)',product_id,'Audit invalid'),
  '22023','invalid_quantity','Null quantity rejected') FROM stock_fixture;
 INSERT INTO audit_results SELECT throws_ok(
  format('SELECT public.record_incoming_stock_v4(%L,%L,NULL,NULL,NULL,NULL)',product_id,'NaN'),
@@ -78,14 +79,14 @@ INSERT INTO audit_results SELECT ok(NOT has_function_privilege('anon','public.wa
 INSERT INTO audit_results SELECT ok(NOT has_function_privilege('anon','public.record_incoming_stock_v4(uuid,numeric,uuid,numeric,text,uuid)','EXECUTE'),'Anon cannot receive');
 INSERT INTO audit_results SELECT ok(to_regprocedure('public.adjust_stock_v1(uuid,numeric,text,uuid)') IS NULL,'Old adjust API removed');
 INSERT INTO audit_results SELECT throws_ok(
- format('SELECT public.adjust_stock_v4(%L,2,%L,NULL)',product_id,'ab'),
+ format('SELECT pg_temp.approved_adjustment(%L,2,%L,NULL)',product_id,'ab'),
  NULL,'reason_required','No-op adjustment still requires reason') FROM stock_fixture;
 INSERT INTO audit_results SELECT throws_ok(
  format('SELECT public.record_incoming_stock_v4(%L,0.0001,NULL,NULL,NULL,NULL)',product_id),
  '22023','invalid_quantity_precision','Sub-millibase quantity rejected') FROM stock_fixture;
 INSERT INTO audit_results SELECT throws_ok(
- format('SELECT public.adjust_stock_v4(%L,10000000,%L,NULL)',product_id,'Audit overflow'),
- '22023','invalid_quantity_precision','Quantity outside storage range rejected') FROM stock_fixture;
+ format('SELECT pg_temp.approved_adjustment(%L,10000000,%L,NULL)',product_id,'Audit overflow'),
+ '22023','invalid_quantity','Quantity outside storage range rejected') FROM stock_fixture;
 UPDATE products SET deleted_at=now() WHERE id=(SELECT product_id FROM stock_fixture);
 INSERT INTO audit_results SELECT throws_ok(
  format('SELECT public.record_incoming_stock_v4(%L,1,NULL,NULL,NULL,NULL)',product_id),
@@ -129,9 +130,9 @@ INSERT INTO products(id,sku,name,category_id,retail_price,cost_price,unit,curren
  SELECT product_id,'AUDIT-KG-' || product_id,'Fractional stock audit fixture',
  (SELECT id FROM categories LIMIT 1),0,0,'kg',0 FROM decrement_fixture;
 SELECT public.record_incoming_stock_v4(product_id,1.375,NULL,NULL,'Fractional fixture',NULL) FROM decrement_fixture;
-INSERT INTO stock_results SELECT 'kg_noop',public.adjust_stock_v4(product_id,1.375,'Fractional no-op',request_key) FROM decrement_fixture;
-SELECT public.waste_stock_v4(product_id,0.375,'Fractional outgoing',NULL) FROM decrement_fixture;
-INSERT INTO stock_results SELECT 'kg_replay',public.adjust_stock_v4(product_id,1.375,'Fractional no-op',request_key) FROM decrement_fixture;
+INSERT INTO stock_results SELECT 'kg_noop',pg_temp.approved_adjustment(product_id,1.375,'Fractional no-op',request_key) FROM decrement_fixture;
+SELECT pg_temp.approved_waste(product_id,0.375,'Fractional outgoing',NULL) FROM decrement_fixture;
+INSERT INTO stock_results SELECT 'kg_replay',pg_temp.approved_adjustment(product_id,1.375,'Fractional no-op',request_key) FROM decrement_fixture;
 INSERT INTO audit_results SELECT is((SELECT current_stock FROM products WHERE id=(SELECT product_id FROM decrement_fixture)),1::numeric,'No-op replay never recreates outgoing stock');
 INSERT INTO audit_results SELECT is((SELECT (result->>'new_current_stock')::numeric FROM stock_results WHERE name='kg_replay'),1.375::numeric,'Fractional replay returns original count');
 INSERT INTO audit_results SELECT is((SELECT count(*) FROM stock_movements WHERE idempotency_key=(SELECT request_key FROM decrement_fixture)),0::bigint,'No-op creates no artificial ledger movement');

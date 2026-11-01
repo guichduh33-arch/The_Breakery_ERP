@@ -32,6 +32,7 @@
 -- guard (g->kg and mL->L are convertible).
 
 BEGIN;
+\ir helpers/released_report_days.sql
 \ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -312,6 +313,7 @@ BEGIN
   IF v_mgr IS NULL THEN
     RAISE EXCEPTION 'T_PROD_09: missing required actor fixture';
   END IF;
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   BEGIN
@@ -352,6 +354,7 @@ BEGIN
   -- et neutre vis-à-vis de l'état de la base (rollback avec la suite). Aussi :
   -- passer la section seedée (requise avant le contrôle de stock).
   UPDATE business_config SET allow_negative_stock = false WHERE id = 1;
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   -- Ensure single recipe for clarity (deactivate any others on this product first)
@@ -408,6 +411,7 @@ BEGIN
   UPDATE products SET current_stock=0   WHERE id=v_bag;
   SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
 
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo,   250, 'g',  NULL);
@@ -455,6 +459,7 @@ BEGIN
   UPDATE products SET current_stock=100 WHERE id=v_flo;
   UPDATE products SET current_stock=0   WHERE id=v_bag;
   SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
+  PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);

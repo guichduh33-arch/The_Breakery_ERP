@@ -67,6 +67,7 @@ BEGIN
     p_order_type  := 'take_out'::order_type);
 
   PERFORM set_config('ho.expected_total', (SELECT (retail_price * 2)::text FROM products WHERE id = v_prod), true);
+  PERFORM set_config('ho.session',v_sess::text,true);
   PERFORM set_config('ho.order', (v_env->>'order_id'), false);
   PERFORM set_config('ho.prof',  v_prof::text, false);
 END $fixture$;
@@ -76,7 +77,7 @@ END $fixture$;
 -- ===========================================================================
 DO $hold$
 BEGIN
-  PERFORM hold_fired_order_v4(current_setting('ho.order')::uuid);
+  PERFORM hold_fired_order_v4(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid);
 END $hold$;
 
 SELECT ok(
@@ -103,7 +104,7 @@ SELECT ok(
 DO $reopen$
 DECLARE v_res JSONB;
 BEGIN
-  v_res := reopen_held_order_v8(current_setting('ho.order')::uuid);
+  v_res := reopen_held_order_v8(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid);
   PERFORM set_config('ho.reopen', v_res::text, false);
 END $reopen$;
 
@@ -120,7 +121,7 @@ SELECT ok(
   'T5: la reouverture reclame la commande (is_held=false) sans la supprimer');
 
 SELECT lives_ok(
-  $q$ SELECT reopen_held_order_v8(current_setting('ho.order')::uuid) $q$,
+  $q$ SELECT reopen_held_order_v8(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid) $q$,
   'T6: une commande caisse deja ouverte reste recuperable');
 
 -- ===========================================================================

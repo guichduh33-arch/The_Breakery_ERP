@@ -7,6 +7,8 @@
 -- la disparition de v3.
 
 BEGIN;
+\ir helpers/released_report_days.sql
+SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 SELECT plan(7);
 
 -- Contexte MANAGER (gate inventory.read).

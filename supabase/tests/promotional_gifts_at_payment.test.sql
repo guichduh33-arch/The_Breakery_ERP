@@ -1,4 +1,5 @@
 BEGIN;
+\ir helpers/released_report_days.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(45);
 CREATE TEMP TABLE gift_checks(name text, passed boolean);
@@ -239,6 +240,7 @@ BEGIN
   INSERT INTO gift_checks VALUES('payment-only operator can replay the confirmed payment',
     (replay->>'idempotent_replay')::boolean AND replay->'order_snapshot'=result->'order_snapshot');
   refused:=false;
+  PERFORM pg_temp.fixture_released_days(current_date,current_date);
   BEGIN PERFORM public.get_pos_order_snapshot_v4((fired->>'order_id')::uuid);
   EXCEPTION WHEN insufficient_privilege THEN refused:=true; END;
   INSERT INTO gift_checks VALUES('public order reader keeps its existing creation-permission gate',refused);

@@ -22,7 +22,7 @@
 --
 -- Utilisateurs seedés : MANAGER 00000000-0000-0000-0000-000000000004,
 -- CASHIER 00000000-0000-0000-0000-000000000002.
--- Fenêtre de fixture : janvier 2027 (0 vente combo en dev).
+-- Fenêtre de fixture : janvier 2025 (0 vente combo en dev).
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
@@ -54,12 +54,12 @@ BEGIN
   INSERT INTO orders (id, order_number, order_type, status, subtotal, tax_amount, total,
                       paid_at, session_id)
   VALUES
-    (f.o1,     '#PGTAP-CS-1', 'take_out', 'paid',  96000, 0,  96000, '2027-01-17T09:00:00+08', f.sid),
-    (f.o2,     '#PGTAP-CS-2', 'dine_in',  'paid', 180000, 0, 180000, '2027-01-18T09:00:00+08', f.sid),
-    (f.o3,     '#PGTAP-CS-3', 'take_out', 'paid',  58000, 0,  58000, '2027-01-18T10:00:00+08', f.sid),
-    (f.o4,     '#PGTAP-CS-4', 'take_out', 'paid',  40000, 0,  40000, '2027-01-19T10:00:00+08', f.sid),
-    (f.o5,     '#PGTAP-CS-5', 'take_out', 'paid',  20000, 0,  20000, '2027-01-19T11:00:00+08', f.sid),
-    (f.o_prev, '#PGTAP-CS-P', 'take_out', 'paid',  45000, 0,  45000, '2026-12-12T10:00:00+08', f.sid);
+    (f.o1,     '#PGTAP-CS-1', 'take_out', 'paid',  96000, 0,  96000, '2025-01-17T09:00:00+08', f.sid),
+    (f.o2,     '#PGTAP-CS-2', 'dine_in',  'paid', 180000, 0, 180000, '2025-01-18T09:00:00+08', f.sid),
+    (f.o3,     '#PGTAP-CS-3', 'take_out', 'paid',  58000, 0,  58000, '2025-01-18T10:00:00+08', f.sid),
+    (f.o4,     '#PGTAP-CS-4', 'take_out', 'paid',  40000, 0,  40000, '2025-01-19T10:00:00+08', f.sid),
+    (f.o5,     '#PGTAP-CS-5', 'take_out', 'paid',  20000, 0,  20000, '2025-01-19T11:00:00+08', f.sid),
+    (f.o_prev, '#PGTAP-CS-P', 'take_out', 'paid',  45000, 0,  45000, '2024-12-12T10:00:00+08', f.sid);
 
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity,
                            line_total, combo_components, is_cancelled, cancelled_at,
@@ -99,7 +99,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   v_ok := (v_r ? 'period') AND (v_r ? 'period_prev') AND (v_r ? 'timezone')
       AND (v_r ? 'generated_at') AND (v_r ? 'summary')
       AND (v_r ? 'by_day') AND (v_r ? 'by_combo') AND (v_r ? 'component_picks');
@@ -114,7 +114,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_combo_sales_v2('2027-01-01', '2027-01-31');
+    PERFORM get_combo_sales_v2('2025-01-01', '2025-01-31');
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
@@ -128,7 +128,7 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   BEGIN
-    PERFORM get_combo_sales_v2('2027-01-31', '2027-01-01');
+    PERFORM get_combo_sales_v2('2025-01-31', '2025-01-01');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -141,9 +141,9 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2020-01-01', '2027-01-31');
-  v_ok := ((v_r->'period'->>'start')::date = '2027-01-31'::date - 366)
-      AND ((v_r->'period'->>'end')::date   = '2027-01-31'::date);
+  v_r := get_combo_sales_v2('2020-01-01', '2025-01-31');
+  v_ok := ((v_r->'period'->>'start')::date = '2025-01-31'::date - 366)
+      AND ((v_r->'period'->>'end')::date   = '2025-01-31'::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t4')::boolean,
@@ -154,7 +154,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'combo_revenue')::numeric = 260000)
       AND ((v_r->'summary'->>'combo_qty')::numeric = 3)
       AND ((v_r->'summary'->>'combo_orders')::int = 2);
@@ -168,7 +168,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'gross_sales')::numeric = 394000);
   PERFORM set_config('breakery.t6', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -180,7 +180,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'avg_ticket_with')::numeric = 138000)
       AND ((v_r->'summary'->>'avg_ticket_without')::numeric = 39333);
   PERFORM set_config('breakery.t7', COALESCE(v_ok, false)::text, false);
@@ -193,7 +193,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'combo_revenue')::numeric = 260000);  -- pas 310k
   PERFORM set_config('breakery.t8', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -205,7 +205,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'combo_qty')::numeric = 3)  -- pas 4
       AND ((v_r->'summary'->>'combo_orders')::int = 2);   -- O5 n'est pas une commande combo
   PERFORM set_config('breakery.t9', COALESCE(v_ok, false)::text, false);
@@ -219,7 +219,7 @@ DECLARE v_r JSONB; v_c JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _cs_fix;
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   SELECT c INTO v_c FROM jsonb_array_elements(v_r->'by_combo') c
    WHERE (c->>'product_id')::uuid = f.combo1;
   v_ok := (v_c->>'name' = 'PGTAP Combo Breakfast')
@@ -237,7 +237,7 @@ DECLARE v_r JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _cs_fix;
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   SELECT bool_and(CASE (p->>'product_id')::uuid
            WHEN f.k1 THEN (p->>'qty')::numeric = 3   -- 1×1 (O1) + 1×2 (O2)
            WHEN f.k2 THEN (p->>'qty')::numeric = 3
@@ -254,7 +254,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_combo_sales_v2('2027-01-01', '2027-01-31');
+  v_r := get_combo_sales_v2('2025-01-01', '2025-01-31');
   SELECT (SUM((d->>'revenue')::numeric) = (v_r->'summary'->>'combo_revenue')::numeric)
      AND (SUM((d->>'qty')::numeric) = (v_r->'summary'->>'combo_qty')::numeric)
      AND ((v_r->'summary'->>'combo_revenue_prev')::numeric = 45000)

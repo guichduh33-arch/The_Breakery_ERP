@@ -10,7 +10,7 @@ SELECT plan(7);
 DO $$
 DECLARE
   v_auth UUID; v_prof UUID; v_mgr_prof UUID; v_weak_prof UUID;
-  v_cat UUID; v_prod UUID;
+  v_cat UUID; v_prod UUID; v_session UUID;
   v_o1 UUID; v_o2 UUID; v_o3 UUID; v_o4 UUID; v_o5 UUID; v_o6 UUID;
   v_nonce4 UUID;
 BEGIN
@@ -38,9 +38,14 @@ BEGIN
   INSERT INTO products (sku,name,category_id,retail_price,cost_price,unit,current_stock)
     VALUES ('TST-D9-PE','D9 PayExisting',v_cat,20000,7000,'pcs',100) RETURNING id INTO v_prod;
 
-  -- 6 draft orders style tablet (session_id NULL autorisé pour created_via='tablet').
-  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via)
-    SELECT '#D9-'||g, 'dine_in','draft',20000,0,20000,'tablet'
+  SELECT id INTO v_session FROM pos_sessions WHERE opened_by=v_prof AND status='open';
+  IF v_session IS NULL THEN
+    INSERT INTO pos_sessions(opened_by,opening_cash,status) VALUES(v_prof,0,'open') RETURNING id INTO v_session;
+  END IF;
+
+  -- Caisse receveuse explicite avant les contrôles de remise.
+  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via, session_id)
+    SELECT '#D9-'||g, 'dine_in','draft',20000,0,20000,'tablet',v_session
       FROM generate_series(1,6) g;
 
   -- Récupère les 6 ids déterministes par order_number.

@@ -42,10 +42,10 @@ SELECT lives_ok(format('SELECT public.hold_fired_order_v4(%L,%L)',order_id,sessi
 SELECT ok(o.is_held AND o.created_via='tablet' AND o.status='draft' AND o.order_number LIKE 'TABLET-APPEND-%','origine numero statut preserves') FROM public.orders o JOIN tablet_fx f ON f.order_id=o.id;
 SELECT lives_ok(format('SELECT public.reopen_held_order_v8(%L,%L)',order_id,session_id),'reopen meme session') FROM tablet_fx;
 SELECT ok(NOT o.is_held,'hold retire') FROM public.orders o JOIN tablet_fx f ON f.order_id=o.id;
-SELECT throws_ok(format('SELECT public.hold_fired_order_v4(%L,%L)',order_id,gen_random_uuid()),'P0002','fired_order_not_found_or_not_holdable','hold autre session refuse') FROM tablet_fx;
-SELECT throws_ok(format('SELECT public.reopen_held_order_v8(%L,%L)',order_id,gen_random_uuid()),'P0002','order_not_available_for_reopen','reopen autre session refuse') FROM tablet_fx;
-SELECT throws_ok(format('SELECT public.hold_fired_order_v4(%L)',order_id),'P0002','fired_order_not_found_or_not_holdable','hold sans session refuse') FROM tablet_fx;
-SELECT throws_ok(format('SELECT public.reopen_held_order_v8(%L)',order_id),'P0002','order_not_available_for_reopen','reopen sans session refuse') FROM tablet_fx;
+SELECT throws_ok(format('SELECT public.hold_fired_order_v4(%L,%L)',order_id,gen_random_uuid()),'P0001','no_open_shift','hold session inexistante refuse') FROM tablet_fx;
+SELECT throws_ok(format('SELECT public.reopen_held_order_v8(%L,%L)',order_id,gen_random_uuid()),'P0001','no_open_shift','reopen session inexistante refuse') FROM tablet_fx;
+SELECT throws_ok(format('SELECT public.hold_fired_order_v4(%L)',order_id),'P0001','no_open_shift','hold sans session refuse') FROM tablet_fx;
+SELECT throws_ok(format('SELECT public.reopen_held_order_v8(%L)',order_id),'P0001','no_open_shift','reopen sans session refuse') FROM tablet_fx;
 SELECT throws_ok(format('SELECT public.fire_counter_order_v12(%L,%L,%L::jsonb,%L)',gen_random_uuid(),gen_random_uuid(),jsonb_build_array(jsonb_build_object('product_id',product_id,'quantity',1)),order_id),'P0002','Order not found or not appendable','append autre session refuse') FROM tablet_fx;
 UPDATE public.orders SET status='pending_payment' WHERE id=(SELECT order_id FROM tablet_fx);
 SELECT throws_ok(format('SELECT public.fire_counter_order_v12(%L,%L,%L::jsonb,%L)',gen_random_uuid(),session_id,jsonb_build_array(jsonb_build_object('product_id',product_id,'quantity',1)),order_id),'P0002','Order not found or not appendable','tablette non reprise refusee') FROM tablet_fx;

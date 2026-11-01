@@ -19,7 +19,7 @@
 --   T_OPN_13 — get_low_stock_v3 + get_reorder_suggestions_v2 + get_product_dashboard_v4
 --             execute without crash for an admin user.
 --   T_OPN_14 — ADR-027 : add_opname_item_v3 charge l'attendu depuis
---             products.current_stock quand p_expected_qty est NULL.
+--             products.current_stock sans valeur attendue fournie par le client.
 --   T_OPN_15 — ADR-027 : finalize_opname_v5 émet opname_in/out SANS section
 --             (from/to_section_id NULL) et corrige products.current_stock.
 --
@@ -29,6 +29,7 @@
 -- get_low_stock_v1 -> get_low_stock_v3 ; get_product_dashboard_v2 -> _v3.
 
 BEGIN;
+\ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 SELECT plan(16);
@@ -152,7 +153,7 @@ SELECT ok(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'get_stock_movements_v5','get_movement_aggregates_v4',
+      'get_stock_movements_v3','get_movement_aggregates_v4',
       'get_low_stock_v3','get_reorder_suggestions_v2','get_product_dashboard_v4'
     )),
   5,
@@ -165,19 +166,27 @@ SELECT is(
 -- SELECT, so DO blocks stash their boolean result in a GUC).
 -- ---------------------------------------------------------------------------
 DO $bootstrap$
-DECLARE v_admin_uid UUID;
+DECLARE v_admin_uid UUID; v_counter_uid uuid; v_counter_profile uuid;
 BEGIN
   SELECT auth_user_id INTO v_admin_uid FROM user_profiles WHERE employee_code = 'EMP000';
   IF v_admin_uid IS NULL THEN
-    RAISE EXCEPTION 'Seed user EMP000 not found — run pnpm db:reset first';
+    RAISE EXCEPTION 'Seed user EMP000 not found — vérifier la fixture de propriétaire dev';
   END IF;
   PERFORM set_config('breakery.opn_admin_uid', v_admin_uid::text, false);
+  SELECT auth_user_id,id INTO STRICT v_counter_uid,v_counter_profile FROM user_profiles
+   WHERE role_code<>'SUPER_ADMIN' AND is_active AND deleted_at IS NULL
+   AND auth_user_id IS NOT NULL ORDER BY id LIMIT 1;
+  INSERT INTO user_permission_overrides(user_profile_id,permission_code,is_granted,reason)
+   SELECT v_counter_profile,code,true,'Transactional opname counter' FROM permissions
+   WHERE code IN ('inventory.opname.create','inventory.read')
+   ON CONFLICT(user_profile_id,permission_code) DO UPDATE SET is_granted=true,expires_at=NULL;
+  PERFORM set_config('breakery.opn_counter_uid',v_counter_uid::text,true);
 END $bootstrap$;
 
 CREATE OR REPLACE FUNCTION pg_temp.set_jwt_uid(p_uid UUID) RETURNS VOID
 LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM set_config('request.jwt.claim.sub', p_uid::text, true);
+  PERFORM pg_temp.authenticate_pin(p_uid);
 END $$;
 GRANT EXECUTE ON FUNCTION pg_temp.set_jwt_uid(UUID) TO PUBLIC;
 
@@ -195,7 +204,7 @@ VALUES (
 ) ON CONFLICT (id) DO UPDATE SET current_stock = 42.500;
 
 -- =========================================================================
--- T_OPN_14 — ADR-027 : add_opname_item_v3(p_expected_qty := NULL) charge
+-- T_OPN_14 — ADR-027 : add_opname_item_v3 charge
 -- l'attendu depuis products.current_stock (42.500 pour la fixture ci-dessus).
 -- =========================================================================
 DO $t_opn_14$
@@ -213,7 +222,7 @@ BEGIN
   PERFORM set_config('breakery.opn14_count_id', v_count_id::text, false);
 
   SELECT add_opname_item_v3(
-    v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, NULL, 'T_OPN_14'
+    v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, 'T_OPN_14'
   ) INTO v_item;
 
   v_expected_returned := (v_item->>'expected_qty')::numeric;
@@ -226,7 +235,7 @@ BEGIN
     (v_expected_returned = 42.500 AND v_expected_stored = 42.500)::text, false);
 END $t_opn_14$;
 SELECT ok(current_setting('breakery.t_opn_14_pass')::boolean,
-  'T_OPN_14: add_opname_item_v3(p_expected_qty=NULL) defaults expected_qty to products.current_stock (42.500)');
+  'T_OPN_14: add_opname_item_v3 defaults expected_qty to products.current_stock (42.500)');
 
 -- =========================================================================
 -- T_OPN_15 — ADR-027 : finalize_opname_v5 émet opname_in/out avec sections
@@ -251,9 +260,11 @@ BEGIN
    WHERE count_id = v_count_id
      AND product_id = '99999999-00e0-00e0-00e0-111111111111'::uuid;
 
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_counter_uid')::uuid);
   PERFORM set_opname_count_v3(v_item_id, 50.000, 'T_OPN_15 counted');
   PERFORM validate_opname_v2(v_count_id);
 
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
   SELECT finalize_opname_v5(v_count_id) INTO v_finalize;
 
   SELECT id, movement_type, quantity, from_section_id, to_section_id
@@ -300,7 +311,7 @@ BEGIN
   v_count_id := (v_count->>'count_id')::uuid;
 
   SELECT add_opname_item_v3(
-    v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, 10.000, 'T_OPN_16'
+    v_count_id, '99999999-00e0-00e0-00e0-111111111111'::uuid, 'T_OPN_16'
   ) INTO v_item;
   SELECT id INTO v_item_id FROM inventory_count_items
    WHERE count_id = v_count_id
@@ -308,6 +319,7 @@ BEGIN
 
   -- Toutes les lignes sont comptées : `missing_counts` ne peut pas masquer
   -- la garde de statut qu'on veut prouver.
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_counter_uid')::uuid);
   PERFORM set_opname_count_v3(v_item_id, 12.000, 'T_OPN_16 counted');
 
   SELECT status INTO v_status FROM inventory_counts WHERE id = v_count_id;
@@ -316,6 +328,7 @@ BEGIN
   END IF;
 
   PERFORM set_config('breakery.opn16_count_id', v_count_id::text, false);
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.opn_admin_uid')::uuid);
 END $t_opn_16$;
 SELECT throws_ok(
   format($q$SELECT finalize_opname_v5(%L::uuid)$q$,

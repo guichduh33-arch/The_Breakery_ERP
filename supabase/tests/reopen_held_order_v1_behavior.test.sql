@@ -33,8 +33,13 @@ DECLARE
   v_cancelled_by uuid;
 BEGIN
   SELECT id INTO v_pid FROM products WHERE is_active LIMIT 1;
+  PERFORM set_config('reopen.expected_type',(SELECT product_type::text FROM products WHERE id=v_pid),true);
   SELECT id INTO v_cancelled_by FROM user_profiles WHERE deleted_at IS NULL LIMIT 1;
-  SELECT id INTO v_session FROM pos_sessions LIMIT 1;
+  SELECT id INTO v_session FROM pos_sessions WHERE opened_by='00000000-0000-0000-0000-000000000002' AND status='open';
+  IF v_session IS NULL THEN
+    INSERT INTO pos_sessions(opened_by,opening_cash,status) VALUES('00000000-0000-0000-0000-000000000002',0,'open') RETURNING id INTO v_session;
+  END IF;
+  PERFORM set_config('reopen.receiving_session',v_session::text,true);
 
   INSERT INTO orders (id, order_number, order_type, status, created_via, session_id,
                       is_held, sent_to_kitchen_at, subtotal, tax_amount, total)
@@ -69,20 +74,17 @@ DECLARE
   v_expected_type text;
   i int;
 BEGIN
-  -- Derive the expected product_type from the SAME product the seeded lines
-  -- reference (all 3 share one product_id) rather than re-querying products
-  -- independently, which could drift if the "first active product" isn't stable.
-  SELECT p.product_type::text, p.id INTO v_expected_type, v_pid
-    FROM order_items oi JOIN products p ON p.id = oi.product_id
-   WHERE oi.order_id = v_oid LIMIT 1;
+  -- Type attendu capturé sur le même produit avant le passage au rôle caisse.
+  -- La vérification du snapshot n'exige pas de lecture directe du stock.
+  v_expected_type := current_setting('reopen.expected_type');
 
   -- hold → is_held=true
-  PERFORM hold_fired_order_v4(v_oid);
+  PERFORM hold_fired_order_v4(v_oid,current_setting('reopen.receiving_session')::uuid);
   SELECT is_held INTO v_held FROM orders WHERE id = v_oid;
   IF v_held IS NOT TRUE THEN RAISE EXCEPTION 'FAIL: hold did not set is_held=true'; END IF;
 
   -- Reopen returns the full snapshot, including cancellation facts, and claims the order.
-  v_env := reopen_held_order_v8(v_oid);
+  v_env := reopen_held_order_v8(v_oid,current_setting('reopen.receiving_session')::uuid);
   IF jsonb_array_length(v_env->'items') <> 3 THEN
     RAISE EXCEPTION 'FAIL: reopen returned % items (incomplete snapshot)', jsonb_array_length(v_env->'items');
   END IF;
@@ -116,7 +118,7 @@ BEGIN
   IF (SELECT count(*) FROM orders WHERE id = v_oid) <> 1 THEN RAISE EXCEPTION 'FAIL: reopen deleted the order'; END IF;
 
   -- Une caisse peut reprendre la même commande après perte de réponse ou reload.
-  IF reopen_held_order_v8(v_oid) IS DISTINCT FROM v_env THEN
+  IF reopen_held_order_v8(v_oid,current_setting('reopen.receiving_session')::uuid) IS DISTINCT FROM v_env THEN
     RAISE EXCEPTION 'FAIL: second reopen changed the snapshot';
   END IF;
   IF (SELECT count(*) FROM order_items WHERE order_id = v_oid) <> 3 THEN

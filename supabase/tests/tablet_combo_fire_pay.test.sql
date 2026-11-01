@@ -279,8 +279,8 @@ SELECT ok(
              AND entity_id = current_setting('tcfp.order7')::uuid
              AND (metadata->>'product_id') = '00000000-0000-0000-0000-0000000cd001'
              AND (metadata->>'client_uuid') = '00000000-0000-0000-0000-0000000ca007'
-             AND (metadata->>'rpc_version') = 'tablet_v10'),
-  'T7c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version tablet_v10)');
+             AND (metadata->>'rpc_version') = 'tablet_v11'),
+  'T7c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version tablet_v11)');
 
 -- ===========================================================================
 -- T8/T9 — versionnage monotone + defense-in-depth anon.

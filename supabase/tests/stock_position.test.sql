@@ -30,6 +30,7 @@
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
 
 BEGIN;
+\ir helpers/released_report_days.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -69,6 +70,7 @@ BEGIN
     (f.f1, 'sale',      -5, 'kg', NULL,            'orders',       gen_random_uuid(), now() - interval '1 day',  f.uid);
 END $$;
 
+SELECT pg_temp.fixture_released_days(current_date-366,current_date);
 -- T1 happy path : 7 clés
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
@@ -101,7 +103,7 @@ SELECT ok(current_setting('breakery.t2')::boolean,
 DO $$
 DECLARE v_caught BOOLEAN := false;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
     PERFORM get_stock_position_v2((now() AT TIME ZONE 'Asia/Makassar')::date + 1);
   EXCEPTION WHEN raise_exception THEN v_caught := true;
@@ -109,7 +111,7 @@ BEGIN
   PERFORM set_config('breakery.t3', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t3')::boolean,
-  'T3: a future as_of raises P0001');
+  'T3: Owner: a future as_of raises P0001');
 
 -- T4 reconstruction arrière à J-3
 DO $$
