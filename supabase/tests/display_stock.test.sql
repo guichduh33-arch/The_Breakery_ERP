@@ -32,19 +32,19 @@ END $$;
 
 -- T1 : add_display_stock happy → display_stock = 10
 SELECT is(
-  (add_display_stock_v2(current_setting('breakery.t_disp')::uuid, 10, 'mise vitrine', gen_random_uuid())->>'new_display_stock')::numeric,
-  10::numeric, 'T1 add_display_stock_v2 → 10');
+  (add_display_stock_v3(current_setting('breakery.t_disp')::uuid, 10, 'mise vitrine', gen_random_uuid())->>'new_display_stock')::numeric,
+  10::numeric, 'T1 add_display_stock_v3 → 10');
 
 -- T2 : add sur non-display → not_a_display_item (P0002)
 SELECT throws_ok(
-  $$ SELECT add_display_stock_v2(current_setting('breakery.t_nondisp')::uuid, 5, 'x', gen_random_uuid()) $$,
+  $$ SELECT add_display_stock_v3(current_setting('breakery.t_nondisp')::uuid, 5, 'x', gen_random_uuid()) $$,
   'P0002', NULL, 'T2 add on non-display raises not_a_display_item');
 
 -- T3 : add idempotent replay (même clé → pas de double)
 DO $$ DECLARE k UUID := gen_random_uuid(); r1 JSONB; r2 JSONB;
 BEGIN
-  r1 := add_display_stock_v2(current_setting('breakery.t_disp')::uuid, 7, 'x', k);
-  r2 := add_display_stock_v2(current_setting('breakery.t_disp')::uuid, 7, 'x', k);
+  r1 := add_display_stock_v3(current_setting('breakery.t_disp')::uuid, 7, 'x', k);
+  r2 := add_display_stock_v3(current_setting('breakery.t_disp')::uuid, 7, 'x', k);
   PERFORM set_config('breakery.t3a', (r1->>'new_display_stock'), true);
   PERFORM set_config('breakery.t3b', (r2->>'new_display_stock'), true);
   PERFORM set_config('breakery.t3replay', (r2->>'idempotent_replay'), true);
@@ -56,7 +56,7 @@ SELECT is(current_setting('breakery.t3replay'), 'true', 'T3 replay flag true');
 DO $$ DECLARE cs_before NUMERIC; cs_after NUMERIC;
 BEGIN
   SELECT current_stock INTO cs_before FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
-  PERFORM return_display_to_kitchen_v2(current_setting('breakery.t_disp')::uuid, 3, 'retour', gen_random_uuid());
+  PERFORM return_display_to_kitchen_v3(current_setting('breakery.t_disp')::uuid, 3, 'retour', gen_random_uuid());
   SELECT current_stock INTO cs_after FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
   PERFORM set_config('breakery.t4cs', (cs_before = cs_after)::text, true);
 END $$;
@@ -64,7 +64,7 @@ SELECT is(current_setting('breakery.t4cs'), 'true', 'T4 return_to_kitchen leaves
 
 -- T5 : return garde insuffisant (P0002)
 SELECT throws_ok(
-  $$ SELECT return_display_to_kitchen_v2(current_setting('breakery.t_disp')::uuid, 99999, 'x', gen_random_uuid()) $$,
+  $$ SELECT return_display_to_kitchen_v3(current_setting('breakery.t_disp')::uuid, 99999, 'x', gen_random_uuid()) $$,
   'P0002', NULL, 'T5 return insufficient_display_stock');
 
 -- T6/T7 : waste happy → display -q ET current_stock -q ET JE waste émis
@@ -72,7 +72,7 @@ DO $$ DECLARE disp_before NUMERIC; disp_after NUMERIC; cs_before NUMERIC; cs_aft
 BEGIN
   SELECT quantity INTO disp_before FROM display_stock WHERE product_id = current_setting('breakery.t_disp')::uuid;
   SELECT current_stock INTO cs_before FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
-  PERFORM waste_display_stock_v2(current_setting('breakery.t_disp')::uuid, 2, 'spoiled', gen_random_uuid());
+  PERFORM waste_display_stock_v4(current_setting('breakery.t_disp')::uuid, 2, 'spoiled', gen_random_uuid());
   SELECT quantity INTO disp_after FROM display_stock WHERE product_id = current_setting('breakery.t_disp')::uuid;
   SELECT current_stock INTO cs_after FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
   SELECT count(*) INTO je_count FROM journal_entries je
@@ -91,8 +91,8 @@ SELECT is(current_setting('breakery.t7je'),   'true', 'T7 waste emits JE via tr_
 DO $$ DECLARE cs NUMERIC;
 BEGIN
   UPDATE products SET current_stock = 1 WHERE id = current_setting('breakery.t_disp')::uuid;
-  PERFORM add_display_stock_v2(current_setting('breakery.t_disp')::uuid, 10, 'top up', gen_random_uuid());
-  PERFORM waste_display_stock_v2(current_setting('breakery.t_disp')::uuid, 5, 'over', gen_random_uuid());
+  PERFORM add_display_stock_v3(current_setting('breakery.t_disp')::uuid, 10, 'top up', gen_random_uuid());
+  PERFORM waste_display_stock_v4(current_setting('breakery.t_disp')::uuid, 5, 'over', gen_random_uuid());
   SELECT current_stock INTO cs FROM products WHERE id = current_setting('breakery.t_disp')::uuid;
   PERFORM set_config('breakery.t8', (cs < 0)::text, true);
 END $$;
@@ -100,12 +100,12 @@ SELECT is(current_setting('breakery.t8'), 'true', 'T8 waste allows current_stock
 
 -- T9 : adjust happy → display_stock = new_qty
 SELECT is(
-  (adjust_display_stock_v2(current_setting('breakery.t_disp')::uuid, 42, 'recount', gen_random_uuid())->>'new_display_stock')::numeric,
+  (adjust_display_stock_v5(current_setting('breakery.t_disp')::uuid, 42, 'recount', gen_random_uuid())->>'new_display_stock')::numeric,
   42::numeric, 'T9 adjust sets display_stock to new_qty');
 
 -- T10 : adjust reason requis (>= 3 chars)
 SELECT throws_ok(
-  $$ SELECT adjust_display_stock_v2(current_setting('breakery.t_disp')::uuid, 10, 'x', gen_random_uuid()) $$,
+  $$ SELECT adjust_display_stock_v5(current_setting('breakery.t_disp')::uuid, 10, 'x', gen_random_uuid()) $$,
   'P0001', 'reason_required', 'T10 adjust requires reason >= 3 chars');
 
 -- T11 : isolation — seul waste crée des stock_movements (reference_type='display_waste').
@@ -153,10 +153,10 @@ SELECT is(current_setting('breakery.t17'), 'true', 'T17 la ligne de ledger du wa
 SELECT is(current_setting('breakery.t18'), 'true', 'T18 audit_logs.actor_id est un user_profiles.id, jamais auth.uid()');
 
 -- T12-T15 : REVOKE pairs — anon ne peut exécuter aucune des 4 RPC
-SELECT is(has_function_privilege('anon','public.add_display_stock_v2(uuid,numeric,text,uuid)','EXECUTE'), false, 'T12 anon !exec add');
-SELECT is(has_function_privilege('anon','public.return_display_to_kitchen_v2(uuid,numeric,text,uuid)','EXECUTE'), false, 'T13 anon !exec return');
-SELECT is(has_function_privilege('anon','public.waste_display_stock_v2(uuid,numeric,text,uuid)','EXECUTE'), false, 'T14 anon !exec waste');
-SELECT is(has_function_privilege('anon','public.adjust_display_stock_v2(uuid,numeric,text,uuid)','EXECUTE'), false, 'T15 anon !exec adjust');
+SELECT is(has_function_privilege('anon','public.add_display_stock_v3(uuid,numeric,text,uuid)','EXECUTE'), false, 'T12 anon !exec add');
+SELECT is(has_function_privilege('anon','public.return_display_to_kitchen_v3(uuid,numeric,text,uuid)','EXECUTE'), false, 'T13 anon !exec return');
+SELECT is(has_function_privilege('anon','public.waste_display_stock_v4(uuid,numeric,text,uuid)','EXECUTE'), false, 'T14 anon !exec waste');
+SELECT is(has_function_privilege('anon','public.adjust_display_stock_v5(uuid,numeric,text,uuid)','EXECUTE'), false, 'T15 anon !exec adjust');
 
 SELECT * FROM finish();
 ROLLBACK;

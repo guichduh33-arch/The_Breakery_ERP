@@ -20,13 +20,15 @@ SELECT ok(NOT has_function_privilege('authenticated','public.signal_ui_invalidat
 CREATE TEMP TABLE signal_before AS SELECT * FROM public.ui_invalidation_topics;
 UPDATE public.products SET current_stock=current_stock WHERE false;
 UPDATE public.categories SET name=name WHERE false;
-SELECT is((SELECT revision FROM public.ui_invalidation_topics WHERE topic='catalog'),
-  (SELECT revision FROM signal_before WHERE topic='catalog'),'UPDATE stock/catalogue sans signal partagé');
+SELECT isnt((SELECT revision FROM public.ui_invalidation_topics WHERE topic='catalog'),
+  (SELECT revision FROM signal_before WHERE topic='catalog'),'UPDATE stock/catalogue invalide les lecteurs masqués');
 SELECT is((SELECT count(*) FROM pg_trigger WHERE tgname='invalidate_catalog'
   AND tgrelid IN ('public.products'::regclass,'public.categories'::regclass)
   AND NOT tgisinternal AND tgtype=40),2::bigint,'signaux catalogue limités à DELETE/TRUNCATE par instruction');
 SELECT is((SELECT count(*) FROM pg_publication_tables WHERE pubname='supabase_realtime'
-  AND schemaname='public' AND tablename IN ('products','categories')),2::bigint,'INSERT/UPDATE catalogue restent publiés directement');
+  AND schemaname='public' AND tablename='categories'),1::bigint,'INSERT/UPDATE des catégories restent publiés directement');
+SELECT is((SELECT count(*) FROM pg_publication_tables WHERE pubname='supabase_realtime'
+  AND schemaname='public' AND tablename='products'),0::bigint,'produits avec stocks confidentiels exclus de la publication directe');
 DELETE FROM public.products WHERE false;
 SELECT isnt((SELECT revision FROM public.ui_invalidation_topics WHERE topic='catalog'),
   (SELECT revision FROM signal_before WHERE topic='catalog'),'suppression produit invalide le catalogue');

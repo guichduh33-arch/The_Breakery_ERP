@@ -82,7 +82,7 @@ INSERT INTO pin_refusal_cases(name,query) VALUES
 ('year',$q$ SELECT public.close_fiscal_year_v3(2098,'999999') $q$),
 ('expense',$q$ SELECT public.approve_expense_v5(gen_random_uuid(),'999999') $q$),
 ('balance',$q$ SELECT public.adjust_b2b_balance_v3(gen_random_uuid(),1,'Fixture reason','999999',gen_random_uuid()) $q$),
-('shift',$q$ SELECT public.close_shift_v10(current_setting('pinatom.shift')::uuid,300000,
+('shift',$q$ SELECT public.close_shift_v11(current_setting('pinatom.shift')::uuid,300000,
   p_notes:='Fixture reason',p_approver_id:=current_setting('pinatom.profile')::uuid,p_manager_pin:='999999') $q$);
 DO $$
 DECLARE c record; result jsonb; before_audit bigint;
@@ -112,11 +112,11 @@ SELECT is((SELECT count(*)::int FROM pg_proc WHERE pronamespace='public'::regnam
   'approve_expense_v4','adjust_b2b_balance_v2','close_shift_v9'])),0,'all eight old signatures are removed');
 SELECT ok((SELECT bool_and(NOT has_function_privilege('anon',oid,'EXECUTE')) FROM pg_proc
   WHERE pronamespace='public'::regnamespace AND proname=ANY(ARRAY['sign_zreport_v3','void_zreport_v3',
-  'close_fiscal_period_v2','create_manual_je_v2','close_fiscal_year_v3','approve_expense_v5','adjust_b2b_balance_v3','close_shift_v10'])),
+  'close_fiscal_period_v2','create_manual_je_v2','close_fiscal_year_v3','approve_expense_v5','adjust_b2b_balance_v3','close_shift_v11'])),
   'all business writers remain unavailable to anon including inherited grants');
 SELECT is((SELECT count(*)::int FROM pg_proc WHERE pronamespace='public'::regnamespace
   AND has_function_privilege('authenticated',oid,'EXECUTE') AND proname=ANY(ARRAY['sign_zreport_v3','void_zreport_v3',
-  'close_fiscal_period_v2','create_manual_je_v2','close_fiscal_year_v3','approve_expense_v5','adjust_b2b_balance_v3','close_shift_v10'])),
+  'close_fiscal_period_v2','create_manual_je_v2','close_fiscal_year_v3','approve_expense_v5','adjust_b2b_balance_v3','close_shift_v11'])),
   8,'all eight business callers retain execute rights');
 SELECT is((SELECT count(*)::int FROM public.user_sessions WHERE user_id=current_setting('pinatom.profile')::uuid),
   1,'the verifier itself creates no additional session');

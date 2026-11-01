@@ -8,7 +8,7 @@
 -- `unit_price` tel quel du client. Le déstockage a lieu au paiement
 -- (`pay_existing_order_v20`), qui lit exactement ces deux colonnes : NULL →
 -- zéro mouvement de stock sur les composants d'un combo envoyé par la
--- tablette. `create_tablet_order_v10` (attendue, PAS ENCORE LIVRÉE au moment où
+-- tablette. `create_tablet_order_v11` (attendue, PAS ENCORE LIVRÉE au moment où
 -- ce fichier est écrit) corrige les trois axes : prix résolu serveur
 -- (`_resolve_combo_price_v1`), `combo_components` persisté,
 -- `modifier_ingredients_deducted` résolu (`_resolve_combo_modifier_ingredients_v1`),
@@ -17,7 +17,7 @@
 -- Ce fichier est écrit AVANT la migration v9 : il est ROUGE contre le corps
 -- actuel (v9 n'existe pas — `function does not exist`). Il est destiné à être
 -- rejoué par l'orchestrateur une fois v9 livrée. Les DO blocks qui appellent
--- create_tablet_order_v10 / pickup_tablet_order / pay_existing_order_v20
+-- create_tablet_order_v11 / pickup_tablet_order / pay_existing_order_v20
 -- capturent l'exception dans un GUC pour que le fichier aille jusqu'à
 -- `finish()` même si une étape casse — diagnostic complet en un seul passage,
 -- pas un abort de transaction à la première ligne qui manque.
@@ -111,7 +111,7 @@ BEGIN
 END $fixture$;
 
 -- ===========================================================================
--- T1-T5 — chemin nominal : create_tablet_order_v10 -> pickup_tablet_order ->
+-- T1-T5 — chemin nominal : create_tablet_order_v11 -> pickup_tablet_order ->
 -- pay_existing_order_v20. Un combo Large+Water avec le composant Large portant
 -- un modificateur Iced rattaché à un ingrédient.
 -- ===========================================================================
@@ -136,7 +136,7 @@ DECLARE
   ));
 BEGIN
   BEGIN
-    v_order_id := create_tablet_order_v10(
+    v_order_id := create_tablet_order_v11(
       p_client_uuid  := '00000000-0000-0000-0000-0000000ca001'::uuid,
       p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
       p_table_number := '',
@@ -145,10 +145,10 @@ BEGIN
       p_source_code  := 'T1'
     );
     PERFORM pickup_tablet_order(v_order_id, current_setting('tcfp.sess')::uuid);
-    PERFORM pay_existing_order_v22(
+    PERFORM pay_existing_order_v24(
       p_order_id := v_order_id,
       p_payment  := '{"method":"cash","amount":48000,"cash_received":48000,"change_given":0}'::jsonb
-    );
+    , p_idempotency_key := gen_random_uuid());
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM;
   END;
   PERFORM set_config('tcfp.order1',      COALESCE(v_order_id::text, '00000000-0000-0000-0000-000000000000'), false);
@@ -161,7 +161,7 @@ SELECT ok(
   AND (SELECT combo_components IS NOT NULL FROM order_items
         WHERE order_id = current_setting('tcfp.order1')::uuid
           AND product_id = '00000000-0000-0000-0000-0000000cd001'),
-  'T1: create_tablet_order_v10 persiste combo_components (NULL sous v8, le P0) - recu: ' || current_setting('tcfp.order1_msg'));
+  'T1: create_tablet_order_v11 persiste combo_components (NULL sous v8, le P0) - recu: ' || current_setting('tcfp.order1_msg'));
 
 SELECT is(
   (SELECT unit_price::int FROM order_items
@@ -220,7 +220,7 @@ SELECT is(
 -- par defaut (false) -> refus check_violation.
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT create_tablet_order_v10(
+  $q$ SELECT create_tablet_order_v11(
         p_client_uuid  := '00000000-0000-0000-0000-0000000ca006'::uuid,
         p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
         p_table_number := '',
@@ -244,7 +244,7 @@ DECLARE
   v_msg      TEXT := '';
 BEGIN
   BEGIN
-    v_order_id := create_tablet_order_v10(
+    v_order_id := create_tablet_order_v11(
       p_client_uuid  := '00000000-0000-0000-0000-0000000ca007'::uuid,
       p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
       p_table_number := '',
@@ -290,8 +290,8 @@ SELECT hasnt_function('public', 'create_tablet_order_v8',
 
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.create_tablet_order_v10(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text,uuid)', 'EXECUTE'),
-  'T9: anon n''a pas EXECUTE sur create_tablet_order_v10');
+    'public.create_tablet_order_v11(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text,uuid)', 'EXECUTE'),
+  'T9: anon n''a pas EXECUTE sur create_tablet_order_v11');
 
 SELECT * FROM finish();
 ROLLBACK;

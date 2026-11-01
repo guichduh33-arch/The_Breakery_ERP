@@ -3,10 +3,10 @@
 --
 -- T_RSV_01: stock_reservations table exists
 -- T_RSV_02: v_product_available_stock view exists
--- T_RSV_03: reservation_hold_v1 reduces available_quantity
+-- T_RSV_03: reservation_hold_v2 reduces available_quantity
 -- T_RSV_04: reservation_release_v1 restores available_quantity
--- T_RSV_05: reservation_hold_v1 with insufficient stock raises insufficient_available_stock
--- T_RSV_06: reservation_hold_v1 idempotent replay returns same id
+-- T_RSV_05: reservation_hold_v2 with insufficient stock raises insufficient_available_stock
+-- T_RSV_06: reservation_hold_v2 idempotent replay returns same id
 -- T_RSV_07: release_expired_reservations() flips held->released for expired
 -- T_RSV_08: pg_cron job 'release-expired-reservations' is scheduled
 
@@ -47,7 +47,7 @@ DO $$
 DECLARE
   v_hold JSONB;
 BEGIN
-  v_hold := reservation_hold_v1(
+  v_hold := reservation_hold_v2(
     'bbbbbbbb-0000-0000-0000-000000000001'::UUID, 30, 'cart',
     now() + interval '10 minutes'
   );
@@ -83,7 +83,7 @@ SELECT is(
 -- T_RSV_05: insufficient stock
 -- ---------------------------------------------------------------------------
 SELECT throws_ok(
-  $$ SELECT reservation_hold_v1(
+  $$ SELECT reservation_hold_v2(
       'bbbbbbbb-0000-0000-0000-000000000001'::UUID, 999, 'cart',
       now() + interval '10 minutes') $$,
   'P0002',
@@ -99,10 +99,10 @@ DECLARE
   v_first  JSONB;
   v_second JSONB;
 BEGIN
-  v_first := reservation_hold_v1(
+  v_first := reservation_hold_v2(
     'bbbbbbbb-0000-0000-0000-000000000001'::UUID, 5, 'cart',
     now() + interval '10 minutes', NULL, NULL, NULL, v_key);
-  v_second := reservation_hold_v1(
+  v_second := reservation_hold_v2(
     'bbbbbbbb-0000-0000-0000-000000000001'::UUID, 5, 'cart',
     now() + interval '10 minutes', NULL, NULL, NULL, v_key);
   PERFORM set_config('pgtap.rsv_first_id', v_first->>'reservation_id', false);

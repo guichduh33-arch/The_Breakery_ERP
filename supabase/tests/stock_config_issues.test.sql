@@ -1,5 +1,5 @@
 -- supabase/tests/stock_config_issues.test.sql
--- Audit 2026-07-08 — get_stock_config_issues_v2 (alerte "produits mal configurés").
+-- Audit 2026-07-08 — get_stock_config_issues_v3 (alerte "produits mal configurés").
 -- Run via Supabase MCP execute_sql (Docker retired). BEGIN..ROLLBACK envelope.
 -- _r capture pattern (le MCP n'echo que la derniere ligne).
 BEGIN;
@@ -7,11 +7,11 @@ SELECT plan(9);
 CREATE TEMP TABLE _r(l text);
 
 -- Existence + ACL defense-in-depth
-INSERT INTO _r SELECT has_function('public', 'get_stock_config_issues_v2', ARRAY[]::text[],
-  'T1: get_stock_config_issues_v2 exists (0 args)');
-INSERT INTO _r SELECT ok(NOT has_function_privilege('anon', 'get_stock_config_issues_v2()', 'EXECUTE'),
+INSERT INTO _r SELECT has_function('public', 'get_stock_config_issues_v3', ARRAY[]::text[],
+  'T1: get_stock_config_issues_v3 exists (0 args)');
+INSERT INTO _r SELECT ok(NOT has_function_privilege('anon', 'get_stock_config_issues_v3()', 'EXECUTE'),
   'T2: anon EXECUTE revoked');
-INSERT INTO _r SELECT ok(has_function_privilege('authenticated', 'get_stock_config_issues_v2()', 'EXECUTE'),
+INSERT INTO _r SELECT ok(has_function_privilege('authenticated', 'get_stock_config_issues_v3()', 'EXECUTE'),
   'T3: authenticated EXECUTE granted');
 
 -- Acteur : un user seedé qui a inventory.read
@@ -67,27 +67,27 @@ BEGIN
 END $$;
 
 INSERT INTO _r SELECT is(
-  (SELECT issue_type FROM get_stock_config_issues_v2() WHERE sku='SCI-MTO'),
+  (SELECT issue_type FROM get_stock_config_issues_v3() WHERE sku='SCI-MTO'),
   'sale_deduct_no_recipe', 'T4: made-to-order sans recette -> sale_deduct_no_recipe');
 INSERT INTO _r SELECT is(
-  (SELECT issue_type FROM get_stock_config_issues_v2() WHERE sku='SCI-ORPH'),
+  (SELECT issue_type FROM get_stock_config_issues_v3() WHERE sku='SCI-ORPH'),
   'orphan_recipe', 'T5: recette + deduct=false -> orphan_recipe');
 INSERT INTO _r SELECT is(
-  (SELECT severity FROM get_stock_config_issues_v2() WHERE sku='SCI-NEG'),
+  (SELECT severity FROM get_stock_config_issues_v3() WHERE sku='SCI-NEG'),
   'critical', 'T6: stock négatif suivi -> severity critical');
 INSERT INTO _r SELECT is(
-  (SELECT issue_type FROM get_stock_config_issues_v2() WHERE sku='SCI-PROD'),
+  (SELECT issue_type FROM get_stock_config_issues_v3() WHERE sku='SCI-PROD'),
   'tracked_recipe_at_prod', 'T7: suivi + recette vendu -> tracked_recipe_at_prod');
 
 -- T8/T9 (F1) : la paire d'unités inconvertible se voit AVANT la vente, et le
 -- prédicat discrimine — une unité simplement DIFFÉRENTE mais convertible ne
 -- déclenche rien.
 INSERT INTO _r SELECT is(
-  (SELECT severity FROM get_stock_config_issues_v2()
+  (SELECT severity FROM get_stock_config_issues_v3()
     WHERE sku='SCI-BADUNIT' AND issue_type='unconvertible_recipe_unit'),
   'critical', 'T8: recette g -> stock cup -> unconvertible_recipe_unit critical');
 INSERT INTO _r SELECT ok(
-  NOT EXISTS (SELECT 1 FROM get_stock_config_issues_v2()
+  NOT EXISTS (SELECT 1 FROM get_stock_config_issues_v3()
                WHERE sku='SCI-OKUNIT' AND issue_type='unconvertible_recipe_unit'),
   'T9: recette g -> stock kg (convertible) n''est PAS signalée');
 

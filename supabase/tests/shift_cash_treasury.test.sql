@@ -32,7 +32,7 @@ SELECT is((SELECT l.credit FROM journal_entry_lines l JOIN shift_cash_treasury t
 SELECT throws_ok($q$ UPDATE pos_sessions SET opening_cash=900000 WHERE id=current_setting('sht.session')::uuid $q$,
   'P0001','issued_shift_float_is_immutable','issued float cannot be changed');
 CREATE TEMP TABLE shift_result(value jsonb);
-INSERT INTO shift_result SELECT close_shift_v10(current_setting('sht.session')::uuid,610000,'Counted 10k overage',gen_random_uuid());
+INSERT INTO shift_result SELECT close_shift_v11(current_setting('sht.session')::uuid,610000,'Counted 10k overage',gen_random_uuid());
 SELECT is((SELECT (value->>'expected_cash')::numeric FROM shift_result),600000::numeric,'expected includes float and net cash movement');
 SELECT is((SELECT (value->>'variance')::numeric FROM shift_result),10000::numeric,'overage stays separate');
 SELECT is((SELECT returned_float FROM shift_cash_treasury WHERE session_id=current_setting('sht.session')::uuid),500000::numeric,'500k returned to Small Money');
@@ -43,7 +43,7 @@ SELECT is((SELECT sum(l.debit-l.credit) FROM journal_entry_lines l JOIN accounts
 SELECT is((SELECT sum(l.debit-l.credit) FROM journal_entry_lines l JOIN accounts a ON a.id=l.account_id
   JOIN journal_entries j ON j.id=l.journal_entry_id WHERE a.code='1117' AND j.reference_id=current_setting('sht.session')::uuid),
   0::numeric,'opening float fully returns');
-SELECT is((close_shift_v10(current_setting('sht.session')::uuid,610000,NULL,NULL)->>'idempotent_replay')::boolean,true,'close replay is safe');
+SELECT is((close_shift_v11(current_setting('sht.session')::uuid,610000,NULL,NULL)->>'idempotent_replay')::boolean,true,'close replay is safe');
 SELECT is((SELECT count(*)::int FROM journal_entries WHERE reference_id=current_setting('sht.session')::uuid AND reference_type='cash_movement'),
   2,'only one issue and one settlement');
 SELECT throws_ok($q$ UPDATE pos_sessions SET closing_cash=999999 WHERE id=current_setting('sht.session')::uuid $q$,
@@ -53,17 +53,17 @@ DO $$ DECLARE s uuid; BEGIN
   INSERT INTO pos_sessions(opened_by,opening_cash,status) VALUES(current_setting('sht.profile')::uuid,500000,'open') RETURNING id INTO s;
   PERFORM set_config('sht.second',s::text,true);
 END $$;
-SELECT is(close_shift_v10(current_setting('sht.second')::uuid,900000,'Large variance',gen_random_uuid(),
+SELECT is(close_shift_v11(current_setting('sht.second')::uuid,900000,'Large variance',gen_random_uuid(),
   current_setting('sht.profile')::uuid,'999999')->>'error','invalid_pin','bad manager PIN refused');
 SELECT ok((SELECT settled_at IS NULL FROM shift_cash_treasury WHERE session_id=current_setting('sht.second')::uuid),'no settlement after PIN refusal');
 SELECT is((SELECT status::text FROM pos_sessions WHERE id=current_setting('sht.second')::uuid),'open','refused shift remains open');
-SELECT lives_ok($q$ SELECT close_shift_v10(current_setting('sht.second')::uuid,500000,NULL,gen_random_uuid()) $q$,'matching count closes without variance');
+SELECT lives_ok($q$ SELECT close_shift_v11(current_setting('sht.second')::uuid,500000,NULL,gen_random_uuid()) $q$,'matching count closes without variance');
 SELECT is((SELECT safe_deposit FROM shift_cash_treasury WHERE session_id=current_setting('sht.second')::uuid),0::numeric,'no sale means no safe deposit');
 -- En cas de perte dépassant les recettes, on retourne uniquement les espèces réelles.
 DO $$ DECLARE s uuid; BEGIN
   INSERT INTO pos_sessions(opened_by,opening_cash,status) VALUES(current_setting('sht.profile')::uuid,500000,'open') RETURNING id INTO s;
   PERFORM set_config('sht.third',s::text,true);
-  PERFORM close_shift_v10(s,490000,'Float shortage',gen_random_uuid(),current_setting('sht.profile')::uuid,'285741');
+  PERFORM close_shift_v11(s,490000,'Float shortage',gen_random_uuid(),current_setting('sht.profile')::uuid,'285741');
 END $$;
 SELECT is((SELECT returned_float FROM shift_cash_treasury WHERE session_id=current_setting('sht.third')::uuid),490000::numeric,'short float returns only actual cash');
 SELECT is((SELECT safe_deposit FROM shift_cash_treasury WHERE session_id=current_setting('sht.third')::uuid),0::numeric,'shortage does not invent a negative deposit');

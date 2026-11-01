@@ -1,4 +1,4 @@
--- pgTAP — S72 Lot 5 : get_pos_events_v1 unified stream (source unique).
+-- pgTAP — S72 Lot 5 : get_pos_events_v2 unified stream (source unique).
 -- Run via MCP execute_sql inside a BEGIN … ROLLBACK envelope (Docker retired).
 -- The reader merges client gestures (pos_events) with server outcomes derived
 -- at read time from the money tables. Verifies:
@@ -24,7 +24,7 @@ SELECT set_config('request.jwt.claims',
 
 -- 1) Source-unique reconciliation (live data, wide range).
 SELECT is(
-  (get_pos_events_v1('2026-05-01','2026-07-11', ARRAY['sale_completed'], NULL,NULL,NULL)->>'total_count')::int,
+  (get_pos_events_v2('2026-05-01','2026-07-11', ARRAY['sale_completed'], NULL,NULL,NULL)->>'total_count')::int,
   (get_pos_sales_overview_v1('2026-05-01','2026-07-11')->>'orders')::int,
   'derived sale_completed count reconciles exactly with the Overview order count');
 
@@ -32,7 +32,7 @@ SELECT is(
 SELECT ok(
   (SELECT bool_and(e->'payload'->>'source' = 'server' AND (e->>'order_id') IS NOT NULL)
      FROM jsonb_array_elements(
-       get_pos_events_v1('2026-05-01','2026-07-11', ARRAY['sale_completed'], NULL,NULL,NULL, 50)->'events') e),
+       get_pos_events_v2('2026-05-01','2026-07-11', ARRAY['sale_completed'], NULL,NULL,NULL, 50)->'events') e),
   'derived sale rows are payload.source=server with an order id');
 
 -- Session A: server-only (no client event), pre-closed.
@@ -44,7 +44,7 @@ VALUES ('cccc3333-0000-0000-0000-00000000000a','00000000-0000-0000-0000-00000000
 -- 3) Un-synced session surfaces as a server-derived session_opened.
 SELECT is(
   (SELECT e->'payload'->>'source'
-     FROM jsonb_array_elements(get_pos_events_v1('2026-07-11','2026-07-11',
+     FROM jsonb_array_elements(get_pos_events_v2('2026-07-11','2026-07-11',
             ARRAY['session_opened'], NULL,NULL,NULL)->'events') e
     WHERE e->>'session_id' = 'cccc3333-0000-0000-0000-00000000000a'),
   'server', 'un-synced session surfaces as a server-derived session_opened');
@@ -61,13 +61,13 @@ SELECT record_pos_events_v1('tap-device-lot5-01', $J$[
 -- 4) Dedup: exactly ONE session_opened row for session B — the client's.
 SELECT is(
   (SELECT COUNT(*)::int
-     FROM jsonb_array_elements(get_pos_events_v1('2026-07-11','2026-07-11',
+     FROM jsonb_array_elements(get_pos_events_v2('2026-07-11','2026-07-11',
             ARRAY['session_opened'], NULL,NULL,NULL)->'events') e
     WHERE e->>'session_id' = 'cccc3333-0000-0000-0000-00000000000b'),
   1, 'client-synced session is NOT duplicated by the server derivation');
 SELECT is(
   (SELECT COALESCE(e->'payload'->>'source','client')
-     FROM jsonb_array_elements(get_pos_events_v1('2026-07-11','2026-07-11',
+     FROM jsonb_array_elements(get_pos_events_v2('2026-07-11','2026-07-11',
             ARRAY['session_opened'], NULL,NULL,NULL)->'events') e
     WHERE e->>'session_id' = 'cccc3333-0000-0000-0000-00000000000b'),
   'client', 'the surviving session_opened row is the client one');
@@ -75,7 +75,7 @@ SELECT is(
 -- 5) session_closed derived with the counted closing cash as amount.
 SELECT is(
   (SELECT (e->>'amount')::numeric
-     FROM jsonb_array_elements(get_pos_events_v1('2026-07-11','2026-07-11',
+     FROM jsonb_array_elements(get_pos_events_v2('2026-07-11','2026-07-11',
             ARRAY['session_closed'], NULL,NULL,NULL)->'events') e
     WHERE e->>'session_id' = 'cccc3333-0000-0000-0000-00000000000a'),
   750000::numeric, 'closing surfaces as a server-derived session_closed with the counted cash');
@@ -83,7 +83,7 @@ SELECT is(
 -- 6) Device filter excludes deviceless server-derived rows.
 SELECT is(
   (SELECT COUNT(*)::int
-     FROM jsonb_array_elements(get_pos_events_v1('2026-07-11','2026-07-11',
+     FROM jsonb_array_elements(get_pos_events_v2('2026-07-11','2026-07-11',
             ARRAY['session_opened','session_closed','sale_completed'],
             (SELECT id FROM pos_devices WHERE device_token='tap-device-lot5-01'),
             NULL,NULL)->'events') e
@@ -93,7 +93,7 @@ SELECT is(
 -- 7) Server rows are labelled for the UI.
 SELECT is(
   (SELECT e->>'device_label'
-     FROM jsonb_array_elements(get_pos_events_v1('2026-07-11','2026-07-11',
+     FROM jsonb_array_elements(get_pos_events_v2('2026-07-11','2026-07-11',
             ARRAY['session_closed'], NULL,NULL,NULL)->'events') e
     WHERE e->>'session_id' = 'cccc3333-0000-0000-0000-00000000000a'),
   'Server (money-path)', 'server-derived rows carry the Server device label');

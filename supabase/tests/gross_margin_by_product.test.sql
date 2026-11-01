@@ -1,5 +1,5 @@
 -- supabase/tests/gross_margin_by_product.test.sql
--- S57 Chantier B (B-D1/B-D2/B-D3) — pgTAP for get_gross_margin_by_product_v1.
+-- S57 Chantier B (B-D1/B-D2/B-D3) — pgTAP for get_gross_margin_by_product_v2.
 --
 -- Covers:
 --   T1 : happy path — revenue/cogs/margin/margin_pct computed correctly from a
@@ -71,7 +71,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product 1', 2500, 3, 7500);
 
-  v_res := get_gross_margin_by_product_v1('2031-03-15', '2031-03-15');
+  v_res := get_gross_margin_by_product_v2('2031-03-15', '2031-03-15');
   SELECT e INTO v_line FROM jsonb_array_elements(v_res->'by_product') e
     WHERE (e->>'product_id')::uuid = v_prod;
 
@@ -84,7 +84,7 @@ BEGIN
 END
 $$;
 SELECT ok(current_setting('breakery.gm_t1')::boolean,
-  'T1: get_gross_margin_by_product_v1 computes revenue/cogs/margin/margin_pct correctly');
+  'T1: get_gross_margin_by_product_v2 computes revenue/cogs/margin/margin_pct correctly');
 
 -- ── T2 : local-day tz attribution ───────────────────────────────────────────
 DO $$
@@ -132,8 +132,8 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product TZ', 1000, 1, 1000);
 
-  v_res_d   := get_gross_margin_by_product_v1('2031-03-16', '2031-03-16');
-  v_res_dm1 := get_gross_margin_by_product_v1('2031-03-15', '2031-03-15');
+  v_res_d   := get_gross_margin_by_product_v2('2031-03-16', '2031-03-16');
+  v_res_dm1 := get_gross_margin_by_product_v2('2031-03-15', '2031-03-15');
 
   v_found_d   := EXISTS (SELECT 1 FROM jsonb_array_elements(v_res_d->'by_product') e
                           WHERE (e->>'product_id')::uuid = v_prod);
@@ -187,7 +187,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product Void', 1000, 1, 1000);
 
-  v_res := get_gross_margin_by_product_v1('2031-03-17', '2031-03-17');
+  v_res := get_gross_margin_by_product_v2('2031-03-17', '2031-03-17');
   v_found := EXISTS (SELECT 1 FROM jsonb_array_elements(v_res->'by_product') e
                        WHERE (e->>'product_id')::uuid = v_prod);
   PERFORM set_config('breakery.gm_t3', (NOT v_found)::text, false);
@@ -203,7 +203,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_gross_margin_by_product_v1('2031-01-01', '2031-12-31');
+    PERFORM get_gross_margin_by_product_v2('2031-01-01', '2031-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -211,7 +211,7 @@ BEGIN
 END
 $$;
 SELECT ok(current_setting('breakery.gm_t4')::boolean,
-  'T4: get_gross_margin_by_product_v1 CASHIER raises 42501 (reports.financial.read required)');
+  'T4: get_gross_margin_by_product_v2 CASHIER raises 42501 (reports.financial.read required)');
 
 -- ── T5 : B2B settled order included ─────────────────────────────────────────
 DO $$
@@ -247,7 +247,7 @@ BEGIN
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product B2B', 5000, 2, 10000);
 
-  v_res := get_gross_margin_by_product_v1('2031-03-18', '2031-03-18');
+  v_res := get_gross_margin_by_product_v2('2031-03-18', '2031-03-18');
   v_found := EXISTS (SELECT 1 FROM jsonb_array_elements(v_res->'by_product') e
                        WHERE (e->>'product_id')::uuid = v_prod);
   PERFORM set_config('breakery.gm_t5', v_found::text, false);
