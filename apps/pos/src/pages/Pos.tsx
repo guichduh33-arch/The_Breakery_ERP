@@ -28,6 +28,7 @@ import {
   FullScreenModal,
 } from '@breakery/ui';
 import { usePickedUpOrderSync } from '@/features/inbox/hooks/usePickedUpOrderSync';
+import { DeviceSyncButton } from '@/features/sync/DeviceSyncButton';
 import { CategoryNav } from '@/features/products/CategoryNav';
 import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { SideMenuDrawer } from '@/features/nav/SideMenuDrawer';
@@ -198,6 +199,7 @@ export default function PosPage() {
             défilement horizontal sur l'écran principal. Le nom est la seule
             chose compressible du header. */}
         <div className="flex items-center gap-2 min-w-0">
+          <DeviceSyncButton />
           {/* Critique run 4 lot 2 — vérité du poste : l'alerte « No shift »
               se balaye, et sans rappel le caissier compose une commande
               entière avant d'échouer au process. La pastille reste tant

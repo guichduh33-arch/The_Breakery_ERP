@@ -18,6 +18,7 @@ import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { useKotCopies } from '@/features/settings/hooks/useKotCopies';
 import { PrintJobsPanel } from '@/features/cart/PrintJobsPanel';
 import { TabletUserMenu } from '@/features/tablet/components/TabletUserMenu';
+import { DeviceSyncButton } from '@/features/sync/DeviceSyncButton';
 
 function TabletAccessDenied(): JSX.Element {
   useEffect(() => {
@@ -98,6 +99,7 @@ export default function TabletLayout(): JSX.Element {
         <TabletUserMenu />
 
         <div className="shrink-0 flex items-center gap-2">
+          <DeviceSyncButton />
           <PrintJobsPanel compact />
           {/* Active table */}
           <span
