@@ -149,7 +149,7 @@ describe('S55 useVoidOrder — manager-pin header + idempotency wiring', () => {
 
     // Body MUST NOT carry manager_pin
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    expect(body).toEqual({ order_id: 'order-1', reason: 'customer cancelled' });
+    expect(body).toEqual({ order_id: 'order-1', reason: 'customer cancelled', source: 'pos', session_id: null });
     expect(body).not.toHaveProperty('manager_pin');
     expect(body).not.toHaveProperty('managerPin');
     expect(body).not.toHaveProperty('idempotency_key');

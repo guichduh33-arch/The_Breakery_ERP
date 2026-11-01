@@ -31,7 +31,7 @@ describe('Disponibilité de la route caisse', () => {
     expect(screen.queryByRole('main', { name: 'Cashier' })).not.toBeInTheDocument();
   });
 
-  it.each(['/pos', '/pos/debts'])('renvoie un appareil de prise de commande hors de %s', async (route) => {
+  it.each(['/pos', '/pos/debts', '/pos/outstanding'])('renvoie un appareil de prise de commande hors de %s', async (route) => {
     terminal.orderingOnly = true;
     render(<MemoryRouter initialEntries={[route]}><AppRoutes /></MemoryRouter>);
     expect(await screen.findByRole('main', { name: 'Tablet' })).toHaveTextContent('Order only');

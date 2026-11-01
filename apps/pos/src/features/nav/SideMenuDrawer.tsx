@@ -245,6 +245,11 @@ export function SideMenuDrawer({
               onClick={() => go('/pos/debts')}
             />
             <NavLink
+              icon={<AlertCircle className="h-5 w-5" aria-hidden />}
+              label="Outstanding Tickets"
+              onClick={() => go('/pos/outstanding')}
+            />
+            <NavLink
               icon={<Monitor className="h-5 w-5" aria-hidden />}
               label="KDS"
               onClick={() => go('/kds')}
