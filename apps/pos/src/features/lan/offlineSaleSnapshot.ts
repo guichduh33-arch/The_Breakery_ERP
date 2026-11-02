@@ -10,6 +10,18 @@ interface Entry { key: QueryKey; data: unknown; updatedAt: number }
 interface Snapshot { version: 1; identity: SaleIdentity; shift: ActiveShift; entries: Entry[] }
 const settings = ['offline-network', 'tax-config', 'enabled-payment-methods'];
 
+/** Les événements d'observation et les autres données n'affectent pas la vente hors ligne. */
+export function isSaleSnapshotQuery(key: QueryKey): boolean {
+  switch (key[0]) {
+    case 'products': case 'categories': case 'station-map': return key.length === 1;
+    case 'promotions': return key.length === 2 && key[1] === 'active';
+    case 'product-modifiers': return key.length === 3;
+    case 'pos-product-variants': case 'combo-config': return key.length === 2;
+    case 'business-config': return key.length === 2 && settings.includes(String(key[1]));
+    default: return false;
+  }
+}
+
 /** Le manifeste couvre aussi les produits jamais ouverts dans une modale. */
 export function saleKeys(client: QueryClient): QueryKey[] | null {
   const products = client.getQueryData<Product[]>(['products']);
@@ -52,7 +64,8 @@ export function saveSaleSnapshot(storage: Storage, client: QueryClient, identity
     entries.push({ key, data: state.data, updatedAt: state.dataUpdatedAt });
   }
   try {
-    storage.setItem(SALE_SNAPSHOT_KEY, JSON.stringify({ version: 1, identity, shift, entries } satisfies Snapshot));
+    const serialized = JSON.stringify({ version: 1, identity, shift, entries } satisfies Snapshot);
+    if (storage.getItem(SALE_SNAPSHOT_KEY) !== serialized) storage.setItem(SALE_SNAPSHOT_KEY, serialized);
     return true;
   } catch { return false; }
 }
