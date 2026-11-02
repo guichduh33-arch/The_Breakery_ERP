@@ -11,6 +11,9 @@ export interface PrintJob {
   error?: string;
   attempts: number;
 }
+export function isConfirmedStationJob(job: PrintJob): boolean {
+  return job.status === 'confirmed' && (job.payload.kind === 'prep' || job.payload.kind === 'waiter');
+}
 const JOURNAL_KEY = 'breakery.print-jobs.v1';
 interface PrintJobsState { jobs: PrintJob[]; put: (job: PrintJob) => Promise<void> }
 export const usePrintJobs = create<PrintJobsState>()(persist((set) => ({
@@ -66,6 +69,10 @@ export async function runPrintJob(payload: StationTicketPayload, printer: Printe
         if (automaticId && !previous && !manual && existing) {
           usePrintJobs.setState({ jobs });
           return { existing };
+        }
+        // La confirmation durable prime sur un ancien état affiché dans un autre onglet.
+        if ((existing && isConfirmedStationJob(existing)) || (previous && isConfirmedStationJob(previous))) {
+          throw new Error('Already printed — station tickets cannot be reprinted');
         }
         const original = previous || manual ? existing ?? previous : undefined;
         const job: PrintJob = { id, payload: original?.payload ?? payload, status: 'pending', attempts: (original?.attempts ?? 0) + 1 };

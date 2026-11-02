@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Printer } from 'lucide-react';
 import { Button, Sheet, SheetContent, SheetTitle, SheetDescription } from '@breakery/ui';
-import { usePrintJobs, runPrintJob } from '@/services/print/printJobs';
+import { usePrintJobs, runPrintJob, isConfirmedStationJob } from '@/services/print/printJobs';
 import { useReceiptJobs, runReceiptJob } from '@/services/print/receiptJobs';
 import { useStationPrinters } from './hooks/useStationPrinters';
 
@@ -23,7 +23,7 @@ export function PrintJobsPanel({ compact = false }: { compact?: boolean }) {
       </> : label}
     </Button>
     <Sheet open={open} onOpenChange={setOpen}><SheetContent className="theme-pos w-full sm:max-w-lg overflow-y-auto bg-bg-base text-text-primary">
-      <SheetTitle>Printing</SheetTitle><SheetDescription>Orders are saved separately. Reprints are marked as duplicates.</SheetDescription>
+      <SheetTitle>Printing</SheetTitle><SheetDescription>Orders are saved separately. Confirmed station tickets cannot be reprinted. Other reprints are marked as duplicates.</SheetDescription>
       <div className="space-y-3 py-4">{jobs.length === 0 && receipts.length === 0 && <p>No print jobs on this terminal yet.</p>}
         {[...receipts].reverse().map((job) => <div key={job.id} className="p-3 border border-border-subtle rounded-md space-y-2">
           <p className="font-semibold break-words">{job.payload.order.order_number} · Receipt</p>
@@ -36,10 +36,10 @@ export function PrintJobsPanel({ compact = false }: { compact?: boolean }) {
         {[...jobs].reverse().map((job) => <div key={job.id} className="p-3 border border-border-subtle rounded-md space-y-2">
           <p className="font-semibold break-words">{job.payload.order_number} · {job.payload.role}</p>
           <p className={job.status === 'confirmed' ? 'text-text-secondary' : 'text-gold'}>{job.status === 'confirmed' ? 'Printer acknowledged' : 'Print to verify'}{job.error ? ` — ${job.error}` : ''}</p>
-          <Button variant="secondary" disabled={busy !== null} onClick={() => {
+          <Button variant="secondary" disabled={busy !== null || isConfirmedStationJob(job)} onClick={() => {
             setBusy(job.id);
             void runPrintJob(job.payload, printers?.get(job.payload.role), 1, job).finally(() => setBusy(null));
-          }}>{busy === job.id ? 'Printing…' : 'Reprint duplicate'}</Button>
+          }}>{isConfirmedStationJob(job) ? 'Already printed' : busy === job.id ? 'Printing…' : 'Reprint duplicate'}</Button>
         </div>)}
       </div>
     </SheetContent></Sheet>
