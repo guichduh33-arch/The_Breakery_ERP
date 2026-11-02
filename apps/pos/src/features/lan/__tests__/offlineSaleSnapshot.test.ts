@@ -37,6 +37,21 @@ function completeCache() {
 }
 beforeEach(() => sessionStorage.clear());
 describe('sale snapshot', () => {
+  it('does not rewrite an identical complete snapshot, but recreates a missing one', () => {
+    const source = completeCache();
+    const write = vi.spyOn(Storage.prototype, 'setItem');
+    try {
+      expect(saveSaleSnapshot(sessionStorage, source, identity, shift)).toBe(true);
+      const stored = sessionStorage.getItem(SALE_SNAPSHOT_KEY);
+      expect(saveSaleSnapshot(sessionStorage, source, identity, shift)).toBe(true);
+      expect(write.mock.calls.filter(([key]) => key === SALE_SNAPSHOT_KEY)).toHaveLength(1);
+      sessionStorage.removeItem(SALE_SNAPSHOT_KEY);
+      expect(saveSaleSnapshot(sessionStorage, source, identity, shift)).toBe(true);
+      expect(sessionStorage.getItem(SALE_SNAPSHOT_KEY)).toBe(stored);
+      expect(write.mock.calls.filter(([key]) => key === SALE_SNAPSHOT_KEY)).toHaveLength(2);
+    } finally { write.mockRestore(); }
+  });
+
   it('serves the restored routing including variants to the real fire getter without cloud access', async () => {
     const source = completeCache();
     expect(saveSaleSnapshot(sessionStorage, source, identity, shift)).toBe(true);

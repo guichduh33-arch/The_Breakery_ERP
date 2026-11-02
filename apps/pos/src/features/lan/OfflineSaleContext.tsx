@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { useShiftStore } from '@/stores/shiftStore';
+import { useShiftStore, type ActiveShift } from '@/stores/shiftStore';
 import { supabaseUrl } from '@/lib/supabase';
 import { localSessionValid, isSameTabReload } from '@/features/auth/localSession';
 import { useProducts } from '@/features/products/hooks/useProducts';
@@ -17,7 +17,7 @@ import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPa
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { usePromotions } from '@/features/promotions/hooks/usePromotions';
 import { useLanCredential } from './lanCredential';
-import { clearSaleSnapshot, restoreSaleSnapshot, saveSaleSnapshot, saleKeys, type SaleIdentity } from './offlineSaleSnapshot';
+import { clearSaleSnapshot, isSaleSnapshotQuery, restoreSaleSnapshot, saveSaleSnapshot, saleKeys, SALE_SNAPSHOT_KEY, type SaleIdentity } from './offlineSaleSnapshot';
 import { useCloudStatusStore } from './cloudStatusStore';
 import { TabletOptionsPreload } from './TabletOptionsPreload';
 
@@ -56,6 +56,8 @@ export function OfflineSaleContext() {
   const { pathname } = useLocation();
   const initialRestore = useRef(false);
   const previousIdentity = useRef<string | null>(null);
+  const dirty = useRef(true);
+  const saved = useRef<{ client: QueryClient; signature: string | null; shift: ActiveShift; serialized: string | null } | null>(null);
 
   useLayoutEffect(() => {
     if (auth.bootstrapStatus !== 'ready') return;
@@ -97,20 +99,66 @@ export function OfflineSaleContext() {
         }
         return;
       }
-      if (current.isLocked || !current.cloudValidated || current.sessionToken !== identity.session) return;
+      if (!current.isAuthenticated || current.bootstrapStatus !== 'ready' || current.isLocked || !current.cloudValidated
+        || current.sessionToken !== identity.session || current.user?.id !== identity.user
+        || useLanCredential.getState().credential?.id !== identity.terminal) return;
       if (!localSessionValid(current.localSession, current.sessionToken, current.user?.id)) return;
       const shift = useShiftStore.getState().current;
       const verifiedShift = client.getQueryState<{ id: string } | null>(['pos_sessions', 'current', identity.user]);
       if (verifiedShift?.status !== 'success' || !shift || verifiedShift.data?.id !== shift.id) return;
-      saveSaleSnapshot(storage, client, identity, shift);
+      // L'activité locale et les changements de route ne modifient pas le
+      // catalogue : aucun parcours/JSON.stringify avant affichage dans ce cas.
+      const previous = saved.current;
+      try {
+        if (!dirty.current && previous?.client === client && previous.signature === signature
+          && previous.shift.id === shift.id && previous.shift.opened_at === shift.opened_at
+          && previous.shift.opening_cash === shift.opening_cash
+          && previous.serialized !== null && storage.getItem(SALE_SNAPSHOT_KEY) === previous.serialized) return;
+        if (saveSaleSnapshot(storage, client, identity, shift)) {
+          saved.current = { client, signature, shift, serialized: storage.getItem(SALE_SNAPSHOT_KEY) };
+          dirty.current = false;
+        }
+      } catch { /* Stockage indisponible : conserver le dernier instantané connu. */ }
     };
-    const unsubscribeQueries = client.getQueryCache().subscribe(save);
-    const unsubscribeShift = useShiftStore.subscribe((state, previous) => {
-      if (!state.current && previous.current) clearSaleSnapshot(storage);
-      else save();
+    let disposed = false;
+    let pending = false;
+    const flush = () => {
+      if (disposed || !pending) return;
+      pending = false;
+      save(); // Revalide l'identité, le cloud et le shift au moment de l'écriture.
+    };
+    const scheduleSave = () => {
+      if (disposed || pending) return;
+      pending = true;
+      queueMicrotask(flush);
+    };
+    const unsubscribeQueries = client.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated') return;
+      const key = event.query.queryKey as QueryKey;
+      const shiftQuery = key.length === 3 && key[0] === 'pos_sessions' && key[1] === 'current' && key[2] === identity.user;
+      if (!isSaleSnapshotQuery(key) && !shiftQuery) return;
+      if (event.action.type !== 'success' && event.action.type !== 'error' && event.action.type !== 'setState') return;
+      dirty.current = true;
+      if (!useCloudStatusStore.getState().cloudOnline || !useAuthStore.getState().cloudValidated) {
+        // Réparer uniquement la requête déjà connue qui vient d'échouer, sans
+        // reparcourir le catalogue à chaque événement ni récursion globale.
+        const state = event.query.state;
+        if (isSaleSnapshotQuery(key) && state.status === 'error' && state.data !== undefined) {
+          client.setQueryData(key, state.data, { updatedAt: state.dataUpdatedAt });
+        }
+        return;
+      }
+      scheduleSave();
     });
+    const unsubscribeShift = useShiftStore.subscribe((state, previous) => {
+      if (state.current !== previous.current) dirty.current = true;
+      if (!state.current && previous.current) clearSaleSnapshot(storage);
+      else if (state.current !== previous.current) scheduleSave();
+    });
+    // Une fermeture/recharge de l'onglet ne perd pas le dernier lot de données.
+    window.addEventListener('pagehide', flush);
     save();
-    return () => { unsubscribeQueries(); unsubscribeShift(); };
+    return () => { disposed = true; unsubscribeQueries(); unsubscribeShift(); window.removeEventListener('pagehide', flush); };
   }, [client, terminal, pathname, cloudOnline, auth.cloudValidated, auth.bootstrapStatus, auth.isAuthenticated, auth.user, auth.sessionToken, auth.localSession, auth.isLocked]);
 
   // L'identité change aussi à la déconnexion : ne conserver aucun ancien manifeste.
