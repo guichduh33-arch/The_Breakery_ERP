@@ -81,7 +81,8 @@ SELECT is(e.payment_method,CASE c.kind WHEN 'credit-default' THEN 'cash' ELSE re
  'chosen/default method is persisted for credit: '||c.kind)
  FROM ep_cases c JOIN expenses e USING(id) WHERE c.kind LIKE 'credit-%' AND c.kind <> 'credit-invalid';
 SELECT is((SELECT l.account_id FROM journal_entry_lines l WHERE l.journal_entry_id=e.payment_je_id AND l.credit>0),
- public.resolve_mapping_account(public._expense_settlement_mapping_key(e.payment_method)),
+ public.resolve_mapping_account(public._expense_settlement_mapping_key(
+  CASE c.kind WHEN 'credit-default' THEN 'cash' ELSE replace(c.kind,'credit-','') END)),
  'credit settlement account matches persisted method: '||c.kind)
  FROM ep_cases c JOIN expenses e USING(id) WHERE c.kind LIKE 'credit-%' AND c.kind <> 'credit-invalid';
 SELECT ok((SELECT SUM(l.debit)=110000 AND SUM(l.credit)=110000 AND count(*)=2 FROM journal_entry_lines l
