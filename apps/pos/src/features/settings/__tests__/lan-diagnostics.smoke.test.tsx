@@ -96,35 +96,82 @@ describe('NetworkScanPanel', () => {
 });
 
 describe('PrinterTestPanel', () => {
-  it('probes then prints a test ticket on the registered printer', async () => {
-    vi.mocked(probePrinter).mockResolvedValue({ reachable: true, latencyMs: 5 });
+  it('prints a new TEST ticket on the registered target without diagnostics permission', async () => {
+    vi.mocked(probePrinter).mockRejectedValue(new Error('HTTP 403'));
     vi.mocked(printStationTicket).mockResolvedValue({ success: true });
 
     render(<PrinterTestPanel readOnly={false} />);
     fireEvent.click(screen.getByRole('button', { name: 'Test PRN-KITCHEN' }));
 
-    await waitFor(() => expect(printStationTicket).toHaveBeenCalled());
-    expect(probePrinter).toHaveBeenCalledWith('192.168.1.50', 9100);
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('PRN-KITCHEN: test ticket sent'));
+    expect(printStationTicket).toHaveBeenCalledTimes(1);
+    expect(probePrinter).not.toHaveBeenCalled();
     const [target, payload] = vi.mocked(printStationTicket).mock.calls[0]!;
     expect(target).toEqual({ ip_address: '192.168.1.50', port: 9100 });
-    expect(payload.role).toBe('kitchen');
-    expect(payload.order_number).toBe('TEST');
-    expect(toast.success).toHaveBeenCalled();
+    expect(payload).toEqual({
+      kind: 'prep',
+      role: 'kitchen',
+      order_number: 'TEST',
+      created_at: payload.created_at,
+      server_name: 'POS Settings',
+      items: [{ name: 'Test ticket — POS Settings', quantity: 1 }],
+    });
+    expect(new Date(payload.created_at).toISOString()).toBe(payload.created_at);
+    expect(payload).not.toHaveProperty('duplicate');
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it('stops at the probe when the printer does not answer', async () => {
-    vi.mocked(probePrinter).mockResolvedValue({ reachable: false });
+  it('surfaces the print failure without showing success', async () => {
+    vi.mocked(printStationTicket).mockResolvedValue({ success: false, error: 'HTTP 502' });
 
     render(<PrinterTestPanel readOnly={false} />);
     fireEvent.click(screen.getByRole('button', { name: 'Test PRN-KITCHEN' }));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(printStationTicket).not.toHaveBeenCalled();
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('PRN-KITCHEN: print failed — HTTP 502'));
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(probePrinter).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a transport failure and restores the test action', async () => {
+    vi.mocked(printStationTicket).mockRejectedValue(new Error('bridge_unreachable'));
+
+    render(<PrinterTestPanel readOnly={false} />);
+    const button = screen.getByRole('button', { name: 'Test PRN-KITCHEN' });
+    fireEvent.click(button);
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(
+      'Print-bridge unreachable — check the print server URL on the Printing tab and that the service is running.',
+    ));
+    expect(button).toBeEnabled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('keeps the test action busy until the print completes', async () => {
+    let finishPrint!: (result: { success: boolean }) => void;
+    vi.mocked(printStationTicket).mockImplementationOnce(() => new Promise((resolve) => {
+      finishPrint = resolve;
+    }));
+
+    render(<PrinterTestPanel readOnly={false} />);
+    const button = screen.getByRole('button', { name: 'Test PRN-KITCHEN' });
+    fireEvent.click(button);
+
+    expect(button).toBeDisabled();
+    expect(button.querySelector('.animate-spin')).toBeInTheDocument();
+    fireEvent.click(button);
+    expect(printStationTicket).toHaveBeenCalledTimes(1);
+
+    finishPrint({ success: true });
+    await waitFor(() => expect(button).toBeEnabled());
   });
 
   it('disables the test button in read-only mode', () => {
     render(<PrinterTestPanel readOnly />);
-    expect(screen.getByRole('button', { name: 'Test PRN-KITCHEN' })).toBeDisabled();
+    const button = screen.getByRole('button', { name: 'Test PRN-KITCHEN' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(printStationTicket).not.toHaveBeenCalled();
+    expect(probePrinter).not.toHaveBeenCalled();
   });
 });
 
