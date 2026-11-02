@@ -23,12 +23,12 @@ BEGIN
  SELECT updated_at INTO v_revision FROM public.orders WHERE id=v_order;
  v_items := jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',4));
  v_result := public.edit_b2b_order_v2(v_order,v_items,'Display increase',v_revision,gen_random_uuid());
- INSERT INTO stock_edit_checks SELECT 'display increase updates both stocks',p.current_stock=6 AND ds.quantity=6
+ INSERT INTO stock_edit_checks SELECT 'B2B increase updates general stock only',p.current_stock=6 AND ds.quantity=10
   FROM public.products p JOIN public.display_stock ds ON ds.product_id=p.id WHERE p.id=v_product;
  SELECT updated_at INTO v_revision FROM public.orders WHERE id=v_order;
  v_items := jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',1));
  v_result := public.edit_b2b_order_v2(v_order,v_items,'Display decrease',v_revision,gen_random_uuid());
- INSERT INTO stock_edit_checks SELECT 'display decrease restores both stocks',p.current_stock=9 AND ds.quantity=9
+ INSERT INTO stock_edit_checks SELECT 'B2B decrease restores general stock only',p.current_stock=9 AND ds.quantity=10
   FROM public.products p JOIN public.display_stock ds ON ds.product_id=p.id WHERE p.id=v_product;
  -- L'annulation après édition doit rendre exactement la quantité encore facturée.
  PERFORM public.cancel_b2b_order_v3(v_order,'Cancel edited fixture',gen_random_uuid());
