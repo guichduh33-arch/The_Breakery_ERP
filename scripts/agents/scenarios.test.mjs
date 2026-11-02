@@ -52,7 +52,7 @@ test('scénario live : vrai package, fichier exact, autorisation requise et abse
   const file = 'supabase/tests/functions/record-b2b-payment.test.ts';
   const result = fixture(t, file, [file], { 'supabase/tests/package.json': '{"name":"@breakery/supabase-tests"}' });
   assert.equal(result.package, '@breakery/supabase-tests'); assert.deepEqual(result.tests, [file]);
-  assert.equal(result.live, true); assert.match(role('test-engineer'), /autorisation explicite/);
+  assert.equal(result.live, true); assert.match(role('test-engineer'), /objectif et ses restrictions/);
   assert.throws(() => liveAllowed(result.package, false, {}), /autorisation/);
   assert.equal(testEvidence({ success: true, numPassedTests: 0, numPendingTests: 12 }).valid, false);
 });

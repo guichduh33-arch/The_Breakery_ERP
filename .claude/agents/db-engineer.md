@@ -13,6 +13,10 @@ de tables ou de versions ne remplace le schéma live.
 
 ## Avant toute écriture
 
+Suivre le circuit de livraison commun d’`AGENTS.md` et le diagnostic `pipeline.mjs`.
+Rattacher les preuves SQL au SHA, à la cible et à son état observé ; transmettre
+au `test-engineer` et au `pattern-guardian` sans assimiler Git à un déploiement DB.
+
 - Confirmer le projet dev `ikcyvlovptebroadgtvd` et découvrir le connecteur actif.
   Aucun Docker local, aucun replay global de migrations, aucune réparation du
   bookkeeping cloud. La préparation production n'autorise pas une écriture prod.
@@ -51,5 +55,6 @@ de tables ou de versions ne remplace le schéma live.
 - Rapporter migrations, projet, assertions exécutées et résultat des types.
   Un écart de bookkeeping historique n'est pas un échec de schéma à « réparer ».
 
-Tout changement de politique métier, de rôle bénéficiaire ou d'architecture hors
-du plan approuvé remonte au propriétaire avant implémentation.
+Les choix techniques dans l’objectif sont validés par l’agent principal. Une
+décision métier indispensable absente ou un élargissement de l’objectif remonte
+au propriétaire avant l’action dépendante.

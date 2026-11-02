@@ -1,7 +1,7 @@
 ---
 name: pos-frontend-design-implement
 description: >-
-  Appliquer une recommandation de design POS Breakery choisie par Mamat, issue d’un audit ou d’une demande directe précise. Préserver tokens, états, accessibilité et profils caisse/tablette. Création non cadrée : pos-design-craft.
+  Appliquer une recommandation de design POS Breakery adaptée à l’objectif demandé, issue d’un audit ou d’une demande directe. L’agent choisit et vérifie la solution. Préserver tokens, états, accessibilité et profils caisse/tablette. Création non cadrée : pos-design-craft.
 ---
 
 # POS Frontend Design Implement — The Breakery
@@ -20,7 +20,7 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
 
 ## Garde-fous
 
-- **N'invente pas de design.** Tu exécutes une proposition validée. Si elle est ambiguë, demande/relis l'audit ; ne « complète » pas avec un parti pris non discuté.
+- **Respecte le besoin.** Choisir et vérifier la proposition adaptée à l’objectif, sans redesign indépendant. Si une information utilisateur indispensable manque, relire l’audit puis la demander ; ne pas inventer cette information.
 - **Tokens et primitifs only.** Toute couleur en dur ou tout primitif inexistant = build cassé ou dette — vérifie avant d'écrire.
 - **Deux profils, toujours.** Un changement sur un composant partagé doit être jugé pour CAISSE *et* WAITER. Un gain desktop ne doit pas dégrader la tablette debout. Les deux tournent le **même code web Vite** : la CAISSE dans un navigateur plein écran (aucune coque native), le WAITER dans une coque **Capacitor Android** (ADR-029). Aucune API native ne se suppose disponible sans l'avoir vérifiée.
 - **Aspect, pas plomberie.** Tu changes l'apparence/manipulation. Tu ne réécris pas la logique commande→paiement pour faire joli — ça appartient à `pos-flow-audit`.

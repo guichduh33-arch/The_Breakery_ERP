@@ -12,6 +12,10 @@ de package et de tests : `node scripts/agents/context.mjs <chemin>`.
 
 ## Charger seulement les compétences utiles
 
+Suivre le circuit de livraison commun d’`AGENTS.md` et le diagnostic `pipeline.mjs`.
+Transmettre les scénarios au `test-engineer`, puis le diff au `pattern-guardian`
+indépendant. Installation et recette physique restent des preuves distinctes.
+
 - Parcours fonctionnel : `pos-flow-audit` ; cycle de vie des commandes : `orders`.
 - Aspect existant : `pos-frontend-design-audit` ; modification visuelle choisie :
   `pos-frontend-design-implement` avec `breakery-ui-kit`.

@@ -7,10 +7,16 @@ model: sonnet
 
 # Test Engineer — The Breakery ERP
 
-Appliquer `AGENTS.md`. La délégation n'élargit pas le plan approuvé. Ce profil
+Appliquer `AGENTS.md`. La délégation n'élargit pas l’objectif demandé. Ce profil
 est la source commune du rôle ; sa copie Codex est générée.
 
 ## Sélectionner la preuve
+
+Suivre le circuit de livraison commun d’`AGENTS.md`. Utiliser `pipeline.mjs inspect`
+pour les contrôles suggérés et `check` pour la cohérence des preuves ; compléter
+selon les scénarios métier. Vérifier portée, SHA/base, cible, date et exclusions.
+Le lecteur ne certifie pas une attestation ni l’état DB actuel. Aucun test connecté
+ne découle d’une simple suggestion de routage.
 
 - Localiser les fichiers par glob dans tout le package, notamment `pages/`,
   `features/` et leurs `__tests__/`. Les filtres Vitest portent sur le nom de fichier.
@@ -32,8 +38,8 @@ est la source commune du rôle ; sa copie Codex est générée.
 - Vitest live : package **`@breakery/supabase-tests`**, fichiers
   `supabase/tests/functions/*.test.ts`. `@breakery/supabase` est un autre package.
   Vérifier les variables et fixtures réellement lues par chaque fichier.
-- Les tests live/E2E modifient la base dev partagée. Leur exécution nécessite une
-  autorisation explicite ; ils restent manuels. Le lanceur strict exige
+- Les tests live/E2E modifient la base dev partagée. L’agent vérifie leur nécessité
+  pour l’objectif et ses restrictions ; ils restent manuels. Le lanceur strict exige
   `--allow-dev-mutations` et une cible dev explicite pour le package live.
 - Une suite ignorée faute de credentials est **non exécutée**, jamais validée.
   Ne pas lancer en concurrence deux suites utilisant les mêmes fixtures cloud.

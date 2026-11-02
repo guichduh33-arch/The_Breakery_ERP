@@ -14,8 +14,9 @@ Sélection : ce skill mène le diagnostic d’un rapport BO existant cassé ou i
 
 # Report Audit — The Breakery V3 (apps/backoffice)
 
-Systematic auditor for the V3 reporting module. Reads the **real** code across the V3 stack to find errors,
-inconsistencies, and gaps — then proposes interactive fixes one by one with user confirmation.
+Auditeur des rapports V3 : lire le code réel pour identifier erreurs, incohérences
+et lacunes. Une demande d’audit rend ses constats ; une demande de correction mène
+aux corrections et vérifications nécessaires, sans confirmation par finding.
 
 > **Ancrages re-vérifiés contre le code le 2026-08-31.** Tout ce qui suit (chemins, composants, familles de
 > RPC, conventions) a été relevé dans l'arbre à cette date. Le module bouge vite : au-delà de quelques

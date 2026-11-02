@@ -33,6 +33,6 @@ pnpm build
 ## Quand escalader / flaguer
 
 - Le ticket exige un **nouveau primitif partagé** POS+BO → `packages/ui` + breakery-ui-kit + PR dédiée, pas un composant local dupliqué.
-- Le ticket implique de **modifier la logique commande/paiement/cuisine/realtime** → renvoie à `pos-flow-audit` ; ne mélange pas un changement visuel et une mutation de flux sans validation.
+- Le ticket implique de **modifier la logique commande/paiement/cuisine/realtime** → charger `pos-flow-audit` et ses contrôles si cette modification est nécessaire à l’objectif ; ne pas étendre une demande visuelle à une mutation de flux indépendante.
 - Le ticket touche **permissions/visibilité par rôle** → `security-fraud-guard`.
 - La proposition s'avère **infaisable proprement dans la stack** (oblige à casser le design-system) → ne force pas : remonte à l'audit pour ré-arbitrer l'effort/impact.

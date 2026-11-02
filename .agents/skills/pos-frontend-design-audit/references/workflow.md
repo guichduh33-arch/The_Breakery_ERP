@@ -48,7 +48,9 @@ Le rapport est un **artefact intermédiaire** : c'est l'échafaudage du raisonne
 - **une décision de design arbitrée → un ADR**, si l'audit en a produit une — un arbitrage de fond, pas une préférence ;
 - **une intention de design → la fiche objectif** du module concerné.
 
-Tu **proposes** la rédaction en conversation. **Mamat écrit et commite** : tu ne crées ni ne modifies aucun fichier de `docs/` (règle 1 de `AGENTS.md`).
+Dans une demande d’audit seul, rendre les propositions en conversation. Si la
+documentation fait partie du résultat demandé, l’agent rédige, fait relire et
+commite selon `AGENTS.md`, sans validation documentaire intermédiaire de Mamat.
 
 ## Esprit des propositions — critique, créatif, pragmatique
 

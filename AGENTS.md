@@ -5,6 +5,21 @@
 > Il régit le travail des agents ; le code et le schéma établissent les faits.
 > Un écart entre une décision et son implémentation se signale, sans effacer la décision.
 
+## Mandat et autonomie
+
+Mamat définit l’objectif et ses contraintes. Sa demande autorise les étapes
+nécessaires pour obtenir ce résultat : cadrage, choix techniques, délégation,
+documentation, corrections, tests, commits, push, PR, intégration et livraison
+sur les cibles concernées. L’agent principal organise, décide et valide la
+procédure de bout en bout, sans validation intermédiaire de Mamat.
+
+Une restriction explicite (« lecture seule », « sans publier », « dev uniquement »)
+reste impérative. L’autonomie ne permet ni d’élargir l’objectif, ni d’inventer une
+décision métier manquante, ni de contourner un contrôle d’accès ou un filet de test.
+Demander seulement l’information indispensable absente, un arbitrage hors objectif
+ou la résolution d’un blocage externe. Poursuivre le travail indépendant entre-temps.
+Une ancienne consigne demandant une validation procédurale s’interprète selon ce mandat.
+
 ## Hiérarchie de vérité
 
 ```
@@ -25,34 +40,31 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
 
 ## Règles documentaires — non négociables
 
-1. **Tu rédiges, Mamat valide, tu commites — dans cet ordre.** Le commit d'un
-   fichier de doc se fait **après validation explicite de Mamat**, sur une branche
-   dédiée (`docs/…`, `feat/…`, `fix/…`, **jamais `master`**), sans push sans
-   demander. Pas de validation explicite = pas de commit.
+1. **L’agent rédige, vérifie, fait relire et commite la documentation nécessaire
+   à l’objectif.** Branche dédiée, jamais de commit direct sur `master`.
+   Commit, push et PR suivent les contrôles du dépôt, sans validation documentaire
+   intermédiaire de Mamat. Ne jamais présenter une validation technique comme son accord.
 2. **Les plans de session vivent dans la conversation** (mode plan), jamais en
    fichier. Ce qui mérite de survivre à une session devient un ADR — que tu
-   rédiges et que Mamat valide (règle 1) — ou disparaît avec le contexte.
+   rédiges et vérifies dans le mandat (règle 1) — ou disparaît avec le contexte.
 3. **Specs d'exécution (`docs/specs/`)** : uniquement quand un ADR l'exige
    explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Rédigée par
-   l'agent, relue et validée par Mamat (création/commit selon règle 1). Une
+   l'agent, relue indépendamment (création/commit selon règle 1). Une
    spec meurt à la livraison du chantier : supprimée, son
-   résiduel éventuel noté dans le bilan factuel de l'ADR après validation de Mamat.
+   résiduel éventuel noté dans le bilan factuel de l'ADR après vérification.
    Jamais plus de 3 specs vivantes.
 4. **Le texte de décision d'un ADR est immuable.** Changement d'avis = nouvel ADR
    numéroté qui supersede l'ancien. Le statut (`Statut: remplacé par ADR-00XX`)
-   et le bilan factuel peuvent être mis à jour après validation explicite de Mamat,
+   et le bilan factuel peuvent être mis à jour après vérification et revue,
    sans réécrire la décision ni transformer une intention en fait livré.
 5. **Information nécessaire manquante → tu demandes avant l'action qui en dépend.**
    Tu peux poursuivre les vérifications indépendantes. Tu n'inventes pas,
    tu ne déduis pas « ce qui semble logique », tu ne vas pas fouiller la quarantaine.
-6. **Initiative de proposition, validation avant exécution.** L'agent peut analyser,
-   vérifier et proposer spontanément des améliorations ou des alternatives, y compris
-   l'évolution d'une règle. Il expose les preuves, bénéfices, risques et fichiers
-   concernés, puis recommande une option. Toute proposition à son initiative attend
-   l'accord explicite de Mamat avant exécution ; une absence de réponse ne vaut pas accord.
-   Architecture, renommage, suppression, choix de librairie et changement de comportement
-   exigent cet accord AVANT l'action. L'accord vaut pour le périmètre approuvé ;
-   toute nouvelle décision revient à Mamat.
+6. **L’objectif est le mandat ; l’agent assume la procédure.** Dans ce périmètre,
+   l’agent choisit et vérifie architecture, librairies, découpage et corrections,
+   puis les livre sans redemander une validation de méthode. Il explique les choix
+   significatifs et leurs preuves. Les améliorations indépendantes de la demande
+   restent des propositions ; une absence de réponse n’élargit pas le mandat.
 7. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
 
 ## Règles d'écriture des documents de gouvernance
@@ -112,7 +124,7 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   les décisions validées, commits/PR, environnement, tests exécutés et ignorés,
   installations observées, limites et travail restant. Les preuves se rattachent
   à leur date, cible et SHA ou artefact ; une fusion n'est pas une installation.
-  La conservation documentaire suit la validation de Mamat, sans écriture
+  La conservation documentaire suit le mandat et la revue, sans écriture
   automatique par un hook. Ce bilan fournit du contexte à la génération automatique de
   mémoire lorsque le client l'autorise ; il n'est pas un plan en fichier.
 - **Ne jamais annoncer une mémorisation non vérifiée.** La génération native
@@ -138,15 +150,52 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   conclure « pas de test » depuis un seul répertoire.
 - **Sous-agents (outil `Agent`, ex-`Task`) : autorisés dans une session, sous régime strict.**
   Sous-agents lecture-seule : libres dans le périmètre de la tâche.
-  Tout dispatch impliquant une écriture exige un plan approuvé par Mamat AVANT
-  le dispatch ; les sous-agents exécutent ce plan, toute déviation remonte à Mamat
-  (jamais arbitrée en interne). Écrivain : UN à la fois, périmètre de
+  L’agent principal cadre la délégation avant tout dispatch impliquant une écriture ;
+  les sous-agents exécutent ce mandat, les écarts reviennent à l’agent principal.
+  Un écart hors objectif remonte à Mamat. Écrivain : UN à la fois, périmètre de
   fichiers déclaré. Reviewer : contexte vierge, reçoit le diff + la spec + les
   invariants (jamais le résumé de l'implémenteur), findings montrés à Mamat ;
-  boucle implémentation↔review plafonnée à 1 correction, au-delà on s'arrête.
+  corrections et contrôles sont poursuivis jusqu’à résolution des constats bloquants ;
+  ne pas répéter une tentative identique sans information nouvelle.
   Les consignes aux sous-agents citent fichiers/ADR précis ; leurs rapports
   citent fichier:ligne. La review ne remplace jamais les tests exécutés.
-  L'orchestrateur coordonne, il ne décide pas. session-coordinator est aboli.
+  L’agent principal coordonne et valide la procédure. session-coordinator est aboli.
+
+## Circuit de livraison commun
+
+- Une demande principale active jusqu’à clôture ; une urgence de production peut
+  l’interrompre sur décision de Mamat. Les demandes suivantes restent en attente,
+  sans branche créée par anticipation. Les travaux déjà ouverts restent préservés :
+  l’inventaire ne les abandonne pas et ne change pas leur priorité implicitement.
+- Une demande = un sujet, une branche de travail et une PR principale. Un chantier
+  lourd exige un découpage justifié par l’agent principal. Reprendre la branche existante
+  quand elle convient ; un blocage ne justifie pas une copie « production » automatique.
+- Étapes constantes : cadrée → développée → vérifiée dev → relue → intégrée → prête
+  à livrer → déployée → vérifiée en usage → clôturée. Une étape non applicable se
+  justifie ; un blocage ou une suspension conserve le dernier état prouvé.
+- L’agent principal conduit l’objectif demandé. BO/POS : spécialiste de surface ;
+  SQL : `db-engineer` ; EF : `edge-functions-engineer` ; preuves : `test-engineer` ;
+  revue indépendante : `pattern-guardian`. Les spécialistes utiles seulement, avec
+  les limites de délégation et la boucle de correction déjà imposées ci-dessus.
+- Au départ et à la reprise : `node scripts/agents/pipeline.mjs inspect --base origin/master`.
+  Le routage suggère les rôles et preuves ; l’agent complète selon le métier. Pour
+  les restes locaux : `node scripts/agents/inventory.mjs`. Aucun de ces relevés ne
+  supprime, ne déploie, ne teste ni ne déclare un travail abandonné.
+- Les preuves nomment le SHA, la base, la cible et leur date. Nouveau code ou
+  nouvelle base invalide leur rattachement automatique ; l’état DB peut aussi
+  changer sans commit. Recontrôler les preuves affectées avant de poursuivre.
+  La commande `pipeline.mjs check` contrôle leur cohérence, pas la vérité d’une
+  attestation déclarative ; sa réussite ne remplace ni la revue ni la recette métier.
+- Un seul candidat de livraison en attente, sauf nécessité justifiée. L’agent
+  décide la livraison nécessaire à l’objectif après vérification des composants,
+  du paquet, de la cible, des dépendances, du créneau et du retour. Respecter les
+  restrictions explicites de Mamat. Une fusion ne clôture pas une livraison.
+- À la clôture, inventorier le travail suivi, non suivi, les stashes et commits
+  uniques avant de proposer un nettoyage. Un squash ou cherry-pick peut intégrer
+  le code sans fusionner la branche. Conserver les artefacts nécessaires au retour ;
+  ni l’âge, ni l’équivalence Git ne donne l’autorisation de supprimer.
+- Procédure et format des preuves : [outillage agents](docs/runbooks/agent-tooling.md).
+  Les plans restent en conversation ; aucun hook n’enregistre de plan ni de mémoire.
 
 ## Commandes
 
@@ -173,7 +222,8 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   >~12 KB : POST le fichier sur l'API `database/query` (troncature inline MCP).
 - E2E Playwright : specs dans `tests/e2e/`, `pnpm e2e` (config racine, apps
   buildées et servies en local contre la base dev V3). Le workflow
-  `playwright-e2e.yml` est manuel, avec acceptation explicite des mutations dev :
+  `playwright-e2e.yml` est manuel ; l’agent confirme les mutations dev nécessaires
+  à l’objectif dans ses paramètres de lancement :
   une PR POS ou money-path n'est pas automatiquement couverte par l'E2E.
 - Filets CI : `ci.yml` (gardes gouvernance nues + lint-ratchet + build/tests) ;
   `pgtap-pr.yml` classe toutes les PR : pgTAP est requis pour
@@ -221,7 +271,7 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   Les profils `context:snapshot` restent des inventaires, pas des listes à tout lire.
 - Preuve Vitest ciblée : `node scripts/agents/test.mjs <fichier-test>`.
   Le lanceur refuse les tests absents ou tous ignorés. Les tests live exigent
-  une autorisation explicite et `--allow-dev-mutations`, sur dev uniquement.
+  le rattachement à l’objectif et `--allow-dev-mutations`, sur dev uniquement.
 
 ## Critical patterns — don't break these
 
@@ -241,8 +291,10 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   signaler l'écart. Une configuration locale, un souvenir ou un catalogue aux
   mêmes identifiants ne prouve pas la cible du terminal. Une demande concernant
   le catalogue de production se vérifie en lecture seule sur la production V3 ;
-  les constats dev ne s'y transposent pas. Aucun test créant une commande ou un
-  paiement, aucune migration ni écriture de production sans autorisation explicite.
+  les constats dev ne s'y transposent pas. Les migrations, écritures et essais
+  production restent limités aux gestes nécessaires à l’objectif demandé, sur une
+  cible prouvée. Aucun essai créant une commande ou un paiement ne découle d’une
+  simple demande d’audit.
 - **PIN auth fetch wrapper** — l'EF `auth-verify-pin` émet des JWT HS256 que GoTrue
   (ES256) ne valide pas par le header par défaut. Le client Supabase utilise un fetch
   wrapper qui injecte le PIN JWT via `setSupabaseAccessToken` (`packages/supabase`).
@@ -349,9 +401,9 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   et le diff avec la branche cible, puis confronte les passages concernés
   d'`AGENTS.md` au code, aux workflows et à la documentation vivante. Il présente
   les écarts, améliorations et alternatives avec leurs preuves avant l'ouverture.
-  Toute correction proposée attend la validation explicite de Mamat avant
-  exécution ; un arbitrage bloquant doit être résolu ou son report validé avant
-  l'ouverture. Après les corrections autorisées, vérifier les miroirs et les
+  L’agent corrige et valide les écarts nécessaires à l’objectif avant l’ouverture ;
+  un choix hors objectif ou une information indispensable manquante reste bloquant.
+  Après les corrections, vérifier les miroirs et les
   gardes documentaires applicables. Restituer dans la PR le périmètre audité,
   les corrections validées, les contrôles et les limites. Une modification
   ultérieure du diff impose de revalider les conclusions qu'elle affecte.
@@ -360,8 +412,8 @@ implémentée reste valable : l'écart est du backlog, pas une erreur documentai
   (Le préfixe `swarm/` est aboli avec le mode multi-session.)
 - Commits conventionnels (`feat(scope): …`). Co-author l'agent qui a assisté,
   nommé par l'agent lui-même : ce fichier sert les deux outils.
-- **Un commit `docs(...)` par un agent sans validation préalable de Mamat =
-  violation de la règle documentaire 1.**
+- **Les commits documentaires suivent la revue et les contrôles, sans validation
+  intermédiaire du propriétaire dans le périmètre de l’objectif.**
 - **Jamais de commit direct sur master.** Tout changement passe par une branche
   (`feat/`, `fix/`, `chore/`) puis une PR — même un fix d'une ligne. Si la session
   démarre sur master, créer la branche AVANT le premier commit.

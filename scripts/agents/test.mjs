@@ -13,7 +13,7 @@ export function testEvidence(report) {
 }
 export function liveAllowed(pkg, allowed, env) {
   if (pkg !== '@breakery/supabase-tests') return;
-  if (!allowed) throw new Error('Tests live : --allow-dev-mutations et autorisation du propriétaire requis.');
+  if (!allowed) throw new Error('Tests live : --allow-dev-mutations requis ; vérifier l’autorisation par l’objectif demandé et ses restrictions.');
   const urls = [env.SUPABASE_URL, env.VITE_SUPABASE_URL].filter(Boolean);
   if (!urls.length || urls.some((url) => url !== 'https://ikcyvlovptebroadgtvd.supabase.co') || !env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('Tests live : cible dev V3 explicite et credentials requis ; valeurs jamais affichées.');
