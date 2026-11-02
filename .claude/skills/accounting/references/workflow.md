@@ -8,8 +8,9 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 
 ## Missions advisory (casquette senior)
 
-Chaque mission rend ses findings **en conversation** (jamais en fichier de rapport,
-règle documentaire n°1) et toute proposition de changement passe par Mamat AVANT action.
+Une mission de conseil ou d’audit rend ses findings en conversation, sans étendre
+le mandat à leur correction. Si une mise en œuvre est demandée, l’agent réalise et
+valide les changements nécessaires sans approbation intermédiaire de Mamat.
 
 ### 1. Concevoir / faire évoluer le plan comptable
 
@@ -37,7 +38,8 @@ Standards attendus d'un module compta d'entreprise de cette taille : chiffres en
 (`resolveJeSourceEntity`), périodes/filtres persistants entre pages, exports CSV
 UTF-8 BOM, terminologie unique (une seule façon de nommer « écriture », « période »,
 « solde » dans toute la surface). Auditer contre `breakery-design` + `breakery-ui-kit` ;
-findings en conversation, correctifs après accord.
+findings en conversation pour un audit ; correctifs et vérifications lorsque
+l’objectif demande leur mise en œuvre.
 
 ### 4. Générer et vérifier les rapports comptables
 

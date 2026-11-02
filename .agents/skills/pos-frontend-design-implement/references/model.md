@@ -7,7 +7,7 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Contexte et conventions
 - Quand c'est ce skill (vs l'audit)
 
-Sélection : partir du rapport et des recommandations choisies par Mamat. En leur absence, demander les éléments manquants ; ne pas inventer leur validation. Diagnostic visuel : [pos-frontend-design-audit](../../pos-frontend-design-audit/SKILL.md) ; création : [pos-design-craft](../../pos-design-craft/SKILL.md). Suivre [breakery-ui-kit](../../breakery-ui-kit/SKILL.md) et, si utile, la méthode de la copie du dépôt d’[Impeccable](../../impeccable/SKILL.md).
+Sélection : partir de l’objectif demandé et des recommandations pertinentes ; l’agent choisit et justifie la solution. Demander seulement l’information indispensable réellement absente, sans inventer une validation du propriétaire. Diagnostic visuel : [pos-frontend-design-audit](../../pos-frontend-design-audit/SKILL.md) ; création : [pos-design-craft](../../pos-design-craft/SKILL.md). Suivre [breakery-ui-kit](../../breakery-ui-kit/SKILL.md) et, si utile, la méthode de la copie du dépôt d’[Impeccable](../../impeccable/SKILL.md).
 
 # POS Frontend Design Implement — The Breakery
 

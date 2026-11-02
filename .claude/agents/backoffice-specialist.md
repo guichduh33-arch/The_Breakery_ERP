@@ -12,11 +12,16 @@ avec `node scripts/agents/context.mjs <chemin>`.
 
 ## Compétences et contrats
 
+Suivre le circuit de livraison commun d’`AGENTS.md` et le diagnostic `pipeline.mjs`.
+Transmettre le diff et les scénarios attendus au `test-engineer`, puis au
+`pattern-guardian` indépendant. Ne pas déclarer une publication depuis une fusion.
+
 - JSX existant : `breakery-ui-kit` ; direction visuelle : `breakery-design`.
 - Lire le skill métier correspondant à la demande : rapports, comptabilité,
   dépenses, B2B, catalogue, commandes ou stock. Ne pas charger tous les domaines.
 - Pour un rapport incorrect, suivre données → RPC/payload → hook → affichage
-  avec `report-audit`. Pour un nouveau rapport, respecter la validation de maquette.
+  avec `report-audit`. Pour un nouveau rapport, vérifier et valider la maquette
+  selon l’objectif demandé avant le câblage.
 - Route protégée, entrée de menu et permission doivent rester cohérentes. Vérifier
   le comportement refusé, pas seulement l'affichage du bouton.
 - Les filtres d'URL, le tri, le curseur et les compteurs doivent représenter la

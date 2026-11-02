@@ -67,7 +67,9 @@ pnpm --filter @breakery/app-backoffice test accounting
 - **Taux PB1 ou `tax_inclusive`** (`business_config`) → décision business owner.
 - **Réactiver 1151, router vers 2142/2143/4190** → violation ADR-005 / doublon — nouvel
   ADR requis.
-- **Verrouiller une période, clôturer une année** → irréversible, confirmer avec l'owner.
+- **Verrouiller une période, clôturer une année** → exiger que la clôture précise
+  fasse partie de l’objectif et vérifier ses prérequis ; ne pas la lancer pendant
+  un simple audit. Si la période ou le résultat souhaité manque, le demander.
 - **Choix de régime fiscal (UMKM final vs réel), statut juridique, seuils PKP** →
   décision Mamat + conseil fiscal local ; le skill chiffre, il ne tranche pas.
 - **Nouveau moyen de paiement** sans mise à jour de `_sale_payment_mapping_key` → il

@@ -39,19 +39,20 @@ uniquement** — la base est partagée, aucune écriture, jamais. Lire
   référence du moment, les versions bumpent) ; le MCP contourne la RLS — ce que tu
   vois n'est pas ce que l'app verra.
 
-### 4. Conception + prototype — validation AVANT le code
+### 4. Conception + prototype — vérification avant le code
 Choisir KPIs et graphiques (voir les deux sections suivantes), puis produire un
 **prototype HTML alimenté par les vraies données dev** (Artifact ou fichier envoyé à
 Mamat) : KpiBand simulée, graphiques proposés avec les vrais chiffres, table d'exemple.
 Appliquer les consignes de choix des graphiques ci-dessous, et reprendre le
 langage visuel du module (couleurs de `chartColors.ts`, comparaison en pointillé pâle).
 
-**Mamat valide la maquette avant toute implémentation** — c'est la méthodologie
-variantes-avant-implémentation du projet, et ça coûte dix fois moins cher de jeter
-une maquette qu'une page câblée.
+L’agent choisit et valide la maquette contre la demande, les données et les
+critères de résultat avant l’implémentation. Il présente les choix significatifs
+sans attendre une approbation intermédiaire ; une information métier indispensable
+absente se demande avant l’action qui en dépend.
 
 ### 5. Implémentation — handoff outillé
-Une fois validé : la spec analytique (métriques, agrégations SQL, choix de graphiques)
+Une fois vérifié par l’agent : le cadrage analytique (métriques, agrégations SQL, choix de graphiques)
 part vers `reports-exports` pour le câblage (RPC via `db-migrations`, hook TanStack
 Query, page ReportShell, ExportMenu). Ce skill reste dans la boucle pour
 vérifier que l'implémentation rend fidèlement la maquette validée.
@@ -121,6 +122,7 @@ Règles du langage visuel (gravées dans `chartColors.ts`, ne pas les contourner
    article/fournisseur ni l'analyse des quantités achetées dans le temps.
 3. Proposer 1 à 3 rapports candidats, chacun avec sa question métier, ses KPIs, ses
    graphiques — et un ordre de priorité argumenté.
-4. Maquetter le premier avec les vraies données ; Mamat arbitre.
+4. Maquetter et vérifier le premier avec les vraies données. Si l’objectif porte
+   seulement sur l’analyse, rendre les options sans étendre la demande au code.
 
 ---

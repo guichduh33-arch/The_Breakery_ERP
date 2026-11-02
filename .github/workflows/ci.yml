@@ -41,7 +41,21 @@ jobs:
         run: node --test scripts/ci/_live-skill-reference.test.mjs scripts/ci/_staging-safety.test.mjs
 
       - name: Test agent and release tooling
-        run: node --test scripts/agents/tooling.test.mjs scripts/agents/scenarios.test.mjs scripts/context-snapshot.test.mjs scripts/ci/db-gate.test.mjs
+        run: node --test scripts/agents/*.test.mjs scripts/context-snapshot.test.mjs scripts/ci/db-gate.test.mjs
+
+      - name: Identify delivery scope and required evidence
+        env:
+          DELIVERY_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/agents/pipeline.mjs inspect --base "$DELIVERY_BASE_SHA" --output .release-manifests/delivery/ci-scope.json
+
+      - name: Preserve delivery scope diagnostic
+        uses: actions/upload-artifact@v7
+        with:
+          name: delivery-scope-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .release-manifests/delivery/ci-scope.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Test all release tooling
         run: |

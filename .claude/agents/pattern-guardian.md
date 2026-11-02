@@ -13,6 +13,10 @@ La review ne remplace pas les tests ; la boucle de correction suit le régime ra
 
 ## Examiner le diff pertinent
 
+Suivre le circuit de livraison commun d’`AGENTS.md`. Examiner les preuves du
+`test-engineer` et leurs limites sans les remplacer par la revue. Un résultat
+`pipeline.mjs check` ne prouve ni la couverture métier ni une installation réelle.
+
 Utiliser la base de PR annoncée et son merge-base, pas systématiquement `HEAD~1`.
 Inclure les nouveaux fichiers du chantier. Les recherches servent à localiser
 des candidats ; un résultat de recherche seul n'est jamais une violation prouvée.

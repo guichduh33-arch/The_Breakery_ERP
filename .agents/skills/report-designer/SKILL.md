@@ -1,12 +1,12 @@
 ---
 name: report-designer
 description: >-
-  Concevoir ou enrichir un rapport BO Breakery : question métier, KPIs, dimensions, graphique et prototype fondé sur les données dev. Maquette à valider avant implémentation. Rapport inexact : report-audit ; câblage : reports-exports.
+  Concevoir ou enrichir un rapport BO Breakery : question métier, KPIs, dimensions, graphique et prototype fondé sur les données dev. L’agent vérifie la maquette puis poursuit l’implémentation demandée. Rapport inexact : report-audit ; câblage : reports-exports.
 ---
 
 # Report Designer — The Breakery ERP
 
-Formuler la décision que le rapport doit aider à prendre, vérifier l’existant et la donnée, puis concevoir. Lire la carte analytique avant la requête ; faire valider le prototype avant le câblage.
+Formuler la décision que le rapport doit aider à prendre, vérifier l’existant et la donnée, puis concevoir. Lire la carte analytique avant la requête ; l’agent valide le prototype contre l’objectif et les données avant le câblage, sans approbation intermédiaire.
 
 ## Lecture proportionnée
 

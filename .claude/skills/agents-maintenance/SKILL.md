@@ -1,6 +1,6 @@
 ---
 name: agents-maintenance
-description: Auditer, corriger, mettre a jour et optimiser CLAUDE.md pour le depot Breakery, notamment avant chaque creation de PR. Verifier les faits contre les sources vivantes et soumettre les corrections a Mamat. Ne pas modifier le comportement applicatif.
+description: Auditer, corriger et optimiser les consignes Breakery, notamment avant chaque PR. Verifier les faits contre les sources vivantes et valider les corrections dans l'objectif demande. Ne pas modifier le comportement applicatif.
 ---
 
 # Entretien des consignes Breakery
@@ -17,12 +17,12 @@ supprimer un invariant, d'assouplir une obligation ou de changer une decision.
 - Distinguer une demande d'audit d'une demande de modification. Un audit rend
   ses constats en conversation. Une demande de modification autorise la
   redaction d'un diff dans le perimetre demande.
-- Appliquer les validations imposees par `CLAUDE.md` : proposer a Mamat toute
-  suppression, relocalisation, modification de regle ou decision nouvelle avant
-  l'action. Une contradiction entre document et code se signale ; elle ne se
-  corrige pas automatiquement.
-- Ne pas committer de documentation sans validation explicite du contenu par
-  Mamat. Respecter les regles de branche et de push du depot.
+- Appliquer le mandat et l'autonomie d'`CLAUDE.md` : Mamat definit l'objectif,
+  l'agent choisit, verifie et valide la procedure necessaire de bout en bout.
+  Signaler une contradiction factuelle puis la corriger dans le perimetre ;
+  ne jamais remplacer une decision metier par le comportement actuel du code.
+- Relire et committer la documentation necessaire, puis pousser et ouvrir la PR
+  selon les controles du depot, sans validation intermediaire de Mamat.
 
 ## Initiative et alternatives
 
@@ -37,14 +37,13 @@ Pour chaque proposition, expliquer le probleme observe, le benefice attendu,
 les risques et les fichiers concernes. Presenter les alternatives utiles et
 recommander une option avec ses raisons. Distinguer clairement les corrections
 demandees des suggestions supplementaires ; ne pas transformer une suggestion
-en nouveau chantier sans validation.
+en nouveau chantier sans demande correspondante.
 
-L'analyse et la preparation des propositions peuvent avancer de facon autonome
-en lecture seule. Toute amelioration ou alternative proposee a l'initiative de
-l'agent attend la validation explicite de Mamat avant execution, y compris les
-editions, deplacements, suppressions et changements de regles. Une absence de
-reponse ne vaut pas accord. Apres validation, executer le perimetre approuve ;
-si une nouvelle decision apparait, la soumettre a Mamat avant de l'appliquer.
+Dans l'objectif demande, choisir l'option utile, executer les corrections et
+les valider avec les preuves adequates. Les ameliorations hors objectif restent
+des propositions. Demander seulement une information indispensable absente,
+un choix hors mandat ou la resolution d'un blocage externe ; ne pas demander
+une nouvelle approbation pour une etape technique ou un commit documentaire.
 
 ## Releve cible
 
@@ -71,13 +70,14 @@ si une nouvelle decision apparait, la soumettre a Mamat avant de l'appliquer.
 Presenter les constats avec le passage concerne, la preuve `fichier:ligne`
 en conversation, l'effet concret et la correction proposee. Distinguer :
 
-- Fait perime ou contradiction : signaler l'ecart et faire valider la correction.
+- Fait perime ou contradiction : signaler l'ecart, corriger puis verifier.
 - Intention non implementee : conserver l'intention et signaler le backlog.
-- Ambiguite ou conflit de regles : demander l'arbitrage de Mamat.
+- Ambiguite : resoudre les choix de methode dans le mandat ; demander une
+  decision metier indispensable absente ou un arbitrage hors objectif.
 - Repetition ou longueur : proposer une formulation plus courte en preservant
   portee, exceptions, interdictions et conditions de validation.
 
-Apres autorisation, appliquer uniquement les passages convenus. Ecrire en
+Appliquer uniquement les passages necessaires a l'objectif. Ecrire en
 francais, avec des ancres stables dans les documents. Preferer les familles de
 RPC aux versions vivantes, sans effacer une version imposee par un ADR ou un
 fait historique date. Eviter compteurs vivants et references a des plans de
@@ -106,16 +106,16 @@ travail de l'agent ; une verification CI apres ouverture ne la remplace pas.
 3. Presenter les constats et propositions en conversation avant l'ouverture,
    meme si le constat est qu'aucune mise a jour des consignes n'est necessaire.
    Pour une correction, donner le passage vise, la preuve et le changement
-   propose. Attendre la validation explicite de Mamat avant son execution.
-   Un arbitrage bloquant exige une decision ou un report explicitement valide
-   avant l'ouverture ; une suggestion facultative ne devient pas un chantier
+   effectue et sa verification. Corriger les ecarts dans le mandat sans attente
+   de validation intermediaire ; resoudre toute information indispensable manquante
+   avant l'action dependante. Une suggestion facultative ne devient pas un chantier
    par sa seule presence dans l'audit.
-4. Apres correction autorisee, suivre les controles de livraison ci-dessous.
-   L'autorisation de modifier ou d'ouvrir une PR ne vaut pas validation du
-   contenu documentaire a committer. Revalider les conclusions affectees par
+4. Apres correction, suivre les controles de livraison ci-dessous.
+   L'agent valide le contenu documentaire necessaire au resultat demande.
+   Revalider les conclusions affectees par
    toute modification du diff apres l'audit.
 5. Avant l'appel de creation de PR, restituer le resultat de l'audit et verifier
-   que les arbitrages bloquants sont clos. Inclure dans la description de PR
+   que les constats bloquants sont resolus. Inclure dans la description de PR
    une preuve concise : perimetre, corrections validees ou absence de correction,
    controles executes et limites. Ne pas annoncer un audit non execute.
 

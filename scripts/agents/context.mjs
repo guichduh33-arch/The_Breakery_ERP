@@ -45,7 +45,8 @@ export function contextFor(input, root = ROOT, tracked = null) {
     : rel === '.github/workflows/pgtap-pr.yml' ? ['gate'] : words(rel.split('/').at(-1));
   const feature = rel.match(/\/features\/([^/]+)\//)?.[1];
   const explicit = rel.startsWith('scripts/agents/')
-    ? ['scripts/agents/tooling.test.mjs', 'scripts/agents/scenarios.test.mjs'] : [];
+    ? ['scripts/agents/tooling.test.mjs', 'scripts/agents/scenarios.test.mjs',
+      'scripts/agents/delivery.test.mjs', 'scripts/agents/inventory.test.mjs'] : [];
   const tests = files.filter((file) => file.startsWith(scope) &&
     (/\.(test|spec)\.[cm]?[jt]sx?$/.test(file) || (rel.startsWith('supabase/') && /^supabase\/tests\/.*\.sql$/.test(file))))
     .map((file) => ({ file, score: file === rel ? 100 : explicit.includes(file) ? 90 : words(file).filter((word) => tokens.includes(word)).length

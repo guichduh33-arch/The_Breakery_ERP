@@ -9,7 +9,7 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 ## Méthode — 6 étapes
 
 ### Étape 1 — Récupérer la proposition
-- **Cas conversation** (par défaut, et seul cas normal) : la proposition est dans la session — rapport rendu par `pos-frontend-design-audit`, ou demande directe de l'utilisateur. Identifie le(s) ticket(s) à développer : l'utilisateur en nomme un, sinon propose les P0/quick-wins et confirme avant de coder. Reformule en une phrase (« j'implémente : <X> pour <profil> sur <écran> ») et avance.
+- **Cas conversation** : partir du rapport d’audit ou de la demande directe. Identifier les corrections nécessaires à l’objectif ; si l’utilisateur n’a pas sélectionné un ticket précis, l’agent priorise et justifie les corrections utiles. Annoncer en une phrase le résultat visé puis avancer, sans confirmation avant chaque modification.
 - **Aucune proposition en session** : ne devine pas le design. Lance `pos-frontend-design-audit` sur la zone concernée, ou demande le ticket précis. **Il n'y a rien à rattraper sur disque** — un audit non consommé dans sa session se refait.
 
 ### Étape 2 — Lire le code cible avant de toucher

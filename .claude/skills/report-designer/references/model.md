@@ -7,7 +7,7 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
 - Contexte et conventions
 - Frontières
 
-Sélection : ce skill mène la conception analytique et le prototype à faire valider. Diagnostic d’un rapport existant : [report-audit](../../report-audit/SKILL.md) ; câblage, exports et drill-down : [reports-exports](../../reports-exports/SKILL.md). Les [consignes de choix des graphiques](workflow.md) sont autonomes ; aucune skill externe de datavisualisation n’est requise.
+Sélection : ce skill mène la conception analytique et le prototype que l’agent vérifie contre l’objectif et les données. Diagnostic d’un rapport existant : [report-audit](../../report-audit/SKILL.md) ; câblage, exports et drill-down : [reports-exports](../../reports-exports/SKILL.md). Les [consignes de choix des graphiques](workflow.md) sont autonomes ; aucune skill externe de datavisualisation n’est requise.
 
 # Report Designer — The Breakery ERP
 
@@ -30,6 +30,6 @@ graphique du module.
 | Migration SQL de la RPC de rapport | `db-migrations` |
 
 Les deux skills reports se composent : report-designer produit la spec analytique
-(métriques + graphiques + maquette validée), reports-exports la câble.
+(métriques + graphiques + maquette vérifiée par l’agent), reports-exports la câble.
 
 ---
