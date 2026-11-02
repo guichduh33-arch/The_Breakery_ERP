@@ -235,6 +235,13 @@ ADR-014 : pas de JE.
 
 ### POS display-stock vs BO stock — RESOLVED (isolation shipped, re-verified 2026-05-31)
 
+**Décision du 2026-11-02 — ADR-036 :** le BtoB doit ignorer le compteur vitrine et
+ne jamais le modifier, y compris à la modification et à l'annulation. Le stock
+général nécessaire doit rester suffisant, indépendamment du réglage autorisant
+le négatif. Le relevé historique ci-dessous décrit l'ancien comportement commun
+aux canaux ; il ne définit pas le contrat BtoB attendu. Voir
+[ADR-036](../../../../docs/adr/036-stock-vitrine-independant-du-b2b.md).
+
 **Business intent (owner, 2026-05-30):** the POS `stock` module is a *display-case counter* ONLY. It records finished goods brought from the kitchen into the front display and decrements them on direct sales, purely to avoid selling out-of-stock items. It is meant to be **independent** of the BO stock module and is NOT a procurement/costing flow — a finished good is already costed upstream via its recipe/production, so putting it in the display is not an acquisition (no lot / no WAC / no JE is correct by design). Do NOT "fix" this by adding WAC/lots to the POS path.
 
 **Implementation status — ISOLATION LIVRÉE.** Le « gap » du 2026-05-30 décrit ci-dessous est

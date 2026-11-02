@@ -1,7 +1,5 @@
 -- b2b_display_aware_stock.test.sql
--- S53 P1.4 — create_b2b_order is display-aware: a display item (is_display_item) sold via a
--- B2B order now decrements display_stock AND appends a display_movements row (reference_type='order'),
--- via _record_sale_stock_v1. v2 did NOT touch display tables — this closes that inconsistency.
+-- ADR-036 : la vente B2B déduit le général et laisse la vitrine inchangée.
 --
 -- Run via MCP execute_sql under BEGIN/ROLLBACK. Auth simulated via request.jwt.claim.sub (EMP000).
 -- The suite captures each assertion's TAP line into _cap and returns (failures, total, lines).
@@ -29,15 +27,17 @@ DO $d$ DECLARE v jsonb; BEGIN
         jsonb_build_array(jsonb_build_object('product_id','ddd40003-0000-0000-0000-000000000003','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('order', (v->>'order_id') IS NOT NULL);
-  INSERT INTO _r VALUES ('disp',  (SELECT quantity FROM display_stock WHERE product_id='ddd40003-0000-0000-0000-000000000003') = 3);
-  INSERT INTO _r VALUES ('mov',   (SELECT count(*) FROM display_movements WHERE product_id='ddd40003-0000-0000-0000-000000000003' AND reference_id=(v->>'order_id')::uuid) = 1);
+  INSERT INTO _r VALUES ('disp',  (SELECT quantity FROM display_stock WHERE product_id='ddd40003-0000-0000-0000-000000000003') = 5
+    AND (SELECT current_stock FROM products WHERE id='ddd40003-0000-0000-0000-000000000003') = 98);
+  INSERT INTO _r VALUES ('mov',   (SELECT count(*) FROM display_movements WHERE product_id='ddd40003-0000-0000-0000-000000000003' AND reference_id=(v->>'order_id')::uuid) = 0);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('order', false); INSERT INTO _r VALUES ('disp', false); INSERT INTO _r VALUES ('mov', false);
 END $d$;
 
 CREATE TEMP TABLE _cap(l text);
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='order'), 'B2B display order succeeds via create_b2b_order');
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='disp'),  'display_stock decremented 5->3 (B2B now display-aware)');
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='mov'),   'one display_movements row for the B2B display sale');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='disp'),  'B2B decrements general stock only (100->98, display stays 5)');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='mov'),   'B2B creates no display movement');
+INSERT INTO _cap SELECT * FROM finish();
 SELECT count(*) FILTER (WHERE l LIKE 'not ok%') AS failures, count(*) AS total, string_agg(l,' | ') AS lines FROM _cap;
 ROLLBACK;

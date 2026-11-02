@@ -1,12 +1,5 @@
 -- supabase/tests/b2b_cancel_display_restore.test.sql
--- Audit b2b-credit 2026-08-31, finding n°3 (P1) — l'annulation d'une facture B2B doit rendre
--- le stock VITRINE, pas seulement `products.current_stock`. La v1 recopiait la logique de
--- mouvement au lieu d'appeler un helper ; le helper a évolué (vitrine), la copie non.
---
--- Contrôle de MUTATION fait le 2026-09-08 avant de livrer : en rejouant la boucle exacte de
--- la v1 (INSERT stock_movements + UPDATE products, aucun geste vitrine) sur le même scénario,
--- `display_stock` restait à 8 au lieu de revenir à 10 — T2 échouait. Le test discrimine donc
--- bien le défaut ; un test vert qui ne peut pas rougir ne prouverait rien.
+-- ADR-036 : création et annulation B2B ne bougent que le stock général.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
 \ir helpers/catalog.sql
@@ -68,22 +61,22 @@ BEGIN
   PERFORM set_config('breakery.dm_delta',    (v_dm_after - v_dm_before)::text, true);
 END $$;
 
--- T1 : CONTRÔLE POSITIF de la porte d'entrée — sans lui, un scénario où rien ne bouge
--- passerait T2 et T3 sans rien prouver.
+-- T1 et T2 vérifient l'invariant vitrine à chaque étape ; la déduction positive
+-- du général est contrôlée par b2b_display_aware_stock et b2b_independent_display_stock.
 SELECT is(current_setting('breakery.disp_sold')::numeric,
-          current_setting('breakery.disp_before')::numeric - 2,
-          'T1 la vente B2B décrémente bien display_stock de 2');
+          current_setting('breakery.disp_before')::numeric,
+          'T1 la vente B2B laisse display_stock inchangé');
 
 SELECT is(current_setting('breakery.disp_after')::numeric,
           current_setting('breakery.disp_before')::numeric,
-          'T2 après annulation, display_stock est revenu à son niveau initial');
+          'T2 après annulation, display_stock reste inchangé');
 
 SELECT is(current_setting('breakery.stock_after')::numeric,
           current_setting('breakery.stock_before')::numeric,
           'T3 après annulation, products.current_stock est revenu à son niveau initial');
 
-SELECT is(current_setting('breakery.dm_delta')::int, 2,
-          'T4 display_movements porte les DEUX gestes : la vente et la restitution');
+SELECT is(current_setting('breakery.dm_delta')::int, 0,
+          'T4 ni la vente ni la restitution B2B ne créent de mouvement vitrine');
 
 SELECT * FROM finish();
 ROLLBACK;

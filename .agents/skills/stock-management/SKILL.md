@@ -21,6 +21,7 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
 
 - ADR-004 : pas de péremption automatique ni FIFO de stock ; pertes déclarées. Ne pas rouvrir ce chantier, ni confondre avec le FIFO des règlements B2B.
 - ADR-027 : stock global mono-emplacement ; pas de transferts internes ni de contrainte de section sur le ledger. Une station de production n’est pas un emplacement de stock.
+- ADR-036 : compteur vitrine indépendant du BtoB ; création, modification et annulation BtoB ne doivent pas le modifier ni dépendre de son solde. Le stock général consommé doit être suffisant, même si le réglage de stock négatif est activé.
 - ADR-016 : arrêter la cascade au premier semi-fini suivi en stock ; seuls les intermédiaires non stockés se déplient.
 - ADR-014 : pas de JE de réévaluation sur un changement de coût ; valorisation instantanée et grand livre peuvent diverger entre deux opnames.
 - Lire les corps des ADR concernés avant de modifier ces parcours ; ne pas les déduire de leurs titres.
@@ -53,7 +54,7 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
    matières ne doit PAS dériver son autorisation de dépassement d'un réglage global.
    Le forçage se demande explicitement et se gate sur une permission dédiée.
    `_record_sale_stock` garde son `p_allow_negative` piloté par
-   `business_config.allow_negative_stock` : c'est le chemin de VENTE, distinct. Attention :
+   `business_config.allow_negative_stock` pour le café : c'est le chemin de VENTE, distinct. Le BtoB doit refuser un stock général insuffisant (ADR-036). Attention :
    ce drapeau ne gouverne que le stock GLOBAL — la garde de solde de la vitrine, dans le même
    helper, est inconditionnelle.
 10. **Recipe cascade immutable** — `recipe_versions.snapshot` is append-only. No retroactive mutation. La RPC de production lit la version au temps T pour le calcul de coût (pas la version courante). When changing a recipe, the trigger creates a new `recipe_versions` row — never UPDATE existing snapshots.
