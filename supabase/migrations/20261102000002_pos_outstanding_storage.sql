@@ -5,7 +5,11 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM information_schema.columns
     WHERE table_schema='public' AND table_name='order_payments' AND column_name='session_id') THEN
     ALTER TABLE public.order_payments ADD COLUMN session_id uuid REFERENCES public.pos_sessions(id);
-    UPDATE public.order_payments p SET session_id=o.session_id FROM public.orders o WHERE o.id=p.order_id;
+    -- Les imports historiques restent hors shift et leur garde d'intégrité reste active.
+    UPDATE public.order_payments p SET session_id=o.session_id FROM public.orders o
+      WHERE o.id=p.order_id AND o.financial_import_document_id IS NULL
+        AND NOT coalesce(o.is_historical_import,false)
+        AND p.session_id IS DISTINCT FROM o.session_id;
   END IF;
 END $backfill$;
 CREATE INDEX IF NOT EXISTS order_payments_session_idx ON public.order_payments(session_id);
