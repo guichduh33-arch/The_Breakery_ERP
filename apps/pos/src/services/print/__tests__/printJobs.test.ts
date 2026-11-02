@@ -103,9 +103,49 @@ describe('print acknowledgement and duplicates', () => {
     const newer: PrintJob = { ...other, id: 'payment:newer:kitchen' };
     otherTabWrite([...readDurable(), newer]);
     send.mockResolvedValue({ success: true });
-    await runPrintJob({ ...ticket, order_number: 'Changed caller' }, target, 1, previous);
+    const result = await runPrintJob({ ...ticket, order_number: 'Changed caller' }, target, 1, previous);
     expect(readDurable()).toEqual(expect.arrayContaining([other, newer]));
-    expect(send.mock.calls[1]?.[1]).toMatchObject({ order_number: ticket.order_number, duplicate: true });
+    if (success) {
+      expect(result).toEqual({ success: false, error: 'Already printed — station tickets cannot be reprinted' });
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(readDurable()).toContainEqual(previous);
+    } else {
+      expect(result.success).toBe(true);
+      expect(send.mock.calls[1]?.[1]).toMatchObject({ order_number: ticket.order_number, duplicate: true });
+    }
+  });
+  it.each(['prep', 'waiter'] as const)('refuses a confirmed %s ticket after reload and on the manual-id path', async (kind) => {
+    const confirmed: PrintJob = { id: 'tablet:printed:kitchen', payload: { ...ticket, kind }, status: 'confirmed', attempts: 1 };
+    otherTabWrite([confirmed]);
+    const saved = localStorage.getItem('breakery.print-jobs.v1');
+    const stale: PrintJob = { ...confirmed, status: 'unknown' };
+    expect((await runPrintJob(ticket, target, 1, stale)).success).toBe(false);
+    expect((await runPrintJob(ticket, target, 1, undefined, confirmed.id, () => true, true)).success).toBe(false);
+    expect(localStorage.getItem('breakery.print-jobs.v1')).toBe(saved);
+    expect(send).not.toHaveBeenCalled();
+  });
+  it('refuses a confirmed snapshot even if its durable marker is no longer retained', async () => {
+    const confirmed: PrintJob = { id: 'old', payload: ticket, status: 'confirmed', attempts: 1 };
+    expect((await runPrintJob(ticket, target, 1, confirmed)).success).toBe(false);
+    expect(readDurable()).toEqual([]);
+    expect(send).not.toHaveBeenCalled();
+  });
+  it('prints a new batch for the same order and preserves configured initial copies', async () => {
+    send.mockResolvedValue({ success: true });
+    await runPrintJob(ticket, target, 1, undefined, 'tablet:first:kitchen');
+    await runPrintJob({ ...ticket, additional: true }, target, 2, undefined, 'tablet:additional:kitchen');
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(send.mock.calls[1]?.[1]).toMatchObject({ order_number: ticket.order_number, additional: true });
+    expect(send.mock.calls[1]?.[1]).not.toHaveProperty('duplicate');
+    expect(readDurable()).toHaveLength(2);
+  });
+  it('still allows confirmed cashier closing reports to be reprinted as duplicates', async () => {
+    const report: PrintJob = { id: 'shift-close:closed', payload: { ...ticket, kind: 'shift_close', role: 'cashier' }, status: 'confirmed', attempts: 1 };
+    otherTabWrite([report]);
+    send.mockResolvedValue({ success: true });
+    expect((await runPrintJob(report.payload, target, 1, report)).success).toBe(true);
+    expect(send).toHaveBeenCalledWith(target, expect.objectContaining({ kind: 'shift_close', duplicate: true }));
+    expect(readDurable()[0]?.attempts).toBe(2);
   });
   it('coordinates every mutation under the journal lock and refuses concurrent manual/automatic sends of one job', async () => {
     const locks = installPrintLocks();
