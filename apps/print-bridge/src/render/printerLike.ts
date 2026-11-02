@@ -6,6 +6,8 @@ export interface PrinterLike {
   bold(on: boolean): void;
   setTextSize(height: number, width: number): void;
   setTextNormal(): void;
+  /** Largeur configurée en caractères à taille normale (ThermalPrinter). */
+  getWidth?(): number;
   println(text: string): void;
   newLine(): void;
   drawLine(): void;
