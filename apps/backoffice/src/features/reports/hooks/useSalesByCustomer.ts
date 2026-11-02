@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByCustomer.ts
 //
-// Query hook pour `get_sales_by_customer_v1` — le CA identifié (client attaché)
+// Query hook pour `get_sales_by_customer_v2` — le CA identifié (client attaché)
 // vs l'anonyme, le détail par client avec fenêtre précédente, les nouveaux et
 // le décrochage. Le seuil de décrochage est une CONSTANTE DOMAIN
 // (CUSTOMER_CHURN_MIN_PREV_ORDERS) transmise en argument — la RPC reste
@@ -110,7 +110,7 @@ export function useSalesByCustomer(params: UseSalesByCustomerParams) {
       };
       if (customerType) args.p_customer_type = customerType;
 
-      const { data, error } = await supabase.rpc('get_sales_by_customer_v1', args);
+      const { data, error } = await supabase.rpc('get_sales_by_customer_v2', args);
       if (error) throw error as Error;
 
       const r       = (data ?? {}) as Record<string, unknown>;

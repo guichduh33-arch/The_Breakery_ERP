@@ -17,6 +17,16 @@ const BASE: StationTicketPayload = {
 };
 
 describe('renderStationTicket', () => {
+  it('prints a closing report with received methods and duplicate marker', () => {
+    const { p, log } = makeFake();
+    renderStationTicket(p, { ...BASE, kind: 'shift_close', role: 'cashier', duplicate: true,
+      report_lines: [{ label: 'CASH', amount: 30000 }, { label: 'Outstanding collected', amount: 90000 }] });
+    expect(log.join('\n')).toContain('SHIFT CLOSING REPORT');
+    expect(log.join('\n')).toContain('CASH | 30.000');
+    expect(log.join('\n')).toContain('Outstanding collected | 90.000');
+    expect(log.join('\n')).toContain('*** DUPLICATE ***');
+    expect(log.at(-1)).toBe('<cut>');
+  });
   it('renders station header, order, table, items with modifiers and notes', () => {
     const { p, log } = makeFake();
     renderStationTicket(p, BASE);

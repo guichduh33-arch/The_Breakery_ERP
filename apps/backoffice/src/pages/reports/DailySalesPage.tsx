@@ -3,7 +3,7 @@
 // Lot C (campagne Reports 2026-08-15) — la page FLAGSHIP de l'archétype
 // « Report » (maquette 4c), posée sur le socle du lot B (ReportShell, KpiBand,
 // PeriodControl, ExportMenu, BreakdownCard, PairedBarsChart) et sur le payload
-// `get_daily_sales_v3` (lot I, puis bump du 2026-08-21). Cinq propriétés qui ne
+// `get_daily_sales_v4` (lot I, puis bump du 2026-08-21). Cinq propriétés qui ne
 // sont pas cosmétiques :
 //
 //  1. CHAQUE CHIFFRE PORTE SA COMPARAISON — la période précédente est requêtée
@@ -93,8 +93,8 @@ const MAX_SESSIONS = 8;
 
 /**
  * Périmètre des deux cartes bâties sur les LIGNES de commande — « Revenue by
- * category » (`get_sales_by_category_v3`) et « Top products »
- * (`get_gross_margin_by_product_v1`).
+ * category » (`get_sales_by_category_v5`) et « Top products »
+ * (`get_gross_margin_by_product_v3`).
  *
  * Elles somment `order_items.line_total` HORS TAXE et brut des remises posées
  * au niveau de la COMMANDE, là où la bande de KPI somme `orders.total`. Leur
@@ -102,8 +102,8 @@ const MAX_SESSIONS = 8;
  * rien à voir avec celui qu'explique la carte Payments.
  *
  * CE QUE CETTE PHRASE NE DIT PAS, ET POURQUOI. Elle ne mentionne pas le B2B.
- * Relevé du 2026-08-21 : ni `get_sales_by_category_v3` ni
- * `get_gross_margin_by_product_v1` ne porte de filtre `order_type` — les
+ * Relevé du 2026-08-21 : ni `get_sales_by_category_v5` ni
+ * `get_gross_margin_by_product_v3` ne porte de filtre `order_type` — les
  * commandes B2B y entreront donc dès qu'elles porteront des lignes. Si elles
  * n'y pèsent rien sur la base de développement, c'est que les quinze qui s'y
  * trouvent ont été insérées directement par des fixtures, en contournant
@@ -238,25 +238,18 @@ export default function DailySalesPage(): JSX.Element {
       : `${s.status} · var ${s.variance_total === null ? '—' : formatIdrFull(s.variance_total)}`,
   }));
 
-  // Ligne de rapprochement de la carte Payments — DÉRIVÉE du serveur, jamais
-  // d'une soustraction locale. Elle ne se rend que s'il y a un écart à
-  // expliquer : sur une période sans règlement en compte, « + Rp 0 settled on
-  // account » n'informerait de rien et deviendrait faux le jour où l'écart
-  // aurait une autre origine. Le partage serveur porte sur le BRUT
-  // (`total = tendered + on_account`), le net s'en déduit par les refunds.
-  const onAccount      = summary?.on_account_total ?? 0;
-  const onAccountCount = summary?.on_account_order_count ?? 0;
-  const settlementSplit = summary !== undefined && onAccount > 0 ? (
+  // Ventes de période, versements réels et encours courant ont des dates distinctes.
+  const settlementSplit = summary !== undefined ? (
     <span className="text-text-muted" data-testid="payments-settlement-split">
-      Gross revenue{' '}
-      <span className="font-data tabular-nums">{formatIdrFull(summary.total)}</span>
-      {' = '}
-      <span className="font-data tabular-nums">{formatIdrFull(summary.tendered_total)}</span>
-      {' tendered + '}
-      <span className="font-data tabular-nums">{formatIdrFull(onAccount)}</span>
-      {' settled on account ('}
-      <span className="font-data tabular-nums">{formatCount(onAccountCount)}</span>
-      {` order${onAccountCount === 1 ? '' : 's'} with no payment line)`}
+      Recognized sales <span className="font-data tabular-nums">{formatIdrFull(summary.total)}</span>
+      {' · Receipts in period '}
+      <span className="font-data tabular-nums">{formatIdrFull(summary.receipts_total ?? payments.data?.total ?? 0)}</span>
+      {' · Outstanding collections '}
+      <span className="font-data tabular-nums">{formatIdrFull(summary.outstanding_collections_total ?? 0)}</span>
+      {' · Outstanding sales created '}
+      <span className="font-data tabular-nums">{formatIdrFull(summary.outstanding_created_total ?? 0)}</span>
+      {' · Current POS amount due (all dates) '}
+      <span className="font-data tabular-nums">{formatIdrFull(summary.outstanding_due_total ?? 0)}</span>
     </span>
   ) : null;
 

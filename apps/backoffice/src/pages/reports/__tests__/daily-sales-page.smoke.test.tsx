@@ -77,6 +77,8 @@ const CURRENT = {
     // Bump v3 — invariant serveur : total = tendered_total + on_account_total,
     // order_count = tendered_order_count + on_account_order_count.
     tendered_total: 7_610_000, tendered_order_count: 233,
+    receipts_total: 9_000_000, outstanding_collections_total: 400_000,
+    outstanding_created_total: 300_000, outstanding_due_total: 1_500_000,
     on_account_total: 1_000_000, on_account_order_count: 14,
   },
   by_day: [
@@ -230,35 +232,19 @@ describe('DailySalesPage — archétype Report (maquette 4c)', () => {
     expect(within(screen.getByTestId('breakdown-payments')).getByText('Total collected')).toBeInTheDocument();
   });
 
-  it('Payments : la ligne de rapprochement nomme l’écart entre les deux « Total »', () => {
-    renderPage();
-    const card  = screen.getByTestId('breakdown-payments');
-    const split = within(card).getByTestId('payments-settlement-split');
-    // Les trois montants sont RENDUS, pas recalculés : brut, encaissé, en compte.
-    expect(split).toHaveTextContent(/8\.610\.000/);
-    expect(split).toHaveTextContent(/7\.610\.000/);
-    expect(split).toHaveTextContent(/1\.000\.000/);
-    expect(split).toHaveTextContent(/14 orders with no payment line/);
-    // Elle s'AJOUTE à la note existante, elle ne la remplace pas.
-    expect(card).toHaveTextContent(/260 payments across 247 orders/);
-  });
-
-  it('Payments : aucun règlement en compte → aucune ligne, et surtout aucun « Rp 0 »', () => {
-    seedHooks(ok({
-      ...CURRENT,
-      summary: {
-        ...CURRENT.summary,
-        tendered_total:       CURRENT.summary.total,
-        tendered_order_count: CURRENT.summary.order_count,
-        on_account_total: 0, on_account_order_count: 0,
-      },
-    }));
+  it('Payments : affiche les flux sans égalité artificielle entre ventes et versements', () => {
     renderPage();
     const card = screen.getByTestId('breakdown-payments');
-    expect(within(card).queryByTestId('payments-settlement-split')).toBeNull();
-    expect(card).not.toHaveTextContent(/settled on account/);
-    // Le pied garde sa note : c'est la ligne de rapprochement qui disparaît,
-    // pas le pied entier.
+    const detail = within(card).getByTestId('payments-settlement-split');
+    expect(detail).toHaveTextContent(/Recognized sales/);
+    expect(detail).toHaveTextContent(/8\.610\.000/);
+    expect(detail).toHaveTextContent(/Receipts in period/);
+    expect(detail).toHaveTextContent(/9\.000\.000/);
+    expect(detail).toHaveTextContent(/Outstanding collections/);
+    expect(detail).toHaveTextContent(/400\.000/);
+    expect(detail).toHaveTextContent(/Current POS amount due \(all dates\)/);
+    expect(detail).toHaveTextContent(/1\.500\.000/);
+    expect(detail).not.toHaveTextContent('=');
     expect(card).toHaveTextContent(/260 payments across 247 orders/);
   });
 

@@ -22,9 +22,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 /** Capture chaque appel `.not(colonne, opérateur, valeur)` de la chaîne. */
 const notSpy = vi.fn();
+let orderRows: Record<string, unknown>[] = [];
 
 vi.mock('@/lib/supabase', () => {
-  const okResult = Promise.resolve({ data: [], error: null });
   const queryChain = {
     select: () => queryChain,
     order: () => queryChain,
@@ -32,8 +32,7 @@ vi.mock('@/lib/supabase', () => {
       notSpy(col, op, value);
       return queryChain;
     },
-    then: (...args: unknown[]) =>
-      okResult.then(...(args as Parameters<typeof okResult.then>)),
+    then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: orderRows, error: null }).then(resolve),
   };
   return {
     supabase: {
@@ -61,6 +60,7 @@ function capturedStatusFilter(): unknown {
 describe('libération des tables — statuts qui rendent une table libre', () => {
   beforeEach(() => {
     notSpy.mockClear();
+    orderRows = [];
   });
 
   it('`paid` libère la table — le paiement pose ce statut, pas `completed`', () => {
@@ -90,5 +90,14 @@ describe('libération des tables — statuts qui rendent une table libre', () =>
     await waitFor(() => {
       expect(capturedStatusFilter()).toBe(TABLE_RELEASING_STATUSES_FILTER);
     });
+  });
+  it('une vente Outstanding finalisee libere la table sans effacer la dette', async () => {
+    orderRows = [{ id: 'deferred', order_number: 'OUT-1', table_number: '7', status: 'pending_payment',
+      created_via: 'pos', created_at: '', outstanding_at: '2026-11-02T00:00:00Z' }];
+    const occupancy = renderHook(() => useTableOccupancy(), { wrapper });
+    const orders = renderHook(() => useTableOrders(), { wrapper });
+    await waitFor(() => expect(orders.result.current.isSuccess).toBe(true));
+    expect(orders.result.current.data).toEqual({});
+    expect(occupancy.result.current).toEqual({});
   });
 });

@@ -37,6 +37,7 @@ const POSMarginReportPage = lazy(() => import('@/features/reports/POSMarginRepor
 const POSActivityReportPage = lazy(() => import('@/features/reports/POSActivityReportPage'));
 const POSSettingsPage = lazy(() => import('@/features/settings/POSSettingsPage'));
 const CustomerDebtsPanel = lazy(() => import('@/features/customers/CustomerDebtsPanel'));
+const OutstandingPage = lazy(() => import('@/features/outstanding/OutstandingPage'));
 
 function Protected({ children }: { children: ReactNode }) {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
@@ -107,6 +108,7 @@ export function AppRoutes() {
       <Route path="/pos/reports/activity" element={<ProtectedLazy><POSActivityReportPage /></ProtectedLazy>} />
       <Route path="/pos/settings" element={<ProtectedLazy allowSetup><POSSettingsPage /></ProtectedLazy>} />
       <Route path="/pos/debts" element={<ProtectedLazy><CustomerDebtsPanel /></ProtectedLazy>} />
+      <Route path="/pos/outstanding" element={<ProtectedLazy><OutstandingPage /></ProtectedLazy>} />
 
       <Route
         path="/kds"

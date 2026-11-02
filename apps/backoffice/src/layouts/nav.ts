@@ -67,6 +67,7 @@ export const NAV_DOMAINS: NavDomain[] = [
         label: 'Orders',
         links: [
           { to: '/backoffice/orders', label: 'Orders', end: true, permission: 'orders.read' },
+          { to: '/backoffice/orders/outstanding', label: 'POS Outstanding', permission: 'orders.read' },
           { to: '/backoffice/customers', label: 'Customers', end: true, permission: 'customers.read' },
           { to: '/backoffice/customers/categories', label: 'Customer categories', permission: 'customer_categories.read' },
         ],

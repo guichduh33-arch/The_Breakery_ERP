@@ -76,6 +76,7 @@ describe('SideMenuDrawer', () => {
     expect(screen.getByTestId('side-menu-close-shift')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-cafe-stock')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-outstanding-debts')).toBeInTheDocument();
+    expect(screen.getByTestId('side-menu-outstanding-tickets')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-kds')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-pos-settings')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-lock-terminal')).toBeInTheDocument();
@@ -84,6 +85,14 @@ describe('SideMenuDrawer', () => {
   });
 
   // Session 19 / Phase 3.C — Change PIN item.
+  it('keeps customer debts and outstanding ticket collection on their own routes', () => {
+    renderDrawer();
+    fireEvent.click(screen.getByTestId('side-menu-outstanding-debts'));
+    expect(navigateMock).toHaveBeenCalledWith('/pos/debts');
+    fireEvent.click(screen.getByTestId('side-menu-outstanding-tickets'));
+    expect(navigateMock).toHaveBeenCalledWith('/pos/outstanding');
+  });
+
   it('renders Change PIN item when onChangePin prop is provided', () => {
     renderDrawer({ onChangePin: noop });
     const item = screen.getByTestId<HTMLButtonElement>('side-menu-change-pin');

@@ -41,6 +41,19 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe('PaymentMethodGrid', () => {
+  it('allows Outstanding only for an attached customer online', () => {
+    enabledMock.current = new Set(['cash']);
+    const action = vi.fn();
+    const view = render(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} onOutstanding={action} />, { wrapper });
+    expect(screen.getByTestId('pay-method-outstanding')).toBeDisabled();
+    useCartStore.setState({ attachedCustomer: FAKE_CUSTOMER });
+    view.rerender(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} onOutstanding={action} />);
+    fireEvent.click(screen.getByTestId('pay-method-outstanding'));
+    expect(action).toHaveBeenCalledOnce();
+    network.offline = true;
+    view.rerender(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} onOutstanding={action} />);
+    expect(screen.getByTestId('pay-method-outstanding')).toBeDisabled();
+  });
   beforeEach(() => {
     network.offline = false;
     useCartStore.setState({ attachedCustomer: null });

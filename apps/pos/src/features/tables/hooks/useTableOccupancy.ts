@@ -5,6 +5,7 @@ import { TABLE_RELEASING_STATUSES_FILTER } from '../tableActivity';
 
 interface OccupiedRow {
   table_number: string;
+  outstanding_at?: string | null;
 }
 
 const OCCUPANCY_KEY = ['table_occupancy'];
@@ -20,12 +21,12 @@ async function fetchOccupied(): Promise<Set<string>> {
     };
   })
     .from('orders')
-    .select('table_number')
+    .select('table_number, outstanding_at')
     .not('table_number', 'is', null)
     .not('status', 'in', TABLE_RELEASING_STATUSES_FILTER);
 
   if (error) throw new Error(error.message);
-  return new Set((data ?? []).map((r) => r.table_number));
+  return new Set((data ?? []).filter((r) => r.outstanding_at == null).map((r) => r.table_number));
 }
 
 // Re-audit 2026-08-24 (perf P1) — le hook est monté DEUX fois sur /pos via

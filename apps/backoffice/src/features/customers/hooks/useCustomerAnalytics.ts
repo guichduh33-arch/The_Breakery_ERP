@@ -3,12 +3,10 @@
 // Per-customer purchase analytics — powers the Analytics tab of the customer
 // detail page. Aggregated client-side from the customer's own orders +
 // order_items (read-only PostgREST, no new RPC). Counts only realised-revenue
-// orders (completed / paid), matching the dashboard's revenue semantics.
+// orders, including Outstanding from its recognition date.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
-
-const REVENUE_STATUSES = ['completed', 'paid'] as const;
 
 export type AnalyticsOrderType = 'dine_in' | 'take_out' | 'delivery' | 'b2b';
 
@@ -73,12 +71,9 @@ export function useCustomerAnalytics(customerId: string | null | undefined) {
       };
       if (!customerId) return empty;
 
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('id, created_at, total, order_type, status')
-        .eq('customer_id', customerId)
-        .in('status', REVENUE_STATUSES as unknown as ('completed' | 'paid')[])
-        .order('created_at', { ascending: true });
+      const { data: orders, error } = await supabase.rpc('get_customer_recognized_orders_v1', {
+        p_customer_id: customerId,
+      });
       if (error) throw error;
 
       const rows = orders ?? [];
@@ -101,7 +96,7 @@ export function useCustomerAnalytics(customerId: string | null | undefined) {
       for (const o of rows) {
         const total = Number(o.total);
         totalSpend += total;
-        const k = o.created_at.slice(0, 7);
+        const k = o.recognized_at.slice(0, 7);
         const idx = keyToIdx.get(k);
         if (idx !== undefined) {
           const bucket = buckets[idx];
@@ -110,7 +105,7 @@ export function useCustomerAnalytics(customerId: string | null | undefined) {
             bucket.orders += 1;
           }
         }
-        const t = o.order_type as AnalyticsOrderType;
+        const t = o.order_type;
         const prev = typeAgg.get(t) ?? { orders: 0, total: 0 };
         typeAgg.set(t, { orders: prev.orders + 1, total: prev.total + total });
       }

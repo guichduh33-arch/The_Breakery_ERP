@@ -219,6 +219,7 @@ export { VirtualKeypadProvider } from './components/VirtualKeypadProvider.js';
 export { useVirtualKeypad, type VkpLayout } from './hooks/useVirtualKeypad.js';
 
 // hooks
+export { OutstandingOrdersPanel, type OutstandingRow, type OutstandingPaymentRequest } from './components/OutstandingOrdersPanel.js';
 export { useIdleTimeout, type UseIdleTimeoutArgs, IDLE_WARNING_LEAD_MS } from './hooks/useIdleTimeout.js';
 export { useDebouncedValue } from './hooks/useDebouncedValue.js';
 

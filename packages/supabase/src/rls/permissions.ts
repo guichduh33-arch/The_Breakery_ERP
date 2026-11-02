@@ -18,6 +18,7 @@ export type PermissionCode =
   | 'pos.session.close_other'
   | 'pos.session.view_all'
   | 'pos.sale.create'
+  | 'payments.process'
   | 'pos.sale.void'
   | 'pos.sale.update'
   | 'products.read'

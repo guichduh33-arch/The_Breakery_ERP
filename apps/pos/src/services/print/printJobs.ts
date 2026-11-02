@@ -55,22 +55,22 @@ function writeJob(jobs: PrintJob[], job: PrintJob, apply = usePrintJobs.setState
 }
 
 /** Aucun appel de création de commande : ce journal ne fait qu'imprimer les snapshots. */
-export async function runPrintJob(payload: StationTicketPayload, printer: PrinterTarget | undefined, copies = 1, previous?: PrintJob, automaticId?: string, current = () => true) {
+export async function runPrintJob(payload: StationTicketPayload, printer: PrinterTarget | undefined, copies = 1, previous?: PrintJob, automaticId?: string, current = () => true, manual = false) {
   const id = previous?.id ?? automaticId ?? crypto.randomUUID();
   try {
     // Tous les appelants, y compris le geste manuel, coordonnent le même job.
     return await withJob(id, async () => {
-      const claim = await withJournal<{ existing: PrintJob } | { job: PrintJob }>((jobs) => {
+      const claim = await withJournal<{ existing: PrintJob } | { job: PrintJob; duplicate: boolean }>((jobs) => {
         if (!current()) throw new Error('Your session changed — check print jobs before reprinting');
         const existing = jobs.find((item) => item.id === id);
-        if (automaticId && !previous && existing) {
+        if (automaticId && !previous && !manual && existing) {
           usePrintJobs.setState({ jobs });
           return { existing };
         }
-        const original = previous ? existing ?? previous : undefined;
+        const original = previous || manual ? existing ?? previous : undefined;
         const job: PrintJob = { id, payload: original?.payload ?? payload, status: 'pending', attempts: (original?.attempts ?? 0) + 1 };
         writeJob(jobs, job);
-        return { job };
+        return { job, duplicate: !!original };
       });
       if ('existing' in claim) return { success: claim.existing.status === 'confirmed',
         ...(claim.existing.status !== 'confirmed' ? { error: claim.existing.error ?? 'Check the existing print job before reprinting' } : {}) };
@@ -79,7 +79,7 @@ export async function runPrintJob(payload: StationTicketPayload, printer: Printe
         if (!printer) throw new Error('Printer not configured');
         for (let copy = 0; copy < copies; copy++) {
           if (!current()) throw new Error('Your session changed — check print jobs before reprinting');
-          const result = await printStationTicket(printer, previous ? { ...job.payload, duplicate: true, server_name: `DUPLICATE · ${job.payload.server_name}` } : job.payload);
+          const result = await printStationTicket(printer, claim.duplicate ? { ...job.payload, duplicate: true, server_name: `DUPLICATE · ${job.payload.server_name}` } : job.payload);
           if (!result.success) throw new Error(result.error ?? 'Printer acknowledgement unavailable');
         }
         await withJournal((jobs) => { writeJob(jobs, { ...job, status: 'confirmed' }); });

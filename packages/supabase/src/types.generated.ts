@@ -63,6 +63,55 @@ export type Database = {
           },
         ]
       }
+      pos_payment_attempt_keys: {
+        Row: {
+          actor_id: string
+          created_at: string
+          key: string
+          order_id: string
+          request: Json
+          result: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          key: string
+          order_id: string
+          request: Json
+          result: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          key?: string
+          order_id?: string
+          request?: Json
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_payment_attempt_keys_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_payment_attempt_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_payment_attempt_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       accounting_mappings: {
         Row: {
           account_code: string
@@ -4025,6 +4074,7 @@ export type Database = {
           order_id: string
           paid_at: string
           reference: string | null
+          session_id: string | null
         }
         Insert: {
           amount: number
@@ -4035,6 +4085,7 @@ export type Database = {
           order_id: string
           paid_at?: string
           reference?: string | null
+          session_id?: string | null
         }
         Update: {
           amount?: number
@@ -4045,6 +4096,7 @@ export type Database = {
           order_id?: string
           paid_at?: string
           reference?: string | null
+          session_id?: string | null
         }
         Relationships: [
           {
@@ -4060,6 +4112,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "view_b2b_invoices"
             referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "order_payments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -4102,6 +4161,7 @@ export type Database = {
           notes: string | null
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
+          outstanding_at: string | null
           paid_at: string | null
           pickup_date: string | null
           promotion_total: number
@@ -4143,6 +4203,7 @@ export type Database = {
           notes?: string | null
           order_number: string
           order_type?: Database["public"]["Enums"]["order_type"]
+          outstanding_at?: string | null
           paid_at?: string | null
           pickup_date?: string | null
           promotion_total?: number
@@ -4184,6 +4245,7 @@ export type Database = {
           notes?: string | null
           order_number?: string
           order_type?: Database["public"]["Enums"]["order_type"]
+          outstanding_at?: string | null
           paid_at?: string | null
           pickup_date?: string | null
           promotion_total?: number
@@ -6275,6 +6337,8 @@ export type Database = {
           loyalty_points_restored: number
           loyalty_redemption_restored_amount: number
           order_id: string
+          payment_session_id: string | null
+          payment_source: string | null
           reason: string
           refund_number: string
           refunded_by: string
@@ -6291,6 +6355,8 @@ export type Database = {
           loyalty_points_restored?: number
           loyalty_redemption_restored_amount?: number
           order_id: string
+          payment_session_id?: string | null
+          payment_source?: string | null
           reason: string
           refund_number: string
           refunded_by: string
@@ -6307,6 +6373,8 @@ export type Database = {
           loyalty_points_restored?: number
           loyalty_redemption_restored_amount?: number
           order_id?: string
+          payment_session_id?: string | null
+          payment_source?: string | null
           reason?: string
           refund_number?: string
           refunded_by?: string
@@ -6335,6 +6403,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "view_b2b_invoices"
             referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "refunds_payment_session_id_fkey"
+            columns: ["payment_session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "refunds_refunded_by_fkey"
@@ -8276,7 +8351,51 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v10: {
+      close_shift_v13: {
+        Args: {
+          p_approver_id?: string
+          p_counted_card?: number
+          p_counted_cash: number
+          p_counted_qris?: number
+          p_denominations?: Json
+          p_idempotency_key?: string
+          p_manager_pin?: string
+          p_notes?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      get_shift_close_preview_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      refund_order_rpc_v15: {
+        Args: {
+          p_acting_auth_user_id: string
+          p_authorized_by: string
+          p_idempotency_key: string
+          p_lines: Json
+          p_order_id: string
+          p_reason: string
+          p_refund_source?: string
+          p_session_id?: string
+          p_tenders: Json
+        }
+        Returns: Json
+      }
+      void_order_rpc_v14: {
+        Args: {
+          p_acting_auth_user_id: string
+          p_authorized_by: string
+          p_idempotency_key?: string
+          p_order_id: string
+          p_reason: string
+          p_refund_source?: string
+          p_session_id?: string
+        }
+        Returns: Json
+      }
+      close_shift_v12: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number
@@ -10059,7 +10178,239 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
-      reopen_held_order_v6: {
+      defer_pos_order_v1: {
+        Args: {
+          p_customer_id: string
+          p_discount_amount?: number
+          p_discount_auth_id?: string
+          p_discount_authorized_by?: string
+          p_discount_reason?: string
+          p_discount_type?: string
+          p_discount_value?: number
+          p_idempotency_key: string
+          p_loyalty_points_redeemed?: number
+          p_order_id: string
+          p_promotions?: Json
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      settle_pos_outstanding_v1: {
+        Args: {
+          p_amount: number
+          p_idempotency_key: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_order_id: string
+          p_session_id?: string
+        }
+        Returns: Json
+      }
+      list_pos_outstanding_v1: {
+        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: {
+          created_at: string
+          customer_id: string
+          customer_name: string
+          due: number
+          order_id: string
+          order_number: string
+          paid: number
+          total: number
+          total_count: number
+        }[]
+      }
+      get_shift_close_print_v1: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      get_basket_analysis_v5: {
+        Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
+        Returns: {
+          co_occurrence_count: number
+          confidence: number
+          lift: number
+          product_a_name: string
+          product_b_name: string
+          product_id_a: string
+          product_id_b: string
+          support_a: number
+          support_b: number
+          support_pair: number
+        }[]
+      }
+      get_combo_sales_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_discounts_loyalty_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_gross_margin_by_product_v3: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_pos_activity_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_margin_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_order_type_category_mix_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_sales_overview_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_top_products_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_voids_refunds_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_product_dashboard_v5: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_product_dashboard_v6: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_product_performance_v3: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_product_sales_lines_v3: {
+        Args: {
+          p_cursor?: string
+          p_end_date: string
+          p_limit?: number
+          p_product_id: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_sales_by_category_v5: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          qty: number
+          total: number
+        }[]
+      }
+      get_sales_by_customer_v2: {
+        Args: {
+          p_churn_min_orders?: number
+          p_customer_type?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_sales_by_hour_v4: {
+        Args: { p_date: string }
+        Returns: {
+          hour: number
+          order_count: number
+          total: number
+        }[]
+      }
+      get_sales_by_origin_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_sales_by_product_v3: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_sales_by_staff_v4: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: {
+          avg_basket: number
+          order_count: number
+          staff_id: string
+          staff_name: string
+          total: number
+        }[]
+      }
+      get_sales_by_table_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_staff_performance_v2: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_daily_sales_v4: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_pb1_report_v4: {
+        Args: { p_period_month: number; p_period_year: number }
+        Returns: Json
+      }
+      get_pos_payment_breakdown_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_sessions_report_v2: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_customer_recognized_orders_v1: {
+        Args: { p_customer_id: string }
+        Returns: {
+          id: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          recognized_at: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }[]
+      }
+      defer_pos_order_v2: {
+        Args: {
+          p_customer_id: string
+          p_discount_amount?: number
+          p_discount_auth_id?: string
+          p_discount_authorized_by?: string
+          p_discount_reason?: string
+          p_discount_type?: string
+          p_discount_value?: number
+          p_idempotency_key: string
+          p_loyalty_points_redeemed?: number
+          p_order_id: string
+          p_promotions?: Json
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      settle_pos_outstanding_v2: {
+        Args: {
+          p_amount: number
+          p_expected_paid?: number
+          p_idempotency_key: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_order_id: string
+          p_session_id?: string
+        }
+        Returns: Json
+      }
+      reopen_held_order_v9: {
         Args: { p_order_id: string; p_session_id?: string }
         Returns: Json
       }

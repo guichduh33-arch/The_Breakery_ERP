@@ -97,13 +97,7 @@ export function usePaymentFlowLogic() {
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
-  // Pre-payment estimate shown in the terminal — uses the SERVER tax config
-  // (useTaxConfig: rate + inclusive mode) so it matches what the money-path RPC
-  // will charge. ADR-013 D11 : la promo vit dans `cart.promotionTotal` (écrit
-  // par setAppliedPromotions) — calculateTotals applique l'ordre canonique
-  // items → promo → redemption → remise panier → taxe, plus aucun
-  // post-traitement ici. The receipt (post-payment) consumes the server
-  // `tax_amount`/`total` directly below.
+  // Estimation au tarif serveur ; le reçu utilise les montants confirmés.
   const totals = calculateTotals(cart, taxRate, taxInclusive);
   const { tax_amount, total } = totals;
 
@@ -311,7 +305,12 @@ export function usePaymentFlowLogic() {
     });
   }
 
-  async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
+  async function handleOutstanding(): Promise<void> {
+    if (!attachedCustomer || offlineGate.offlineMode || tenders.length > 0) return;
+    await dispatchCheckout([], true);
+  }
+
+  async function dispatchCheckout(tendersToShip: Tender[], outstanding = false): Promise<void> {
     if (dispatching) return;
     if (isOrderSending()) { toast.error('Wait for the order send to finish before paying'); return; }
     dispatching = true;
@@ -329,7 +328,7 @@ export function usePaymentFlowLogic() {
       const snapshot = saved && saved.state !== 'refused' ? saved : JSON.parse(JSON.stringify({
         version: 1, state: 'pending', stationPrinting: 'prepared', cart: state.cart, tenders: tendersToShip,
         context: {
-          idempotencyKey, appendUuid: crypto.randomUUID(), sessionId, userId: user.id,
+          idempotencyKey, appendUuid: crypto.randomUUID(), sessionId, userId: user.id, outstanding,
           pickedUpOrderId: state.pickedUpOrderId, orderOrigin: state.orderOrigin,
           lockedItemIds: state.lockedItemIds, printedItemIds: state.printedItemIds,
           appliedPromotions: state.appliedPromotions, sourceCode: getOrderSourceCode(), offlineOrder: state.offlineOrder,
@@ -337,6 +336,7 @@ export function usePaymentFlowLogic() {
         customer: state.attachedCustomer, offline: offlineGate.offlineMode, taxRate, taxInclusive,
       })) as PaymentAttempt;
       if (snapshot.context.userId !== user.id) throw new Error('Resume this payment with the original cashier');
+      if (snapshot.context.outstanding && snapshot.offline) throw new Error('Outstanding requires an online connection');
       if (snapshot.offline && !snapshot.context.offlineOrder) snapshot.context.offlineOrder = { clientUuid: snapshot.context.appendUuid, localNumber: nextLocalOrderNumber() };
       if (snapshot.result) { setSuccessState(snapshot.result); return; }
       if (snapshot.offline && !saved) validateOfflinePayment(snapshot);
@@ -384,6 +384,7 @@ export function usePaymentFlowLogic() {
       // estimate only if the server omitted points (legacy / no customer).
       setSuccess({
         orderNumber: result.order_number,
+        ...(result.outstanding_due !== undefined ? { outstandingDue: result.outstanding_due } : {}),
         orderId: result.order_id,
         total: result.total,
         // S51 — consume server tax/subtotal/lines; fall back to the pre-payment
@@ -399,7 +400,7 @@ export function usePaymentFlowLogic() {
             : 0),
         ...(result.loyalty_balance_after != null ? { loyaltyBalanceAfter: result.loyalty_balance_after } : {}),
         customerName: attachedCustomer?.name ?? undefined,
-        paymentMethod: tendersToShip[0]!.method,
+        paymentMethod: tendersToShip[0]?.method ?? 'cash',
         // Critique 2026-08-29 P3 — même somme que le chemin offline : le reçu
         // n'imprime jamais un cash_received périmé sur un split.
         cashReceived: tendersToShip
@@ -410,8 +411,8 @@ export function usePaymentFlowLogic() {
       // S72 audit — the charge succeeded (order now exists server-side).
       emitPosEvent('payment_completed', {
         order_number_snap: result.order_number,
-        amount: result.total,
-        payload: { method: tendersToShip[0]!.method, change_given: result.change_given },
+        amount: snapshot.context.outstanding ? 0 : result.total,
+        payload: { method: tendersToShip[0]?.method ?? 'outstanding', change_given: result.change_given },
       });
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);
@@ -487,7 +488,7 @@ export function usePaymentFlowLogic() {
     // ui state
     success, lastError, splitOpen, setSplitOpen,
     // handlers
-    handleAddTender, handleProcess, handleRetry,
+    handleAddTender, handleProcess, handleRetry, handleOutstanding,
     handleDismissAlreadyPaid, handleNewOrder, handleSplitComplete,
   };
 }

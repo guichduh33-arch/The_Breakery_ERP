@@ -46,7 +46,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
     tenders, removeTender,
     total, remaining, fastPathReady, canProcess, checkoutPending, offlineGate, attemptLocked,
     success, lastError, splitOpen, setSplitOpen,
-    handleAddTender, handleProcess, handleRetry,
+    handleAddTender, handleProcess, handleRetry, handleOutstanding,
     handleDismissAlreadyPaid, handleNewOrder, handleSplitComplete,
   } = usePaymentFlowLogic();
 
@@ -88,6 +88,7 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
         {...(success.loyaltyBalanceAfter !== undefined ? { loyaltyBalanceAfter: success.loyaltyBalanceAfter } : {})}
         {...(success.appliedPromotions ? { appliedPromotions: success.appliedPromotions } : {})}
         {...(success.offline ? { offline: true } : {})}
+        {...(success.outstandingDue !== undefined ? { outstandingDue: success.outstandingDue } : {})}
       />
     );
   }
@@ -245,7 +246,9 @@ export function PaymentTerminal({ onOpenShift }: PaymentTerminalProps = {}) {
 
           {remaining > 0 && !attemptLocked && (
             <>
-              <PaymentMethodGrid selectedMethod={selectedMethod} onSelect={selectMethod} />
+              <PaymentMethodGrid selectedMethod={selectedMethod} onSelect={selectMethod}
+                onOutstanding={() => { void handleOutstanding(); }}
+                outstandingDisabled={tenders.length > 0 || checkoutPending || cart.items.length === 0} />
 
               {selectedMethod && (
                 <TenderDraftPanel

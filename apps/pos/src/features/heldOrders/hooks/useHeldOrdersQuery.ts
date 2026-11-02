@@ -19,7 +19,7 @@ export interface HeldOrderRow {
 /**
  * Commandes envoyées impayées, de la caisse comme des appareils waiter.
  * Les commandes tablette entrantes sont visibles avant leur prise en charge ;
- * celles déjà reprises restent limitées à la session courante.
+ * celles déjà reprises restent visibles après la clôture de leur shift.
  * La reprise conserve le paiement et l'annulation protégée existants.
  */
 export function useHeldOrdersQuery() {
@@ -33,7 +33,7 @@ export function useHeldOrdersQuery() {
       const { data, error } = await supabase
         .from('orders')
         .select('id, order_number, table_number, notes, total, created_at, status, created_via, sent_to_kitchen_at, order_items(is_cancelled)')
-        .or(`and(status.eq.pending_payment,created_via.in.(pos,tablet))${sessionId ? `,and(status.eq.draft,created_via.eq.tablet,session_id.eq.${sessionId})` : ''}`)
+        .or('and(outstanding_at.is.null,status.eq.pending_payment,created_via.in.(pos,tablet)),and(outstanding_at.is.null,status.eq.draft,created_via.eq.tablet,sent_to_kitchen_at.not.is.null)')
         .order('created_at', { ascending: false })
         // Audit 2026-08-24 (perf P1) — sans borne, cette requête rapatriait
         // TOUTES les pending_payment jamais soldées depuis la mise en prod,

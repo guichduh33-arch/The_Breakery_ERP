@@ -12,6 +12,8 @@ import { finite, identifier, isRecord } from './refundRecovery';
 import { PAYMENT_METHODS } from '@breakery/supabase';
 
 interface RefundArgs {
+  source?: 'pos';
+  sessionId?: string | null;
   orderId: string;
   lines: { order_item_id: string; qty: number }[];
   tenders: { method: PaymentMethod; amount: number; reference?: string }[];
@@ -40,7 +42,7 @@ export function useRefundOrder() {
   return useMutation({
     retry: false,
     onMutate: () => captureRefundSession(),
-    mutationFn: async ({ orderId, lines, tenders, reason, managerPin, idempotencyKey, sessionGuard }: RefundArgs): Promise<RefundResponse> => {
+    mutationFn: async ({ orderId, lines, tenders, reason, managerPin, idempotencyKey, sessionGuard, source, sessionId }: RefundArgs): Promise<RefundResponse> => {
       const session = captureRefundSession();
       const accessToken = await getAccessToken();
       if (!session.current() || sessionGuard?.() === false) throw new FinancialAttemptError('Your session changed. Reopen this form.');
@@ -59,6 +61,7 @@ export function useRefundOrder() {
           lines,
           tenders,
           reason,
+          ...(source ? { source, session_id: sessionId ?? null } : {}),
         }),
       });
       if (!res.ok) {

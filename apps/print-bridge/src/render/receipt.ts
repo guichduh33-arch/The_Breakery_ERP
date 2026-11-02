@@ -54,13 +54,17 @@ export function renderReceipt(p: PrinterLike, r: ReceiptPayload): void {
   p.bold(false);
   p.drawLine();
 
-  if (r.payments?.length) {
+  if (r.outstanding_due !== undefined) {
+    p.bold(true);
+    p.leftRight('OUTSTANDING — NOT PAID', money(r.outstanding_due));
+    p.bold(false);
+  } else if (r.payments?.length) {
     for (const tender of r.payments) p.leftRight(METHOD_LABELS[tender.method] ?? tender.method, money(tender.amount));
   } else {
     p.leftRight(METHOD_LABELS[r.payment.method] ?? r.payment.method, money(r.payment.amount));
   }
-  if (r.payment.cash_received !== undefined) p.leftRight('Cash received', money(r.payment.cash_received));
-  if (r.payment.change_given !== undefined) p.leftRight('Change', money(r.payment.change_given));
+  if (r.outstanding_due === undefined && r.payment.cash_received !== undefined) p.leftRight('Cash received', money(r.payment.cash_received));
+  if (r.outstanding_due === undefined && r.payment.change_given !== undefined) p.leftRight('Change', money(r.payment.change_given));
 
   if (r.loyalty) {
     p.drawLine();

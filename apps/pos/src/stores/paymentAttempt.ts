@@ -16,6 +16,7 @@ export interface CheckoutContext {
   paymentDiscountAuthId?: string;
   sourceCode?: string | null;
   offlineOrder?: { clientUuid: string; localNumber: string } | null;
+  outstanding?: boolean;
 }
 
 export interface PaymentAttempt {

@@ -48,7 +48,7 @@ export function usePOSReportsOverview(period: ReportsPeriod) {
     // Keyed on the WITA business dates the RPC actually consumes.
     queryKey: ['pos-reports-overview', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_sales_overview_v1', {
+      const { data, error } = await supabase.rpc('get_pos_sales_overview_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -79,7 +79,7 @@ export function usePOSReportsOverview(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_payment_breakdown_v1(p_start_date,
+// Source of truth: server RPC `get_pos_payment_breakdown_v2(p_start_date,
 // p_end_date)`. Same order scope as the Overview (paid + completed retail,
 // non-B2B, non-historical, no test-product line, WITA date bucketing), so the
 // tendered total reconciles with Overview revenue — except for outstanding
@@ -125,7 +125,7 @@ export function usePOSReportsPayments(period: ReportsPeriod) {
   return useQuery<POSReportsPayments>({
     queryKey: ['pos-reports-payments', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_payment_breakdown_v1', {
+      const { data, error } = await supabase.rpc('get_pos_payment_breakdown_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -150,7 +150,7 @@ export function usePOSReportsPayments(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_voids_refunds_v1(p_start_date,
+// Source of truth: server RPC `get_pos_voids_refunds_v2(p_start_date,
 // p_end_date)`. Same order scope as the Overview (non-B2B, non-historical, no
 // test-product line, WITA date bucketing). Two blocks:
 //   * reversals   — full voids + partial refunds (refunds table) + pre-payment

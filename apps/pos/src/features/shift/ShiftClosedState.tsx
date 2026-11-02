@@ -18,6 +18,7 @@
 import { Clock } from 'lucide-react';
 import type { JSX } from 'react';
 import { Button, FullScreenModal } from '@breakery/ui';
+import { LastShiftReportButton } from './LastShiftReportButton';
 
 export interface ShiftClosedStateProps {
   /** Whether the alert is visible. */
@@ -56,6 +57,7 @@ export function ShiftClosedState({
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2">
+          <LastShiftReportButton />
           <Button variant="secondary" size="md" onClick={onCancel} data-testid="shift-closed-cancel">
             Cancel
           </Button>

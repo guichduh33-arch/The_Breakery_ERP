@@ -30,6 +30,7 @@ export interface TableOrderRef {
 }
 
 interface ActiveOrderRow {
+  outstanding_at?: string | null;
   id: string;
   order_number: string;
   table_number: string;
@@ -56,7 +57,7 @@ async function fetchTableOrders(): Promise<Record<string, TableOrderRef>> {
     };
   })
     .from('orders')
-    .select('id, order_number, table_number, created_at, created_via, status')
+    .select('id, order_number, table_number, created_at, created_via, status, outstanding_at')
     .not('table_number', 'is', null)
     .not('status', 'in', TABLE_RELEASING_STATUSES_FILTER)
     .order('created_at', { ascending: false });
@@ -64,6 +65,7 @@ async function fetchTableOrders(): Promise<Record<string, TableOrderRef>> {
   if (error) throw new Error(error.message);
   const map: Record<string, TableOrderRef> = {};
   for (const row of data ?? []) {
+    if (row.outstanding_at != null) continue;
     // Trié décroissant → la première occurrence par table est la plus récente.
     if (!(row.table_number in map)) {
       map[row.table_number] = {

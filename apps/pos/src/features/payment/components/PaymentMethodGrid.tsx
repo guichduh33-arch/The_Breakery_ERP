@@ -10,11 +10,13 @@ import { useOfflineMode } from '@/features/lan/offlineMode';
 import { useCartStore } from '@/stores/cartStore';
 
 export interface PaymentMethodGridProps {
+  onOutstanding?: () => void;
+  outstandingDisabled?: boolean;
   selectedMethod: PaymentMethod | null;
   onSelect: (method: PaymentMethod) => void;
 }
 
-export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGridProps) {
+export function PaymentMethodGrid({ selectedMethod, onSelect, onOutstanding, outstandingDisabled }: PaymentMethodGridProps) {
   // S64 — only methods enabled in BO Settings render (fail-open = all 6).
   const enabled = useEnabledPaymentMethods();
   // ADR-015 — tous les moyens activés restent disponibles hors ligne, sauf l'avoir.
@@ -69,6 +71,13 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
           );
         })}
       </div>
+      {onOutstanding && <button type="button" onClick={onOutstanding}
+        disabled={offline || !attachedCustomer || outstandingDisabled}
+        className="min-h-14 w-full mb-4 rounded-md border border-border-subtle px-4 py-3 text-left disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+        data-testid="pay-method-outstanding">
+        <span className="font-semibold">Outstanding</span>
+        <span className="block text-sm text-text-secondary">{!attachedCustomer ? 'Attach a customer to pay later' : 'Save as unpaid — collect later'}</span>
+      </button>}
     </>
   );
 }

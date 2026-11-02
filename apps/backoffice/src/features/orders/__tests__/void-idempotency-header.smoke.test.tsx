@@ -5,7 +5,7 @@
 //
 // T1/T2: hook-level — useVoidOrder forwards idempotencyKey as the
 //        `x-idempotency-key` header (or omits it) alongside the existing
-//        `x-manager-pin` header; the JSON body stays `{ order_id, reason }`.
+//        `x-manager-pin` ; le corps identifie le backoffice sans transporter le PIN.
 // T3:    modal-level — the modal's per-open UUID is stable across a failed
 //        retry, and rotates both after a successful void AND when the modal
 //        is closed (Cancel) without submitting.
@@ -52,7 +52,16 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 // =====================================================================
 
 describe('S60 useVoidOrder — x-idempotency-key header wiring', () => {
-  it('T1: sends x-idempotency-key + x-manager-pin headers; body is { order_id, reason } only', async () => {
+  it('directs a prior-day Outstanding return to Refund', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 422, json: () => Promise.resolve({ error: 'outstanding_prior_day_requires_refund' }) });
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const { result } = renderHook(() => useVoidOrder(), { wrapper: makeWrapper(qc) });
+    await act(async () => {
+      await expect(result.current.mutateAsync({ orderId: 'ord-1', reason: 'Customer return', managerPin: '123456' }))
+        .rejects.toThrow('Use Refund for an Outstanding ticket from an earlier business day. The original sale must be kept.');
+    });
+  });
+  it('T1: sends PIN and idempotency headers and identifies the backoffice in the body', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ order_id: 'ord-1', refund_id: 'ref-1', total_refunded: 0 }),
@@ -83,7 +92,7 @@ describe('S60 useVoidOrder — x-idempotency-key header wiring', () => {
     );
 
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    expect(body).toEqual({ order_id: 'ord-1', reason: 'test reason long enough' });
+    expect(body).toEqual({ order_id: 'ord-1', reason: 'test reason long enough', source: 'backoffice' });
   });
 
   it('T2: without an idempotencyKey, no x-idempotency-key header is sent', async () => {

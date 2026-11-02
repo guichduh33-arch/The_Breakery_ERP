@@ -104,7 +104,7 @@ export function usePOSReportsVoidsRefunds(period: ReportsPeriod) {
   return useQuery<POSReportsVoidsRefunds>({
     queryKey: ['pos-reports-voids-refunds', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_voids_refunds_v1', {
+      const { data, error } = await supabase.rpc('get_pos_voids_refunds_v2', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -159,7 +159,7 @@ export function usePOSReportsVoidsRefunds(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_sessions_report_v1(p_start_date,
+// Source of truth: server RPC `get_pos_sessions_report_v2(p_start_date,
 // p_end_date)`. One row per pos_session (drawer lifecycle), anchored on its
 // WITA opening day — this REPLACES the Activity tab's confusing "Session Open N
 // ≠ Session Close M" counters with a single lifecycle count. Each row carries:

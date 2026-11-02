@@ -44,11 +44,14 @@ export function useVoidOrder() {
       const res = await fetch(`${supabaseUrl}/functions/v1/void-order`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ order_id: orderId, reason }),
+        body: JSON.stringify({ order_id: orderId, reason, source: 'backoffice' }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as VoidResponse;
-        throw Object.assign(new Error(err.error ?? 'void_failed'), { details: err, status: res.status });
+        const message = err.error === 'outstanding_prior_day_requires_refund'
+          ? 'Use Refund for an Outstanding ticket from an earlier business day. The original sale must be kept.'
+          : err.error ?? 'void_failed';
+        throw Object.assign(new Error(message), { details: err, status: res.status });
       }
       return await res.json() as VoidResponse;
     },

@@ -39,6 +39,15 @@ describe('money', () => {
 });
 
 describe('renderReceipt', () => {
+  it('labels a deferred sale as outstanding without claiming cash was received', () => {
+    const { p, log } = makeFake();
+    renderReceipt(p, { ...BASE, outstanding_due: 32000 });
+    const text = log.join('\n');
+    expect(text).toContain('OUTSTANDING — NOT PAID | 32.000');
+    expect(text).not.toContain('Cash received');
+    expect(text).not.toContain('Cash |');
+    expect(text).not.toContain('Change |');
+  });
   it('renders business, items, modifiers, totals, payment and cuts', () => {
     const { p, log } = makeFake();
     renderReceipt(p, BASE);

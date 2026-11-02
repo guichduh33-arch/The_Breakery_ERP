@@ -132,6 +132,7 @@ const OrderDetailPage = lazy(() =>
   import('@/pages/orders/OrderDetailPage.js').then((m) => ({ default: m.OrderDetailPage })),
 );
 const OrdersListPage = lazy(() => import('@/pages/orders/OrdersListPage.js'));
+const OutstandingOrdersPage = lazy(() => import('@/pages/orders/OutstandingOrdersPage.js'));
 const RecipeDetailPage = lazy(() =>
   import('@/pages/recipes/RecipeDetailPage.js').then((m) => ({ default: m.RecipeDetailPage })),
 );
@@ -558,6 +559,10 @@ export function AppRoutes() {
               <OrdersListPage />
             </PermissionGate>
           }
+        />
+        <Route
+          path="orders/outstanding"
+          element={<PermissionGate required="orders.read"><OutstandingOrdersPage /></PermissionGate>}
         />
         <Route
           path="orders/:id"
