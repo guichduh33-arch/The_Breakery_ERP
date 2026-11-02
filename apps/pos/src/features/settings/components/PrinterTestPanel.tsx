@@ -3,14 +3,13 @@
 // ADR-030 — déménagé depuis le back-office (bouton « Test » de LanDevicesTable),
 // qui ne peut plus joindre un `http://` local une fois publié en HTTPS.
 //
-// Sonde puis ticket de test sur une imprimante enregistrée. Lecture seule sur le
+// Ticket de test direct sur une imprimante enregistrée. Lecture seule sur le
 // registre : renommer, ajouter ou supprimer un appareil reste au back-office.
 import { useState, type JSX } from 'react';
 import { Loader2, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
 import type { PrinterRole } from '@breakery/domain';
-import { probePrinter } from '@/services/print/bridgeDiagnostics';
 import { printStationTicket } from '@/services/print/printService';
 import { usePrinterDevices, type PrinterDevice } from '../hooks/usePrinterDevices';
 
@@ -25,11 +24,6 @@ export function PrinterTestPanel({ readOnly }: { readOnly: boolean }): JSX.Eleme
     }
     setTestingId(d.id);
     try {
-      const probe = await probePrinter(d.ip_address, d.port);
-      if (!probe.reachable) {
-        toast.error(`${d.code}: printer unreachable on ${d.ip_address}:${d.port}`);
-        return;
-      }
       const res = await printStationTicket(
         { ip_address: d.ip_address, port: d.port },
         {
@@ -41,7 +35,7 @@ export function PrinterTestPanel({ readOnly }: { readOnly: boolean }): JSX.Eleme
           items: [{ name: 'Test ticket — POS Settings', quantity: 1 }],
         },
       );
-      if (res.success) toast.success(`${d.code}: test ticket sent (${probe.latencyMs ?? '?'} ms)`);
+      if (res.success) toast.success(`${d.code}: test ticket sent`);
       else toast.error(`${d.code}: print failed — ${res.error ?? 'unknown'}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
