@@ -30,8 +30,14 @@ L'installation conserve la tâche et son compte, les certificats, l'origine HTTP
 
 Après installation, recharger le POS et les tablettes et vérifier la version chargée et l'imprimante. La santé HTTP ne prouve ni une sortie papier ni un encaissement réel.
 
-## État de validation daté du 1 novembre 2026
+## État de validation daté du 2 novembre 2026
 
-Les migrations, les fonctions serveur d'annulation/remboursement et les scénarios financiers sont installés ou exécutés en développement. La CI applicative du candidat et la validation d'une archive sur un runner Windows ont réussi ; voir la [PR de livraison](https://github.com/guichduh33-arch/The_Breakery_ERP/pull/628). Cette validation inclut le démarrage HTTPS du bridge empaqueté et les fichiers POS servis.
+La [PR de livraison](https://github.com/guichduh33-arch/The_Breakery_ERP/pull/628), guide inclus, est fusionnée dans master au commit `ad718421635b2ea750b79fc3c8af7c461d4bf103`. La [CI complète de master](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/41368715855) et les [321 fichiers pgTAP exécutés sur master](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/41368937389) ont réussi. Deux assertions de sécurité préexistantes sont ignorées. La validation d'une archive sur un runner Windows a également réussi ; elle inclut le démarrage HTTPS du bridge empaqueté et les fichiers POS servis.
 
-Le code n'est pas encore publié en production. La recette dans un navigateur connecté et sur le poste de caisse reste à effectuer ; ce poste est déclaré débranché. Un essai sur runner Windows ne prouve pas l'installation sur ce poste ni la sortie papier. Aucun mécanisme existant de mise à jour automatique n'a été établi. La mémoire native du client n'est pas vérifiable depuis cette session.
+Le backend est installé en production : paquet de migrations compatible enregistré et fonctions serveur d'annulation/remboursement déployées, actives et relues. Une vérification indépendante en lecture seule confirme les nouveaux contrats, la conservation des anciens contrats, le rattachement correct des paiements ordinaires et le maintien des imports protégés hors shift. Le mapping cash existant est conservé. Aucun paiement ni mouvement métier de test n'a été créé en production.
+
+La [publication protégée du backoffice](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/41372674448) a réussi. Vercel confirme le commit attendu en production sur `backoffice.the-breakery.com` ; la route Outstanding et le bundle principal répondent en HTTP 200. Ce contrôle HTTP ne remplace pas une recette authentifiée dans le navigateur.
+
+Le [workflow protégé du paquet POS + bridge](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/41372719816) a réussi. L'[archive installable](https://github.com/guichduh33-arch/The_Breakery_ERP/actions/runs/41372719816/artifacts/13110197500) contient le bundle et le bridge pour le commit testé, avec leurs empreintes. La vérification des fichiers réextraits et le démarrage HTTPS ont réussi sur Windows.
+
+La recette dans un navigateur connecté, l'installation sur le poste de caisse et la sortie papier restent à effectuer. Une adresse MeshCentral a été fournie, mais aucun outil de contrôle Chrome n'est disponible dans cette session. Un essai sur runner Windows ne prouve pas l'installation sur le poste ni la sortie papier. Aucun mécanisme existant de mise à jour automatique n'a été établi. La mémoire native du client n'est pas vérifiable depuis cette session.
