@@ -13,6 +13,7 @@ import { Dialog, DialogDescription } from '@breakery/ui';
 import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/BackofficeUi.js';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 
 export interface ReceiveDialogProps {
   po:        PurchaseOrderDetail;
@@ -23,11 +24,12 @@ export interface ReceiveDialogProps {
   }) => Promise<void>;
   submitting?: boolean;
   error?:    string;
+  invoiceBlocked?: boolean;
 }
 
 export function ReceiveDialog({
   po, onCancel, onConfirm,
-  submitting = false, error,
+  submitting = false, error, invoiceBlocked = false,
 }: ReceiveDialogProps): JSX.Element {
   // Stable idempotency key for this dialog session (survives retries / re-renders).
   // A lost response + re-click replays the same GRN server-side instead of doubling it.
@@ -52,7 +54,7 @@ export function ReceiveDialog({
     .map((it) => ({ poItemId: it.id, receivedQuantity: qtyByItem[it.id] ?? 0 }))
     .filter((it) => it.receivedQuantity > 0);
 
-  const canSubmit = itemsWithQty.length > 0 && !submitting;
+  const canSubmit = itemsWithQty.length > 0 && !submitting && !invoiceBlocked;
 
   function patchQty(itemId: string, qty: number): void {
     setQtyByItem((m) => ({ ...m, [itemId]: qty }));
@@ -70,6 +72,7 @@ export function ReceiveDialog({
           <DialogTitle>Receive goods</DialogTitle>
           <DialogDescription>PO {po.po_number}</DialogDescription>
         </DialogHeader>
+        {invoiceBlocked && <p role="alert" className="text-sm text-danger">{INVOICE_PAYMENT_MESSAGE} Cash reception records payment automatically.</p>}
 
         <div className="space-y-3 max-h-[60vh] overflow-y-auto">
           <div className="overflow-x-auto border border-border-subtle rounded-md">

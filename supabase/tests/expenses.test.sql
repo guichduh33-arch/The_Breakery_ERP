@@ -26,6 +26,7 @@
 --   Run via Supabase MCP execute_sql wrapped BEGIN ... ROLLBACK.
 
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;

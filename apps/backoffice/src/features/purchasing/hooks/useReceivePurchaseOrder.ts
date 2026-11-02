@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import { PURCHASE_ORDERS_QUERY_KEY } from './usePurchaseOrdersList.js';
 import { PURCHASE_ORDER_DETAIL_QUERY_KEY } from './usePurchaseOrderDetail.js';
+import { invoiceErrorMessage } from '@/lib/invoiceFiles.js';
 
 export type ReceivePOErrorCode =
   | 'forbidden'
@@ -18,6 +19,7 @@ export type ReceivePOErrorCode =
   | 'quantity_must_be_positive'
   | 'received_exceeds_ordered'
   | 'product_not_found'
+  | 'invoice_required_before_payment'
   | 'unknown';
 
 export class ReceivePOError extends Error {
@@ -51,6 +53,7 @@ export interface ReceivePOResult {
 }
 
 function classify(message: string): ReceivePOErrorCode {
+  if (message.includes('invoice_required_before_payment')) return 'invoice_required_before_payment';
   if (message.includes('forbidden'))                  return 'forbidden';
   if (message.includes('po_id_required'))             return 'po_id_required';
   if (message.includes('po_not_found'))               return 'po_not_found';
@@ -90,7 +93,7 @@ export function useReceivePurchaseOrder() {
         rpcArgs,
       );
 
-      if (error !== null) throw new ReceivePOError(classify(error.message), error.message);
+      if (error !== null) throw new ReceivePOError(classify(error.message), invoiceErrorMessage(error.message));
       if (data === null)  throw new ReceivePOError('unknown', 'Empty RPC response');
       return data as ReceivePOResult;
     },

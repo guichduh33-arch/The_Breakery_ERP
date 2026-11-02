@@ -8,6 +8,7 @@ import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { useApproveExpense } from '../hooks/useExpenseActions.js';
 import type { ExpenseApprovalRow } from '../hooks/useExpenseApprovals.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { INVOICE_APPROVAL_MESSAGE } from '@/lib/invoiceFiles.js';
 
 export interface ApproveDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ export interface ApproveDialogProps {
   currentUserId?: string | null;
   /** role_code of the currently logged-in user — SUPER_ADMIN may self-approve (SOD block 1 relaxed) */
   currentUserRole?: string | null;
+  invoiceBlocked?: boolean;
 }
 
 export function ApproveDialog({
@@ -33,6 +35,7 @@ export function ApproveDialog({
   approvals = [],
   currentUserId,
   currentUserRole,
+  invoiceBlocked = false,
 }: ApproveDialogProps): JSX.Element {
   const [pin, setPin] = useState('');
   const mut = useApproveExpense();
@@ -62,7 +65,7 @@ export function ApproveDialog({
   }
 
   async function handleSubmit(): Promise<void> {
-    if (pin.trim().length === 0 || sodBlocked) return;
+    if (pin.trim().length === 0 || sodBlocked || invoiceBlocked || mut.isPending) return;
     try {
       await mut.mutateAsync({ id: expenseId, manager_pin: pin.trim() });
       setPin('');
@@ -98,6 +101,7 @@ export function ApproveDialog({
             className={`w-full rounded-md border border-border-strong bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest placeholder:text-text-muted ${FOCUS_RING}`}
           />
         </div>
+        {invoiceBlocked && <p role="alert" className="text-sm text-danger">{INVOICE_APPROVAL_MESSAGE}</p>}
         {mut.error !== null && mut.error !== undefined && (
           <div className="text-xs text-red">{mut.error.message}</div>
         )}
@@ -108,7 +112,7 @@ export function ApproveDialog({
             type="button"
             variant="ink"
             onClick={() => { void handleSubmit(); }}
-            disabled={sodBlocked || mut.isPending || pin.trim().length === 0}
+            disabled={sodBlocked || mut.isPending || invoiceBlocked || pin.trim().length === 0}
             title={sodTooltip}
           >
             {mut.isPending ? 'Approving…' : sodBlocked ? 'Cannot approve' : 'Approve'}

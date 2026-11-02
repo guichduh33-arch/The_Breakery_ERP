@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase.js';
 import { PO_PAYMENTS_QUERY_KEY } from './usePoPayments.js';
 import { PURCHASE_ORDER_DETAIL_QUERY_KEY } from './usePurchaseOrderDetail.js';
 import { PURCHASE_ORDERS_QUERY_KEY } from './usePurchaseOrdersList.js';
+import { invoiceErrorMessage } from '@/lib/invoiceFiles.js';
 
 export type RecordPaymentErrorCode =
   | 'forbidden'
@@ -20,6 +21,7 @@ export type RecordPaymentErrorCode =
   | 'overpayment_not_allowed'
   | 'invalid_method'
   | 'po_cancelled'
+  | 'invoice_required_before_payment'
   | 'unknown';
 
 export class RecordPaymentError extends Error {
@@ -50,6 +52,7 @@ export interface RecordPaymentResult {
 }
 
 function classify(message: string): RecordPaymentErrorCode {
+  if (message.includes('invoice_required_before_payment')) return 'invoice_required_before_payment';
   if (message.includes('forbidden') || message.includes('permission_denied')) return 'forbidden';
   if (message.includes('po_not_found'))            return 'po_not_found';
   if (message.includes('amount_must_be_positive')) return 'amount_must_be_positive';
@@ -65,6 +68,7 @@ function classify(message: string): RecordPaymentErrorCode {
  * renders `error.message` directly would show the bare server string.
  */
 function friendlyMessage(code: RecordPaymentErrorCode, raw: string): string {
+  if (code === 'invoice_required_before_payment') return invoiceErrorMessage(raw);
   if (code === 'po_cancelled') {
     return 'This purchase order is cancelled — no payment can be recorded.';
   }

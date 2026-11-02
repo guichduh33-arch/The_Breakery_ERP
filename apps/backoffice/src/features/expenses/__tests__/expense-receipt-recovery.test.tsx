@@ -62,13 +62,13 @@ describe('expense receipt durable recovery',()=>{
  it('does not turn a persisted draft-only refusal into success',async()=>{
   rpc.mockResolvedValue({data:{expense_id:expenseId,receipt_path:null,applied:false,idempotent_replay:false,reason:'receipt_requires_draft'},error:null});
   mountUploader();fireEvent.change(screen.getByLabelText('Receipt file'),{target:{files:[file()]}});
-  expect(await screen.findByRole('alert')).toHaveTextContent('already been submitted');expect(screen.queryByText('Receipt change confirmed.')).not.toBeInTheDocument();
+  expect(await screen.findByRole('alert')).toHaveTextContent('no longer allows');expect(screen.queryByText('Receipt change confirmed.')).not.toBeInTheDocument();
   expect(upload).not.toHaveBeenCalled();expect(readFinancialSlot(scope)?.status).toBe('resolved');
  });
  it('removes only the expense reference through RPC',async()=>{
   mountUploader(true,'expenses/historical/receipt.pdf');fireEvent.click(screen.getByRole('button',{name:'Remove receipt'}));
   expect(await screen.findByText('Receipt change confirmed.')).toBeInTheDocument();
-  expect(rpc).toHaveBeenCalledWith('set_expense_receipt_v1',expect.objectContaining({p_expense_id:expenseId,p_expected_path:'expenses/historical/receipt.pdf'}));expect(upload).not.toHaveBeenCalled();
+  expect(rpc).toHaveBeenCalledWith('set_expense_receipt_v2',expect.objectContaining({p_expense_id:expenseId,p_expected_path:'expenses/historical/receipt.pdf'}));expect(upload).not.toHaveBeenCalled();
  });
  it('resolves a retained attempt after submission, without offering a new upload',async()=>{
   rpc.mockRejectedValueOnce(new Error('Response lost'));const input=await snapshot(file());
@@ -86,7 +86,7 @@ describe('expense receipt durable recovery',()=>{
  });
  it('rejects unsupported MIME without persisting a financial attempt',async()=>{
   mountUploader();fireEvent.change(screen.getByLabelText('Receipt file'),{target:{files:[file('bad','text/html')]}});
-  expect(await screen.findByRole('alert')).toHaveTextContent('JPEG, PNG, WebP or PDF');expect(rpc).not.toHaveBeenCalled();expect(localStorage.length).toBe(0);
+  expect(await screen.findByRole('alert')).toHaveTextContent('JPEG or PDF');expect(rpc).not.toHaveBeenCalled();expect(localStorage.length).toBe(0);
  });
  it('downloads privately and never places the storage path in a public link',async()=>{
   const create=vi.fn(()=> 'blob:private-receipt'),revoke=vi.fn();
@@ -102,5 +102,22 @@ describe('expense receipt durable recovery',()=>{
   render(<ExpenseReceiptPanel expense={{id:expenseId,status:'submitted',created_by:'profile-a',receipt_url:'expenses/old/receipt.pdf'} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
   fireEvent.click(screen.getByRole('button',{name:'Download receipt'}));act(()=>{financialTestAuth.setState({sessionToken:'new-session'});});
   await act(async()=>{response.resolve({data:new Blob(['private']),error:null});await response.promise;});expect(create).not.toHaveBeenCalled();
+ });
+ it('allows a payer to regularize an approved expense with a missing invoice',()=>{
+  financialTestAuth.setState({hasPermission:p=>p==='expenses.pay'});
+  render(<ExpenseReceiptPanel expense={{id:expenseId,status:'approved',created_by:'other',receipt_url:null} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
+  expect(screen.getByLabelText('Receipt file')).toBeEnabled();expect(screen.queryByText('Remove receipt')).not.toBeInTheDocument();
+ });
+ it('offers repair after submission because a referenced file may be missing or invalid',()=>{
+  render(<ExpenseReceiptPanel expense={{id:expenseId,status:'submitted',created_by:'profile-a',receipt_url:'expenses/'+expenseId+'/invoice.pdf'} as ExpenseRow} onBusyChange={vi.fn()}/>,{wrapper});
+  expect(screen.getByLabelText('Receipt file')).toBeEnabled();expect(screen.queryByText('Remove receipt')).not.toBeInTheDocument();
+  expect(screen.getByText(/Only missing or invalid receipts can be replaced/)).toBeInTheDocument();
+ });
+ it('keeps old PNG attempts readable for confirmation after upgrade',async()=>{
+  const selected=file('legacy','image/png'); const input={expenseId,expectedPath:null,kind:'attach' as const,mime:'image/png' as const,size:selected.size,sha256:await receiptFileDigest(selected)};
+  rpc.mockRejectedValueOnce(new Error('Response lost'));
+  const first=renderHook(()=>useExpenseReceipt(expenseId),{wrapper});await act(async()=>{await first.result.current.submit(input);});first.unmount();
+  const next=renderHook(()=>useExpenseReceipt(expenseId),{wrapper});await act(async()=>{await next.result.current.submit(input);});
+  expect(rpc.mock.calls[1]).toEqual(rpc.mock.calls[0]);expect(readFinancialSlot(scope)?.status).toBe('resolved');expect(upload).not.toHaveBeenCalled();
  });
 });

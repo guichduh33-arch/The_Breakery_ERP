@@ -11,6 +11,7 @@ import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import { EXPENSES_QUERY_KEY } from './useExpensesList.js';
+import { invoiceErrorMessage } from '@/lib/invoiceFiles.js';
 
 export interface SubmitResult {
   expense_id: string;
@@ -31,7 +32,7 @@ export function useSubmitExpense() {
         p_expense_id: id,
         p_idempotency_key: idempotencyKey.current,
       });
-      if (error) throw error;
+      if (error) throw new Error(invoiceErrorMessage(error.message));
       return data as unknown as SubmitResult;
     },
     onSuccess: async (_data, { id }) => {
@@ -72,7 +73,7 @@ export function useApproveExpense() {
       if (data && typeof data === 'object' && !Array.isArray(data) && data.ok === false) {
         throw new Error(typeof data.error === 'string' ? data.error : 'invalid_pin');
       }
-      if (error) throw error;
+      if (error) throw new Error(invoiceErrorMessage(error.message));
       return data as unknown as ApproveResult;
     },
     onSuccess: async (_data, { id }) => {
@@ -112,8 +113,8 @@ export function usePayExpense() {
     mutationFn: async ({ id, paymentMethod }) => {
       const args: Record<string, unknown> = { p_expense_id: id };
       if (paymentMethod !== undefined) args.p_payment_method = paymentMethod;
-      const { data, error } = await supabase.rpc('pay_expense_v4', args as never);
-      if (error) throw error;
+      const { data, error } = await supabase.rpc('pay_expense_v5' as 'pay_expense_v4', args as never);
+      if (error) throw new Error(invoiceErrorMessage(error.message));
       return data as unknown as PayResult;
     },
     onSuccess: async (_data, { id }) => {

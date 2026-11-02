@@ -4,7 +4,7 @@
 // detail hook + receive/cancel mutations and asserts header, financial
 // summary card, ordered items table, and action gating render correctly.
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -28,6 +28,8 @@ const PO: PurchaseOrderDetail = {
   import_reference: null,
   financial_import_document_id: null,
   is_historical_import: false,
+  invoice_exempt: false,
+  invoice_path: null,
   cancelled_at:     null,
   cancelled_by:     null,
   received_by:      null,
@@ -106,6 +108,22 @@ function renderPage(): ReturnType<typeof render> {
 }
 
 describe('PurchaseOrderDetailPage (Phase 5.A rewrite)', () => {
+  afterEach(() => { Object.assign(PO, { payment_terms: 'credit', invoice_exempt: false, invoice_path: null }); });
+  it('allows credit reception without a file but blocks payment', () => {
+    currentPerms = new Set(['purchasing.po.read', 'purchasing.po.receive', 'purchasing.po.pay']); renderPage();
+    expect(screen.getByRole('button', { name: /^Receive$/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Record payment/ })).toBeDisabled();
+  });
+  it('blocks cash reception because it records payment automatically', () => {
+    PO.payment_terms = 'cash'; currentPerms = new Set(['purchasing.po.read', 'purchasing.po.receive']); renderPage();
+    expect(screen.getByRole('button', { name: /^Receive$/ })).toBeDisabled();
+  });
+  it.each([false, true])('allows cash reception with a confirmed file or server exemption (%s)', exempt => {
+    Object.assign(PO, { payment_terms: 'cash', invoice_exempt: exempt, invoice_path: exempt ? null : 'purchase-orders/po-1/invoice.pdf' });
+    currentPerms = new Set(['purchasing.po.read', 'purchasing.po.receive', 'purchasing.po.pay']); renderPage();
+    expect(screen.getByRole('button', { name: /^Receive$/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Record payment/ })).toBeEnabled();
+  });
   it('renders the PO header, financial summary card, and ordered items', () => {
     currentPerms = new Set(['purchasing.po.read', 'purchasing.po.receive', 'purchasing.po.cancel']);
     renderPage();

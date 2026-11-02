@@ -39,6 +39,7 @@ import { ThresholdResolutionBadge } from '@/features/expenses/components/Thresho
 import { useBeginExpenseDraft } from '@/features/expenses/hooks/useBeginExpenseDraft.js';
 import { ExpenseReceiptPanel } from '@/features/expenses/components/ExpenseReceiptPanel.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
+import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE, isInvoicePath } from '@/lib/invoiceFiles.js';
 import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
 import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/useExpenseThresholds.js';
 import {
@@ -123,9 +124,13 @@ export default function ExpenseDetailPage(): JSX.Element {
   }
 
   const category = (cats ?? []).find((c) => c.id === expense.category_id);
+  const missingInvoice = !expense.invoice_exempt && !isInvoicePath(expense.receipt_url, 'expenses/' + expense.id + '/');
+  const invoiceUnconfirmed = receiptBusy || pendingReceipt;
+  const paymentBlocked = missingInvoice || invoiceUnconfirmed;
+  const approvalBlocked = invoiceUnconfirmed || (expense.payment_method === 'cash' && missingInvoice);
 
   async function handleSubmitForReview(): Promise<void> {
-    if (receiptBusy || pendingReceipt) return;
+    if (approvalBlocked) return;
     try {
       await submit.mutateAsync({ id });
       // Rotate the idempotency key so a subsequent submit (same mount) is a fresh call.
@@ -193,14 +198,14 @@ export default function ExpenseDetailPage(): JSX.Element {
                 type="button"
                 className={TOOLBAR_BTN_PRIMARY}
                 onClick={() => { void handleSubmitForReview(); }}
-                disabled={submit.isPending || receiptBusy || pendingReceipt}
+                disabled={submit.isPending || approvalBlocked}
               >
                 {submit.isPending ? 'Submitting…' : 'Submit for approval'}
               </button>
             )}
             {expense.status === 'submitted' && canApprove && (
               <>
-                <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setApproveOpen(true)}>
+                <button type="button" className={TOOLBAR_BTN_PRIMARY} disabled={approvalBlocked} onClick={() => setApproveOpen(true)}>
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Approve
                 </button>
                 <button type="button" className={BTN_DANGER} onClick={() => setRejectOpen(true)}>
@@ -219,13 +224,17 @@ export default function ExpenseDetailPage(): JSX.Element {
               </div>
             )}
             {expense.status === 'approved' && canPay && (
-              <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setPayOpen(true)}>
+              <button type="button" className={TOOLBAR_BTN_PRIMARY} disabled={paymentBlocked} onClick={() => setPayOpen(true)}>
                 <CreditCard className="h-3.5 w-3.5" aria-hidden /> Mark as paid
               </button>
             )}
           </>
         }
       />
+
+      {missingInvoice && expense.status !== 'paid' && <p role="status" className="text-sm text-text-secondary">
+        {expense.payment_method === 'cash' ? INVOICE_APPROVAL_MESSAGE : INVOICE_PAYMENT_MESSAGE}
+      </p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
@@ -314,9 +323,10 @@ export default function ExpenseDetailPage(): JSX.Element {
         approvals={approvals}
         currentUserId={currentUserId}
         currentUserRole={currentUserRole}
+        invoiceBlocked={approvalBlocked}
       />
       <RejectDialog  open={rejectOpen}  expenseId={id} onClose={() => setRejectOpen(false)} />
-      <PayDialog open={payOpen} expenseId={id} recordedPaymentMethod={expense.payment_method} onClose={() => setPayOpen(false)} />
+      <PayDialog open={payOpen} expenseId={id} recordedPaymentMethod={expense.payment_method} invoiceBlocked={paymentBlocked} onClose={() => setPayOpen(false)} />
     </div>
   );
 }
