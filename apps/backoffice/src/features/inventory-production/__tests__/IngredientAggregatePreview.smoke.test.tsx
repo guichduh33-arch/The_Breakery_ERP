@@ -121,6 +121,7 @@ describe('IngredientAggregatePreview smoke', () => {
     expect(screen.getByText('Flour')).toBeInTheDocument();
     expect(screen.getByText('Butter')).toBeInTheDocument();
     expect(screen.getByText('Chocolate')).toBeInTheDocument();
+    expect(screen.getByTestId('ingredient-aggregate-preview')).toHaveClass('text-text-primary');
     expect(screen.queryByText(/^Dough$/)).not.toBeInTheDocument();
 
     // Verify tbody has exactly 3 rows

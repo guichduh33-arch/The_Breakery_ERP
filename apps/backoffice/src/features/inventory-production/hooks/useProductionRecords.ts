@@ -13,6 +13,8 @@ export interface ProductionRecordSummary {
   quantity_produced: number;
   quantity_waste: number;
   production_date: string;
+  created_at?: string;
+  author?: { full_name: string } | null;
   section_id: string | null;
   batch_number: string | null;
   materials_consumed: boolean;
@@ -35,7 +37,7 @@ export function useProductionRecords(filter: ProductionRecordsFilter = {}) {
     queryFn: async (): Promise<ProductionRecordSummary[]> => {
       let q = supabase
         .from('production_records')
-        .select('id, production_number, product_id, quantity_produced, quantity_waste, production_date, section_id, batch_number, materials_consumed, stock_updated, je_posted, reverted_at, notes')
+        .select('id, production_number, product_id, quantity_produced, quantity_waste, production_date, created_at, author:user_profiles!production_records_staff_id_fkey(full_name), section_id, batch_number, materials_consumed, stock_updated, je_posted, reverted_at, notes')
         .order('production_date', { ascending: false })
         .limit(200);
       if (filter.fromDate) q = q.gte('production_date', filter.fromDate);
@@ -55,7 +57,7 @@ export function useProductionRecords(filter: ProductionRecordsFilter = {}) {
           .in('id', productIds);
         if (prodErr) throw prodErr;
         for (const p of prods ?? []) {
-          nameById[p.id as string] = p.name as string;
+          nameById[p.id] = p.name;
         }
       }
 
@@ -67,6 +69,8 @@ export function useProductionRecords(filter: ProductionRecordsFilter = {}) {
           quantity_produced: Number(r.quantity_produced),
           quantity_waste: Number(r.quantity_waste),
           production_date: r.production_date,
+          created_at: r.created_at,
+          author: r.author,
           section_id: r.section_id,
           batch_number: r.batch_number,
           materials_consumed: r.materials_consumed,

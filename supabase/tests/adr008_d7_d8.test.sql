@@ -38,6 +38,7 @@
 --      (T12).
 
 BEGIN;
+\ir helpers/production_candidate.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

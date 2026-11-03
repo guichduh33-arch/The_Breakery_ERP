@@ -32,6 +32,7 @@
 -- guard (g->kg and mL->L are convertible).
 
 BEGIN;
+\ir helpers/production_candidate.sql
 \ir helpers/released_report_days.sql
 \ir helpers/pin_session.sql
 CREATE EXTENSION IF NOT EXISTS pgtap;

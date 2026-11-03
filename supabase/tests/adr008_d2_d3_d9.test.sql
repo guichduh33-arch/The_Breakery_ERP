@@ -47,6 +47,7 @@
 --   Part ratée = 1200 x 2/12 = 200. Capitalisé = 1000, soit 100 par pièce.
 
 BEGIN;
+\ir helpers/production_candidate.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
