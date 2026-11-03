@@ -1,5 +1,6 @@
 -- Conversions par chemin et par niveau ; fixtures autonomes, aucune donnée conservée.
 BEGIN;
+\ir helpers/production_candidate.sql
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path=public,extensions,pg_catalog;
 \ir helpers/pin_session.sql

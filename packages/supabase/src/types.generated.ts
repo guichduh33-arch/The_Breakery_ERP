@@ -10043,7 +10043,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v9: {
+      record_batch_production_v10: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -10081,7 +10081,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_kitchen_production_v2: { Args: { p_request: Json }; Returns: Json }
+      record_kitchen_production_v3: { Args: { p_request: Json }; Returns: Json }
       record_pin_failure_v1: {
         Args: { p_source?: string; p_user_id: string }
         Returns: Json
@@ -10100,7 +10100,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v7: {
+      record_production_v8: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string

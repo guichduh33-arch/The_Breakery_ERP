@@ -62,6 +62,7 @@
 --                atteinte à depth = 5 en tant que FEUILLE (donc hors garde D5)
 
 BEGIN;
+\ir helpers/production_candidate.sql
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 

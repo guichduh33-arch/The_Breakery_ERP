@@ -1,5 +1,6 @@
 -- Contrepassations et gardes de l'annulation ; fixtures autonomes sous rollback.
 BEGIN;
+\ir helpers/production_candidate.sql
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path=public,extensions,pg_catalog;
 \ir helpers/pin_session.sql

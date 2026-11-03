@@ -135,7 +135,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
 
   return (
     <div data-testid="ingredient-aggregate-preview"
-         className="rounded-md border border-border-subtle bg-bg-elevated p-4 space-y-2">
+         className="rounded-md border border-border-subtle bg-bg-elevated p-4 space-y-2 text-text-primary">
       <div className="flex items-baseline justify-between">
         <h3 className="text-lg">Aggregate ingredient preview</h3>
         {/* Le point médian et le compteur qui le suit tiennent sur une seule

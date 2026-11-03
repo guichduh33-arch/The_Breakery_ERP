@@ -63,6 +63,8 @@ const RECORDS = [
     id: 'pr-1', production_number: 'PRD-0001', product_id: 'p-1',
     quantity_produced: 200, quantity_waste: 0,
     production_date: new Date(2026, 7, 20, 6, 30).toISOString(),
+    created_at: '2026-08-20T02:15:00Z',
+    author: { full_name: 'Production Manager' },
     section_id: SECTION, batch_number: 'B-1',
     materials_consumed: true, stock_updated: true, je_posted: true,
     reverted_at: null, notes: null,
@@ -103,6 +105,15 @@ describe('Production log — la contre-écriture est atteignable', () => {
     const action = await screen.findByTestId('revert-production-PRD-0001');
     expect(action).toBeEnabled();
     expect(screen.queryByTestId('revert-production-PRD-0002')).not.toBeInTheDocument();
+  });
+
+  it('affiche la date de production et la création datée avec son auteur', async () => {
+    renderPanel();
+    const row = await screen.findByTestId('production-row-PRD-0001');
+    expect(row).toHaveTextContent('Production Manager');
+    expect(row).toHaveTextContent('Created · 20 Aug 2026, 10:15');
+    expect(row).toHaveTextContent('Produced ·');
+    expect(screen.getByTestId('production-row-PRD-0002')).toHaveTextContent('Unknown date · Unknown author');
   });
 
   it('ouvre le dialogue de contre-écriture, qui annonce ce qu\'il va produire', async () => {
