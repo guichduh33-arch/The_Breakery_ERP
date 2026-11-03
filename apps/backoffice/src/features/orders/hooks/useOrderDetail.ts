@@ -16,6 +16,14 @@ export interface OrderItem {
   modifiers: unknown;
   is_cancelled: boolean;
   kitchen_status: string | null;
+  created_at?: string;
+  sent_to_kitchen_at?: string | null;
+  prep_started_at?: string | null;
+  ready_at?: string | null;
+  served_at?: string | null;
+  cancelled_at?: string | null;
+  served_by_name?: string | null;
+  cancelled_by_name?: string | null;
   /**
    * Lot 6c — quantité déjà remboursée sur cette ligne (somme des refund_lines.qty
    * de tous les remboursements de la commande). Sert de plafond à la modale de
@@ -86,6 +94,12 @@ export interface OrderDetail {
   refunded_by_method: Record<string, number>;
   /** Lot 6c — total déjà remboursé sur la commande (somme des refunds.total). */
   total_refunded: number;
+  history?: {
+    createdVia: string;
+    waiterName: string | null;
+    voidedAt: string | null;
+    voidedByName: string | null;
+  };
 }
 
 export function useOrderDetail(id: string | undefined) {
@@ -99,12 +113,17 @@ export function useOrderDetail(id: string | undefined) {
         .select(
           `
           id, order_number, status, order_type, table_number, created_at, paid_at,
-          sent_to_kitchen_at,
+          sent_to_kitchen_at, created_via, voided_at,
           customer_id, served_by,
           subtotal, discount_amount, tax_amount, total, loyalty_points_redeemed,
           customers(name),
           user_profiles!orders_served_by_fkey(full_name),
-          order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled, kitchen_status),
+          waiter:user_profiles!orders_waiter_id_fkey(full_name),
+          voider:user_profiles!orders_voided_by_fkey(full_name),
+          order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled, kitchen_status,
+            created_at, sent_to_kitchen_at, prep_started_at, ready_at, served_at, cancelled_at,
+            server:user_profiles!order_items_served_by_fkey(full_name),
+            canceller:user_profiles!order_items_cancelled_by_fkey(full_name)),
           order_payments(id, method, amount, cash_received, change_given, paid_at, reference),
           refunds(id, refund_number, total, reason, created_at, refunded_by, is_full_void, refund_lines(order_item_id, qty), refund_payments(method, amount)),
           promotion_applications(amount, description, promotions(name))
@@ -122,6 +141,10 @@ export function useOrderDetail(id: string | undefined) {
         created_at: string;
         paid_at: string | null;
         sent_to_kitchen_at: string | null;
+        created_via: string;
+        voided_at: string | null;
+        waiter: { full_name: string } | null;
+        voider: { full_name: string } | null;
         customer_id: string | null;
         served_by: string | null;
         subtotal: number;
@@ -131,7 +154,10 @@ export function useOrderDetail(id: string | undefined) {
         total: number;
         customers: { name: string } | null;
         user_profiles: { full_name: string } | null;
-        order_items: OrderItem[];
+        order_items: (OrderItem & {
+          server: { full_name: string } | null;
+          canceller: { full_name: string } | null;
+        })[];
         order_payments: OrderPayment[];
         refunds: (OrderRefundRow & {
           refund_lines: { order_item_id: string; qty: number }[] | null;
@@ -167,6 +193,12 @@ export function useOrderDetail(id: string | undefined) {
         created_at: row.created_at,
         paid_at: row.paid_at,
         sent_to_kitchen_at: row.sent_to_kitchen_at ?? null,
+        history: {
+          createdVia: row.created_via,
+          waiterName: row.waiter?.full_name ?? null,
+          voidedAt: row.voided_at ?? null,
+          voidedByName: row.voider?.full_name ?? null,
+        },
         customer_id: row.customer_id,
         customer_name: row.customers?.name ?? null,
         served_by: row.served_by,
@@ -178,6 +210,8 @@ export function useOrderDetail(id: string | undefined) {
         total: Number(row.total ?? 0),
         items: (row.order_items ?? []).map((it) => ({
           ...it,
+          served_by_name: it.server?.full_name ?? null,
+          cancelled_by_name: it.canceller?.full_name ?? null,
           qty_already_refunded: refundedQtyByItem.get(it.id) ?? 0,
         })),
         // Review PR #367 : un embed PostgREST sans clause order est dans un

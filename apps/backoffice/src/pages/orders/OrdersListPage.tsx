@@ -64,6 +64,7 @@ import { useOrdersRealtime } from '@/features/orders/hooks/useOrdersRealtime.js'
 import { exportOrdersCsv } from '@/features/orders/exportOrdersCsv.js';
 import { RowActionsMenu } from '@/components/RowActionsMenu.js';
 import { VoidOrderModal } from '@/features/orders/components/VoidOrderModal.js';
+import { CancelUnpaidOrderModal } from '@/features/orders/components/CancelUnpaidOrderModal.js';
 import { EditOrderItemsModal } from '@/features/orders/components/EditOrderItemsModal.js';
 import { OrderDetailDrawer } from '@/features/orders/components/OrderDetailDrawer.js';
 import type { OrderItemEdit } from '@/features/orders/types.js';
@@ -95,6 +96,7 @@ export default function OrdersListPage(): JSX.Element {
   const { isConnected } = useOrdersRealtime();
   const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
   const hasVoid     = useAuthStore((s) => s.hasPermission('orders.void'));
+  const hasUnpaidVoid = useAuthStore((s) => s.hasPermission('orders.void') && s.hasPermission('payments.process'));
   // Le CSV sort des données nominatives : même gate que tous les exports
   // (« le SEUL point de contrôle possible pour le CSV », audit reports).
   const canExport   = useAuthStore((s) => s.hasPermission('reports.export'));
@@ -271,6 +273,7 @@ export default function OrdersListPage(): JSX.Element {
   // Actions de ligne — modales et tiroir de détail.
   const [detailId, setDetailId]     = useState<string | null>(null);
   const [voidTarget, setVoidTarget] = useState<{ id: string; number: string } | null>(null);
+  const [unpaidVoidId, setUnpaidVoidId] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; number: string; items: OrderItemEdit[] } | null>(null);
 
   // Un seul flux d'édition pour les DEUX surfaces : la ligne de table et le
@@ -279,7 +282,8 @@ export default function OrdersListPage(): JSX.Element {
     const { data, error } = await supabase
       .from('order_items')
       .select('id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_locked')
-      .eq('order_id', orderId);
+      .eq('order_id', orderId)
+      .eq('is_cancelled', false);
     if (error) {
       toast.error(`Failed to load order items: ${(error as { message?: string }).message ?? 'unknown error'}`);
       return;
@@ -404,13 +408,17 @@ export default function OrdersListPage(): JSX.Element {
                 ? [{ key: 'void', label: 'Void order', danger: true, testId: `row-void-${o.id}`,
                      activate: () => { setVoidTarget({ id: o.id, number: o.order_number }); } }]
                 : []),
+              ...(hasUnpaidVoid && (o.status === 'draft' || o.status === 'pending_payment')
+                ? [{ key: 'void-unpaid', label: 'Void unpaid order', danger: true, testId: `row-void-unpaid-${o.id}`,
+                     activate: () => { setUnpaidVoidId(o.id); } }]
+                : []),
             ]}
           />
         </span>
       ),
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [hasEditOpen, hasVoid]);
+  ], [hasEditOpen, hasVoid, hasUnpaidVoid]);
 
   return (
     <div className="flex flex-col gap-[13px]">
@@ -635,7 +643,9 @@ export default function OrdersListPage(): JSX.Element {
         onClose={() => setDetailId(null)}
         onEditItems={(id, number) => { setDetailId(null); void loadItemsAndOpenEdit(id, number); }}
         onVoid={(id, number) => { setDetailId(null); setVoidTarget({ id, number }); }}
+        onCancelUnpaid={(id) => { setDetailId(null); setUnpaidVoidId(id); }}
       />
+      <CancelUnpaidOrderModal open={unpaidVoidId !== null} orderId={unpaidVoidId} onClose={() => setUnpaidVoidId(null)} />
       {voidTarget !== null && (
         <VoidOrderModal open orderId={voidTarget.id} orderNumber={voidTarget.number} onClose={() => setVoidTarget(null)} />
       )}

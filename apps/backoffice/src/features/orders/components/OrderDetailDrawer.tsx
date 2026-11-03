@@ -35,7 +35,7 @@ import { Button } from '@/components/BackofficeUi.js';
 // Formats partagés du BO (24 h, ADR-019 D5 : le fuseau ne se redéclare pas).
 // Les montants passent par `formatCurrency`, qui pose lui-même le préfixe
 // « Rp » — audit UX/UI 2026-08-13, lot 1.
-import { formatCurrency, formatDateTimeShortWita, formatDateTimeWita } from '@breakery/utils';
+import { formatCurrency, formatDateTimeShortWita } from '@breakery/utils';
 import { useOrderDetail, type OrderDetail } from '@/features/orders/hooks/useOrderDetail.js';
 import { RefundOrderModalBo } from '@/features/orders/components/RefundOrderModalBo.js';
 import { useReprintReceipt } from '@/features/orders/hooks/useReprintReceipt.js';
@@ -48,6 +48,7 @@ import {
 } from '@/features/orders/statusMeta.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
+import { OrderHistory } from './OrderHistory.js';
 
 export interface OrderDetailDrawerProps {
   orderId: string | null;
@@ -59,6 +60,8 @@ export interface OrderDetailDrawerProps {
   onEditItems?: (orderId: string, orderNumber: string) => void;
   /** Ouvre l'annulation sur la surface appelante (PIN + idempotence côté modale). */
   onVoid?: (orderId: string, orderNumber: string) => void;
+  /** Annulation impayée avec déclaration des pertes, distincte du void payé. */
+  onCancelUnpaid?: (orderId: string) => void;
 }
 
 /** Statuts éditables — même liste que la liste (ADR-009 : jamais `'open'`). */
@@ -85,7 +88,6 @@ const KITCHEN_TONE: Record<string, string> = {
 const SECTION_LABEL = 'font-data text-xs font-semibold uppercase tracking-widest text-text-muted';
 
 const fmtDateTime = formatDateTimeShortWita;
-const fmtLogTime = formatDateTimeWita;
 
 function InfoCell({
   icon: Icon,
@@ -115,17 +117,6 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
   // `order_items.kitchen_status` sans qu'aucun cuisinier ne l'ait vu : afficher
   // ce badge ferait lire « impayé » là où il n'y a pas de cycle cuisine.
   const wentToKitchen = order.sent_to_kitchen_at != null;
-
-  const activity: { key: string; title: string; at: string; tone: string; detail?: string }[] = [
-    { key: 'created', title: 'Order created', at: order.created_at, tone: 'bg-info' },
-    ...order.payments.map((p, i) => ({
-      key: `pay-${p.id ?? i}`,
-      title: 'Payment completed',
-      at: p.paid_at,
-      tone: 'bg-success',
-      detail: `Method: ${p.method}`,
-    })),
-  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
   return (
     <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-8">
@@ -211,21 +202,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
       {/* Activity log */}
       <div className="rounded-md border border-border-subtle p-4">
         <h3 className={SECTION_LABEL}>Activity</h3>
-        <ol className="mt-2 space-y-3">
-          {activity.map((ev) => (
-            <li key={ev.key} className="flex gap-3">
-              {/* Point d'état, pas une pastille décorative. */}
-              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${ev.tone}`} aria-hidden />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-text-primary">{ev.title}</div>
-                {ev.detail && (
-                  <div className="mt-0.5 text-xs text-text-secondary">{ev.detail}</div>
-                )}
-                <div className="mt-0.5 font-data text-xs tabular-nums text-text-muted">{fmtLogTime(ev.at)}</div>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <OrderHistory order={order} />
       </div>
     </div>
   );
@@ -241,13 +218,14 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
 }
 
 export function OrderDetailDrawer({
-  orderId, onClose, onEditItems, onVoid,
+  orderId, onClose, onEditItems, onVoid, onCancelUnpaid,
 }: OrderDetailDrawerProps): JSX.Element {
   const { data, isLoading } = useOrderDetail(orderId ?? undefined);
   // Mêmes gates que la liste — la permission se lit à la source, elle ne se
   // transporte pas en prop (une prop peut mentir, le store non).
   const hasEditOpen = useAuthStore((s) => s.hasPermission('orders.edit_open'));
   const hasVoid     = useAuthStore((s) => s.hasPermission('orders.void'));
+  const hasPaymentProcess = useAuthStore((s) => s.hasPermission('payments.process'));
   const hasRefund   = useAuthStore((s) => s.hasPermission('orders.refund'));
   const hasReprint  = useAuthStore((s) => s.hasPermission('orders.reprint_receipt'));
 
@@ -278,6 +256,11 @@ export function OrderDetailDrawer({
     data !== undefined && onVoid !== undefined
       && hasVoid && VOIDABLE_STATUSES.has(data.status)
       ? (): void => { onVoid(data.id, data.order_number); }
+      : null;
+  const cancelUnpaidAction =
+    data !== undefined && onCancelUnpaid !== undefined && hasVoid && hasPaymentProcess
+      && EDITABLE_STATUSES.has(data.status) && !isOrderDetailPaid(data)
+      ? (): void => { onCancelUnpaid(data.id); }
       : null;
 
   return (
@@ -318,7 +301,7 @@ export function OrderDetailDrawer({
                 Open full page
               </Link>
             </Button>
-            {(editAction !== null || voidAction !== null || canRefund || canReprint) && (
+            {(editAction !== null || voidAction !== null || cancelUnpaidAction !== null || canRefund || canReprint) && (
               <span className="flex flex-wrap justify-end gap-2">
                 {canReprint && (
                   <Button
@@ -373,6 +356,13 @@ export function OrderDetailDrawer({
                   >
                     <XCircle className="h-3.5 w-3.5" aria-hidden />
                     Void
+                  </Button>
+                )}
+                {cancelUnpaidAction !== null && (
+                  <Button type="button" size="sm" variant="secondary" className={BTN_DANGER}
+                    data-testid="drawer-cancel-unpaid" onClick={cancelUnpaidAction}>
+                    <XCircle className="h-3.5 w-3.5" aria-hidden />
+                    Void unpaid order
                   </Button>
                 )}
               </span>
