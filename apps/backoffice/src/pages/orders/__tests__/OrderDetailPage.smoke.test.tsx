@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OrderDetailPage } from '../OrderDetailPage.js';
+import type { OrderAuditEvent } from '@/features/orders/orderHistory.js';
 
 // La fixture est MUTABLE : les preuves de la frise (une étape non franchie)
 // exigent un autre statut que le cas nominal.
@@ -51,6 +52,7 @@ const BASE_ORDER = {
 };
 
 let orderOverrides: Record<string, unknown> = {};
+let auditEvents: OrderAuditEvent[] = [];
 
 // Seul le hook est doublé. `isOrderDetailPaid` vit dans `statusMeta` (sans IO)
 // et n'est PAS mocké : la page se prouve contre la vraie définition partagée.
@@ -66,6 +68,9 @@ vi.mock('@/features/orders/hooks/useOrderDetail.js', () => ({
 // store d'auth. On les stub pour garder la page hors de cette chaîne d'import.
 vi.mock('@/features/orders/hooks/useReprintReceipt.js', () => ({
   useReprintReceipt: () => ({ reprint: vi.fn(), isPending: false, error: null }),
+}));
+vi.mock('@/features/orders/hooks/useOrderHistory.js', () => ({
+  useOrderHistory: () => ({ data: { pages: [auditEvents] }, isLoading: false, isError: false, hasNextPage: false }),
 }));
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (selector: (s: { hasPermission: (c: string) => boolean }) => unknown) =>
@@ -86,7 +91,25 @@ function renderAt(path: string) {
 }
 
 describe('OrderDetailPage', () => {
-  beforeEach(() => { orderOverrides = {}; });
+  beforeEach(() => { orderOverrides = {}; auditEvents = []; });
+
+  it('exposes edit and unpaid cancellation on the full unpaid order page', () => {
+    orderOverrides = { status: 'pending_payment', paid_at: null, payments: [] };
+    renderAt('/backoffice/orders/o-1');
+    expect(screen.getByRole('button', { name: 'Edit items' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Void unpaid order' })).toBeInTheDocument();
+  });
+
+  it('shows the time and employee for additions to the order', () => {
+    auditEvents = [{ id: 1, action: 'order.tablet_appended', actor_id: 'waiter-2', entity_id: 'o-1',
+      created_at: '2026-05-22T10:02:00Z', metadata: { items_added: 2 }, actor: { full_name: 'Bob Waiter' } }];
+    renderAt('/backoffice/orders/o-1');
+    const activity = screen.getByRole('list', { name: 'Order activity' });
+    expect(activity).toHaveTextContent('Items added from tablet');
+    expect(activity).toHaveTextContent('Bob Waiter');
+    expect(activity).toHaveTextContent('2 item lines');
+    expect(activity.querySelector('time[datetime="2026-05-22T10:02:00Z"]')).toBeInTheDocument();
+  });
 
   it('renders order header with number + status + customer drill', async () => {
     renderAt('/backoffice/orders/o-1');

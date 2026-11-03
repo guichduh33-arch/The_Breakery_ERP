@@ -119,6 +119,14 @@ describe('OrdersListPage smoke', () => {
     fromMock.mockReturnValue(makeFromChain());
   });
 
+  it('offers unpaid cancellation in the row actions menu', async () => {
+    renderRoute('/backoffice/orders');
+    fireEvent.click(await screen.findByTestId('row-actions-o-1'));
+    fireEvent.click(screen.getByTestId('row-void-unpaid-o-1'));
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Void unpaid order' })).toBeInTheDocument();
+  });
+
   it('T1 default mount calls RPC v4 with default range and empty filters', async () => {
     renderRoute('/backoffice/orders');
     await screen.findByText(/ORD-001/);
