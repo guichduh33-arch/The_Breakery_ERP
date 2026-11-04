@@ -1,36 +1,6 @@
-// apps/backoffice/src/pages/reports/AuditPage.tsx
-//
-// Lot G (campagne Reports 2026-08-15) — vague Journaux, page 1/5. Migrée sur le
-// socle Report shell v2 (archétype maquette 4c, patron : PurchaseItemsPage).
-//
-// C'EST UN JOURNAL, PAS UN AGRÉGAT. Pas de bande de KPI : l'écran ne porte
-// aucun compteur de synthèse, et en inventer un (« 312 entrées ») ne dirait
-// rien — le nombre d'écritures d'audit d'une semaine n'est ni un objectif ni un
-// signal. Pas de comparaison non plus : une trace ne se met pas en regard de la
-// trace précédente, ligne à ligne. Le gain du lot est ailleurs — le shell, le
-// TRI DE COLONNE, et des filtres au format du bandeau.
-//
-// CE QUI NE CHANGE PAS : la pagination par curseur (`get_audit_logs_v3`, pages
-// de 50, « Load more » qui APPEND — jamais de `LIMIT 5000` ni d'offset, cf. fix
-// 14-002) ; le dépliage par ligne montrant `metadata` ; le déclencheur de
-// dépliage focusable posé au lot A2 ; les drill-downs entité et acteur ; et le
-// lien profond `?action=` du hub Settings (« Settings History »), qui pré-remplit
-// le filtre Action au lieu de déverser tout le flux.
-//
-// `audit_logs.payload` (la colonne de diff avant/après, S19) n'est TOUJOURS pas
-// servie par `get_audit_logs_v3` : seul `metadata` est affichable ici. La
-// surfacer demanderait un bump additif de la RPC — hors campagne.
-//
-// Params URL : `start` / `end` (bornes du socle) + `action` (lien profond).
-// AUCUN repli legacy : cet écran n'avait PAS de bornes en URL — ses dates
-// vivaient dans un `useState` de la barre de filtres, donc dans aucun lien
-// partageable. Conséquence assumée et déclarée : la vue est désormais BORNÉE
-// par défaut (fenêtre du socle) là où elle s'ouvrait sur le flux entier.
-//
-// LIMITE DU TRI, dite à l'écran : trier réordonne les lignes DÉJÀ CHARGÉES. Sur
-// une liste à curseur, il ne peut pas en être autrement sans un ORDER BY
-// serveur — que la RPC ne prend pas. Le sous-titre de la carte le dit ; il ne
-// laisse pas croire que « le plus ancien » remonte tout l'historique.
+// Journal des audits métier et des gestes POS synchronisés.
+// Pagination serveur commune, tri et exports des lignes chargées.
+// Le contexte et le diff restent distincts dans les détails dépliables.
 
 import { Fragment, useMemo, useState, type JSX } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -48,6 +18,7 @@ import { useReportPeriod } from '@/features/reports/hooks/useReportPeriod.js';
 import { useSortedRows, type SortSpec } from '@/features/reports/hooks/useSortedRows.js';
 import { formatCount, periodLabel } from '@/features/reports/utils/reportFigures.js';
 import { useAuditLogs, type AuditLogRow } from '@/features/reports/hooks/useAuditLogs.js';
+import { auditActorName, auditActionLabel, describeAuditLog } from '@/features/reports/utils/auditDescription.js';
 import {
   AuditLogFilters,
   EMPTY_AUDIT_LOG_FILTERS,
@@ -57,6 +28,9 @@ import {
 const csvColumns: CsvColumn<AuditLogRow>[] = [
   { header: 'Timestamp',   accessor: (r) => r.created_at,  format: 'datetime' },
   { header: 'Action',      accessor: (r) => r.action,      format: 'text' },
+  { header: 'Description', accessor: describeAuditLog,     format: 'text' },
+  { header: 'User',        accessor: auditActorName,       format: 'text' },
+  { header: 'Source',      accessor: (r) => r.source,      format: 'text' },
   { header: 'Entity Type', accessor: (r) => r.entity_type, format: 'text' },
   { header: 'Actor ID',    accessor: (r) => r.actor_id,    format: 'text' },
 ];
@@ -66,13 +40,16 @@ type SortKey = 'timestamp' | 'action' | 'entity' | 'actor';
 // Défini au niveau module : l'objet entre dans les dépendances du tri.
 const SORT_SPECS: Record<SortKey, SortSpec<AuditLogRow>> = {
   timestamp: { kind: 'date',   value: (r) => r.created_at },
-  action:    { kind: 'string', value: (r) => r.action },
+  action:    { kind: 'string', value: (r) => auditActionLabel(r.action) },
   entity:    { kind: 'string', value: (r) => r.entity_type },
-  actor:     { kind: 'string', value: (r) => r.actor_id },
+  actor:     { kind: 'string', value: auditActorName },
 };
 
 /** Entités pour lesquelles `buildDrilldownUrl` sait produire une cible. */
-const LINKABLE = new Set(['product', 'order', 'expense', 'customer']);
+const ENTITY_LINKS: Record<string, 'product' | 'order' | 'expense' | 'customer'> = {
+  product: 'product', products: 'product', order: 'order', orders: 'order',
+  expense: 'expense', expenses: 'expense', customer: 'customer', customers: 'customer',
+};
 
 function formatMetadata(metadata: unknown): string {
   if (metadata === null || metadata === undefined) return '—';
@@ -84,12 +61,13 @@ function formatMetadata(metadata: unknown): string {
 }
 
 function EntityCell({ row }: { row: AuditLogRow }): JSX.Element {
-  if (row.entity_id === null || !LINKABLE.has(row.entity_type)) {
+  const entity = ENTITY_LINKS[row.entity_type];
+  if (row.entity_id === null || !entity) {
     return <>{row.entity_type}</>;
   }
   return (
     <DrilldownLink
-      entity={row.entity_type as 'product' | 'order' | 'expense' | 'customer'}
+      entity={entity}
       id={row.entity_id}
       label={`${row.entity_type} ${row.entity_id.slice(0, 8)}`}
       icon={false}
@@ -108,7 +86,7 @@ export default function AuditPage(): JSX.Element {
     ...EMPTY_AUDIT_LOG_FILTERS,
     action: searchParams.get('action') ?? '',
   }));
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // exactOptionalPropertyTypes : on ne pose la clé que si le filtre est non
   // vide — un `actorId: undefined` explicite est refusé, la clé doit être absente.
@@ -127,11 +105,13 @@ export default function AuditPage(): JSX.Element {
   const toolbar = (
     <>
       <PeriodControl period={period} />
-      <AuditLogFilters value={filters} onChange={setFilters} />
+      <AuditLogFilters value={filters} onChange={setFilters} actors={rows} />
       <ExportMenu
         csv={{ rows, columns: csvColumns, filename: `audit-log-${start}_${end}` }}
         pdf={{
-          template: 'audit', data: rows,
+          template: 'audit', data: rows.map((row) => ({ ...row,
+            description: describeAuditLog(row), actor_name: auditActorName(row),
+          })),
           period: { start, end },
           filename: `audit-log-${start}_${end}`,
         }}
@@ -160,7 +140,7 @@ export default function AuditPage(): JSX.Element {
             {formatCount(rows.length)} loaded
           </span>
         }
-        subtitle="Sorting reorders the entries loaded so far — load more to widen it."
+        subtitle="Business audits and synchronised POS gestures. Sorting and exports cover loaded entries."
         isLoading={isLoading}
         testId="audit-log-table"
       >
@@ -178,6 +158,7 @@ export default function AuditPage(): JSX.Element {
                 <SortableTh label="Action"    sortKey="action"    sorted={sorted} />
                 <SortableTh label="Entity"    sortKey="entity"    sorted={sorted} />
                 <SortableTh label="Actor"     sortKey="actor"     sorted={sorted} />
+                <th scope="col" className="py-2 text-left">Source</th>
               </tr>
             </thead>
             <tbody>
@@ -209,24 +190,37 @@ export default function AuditPage(): JSX.Element {
                       <td className="py-2 font-data tabular-nums text-text-secondary">
                         {formatDateTimeWita(r.created_at)}
                       </td>
-                      <td className="py-2">{r.action}</td>
+                      <td className="py-2">
+                        <div>{describeAuditLog(r)}</div>
+                        <div className="text-xs text-text-muted">{r.action}</div>
+                      </td>
                       <td className="py-2"><EntityCell row={r} /></td>
                       <td className="py-2 text-xs text-text-secondary">
                         {r.actor_id !== null
-                          ? <DrilldownLink entity="user" id={r.actor_id} label={r.actor_id.slice(0, 8)} icon={false} />
-                          : '—'}
+                          ? <DrilldownLink entity="user" id={r.actor_id} label={auditActorName(r)} icon={false} />
+                          : auditActorName(r)}
                       </td>
+                      <td className="py-2 text-xs text-text-secondary">{r.source === 'pos' ? 'POS gesture' : 'Business audit'}</td>
                     </tr>
                     {expanded && (
                       <tr className="border-b border-border-subtle bg-surface-inert" data-testid={`audit-detail-${r.id}`}>
                         <td />
-                        <td colSpan={4} className="py-2">
+                        <td colSpan={5} className="py-2">
+                          <p className="mb-2 text-sm">{describeAuditLog(r)}</p>
+                          {r.source === 'pos' && <p className="mb-2 text-xs text-text-secondary">Recorded on the POS device and synchronised to the server.</p>}
                           <div className="font-data font-semibold text-xs uppercase tracking-widest text-text-secondary">
                             Metadata (context)
                           </div>
                           <pre className="mt-1 whitespace-pre-wrap break-words text-xs text-text-secondary">
                             {formatMetadata(r.metadata)}
                           </pre>
+                          {r.payload != null && (
+                            <>
+                              <div className="mt-3 font-data text-xs font-semibold uppercase tracking-widest text-text-secondary">Changes / event details</div>
+                              <pre className="mt-1 whitespace-pre-wrap break-words text-xs text-text-secondary">{formatMetadata(r.payload)}</pre>
+                            </>
+                          )}
+                          <p className="mt-2 text-xs text-text-muted">User reference {r.actor_id ?? 'System'}</p>
                         </td>
                       </tr>
                     )}

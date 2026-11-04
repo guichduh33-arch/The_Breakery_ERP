@@ -430,8 +430,8 @@ SELECT is(
      WHERE tgrelid = 'stock_movements'::regclass
        AND tgenabled = 'O'
        AND NOT tgisinternal),
-  ARRAY['historical_import_stock_stamp','tr_20_je_emit','tr_update_product_cost_on_purchase']::TEXT,
-  'T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1): historical stamp, JE emission and purchase costing only'
+  ARRAY['audit_cost_correction','historical_import_stock_stamp','tr_20_je_emit','tr_update_product_cost_on_purchase']::TEXT,
+  'T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1): cost audit, historical stamp, JE emission and purchase costing only'
 );
 
 -- ---------------------------------------------------------------------------

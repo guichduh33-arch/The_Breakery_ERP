@@ -27,7 +27,7 @@ describe('curseur audit composite', () => {
     const { result, unmount } = renderHook(() => useFeed(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.hasNextPage).toBe(true));
     await act(async () => { await result.current.fetchNextPage(); });
-    await waitFor(() => expect(rpc).toHaveBeenCalledWith('get_audit_logs_v4',
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith(surface === 'reports' ? 'get_activity_logs_v1' : 'get_audit_logs_v4',
       expect.objectContaining({ p_cursor: timestamp + '|51' })));
     unmount();
     client.clear();
