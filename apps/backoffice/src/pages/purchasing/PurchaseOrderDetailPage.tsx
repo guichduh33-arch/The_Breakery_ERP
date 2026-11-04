@@ -1,27 +1,10 @@
-// apps/backoffice/src/pages/purchasing/PurchaseOrderDetailPage.tsx
-//
-// Session 14 / Phase 5.A — rewrite of the PO detail page to match the
-// `PO page.jpg` + `13b-incoming-po-detail.jpg` reference family.
-//
-// Composition:
-//   - Breadcrumbs (Purchasing › Purchase Orders › PO-####).
-//   - Header row: PO number + status pill, action buttons
-//     (Confirm/Receive, Cancel, Edit, Print). Le « Back » qui l'ouvrait est
-//     parti au lot 9 : le fil d'Ariane est la seule sortie de la page.
-//   - Two-column layout:
-//       Left  — Order Information card (supplier, dates) + Ordered Items table
-//               + Goods Receipt Notes table + Notes.
-//       Right — Financial Summary card + Payment Status card.
-//
-// Receive + Cancel + Print are unchanged behaviourally — the existing dialogs
-// and POPrintView component still drive those flows. The rewrite is
-// presentation-only.
+// Fiche PO : facture privée et contrôles avant règlement.
 
 import { useState, type JSX } from 'react';
+import { formatDateShortWita } from '@breakery/utils';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  CheckCircle2,
   ChevronRight,
   Pencil,
   Printer,
@@ -29,10 +12,8 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react';
-import { Badge } from '@breakery/ui';
 import { Button, Card, EmptyState } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
-import { formatCurrency, formatDateShortWita, formatQuantity } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePurchaseOrderDetail } from '@/features/purchasing/hooks/usePurchaseOrderDetail.js';
 import { useReceivePurchaseOrder } from '@/features/purchasing/hooks/useReceivePurchaseOrder.js';
@@ -40,7 +21,6 @@ import { useCancelPurchaseOrder } from '@/features/purchasing/hooks/useCancelPur
 import {
   usePoPayments,
   derivePaymentStatus,
-  type PoPaymentStatus,
 } from '@/features/purchasing/hooks/usePoPayments.js';
 import { useRecordPoPayment } from '@/features/purchasing/hooks/useRecordPoPayment.js';
 import {
@@ -56,6 +36,10 @@ import { ReceiveDialog } from '@/features/purchasing/components/ReceiveDialog.js
 import { CancelDialog } from '@/features/purchasing/components/CancelDialog.js';
 import { RecordPaymentDialog } from '@/features/purchasing/components/RecordPaymentDialog.js';
 import { POPrintView } from '@/features/purchasing/components/POPrintView.js';
+import { PurchaseOrderContent, PaymentStatusBadge, SummaryRow, TimelineItem, fmtDay, fmtIdr } from '@/features/purchasing/components/PurchaseOrderDetailCards.js';
+import { PoInvoicePanel } from '@/features/purchasing/components/PoInvoicePanel.js';
+import { useHasPendingFinancial } from '@/lib/useFinancialAttempt.js';
+import { INVOICE_PAYMENT_MESSAGE, isInvoicePath } from '@/lib/invoiceFiles.js';
 import {
   POFormDraft,
   validatePOFormDraft,
@@ -68,30 +52,6 @@ import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON } from '@/components/toolbarButton.js';
-
-/** Cellule numérique : mono tabulaire alignée à droite (The Mono-Carries-Data
- *  Rule). `tabular-nums` seul ne suffit pas — sans `font-data`, le chiffre sort
- *  dans la sans-serif de l'interface. */
-const NUM_CELL = 'px-3 py-2 text-right font-data tabular-nums';
-
-function fmtIdr(amount: number | string | null): string {
-  return formatCurrency(Number(amount ?? 0));
-}
-
-// Un jour du bon de commande (commande, livraison prévue, réception, jalon) —
-// la colonne ISO brute (`2026-09-05`) était la huitième forme de date que
-// `dates.ts` déclare de trop. Absent = tiret, comme les montants.
-function fmtDay(d: string | null | undefined): string {
-  return d === null || d === undefined || d === '' ? '—' : formatDateShortWita(d);
-}
-
-// Quantités commandées / reçues. L'unité occupe sa PROPRE colonne dans la
-// table des lignes : `formatQuantity` la reçoit donc à `null`, sinon chaque
-// ligne l'écrirait deux fois. Le `?? 0` est conservé — une ligne sans réception
-// vaut zéro reçu, ce n'est pas une valeur inconnue.
-function fmtQty(quantity: number | string | null): string {
-  return formatQuantity(quantity ?? 0, null);
-}
 
 /**
  * Le fil d'Ariane de la page — extrait pour être rendu AUSSI au-dessus des
@@ -133,7 +93,6 @@ function PoDetailShell({ children }: { children: JSX.Element }): JSX.Element {
     </div>
   );
 }
-
 export default function PurchaseOrderDetailPage(): JSX.Element {
   const { id }        = useParams<{ id: string }>();
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -148,6 +107,8 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const cancel   = useCancelPurchaseOrder();
   const payments = usePoPayments(id);
   const recordPayment = useRecordPoPayment();
+  const pendingInvoice = useHasPendingFinancial('po_invoice', id ?? '');
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
   const updatePo = useUpdatePurchaseOrder();
   const products = useAllProductsForPO();
   const suppliers = useSuppliersList({ active: 'active' });
@@ -212,23 +173,18 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const canCncl  = canCancel  && status === 'pending'
                               && (po.goods_receipt_notes?.length ?? 0) === 0;
 
-  // Payment status is DERIVED from the ledger, INDEPENDENT of goods reception (R3).
   const totalDue      = Number(po.total_amount ?? 0);
   const totalPaid     = payments.data?.totalPaid ?? 0;
   const remainingDue  = Math.max(0, Math.round((totalDue - totalPaid) * 100) / 100);
-  const paymentStatus: PoPaymentStatus = derivePaymentStatus(totalPaid, totalDue);
+  const paymentStatus = derivePaymentStatus(totalPaid, totalDue);
   const hasPayments   = (payments.data?.payments.length ?? 0) > 0;
   const canRecordPay  = canPay && paymentStatus !== 'paid' && totalDue > 0;
-  // Fix (dev incident 2026-08-21): a cancelled PO still accepted a payment —
-  // record_po_payment_v1 had no status guard, and this button was simply
-  // enabled. The server now refuses it (record_po_payment_v2, po_cancelled).
-  // The button itself must NOT disappear for a cancelled PO (an absent button
-  // does not say why) — it stays rendered and DISABLED, same motif as `Edit`
-  // below (disabled={!editable} + a visible reason). Only 'cancelled' disables
-  // it here; a fully-paid PO still hides it entirely (unchanged from before).
+  // Le bouton reste visible mais désactivé pour expliquer le refus.
   const payBlockedByCancel = status === 'cancelled';
+  const missingInvoice = !po.invoice_exempt && !isInvoicePath(po.invoice_path, 'purchase-orders/' + po.id + '/');
+  const invoiceBlocked = missingInvoice || invoiceBusy || pendingInvoice;
+  const receiveInvoiceBlocked = po.payment_terms === 'cash' && invoiceBlocked;
 
-  // Edit lock (D6): editable only while pending AND no GRN AND no payment.
   const hasGrn        = (po.goods_receipt_notes?.length ?? 0) > 0;
   const editable      = canEdit && status === 'pending' && !hasGrn && !hasPayments;
 
@@ -236,6 +192,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     items: { poItemId: string; receivedQuantity: number }[];
     idempotencyKey: string;
   }): Promise<void> {
+    if (receiveInvoiceBlocked) { setReceiveError(INVOICE_PAYMENT_MESSAGE); return; }
     setReceiveError(undefined);
     try {
       await receive.mutateAsync({
@@ -263,6 +220,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     amount: number; method: 'cash' | 'transfer' | 'card' | 'qris' | 'edc';
     reference?: string; idempotencyKey: string;
   }): Promise<void> {
+    if (invoiceBlocked) { setPayError(INVOICE_PAYMENT_MESSAGE); return; }
     setPayError(undefined);
     try {
       await recordPayment.mutateAsync({ poId: po!.id, ...args });
@@ -392,7 +350,8 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <Printer className={TOOLBAR_ICON} aria-hidden /> Print
           </button>
           {canRcv && (
-            <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setShowReceive(true)}>
+            <button type="button" className={TOOLBAR_BTN_PRIMARY} disabled={receiveInvoiceBlocked}
+              title={receiveInvoiceBlocked ? INVOICE_PAYMENT_MESSAGE : undefined} onClick={() => setShowReceive(true)}>
               <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
             </button>
           )}
@@ -419,120 +378,13 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           )}
         </div>
       </header>
+      {canRcv && receiveInvoiceBlocked && <p role="status" className="text-sm text-text-secondary">{INVOICE_PAYMENT_MESSAGE} Cash reception records payment automatically.</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
-          <Card variant="default" padding="md" className="space-y-4">
-            <SectionLabel as="h2" size="sm" className="text-gold">Order Information</SectionLabel>
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Supplier"          value={po.suppliers?.name ?? '—'} mono />
-              <Field label="Order date"        value={fmtDay(po.order_date)} />
-              <Field label="Expected delivery" value={fmtDay(po.expected_date)} />
-              <Field label="Actual delivery"   value={fmtDay(po.received_date)} />
-              <Field label="Payment terms"     value={po.payment_terms === 'cash' ? 'Cash on delivery' : 'Credit'} />
-              {po.cancel_reason !== null && po.cancel_reason !== '' && (
-                <Field label="Cancel reason"   value={po.cancel_reason} />
-              )}
-            </dl>
-          </Card>
-
-          <Card variant="default" padding="md" className="space-y-3">
-            <SectionLabel as="h2" size="sm" id="po-ordered-items-heading" className="text-gold">Ordered Items</SectionLabel>
-            <div className="overflow-x-auto rounded-md border border-border-subtle">
-              <table className="w-full text-sm" aria-labelledby="po-ordered-items-heading">
-                <thead className="bg-surface-inert">
-                  <tr>
-                    <th scope="col" className="px-3 py-2 text-left">
-                      <SectionLabel as="span" size="xs">Product</SectionLabel>
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-right w-24">
-                      <SectionLabel as="span" size="xs">Quantity</SectionLabel>
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-right w-24">
-                      <SectionLabel as="span" size="xs">Received</SectionLabel>
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-left w-20">
-                      <SectionLabel as="span" size="xs">Unit</SectionLabel>
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-right w-28">
-                      <SectionLabel as="span" size="xs">Unit price</SectionLabel>
-                    </th>
-                    <th scope="col" className="px-3 py-2 text-right w-32">
-                      <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {po.purchase_order_items.map((it) => (
-                    <tr key={it.id} className="border-t border-border-subtle">
-                      <td className="px-3 py-2">
-                        <span className="text-text-primary">{it.products?.name ?? '?'}</span>{' '}
-                        <span className="text-text-secondary text-xs">({it.products?.sku ?? '—'})</span>
-                      </td>
-                      <td className={NUM_CELL}>{fmtQty(it.quantity)}</td>
-                      <td className={NUM_CELL}>{fmtQty(it.received_quantity)}</td>
-                      <td className="px-3 py-2 text-text-secondary">{it.unit}</td>
-                      <td className={NUM_CELL}>{fmtIdr(it.unit_cost)}</td>
-                      <td className={`${NUM_CELL} font-medium`}>{fmtIdr(it.subtotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <Card variant="default" padding="md" className="space-y-3">
-            <SectionLabel as="h2" size="sm" id="po-grn-heading" className="text-gold">Goods Receipt Notes</SectionLabel>
-            {po.goods_receipt_notes.length === 0 ? (
-              <EmptyState
-                title="No receipts recorded yet"
-                description="The first GRN will appear here once goods have been received."
-                size="sm"
-              />
-            ) : (
-              <div className="overflow-x-auto rounded-md border border-border-subtle">
-                <table className="w-full text-sm" aria-labelledby="po-grn-heading">
-                  <thead className="bg-surface-inert">
-                    <tr>
-                      <th scope="col" className="px-3 py-2 text-left">
-                        <SectionLabel as="span" size="xs">GRN</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-left w-32">
-                        <SectionLabel as="span" size="xs">Date</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-right w-32">
-                        <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-right w-32">
-                        <SectionLabel as="span" size="xs">VAT</SectionLabel>
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-right w-32">
-                        <SectionLabel as="span" size="xs">Total</SectionLabel>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {po.goods_receipt_notes.map((g) => (
-                      <tr key={g.id} className="border-t border-border-subtle">
-                        <td className="px-3 py-2 font-mono text-xs">{g.grn_number}</td>
-                        <td className="px-3 py-2 font-data tabular-nums text-text-secondary">{formatDateShortWita(g.received_date)}</td>
-                        <td className={NUM_CELL}>{fmtIdr(g.subtotal)}</td>
-                        <td className={NUM_CELL}>{fmtIdr(g.vat_amount)}</td>
-                        <td className={`${NUM_CELL} font-medium`}>{fmtIdr(g.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-
-          {po.notes !== null && po.notes !== '' && (
-            <Card variant="default" padding="md" className="space-y-2">
-              <SectionLabel as="h2" size="sm" className="text-gold">Notes</SectionLabel>
-              <p className="text-sm text-text-secondary whitespace-pre-wrap">{po.notes}</p>
-            </Card>
-          )}
+          <PoInvoicePanel po={po} hasPayments={hasPayments} fullyPaid={paymentStatus === 'paid'}
+            paymentsKnown={payments.data !== undefined} onBusyChange={setInvoiceBusy} />
+          <PurchaseOrderContent po={po} />
         </div>
 
         <div className="space-y-6">
@@ -584,7 +436,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
                 variant="secondary"
                 className="w-full"
                 onClick={() => { setPayError(undefined); setShowPay(true); }}
-                disabled={payBlockedByCancel}
+                disabled={payBlockedByCancel || invoiceBlocked}
                 aria-describedby="po-payment-note"
               >
                 <Wallet className="h-4 w-4" aria-hidden /> Record payment
@@ -593,7 +445,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <p id="po-payment-note" className="text-xs text-text-muted">
               {payBlockedByCancel
                 ? 'This purchase order is cancelled — no payment can be recorded.'
-                : 'Payment is tracked independently from goods reception.'}
+                : invoiceBlocked ? INVOICE_PAYMENT_MESSAGE : 'Payment is tracked independently from goods reception.'}
             </p>
           </Card>
 
@@ -618,6 +470,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           onCancel={() => setShowReceive(false)}
           onConfirm={handleReceive}
           submitting={receive.isPending}
+          invoiceBlocked={receiveInvoiceBlocked}
           {...(receiveError !== undefined ? { error: receiveError } : {})}
         />
       )}
@@ -637,64 +490,10 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           onCancel={() => setShowPay(false)}
           onConfirm={handleRecordPayment}
           submitting={recordPayment.isPending}
+          invoiceBlocked={invoiceBlocked}
           {...(payError !== undefined ? { error: payError } : {})}
         />
       )}
     </div>
-  );
-}
-
-function PaymentStatusBadge({ status }: { status: PoPaymentStatus }): JSX.Element {
-  if (status === 'paid') {
-    return <Badge variant="outline" className="border-success text-success">PAID</Badge>;
-  }
-  if (status === 'partial') {
-    return <Badge variant="outline" className="border-border-gold text-gold">PARTIAL</Badge>;
-  }
-  return <Badge variant="outline" className="border-danger text-danger">UNPAID</Badge>;
-}
-
-function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }): JSX.Element {
-  return (
-    <div className="rounded-md bg-surface-inert px-3 py-2">
-      <dt className="text-sm font-medium text-text-secondary">{label}</dt>
-      <dd className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono' : ''}`}>{value}</dd>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2 text-text-secondary">
-      <dt>{label}</dt>
-      <dd className="font-data tabular-nums text-text-primary">{value}</dd>
-    </div>
-  );
-}
-
-function TimelineItem({
-  reached,
-  cancelled = false,
-  label,
-  date,
-}: {
-  reached: boolean;
-  cancelled?: boolean;
-  label: string;
-  date: string;
-}): JSX.Element {
-  return (
-    <li className="flex items-center gap-2">
-      {cancelled ? (
-        <XCircle className="h-3.5 w-3.5 text-danger" aria-hidden />
-      ) : (
-        <CheckCircle2
-          className={`h-3.5 w-3.5 ${reached ? 'text-success' : 'text-text-muted'}`}
-          aria-hidden
-        />
-      )}
-      <span className={reached ? 'text-text-primary' : 'text-text-muted'}>{label}</span>
-      <span className="ml-auto text-text-muted tabular-nums">{date}</span>
-    </li>
   );
 }

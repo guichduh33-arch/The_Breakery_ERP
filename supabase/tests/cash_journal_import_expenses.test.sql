@@ -1,4 +1,5 @@
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/pin_session.sql
 SELECT no_plan();
 DO $$ DECLARE a uuid:=gen_random_uuid(); p uuid:=gen_random_uuid(); BEGIN

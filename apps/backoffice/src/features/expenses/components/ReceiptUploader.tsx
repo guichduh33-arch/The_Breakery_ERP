@@ -5,16 +5,18 @@ import type { ExpenseReceiptSnapshot } from '@/lib/pendingFinancialAttemptSchema
 import { Button } from '@/components/BackofficeUi.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { useExpenseReceipt } from '../hooks/useExpenseReceipt.js';
-import { RECEIPT_ACCEPT, receiptFileDigest, validateReceiptFile } from '../utils/expenseReceiptFiles.js';
+import { receiptFileDigest } from '../utils/expenseReceiptFiles.js';
+import { INVOICE_ACCEPT, validateInvoiceFile } from '@/lib/invoiceFiles.js';
 
 export interface ReceiptUploaderProps {
   expenseId: string;
   value: string | null;
   editable: boolean;
+  removable?: boolean;
   onBusyChange: (busy: boolean) => void;
 }
 
-export function ReceiptUploader({expenseId, value, editable, onBusyChange}: ReceiptUploaderProps): JSX.Element {
+export function ReceiptUploader({expenseId, value, editable, removable = editable, onBusyChange}: ReceiptUploaderProps): JSX.Element {
   const attempt = useExpenseReceipt(expenseId);
   const profile = useAuthStore(s => s.user?.id);
   const token = useAuthStore(s => s.sessionToken);
@@ -44,7 +46,7 @@ export function ReceiptUploader({expenseId, value, editable, onBusyChange}: Rece
     } else if (outcome.result) {
       setFile(undefined);
       if (!outcome.result.applied) setError(outcome.result.reason === 'receipt_requires_draft'
-        ? 'This expense has already been submitted. The receipt was not changed.'
+        ? 'This expense no longer allows this receipt change. Review its current status.'
         : 'The receipt changed in another tab. Review the current expense before continuing.');
       else setMessage('Receipt change confirmed.');
     }
@@ -54,7 +56,7 @@ export function ReceiptUploader({expenseId, value, editable, onBusyChange}: Rece
     if (!current(session) || !editable || blocked) return;
     setHashing(true); setError(null); setMessage(null); setFile(selected);
     try {
-      validateReceiptFile(selected);
+      validateInvoiceFile(selected);
       const sha256 = await receiptFileDigest(selected);
       if (!current(session)) return;
       await change({expenseId, expectedPath: value === '' ? null : value, kind: 'attach',
@@ -66,7 +68,7 @@ export function ReceiptUploader({expenseId, value, editable, onBusyChange}: Rece
   return <div className="space-y-2">
     {pending && <p role="status" className="text-sm text-text-secondary">The receipt change is unconfirmed. Check it before submitting or selecting another receipt.</p>}
     {((editable && !pending) || pending?.kind === 'attach') && <input type="file" aria-label={pending ? 'Select the same receipt file' : 'Receipt file'}
-      accept={RECEIPT_ACCEPT} disabled={hashing || attempt.busy || !attempt.allowed || Boolean(attempt.storageError)}
+      accept={pending?.kind === 'attach' ? 'image/jpeg,image/png,image/webp,application/pdf' : INVOICE_ACCEPT} disabled={hashing || attempt.busy || !attempt.allowed || Boolean(attempt.storageError)}
       aria-invalid={Boolean(error ?? attempt.storageError)} aria-describedby={error ?? attempt.storageError ? errorId : undefined}
       className={'block w-full text-sm text-text-secondary ' + FOCUS_RING}
       onChange={e => {
@@ -76,7 +78,7 @@ export function ReceiptUploader({expenseId, value, editable, onBusyChange}: Rece
       }} />}
     {pending && <Button size="sm" disabled={attempt.busy || !attempt.allowed || Boolean(attempt.storageError)}
       onClick={() => {void change(pending, pending.kind === 'attach' ? file : undefined);}}>Check pending receipt</Button>}
-    {editable && value && !pending && <Button size="sm" variant="ghost" disabled={blocked || !attempt.allowed}
+    {removable && value && !pending && <Button size="sm" variant="ghost" disabled={blocked || !attempt.allowed}
       onClick={() => {void change({expenseId, kind: 'remove', expectedPath: value});}}>Remove receipt</Button>}
     {(hashing || attempt.busy) && <p role="status" className="text-sm text-text-secondary">Checking receipt…</p>}
     {(error ?? attempt.storageError) && <p role="alert" id={errorId} className="text-sm text-danger">{attempt.storageError ?? error}</p>}

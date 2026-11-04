@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import type { Database } from '@breakery/supabase';
 
-export type ExpenseRow = Database['public']['Tables']['expenses']['Row'];
+export type ExpenseRow = Database['public']['Tables']['expenses']['Row'] & { invoice_exempt?: boolean };
 export type ExpenseCategoryRow = Database['public']['Tables']['expense_categories']['Row'];
 
 export type ExpenseStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';

@@ -31,6 +31,11 @@ export type ExpenseReceiptSnapshot = {
   kind: 'attach'; mime: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
   size: number; sha256: string;
 });
+export type PoInvoiceSnapshot = {
+  poId: string; expectedPath: string | null;
+} & ({ kind: 'remove' } | {
+  kind: 'attach'; mime: 'image/jpeg' | 'application/pdf'; size: number; sha256: string;
+});
 export interface B2bEditSnapshot {
   orderId: string;
   items: { id?: string; product_id: string; quantity: number }[];
@@ -44,6 +49,7 @@ export interface FinancialPayloads {
   bank_finalize: BankFinalizeSnapshot;
   expense_creation: ExpenseCreationSnapshot;
   expense_receipt: ExpenseReceiptSnapshot;
+  po_invoice: PoInvoiceSnapshot;
   refund: RefundSnapshot;
   payment: PaymentSnapshot;
   loyalty_conversion: LoyaltyConversionSnapshot;
@@ -98,6 +104,14 @@ export function validPayload(operation: FinancialOperation, target: string, valu
     return value.kind === 'attach' && exact(value,['expenseId','expectedPath','kind','mime','size','sha256'])
       && typeof value.mime === 'string' && ['image/jpeg','image/png','image/webp','application/pdf'].includes(value.mime)
       && finite(value.size) && Number.isInteger(value.size) && value.size >= 0 && value.size <= 5242880
+      && typeof value.sha256 === 'string' && /^[a-f0-9]{64}$/.test(value.sha256);
+  }
+  if (operation === 'po_invoice') {
+    if (!uuid(value.poId) || value.poId !== target || !(value.expectedPath === null || text(value.expectedPath))) return false;
+    if (value.kind === 'remove') return exact(value, ['poId', 'expectedPath', 'kind']);
+    return value.kind === 'attach' && exact(value, ['poId', 'expectedPath', 'kind', 'mime', 'size', 'sha256'])
+      && (value.mime === 'image/jpeg' || value.mime === 'application/pdf')
+      && finite(value.size) && Number.isInteger(value.size) && value.size > 0 && value.size <= 5242880
       && typeof value.sha256 === 'string' && /^[a-f0-9]{64}$/.test(value.sha256);
   }
   if (operation === 'refund') {

@@ -24,15 +24,20 @@ export function useFinancialAttempt<K extends FinancialOperation>(operation: K, 
     bank_manage: 'accounting.bank.manage', bank_post: 'accounting.bank.settle', bank_finalize: 'accounting.bank.validate',
     refund: 'orders.refund', payment: 'b2b.payment.record', b2bEdit: 'pos.sale.create',
     expense_creation: 'expenses.create', expense_receipt: 'expenses.create',
+    po_invoice: 'purchasing.po.create',
     loyalty_conversion: 'customers.store_credit.convert', loyalty_adjustment: 'loyalty.adjust',
   };
   const permission = permissions[operation];
   const expenseOperation = operation === 'expense_creation' || operation === 'expense_receipt';
   const permitted = () => (useAuthStore.getState().hasPermission(permission)
-    || (expenseOperation && useAuthStore.getState().hasPermission('expenses.manage')))
+    || (expenseOperation && useAuthStore.getState().hasPermission('expenses.manage'))
+    || (operation === 'expense_receipt' && useAuthStore.getState().hasPermission('expenses.pay'))
+    || (operation === 'po_invoice' && useAuthStore.getState().hasPermission('purchasing.po.pay')))
     && (operation !== 'b2bEdit' || useAuthStore.getState().hasPermission('b2b.read'));
   const allowed = useAuthStore((s) => (s.hasPermission(permission)
-    || (expenseOperation && s.hasPermission('expenses.manage')))
+    || (expenseOperation && s.hasPermission('expenses.manage'))
+    || (operation === 'expense_receipt' && s.hasPermission('expenses.pay'))
+    || (operation === 'po_invoice' && s.hasPermission('purchasing.po.pay')))
     && (operation !== 'b2bEdit' || s.hasPermission('b2b.read')));
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   const [busy, setBusy] = useState(false);

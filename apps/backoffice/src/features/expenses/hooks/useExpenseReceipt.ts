@@ -25,11 +25,11 @@ export function useExpenseReceipt(expenseId:string) {
     }
    }
    const path=snapshot.kind==='attach'?receiptPath(snapshot,key):null;
-   const apply=()=>supabase.rpc('set_expense_receipt_v1',{
+   const apply=()=>supabase.rpc('set_expense_receipt_v2' as never,{
     p_expense_id:snapshot.expenseId,p_idempotency_key:key,
     ...(path!==null?{p_storage_path:path}:{}),
     ...(snapshot.expectedPath!==null?{p_expected_path:snapshot.expectedPath}:{}),
-   });
+   } as never);
    let response=await apply();assertSession();
    if(snapshot.kind==='attach'&&response.error?.code==='P0002'
       && response.error.message==='receipt_object_not_found') {

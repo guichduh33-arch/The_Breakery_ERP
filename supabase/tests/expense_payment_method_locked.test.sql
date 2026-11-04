@@ -1,5 +1,6 @@
 -- Méthode comptabilisée figée ; règlement des crédits cohérent, sous rollback.
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
 \ir helpers/pin_session.sql
 SELECT no_plan();
@@ -42,7 +43,7 @@ SELECT pg_temp.ep_make('credit-invalid','credit');
 GRANT SELECT ON ep_cases TO authenticated;
 SET LOCAL ROLE authenticated;
 SELECT ok(public.request_has_active_pin_session_v1(),'caller uses a real active PIN session');
-SELECT throws_ok(format('SELECT public.pay_expense_v4(%L::uuid,%L)',id,
+SELECT throws_ok(format('SELECT public.pay_expense_v5(%L::uuid,%L)',id,
  CASE method WHEN 'cash' THEN 'transfer' ELSE 'cash' END),
  '22023','payment_method_locked','non-credit method cannot change: '||kind)
 FROM ep_cases WHERE method <> 'credit';
@@ -54,16 +55,16 @@ SELECT is(e.payment_method,c.method,'rejected change preserves recorded method: 
 SELECT is((SELECT count(*) FROM audit_logs WHERE entity_id IN (SELECT id FROM ep_cases)),0::bigint,
  'rejected changes leave no payment audit or partial write');
 SET LOCAL ROLE authenticated;
-SELECT lives_ok(format('SELECT public.pay_expense_v4(%L::uuid,NULL)',id),
+SELECT lives_ok(format('SELECT public.pay_expense_v5(%L::uuid,NULL)',id),
  'omitted method marks non-credit expense paid: '||kind)
  FROM ep_cases WHERE method <> 'credit' AND kind <> 'cash-same';
-SELECT lives_ok(format('SELECT public.pay_expense_v4(%L::uuid,%L)',id,'cash'),'explicit recorded method remains accepted') FROM ep_cases WHERE kind='cash-same';
-SELECT lives_ok(format('SELECT public.pay_expense_v4(%L::uuid,%L)',id,replace(kind,'credit-','')),
+SELECT lives_ok(format('SELECT public.pay_expense_v5(%L::uuid,%L)',id,'cash'),'explicit recorded method remains accepted') FROM ep_cases WHERE kind='cash-same';
+SELECT lives_ok(format('SELECT public.pay_expense_v5(%L::uuid,%L)',id,replace(kind,'credit-','')),
  'credit settlement allowed: '||kind) FROM ep_cases WHERE kind IN ('credit-cash','credit-transfer','credit-card');
-SELECT lives_ok(format('SELECT public.pay_expense_v4(%L::uuid)',id),'credit settlement default allowed')
+SELECT lives_ok(format('SELECT public.pay_expense_v5(%L::uuid)',id),'credit settlement default allowed')
  FROM ep_cases WHERE kind='credit-default';
-SELECT throws_ok(format('SELECT public.pay_expense_v4(%L::uuid,%L)',id,'bitcoin'),'22023',
- 'pay_expense_v4: unknown payment method bitcoin','unknown credit settlement still rejected')
+SELECT throws_ok(format('SELECT public.pay_expense_v5(%L::uuid,%L)',id,'bitcoin'),'22023',
+ 'pay_expense_v5: unknown payment method bitcoin','unknown credit settlement still rejected')
  FROM ep_cases WHERE kind='credit-invalid';
 RESET ROLE;
 
@@ -80,7 +81,8 @@ SELECT is(e.payment_method,CASE c.kind WHEN 'credit-default' THEN 'cash' ELSE re
  'chosen/default method is persisted for credit: '||c.kind)
  FROM ep_cases c JOIN expenses e USING(id) WHERE c.kind LIKE 'credit-%' AND c.kind <> 'credit-invalid';
 SELECT is((SELECT l.account_id FROM journal_entry_lines l WHERE l.journal_entry_id=e.payment_je_id AND l.credit>0),
- public.resolve_mapping_account(public._expense_settlement_mapping_key(e.payment_method)),
+ public.resolve_mapping_account(public._expense_settlement_mapping_key(
+  CASE c.kind WHEN 'credit-default' THEN 'cash' ELSE replace(c.kind,'credit-','') END)),
  'credit settlement account matches persisted method: '||c.kind)
  FROM ep_cases c JOIN expenses e USING(id) WHERE c.kind LIKE 'credit-%' AND c.kind <> 'credit-invalid';
 SELECT ok((SELECT SUM(l.debit)=110000 AND SUM(l.credit)=110000 AND count(*)=2 FROM journal_entry_lines l
@@ -95,8 +97,8 @@ SELECT is((SELECT count(*) FROM audit_logs a JOIN ep_cases c ON c.id=a.entity_id
 SELECT is((SELECT status FROM expenses WHERE id=(SELECT id FROM ep_cases WHERE kind='credit-invalid')),
  'approved','failed credit settlement leaves original approval intact');
 SELECT ok(to_regprocedure('public.pay_expense_v3(uuid,text)') IS NULL,'old payment signature removed');
-SELECT ok(NOT has_function_privilege('anon','public.pay_expense_v4(uuid,text)','EXECUTE')
- AND has_function_privilege('authenticated','public.pay_expense_v4(uuid,text)','EXECUTE')
- AND has_function_privilege('service_role','public.pay_expense_v4(uuid,text)','EXECUTE'),'payment ACL preserved');
+SELECT ok(NOT has_function_privilege('anon','public.pay_expense_v5(uuid,text)','EXECUTE')
+ AND has_function_privilege('authenticated','public.pay_expense_v5(uuid,text)','EXECUTE')
+ AND has_function_privilege('service_role','public.pay_expense_v5(uuid,text)','EXECUTE'),'payment ACL preserved');
 SELECT * FROM finish();
 ROLLBACK;

@@ -10,6 +10,7 @@ import { Button, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { formatCurrency } from '@breakery/utils';
 import type { PoPaymentMethod } from '../hooks/useRecordPoPayment.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
+import { INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 
 const METHODS: { value: PoPaymentMethod; label: string }[] = [
   { value: 'transfer', label: 'Bank transfer' },
@@ -28,10 +29,11 @@ export interface RecordPaymentDialogProps {
   }) => Promise<void>;
   submitting?:  boolean;
   error?:       string;
+  invoiceBlocked?: boolean;
 }
 
 export function RecordPaymentDialog({
-  poNumber, remainingDue, onCancel, onConfirm, submitting = false, error,
+  poNumber, remainingDue, onCancel, onConfirm, submitting = false, error, invoiceBlocked = false,
 }: RecordPaymentDialogProps): JSX.Element {
   const reactId = useId();
   // Stable idempotency key for this dialog session (survives retries / re-renders).
@@ -41,7 +43,7 @@ export function RecordPaymentDialog({
   const [reference, setReference] = useState<string>('');
 
   const overpay   = amount > remainingDue + 0.005;
-  const canSubmit = Number.isFinite(amount) && amount > 0 && !overpay && !submitting;
+  const canSubmit = Number.isFinite(amount) && amount > 0 && !overpay && !submitting && !invoiceBlocked;
 
   async function handleConfirm(): Promise<void> {
     if (!canSubmit) return;
@@ -115,6 +117,7 @@ export function RecordPaymentDialog({
             />
           </div>
 
+          {invoiceBlocked && <p role="alert" className="text-sm text-danger">{INVOICE_PAYMENT_MESSAGE}</p>}
           {error !== undefined && error !== '' && (
             <div role="alert" className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm text-danger">
               {error}

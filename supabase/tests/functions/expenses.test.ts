@@ -17,6 +17,20 @@ const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 interface JeRow { id: string; total_debit: number; total_credit: number }
 
+async function attachInvoice(client: ReturnType<typeof jwtClient>, expenseId: string) {
+  const key = crypto.randomUUID();
+  const path = `expenses/${expenseId}/${key}.pdf`;
+  const file = new TextEncoder().encode('%PDF-1.4\n%%EOF\n');
+  const { error: uploadError } = await client.storage.from('expense-receipts')
+    .upload(path, file, { contentType: 'application/pdf', upsert: false });
+  expect(uploadError).toBeNull();
+  const { data, error } = await client.rpc('set_expense_receipt_v2', {
+    p_expense_id: expenseId, p_storage_path: path, p_expected_path: null, p_idempotency_key: key,
+  });
+  expect(error).toBeNull();
+  expect((data as { applied: boolean }).applied).toBe(true);
+}
+
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle (Phase 3.B)', () => {
   let managerToken: string;
   let adminToken:   string;
@@ -77,6 +91,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
 
     const expenseId = createId as unknown as string;
 
+    await attachInvoice(sbAdm, expenseId);
+
     // 2. Idempotency : same key returns same id.
     const { data: replayId } = await sbAdm.rpc('create_expense_v4', {
       p_expense_term_id: electricityTermId,
@@ -116,7 +132,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(lines?.length).toBe(2);  // cash path : 2 lines.
 
     // 6. Pay (no extra JE since not credit).
-    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v4', {
+    const { data: payData, error: pErr } = await sbAdm.rpc('pay_expense_v5', {
       p_expense_id: expenseId,
       p_payment_method: 'cash',
     });
@@ -150,6 +166,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     });
     const expenseId = createId as unknown as string;
 
+    await attachInvoice(sbAdm, expenseId);
+
     await sbAdm.rpc('submit_expense_v3', { p_expense_id: expenseId });
 
     const { data: approveData } = await sbMgr.rpc('approve_expense_v5', {
@@ -178,7 +196,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(totalDebit).toBe(totalCredit);
 
     // Pay → expects 2nd JE.
-    const { data: payData } = await sbAdm.rpc('pay_expense_v4', {
+    const { data: payData } = await sbAdm.rpc('pay_expense_v5', {
       p_expense_id: expenseId,
       p_payment_method: 'transfer',
     });

@@ -12,6 +12,7 @@
 -- chevauchement AVANT d'atteindre la validation testée ici — le test mesurerait autre chose.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
+\ir helpers/payment_invoice.sql
 \ir helpers/expense_terms.sql
 SELECT plan(6);
 
@@ -40,7 +41,7 @@ BEGIN
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing transfer', 100000,
           CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing transfer'))
   RETURNING id INTO v_exp;
-  v_res := pay_expense_v4(v_exp, 'transfer');
+  v_res := pay_expense_v5(v_exp, 'transfer');
   SELECT a.code INTO v_credit_code FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
    WHERE l.journal_entry_id = (v_res->>'payment_je_id')::uuid AND l.credit > 0;
   PERFORM set_config('breakery.transfer_acc', v_credit_code, true);
@@ -51,7 +52,7 @@ BEGIN
   VALUES ('EXP-TEST-'||substr(gen_random_uuid()::text,1,8), 'pgTAP routing cash', 50000,
           CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing cash'))
   RETURNING id INTO v_exp;
-  v_res := pay_expense_v4(v_exp, 'cash');
+  v_res := pay_expense_v5(v_exp, 'cash');
   SELECT a.code INTO v_credit_code FROM journal_entry_lines l JOIN accounts a ON a.id = l.account_id
    WHERE l.journal_entry_id = (v_res->>'payment_je_id')::uuid AND l.credit > 0;
   PERFORM set_config('breakery.cash_acc', v_credit_code, true);
@@ -63,7 +64,7 @@ BEGIN
           CURRENT_DATE, v_cat, 'credit', 'approved', v_prof, pg_temp.expense_term_fixture(v_cat, 'pgTAP routing unknown'))
   RETURNING id INTO v_exp;
   BEGIN
-    PERFORM pay_expense_v4(v_exp, 'bitcoin');
+    PERFORM pay_expense_v5(v_exp, 'bitcoin');
     PERFORM set_config('breakery.bad', 'no_raise', true);
   EXCEPTION WHEN OTHERS THEN
     PERFORM set_config('breakery.bad', 'raised', true);

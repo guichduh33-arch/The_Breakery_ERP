@@ -6,6 +6,7 @@ import { Card, Button } from '@/components/BackofficeUi.js';
 import { SectionLabel } from '@/components/SectionLabel.js';
 import type { ExpenseRow } from '../hooks/useExpensesList.js';
 import { ReceiptUploader } from './ReceiptUploader.js';
+import { INVOICE_APPROVAL_MESSAGE, INVOICE_PAYMENT_MESSAGE } from '@/lib/invoiceFiles.js';
 
 export function ExpenseReceiptPanel({expense, onBusyChange}: {
   expense: ExpenseRow; onBusyChange: (busy: boolean) => void;
@@ -13,8 +14,10 @@ export function ExpenseReceiptPanel({expense, onBusyChange}: {
   const profile = useAuthStore(s => s.user?.id);
   const token = useAuthStore(s => s.sessionToken);
   const permitted = useAuthStore(s => s.hasPermission);
-  const canEdit = expense.status === 'draft' && (permitted('expenses.manage')
-    || (profile === expense.created_by && permitted('expenses.create')));
+  const canRegularize = ['submitted', 'approved'].includes(expense.status);
+  const canEdit = (expense.status === 'draft' || canRegularize) && (permitted('expenses.manage')
+    || (profile === expense.created_by && permitted('expenses.create'))
+    || (canRegularize && permitted('expenses.pay')));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const identity = JSON.stringify([expense.id, expense.receipt_url, profile, token]);
@@ -50,6 +53,11 @@ export function ExpenseReceiptPanel({expense, onBusyChange}: {
     {expense.receipt_url ? <Button size="sm" variant="ghost" disabled={busy} onClick={() => {void download();}}>Download receipt</Button>
       : <p className="text-sm text-text-secondary">No receipt attached.</p>}
     {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-    <ReceiptUploader expenseId={expense.id} value={expense.receipt_url} editable={canEdit} onBusyChange={onBusyChange} />
+    <p className="text-sm text-text-secondary">{expense.invoice_exempt
+      ? 'Historical import: invoice requirement does not apply.'
+      : expense.payment_method === 'cash' ? INVOICE_APPROVAL_MESSAGE : INVOICE_PAYMENT_MESSAGE} JPEG or PDF, max 5 MB.</p>
+    {canRegularize && canEdit && <p className="text-sm text-text-secondary">Only missing or invalid receipts can be replaced after submission. The server checks the existing file before applying a change.</p>}
+    <ReceiptUploader expenseId={expense.id} value={expense.receipt_url} editable={canEdit}
+      removable={canEdit && expense.status === 'draft'} onBusyChange={onBusyChange} />
   </Card>;
 }
