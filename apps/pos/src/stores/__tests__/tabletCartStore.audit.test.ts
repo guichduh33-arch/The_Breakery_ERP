@@ -18,15 +18,13 @@ describe('tablet cart activity audit', () => {
     useTabletCartStore.getState().removeItem(item.id);
     expect(vi.mocked(emitPosEvent).mock.calls.map(([type]) => type))
       .toEqual(['order_opened', 'item_added', 'item_qty_changed', 'item_removed_pre_fire']);
-    expect(emitPosEvent).toHaveBeenCalledWith('item_added', expect.objectContaining({
-      payload: expect.objectContaining({ surface: 'tablet', name: 'Coffee' }),
-    }));
+    expect(vi.mocked(emitPosEvent).mock.calls.find(([type]) => type === 'item_added')?.[1])
+      .toMatchObject({ payload: { surface: 'tablet', name: 'Coffee' } });
   });
   it('records configured combo additions', () => {
     useTabletCartStore.getState().addCombo({ ...product, product_type: 'combo' }, [], [], 40000);
-    expect(emitPosEvent).toHaveBeenCalledWith('item_added', expect.objectContaining({
-      amount: 40000, payload: expect.objectContaining({ combo: true, surface: 'tablet' }),
-    }));
+    expect(vi.mocked(emitPosEvent).mock.calls.find(([type]) => type === 'item_added')?.[1])
+      .toMatchObject({ amount: 40000, payload: { combo: true, surface: 'tablet' } });
   });
   it('records table, type, notes and append context', () => {
     const store = useTabletCartStore.getState();
