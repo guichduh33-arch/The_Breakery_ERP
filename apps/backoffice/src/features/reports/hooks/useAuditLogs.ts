@@ -1,26 +1,19 @@
-// apps/backoffice/src/features/reports/hooks/useAuditLogs.ts
-//
-// Cursor-paginated wrapper over `get_audit_logs_v4`. Uses
-// useInfiniteQuery so the page calls `fetchNextPage()` on scroll. Each
-// page returns ≤ 50 rows by default ; cursor combines `created_at` and `id` of the
-// last row of the previous page.
-//
-// Audit Reports 2026-08-01 (R-10) — repointed v1 → v3. La page n'offrait
-// aucune borne temporelle : ni v1 ni v2 n'en acceptaient, il fallait dérouler
-// « Load more » depuis la ligne la plus récente pour atteindre une date. v3
-// ajoute p_date_start / p_date_end, en dates métier résolues dans
-// business_config.timezone (migration 20260801000003).
+// Journal commun paginé par horodatage et identifiant de source.
+// Les droits et les bornes métier sont appliqués par la RPC.
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
 export interface AuditLogRow {
-  id:           number;
+  id:           string;
   actor_id:     string | null;
+  actor_name:   string | null;
   action:       string;
   entity_type:  string;
   entity_id:    string | null;
   metadata:     unknown;
+  payload:      unknown;
+  source:       string;
   created_at:   string;
 }
 
@@ -34,7 +27,7 @@ export interface AuditLogFilters {
   pageSize?:    number;
 }
 
-export const AUDIT_LOGS_QK = ['reports', 'audit-logs', 'cursor-v4'] as const;
+export const AUDIT_LOGS_QK = ['reports', 'activity-logs', 'cursor-v1'] as const;
 const DEFAULT_PAGE_SIZE = 50;
 
 export function useAuditLogs(filters: AuditLogFilters = {}) {
@@ -66,15 +59,18 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
       if (filters.dateStart)  args.p_date_start  = filters.dateStart;
       if (filters.dateEnd)    args.p_date_end    = filters.dateEnd;
 
-      const { data, error } = await supabase.rpc('get_audit_logs_v4', args);
+      const { data, error } = await supabase.rpc('get_activity_logs_v1', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
-        id:          Number(r.id),
+        id:          r.id,
         actor_id:    r.actor_id,
+        actor_name:  r.actor_name,
         action:      r.action,
         entity_type: r.entity_type,
         entity_id:   r.entity_id,
         metadata:    r.metadata,
+        payload:     r.payload,
+        source:      r.source,
         created_at:  r.created_at,
       }));
     },

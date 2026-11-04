@@ -8864,6 +8864,30 @@ export type Database = {
         Returns: Json
       }
       format_type_string: { Args: { "": string }; Returns: string }
+      get_activity_logs_v1: {
+        Args: {
+          p_action?: string
+          p_actor_id?: string
+          p_cursor?: string
+          p_date_end?: string
+          p_date_start?: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_limit?: number
+        }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_name: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json
+          payload: Json
+          source: string
+        }[]
+      }
       get_ar_aging_v1: { Args: never; Returns: Json }
       get_audit_logs_v4: {
         Args: {

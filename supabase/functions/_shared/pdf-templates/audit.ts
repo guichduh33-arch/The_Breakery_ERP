@@ -10,6 +10,8 @@ export interface AuditRow {
   action:      string;
   entity_type: string;
   actor_id:    string | null;
+  actor_name?: string | null;
+  description?: string;
 }
 
 export type AuditData = AuditRow[];
@@ -46,6 +48,13 @@ export async function render(
   data:   AuditData,
   period: { start: string; end: string } | null,
 ): Promise<void> {
+  const characters = new Set(ctx.font.getCharacterSet());
+  // Helvetica ne couvre pas tout Unicode. Une forme échappée conserve la
+  // référence du caractère et permet de générer le PDF. Le CSV garde le texte.
+  const pdfText = (text: string): string => Array.from(text, (character) => {
+    const code = character.codePointAt(0)!;
+    return characters.has(code) ? character : `[U+${code.toString(16).toUpperCase()}]`;
+  }).join('');
   const totalPages = Math.max(1, Math.ceil(data.length / ROWS_PER_PAGE));
   let pageNum  = 0;
   let rowIndex = 0;
@@ -77,9 +86,9 @@ export async function render(
       : row.created_at;
 
     page.drawText(ts,                              { x: COL_TS,     y, size: 8, font: ctx.font, color: rgb(0.3, 0.3, 0.3) });
-    page.drawText(truncate(row.action, 18),        { x: COL_ACTION, y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(truncate(pdfText(row.description ?? row.action), 30), { x: COL_ACTION, y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
     page.drawText(truncate(row.entity_type, 15),   { x: COL_ENTITY, y, size: 8, font: ctx.font, color: rgb(0.1, 0.1, 0.1) });
-    page.drawText(shortId(row.actor_id),           { x: COL_ACTOR,  y, size: 8, font: ctx.font, color: rgb(0.4, 0.4, 0.4) });
+    page.drawText(truncate(pdfText(row.actor_name ?? shortId(row.actor_id)), 24), { x: COL_ACTOR, y, size: 8, font: ctx.font, color: rgb(0.4, 0.4, 0.4) });
 
     y -= ROW_H;
     rowIndex++;

@@ -1,18 +1,4 @@
-// apps/backoffice/src/pages/reports/__tests__/AuditPage.smoke.test.tsx
-//
-// Filtres + dépliage du contexte sur le journal d'audit. Prouve :
-//   1. acteur / action / entité sont câblés sur les params de useAuditLogs ;
-//   2. cliquer une ligne déplie son `metadata` (JSON rendu) ;
-//   3. `audit_logs.payload` (la colonne de diff avant/après, S19) n'est PAS
-//      servie par get_audit_logs_v3 — seul `metadata` est affichable ;
-//   4. Action / Entity type sont débouncés 300 ms avant d'atteindre
-//      useAuditLogs ; l'acteur (un `<select>`) reste immédiat.
-//
-// Lot G (campagne Reports 2026-08-15) — la page passe sur le socle Report shell
-// v2 : les bornes de date quittent la barre de filtres pour le contrôle de
-// période du bandeau (params `start` / `end`), donc TOUT appel à useAuditLogs
-// porte désormais `dateStart` / `dateEnd`. Et le tri de colonne entre en scène :
-// il réordonne les lignes chargées sans toucher à la pagination par curseur.
+// Régressions du journal regroupé, des noms, descriptions, filtres et détails.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -21,12 +7,12 @@ import AuditPage from '@/pages/reports/AuditPage.js';
 
 const ROWS = [
   {
-    id: 2, actor_id: 'u-1', action: 'expense.approve', entity_type: 'expense',
+    id: '2', actor_id: 'u-1', actor_name: 'Made', source: 'audit', payload: { before: 'submitted', after: 'approved' }, action: 'expense.approve', entity_type: 'expense',
     entity_id: 'e-1', metadata: { before: { status: 'submitted' }, after: { status: 'approved' } },
     created_at: '2026-07-04T10:00:00Z',
   },
   {
-    id: 1, actor_id: 'u-2', action: 'product.update', entity_type: 'product',
+    id: '1', actor_id: 'u-2', actor_name: 'Wayan', source: 'audit', payload: null, action: 'product.update', entity_type: 'product',
     entity_id: 'p-1', metadata: { field: 'price', before: 10000, after: 12000 },
     created_at: '2026-07-03T09:00:00Z',
   },
@@ -86,6 +72,16 @@ describe('AuditPage — filtres + contexte déplié', () => {
     renderPage();
     expect(screen.getByTestId('audit-row-1')).toBeInTheDocument();
     expect(screen.getByTestId('audit-row-2')).toBeInTheDocument();
+  });
+
+  it('shows the user name and a readable description while retaining the action code', () => {
+    renderPage();
+    const row = within(screen.getByTestId('audit-row-2'));
+    expect(row.getByRole('link', { name: 'Made' })).toBeInTheDocument();
+    expect(row.getByText('Expense approved')).toBeInTheDocument();
+    expect(row.getByText('expense.approve')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('audit-row-2'));
+    expect(screen.getByTestId('audit-detail-2')).toHaveTextContent('Changes / event details');
   });
 
   it('affiche une période récupérable pour une URL invalide', () => {

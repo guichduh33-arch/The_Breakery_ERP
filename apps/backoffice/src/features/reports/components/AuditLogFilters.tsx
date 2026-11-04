@@ -24,6 +24,7 @@
 import { useEffect, useRef, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
 import { Input, cn, selectClassName } from '@breakery/ui';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
+import type { AuditLogRow } from '../hooks/useAuditLogs.js';
 
 export interface AuditLogFilterValues {
   actorId:    string;
@@ -37,6 +38,7 @@ export const EMPTY_AUDIT_LOG_FILTERS: AuditLogFilterValues = {
 
 export interface AuditLogFiltersProps {
   value: AuditLogFilterValues;
+  actors?: Pick<AuditLogRow, 'actor_id' | 'actor_name'>[];
   // Forme « updater fonctionnel » (celle du setter de useState, que AuditPage
   // passe directement). Obligatoire — voir le commentaire sur la fermeture
   // périmée que la signature `(next) => void` provoquait.
@@ -66,8 +68,12 @@ const DEBOUNCE_MS = 300;
 const FIELD = 'h-8 w-40';
 const FIELD_LABEL = 'flex items-center gap-2 text-sm text-text-secondary';
 
-export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.Element {
+export function AuditLogFilters({ value, onChange, actors = [] }: AuditLogFiltersProps): JSX.Element {
   const users = useLoginUsers();
+  const actorOptions = new Map((users.data ?? []).map((user) => [user.id, user.display_name]));
+  for (const actor of actors) {
+    if (actor.actor_id && actor.actor_name) actorOptions.set(actor.actor_id, actor.actor_name);
+  }
   const hasFilters = value.actorId !== '' || value.action !== '' || value.entityType !== '';
 
   // Brouillons locaux : le champ suit chaque frappe pendant que le commit vers
@@ -128,8 +134,8 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
           aria-label="Filter by actor"
         >
           <option value="">All actors</option>
-          {(users.data ?? []).map((u) => (
-            <option key={u.id} value={u.id}>{u.display_name}</option>
+          {[...actorOptions].map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
           ))}
         </select>
       </label>
