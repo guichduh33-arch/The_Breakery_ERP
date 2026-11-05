@@ -15,7 +15,7 @@ DECLARE
   limited_auth uuid := gen_random_uuid(); limited_profile uuid := gen_random_uuid();
 BEGIN
   SELECT auth_user_id, id INTO actor, profile FROM public.user_profiles
-    WHERE deleted_at IS NULL AND has_permission(auth_user_id, 'pos.sale.create')
+    WHERE deleted_at IS NULL AND role_code='SUPER_ADMIN' AND has_permission(auth_user_id, 'pos.sale.create')
       AND has_permission(auth_user_id, 'payments.process')
       AND has_permission(auth_user_id, 'pos.sale.void') LIMIT 1;
   IF actor IS NULL THEN RAISE EXCEPTION 'fixture: missing sale/payment actor'; END IF;
@@ -63,7 +63,7 @@ BEGIN
   SELECT total INTO charged FROM public._pb1_split_v1(2000);
   payment:=jsonb_build_object('method','cash','amount',charged,'cash_received',charged,'change_given',0);
   key:=gen_random_uuid();
-  result:=public.complete_order_with_payment_v31(shift,'take_out',payload,payment,key,p_promotions:=chosen);
+  result:=public.complete_order_with_payment_v32(shift,'take_out',payload,payment,key,p_promotions:=chosen);
   v_paid_order_id:=(result->>'order_id')::uuid;
   INSERT INTO gift_checks VALUES
     ('server creates the omitted gift for direct payment',(SELECT count(*)=1 AND sum(quantity)=1 AND bool_and(unit_price=0 AND line_total=0 AND is_locked) FROM public.order_items WHERE order_items.order_id=v_paid_order_id AND is_promo_gift)),
@@ -72,12 +72,12 @@ BEGIN
     ('gift stock is consumed once',(SELECT current_stock=99 FROM public.products WHERE id=gift_product)),
     ('zero amount gift consumes one application',(SELECT count(*)=1 AND sum(amount)=0 FROM public.promotion_applications WHERE promotion_id=promo));
   UPDATE public.promotions SET is_active=false WHERE id=promo;
-  replay:=public.complete_order_with_payment_v31(shift,'take_out','[]',payment,key,p_promotions:='[]');
+  replay:=public.complete_order_with_payment_v32(shift,'take_out','[]',payment,key,p_promotions:='[]');
   INSERT INTO gift_checks VALUES
     ('replay returns original persisted gifts after promotion removal',replay->'order_snapshot'=result->'order_snapshot'),
     ('replay does not consume more gift stock',(SELECT current_stock=99 FROM public.products WHERE id=gift_product));
   UPDATE public.promotions SET is_active=true WHERE id=promo;
-  result:=public.complete_order_with_payment_v31(shift,'take_out',payload||jsonb_build_array(
+  result:=public.complete_order_with_payment_v32(shift,'take_out',payload||jsonb_build_array(
     jsonb_build_object('product_id',gift_product,'quantity',99,'unit_price',0,'is_promo_gift',true,'promotion_id',promo),
     jsonb_build_object('product_id',gift_product,'quantity',99,'unit_price',0,'is_promo_gift',true,'promotion_id',promo)),
     payment,gen_random_uuid(),p_promotions:=chosen);
@@ -85,10 +85,10 @@ BEGIN
     (SELECT count(*)=1 AND sum(quantity)=1 FROM public.order_items WHERE order_items.order_id=(result->>'order_id')::uuid AND is_promo_gift));
   refused:=false;
   BEGIN
-    PERFORM public.complete_order_with_payment_v31(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen||chosen);
+    PERFORM public.complete_order_with_payment_v32(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen||chosen);
   EXCEPTION WHEN check_violation THEN refused:=SQLERRM LIKE 'promo_declaration_duplicate:%'; END;
   INSERT INTO gift_checks VALUES('duplicate promotion declarations are refused',refused);
-  result:=public.pay_existing_order_v24((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid(),p_promotions:=chosen);
+  result:=public.pay_existing_order_v25((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid(),p_promotions:=chosen);
   INSERT INTO gift_checks VALUES('payment of fired order creates the gift',
     (SELECT count(*)=1 AND sum(quantity)=1 FROM public.order_items WHERE order_items.order_id=(fired->>'order_id')::uuid AND is_promo_gift));
   -- Les droits de préparation viennent du serveur ; aucun choix implicite.
@@ -129,7 +129,7 @@ BEGIN
   SELECT current_stock INTO after_stock FROM public.products WHERE id=gift_product;
   UPDATE public.products SET is_active=false WHERE id=gift_product;
   refused:=false;
-  BEGIN PERFORM public.complete_order_with_payment_v31(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
+  BEGIN PERFORM public.complete_order_with_payment_v32(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
   EXCEPTION WHEN check_violation THEN refused:=SQLERRM LIKE 'promo_gift_unavailable:%'; END;
   INSERT INTO gift_checks VALUES('unavailable gift rejects the entire payment',refused
     AND (SELECT count(*)=before_count FROM public.orders)
@@ -143,7 +143,7 @@ BEGIN
   INSERT INTO public.order_items(order_id,product_id,name_snapshot,unit_price,quantity,line_total,
     modifiers,is_promo_gift,promotion_id,is_locked,kitchen_status,sent_to_kitchen_at)
     VALUES((fired->>'order_id')::uuid,gift_product,'Historic gift',0,1,0,'[]',true,promo,true,'pending',now());
-  result:=public.pay_existing_order_v24((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid(),p_promotions:=chosen);
+  result:=public.pay_existing_order_v25((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid(),p_promotions:=chosen);
   INSERT INTO gift_checks VALUES('historical marked gift is retained without duplicate',
     (SELECT count(*)=1 AND bool_and(name_snapshot='Historic gift') FROM public.order_items WHERE order_items.order_id=(fired->>'order_id')::uuid AND is_promo_gift));
   FOR before_count IN 1..2 LOOP
@@ -156,7 +156,7 @@ BEGIN
       INSERT INTO public.product_modifiers(product_id,group_name,group_required,group_type,option_label,is_active)
         VALUES(gift_product,'New requirement',true,'single_select','Required now',true);
     END IF;
-    result:=public.pay_existing_order_v24((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid(),p_promotions:=chosen);
+    result:=public.pay_existing_order_v25((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid(),p_promotions:=chosen);
     INSERT INTO gift_checks VALUES(CASE WHEN before_count=1 THEN 'inactive historical gift does not block payment'
       ELSE 'new required choices do not invalidate a historical prepared gift' END,
       (SELECT count(*)=1 FROM public.order_items WHERE order_items.order_id=(fired->>'order_id')::uuid AND is_promo_gift));
@@ -167,7 +167,7 @@ BEGIN
   INSERT INTO public.order_items(order_id,product_id,name_snapshot,unit_price,quantity,line_total,
     modifiers,is_promo_gift,is_locked,kitchen_status,sent_to_kitchen_at)
     VALUES((fired->>'order_id')::uuid,gift_product,'Historic zero line',0,1,0,'[]',false,true,'pending',now());
-  result:=public.pay_existing_order_v24((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid());
+  result:=public.pay_existing_order_v25((fired->>'order_id')::uuid,payment,p_idempotency_key:=gen_random_uuid());
   INSERT INTO gift_checks VALUES
     ('historical zero-price line is retained',(SELECT count(*)=1 FROM public.order_items WHERE order_items.order_id=(fired->>'order_id')::uuid AND name_snapshot='Historic zero line' AND unit_price=0)),
     ('zero price alone never becomes a gift',(SELECT count(*)=0 FROM public.order_items WHERE order_items.order_id=(fired->>'order_id')::uuid AND is_promo_gift));
@@ -177,15 +177,15 @@ BEGIN
     VALUES(promo,'Free quantity fixture','free-quantity-'||promo,'free_product','cart',gift_product,2,1,true);
   chosen:=jsonb_build_array(jsonb_build_object('promotion_id',promo,'amount',0));
   key:=gen_random_uuid();
-  result:=public.complete_order_with_payment_v31(shift,'take_out',payload,payment,key,p_promotions:=chosen);
+  result:=public.complete_order_with_payment_v32(shift,'take_out',payload,payment,key,p_promotions:=chosen);
   INSERT INTO gift_checks VALUES
     ('free_product preserves the configured gift quantity',(SELECT sum(quantity)=2 FROM public.order_items WHERE order_items.order_id=(result->>'order_id')::uuid AND is_promo_gift)),
     ('zero-amount free_product consumes its global cap',(SELECT count(*)=1 FROM public.promotion_applications WHERE promotion_id=promo));
   refused:=false;
-  BEGIN PERFORM public.complete_order_with_payment_v31(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
+  BEGIN PERFORM public.complete_order_with_payment_v32(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
   EXCEPTION WHEN check_violation THEN refused:=true; END;
   INSERT INTO gift_checks VALUES('a second zero-amount gift cannot exceed its cap',refused);
-  replay:=public.complete_order_with_payment_v31(shift,'take_out','[]',payment,key,p_promotions:=chosen);
+  replay:=public.complete_order_with_payment_v32(shift,'take_out','[]',payment,key,p_promotions:=chosen);
   INSERT INTO gift_checks VALUES('replay after cap consumption returns the first gift',
     replay->'order_snapshot'=result->'order_snapshot' AND (SELECT count(*)=1 FROM public.promotion_applications WHERE promotion_id=promo));
   SELECT current_stock INTO after_stock FROM public.products WHERE id=gift_product;
@@ -203,19 +203,19 @@ BEGIN
   INSERT INTO public.recipes(product_id,material_id,quantity,unit,is_active)
     VALUES(gift_product,raw_product,3,'pcs',true);
   SELECT current_stock INTO after_stock FROM public.products WHERE id=gift_product;
-  result:=public.complete_order_with_payment_v31(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
+  result:=public.complete_order_with_payment_v32(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
   INSERT INTO gift_checks VALUES
     ('recipe gift consumes its configured ingredient quantity',(SELECT current_stock=94 FROM public.products WHERE id=raw_product)),
     ('recipe gift does not also consume the untracked finished stock',(SELECT current_stock=after_stock FROM public.products WHERE id=gift_product));
   UPDATE public.products SET deduct_stock=false WHERE id=gift_product;
-  result:=public.complete_order_with_payment_v31(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
+  result:=public.complete_order_with_payment_v32(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
   INSERT INTO gift_checks VALUES('gift without stock deduction consumes no ingredients',(SELECT current_stock=94 FROM public.products WHERE id=raw_product));
   UPDATE public.products SET track_inventory=true,is_display_item=true WHERE id=gift_product;
   INSERT INTO public.display_stock(product_id,quantity) VALUES(gift_product,0)
     ON CONFLICT(product_id) DO UPDATE SET quantity=0;
   SELECT count(*) INTO before_count FROM public.orders;
   refused:=false;
-  BEGIN PERFORM public.complete_order_with_payment_v31(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
+  BEGIN PERFORM public.complete_order_with_payment_v32(shift,'take_out',payload,payment,gen_random_uuid(),p_promotions:=chosen);
   EXCEPTION WHEN SQLSTATE 'P0002' THEN refused:=true; END;
   INSERT INTO gift_checks VALUES('insufficient display gift stock rolls back the entire sale',
     refused AND (SELECT count(*)=before_count FROM public.orders));
@@ -233,15 +233,15 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub',limited_auth::text,true);
   PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',limited_auth)::text,true);
   key:=gen_random_uuid();
-  result:=public.pay_existing_order_v24((fired->>'order_id')::uuid,payment,p_idempotency_key:=key);
+  result:=public.pay_existing_order_v25((fired->>'order_id')::uuid,payment,p_idempotency_key:=key);
   INSERT INTO gift_checks VALUES('payment-only operator can still pay an existing order',
     result->'order_snapshot'->>'order_id'=fired->>'order_id');
-  replay:=public.pay_existing_order_v24((fired->>'order_id')::uuid,payment,p_idempotency_key:=key);
+  replay:=public.pay_existing_order_v25((fired->>'order_id')::uuid,payment,p_idempotency_key:=key);
   INSERT INTO gift_checks VALUES('payment-only operator can replay the confirmed payment',
     (replay->>'idempotent_replay')::boolean AND replay->'order_snapshot'=result->'order_snapshot');
   refused:=false;
   PERFORM pg_temp.fixture_released_days(current_date,current_date);
-  BEGIN PERFORM public.get_pos_order_snapshot_v4((fired->>'order_id')::uuid);
+  BEGIN PERFORM public.get_pos_order_snapshot_v5((fired->>'order_id')::uuid);
   EXCEPTION WHEN insufficient_privilege THEN refused:=true; END;
   INSERT INTO gift_checks VALUES('public order reader keeps its existing creation-permission gate',refused);
 END;

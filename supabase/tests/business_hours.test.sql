@@ -101,7 +101,7 @@ BEGIN
     (v_ord, 'qris', 200, ('2026-06-02 10:00:00'::timestamp AT TIME ZONE v_tz)),  -- mar fermé
     (v_ord, 'card', 75,  ('2026-06-03 10:00:00'::timestamp AT TIME ZONE v_tz));  -- mer non configuré
 
-  v_res := get_off_hours_sales_v1('2026-06-01', '2026-06-03');
+  v_res := get_off_hours_sales_v2('2026-06-01', '2026-06-03');
 
   -- T6: résumé = 2 paiements marqués (lun 23:30 + mar), 1 commande, 300 au total.
   INSERT INTO _r VALUES ('t6_summary',
@@ -138,7 +138,7 @@ DO $$ DECLARE v_rand UUID := gen_random_uuid(); BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_rand::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_rand)::text, true);
   BEGIN
-    PERFORM get_off_hours_sales_v1('2026-06-01', '2026-06-03');
+    PERFORM get_off_hours_sales_v2('2026-06-01', '2026-06-03');
     INSERT INTO _r VALUES ('t9_perm', false);
   EXCEPTION WHEN SQLSTATE '42501' THEN
     INSERT INTO _r VALUES ('t9_perm', true);
@@ -154,7 +154,7 @@ DO $$ BEGIN
   INSERT INTO _r VALUES ('t10_acl_anon',
     NOT has_function_privilege('anon', 'public.set_setting_v13(text,jsonb,text)', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v10(text)', 'EXECUTE')
-    AND NOT has_function_privilege('anon', 'public.get_off_hours_sales_v1(text,text)', 'EXECUTE'));
+    AND NOT has_function_privilege('anon', 'public.get_off_hours_sales_v2(text,text)', 'EXECUTE'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t10_acl_anon', false);
 END $$;

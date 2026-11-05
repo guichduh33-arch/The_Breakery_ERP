@@ -1,7 +1,8 @@
 -- Parcours partagé réel : trois profils, droits authenticated, aucune donnée conservée.
 BEGIN;
 \ir helpers/pin_session.sql
-SELECT plan(12);
+\ir helpers/released_report_days.sql
+SELECT plan(13);
 -- Prix TTC pour un montant de règlement déterministe ; annulé au ROLLBACK.
 UPDATE business_config SET tax_inclusive=true;
 
@@ -70,14 +71,20 @@ SELECT lives_ok(format($q$SELECT create_tablet_order_v11(gen_random_uuid(),%L::u
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.cashier_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.cashier_claims'),true);
 SELECT is((SELECT count(*)::int FROM order_items WHERE order_id=current_setting('wa.order')::uuid),2,'caisse voit les deux tournées');
-SELECT lives_ok(format($q$SELECT pay_existing_order_v24(p_order_id:=%L::uuid,p_idempotency_key:=gen_random_uuid(),
+SELECT lives_ok(format($q$SELECT pay_existing_order_v25(p_order_id:=%L::uuid,p_idempotency_key:=gen_random_uuid(),
  p_payments:=jsonb_build_array(jsonb_build_object('method','cash','amount',(SELECT sum(line_total) FROM order_items WHERE order_id=%L::uuid),
  'cash_received',(SELECT sum(line_total) FROM order_items WHERE order_id=%L::uuid))))$q$,
  current_setting('wa.order'),current_setting('wa.order'),current_setting('wa.order')),'paiement autorisé en caisse');
 
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.bo_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.bo_claims'),true);
-SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v5(
+SELECT ok(NOT EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v6(
+  (current_date-1)::text,(current_date+1)::text,'{}'::jsonb,200)->'lines') row
+  WHERE row->>'id'=current_setting('wa.order')),'vente POS du shift ouvert masquée au back-office');
+RESET ROLE;
+SELECT pg_temp.fixture_released_days(current_date,current_date);
+SET LOCAL ROLE authenticated;
+SELECT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(get_orders_list_v6(
   (current_date-1)::text,(current_date+1)::text,'{}'::jsonb,200)->'lines') row
   WHERE row->>'id'=current_setting('wa.order')),'commande accessible par la RPC de liste du back-office');
 SELECT ok((SELECT o.status='paid' AND o.total=(SELECT sum(amount) FROM order_payments WHERE order_id=o.id)

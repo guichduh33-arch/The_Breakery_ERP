@@ -30,20 +30,20 @@ END $fixture$;
 -- T_RPT_FIN_01..04 — RPC existence
 -- ============================================================
 SELECT has_function(
-  'public', 'get_profit_loss_v3', ARRAY['date','date','uuid'],
-  'T_RPT_FIN_01 — get_profit_loss_v3 exists'
+  'public', 'get_profit_loss_v4', ARRAY['date','date','uuid'],
+  'T_RPT_FIN_01 — get_profit_loss_v4 exists'
 );
 SELECT has_function(
-  'public', 'get_balance_sheet_v3', ARRAY['date'],
-  'T_RPT_FIN_02 — get_balance_sheet_v3 exists'
+  'public', 'get_balance_sheet_v4', ARRAY['date'],
+  'T_RPT_FIN_02 — get_balance_sheet_v4 exists'
 );
 SELECT has_function(
-  'public', 'get_cash_flow_v3', ARRAY['date','date'],
-  'T_RPT_FIN_03 — get_cash_flow_v3 exists'
+  'public', 'get_cash_flow_v4', ARRAY['date','date'],
+  'T_RPT_FIN_03 — get_cash_flow_v4 exists'
 );
 SELECT has_function(
-  'public', 'get_basket_analysis_v4', ARRAY['date','date','integer'],
-  'T_RPT_FIN_04 — get_basket_analysis_v4 exists'
+  'public', 'get_basket_analysis_v6', ARRAY['date','date','integer'],
+  'T_RPT_FIN_04 — get_basket_analysis_v6 exists'
 );
 
 -- ============================================================
@@ -56,20 +56,20 @@ SELECT has_function(
 DO $baseline$
 BEGIN
   PERFORM set_config('breakery.cye_before',
-    ((get_balance_sheet_v3(CURRENT_DATE))->'equity'->>'current_year_earnings'), true);
+    ((get_balance_sheet_v4(CURRENT_DATE))->'equity'->>'current_year_earnings'), true);
   -- S77 : même réparation pour T_RPT_FIN_05..07 — la base dev vivante poste de
   -- vraies JE le jour même (ventes POS, suite vitest), les absolus 100/40/40 ne
   -- tenaient que sur base vierge. Capture avant seed, assertions en DELTA.
   PERFORM set_config('breakery.pl_rev_before',
-    ((get_profit_loss_v3(CURRENT_DATE, CURRENT_DATE))->'revenue'->>'total'), true);
+    ((get_profit_loss_v4(CURRENT_DATE, CURRENT_DATE))->'revenue'->>'total'), true);
   PERFORM set_config('breakery.pl_cogs_before',
-    ((get_profit_loss_v3(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total'), true);
+    ((get_profit_loss_v4(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total'), true);
   PERFORM set_config('breakery.pl_net_before',
-    ((get_profit_loss_v3(CURRENT_DATE, CURRENT_DATE))->>'net_profit'), true);
+    ((get_profit_loss_v4(CURRENT_DATE, CURRENT_DATE))->>'net_profit'), true);
   -- Même raison pour le cash flow : une vente POS postée aujourd'hui déplace
   -- déjà la trésorerie, un absolu ne tiendrait pas.
   PERFORM set_config('breakery.cf_net_before',
-    ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash'), true);
+    ((get_cash_flow_v4(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash'), true);
 END $baseline$;
 
 -- ============================================================
@@ -116,19 +116,19 @@ END $seed$;
 -- T_RPT_FIN_05..07 — P&L math
 -- ============================================================
 SELECT is(
-  ((get_profit_loss_v3(CURRENT_DATE, CURRENT_DATE))->'revenue'->>'total')::NUMERIC
+  ((get_profit_loss_v4(CURRENT_DATE, CURRENT_DATE))->'revenue'->>'total')::NUMERIC
     - current_setting('breakery.pl_rev_before')::NUMERIC,
   100::NUMERIC,
   'T_RPT_FIN_05 — P&L revenue moved by seeded sale (+100)'
 );
 SELECT is(
-  ((get_profit_loss_v3(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total')::NUMERIC
+  ((get_profit_loss_v4(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total')::NUMERIC
     - current_setting('breakery.pl_cogs_before')::NUMERIC,
   40::NUMERIC,
   'T_RPT_FIN_06 — P&L COGS moved by seeded entry (+40)'
 );
 SELECT is(
-  ((get_profit_loss_v3(CURRENT_DATE, CURRENT_DATE))->>'net_profit')::NUMERIC
+  ((get_profit_loss_v4(CURRENT_DATE, CURRENT_DATE))->>'net_profit')::NUMERIC
     - current_setting('breakery.pl_net_before')::NUMERIC,
   40::NUMERIC,
   'T_RPT_FIN_07 — P&L net profit moved by 100 - 40 - 20 = +40'
@@ -138,13 +138,13 @@ SELECT is(
 -- T_RPT_FIN_08..09 — Balance Sheet math + balanced
 -- ============================================================
 SELECT is(
-  ((get_balance_sheet_v3(CURRENT_DATE))->'equity'->>'current_year_earnings')::NUMERIC
+  ((get_balance_sheet_v4(CURRENT_DATE))->'equity'->>'current_year_earnings')::NUMERIC
     - current_setting('breakery.cye_before')::NUMERIC,
   40::NUMERIC,
   'T_RPT_FIN_08 — Balance Sheet CYE moved by seeded net profit (+40)'
 );
 SELECT ok(
-  ((get_balance_sheet_v3(CURRENT_DATE))->>'balanced')::BOOLEAN,
+  ((get_balance_sheet_v4(CURRENT_DATE))->>'balanced')::BOOLEAN,
   'T_RPT_FIN_09 — Balance Sheet is balanced (A = L + E + CYE)'
 );
 
@@ -156,15 +156,15 @@ SELECT ok(
 -- par construction — ce n'est plus `net_change := operating_total`, qui pouvait
 -- rendre un chiffre au signe faux (juillet 2026 : -515 546 contre +628 554).
 SELECT is(
-  ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash')::NUMERIC
+  ((get_cash_flow_v4(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash')::NUMERIC
     - current_setting('breakery.cf_net_before')::NUMERIC,
   80::NUMERIC,
   'T_RPT_FIN_10 — Cash Flow net change moved by the seeded entries (+100 -20 = +80)'
 );
 SELECT is(
-  ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash')::NUMERIC,
-  ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'cash_end')::NUMERIC
-    - ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'cash_start')::NUMERIC,
+  ((get_cash_flow_v4(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash')::NUMERIC,
+  ((get_cash_flow_v4(CURRENT_DATE, CURRENT_DATE))->>'cash_end')::NUMERIC
+    - ((get_cash_flow_v4(CURRENT_DATE, CURRENT_DATE))->>'cash_start')::NUMERIC,
   'T_RPT_FIN_11 — Cash Flow réconcilie : net change = cash_end - cash_start'
 );
 
@@ -172,8 +172,8 @@ SELECT is(
 -- T_RPT_FIN_12 — Basket analysis runs on empty window
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_basket_analysis_v4(CURRENT_DATE, CURRENT_DATE, 10)$$,
-  'T_RPT_FIN_12 — get_basket_analysis_v4 runs without error on empty window'
+  $$SELECT * FROM public.get_basket_analysis_v6(CURRENT_DATE, CURRENT_DATE, 10)$$,
+  'T_RPT_FIN_12 — get_basket_analysis_v6 runs without error on empty window'
 );
 
 SELECT * FROM finish();

@@ -12,8 +12,8 @@ SELECT plan(10);
 
 -- ── Gate: anon (no auth.uid()) is denied ──────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') $$,
-  '42501', NULL,
+  $$ SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') $$,
+  'P0003', NULL,
   'anon / no-perm caller is denied (reports.sales.read)'
 );
 
@@ -23,22 +23,22 @@ SET LOCAL role authenticated;
 
 -- ── Date-range guards ─────────────────────────────────────────────────────
 SELECT throws_ok(
-  $$ SELECT get_pos_order_type_category_mix_v2(NULL, '2026-07-11') $$, 'P0001', NULL,
-  'NULL start date raises P0001');
+  $$ SELECT get_pos_order_type_category_mix_v4(NULL, '2026-07-11') $$, '22023', NULL,
+  'NULL start date raises 22023');
 SELECT throws_ok(
-  $$ SELECT get_pos_order_type_category_mix_v2('2026-07-11','2026-05-01') $$, 'P0001', NULL,
+  $$ SELECT get_pos_order_type_category_mix_v4('2026-07-11','2026-05-01') $$, '22023', NULL,
   'start > end raises invalid_date_range');
 
 -- ── Envelope shape + timezone ─────────────────────────────────────────────
-WITH r AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT ok((SELECT j ? 'timezone' AND j ? 'totals' AND j ? 'by_order_type' AND j ? 'by_category' FROM r),
           'envelope exposes timezone/totals/by_order_type/by_category');
-WITH r AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT is((SELECT j->>'timezone' FROM r), 'Asia/Makassar',
           'timezone is the business tz (WITA)');
 
 -- ── by_order_type revenue sums to the envelope totals.revenue ─────────────
-WITH r AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((t->>'revenue')::numeric),0)
      FROM r, jsonb_array_elements(j->'by_order_type') t),
@@ -46,7 +46,7 @@ SELECT is(
   'sum(by_order_type.revenue) = totals.revenue');
 
 -- ── by_order_type order_count sums to totals.orders ───────────────────────
-WITH r AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((t->>'order_count')::int),0)::int
      FROM r, jsonb_array_elements(j->'by_order_type') t),
@@ -54,15 +54,15 @@ SELECT is(
   'sum(by_order_type.order_count) = totals.orders');
 
 -- ── Cross-report reconciliation: mix totals = Overview (shared scope) ─────
-WITH mix AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j),
-ov  AS (SELECT get_pos_sales_overview_v1('2026-05-01','2026-07-11') AS j)
+WITH mix AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j),
+ov  AS (SELECT get_pos_sales_overview_v3('2026-05-01','2026-07-11') AS j)
 SELECT is(
   (SELECT (j->'totals'->>'revenue')::numeric FROM mix),
   (SELECT (j->>'revenue')::numeric FROM ov),
   'mix totals.revenue reconciles exactly with Overview revenue');
 
 -- ── Order-type shares sum to ~100 (rounding tolerance) ────────────────────
-WITH r AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+WITH r AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT ok(
   (SELECT COALESCE(SUM((t->>'share_pct')::numeric),0)
      FROM r, jsonb_array_elements(j->'by_order_type') t) BETWEEN 99.5 AND 100.5,
@@ -84,7 +84,7 @@ recompute AS (
     FROM order_items oi JOIN scoped s ON s.id=oi.order_id
    WHERE oi.is_cancelled = false AND oi.is_promo_gift = false
 ),
-got AS (SELECT get_pos_order_type_category_mix_v2('2026-05-01','2026-07-11') AS j)
+got AS (SELECT get_pos_order_type_category_mix_v4('2026-05-01','2026-07-11') AS j)
 SELECT is(
   (SELECT COALESCE(SUM((c->>'revenue')::numeric),0)
      FROM got, jsonb_array_elements(j->'by_category') c),

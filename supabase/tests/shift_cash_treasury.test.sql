@@ -69,10 +69,10 @@ SELECT is((SELECT returned_float FROM shift_cash_treasury WHERE session_id=curre
 SELECT is((SELECT safe_deposit FROM shift_cash_treasury WHERE session_id=current_setting('sht.third')::uuid),0::numeric,'shortage does not invent a negative deposit');
 SELECT is((SELECT sum(l.debit-l.credit) FROM journal_entry_lines l JOIN journal_entries j ON j.id=l.journal_entry_id
   JOIN accounts a ON a.id=l.account_id WHERE j.reference_id=current_setting('sht.third')::uuid AND a.code='1119'),0::numeric,'drawer clears even with shortage');
-SELECT ok(EXISTS(SELECT 1 FROM get_cash_wallet_balances_v3() WHERE account_code='1118'),'reserve visible in treasury');
-SELECT ok(EXISTS(SELECT 1 FROM get_cash_wallet_balances_v3() WHERE account_code='1119'),'drawer visible in treasury');
+SELECT ok(EXISTS(SELECT 1 FROM get_cash_wallet_balances_v4() WHERE account_code='1118'),'reserve visible in treasury');
+SELECT ok(EXISTS(SELECT 1 FROM get_cash_wallet_balances_v4() WHERE account_code='1119'),'drawer visible in treasury');
 DO $$ DECLARE je uuid; BEGIN
-  PERFORM set_config('sht.safe_before',(SELECT balance::text FROM get_cash_wallet_balances_v3() WHERE account_code='1110'),true);
+  PERFORM set_config('sht.safe_before',(SELECT balance::text FROM get_cash_wallet_balances_v4() WHERE account_code='1110'),true);
   INSERT INTO journal_entries(entry_number,entry_date,description,reference_type,status,total_debit,total_credit,created_by)
     VALUES(next_journal_entry_number(current_date),current_date,'Draft is not cash','manual','draft',777,777,current_setting('sht.profile')::uuid)
     RETURNING id INTO je;
@@ -80,7 +80,7 @@ DO $$ DECLARE je uuid; BEGIN
     (je,(SELECT id FROM accounts WHERE code='1110'),777,0),
     (je,(SELECT id FROM accounts WHERE code='3100'),0,777);
 END $$;
-SELECT is((SELECT balance FROM get_cash_wallet_balances_v3() WHERE account_code='1110'),
+SELECT is((SELECT balance FROM get_cash_wallet_balances_v4() WHERE account_code='1110'),
   current_setting('sht.safe_before')::numeric,'draft journal lines never increase available cash');
 SELECT * FROM finish();
 ROLLBACK;

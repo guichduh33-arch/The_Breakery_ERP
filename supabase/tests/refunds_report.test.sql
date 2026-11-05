@@ -6,7 +6,7 @@
 -- JAMAIS dans le remboursé), et la table recoupe la synthèse (T12). Si l'une
 -- de ces identités casse, le lecteur ne peut plus faire confiance à rien.
 --
---   T1  : happy path MANAGER — 7-key JSONB
+--   T1  : happy path Owner — 7-key JSONB
 --   T2  : CASHIER denied (42501)
 --   T3  : end < start raises P0001
 --   T4  : clamp 366 jours — début rogné, fin demandée conservée
@@ -20,7 +20,7 @@
 --   T11 : lignes annulées à part — count/value, JAMAIS dans refunded
 --   T12 : SUM(events.total) == summary.refunded — la table recoupe la synthèse
 --
--- Utilisateurs seedés : MANAGER 00000000-0000-0000-0000-000000000004,
+-- Utilisateurs seedés : Owner 00000000-0000-0000-0000-000000000001,
 -- CASHIER 00000000-0000-0000-0000-000000000002.
 -- Fenêtre de fixture : janvier 2025 (vide en dev, période préc. déc. 2026 vide).
 -- Lancé via mcp execute_sql enveloppé dans BEGIN/ROLLBACK — auto-nettoyant.
@@ -38,17 +38,17 @@ SELECT plan(12);
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_refunds_report_v3('2026-01-01', CURRENT_DATE);
   v_ok := (v_r ? 'period') AND (v_r ? 'period_prev') AND (v_r ? 'timezone')
       AND (v_r ? 'generated_at') AND (v_r ? 'summary') AND (v_r ? 'events')
       AND (v_r ? 'cancelled_by_product');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_refunds_report_v2 MANAGER happy path returns 7-key JSONB');
+  'T1: get_refunds_report_v3 Owner happy path returns 7-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -56,21 +56,21 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_refunds_report_v2('2026-01-01', CURRENT_DATE);
+    PERFORM get_refunds_report_v3('2026-01-01', CURRENT_DATE);
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_refunds_report_v2 CASHIER raises 42501');
+  'T2: get_refunds_report_v3 CASHIER raises 42501');
 
 -- T3 bornes inversées → P0001
 DO $$
 DECLARE v_caught BOOLEAN := false;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_refunds_report_v2(CURRENT_DATE, '2026-01-01');
+    PERFORM get_refunds_report_v3(CURRENT_DATE, '2026-01-01');
   EXCEPTION WHEN raise_exception THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t3', v_caught::text, false);
@@ -82,10 +82,10 @@ SELECT ok(current_setting('breakery.t3')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2020-01-01', CURRENT_DATE);
+  v_r := get_refunds_report_v3('2020-01-01', CURRENT_DATE);
   v_ok := ((v_r->'period'->>'start')::date = CURRENT_DATE::date - 366)
       AND ((v_r->'period'->>'end')::date   = CURRENT_DATE::date);
   PERFORM set_config('breakery.t4', v_ok::text, false);
@@ -97,10 +97,10 @@ SELECT ok(current_setting('breakery.t4')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2026-01-01', CURRENT_DATE);
+  v_r := get_refunds_report_v3('2026-01-01', CURRENT_DATE);
   v_ok := ((v_r->'summary'->>'void_amount')::numeric
          + (v_r->'summary'->>'partial_amount')::numeric
          = (v_r->'summary'->>'refunded')::numeric);
@@ -146,10 +146,10 @@ END $$;
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'refunded')::numeric = 145000)
       AND ((v_r->'summary'->>'refund_count')::int = 2)
       AND ((v_r->'summary'->>'void_count')::int = 1)
@@ -164,10 +164,10 @@ SELECT ok(current_setting('breakery.t6')::boolean,
 DO $$
 DECLARE v_r JSONB; v_fam1 TEXT; v_fam2 TEXT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   SELECT e->>'reason_family' INTO v_fam1
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   SELECT e->>'reason_family' INTO v_fam2
@@ -182,10 +182,10 @@ SELECT ok(current_setting('breakery.t7')::boolean,
 DO $$
 DECLARE v_r JSONB; v_e JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   SELECT e INTO v_e
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   SELECT COALESCE(SUM((p->>'amount')::numeric), 0) INTO v_sum
@@ -200,10 +200,10 @@ SELECT ok(current_setting('breakery.t8')::boolean,
 DO $$
 DECLARE v_r JSONB; v_e JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   SELECT e INTO v_e
     FROM jsonb_array_elements(v_r->'events') e WHERE e->>'refund_number' = 'RF-PGTAP-1';
   v_ok := (v_e->'refunded_by'->>'name') IS NOT NULL
@@ -217,10 +217,10 @@ SELECT ok(current_setting('breakery.t9')::boolean,
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   v_ok := ((v_r->'summary'->>'gross_sales')::numeric = 250000);
   PERFORM set_config('breakery.t10', COALESCE(v_ok, false)::text, false);
 END $$;
@@ -231,11 +231,11 @@ SELECT ok(current_setting('breakery.t10')::boolean,
 DO $$
 DECLARE v_r JSONB; v_row JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT * INTO f FROM _rr_fix;
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   SELECT p INTO v_row
     FROM jsonb_array_elements(v_r->'cancelled_by_product') p
    WHERE (p->>'product_id')::uuid = f.pid;
@@ -252,10 +252,10 @@ SELECT ok(current_setting('breakery.t11')::boolean,
 DO $$
 DECLARE v_r JSONB; v_sum NUMERIC; v_ok BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   PERFORM pg_temp.fixture_released_days(current_date-366,current_date);
 
-  v_r := get_refunds_report_v2('2025-01-01', '2025-01-31');
+  v_r := get_refunds_report_v3('2025-01-01', '2025-01-31');
   SELECT COALESCE(SUM((e->>'total')::numeric), 0) INTO v_sum
     FROM jsonb_array_elements(v_r->'events') e;
   v_ok := (v_sum = (v_r->'summary'->>'refunded')::numeric);

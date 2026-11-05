@@ -87,13 +87,13 @@ INSERT INTO journal_entry_lines (id, journal_entry_id, account_id, debit, credit
  (gen_random_uuid(),'bbbb0008-0000-0000-0000-000000000008','07d638db-baac-4cda-ab75-8515702c26d1',4000,0),
  (gen_random_uuid(),'bbbb0009-0000-0000-0000-000000000009','07d638db-baac-4cda-ab75-8515702c26d1',4000,0);
 
-SELECT is((calculate_pb1_payable_v3('2099-01-01','2099-01-31')->>'pb1_output')::numeric, 7000::numeric,
+SELECT is((calculate_pb1_payable_v4('2099-01-01','2099-01-31')->>'pb1_output')::numeric, 7000::numeric,
   'T1 happy path — crédit 2110 sur vente compté intégralement');
-SELECT is((calculate_pb1_payable_v3('2099-02-01','2099-02-28')->>'pb1_output')::numeric, 0::numeric,
+SELECT is((calculate_pb1_payable_v4('2099-02-01','2099-02-28')->>'pb1_output')::numeric, 0::numeric,
   'T2 VRAI VOID — la contre-passation COMPTE malgré la ligne refunds(is_full_void) ; avant le correctif : +5000 surdéclaré');
-SELECT is((calculate_pb1_payable_v3('2099-03-01','2099-03-31')->>'pb1_output')::numeric, 0::numeric,
+SELECT is((calculate_pb1_payable_v4('2099-03-01','2099-03-31')->>'pb1_output')::numeric, 0::numeric,
   'T3 void-only — contre-passement compté quand aucun refund');
-SELECT is((calculate_pb1_payable_v3('2099-04-01','2099-04-30')->>'pb1_output')::numeric, 0::numeric,
+SELECT is((calculate_pb1_payable_v4('2099-04-01','2099-04-30')->>'pb1_output')::numeric, 0::numeric,
   'T4 VRAI DOUBLON — sale_void exclue car une JE sale_refund rattachée existe (sans dédup = -4000)');
 
 SELECT * FROM finish();

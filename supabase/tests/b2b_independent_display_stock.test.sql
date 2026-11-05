@@ -48,13 +48,13 @@ BEGIN
   SELECT id INTO v_line FROM public.order_items WHERE order_id=v_order;
   SELECT updated_at INTO v_revision FROM public.orders WHERE id=v_order;
   v_items := jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',4));
-  v_result := public.edit_b2b_order_v2(v_order,v_items,NULL,v_revision,gen_random_uuid());
+  v_result := public.edit_b2b_order_v3(v_order,v_items,NULL,v_revision,gen_random_uuid());
   INSERT INTO channel_stock_checks SELECT 'edit increase deducts general only, case '||v_case,
    current_stock=6 FROM public.products WHERE id=v_product;
   SELECT updated_at INTO v_revision FROM public.orders WHERE id=v_order;
   -- La hausse qui dépasserait le général est atomiquement refusée, même avec flag négatif.
   BEGIN
-   PERFORM public.edit_b2b_order_v2(v_order,
+   PERFORM public.edit_b2b_order_v3(v_order,
     jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',11)),
     NULL,v_revision,gen_random_uuid());
    INSERT INTO channel_stock_checks VALUES('edit oversell rejected, case '||v_case,false);
@@ -64,7 +64,7 @@ BEGIN
   INSERT INTO channel_stock_checks SELECT 'failed edit leaves general unchanged, case '||v_case,
    current_stock=6 FROM public.products WHERE id=v_product;
   v_items := jsonb_build_array(jsonb_build_object('id',v_line,'product_id',v_product,'quantity',1));
-  v_result := public.edit_b2b_order_v2(v_order,v_items,NULL,v_revision,gen_random_uuid());
+  v_result := public.edit_b2b_order_v3(v_order,v_items,NULL,v_revision,gen_random_uuid());
   INSERT INTO channel_stock_checks SELECT 'edit decrease restores general only, case '||v_case,
    current_stock=9 FROM public.products WHERE id=v_product;
   PERFORM public.cancel_b2b_order_v3(v_order,'Independent display test',gen_random_uuid());

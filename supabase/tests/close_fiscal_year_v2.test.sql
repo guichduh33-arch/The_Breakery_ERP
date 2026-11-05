@@ -170,21 +170,21 @@ SELECT ok(NOT has_function_privilege('anon','public.close_fiscal_year_v3(int,tex
   'T15 — anon sans EXECUTE, authenticated avec');
 
 -- ==== T16-T19 : rapports post-clôture (migration _081 — exclusion year_close) ====
-SELECT ok((SELECT (get_profit_loss_v3('2098-01-01','2098-12-31')->>'net_profit')::numeric = 600),
+SELECT ok((SELECT (get_profit_loss_v4('2098-01-01','2098-12-31')->>'net_profit')::numeric = 600),
   'T16 — P&L exercice 2098 post-cloture lit toujours 600 (year_close exclue)');
 SELECT ok((SELECT (j->>'total_debit')::numeric = 0 AND (j->>'balanced')::boolean
-     FROM (SELECT get_trial_balance_v4('2098-12-01','2098-12-31') AS j) s),
+     FROM (SELECT get_trial_balance_v5('2098-12-01','2098-12-31') AS j) s),
   'T17 — TB decembre 2098 : colonnes de periode non gonflees par la JE de cloture (0, balanced)');
 -- 3200 cumule les DEUX clôtures de la suite : +600 (profit 2098) − 500 (perte 2096) = 100
 SELECT ok((SELECT (e->>'balance')::numeric = 100 AND (e->>'opening_balance')::numeric = 100
-     FROM jsonb_array_elements((get_trial_balance_v4('2099-01-01','2099-01-31'))->'lines') e
+     FROM jsonb_array_elements((get_trial_balance_v5('2099-01-01','2099-01-31'))->'lines') e
     WHERE e->>'code'='3200')
   AND NOT EXISTS (SELECT 1
-     FROM jsonb_array_elements((get_trial_balance_v4('2099-01-01','2099-01-31'))->'lines') e
+     FROM jsonb_array_elements((get_trial_balance_v5('2099-01-01','2099-01-31'))->'lines') e
     WHERE e->>'code' IN ('4991','6991')),
   'T18 — TB 2099 : 3200 porte le report cumule 100 (600-500), 4991/6991 rouvrent a 0');
 SELECT ok((SELECT (l->>'balance')::numeric = 100
-     FROM jsonb_array_elements((get_balance_sheet_v3('2098-12-31'))->'lines') l
+     FROM jsonb_array_elements((get_balance_sheet_v4('2098-12-31'))->'lines') l
     WHERE l->>'code'='3200'),
   'T19 — BS 31/12/2098 : 3200 Retained Earnings = 100 (CYE YTD retombe a 0, aucun changement BS requis)');
 

@@ -190,7 +190,7 @@ DECLARE
   v_keys TEXT;
   v_arr_type TEXT;
 BEGIN
-  v_payload := suggest_production_schedule_v2(CURRENT_DATE);
+  v_payload := suggest_production_schedule_v3(CURRENT_DATE);
   SELECT string_agg(k, ',' ORDER BY k) INTO v_keys
     FROM jsonb_object_keys(v_payload) AS k;
   v_arr_type := jsonb_typeof(v_payload->'suggestions');
@@ -201,7 +201,7 @@ END $t5$;
 SELECT is(
   current_setting('ps.t5_arr'),
   'array',
-  'T5: suggest_production_schedule_v2 returns jsonb envelope with suggestions array'
+  'T5: suggest_production_schedule_v3 returns jsonb envelope with suggestions array'
 );
 
 -- ---------------------------------------------------------------------------

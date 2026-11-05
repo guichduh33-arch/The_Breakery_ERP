@@ -236,9 +236,9 @@ SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v4'
+    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v5'
   ),
-  'T8: record_incoming_stock_v4 still exists (non-purchase entries kept)');
+  'T8: record_incoming_stock_v5 still exists (non-purchase entries kept)');
 
 -- =========================================================================
 -- T9 — waste_stock_v4 with qty > on-hand -> insufficient_stock P0002
@@ -333,12 +333,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v5(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-LOW', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_low_only_has_pgtap_low;
 
   SELECT NOT EXISTS (
-    SELECT 1 FROM get_stock_levels_v5(NULL, 'PGTAP-PROD-1', 'low', 100, 0)
+    SELECT 1 FROM get_stock_levels_v6(NULL, 'PGTAP-PROD-1', 'low', 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_low_only_excludes_threshold_zero;
 
@@ -346,7 +346,7 @@ BEGIN
     (v_low_only_has_pgtap_low AND v_low_only_excludes_threshold_zero)::text, false);
 END $t12$;
 SELECT ok(current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_levels_v5 bucket low includes (current < threshold > 0) and excludes threshold = 0');
+  'T12: get_stock_levels_v6 bucket low includes (current < threshold > 0) and excludes threshold = 0');
 
 -- =========================================================================
 -- T13 — Sequential adjusts on the same row sum correctly via row lock.

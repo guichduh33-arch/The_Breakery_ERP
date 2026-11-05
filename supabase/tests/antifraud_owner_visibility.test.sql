@@ -57,7 +57,7 @@ INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT current_stock FROM p
 INSERT INTO antifraud_results(tap) SELECT is((SELECT e->>'current_stock' FROM jsonb_array_elements(public.get_operational_products_v2()) e
  WHERE e->>'id'=(SELECT product_id::text FROM antifraud_ids)),NULL::text,'Operational catalogue masks exact stock');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_sales_day_v1(current_date),'Open shift keeps the sales day private');
-INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_sales_by_product_v4(current_date,current_date)','P0003','business_day_not_closed','Newest product-sales RPC refuses an open day');
+INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_sales_by_product_v5(current_date,current_date)','P0003','business_day_not_closed','Newest product-sales RPC refuses an open day');
 INSERT INTO antifraud_results(tap) SELECT throws_ok('SELECT public.get_daily_sales_v5(current_date::text,current_date::text)','P0003','business_day_not_closed','Newest daily-sales RPC refuses an open day');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_order_v2(order_id),'ADMIN cannot use the paid kitchen exception even with POS permissions') FROM antifraud_ids;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT public.can_view_financial_entry_v1(sale_je),'Sale JE hidden while originating shift is open') FROM antifraud_ids;
@@ -131,7 +131,7 @@ INSERT INTO antifraud_results(tap) SELECT is((SELECT (e->>'current_stock')::nume
 RESET ROLE;
 INSERT INTO antifraud_results(tap) SELECT ok(NOT has_function_privilege('anon','public.submit_display_day_closing_v1(date,jsonb,uuid)','EXECUTE'),'Daily submission denies anonymous execution');
 INSERT INTO antifraud_results(tap) SELECT ok(NOT has_table_privilege('authenticated','public.display_day_closing_items','SELECT'),'Raw daily rows cannot leak theoretical snapshots');
-INSERT INTO antifraud_results(tap) SELECT ok(to_regprocedure('public.get_sales_by_product_v2(date,date)') IS NULL AND to_regprocedure('public.get_sales_by_product_v3(date,date)') IS NULL,'Legacy product report bypasses are removed');
+INSERT INTO antifraud_results(tap) SELECT ok(NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname ~ '^get_(sales_by_product|product_sales_lines)_v[1-4]$'),'Legacy product report bypasses are removed');
 SELECT jsonb_build_object('tap',(SELECT jsonb_agg(tap ORDER BY seq) FROM antifraud_results),
  'finish',(SELECT jsonb_agg(f) FROM finish() f)) AS results;
 ROLLBACK;

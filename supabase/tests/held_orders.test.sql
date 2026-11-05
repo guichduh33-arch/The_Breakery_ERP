@@ -104,7 +104,7 @@ SELECT ok(
 DO $reopen$
 DECLARE v_res JSONB;
 BEGIN
-  v_res := reopen_held_order_v8(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid);
+  v_res := reopen_held_order_v10(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid);
   PERFORM set_config('ho.reopen', v_res::text, false);
 END $reopen$;
 
@@ -121,7 +121,7 @@ SELECT ok(
   'T5: la reouverture reclame la commande (is_held=false) sans la supprimer');
 
 SELECT lives_ok(
-  $q$ SELECT reopen_held_order_v8(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid) $q$,
+  $q$ SELECT reopen_held_order_v10(current_setting('ho.order')::uuid,current_setting('ho.session')::uuid) $q$,
   'T6: une commande caisse deja ouverte reste recuperable');
 
 -- ===========================================================================
@@ -188,7 +188,7 @@ SELECT ok(
   'T11: anon n''a pas EXECUTE sur hold_fired_order_v4');
 
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.reopen_held_order_v8(uuid,uuid)', 'EXECUTE')
+  NOT has_function_privilege('anon', 'public.reopen_held_order_v10(uuid,uuid)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.discard_held_order_v3(uuid, text)', 'EXECUTE'),
   'T12: anon n''a pas EXECUTE sur les portes reprise et abandon');
 

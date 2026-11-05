@@ -8282,7 +8282,7 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_sales_lines_v4: {
+      get_product_sales_lines_v5: {
         Args: {
           p_cursor?: string
           p_end_date: string
@@ -8376,7 +8376,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_sales_by_product_v4: {
+      get_sales_by_product_v5: {
         Args: {
           p_category_id?: string
           p_end_date: string

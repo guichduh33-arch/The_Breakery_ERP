@@ -86,14 +86,14 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   v_ok := (v_r ? 'as_of') AND (v_r ? 'timezone') AND (v_r ? 'generated_at')
       AND (v_r ? 'terms_default_days') AND (v_r ? 'summary')
       AND (v_r ? 'by_bucket') AND (v_r ? 'by_customer') AND (v_r ? 'invoices');
   PERFORM set_config('breakery.t1', v_ok::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t1')::boolean,
-  'T1: get_ar_aging_v1 MANAGER happy path returns 8-key JSONB');
+  'T1: get_ar_aging_v2 MANAGER happy path returns 8-key JSONB');
 
 -- T2 garde : CASHIER → 42501
 DO $$
@@ -101,20 +101,20 @@ DECLARE v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_ar_aging_v1();
+    PERFORM get_ar_aging_v2();
   EXCEPTION WHEN insufficient_privilege THEN v_caught := true;
   END;
   PERFORM set_config('breakery.t2', v_caught::text, false);
 END $$;
 SELECT ok(current_setting('breakery.t2')::boolean,
-  'T2: get_ar_aging_v1 CASHIER raises 42501');
+  'T2: get_ar_aging_v2 CASHIER raises 42501');
 
 -- T3 les 5 buckets, toujours, dans l'ordre
 DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   v_ok := (jsonb_array_length(v_r->'by_bucket') = 5)
       AND (v_r->'by_bucket'->0->>'bucket' = 'current')
       AND (v_r->'by_bucket'->1->>'bucket' = 'late_1_30')
@@ -131,7 +131,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT bool_and(CASE e->>'order_number'
            WHEN '#PGTAP-AR-A1' THEN e->>'bucket' = 'current'
            WHEN '#PGTAP-AR-A2' THEN e->>'bucket' = 'late_1_30'
@@ -153,7 +153,7 @@ DO $$
 DECLARE v_r JSONB; v_e JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT e INTO v_e FROM jsonb_array_elements(v_r->'invoices') e
    WHERE e->>'order_number' = '#PGTAP-AR-A3';
   v_ok := ((v_e->>'total')::numeric = 300000)
@@ -169,7 +169,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   v_ok := NOT EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_r->'invoices') e
     WHERE e->>'order_number' IN ('#PGTAP-AR-PD', '#PGTAP-AR-VD'));
@@ -183,7 +183,7 @@ DO $$
 DECLARE v_r JSONB; v_a1 JSONB; v_b1 JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT e INTO v_a1 FROM jsonb_array_elements(v_r->'invoices') e
    WHERE e->>'order_number' = '#PGTAP-AR-A1';
   SELECT e INTO v_b1 FROM jsonb_array_elements(v_r->'invoices') e
@@ -200,7 +200,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT SUM((e->>'outstanding')::numeric) = (v_r->'summary'->>'total_outstanding')::numeric
     INTO v_ok FROM jsonb_array_elements(v_r->'invoices') e;
   PERFORM set_config('breakery.t8', COALESCE(v_ok, false)::text, false);
@@ -213,7 +213,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT (SUM((c->>'total_outstanding')::numeric)
             = (v_r->'summary'->>'total_outstanding')::numeric)
      AND bool_and(
@@ -232,7 +232,7 @@ DECLARE v_r JSONB; v_c JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _ar_fix;
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT c INTO v_c FROM jsonb_array_elements(v_r->'by_customer') c
    WHERE (c->>'customer_id')::uuid = f.cust_a;
   v_ok := ((v_r->'summary'->>'overdue_total')::numeric
@@ -253,7 +253,7 @@ DECLARE v_r JSONB; v_c JSONB; f RECORD; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   SELECT * INTO f FROM _ar_fix;
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   SELECT c INTO v_c FROM jsonb_array_elements(v_r->'by_customer') c
    WHERE (c->>'customer_id')::uuid = f.cust_a;
   v_ok := ((v_c->>'balance_cached')::numeric = 480000)
@@ -269,7 +269,7 @@ DO $$
 DECLARE v_r JSONB; v_ok BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_r := get_ar_aging_v1();
+  v_r := get_ar_aging_v2();
   v_ok := (v_r->'summary'->>'dso_90d') IS NOT NULL
       AND ((v_r->'summary'->>'oldest_days_late')::int >= 115);
   PERFORM set_config('breakery.t12', COALESCE(v_ok, false)::text, false);

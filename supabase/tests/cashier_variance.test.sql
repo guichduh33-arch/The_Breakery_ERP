@@ -60,7 +60,7 @@ BEGIN
   -- ── Act as reports.read user, call the RPC over the seeded window ──────
   PERFORM set_config('request.jwt.claim.sub', v_ADMIN::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_ADMIN)::text, true);
-  v_res := public.get_cashier_variance_v2(v_start, v_end);
+  v_res := public.get_cashier_variance_v3(v_start, v_end);
 
   SELECT e INTO v_row FROM jsonb_array_elements(v_res->'cashiers') e
    WHERE e->>'cashier_id' = v_A::text;
@@ -94,33 +94,35 @@ BEGIN
 
   -- T12: invalid_date_range (start > end) → P0001
   BEGIN
-    PERFORM public.get_cashier_variance_v2(v_end, v_start);
+    PERFORM public.get_cashier_variance_v3(v_end, v_start);
     v_denied := false;
-  EXCEPTION WHEN SQLSTATE 'P0001' THEN v_denied := true;
+  EXCEPTION WHEN SQLSTATE '22023' THEN v_denied := true;
   END;
-  INSERT INTO _r SELECT 'T12_invalid_date_range_P0001', v_denied;
+  INSERT INTO _r SELECT 'T12_invalid_date_range_22023', v_denied;
 
   -- T13: acting user WITHOUT reports.read → 42501
   PERFORM set_config('request.jwt.claim.sub', v_A::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_A)::text, true);
   BEGIN
-    PERFORM public.get_cashier_variance_v2(v_start, v_end);
+    PERFORM public.get_cashier_variance_v3(v_start, v_end);
     v_denied := false;
   EXCEPTION WHEN insufficient_privilege THEN v_denied := true;
   END;
   INSERT INTO _r SELECT 'T13_no_perm_42501', v_denied;
 
-  -- T14: anon / no claims → auth.uid() NULL → 42501
+  -- T14: anon / no claims → auth.uid() NULL → P0003
   PERFORM set_config('request.jwt.claim.sub', '', true);
   PERFORM set_config('request.jwt.claims', '', true);
   BEGIN
-    PERFORM public.get_cashier_variance_v2(v_start, v_end);
+    PERFORM public.get_cashier_variance_v3(v_start, v_end);
     v_denied := false;
-  EXCEPTION WHEN insufficient_privilege THEN v_denied := true;
+  EXCEPTION WHEN SQLSTATE 'P0003' THEN v_denied := true;
   END;
-  INSERT INTO _r SELECT 'T14_anon_42501', v_denied;
+  INSERT INTO _r SELECT 'T14_anon_P0003', v_denied;
 END $$;
 
-SELECT name, pass FROM _r ORDER BY name;
+SELECT plan(14);
+SELECT ok(pass, name) FROM _r ORDER BY name;
+SELECT * FROM finish();
 -- Expected: 14 rows, pass = true everywhere.
 ROLLBACK;
