@@ -7889,6 +7889,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_pos_transaction_history_v2: {
+        Args: { p_order_number?: string; p_session_id: string }
+        Returns: Json
+      }
       _dashboard_cash_on_hand_v2: { Args: never; Returns: Json }
       _dashboard_cost_mtd_v3: {
         Args: { p_today: string; p_tz: string }
