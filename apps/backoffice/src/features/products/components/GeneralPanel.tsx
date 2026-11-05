@@ -37,9 +37,8 @@ interface Props {
   /** Called when any field changes. */
   onChange?: (patch: Partial<ProductRow>) => void;
   /**
-   * Vitrine counter for this product (display_stock). `null` = no row / not
-   * stocked yet, `undefined` = not provided. Drives the M7 "needs stocking"
-   * banner: a display-case item with a 0/empty counter is unsellable at the POS.
+   * Compteur vitrine. `null` signifie masqué ou indisponible et `undefined`
+   * signifie non fourni. Seule une quantité connue déclenche l'alerte.
    */
   displayStockQty?: number | null;
 }
@@ -254,7 +253,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               disabled={readOnly}
               onChange={(v) => update('is_display_item', v)}
             />
-            {draft.is_display_item === true && (displayStockQty ?? 0) <= 0 && (
+            {draft.is_display_item === true && typeof displayStockQty === 'number' && displayStockQty <= 0 && (
               <div
                 role="alert"
                 data-testid="display-stock-warning"
