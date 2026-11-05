@@ -39,8 +39,8 @@
 -- T31 : record_stock_movement_v1 accepts p_lot_id (B1 pattern a)
 -- T32 : record_stock_movement_v1 backward-compat — old caller without lot_id still works
 -- T33 : refund_order_rpc is dropped ; refund_order_rpc_v2 exists
--- T34 : complete_order_with_payment is dropped ; complete_order_with_payment_v9 exists
--- T35 : pay_existing_order is dropped ; pay_existing_order_v6 exists
+-- T34 : complete_order_with_payment is dropped ; complete_order_with_payment_v32 exists
+-- T35 : pay_existing_order is dropped ; pay_existing_order_v25 exists
 -- T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1) : inventaire exact des triggers du ledger
 -- T_F1_NO_UPDATE_INVARIANT (B1) : no AFTER-UPDATE trigger on stock_movements modifies columns
 
@@ -411,14 +411,14 @@ SELECT ok(
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v31'),
-  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v31 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v32' AND pronamespace = 'public'::regnamespace),
+  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v32 exists'
 );
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v24'),
-  'T35: pay_existing_order dropped ; pay_existing_order_v24 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v25' AND pronamespace = 'public'::regnamespace),
+  'T35: pay_existing_order dropped ; pay_existing_order_v25 exists'
 );
 
 -- ---------------------------------------------------------------------------
