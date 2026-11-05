@@ -27,7 +27,7 @@ describe('Protected transaction history', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.financialVisible).toBe(false);
     expect(result.current.data).toEqual([]);
-    expect(rpc).toHaveBeenCalledWith('get_pos_transaction_history_v1', { p_session_id: 'shift-1', p_order_number: undefined });
+    expect(rpc).toHaveBeenCalledWith('get_pos_transaction_history_v2', { p_session_id: 'shift-1', p_order_number: undefined });
   });
   it('does not fetch while the panel is closed', async () => {
     const { result } = renderHook(() => useOrderHistory(false), { wrapper });
@@ -36,7 +36,7 @@ describe('Protected transaction history', () => {
   });
   it('passes an exact receipt number instead of searching a bulk list', async () => {
     renderHook(() => useOrderHistory(true, 'P05112026001'), { wrapper });
-    await waitFor(() => expect(rpc).toHaveBeenCalledWith('get_pos_transaction_history_v1', {
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith('get_pos_transaction_history_v2', {
       p_session_id: 'shift-1', p_order_number: 'P05112026001',
     }));
   });
@@ -53,7 +53,7 @@ describe('Protected transaction history', () => {
     expect(result.current.data?.items[0]?.qty_already_refunded).toBe(1);
     expect(result.current.data?.refunded_by_method.cash).toBe(5000);
     expect(result.current.data?.payments[0]?.amount).toBe(10000);
-    expect(rpc).toHaveBeenCalledWith('get_pos_transaction_history_v1', { p_session_id: 'shift-1', p_order_number: 'P05112026001' });
+    expect(rpc).toHaveBeenCalledWith('get_pos_transaction_history_v2', { p_session_id: 'shift-1', p_order_number: 'P05112026001' });
   });
 
   it('cannot reuse the Owner response after switching to a cashier', async () => {

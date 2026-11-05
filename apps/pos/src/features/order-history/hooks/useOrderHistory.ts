@@ -35,7 +35,7 @@ export function useOrderHistory(enabled = true, receiptNumber: string | null = n
     queryKey: ['order-history', actorId, role, sessionId, receiptNumber],
     queryFn: async () => {
       if (!sessionId || !enabled) return { financial_visible: false, orders: [] };
-      const { data, error } = await supabase.rpc('get_pos_transaction_history_v1', {
+      const { data, error } = await supabase.rpc('get_pos_transaction_history_v2', {
         p_session_id: sessionId,
         ...(receiptNumber ? { p_order_number: receiptNumber } : {}),
       });

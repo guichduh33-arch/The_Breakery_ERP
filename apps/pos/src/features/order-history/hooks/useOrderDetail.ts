@@ -86,7 +86,7 @@ export function useOrderDetail(orderNumber: string | null) {
     queryKey: ['order-detail', actorId, role, sessionId, orderNumber],
     queryFn: async (): Promise<OrderDetail | null> => {
       if (!orderNumber || !sessionId) return null;
-      const { data, error } = await supabase.rpc('get_pos_transaction_history_v1', {
+      const { data, error } = await supabase.rpc('get_pos_transaction_history_v2', {
         p_session_id: sessionId,
         p_order_number: orderNumber,
       });

@@ -7889,7 +7889,7 @@ export type Database = {
       }
     }
     Functions: {
-      get_pos_transaction_history_v1: {
+      get_pos_transaction_history_v2: {
         Args: { p_order_number?: string; p_session_id: string }
         Returns: Json
       }
