@@ -53,6 +53,7 @@ const { fromSpy } = vi.hoisted(() => {
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => fromSpy(table),
+    rpc: () => { fromSpy('orders'); return Promise.resolve({ data: { financial_visible: true, orders: [] }, error: null }); },
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }),
     },

@@ -6,6 +6,8 @@
 import { useQuery } from '@tanstack/react-query';
 import type { PaymentMethod } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
+import { useShiftStore } from '@/stores/shiftStore';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface OrderDetailItem {
   id: string;
@@ -43,23 +45,6 @@ export interface OrderDetail {
   total_refunded: number;
 }
 
-interface QueryResult<T> {
-  data: T | null;
-  error: { message: string } | null;
-}
-interface SelectBuilder {
-  eq: (col: string, val: unknown) => SelectBuilder;
-  single: () => Promise<QueryResult<unknown>>;
-  maybeSingle: () => Promise<QueryResult<unknown>>;
-}
-interface LooseFromBuilder {
-  select: (cols: string) => SelectBuilder;
-}
-interface LooseSupabase {
-  from: (table: string) => LooseFromBuilder;
-}
-const sb = supabase as unknown as LooseSupabase;
-
 interface RawDetail {
   id: string;
   order_number: string;
@@ -93,26 +78,22 @@ interface RawDetail {
   }[];
 }
 
-export function useOrderDetail(orderId: string | null) {
+export function useOrderDetail(orderNumber: string | null) {
+  const sessionId = useShiftStore((s) => s.current?.id);
+  const actorId = useAuthStore((s) => s.user?.id);
+  const role = useAuthStore((s) => s.user?.role_code);
   return useQuery<OrderDetail | null>({
-    queryKey: ['order-detail', orderId],
+    queryKey: ['order-detail', actorId, role, sessionId, orderNumber],
     queryFn: async (): Promise<OrderDetail | null> => {
-      if (!orderId) return null;
-      const { data, error } = await sb
-        .from('orders')
-        .select(
-          `id, order_number, status, total, tax_amount, customer_id, table_number,
-           paid_at, voided_at, void_reason, loyalty_points_redeemed,
-           order_items(id, product_id, name_snapshot, quantity, line_total, is_cancelled),
-           order_payments(id, method, amount, reference),
-           refunds(total, refund_lines(order_item_id, qty), refund_payments(method, amount))`,
-        )
-        .eq('id', orderId)
-        .maybeSingle();
-
+      if (!orderNumber || !sessionId) return null;
+      const { data, error } = await supabase.rpc('get_pos_transaction_history_v1', {
+        p_session_id: sessionId,
+        p_order_number: orderNumber,
+      });
       if (error) throw new Error(error.message);
-      if (!data) return null;
-      const raw = data as unknown as RawDetail;
+      const payload = data as unknown as { detail: RawDetail | null };
+      if (!payload.detail) return null;
+      const raw = payload.detail;
 
       // Aggregate prior refunds → per-line refunded qty + per-method refunded amount.
       const refundedQtyByItem = new Map<string, number>();
@@ -166,7 +147,8 @@ export function useOrderDetail(orderId: string | null) {
         total_refunded,
       };
     },
-    enabled: Boolean(orderId),
+    enabled: Boolean(orderNumber && sessionId),
+    gcTime: 0,
     staleTime: 5_000,
   });
 }

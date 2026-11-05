@@ -13,6 +13,7 @@ import type { OrderHistoryRow } from '../hooks/useOrderHistory';
 const historyState = {
   current: {
     data: [] as OrderHistoryRow[] | undefined,
+    financialVisible: true,
     isLoading: false,
     isError: false,
     // S43 P1-3: the panel calls refetch() when it opens.
@@ -61,7 +62,7 @@ function row(overrides: Partial<OrderHistoryRow> = {}): OrderHistoryRow {
 
 describe('OrderHistoryPanel', () => {
   beforeEach(() => {
-    historyState.current = { data: [], isLoading: false, isError: false, refetch: vi.fn() };
+    historyState.current = { data: [], financialVisible: true, isLoading: false, isError: false, refetch: vi.fn() };
   });
 
   it('renders the Transaction History header and KPI strip when open', () => {
@@ -83,6 +84,7 @@ describe('OrderHistoryPanel', () => {
   it('renders a transaction row and a count tally for each row', () => {
     historyState.current = {
       data: [row(), row({ id: 'o2', order_number: '1002', status: 'voided' })],
+      financialVisible: true,
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
@@ -92,6 +94,25 @@ describe('OrderHistoryPanel', () => {
     expect(screen.getByTestId('history-row-o2')).toBeInTheDocument();
     expect(screen.getByText(/voided/i)).toBeInTheDocument();
     expect(screen.getByText(/2 transactions this shift/i)).toBeInTheDocument();
+  });
+
+  it('hides totals, transaction count and unsolicited rows while the shift is blind', () => {
+    historyState.current = { data: [row()], financialVisible: false, isLoading: false, isError: false, refetch: vi.fn() };
+    render(<OrderHistoryPanel open onClose={vi.fn()} />);
+    expect(screen.queryByTestId('order-history-stats')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('history-row-o1')).not.toBeInTheDocument();
+    expect(screen.getByText('Shift totals are hidden until closure')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Find receipt' })).toBeDisabled();
+  });
+
+  it('allows exact receipt lookup without revealing shift totals', () => {
+    historyState.current = { data: [row()], financialVisible: false, isLoading: false, isError: false, refetch: vi.fn() };
+    render(<OrderHistoryPanel open onClose={vi.fn()} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Receipt number' }), { target: { value: '1001' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find receipt' }));
+    expect(screen.getByTestId('history-row-o1')).toBeInTheDocument();
+    expect(screen.queryByTestId('order-history-stats')).not.toBeInTheDocument();
+    expect(screen.queryByText(/transactions this shift/i)).not.toBeInTheDocument();
   });
 
   it('calls onClose when the close button is clicked', () => {
