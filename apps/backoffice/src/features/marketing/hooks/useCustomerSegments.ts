@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/marketing/hooks/useCustomerSegments.ts
 //
-// Wraps `get_customer_segments_v1(p_segment_type)` RPC. Returns RFM-like
+// Wraps `get_customer_segments_v2(p_segment_type)` RPC. Returns RFM-like
 // segment buckets.
 //
 // Session 13 / Phase 6.B.
@@ -24,7 +24,7 @@ export function useCustomerSegments(segmentType: SegmentCode = 'all') {
     queryKey: [...SEGMENTS_QUERY_KEY, segmentType] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_customer_segments_v1', {
+      const { data, error } = await supabase.rpc('get_customer_segments_v2', {
         p_segment_type: segmentType,
       });
       if (error) throw error;

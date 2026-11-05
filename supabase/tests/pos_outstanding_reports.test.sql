@@ -11,8 +11,8 @@ BEGIN
  IF a IS NULL THEN RAISE EXCEPTION 'fixture: SUPER_ADMIN required'; END IF;
  PERFORM set_config('request.jwt.claim.sub',u::text,true);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u)::text,true);
- INSERT INTO report_baselines SELECT d,public.get_daily_sales_v4(d::text,d::text);
- INSERT INTO report_baselines SELECT current_date,public.get_daily_sales_v4(current_date::text,current_date::text);
+ INSERT INTO report_baselines SELECT d,public.get_daily_sales_v5(d::text,d::text);
+ INSERT INTO report_baselines SELECT current_date,public.get_daily_sales_v5(current_date::text,current_date::text);
  SELECT id INTO s FROM public.pos_sessions WHERE opened_by=a ORDER BY opened_at DESC LIMIT 1;
  IF s IS NULL THEN RAISE EXCEPTION 'fixture: session required'; END IF;
  INSERT INTO public.customers(name,retail_credit_limit) VALUES('Outstanding reports fixture',1000000) RETURNING id INTO c;
@@ -29,26 +29,26 @@ BEGIN
  PERFORM set_config('reports.customer',c::text,true);
 END $fixture$;
 SELECT ok(NOT has_schema_privilege('authenticated','reporting_private','USAGE'),'private projection not exposed');
-SELECT ok(NOT has_function_privilege('anon','public.get_customer_recognized_orders_v1(uuid)','EXECUTE'),'anonymous customer analytics refused');
-SELECT has_function('public','get_daily_sales_v3',ARRAY['text','text'],'previous Daily Sales RPC remains available');
-SELECT has_function('public','get_daily_sales_v4',ARRAY['text','text'],'new Daily Sales RPC available');
-SELECT is((public.get_daily_sales_v4(day::text,day::text)->'summary'->>'total')::numeric-
+SELECT ok(NOT has_function_privilege('anon','public.get_customer_recognized_orders_v2(uuid)','EXECUTE'),'anonymous customer analytics refused');
+SELECT has_function('public','get_daily_sales_v5',ARRAY['text','text'],'previous Daily Sales RPC remains available');
+SELECT has_function('public','get_daily_sales_v5',ARRAY['text','text'],'new Daily Sales RPC available');
+SELECT is((public.get_daily_sales_v5(day::text,day::text)->'summary'->>'total')::numeric-
  (result->'summary'->>'total')::numeric,100000::numeric,'Outstanding belongs to recognition day')
  FROM report_baselines WHERE day=current_date-2;
-SELECT is((public.get_daily_sales_v4(day::text,day::text)->'summary'->>'receipts_total')::numeric,
+SELECT is((public.get_daily_sales_v5(day::text,day::text)->'summary'->>'receipts_total')::numeric,
  (result->'summary'->>'receipts_total')::numeric,'recognition creates no false receipt')
  FROM report_baselines WHERE day=current_date-2;
-SELECT is((public.get_daily_sales_v4(day::text,day::text)->'summary'->>'total')::numeric,
+SELECT is((public.get_daily_sales_v5(day::text,day::text)->'summary'->>'total')::numeric,
  (result->'summary'->>'total')::numeric,'partial receipt creates no new revenue')
  FROM report_baselines WHERE day=current_date;
-SELECT is((public.get_daily_sales_v4(day::text,day::text)->'summary'->>'receipts_total')::numeric-
+SELECT is((public.get_daily_sales_v5(day::text,day::text)->'summary'->>'receipts_total')::numeric-
  (result->'summary'->>'receipts_total')::numeric,30000::numeric,'partial receipt counted on payment day')
  FROM report_baselines WHERE day=current_date;
-SELECT is((SELECT recognized_at::date FROM public.get_customer_recognized_orders_v1(current_setting('reports.customer')::uuid)
+SELECT is((SELECT recognized_at::date FROM public.get_customer_recognized_orders_v2(current_setting('reports.customer')::uuid)
  WHERE id=current_setting('reports.order')::uuid),current_date-2,'customer analytics uses recognition day');
 SELECT is((SELECT status::text FROM public.orders WHERE id=current_setting('reports.order')::uuid),'pending_payment','reporting leaves unpaid status unchanged');
 SELECT is((SELECT paid_at FROM public.orders WHERE id=current_setting('reports.order')::uuid),NULL::timestamptz,'reporting leaves paid_at null');
-CREATE TEMP TABLE payment_baseline AS SELECT public.get_pos_payment_breakdown_v2(current_date,current_date) result;
+CREATE TEMP TABLE payment_baseline AS SELECT public.get_pos_payment_breakdown_v3(current_date,current_date) result;
 DO $settle$
 DECLARE o uuid:=current_setting('reports.order')::uuid; s uuid;
 BEGIN
@@ -58,13 +58,13 @@ BEGIN
  PERFORM set_config('breakery.outstanding_settlement','true',true);
  UPDATE public.orders SET status='paid',paid_at=current_date+interval '13 hours' WHERE id=o;
 END $settle$;
-SELECT is((public.get_daily_sales_v4(day::text,day::text)->'summary'->>'total')::numeric-
+SELECT is((public.get_daily_sales_v5(day::text,day::text)->'summary'->>'total')::numeric-
  (result->'summary'->>'total')::numeric,100000::numeric,'full settlement does not move recognition day')
  FROM report_baselines WHERE day=current_date-2;
-SELECT is((public.get_daily_sales_v4(day::text,day::text)->'summary'->>'total')::numeric,
+SELECT is((public.get_daily_sales_v5(day::text,day::text)->'summary'->>'total')::numeric,
  (result->'summary'->>'total')::numeric,'full settlement does not duplicate revenue')
  FROM report_baselines WHERE day=current_date;
-SELECT is((public.get_pos_payment_breakdown_v2(current_date,current_date)->>'total_amount')::numeric-
+SELECT is((public.get_pos_payment_breakdown_v3(current_date,current_date)->>'total_amount')::numeric-
  (result->>'total_amount')::numeric,70000::numeric,'payment report counts additional real receipt only')
  FROM payment_baseline;
 SELECT * FROM finish();

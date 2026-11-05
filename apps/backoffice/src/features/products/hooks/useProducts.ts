@@ -6,7 +6,7 @@
 // product CRUD RPCs land in a future session.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { getOperationalProducts } from '@/lib/operationalProducts.js';
 import type { ProductRow } from '../types.js';
 
 interface ProductRowDb {
@@ -19,7 +19,7 @@ interface ProductRowDb {
   cost_price:       number;
   product_type:     string;
   image_url:        string | null;
-  current_stock:    number;
+  current_stock:    number | null;
   min_stock_threshold: number;
   unit:             string;
   is_active:        boolean;
@@ -48,23 +48,8 @@ export function useProducts() {
     queryKey: ['products', 'catalog'] as const,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          id, sku, name, category_id,
-          retail_price, wholesale_price, cost_price,
-          product_type, image_url,
-          current_stock, min_stock_threshold, unit,
-          is_active, is_favorite,
-          description, visible_on_pos, available_for_sale,
-          track_inventory, deduct_stock, is_semi_finished,
-          target_gross_margin_pct, default_shelf_life_hours, is_display_item,
-          parent_product_id, variant_label, variant_axis, variant_sort_order,
-          categories:categories ( name, category_type )
-        `)
-        .is('deleted_at', null)
-        .order('name');
-      if (error) throw error;
+      const data = (await getOperationalProducts()).sort((a, b) => a.name.localeCompare(b.name));
+
 
       const rows = (data ?? []) as ProductRowDb[];
       return rows.map((r) => {
@@ -81,7 +66,7 @@ export function useProducts() {
           cost_price:          Number(r.cost_price),
           product_type:        (r.product_type === 'combo' ? 'combo' : 'finished'),
           image_url:           r.image_url,
-          current_stock:       Number(r.current_stock),
+          current_stock:       r.current_stock === null ? null : Number(r.current_stock),
           min_stock_threshold: Number(r.min_stock_threshold),
           unit:                r.unit,
           is_active:           r.is_active,

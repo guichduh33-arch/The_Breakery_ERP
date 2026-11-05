@@ -2,7 +2,7 @@
 -- S30 Wave 2 — pgTAP tests for 5 bakery reports RPCs (15 assertions T1–T15).
 --
 -- Covers:
---   T1  : get_wastage_report_v3 MANAGER happy path — 5-key JSONB
+--   T1  : get_wastage_report_v3 Owner happy path — 5-key JSONB
 --
 -- Audit Reports 2026-08-01 (R-02/R-08) : repointed v1 -> v2 (v1 dropped,
 -- 20260801000002 — fenetre resolue dans business_config.timezone au lieu de
@@ -12,7 +12,7 @@
 --   T3  : get_wastage_report_v3 empty period returns 0 totals
 --   T3b : get_wastage_report_v3 00:30 LOCAL on the start day is inside the window
 --   T3c : get_wastage_report_v3 03:00 LOCAL on end-day+1 is outside the window
---   T4  : get_payments_by_method_v3 MANAGER happy path — 4-key JSONB
+--   T4  : get_payments_by_method_v3 Owner happy path — 4-key JSONB
 --   T5  : get_payments_by_method_v3 CASHIER denied (42501)
 --   T6  : get_payments_by_method_v3 by_day pivots 9 methods + other + total + day
 --
@@ -39,7 +39,7 @@
 --   T15 : get_perishable_turnover_v1 CASHIER denied (42501)
 --
 -- Seeded users reused (no new fixtures needed):
---   MANAGER : auth_user_id = 00000000-0000-0000-0000-000000000004
+--   Owner : auth_user_id = 00000000-0000-0000-0000-000000000001
 --   CASHIER : auth_user_id = 00000000-0000-0000-0000-000000000002
 --
 -- Run via mcp execute_sql wrapped in BEGIN/ROLLBACK — self-cleaning.
@@ -56,14 +56,14 @@ SELECT plan(17);
 -- B.1 Wastage & Spoilage (T1–T3)
 -- ============================================================
 
--- T1 happy path : MANAGER calls with valid period, returns JSONB with 4 keys
+-- T1 happy path : Owner calls with valid period, returns JSONB with 4 keys
 DO $$
 DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_wastage_report_v3('2026-01-01', CURRENT_DATE::text);
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_wastage_report_v4('2026-01-01', CURRENT_DATE::text);
   v_ok := (v_result ? 'period')
       AND (v_result ? 'summary')
       AND (v_result ? 'by_product')
@@ -74,7 +74,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t1_pass')::boolean,
-  'T1: get_wastage_report_v3 MANAGER happy path returns 5-key JSONB'
+  'T1: get_wastage_report_v4 Owner happy path returns 5-key JSONB'
 );
 
 -- T2 perm denied : CASHIER → 42501
@@ -84,7 +84,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_wastage_report_v3('2026-01-01', CURRENT_DATE::text);
+    PERFORM get_wastage_report_v4('2026-01-01', CURRENT_DATE::text);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -93,7 +93,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t2_pass')::boolean,
-  'T2: get_wastage_report_v3 CASHIER raises 42501'
+  'T2: get_wastage_report_v4 CASHIER raises 42501'
 );
 
 -- T3 empty period returns 0 totals
@@ -102,8 +102,8 @@ DECLARE
   v_result JSONB;
   v_zero   BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_wastage_report_v3('1900-01-01', '1900-12-31');
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_wastage_report_v4('1900-01-01', '1900-12-31');
   v_zero := (v_result->'summary'->>'total_qty')::numeric = 0
         AND (v_result->'summary'->>'line_count')::int = 0;
   PERFORM set_config('breakery.t3_pass', v_zero::text, false);
@@ -111,7 +111,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t3_pass')::boolean,
-  'T3: get_wastage_report_v3 empty period returns 0 totals'
+  'T3: get_wastage_report_v4 empty period returns 0 totals'
 );
 
 -- T3b / T3c : la fenetre est resolue dans business_config.timezone, pas en UTC.
@@ -126,10 +126,10 @@ DECLARE
   v_uid  UUID;
   v_res  JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT id INTO v_pid FROM products WHERE deleted_at IS NULL LIMIT 1;
   SELECT id INTO v_uid FROM user_profiles
-   WHERE auth_user_id = '00000000-0000-0000-0000-000000000004';
+   WHERE auth_user_id = '00000000-0000-0000-0000-000000000001';
 
   INSERT INTO stock_movements
     (product_id, movement_type, quantity, unit, unit_cost, reason, reference_type, created_by, created_at)
@@ -139,7 +139,7 @@ BEGIN
     (v_pid, 'waste', -7, 'pcs', 1000, 'tz-probe-next-day', 'admin_action', v_uid,
      ('2026-03-11'::date + TIME '03:00') AT TIME ZONE 'Asia/Makassar');
 
-  v_res := get_wastage_report_v3('2026-03-10', '2026-03-10');
+  v_res := get_wastage_report_v4('2026-03-10', '2026-03-10');
 
   PERFORM set_config('breakery.t3b_pass', EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_res->'lines') l
@@ -168,8 +168,8 @@ DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_payments_by_method_v3('2026-01-01', CURRENT_DATE::text);
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_payments_by_method_v4('2026-01-01', CURRENT_DATE::text);
   v_ok := (v_result ? 'period')
       AND (v_result ? 'summary')
       AND (v_result ? 'by_method')
@@ -179,7 +179,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t4_pass')::boolean,
-  'T4: get_payments_by_method_v3 MANAGER happy path returns 4-key JSONB'
+  'T4: get_payments_by_method_v4 Owner happy path returns 4-key JSONB'
 );
 
 -- T5 CASHIER perm denied → 42501
@@ -189,7 +189,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_payments_by_method_v3('2026-01-01', CURRENT_DATE::text);
+    PERFORM get_payments_by_method_v4('2026-01-01', CURRENT_DATE::text);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -198,7 +198,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t5_pass')::boolean,
-  'T5: get_payments_by_method_v3 CASHIER raises 42501'
+  'T5: get_payments_by_method_v4 CASHIER raises 42501'
 );
 
 -- T6 by_day shape : if non-empty, each entry has required keys
@@ -208,8 +208,8 @@ DECLARE
   v_by_day JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_payments_by_method_v3('2026-01-01', CURRENT_DATE::text);
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_payments_by_method_v4('2026-01-01', CURRENT_DATE::text);
   v_by_day := v_result->'by_day';
   -- If empty array, shape test passes vacuously
   v_ok := (jsonb_array_length(v_by_day) = 0)
@@ -232,7 +232,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t6_pass')::boolean,
-  'T6: get_payments_by_method_v3 by_day pivots 9 methods + other + total + day'
+  'T6: get_payments_by_method_v4 by_day pivots 9 methods + other + total + day'
 );
 
 -- ============================================================
@@ -245,8 +245,8 @@ DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_pb1_report_v3(5, 2026);
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_pb1_report_v5(5, 2026);
   v_ok := (v_result->'period'->>'month')::int = 5
       AND (v_result->'period'->>'year')::int  = 2026
       AND (v_result ? 'pb1_rate')
@@ -260,7 +260,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t7_pass')::boolean,
-  'T7: get_pb1_report_v3 happy month returns 8-key JSONB with balance_account_code=2110'
+  'T7: get_pb1_report_v5 happy month returns 8-key JSONB with balance_account_code=2110'
 );
 
 -- T8 CASHIER perm denied → 42501
@@ -270,7 +270,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_pb1_report_v3(5, 2026);
+    PERFORM get_pb1_report_v5(5, 2026);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -279,7 +279,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t8_pass')::boolean,
-  'T8: get_pb1_report_v3 CASHIER raises 42501'
+  'T8: get_pb1_report_v5 CASHIER raises 42501'
 );
 
 -- T9 invalid month (13) rejected with 22023
@@ -288,9 +288,9 @@ DECLARE
   v_caught   BOOLEAN := false;
   v_sqlstate TEXT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_pb1_report_v3(13, 2026);
+    PERFORM get_pb1_report_v5(13, 2026);
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
     v_caught := (v_sqlstate = '22023');
@@ -300,7 +300,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t9_pass')::boolean,
-  'T9: get_pb1_report_v3 month=13 raises 22023'
+  'T9: get_pb1_report_v5 month=13 raises 22023'
 );
 
 -- ============================================================
@@ -315,8 +315,8 @@ DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_stock_movements_v5(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_stock_movements_v6(
     '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, NULL::text, 50::int, NULL::text
   );
@@ -328,7 +328,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t10_pass')::boolean,
-  'T10: get_stock_movements_v5 returns lines[] + next_cursor'
+  'T10: get_stock_movements_v6 returns lines[] + next_cursor'
 );
 
 -- T11 filter movement_type=waste returns only waste rows
@@ -338,8 +338,8 @@ DECLARE
   v_all_waste BOOLEAN := true;
   v_line      JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_stock_movements_v5(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_stock_movements_v6(
     '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, 'waste'::text, 50::int, NULL::text
   );
@@ -353,7 +353,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t11_pass')::boolean,
-  'T11: get_stock_movements_v5 movement_type=waste filter returns only waste rows'
+  'T11: get_stock_movements_v6 movement_type=waste filter returns only waste rows'
 );
 
 -- T12 p_limit=999 clamps to <= 200
@@ -363,8 +363,8 @@ DECLARE
   v_count  INT;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_stock_movements_v5(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_stock_movements_v6(
     '2026-01-01'::text, CURRENT_DATE::text::text,
     NULL::uuid, NULL::text, 999::int, NULL::text
   );
@@ -375,7 +375,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_movements_v5 p_limit=999 clamps to <= 200 rows'
+  'T12: get_stock_movements_v6 p_limit=999 clamps to <= 200 rows'
 );
 
 -- ============================================================
@@ -388,7 +388,7 @@ DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
   v_ok := (v_result ? 'period')
       AND (v_result ? 'by_product')
@@ -409,7 +409,7 @@ DECLARE
   v_score        INT;
   v_all_in_range BOOLEAN := true;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_perishable_turnover_v1('2026-01-01', CURRENT_DATE::text);
   FOR v_row IN SELECT * FROM jsonb_array_elements(v_result->'by_product') LOOP
     v_score := (v_row->>'velocity_score')::int;

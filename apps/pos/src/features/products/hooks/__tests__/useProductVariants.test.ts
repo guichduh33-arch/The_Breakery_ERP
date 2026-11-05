@@ -1,68 +1,32 @@
-// apps/pos/src/features/products/hooks/__tests__/useProductVariants.test.ts
-//
-// Session 59 (05 D1.1 review finding) — proves useProductVariants filters
-// `visible_on_pos = true` in addition to `is_active`. A variant hidden from
-// the counter in BO must not remain selectable via VariantSelectModal.
-
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
-
-const orderMock = vi.fn();
-const isMock = vi.fn();
-const eqMock = vi.fn();
-const selectMock = vi.fn();
-const fromMock = vi.fn();
-
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: (...args: unknown[]) => fromMock(...args) as unknown,
-  },
-}));
-
-import { useProductVariants } from '../useProductVariants';
-
+const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: mocks.rpc } }));
+import { useProductVariants, normalizeVariantStock } from '../useProductVariants';
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return createElement(QueryClientProvider, { client: qc }, children);
+  return createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
 }
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  // .select().eq('parent_product_id', ...).eq('is_active', true)
-  //   .eq('visible_on_pos', true).is('deleted_at', null).order(...)
-  orderMock.mockResolvedValue({ data: [], error: null });
-  isMock.mockReturnValue({ order: orderMock });
-  eqMock.mockReturnValue({ eq: eqMock, is: isMock });
-  selectMock.mockReturnValue({ eq: eqMock });
-  fromMock.mockReturnValue({ select: selectMock });
+const variant = { id: 'v', parent_product_id: 'p', is_active: true, visible_on_pos: true, variant_sort_order: 1,
+  track_inventory: true, current_stock: null, display_stock: { quantity: null }, is_sellable: true };
+beforeEach(() => { mocks.rpc.mockReset(); mocks.rpc.mockResolvedValue({ data: [], error: null }); });
+it('keeps only active visible variants of the requested parent, sorted, without converting masked stock', async () => {
+  mocks.rpc.mockResolvedValue({ data: [variant, { ...variant, id: 'first', variant_sort_order: 0 },
+    { ...variant, id: 'hidden', visible_on_pos: false }, { ...variant, id: 'inactive', is_active: false },
+    { ...variant, id: 'other', parent_product_id: 'other' }], error: null });
+  const { result } = renderHook(() => useProductVariants('p'), { wrapper });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(result.current.data?.map((v) => v.id)).toEqual(['first', 'v']);
+  expect(result.current.data?.[0]).toMatchObject({ current_stock: null, display_stock: { quantity: null }, is_sellable: true });
 });
-
-describe('useProductVariants — visible_on_pos (session 59 review finding)', () => {
-  it('filters on visible_on_pos = true in addition to is_active', async () => {
-    const { result } = renderHook(() => useProductVariants('parent-1'), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(eqMock).toHaveBeenCalledWith('parent_product_id', 'parent-1');
-    expect(eqMock).toHaveBeenCalledWith('is_active', true);
-    expect(eqMock).toHaveBeenCalledWith('visible_on_pos', true);
-  });
-
-  it('does not fetch when parentId is null', () => {
-    renderHook(() => useProductVariants(null), { wrapper });
-    expect(fromMock).not.toHaveBeenCalled();
-  });
-  it('loads tracking and normalizes object, array, empty and missing vitrine relations', async () => {
-    orderMock.mockResolvedValue({ data: [
-      { id: 'a', track_inventory: true, display_stock: { quantity: 0 } },
-      { id: 'b', track_inventory: false, display_stock: [{ quantity: 4 }] },
-      { id: 'c', display_stock: [] }, { id: 'd', display_stock: null }, { id: 'e' },
-    ], error: null });
-    const { result } = renderHook(() => useProductVariants('parent-1'), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(selectMock).toHaveBeenCalledWith(expect.stringContaining('track_inventory, display_stock(quantity)'));
-    expect(result.current.data?.map((r) => r.display_stock)).toEqual([{ quantity: 0 }, { quantity: 4 }, null, null, null]);
-    expect(result.current.data?.[1]?.track_inventory).toBe(false);
-  });
+it('does not fetch without a parent', () => {
+  renderHook(() => useProductVariants(null), { wrapper });
+  expect(mocks.rpc).not.toHaveBeenCalled();
+});
+it('keeps legacy snapshot relation normalization readable', () => {
+  expect(normalizeVariantStock({ display_stock: [{ quantity: 4 }] }).display_stock).toEqual({ quantity: 4 });
+  expect(normalizeVariantStock({ display_stock: [] }).display_stock).toBeNull();
+  expect(normalizeVariantStock({ display_stock: null }).display_stock).toBeNull();
+  expect(normalizeVariantStock({}).display_stock).toBeNull();
 });

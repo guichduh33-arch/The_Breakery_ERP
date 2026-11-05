@@ -68,13 +68,13 @@ beforeEach(() => {
 });
 
 describe('useDailySales', () => {
-  it('appelle get_daily_sales_v4 avec p_date_start / p_date_end', async () => {
+  it('appelle get_daily_sales_v5 avec p_date_start / p_date_end', async () => {
     const { result } = renderHook(
       () => useDailySales({ start: '2026-07-01', end: '2026-07-02' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v4', {
+    expect(mockRpc).toHaveBeenCalledWith('get_daily_sales_v5', {
       p_date_start: '2026-07-01',
       p_date_end:   '2026-07-02',
     });

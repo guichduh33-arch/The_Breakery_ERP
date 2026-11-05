@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByProduct.ts
 //
-// Query hook pour `get_sales_by_product_v3` — le détail des produits vendus sur
+// Query hook pour `get_sales_by_product_v5` — le détail des produits vendus sur
 // une fenêtre de jours métier, ventilé comptoir / B2B.
 //
 // Deux réserves que la RPC porte et que la page DOIT afficher (elles ne se
@@ -95,7 +95,7 @@ export function useSalesByProduct(params: UseSalesByProductParams) {
       };
       if (categoryId) args.p_category_id = categoryId;
 
-      const { data, error } = await supabase.rpc('get_sales_by_product_v3', args);
+      const { data, error } = await supabase.rpc('get_sales_by_product_v5', args);
       if (error) throw error as Error;
 
       const r        = (data ?? {}) as Record<string, unknown>;

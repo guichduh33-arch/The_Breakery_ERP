@@ -86,7 +86,7 @@ export function useDailySales(params: UseDailySalesParams) {
   return useQuery<DailySalesData, Error>({
     queryKey: ['reports', 'daily-sales', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_daily_sales_v4', {
+      const { data, error } = await supabase.rpc('get_daily_sales_v5', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

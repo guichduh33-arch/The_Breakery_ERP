@@ -3,7 +3,7 @@
 // Lot F (campagne Reports 2026-08-15) — vague Inventory, page 10/10. Migrée sur
 // le socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
-// CE QUI NE CHANGE PAS : les lignes viennent de `get_purchase_by_supplier_v1` ;
+// CE QUI NE CHANGE PAS : les lignes viennent de `get_purchase_by_supplier_v2` ;
 // la PART (`share_pct`) est celle du SERVEUR et non une part recalculée sur les
 // lignes affichées. Page terminale — il n'y a pas de drill-down fournisseur
 // (décision documentée : la Wave C possède ce routage).

@@ -15,8 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProductTypeahead } from '../components/ProductTypeahead.js';
 
 const MOCK_PRODUCTS = [
-  { id: 'p-1', sku: 'BEV-AMER', name: 'Café Americano', current_stock: 100, unit: 'pcs' },
-  { id: 'p-2', sku: 'BEV-LATT', name: 'Café Latte',     current_stock:  42, unit: 'pcs' },
+  { id: 'p-1', sku: 'BEV-AMER', name: 'Café Americano', current_stock: 100, unit: 'pcs', track_inventory: true },
+  { id: 'p-2', sku: 'BEV-LATT', name: 'Café Latte',     current_stock:  42, unit: 'pcs', track_inventory: true },
 ];
 
 // Le motif `ilike` traverse le mock : la liste rétrécit réellement quand on
@@ -50,7 +50,7 @@ vi.mock('@/lib/supabase.js', () => {
       return Promise.resolve({ data, error: null });
     },
   };
-  return { supabase: { from: () => chain, rpc: () => Promise.resolve({ data: null, error: null }) } };
+  return { supabase: { from: () => chain, rpc: () => Promise.resolve({ data: MOCK_PRODUCTS, error: null }) } };
 });
 
 function renderTypeahead() {

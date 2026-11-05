@@ -1,6 +1,6 @@
 // apps/pos/src/features/shift/components/CloseShiftModal.tsx
 // Session 13 / Phase 3.C — full-screen modal to count cash, preview
-// variance, and post the close via close_shift_v1.
+// variance, and post the close via close_shift_v13.
 //
 // LOT 4 (POS P0 hardening, audit 2026-06-25) — BLIND CASH COUNT. The cashier
 // must enter the physically-counted cash WITHOUT seeing the system-expected
@@ -76,7 +76,7 @@ export function CloseShiftModal({
   const [managerPin, setManagerPin] = useState('');
   // S72 audit P1: the blind count hides the non-cash expected amounts, so the
   // client cannot replicate the server's 3-volet OR for the note/PIN gates
-  // (close_shift_v9). When a QRIS/card-only variance trips a server gate, reveal
+  // (close_shift_v13). When a QRIS/card-only variance trips a server gate, reveal
   // the matching section from the server's rejection instead of dead-locking on
   // a toast with no field to fill.
   const [serverPinRequired, setServerPinRequired] = useState(false);
@@ -89,7 +89,7 @@ export function CloseShiftModal({
   const denomEnabled = useDenominationCountEnabled();
   const enabledMethods = useEnabledPaymentMethods();
   // Lot B (ADR-006 déc. 9) — le volet QRIS agrège aussi les e-wallets
-  // (bucket serveur close_shift_v9) : le champ de comptage doit apparaître
+  // (bucket serveur close_shift_v13) : le champ de comptage doit apparaître
   // dès qu'un tender du bucket est activé, même si 'qris' seul ne l'est pas.
   const qrisVisible = enabledMethods.has('qris') || enabledMethods.has('gopay')
     || enabledMethods.has('ovo') || enabledMethods.has('dana');
@@ -116,7 +116,7 @@ export function CloseShiftModal({
 
   // S66 (12 D2.1): above the higher PIN thresholds, a designated manager must
   // approve. Same predicate shape as the note guard, mirrored server-side in
-  // close_shift_v9 (pin_approval_required) — the UI block is a convenience,
+  // close_shift_v13 (pin_approval_required) — the UI block is a convenience,
   // the RPC is the authority. S72: also honoured when the server rejected a
   // prior submit (a QRIS/card-only variance the blind client can't see).
   const pinRequired = step === 'review'
@@ -376,7 +376,7 @@ export function CloseShiftModal({
         )}
 
         {/* S66 (12 D2.1) — large variance: a designated manager approves with
-            their 6-digit PIN. Server-enforced by close_shift_v4; this section
+            their 6-digit PIN. Server-enforced by close_shift_v13; this section
             just collects approver + PIN. */}
         {pinRequired && (
           <section className="space-y-2" data-testid="manager-approval-section">

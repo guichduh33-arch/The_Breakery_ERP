@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/components/HistoryPanel.tsx
 //
 // Product detail "History" tab — the change-log for this product, read from
-// audit_logs via get_audit_logs_v3 (entity_type='product', entity_id=<id>).
+// audit_logs via get_audit_logs_v4 (entity_type='product', entity_id=<id>).
 // The RPC is SECURITY INVOKER and audit_logs is admin_read RLS-gated, so a
 // MANAGER (or any non-admin) sees an empty trail by design.
 

@@ -17,6 +17,8 @@
 -- data in the shared V3 dev DB. Run via MCP execute_sql (BEGIN..ROLLBACK).
 
 BEGIN;
+\ir helpers/released_report_days.sql
+SELECT pg_temp.fixture_released_days(current_date,current_date);
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -43,7 +45,7 @@ BEGIN
   -- POS vivante pour le profil choisi ferait claquer one_open_session_per_user
   -- à l'insertion de la fixture (le test avorterait sans rien évaluer).
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
-  WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+  WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL AND up.role_code='SUPER_ADMIN'
     AND has_permission(up.auth_user_id, 'reports.sales.read')
     AND has_permission(up.auth_user_id, 'reports.financial.read')
     AND NOT EXISTS (
@@ -69,10 +71,10 @@ BEGIN
   INSERT INTO order_payments (order_id, method, amount, paid_at)
   VALUES (v_ord, 'cash', 1100, v_paid_at);
 
-  v_ppm_d   := get_payments_by_method_v3('2031-04-16', '2031-04-16');
-  v_ppm_dm1 := get_payments_by_method_v3('2031-04-15', '2031-04-15');
-  v_ds_d    := get_daily_sales_v3('2031-04-16', '2031-04-16');
-  v_ds_dm1  := get_daily_sales_v3('2031-04-15', '2031-04-15');
+  v_ppm_d   := get_payments_by_method_v4('2031-04-16', '2031-04-16');
+  v_ppm_dm1 := get_payments_by_method_v4('2031-04-15', '2031-04-15');
+  v_ds_d    := get_daily_sales_v5('2031-04-16', '2031-04-16');
+  v_ds_dm1  := get_daily_sales_v5('2031-04-15', '2031-04-15');
 
   v_t1 := (v_ppm_d->'summary'->>'total_amount')::numeric = 1100
       AND jsonb_array_length(v_ppm_d->'by_day') = 1
@@ -88,7 +90,7 @@ END
 $$;
 
 SELECT ok(current_setting('breakery.ppmtz_t1')::boolean,
-  'T1: sale at local 00:15 bucketed on local day D by both get_payments_by_method_v3 and get_daily_sales_v3');
+  'T1: sale at local 00:15 bucketed on local day D by both get_payments_by_method_v4 and get_daily_sales_v5');
 SELECT ok(current_setting('breakery.ppmtz_t2')::boolean,
   'T2: same sale NOT attributed to local day D-1 by either RPC (no UTC-day leakage)');
 

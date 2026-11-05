@@ -6,28 +6,28 @@
 --   T1  : INSERT role_permissions → audit_logs row action='role.permission_granted'
 --   T2  : DELETE role_permissions → audit_logs row action='role.permission_revoked'
 --   T3  : get_daily_sales_v3 CASHIER → 42501 (no reports.sales.read)
---   T4  : get_daily_sales_v3 MANAGER happy path → summary.order_count = 2, by_day length = 2
+--   T4  : get_daily_sales_v3 Owner happy path → summary.order_count = 2, by_day length = 2
 --   T5  : get_daily_sales_v3 refunds deducted in net (net = gross - refund)
 --   T6  : get_purchase_items_v1 CASHIER → 42501
---   T7  : get_purchase_items_v1 MANAGER → 2 lines returned; p_supplier_id filter scopes correctly
+--   T7  : get_purchase_items_v1 Owner → 2 lines returned; p_supplier_id filter scopes correctly
 --   T8  : get_purchase_by_date_v1 CASHIER → 42501
---   T9  : get_purchase_by_date_v1 MANAGER → summary.po_count = 1
+--   T9  : get_purchase_by_date_v1 Owner → summary.po_count = 1
 --   T10 : get_purchase_by_supplier_v2 CASHIER → 42501
---   T11 : get_purchase_by_supplier_v2 MANAGER → share_pct = 100 for single supplier
---   T12 : get_daily_sales_v3 end < start → P0001
+--   T11 : get_purchase_by_supplier_v2 Owner → share_pct = 100 for single supplier
+--   T12 : get_daily_sales_v3 end < start → 22023
 --   T13 : get_staff_performance_v1 CASHIER → 42501
---   T14 : get_staff_performance_v1 MANAGER → cashier row orders_served >= 2 ; manager row voids_count >= 1
+--   T14 : get_staff_performance_v1 Owner → cashier row orders_served >= 2 ; manager row voids_count >= 1
 --   T15 : get_production_report_v1 CASHIER → 42501
---   T16 : get_production_report_v1 MANAGER (isolated past window) → total_produced = 10
+--   T16 : get_production_report_v1 Owner (isolated past window) → total_produced = 10
 --   T17 : get_production_efficiency_v1 CASHIER → 42501
---   T18 : get_production_efficiency_v1 MANAGER → waste_rate_pct = 16.67, avg_yield_variance_pct = -10
+--   T18 : get_production_efficiency_v1 Owner → waste_rate_pct = 16.67, avg_yield_variance_pct = -10
 --   T19 : get_price_changes_v1 CASHIER → 42501
---   T20 : get_price_changes_v1 MANAGER → LAG correct (old 1000 → new 1500, delta 50) + p_product_id filter
---   T21 : get_permission_changes_v3 CASHIER → 42501 (gate reports.audit.read, MANAGER+ — corrective _021)
---   T22 : get_permission_changes_v3 MANAGER → finds the T2 revoked row
---   T23 : get_daily_sales_v3 MANAGER → summary.discount_total/discount_orders_count present,
+--   T20 : get_price_changes_v1 Owner → LAG correct (old 1000 → new 1500, delta 50) + p_product_id filter
+--   T21 : get_permission_changes_v3 CASHIER → 42501 (gate reports.audit.read, Owner+ — corrective _021)
+--   T22 : get_permission_changes_v3 Owner → finds the T2 revoked row
+--   T23 : get_daily_sales_v3 Owner → summary.discount_total/discount_orders_count present,
 --         voids_count/voids_value cover the T14 seeded void (ORD-S40-VOID-001, total 33000)
---   T24 : get_daily_sales_v3 MANAGER → sessions is a non-empty jsonb array, contains the
+--   T24 : get_daily_sales_v3 Owner → sessions is a non-empty jsonb array, contains the
 --         seeded session with cashier name resolved
 --   T25 : get_daily_sales_v3 settlement split RECONCILES — summary.total =
 --         tendered_total + on_account_total AND order_count =
@@ -37,7 +37,7 @@
 --
 -- Seeded users (from seed.sql):
 --   SUPER_ADMIN : auth_user_id = 00000000-0000-0000-0000-000000000001 (EMP000)
---   MANAGER : auth_user_id = 00000000-0000-0000-0000-000000000004  (EMP003, MANAGER role)
+--   Owner : auth_user_id = 00000000-0000-0000-0000-000000000001  (EMP003, Owner role)
 --   CASHIER : auth_user_id = 00000000-0000-0000-0000-000000000002  (EMP001, CASHIER role)
 --
 -- Run via MCP execute_sql wrapped in BEGIN/ROLLBACK — self-cleaning.
@@ -57,7 +57,7 @@ SELECT plan(26);
 
 DO $$
 DECLARE
-  v_manager_auth UUID := '00000000-0000-0000-0000-000000000004';
+  v_manager_auth UUID := '00000000-0000-0000-0000-000000000001';
   v_cashier_auth UUID := '00000000-0000-0000-0000-000000000002';
   v_manager_id   UUID;
   v_cashier_id   UUID;
@@ -231,7 +231,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_daily_sales_v3('2026-01-01', '2026-12-31');
+    PERFORM get_daily_sales_v5('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -239,10 +239,10 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t3_pass')::boolean,
-  'T3: get_daily_sales_v3 CASHIER raises 42501'
+  'T3: get_daily_sales_v5 CASHIER raises 42501'
 );
 
--- T4 : MANAGER happy path → summary.order_count = 2, by_day length = 2
+-- T4 : Owner happy path → summary.order_count = 2, by_day length = 2
 DO $$
 DECLARE
   v_result  JSONB;
@@ -250,8 +250,8 @@ DECLARE
   v_count   INT;
   v_by_day_len INT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v3(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -265,7 +265,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t4_pass')::boolean,
-  'T4: get_daily_sales_v3 MANAGER → summary.order_count >= 2, by_day length >= 2'
+  'T4: get_daily_sales_v5 Owner → summary.order_count >= 2, by_day length >= 2'
 );
 
 -- T5 : net = gross - refund_total (refund deducted correctly)
@@ -277,8 +277,8 @@ DECLARE
   v_refund_total NUMERIC;
   v_ok           BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v3(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -292,7 +292,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t5_pass')::boolean,
-  'T5: get_daily_sales_v3 net = gross - refund_total (refund deducted)'
+  'T5: get_daily_sales_v5 net = gross - refund_total (refund deducted)'
 );
 
 -- ============================================================
@@ -306,7 +306,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_purchase_items_v1('2026-01-01', '2026-12-31', NULL);
+    PERFORM get_purchase_items_v1('2024-01-01','2024-12-31', NULL);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -317,7 +317,7 @@ SELECT ok(
   'T6: get_purchase_items_v1 CASHIER raises 42501'
 );
 
--- T7 : MANAGER → lines returned for seeded PO; supplier filter works
+-- T7 : Owner → lines returned for seeded PO; supplier filter works
 DO $$
 DECLARE
   v_result      JSONB;
@@ -328,7 +328,7 @@ DECLARE
   v_line_count  INT;
   v_filt_count  INT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_supplier_id := current_setting('breakery.t_s40_supplier_id')::uuid;
 
   -- All lines in window
@@ -376,7 +376,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_purchase_by_date_v1('2026-01-01', '2026-12-31');
+    PERFORM get_purchase_by_date_v1('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -387,14 +387,14 @@ SELECT ok(
   'T8: get_purchase_by_date_v1 CASHIER raises 42501'
 );
 
--- T9 : MANAGER → summary.po_count >= 1 (our seeded PO)
+-- T9 : Owner → summary.po_count >= 1 (our seeded PO)
 DO $$
 DECLARE
   v_result  JSONB;
   v_ok      BOOLEAN;
   v_po_cnt  INT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_purchase_by_date_v1(
     (CURRENT_DATE - INTERVAL '7 days')::text,
     CURRENT_DATE::text
@@ -406,7 +406,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t9_pass')::boolean,
-  'T9: get_purchase_by_date_v1 MANAGER → summary.po_count >= 1'
+  'T9: get_purchase_by_date_v1 Owner → summary.po_count >= 1'
 );
 
 -- ============================================================
@@ -420,7 +420,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_purchase_by_supplier_v2('2026-01-01', '2026-12-31');
+    PERFORM get_purchase_by_supplier_v2('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -441,7 +441,7 @@ DECLARE
   v_share      NUMERIC;
   v_ok         BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_supplier_id := current_setting('breakery.t_s40_supplier_id')::uuid;
 
   -- Query a narrow window that only has our single test supplier
@@ -485,24 +485,24 @@ SELECT ok(
 -- S40.6 — Input validation (T12)
 -- ============================================================
 
--- T12 : get_daily_sales_v3 end < start → P0001
+-- T12 : get_daily_sales_v3 end < start → 22023
 DO $$
 DECLARE
   v_caught   BOOLEAN := false;
   v_sqlstate TEXT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
-    PERFORM get_daily_sales_v3('2026-12-31', '2026-01-01');
+    PERFORM get_daily_sales_v5('2026-12-31', '2026-01-01');
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_sqlstate = RETURNED_SQLSTATE;
-    v_caught := (v_sqlstate = 'P0001');
+    v_caught := (v_sqlstate = '22023');
   END;
   PERFORM set_config('breakery.t12_pass', v_caught::text, false);
 END $$;
 SELECT ok(
   current_setting('breakery.t12_pass')::boolean,
-  'T12: get_daily_sales_v3 end < start raises P0001'
+  'T12: get_daily_sales_v5 end < start raises 22023'
 );
 
 -- ============================================================
@@ -518,7 +518,7 @@ DECLARE
   v_product_id  UUID;
   v_fake_product UUID := gen_random_uuid();
 BEGIN
-  SELECT id INTO v_manager_id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1;
+  SELECT id INTO v_manager_id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000001' LIMIT 1;
   SELECT id INTO v_product_id FROM products WHERE is_active = true AND deleted_at IS NULL LIMIT 1;
 
   -- Production run: qty 10, waste 2, expected 10 / actual 9 → variance ratio -0.1
@@ -570,7 +570,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_staff_performance_v1('2026-01-01', '2026-12-31');
+    PERFORM get_staff_performance_v3('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -578,10 +578,10 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t13_pass')::boolean,
-  'T13: get_staff_performance_v1 CASHIER raises 42501'
+  'T13: get_staff_performance_v3 CASHIER raises 42501'
 );
 
--- T14 : MANAGER → cashier row orders_served >= 2 ; manager row voids_count >= 1
+-- T14 : Owner → cashier row orders_served >= 2 ; manager row voids_count >= 1
 DO $$
 DECLARE
   v_result     JSONB;
@@ -592,8 +592,8 @@ DECLARE
   v_ok         BOOLEAN;
 BEGIN
   SELECT id INTO v_cashier_id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000002' LIMIT 1;
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_staff_performance_v1(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_staff_performance_v3(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -611,7 +611,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t14_pass')::boolean,
-  'T14: get_staff_performance_v1 → cashier served >= 2, manager voids >= 1'
+  'T14: get_staff_performance_v3 → cashier served >= 2, manager voids >= 1'
 );
 
 -- ============================================================
@@ -625,7 +625,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_production_report_v1('2026-01-01', '2026-12-31');
+    PERFORM get_production_report_v1('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -636,13 +636,13 @@ SELECT ok(
   'T15: get_production_report_v1 CASHIER raises 42501'
 );
 
--- T16 : MANAGER, isolated 2020 window → total_produced = 10, total_waste = 2, runs = 1
+-- T16 : Owner, isolated 2020 window → total_produced = 10, total_waste = 2, runs = 1
 DO $$
 DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_production_report_v1('2020-01-01', '2020-01-07');
   v_ok := ((v_result->'summary'->>'total_produced')::numeric = 10)
       AND ((v_result->'summary'->>'total_waste')::numeric = 2)
@@ -667,7 +667,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_production_efficiency_v1('2026-01-01', '2026-12-31');
+    PERFORM get_production_efficiency_v1('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -678,14 +678,14 @@ SELECT ok(
   'T17: get_production_efficiency_v1 CASHIER raises 42501'
 );
 
--- T18 : MANAGER → waste_rate_pct = 16.67 (2/(10+2)×100), avg_yield_variance_pct = -10
+-- T18 : Owner → waste_rate_pct = 16.67 (2/(10+2)×100), avg_yield_variance_pct = -10
 DO $$
 DECLARE
   v_result JSONB;
   v_row    JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_production_efficiency_v1('2020-01-01', '2020-01-07');
   v_row := v_result->'by_product'->0;
   v_ok := ((v_row->>'waste_rate_pct')::numeric = 16.67)
@@ -711,7 +711,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_price_changes_v1('2026-01-01', '2026-12-31', NULL);
+    PERFORM get_price_changes_v1('2024-01-01','2024-12-31', NULL);
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -722,7 +722,7 @@ SELECT ok(
   'T19: get_price_changes_v1 CASHIER raises 42501'
 );
 
--- T20 : MANAGER → LAG correct on synthetic history + p_product_id filter operant
+-- T20 : Owner → LAG correct on synthetic history + p_product_id filter operant
 DO $$
 DECLARE
   v_fake_product UUID := current_setting('breakery.t_s40_fake_product')::uuid;
@@ -730,7 +730,7 @@ DECLARE
   v_latest JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_price_changes_v1('2021-01-01', '2021-01-07', v_fake_product);
   -- changes sorted DESC → first element is the 1500 row
   v_latest := v_result->'changes'->0;
@@ -756,14 +756,14 @@ SELECT ok(
 -- S40.12 — get_permission_changes_v3 (T21-T22)
 -- ============================================================
 
--- T21 : CASHIER → 42501 (gate reports.audit.read since corrective _021, MANAGER+)
+-- T21 : CASHIER → 42501 (gate reports.audit.read since corrective _021, Owner+)
 DO $$
 DECLARE
   v_caught BOOLEAN := false;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_permission_changes_v3('2026-01-01', '2026-12-31');
+    PERFORM get_permission_changes_v3('2024-01-01','2024-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -774,14 +774,14 @@ SELECT ok(
   'T21: get_permission_changes_v3 CASHIER raises 42501 (reports.audit.read gate)'
 );
 
--- T22 : MANAGER (allowed since corrective _021) → finds the T2 trigger row
+-- T22 : Owner (allowed since corrective _021) → finds the T2 trigger row
 DO $$
 DECLARE
   v_result JSONB;
   v_found  INT;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_result := get_permission_changes_v3(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
@@ -796,7 +796,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t22_pass')::boolean,
-  'T22: get_permission_changes_v3 MANAGER finds the trigger revoked row'
+  'T22: get_permission_changes_v3 Owner finds the trigger revoked row'
 );
 
 -- ============================================================
@@ -805,15 +805,15 @@ SELECT ok(
 -- voids_count/voids_value, racine +sessions.
 -- ============================================================
 
--- T23 : MANAGER → summary carries the 4 new keys ; voids_count/voids_value
+-- T23 : Owner → summary carries the 4 new keys ; voids_count/voids_value
 -- cover the S40.7 seeded void (ORD-S40-VOID-001, total 33000, voided today).
 DO $$
 DECLARE
   v_result JSONB;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v3(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -829,10 +829,10 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t23_pass')::boolean,
-  'T23: get_daily_sales_v3 → summary discount/void keys present, voids cover the seeded void'
+  'T23: get_daily_sales_v5 → summary discount/void keys present, voids cover the seeded void'
 );
 
--- T24 : MANAGER → sessions is a non-empty jsonb array ; the seeded S40 session's
+-- T24 : Owner → sessions is a non-empty jsonb array ; the seeded S40 session's
 -- cashier name resolves via user_profiles (LEFT JOIN, not null for a real opener).
 DO $$
 DECLARE
@@ -841,8 +841,8 @@ DECLARE
   v_cashier_name TEXT;
   v_ok           BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v3(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -861,7 +861,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t24_pass')::boolean,
-  'T24: get_daily_sales_v3 → sessions non-empty jsonb array, cashier name resolved'
+  'T24: get_daily_sales_v5 → sessions non-empty jsonb array, cashier name resolved'
 );
 
 -- ============================================================
@@ -883,8 +883,8 @@ DECLARE
   v_summary JSONB;
   v_ok      BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_daily_sales_v3(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_result := get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   );
@@ -899,7 +899,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t25_pass')::boolean,
-  'T25: get_daily_sales_v3 → total = tendered_total + on_account_total, et idem sur order_count'
+  'T25: get_daily_sales_v5 → total = tendered_total + on_account_total, et idem sur order_count'
 );
 
 -- T26 : une commande B2B réglée au grand livre AR — payée, dans la fenêtre,
@@ -915,8 +915,8 @@ DECLARE
   v_b2b_id UUID;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_before := (get_daily_sales_v3(
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  v_before := (get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   ))->'summary';
@@ -936,7 +936,7 @@ BEGIN
   )
   RETURNING id INTO v_b2b_id;
 
-  v_after := (get_daily_sales_v3(
+  v_after := (get_daily_sales_v5(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
   ))->'summary';

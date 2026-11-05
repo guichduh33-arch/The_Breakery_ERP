@@ -4,7 +4,7 @@
 //
 // One row per drawer lifecycle (pos_session), REPLACING the Activity tab's
 // confusing "Session Open N ≠ Session Close M" counters with a single lifecycle
-// count. Source serveur unique : get_pos_sessions_report_v1 — même plage WITA.
+// count. Source serveur unique : get_pos_sessions_report_v4 — même plage WITA.
 // Chaque ligne : statut (open/closed), caissier, ouverture→clôture, fond de
 // caisse, ventes live du tiroir, et l'écart figé des 3 volets (cash/QRIS/carte).
 // Export CSV.

@@ -14,6 +14,284 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_day_releases: {
+        Row: {
+          count_id: string
+          day: string
+          released_at: string
+          released_by: string
+        }
+        Insert: {
+          count_id: string
+          day: string
+          released_at?: string
+          released_by: string
+        }
+        Update: {
+          count_id?: string
+          day?: string
+          released_at?: string
+          released_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_day_releases_count_id_fkey"
+            columns: ["count_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_day_releases_released_by_fkey"
+            columns: ["released_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_day_visibility_config: {
+        Row: {
+          activated_on: string
+          id: boolean
+        }
+        Insert: {
+          activated_on?: string
+          id?: boolean
+        }
+        Update: {
+          activated_on?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
+      display_day_closing_items: {
+        Row: {
+          closing_id: string
+          expected_qty: number
+          id: string
+          product_id: string
+          reference_basis: string
+          remaining_qty: number
+          waste_declaration_id: string | null
+          waste_qty: number
+          waste_reason: string | null
+        }
+        Insert: {
+          closing_id: string
+          expected_qty: number
+          id?: string
+          product_id: string
+          reference_basis: string
+          remaining_qty: number
+          waste_declaration_id?: string | null
+          waste_qty: number
+          waste_reason?: string | null
+        }
+        Update: {
+          closing_id?: string
+          expected_qty?: number
+          id?: string
+          product_id?: string
+          reference_basis?: string
+          remaining_qty?: number
+          waste_declaration_id?: string | null
+          waste_qty?: number
+          waste_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_day_closing_items_closing_id_fkey"
+            columns: ["closing_id"]
+            isOneToOne: false
+            referencedRelation: "display_day_closings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_day_closing_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_day_closing_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_day_closing_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_day_closing_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_day_closing_items_waste_declaration_id_fkey"
+            columns: ["waste_declaration_id"]
+            isOneToOne: false
+            referencedRelation: "stock_declarations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      display_day_closings: {
+        Row: {
+          business_day: string
+          correction_reason: string | null
+          id: string
+          idempotency_key: string
+          recorded_at: string
+          recorded_by: string
+          request: Json
+          revision: number
+          supersedes_id: string | null
+        }
+        Insert: {
+          business_day: string
+          correction_reason?: string | null
+          id?: string
+          idempotency_key: string
+          recorded_at?: string
+          recorded_by: string
+          request: Json
+          revision: number
+          supersedes_id?: string | null
+        }
+        Update: {
+          business_day?: string
+          correction_reason?: string | null
+          id?: string
+          idempotency_key?: string
+          recorded_at?: string
+          recorded_by?: string
+          request?: Json
+          revision?: number
+          supersedes_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_day_closings_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_day_closings_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "display_day_closings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_declarations: {
+        Row: {
+          baseline_quantity: number
+          declared_at: string
+          declared_by: string
+          display_withdrawal_applied: boolean
+          id: string
+          idempotency_key: string
+          operation: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason: string | null
+          result: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          baseline_quantity: number
+          declared_at?: string
+          declared_by: string
+          display_withdrawal_applied?: boolean
+          id?: string
+          idempotency_key: string
+          operation: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason?: string | null
+          result?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          baseline_quantity?: number
+          declared_at?: string
+          declared_by?: string
+          display_withdrawal_applied?: boolean
+          id?: string
+          idempotency_key?: string
+          operation?: string
+          product_id?: string
+          quantity?: number
+          reason?: string
+          rejection_reason?: string | null
+          result?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_declarations_declared_by_fkey"
+            columns: ["declared_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_declarations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       b2b_order_edit_keys: {
         Row: {
           actor_id: string
@@ -3001,6 +3279,7 @@ export type Database = {
       inventory_count_items: {
         Row: {
           count_id: string
+          counted_by: string | null
           counted_qty: number | null
           created_at: string
           expected_qty: number
@@ -3014,6 +3293,7 @@ export type Database = {
         }
         Insert: {
           count_id: string
+          counted_by?: string | null
           counted_qty?: number | null
           created_at?: string
           expected_qty?: number
@@ -3027,6 +3307,7 @@ export type Database = {
         }
         Update: {
           count_id?: string
+          counted_by?: string | null
           counted_qty?: number | null
           created_at?: string
           expected_qty?: number
@@ -3044,6 +3325,13 @@ export type Database = {
             columns: ["count_id"]
             isOneToOne: false
             referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_counted_by_fkey"
+            columns: ["counted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3078,6 +3366,7 @@ export type Database = {
       }
       inventory_counts: {
         Row: {
+          business_day: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -3096,6 +3385,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_day?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -3114,6 +3404,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_day?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -7598,13 +7889,822 @@ export type Database = {
       }
     }
     Functions: {
-      edit_b2b_order_v2: {
+      _dashboard_cash_on_hand_v2: { Args: never; Returns: Json }
+      _dashboard_cost_mtd_v3: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_hourly_v2: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_kpis_v3: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_revenue_series_v2: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_share_payments_v4: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      add_display_stock_v4: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      add_opname_item_v3: {
+        Args: { p_count_id: string; p_notes?: string; p_product_id: string }
+        Returns: Json
+      }
+      adjust_display_stock_v6: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_qty: number
+          p_product_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      adjust_stock_v4: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_qty: number
+          p_product_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      approve_stock_declaration_v3: {
+        Args: { p_declaration_id: string }
+        Returns: Json
+      }
+      assert_business_days_visible_v2: {
+        Args: { p_end: string; p_start: string }
+        Returns: undefined
+      }
+      assert_stock_owner_v1: { Args: never; Returns: undefined }
+      calculate_pb1_payable_v4: {
+        Args: { p_period_end: string; p_period_start: string }
+        Returns: Json
+      }
+      can_view_business_day_v2: { Args: { p_day: string }; Returns: boolean }
+      can_view_financial_entry_v1: {
+        Args: { p_detail?: boolean; p_entry_id: string }
+        Returns: boolean
+      }
+      can_view_financial_shift_v1: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
+      can_view_order_v2: { Args: { p_order_id: string }; Returns: boolean }
+      can_view_sales_day_v1: { Args: { p_day: string }; Returns: boolean }
+      can_view_stock_v1: { Args: never; Returns: boolean }
+      complete_order_with_payment_v32: {
+        Args: {
+          p_customer_id?: string
+          p_discount_amount?: number
+          p_discount_auth_id?: string
+          p_discount_authorized_by?: string
+          p_discount_reason?: string
+          p_discount_type?: string
+          p_discount_value?: number
+          p_idempotency_key?: string
+          p_items: Json
+          p_loyalty_points_redeemed?: number
+          p_order_type: Database["public"]["Enums"]["order_type"]
+          p_payment?: Json
+          p_payments?: Json
+          p_promotions?: Json
+          p_session_id: string
+          p_source_code?: string
+          p_table_number?: string
+        }
+        Returns: Json
+      }
+      correct_display_day_count_v1: {
+        Args: {
+          p_closing_id: string
+          p_counts: Json
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      create_b2b_order_v10: {
+        Args: {
+          p_customer_id: string
+          p_delivery_date?: string
+          p_idempotency_key?: string
+          p_items: Json
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      create_opname_v3: {
+        Args: {
+          p_business_day?: string
+          p_idempotency_key?: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      create_product_v5: { Args: { p_payload: Json }; Returns: Json }
+      edit_b2b_order_v3: {
         Args: {
           p_expected_updated_at: string
           p_idempotency_key: string
           p_items: Json
           p_notes: string
           p_order_id: string
+        }
+        Returns: Json
+      }
+      finalize_opname_v5: {
+        Args: { p_count_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
+      fire_counter_order_v12: {
+        Args: {
+          p_client_uuid: string
+          p_customer_id?: string
+          p_discount_auth_id?: string
+          p_discount_authorized_by?: string
+          p_items: Json
+          p_offline_replay?: boolean
+          p_order_id?: string
+          p_order_type?: Database["public"]["Enums"]["order_type"]
+          p_session_id: string
+          p_source_code?: string
+          p_table_number?: string
+          p_tolerate_unsellable?: boolean
+        }
+        Returns: Json
+      }
+      get_ar_aging_v2: { Args: never; Returns: Json }
+      get_b2b_invoice_v3: { Args: { p_order_id: string }; Returns: Json }
+      get_balance_sheet_v4: { Args: { p_as_of_date: string }; Returns: Json }
+      get_basket_analysis_v6: {
+        Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
+        Returns: {
+          co_occurrence_count: number
+          confidence: number
+          lift: number
+          product_a_name: string
+          product_b_name: string
+          product_id_a: string
+          product_id_b: string
+          support_a: number
+          support_b: number
+          support_pair: number
+        }[]
+      }
+      get_business_day_visibility_v2: { Args: { p_day: string }; Returns: Json }
+      get_cash_flow_v4: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_cash_wallet_analysis_v3: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_cash_wallet_balances_v4: {
+        Args: never
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+        }[]
+      }
+      get_cash_wallet_ledger_v4: {
+        Args: {
+          p_account_code: string
+          p_date_end: string
+          p_date_start: string
+        }
+        Returns: {
+          category: string
+          description: string
+          in_amount: number
+          out_amount: number
+          ref_type: string
+          remark: string
+          row_date: string
+          saldo: number
+          supplier: string
+        }[]
+      }
+      get_cashier_variance_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_combo_sales_v4: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_customer_cohort_v2: {
+        Args: { p_cohort_month: string; p_lookback_months?: number }
+        Returns: {
+          cohort_month: string
+          months_since_signup: number
+          retained_customers: number
+          retention_pct: number
+          total_revenue: number
+        }[]
+      }
+      get_customer_recognized_orders_v2: {
+        Args: { p_customer_id: string }
+        Returns: {
+          id: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          recognized_at: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }[]
+      }
+      get_customer_segments_v2: {
+        Args: { p_segment_type?: string }
+        Returns: {
+          avg_orders: number
+          customer_count: number
+          segment: string
+          total_spent: number
+        }[]
+      }
+      get_daily_sales_v5: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_dashboard_action_queue_v3: { Args: never; Returns: Json }
+      get_dashboard_open_orders_v3: { Args: never; Returns: Json }
+      get_dashboard_overview_v7: { Args: never; Returns: Json }
+      get_discounts_loyalty_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_display_day_closing_v1: {
+        Args: { p_business_day: string }
+        Returns: Json
+      }
+      get_display_stock_activity_v3: { Args: never; Returns: Json }
+      get_general_ledger_v4: {
+        Args: {
+          p_account_id: string
+          p_cursor?: Json
+          p_date_end: string
+          p_date_start: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      get_gross_margin_by_product_v4: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_low_stock_v4: {
+        Args: never
+        Returns: {
+          current_qty: number
+          min_stock_threshold: number
+          product_id: string
+          product_name: string
+          product_sku: string
+          shortfall: number
+          unit: string
+        }[]
+      }
+      get_movement_aggregates_v5: {
+        Args: {
+          p_date_end?: string
+          p_date_start?: string
+          p_movement_type?: string
+          p_product_id?: string
+          p_section_id?: string
+        }
+        Returns: Json
+      }
+      get_off_hours_sales_v2: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_operational_products_v2: { Args: never; Returns: Json }
+      get_opname_items_v1: { Args: { p_count_id: string }; Returns: Json }
+      get_orders_counters_v4: {
+        Args: { p_end: string; p_filters?: Json; p_start: string }
+        Returns: Json
+      }
+      get_orders_list_v6: {
+        Args: {
+          p_cursor_id?: string
+          p_cursor_val?: string
+          p_dir?: string
+          p_end: string
+          p_filters?: Json
+          p_limit?: number
+          p_sort?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_payments_by_method_v4: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_pb1_report_v5: {
+        Args: { p_period_month: number; p_period_year: number }
+        Returns: Json
+      }
+      get_pos_activity_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_events_v3: {
+        Args: {
+          p_actor_id?: string
+          p_cursor?: string
+          p_device_id?: string
+          p_end_date: string
+          p_event_types?: string[]
+          p_limit?: number
+          p_order_id?: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_pos_margin_v4: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_order_snapshot_v5: { Args: { p_order_id: string }; Returns: Json }
+      get_pos_order_type_category_mix_v4: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_payment_breakdown_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_sales_overview_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_sessions_report_v4: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_top_products_v4: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_voids_refunds_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_product_analytics_v4: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_product_dashboard_v7: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_product_performance_v4: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_product_sales_lines_v5: {
+        Args: {
+          p_cursor?: string
+          p_end_date: string
+          p_limit?: number
+          p_product_id: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_production_suggestions_v3: {
+        Args: {
+          p_lookback_days?: number
+          p_priority_high?: number
+          p_priority_medium?: number
+        }
+        Returns: {
+          avg_daily_sales: number
+          current_stock: number
+          days_of_stock: number
+          priority: string
+          product_id: string
+          product_name: string
+          product_sku: string
+          suggested_quantity: number
+        }[]
+      }
+      get_profit_loss_v4: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_section_id?: string
+        }
+        Returns: Json
+      }
+      get_promo_roi_v2: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_promotion_id: string
+        }
+        Returns: Json
+      }
+      get_refunds_report_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_reorder_suggestions_v3: {
+        Args: { p_buffer_days?: number; p_lookback_days?: number }
+        Returns: {
+          avg_daily_usage: number
+          current_stock: number
+          days_of_stock: number
+          last_purchase_at: string
+          min_stock_threshold: number
+          product_id: string
+          product_name: string
+          product_sku: string
+          suggested_order_qty: number
+          supplier_id: string
+          supplier_name: string
+          unit: string
+        }[]
+      }
+      get_sales_by_category_v6: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          qty: number
+          total: number
+        }[]
+      }
+      get_sales_by_customer_v3: {
+        Args: {
+          p_churn_min_orders?: number
+          p_customer_type?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_sales_by_hour_v5: {
+        Args: { p_date: string }
+        Returns: {
+          hour: number
+          order_count: number
+          total: number
+        }[]
+      }
+      get_sales_by_origin_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_sales_by_product_v5: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
+      get_sales_by_staff_v5: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: {
+          avg_basket: number
+          order_count: number
+          staff_id: string
+          staff_name: string
+          total: number
+        }[]
+      }
+      get_sales_by_table_v3: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_staff_performance_v3: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_stock_config_issues_v4: {
+        Args: never
+        Returns: {
+          category_name: string
+          current_stock: number
+          deduct_stock: boolean
+          issue_type: string
+          name: string
+          product_id: string
+          recipe_lines: number
+          severity: string
+          sku: string
+          track_inventory: boolean
+        }[]
+      }
+      get_stock_counters_v3: {
+        Args: { p_category_id?: string; p_search?: string }
+        Returns: {
+          low_count: number
+          negative_count: number
+          total_count: number
+          untracked_count: number
+          zero_count: number
+        }[]
+      }
+      get_stock_declarations_v1: { Args: never; Returns: Json }
+      get_stock_levels_v6: {
+        Args: {
+          p_bucket?: Database["public"]["Enums"]["stock_bucket"]
+          p_category_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_sort?: string
+          p_sort_dir?: string
+        }
+        Returns: {
+          category_id: string
+          category_name: string
+          current_stock: number
+          last_movement_at: string
+          min_stock_threshold: number
+          name: string
+          product_id: string
+          sku: string
+          stock_value: number
+          track_inventory: boolean
+          unit: string
+        }[]
+      }
+      get_stock_movement_ledger_v4: {
+        Args: {
+          p_end: string
+          p_limit?: number
+          p_movement_type?: string
+          p_product_id?: string
+          p_section_id?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_stock_movements_v6: {
+        Args: {
+          p_cursor?: string
+          p_end: string
+          p_limit?: number
+          p_movement_type?: string
+          p_product_id?: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      get_stock_position_v3: { Args: { p_as_of?: string }; Returns: Json }
+      get_stock_variance_v5: {
+        Args: { p_date_end?: string; p_date_start?: string }
+        Returns: {
+          closing: number
+          consumed: number
+          corrected: number
+          current_qty: number
+          opening: number
+          other: number
+          product_id: string
+          product_name: string
+          sku: string
+          sold: number
+          stock_in: number
+          wasted: number
+        }[]
+      }
+      get_trial_balance_v5: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_wastage_report_v4: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_zreport_snapshot_v3: { Args: { p_zreport_id: string }; Returns: Json }
+      is_business_owner_v1: { Args: never; Returns: boolean }
+      pay_existing_order_v25: {
+        Args: {
+          p_customer_id?: string
+          p_discount_amount?: number
+          p_discount_auth_id?: string
+          p_discount_authorized_by?: string
+          p_discount_reason?: string
+          p_discount_type?: string
+          p_discount_value?: number
+          p_idempotency_key?: string
+          p_loyalty_points_redeemed?: number
+          p_offline_replay?: boolean
+          p_order_id: string
+          p_outstanding?: boolean
+          p_payment?: Json
+          p_payments?: Json
+          p_promotions?: Json
+          p_session_id?: string
+        }
+        Returns: Json
+      }
+      recipe_bom_full_v5: {
+        Args: { p_max_depth?: number; p_product_id: string }
+        Returns: {
+          cost_price: number
+          current_stock: number
+          line_cost: number
+          material_id: string
+          material_name: string
+          material_unit: string
+          qty_in_base: number
+          qty_per_unit: number
+          recipe_unit: string
+        }[]
+      }
+      recipe_direct_cost_v3: {
+        Args: { p_product_id: string }
+        Returns: {
+          cost_price: number
+          current_stock: number
+          line_cost: number
+          material_id: string
+          material_name: string
+          material_unit: string
+          qty_in_base: number
+          qty_per_unit: number
+          recipe_unit: string
+        }[]
+      }
+      record_batch_production_v12: {
+        Args: { p_batch: Json; p_items: Json }
+        Returns: Json
+      }
+      record_incoming_stock_v5: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+          p_supplier_id?: string
+          p_unit_cost?: number
+        }
+        Returns: Json
+      }
+      record_kitchen_production_v5: { Args: { p_request: Json }; Returns: Json }
+      record_production_v10: {
+        Args: {
+          p_actual_yield_qty?: number
+          p_batch_number?: string
+          p_expected_yield_qty?: number
+          p_force_negative?: boolean
+          p_idempotency_key?: string
+          p_notes?: string
+          p_product_id: string
+          p_quantity_produced: number
+          p_quantity_waste?: number
+          p_recurse_subrecipes?: boolean
+          p_section_id: string
+          p_waste_reason?: Database["public"]["Enums"]["waste_reason"]
+          p_yield_variance_reason?: string
+        }
+        Returns: Json
+      }
+      reject_stock_declaration_v1: {
+        Args: { p_declaration_id: string; p_reason: string }
+        Returns: Json
+      }
+      release_business_day_v1: {
+        Args: { p_count_id: string; p_day: string }
+        Returns: Json
+      }
+      reopen_held_order_v10: {
+        Args: { p_order_id: string; p_session_id?: string }
+        Returns: Json
+      }
+      reservation_hold_v3: {
+        Args: {
+          p_expires_at: string
+          p_holder_id?: string
+          p_holder_type: string
+          p_idempotency_key?: string
+          p_notes?: string
+          p_product_id: string
+          p_quantity: number
+          p_section_id?: string
+        }
+        Returns: Json
+      }
+      return_display_to_kitchen_v4: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      search_ingredients_v3: {
+        Args: { p_kind?: string; p_limit?: number; p_query?: string }
+        Returns: {
+          cost_price: number
+          current_stock: number
+          has_recipe: boolean
+          kind: string
+          name: string
+          product_id: string
+          sku: string
+          unit: string
+        }[]
+      }
+      search_orders_v3: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          created_at: string
+          customer_name: string
+          id: string
+          order_number: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }[]
+      }
+      set_opname_count_v3: {
+        Args: {
+          p_count_item_id: string
+          p_counted_qty: number
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      set_product_base_unit_v4: {
+        Args: { p_new_unit: string; p_product_id: string }
+        Returns: Json
+      }
+      submit_display_day_closing_v1: {
+        Args: {
+          p_business_day: string
+          p_idempotency_key: string
+          p_items: Json
+        }
+        Returns: Json
+      }
+      submit_stock_declaration_v2: {
+        Args: {
+          p_idempotency_key: string
+          p_operation: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: Json
+      }
+      suggest_production_schedule_v3: {
+        Args: { p_target_date: string }
+        Returns: Json
+      }
+      update_b2b_pickup_v2: {
+        Args: {
+          p_mark_delivered?: boolean
+          p_order_id: string
+          p_pickup_date?: string
+        }
+        Returns: Json
+      }
+      update_product_v6: {
+        Args: { p_patch: Json; p_product_id: string }
+        Returns: Json
+      }
+      waste_display_stock_v4: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      waste_stock_v4: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
         }
         Returns: Json
       }
@@ -7695,27 +8795,6 @@ export type Database = {
       }
       _current_profile_id: { Args: never; Returns: string }
       _currtest: { Args: never; Returns: number }
-      _dashboard_cash_on_hand_v1: { Args: never; Returns: Json }
-      _dashboard_cost_mtd_v2: {
-        Args: { p_today: string; p_tz: string }
-        Returns: Json
-      }
-      _dashboard_hourly_v1: {
-        Args: { p_today: string; p_tz: string }
-        Returns: Json
-      }
-      _dashboard_kpis_v2: {
-        Args: { p_today: string; p_tz: string }
-        Returns: Json
-      }
-      _dashboard_revenue_series_v1: {
-        Args: { p_today: string; p_tz: string }
-        Returns: Json
-      }
-      _dashboard_share_payments_v2: {
-        Args: { p_today: string; p_tz: string }
-        Returns: Json
-      }
       _db_privs: { Args: never; Returns: unknown[] }
       _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
       _emit_shift_cash_transfer_v1: {
@@ -8046,24 +9125,6 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      add_display_stock_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_product_id: string
-          p_quantity: number
-          p_reason?: string
-        }
-        Returns: Json
-      }
-      add_opname_item_v2: {
-        Args: {
-          p_count_id: string
-          p_expected_qty?: number
-          p_notes?: string
-          p_product_id: string
-        }
-        Returns: Json
-      }
       add_order_item_v6: {
         Args: {
           p_idempotency_key: string
@@ -8084,29 +9145,11 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_display_stock_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_new_qty: number
-          p_product_id: string
-          p_reason: string
-        }
-        Returns: Json
-      }
       adjust_loyalty_points_v3: {
         Args: {
           p_customer_id: string
           p_delta: number
           p_idempotency_key: string
-          p_reason: string
-        }
-        Returns: Json
-      }
-      adjust_stock_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_new_qty: number
-          p_product_id: string
           p_reason: string
         }
         Returns: Json
@@ -8233,10 +9276,6 @@ export type Database = {
           p_match_id: string
           p_reason: string
         }
-        Returns: Json
-      }
-      calculate_pb1_payable_v3: {
-        Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
       calculate_recipe_cost_v1: {
@@ -8445,28 +9484,6 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v30: {
-        Args: {
-          p_customer_id?: string
-          p_discount_amount?: number
-          p_discount_auth_id?: string
-          p_discount_authorized_by?: string
-          p_discount_reason?: string
-          p_discount_type?: string
-          p_discount_value?: number
-          p_idempotency_key?: string
-          p_items: Json
-          p_loyalty_points_redeemed?: number
-          p_order_type: Database["public"]["Enums"]["order_type"]
-          p_payment?: Json
-          p_payments?: Json
-          p_promotions?: Json
-          p_session_id: string
-          p_source_code?: string
-          p_table_number?: string
-        }
-        Returns: Json
-      }
       convert_baker_recipe_to_absolute_v1: {
         Args: { p_product_id: string; p_target_flour_qty: number }
         Returns: Json
@@ -8495,16 +9512,6 @@ export type Database = {
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
-      }
-      create_b2b_order_v8: {
-        Args: {
-          p_customer_id: string
-          p_delivery_date?: string
-          p_idempotency_key?: string
-          p_items: Json
-          p_notes?: string
-        }
-        Returns: Json
       }
       create_category_v2: { Args: { p_payload: Json }; Returns: Json }
       create_customer_category_v1: {
@@ -8602,15 +9609,10 @@ export type Database = {
         }
         Returns: Json
       }
-      create_opname_v2: {
-        Args: { p_idempotency_key?: string; p_notes?: string }
-        Returns: Json
-      }
       create_pos_events_partition_v1: {
         Args: { p_month: string }
         Returns: string
       }
-      create_product_v3: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v2: {
         Args: {
           p_expected_date?: string
@@ -8840,29 +9842,8 @@ export type Database = {
       fail:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      finalize_opname_v4: {
-        Args: { p_count_id: string; p_idempotency_key?: string }
-        Returns: Json
-      }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v11: {
-        Args: {
-          p_client_uuid: string
-          p_customer_id?: string
-          p_discount_auth_id?: string
-          p_discount_authorized_by?: string
-          p_items: Json
-          p_offline_replay?: boolean
-          p_order_id?: string
-          p_order_type?: Database["public"]["Enums"]["order_type"]
-          p_session_id: string
-          p_source_code?: string
-          p_table_number?: string
-          p_tolerate_unsellable?: boolean
-        }
-        Returns: Json
-      }
       format_type_string: { Args: { "": string }; Returns: string }
       get_activity_logs_v1: {
         Args: {
@@ -8888,7 +9869,6 @@ export type Database = {
           source: string
         }[]
       }
-      get_ar_aging_v1: { Args: never; Returns: Json }
       get_audit_logs_v4: {
         Args: {
           p_action?: string
@@ -8911,28 +9891,7 @@ export type Database = {
         }[]
       }
       get_b2b_dashboard_counters_v1: { Args: never; Returns: Json }
-      get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
-      get_balance_sheet_v3: { Args: { p_as_of_date: string }; Returns: Json }
-      get_basket_analysis_v3: {
-        Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
-        Returns: {
-          co_occurrence_count: number
-          confidence: number
-          lift: number
-          product_a_name: string
-          product_b_name: string
-          product_id_a: string
-          product_id_b: string
-          support_a: number
-          support_b: number
-          support_pair: number
-        }[]
-      }
-      get_cash_flow_v3: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
       get_cash_movement_counterparties_v2: {
         Args: never
         Returns: {
@@ -8941,68 +9900,11 @@ export type Database = {
           name: string
         }[]
       }
-      get_cash_wallet_analysis_v2: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_cash_wallet_balances_v3: {
-        Args: never
-        Returns: {
-          account_code: string
-          account_name: string
-          balance: number
-        }[]
-      }
-      get_cash_wallet_ledger_v3: {
-        Args: {
-          p_account_code: string
-          p_date_end: string
-          p_date_start: string
-        }
-        Returns: {
-          category: string
-          description: string
-          in_amount: number
-          out_amount: number
-          ref_type: string
-          remark: string
-          row_date: string
-          saldo: number
-          supplier: string
-        }[]
-      }
-      get_cashier_variance_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_combo_sales_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
-      get_customer_cohort_v1: {
-        Args: { p_cohort_month: string; p_lookback_months?: number }
-        Returns: {
-          cohort_month: string
-          months_since_signup: number
-          retained_customers: number
-          retention_pct: number
-          total_revenue: number
-        }[]
-      }
       get_customer_product_price: {
         Args: { p_customer_id?: string; p_product_id: string }
         Returns: number
-      }
-      get_customer_segments_v1: {
-        Args: { p_segment_type?: string }
-        Returns: {
-          avg_orders: number
-          customer_count: number
-          segment: string
-          total_spent: number
-        }[]
       }
       get_customer_v3: {
         Args: { p_id: string }
@@ -9024,18 +9926,6 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_daily_sales_v3: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_dashboard_action_queue_v1: { Args: never; Returns: Json }
-      get_dashboard_open_orders_v2: { Args: never; Returns: Json }
-      get_dashboard_overview_v4: { Args: never; Returns: Json }
-      get_discounts_loyalty_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_display_stock_activity_v1: { Args: never; Returns: Json }
       get_expense_categories_admin_v1: { Args: never; Returns: Json }
       get_expense_terms_v1: {
         Args: { p_include_inactive?: boolean }
@@ -9074,24 +9964,6 @@ export type Database = {
           unit: string
         }[]
       }
-      get_general_ledger_v3: {
-        Args: {
-          p_account_id: string
-          p_cursor?: Json
-          p_date_end: string
-          p_date_start: string
-          p_limit?: number
-        }
-        Returns: Json
-      }
-      get_gross_margin_by_product_v1: {
-        Args: {
-          p_category_id?: string
-          p_end_date: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
       get_kiosk_display_v1: { Args: never; Returns: Json }
       get_kitchen_history_v1: {
         Args: {
@@ -9109,72 +9981,17 @@ export type Database = {
         Returns: Json
       }
       get_lan_registry_v1: { Args: never; Returns: Json }
-      get_low_stock_v2: {
-        Args: never
-        Returns: {
-          current_qty: number
-          min_stock_threshold: number
-          product_id: string
-          product_name: string
-          product_sku: string
-          shortfall: number
-          unit: string
-        }[]
-      }
       get_loyalty_multiplier: {
         Args: { p_lifetime_points: number }
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
-      get_movement_aggregates_v3: {
-        Args: {
-          p_date_end?: string
-          p_date_start?: string
-          p_movement_type?: string
-          p_product_id?: string
-          p_section_id?: string
-        }
-        Returns: Json
-      }
-      get_off_hours_sales_v1: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_orders_counters_v2: {
-        Args: { p_end: string; p_filters?: Json; p_start: string }
-        Returns: Json
-      }
-      get_orders_list_v4: {
-        Args: {
-          p_cursor_id?: string
-          p_cursor_val?: string
-          p_dir?: string
-          p_end: string
-          p_filters?: Json
-          p_limit?: number
-          p_sort?: string
-          p_start: string
-        }
-        Returns: Json
-      }
-      get_payments_by_method_v3: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_pb1_report_v3: {
-        Args: { p_period_month: number; p_period_year: number }
-        Returns: Json
-      }
       get_perishable_turnover_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
       get_permission_changes_v3: {
         Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_pos_activity_v1: {
-        Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
       get_pos_b2b_debts_v4: {
@@ -9194,51 +10011,9 @@ export type Database = {
           total: number
         }[]
       }
-      get_pos_events_v1: {
-        Args: {
-          p_actor_id?: string
-          p_cursor?: string
-          p_device_id?: string
-          p_end_date: string
-          p_event_types?: string[]
-          p_limit?: number
-          p_order_id?: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_pos_margin_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_order_snapshot_v2: { Args: { p_order_id: string }; Returns: Json }
-      get_pos_order_type_category_mix_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_payment_breakdown_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
       get_pos_product_price_v1: {
         Args: { p_customer_id?: string; p_product_id: string }
         Returns: number
-      }
-      get_pos_sales_overview_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_sessions_report_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_top_products_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_voids_refunds_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
       }
       get_price_changes_v1: {
         Args: {
@@ -9248,67 +10023,12 @@ export type Database = {
         }
         Returns: Json
       }
-      get_product_analytics_v2: {
-        Args: { p_days?: number; p_product_id: string }
-        Returns: Json
-      }
-      get_product_dashboard_v3: {
-        Args: { p_days?: number; p_product_id: string }
-        Returns: Json
-      }
-      get_product_performance_v1: {
-        Args: { p_days?: number; p_product_id: string }
-        Returns: Json
-      }
-      get_product_sales_lines_v1: {
-        Args: {
-          p_cursor?: string
-          p_end_date: string
-          p_limit?: number
-          p_product_id: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
       get_production_efficiency_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
       get_production_report_v1: {
         Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_production_suggestions_v1: {
-        Args: {
-          p_lookback_days?: number
-          p_priority_high?: number
-          p_priority_medium?: number
-        }
-        Returns: {
-          avg_daily_sales: number
-          current_stock: number
-          days_of_stock: number
-          priority: string
-          product_id: string
-          product_name: string
-          product_sku: string
-          suggested_quantity: number
-        }[]
-      }
-      get_profit_loss_v3: {
-        Args: {
-          p_date_end: string
-          p_date_start: string
-          p_section_id?: string
-        }
-        Returns: Json
-      }
-      get_promo_roi_v1: {
-        Args: {
-          p_date_end: string
-          p_date_start: string
-          p_promotion_id: string
-        }
         Returns: Json
       }
       get_purchase_by_date_v1: {
@@ -9352,230 +10072,19 @@ export type Database = {
         }
         Returns: Json
       }
-      get_refunds_report_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_reorder_suggestions_v1: {
-        Args: { p_buffer_days?: number; p_lookback_days?: number }
-        Returns: {
-          avg_daily_usage: number
-          current_stock: number
-          days_of_stock: number
-          last_purchase_at: string
-          min_stock_threshold: number
-          product_id: string
-          product_name: string
-          product_sku: string
-          suggested_order_qty: number
-          supplier_id: string
-          supplier_name: string
-          unit: string
-        }[]
-      }
-      get_sales_by_category_v3: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: {
-          category_id: string
-          category_name: string
-          qty: number
-          total: number
-        }[]
-      }
-      get_sales_by_customer_v1: {
-        Args: {
-          p_churn_min_orders?: number
-          p_customer_type?: string
-          p_end_date: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_sales_by_hour_v3: {
-        Args: { p_date: string }
-        Returns: {
-          hour: number
-          order_count: number
-          total: number
-        }[]
-      }
-      get_sales_by_origin_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_sales_by_product_v1: {
-        Args: {
-          p_category_id?: string
-          p_end_date: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_sales_by_staff_v3: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: {
-          avg_basket: number
-          order_count: number
-          staff_id: string
-          staff_name: string
-          total: number
-        }[]
-      }
-      get_sales_by_table_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
       get_settings_by_category_v10: {
         Args: { p_category: string }
         Returns: Json
       }
       get_settings_hub_summary_v1: { Args: never; Returns: Json }
-      get_staff_performance_v1: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_stock_config_issues_v2: {
-        Args: never
-        Returns: {
-          category_name: string
-          current_stock: number
-          deduct_stock: boolean
-          issue_type: string
-          name: string
-          product_id: string
-          recipe_lines: number
-          severity: string
-          sku: string
-          track_inventory: boolean
-        }[]
-      }
-      get_stock_counters_v1: {
-        Args: { p_category_id?: string; p_search?: string }
-        Returns: {
-          low_count: number
-          negative_count: number
-          total_count: number
-          untracked_count: number
-          zero_count: number
-        }[]
-      }
-      get_stock_levels_v4: {
-        Args: {
-          p_bucket?: Database["public"]["Enums"]["stock_bucket"]
-          p_category_id?: string
-          p_limit?: number
-          p_offset?: number
-          p_search?: string
-          p_sort?: string
-          p_sort_dir?: string
-        }
-        Returns: {
-          category_id: string
-          category_name: string
-          current_stock: number
-          last_movement_at: string
-          min_stock_threshold: number
-          name: string
-          product_id: string
-          sku: string
-          stock_value: number
-          track_inventory: boolean
-          unit: string
-        }[]
-      }
-      get_stock_movement_ledger_v1: {
-        Args: {
-          p_end: string
-          p_limit?: number
-          p_movement_type?: string
-          p_product_id?: string
-          p_section_id?: string
-          p_start: string
-        }
-        Returns: Json
-      }
-      get_stock_movements_v1: {
-        Args: {
-          p_cursor?: string
-          p_cursor_id?: string
-          p_date_end?: string
-          p_date_start?: string
-          p_limit?: number
-          p_movement_type?: string
-          p_product_id?: string
-          p_section_id?: string
-        }
-        Returns: {
-          author_name: string
-          created_at: string
-          created_by: string
-          from_section_code: string
-          from_section_id: string
-          id: string
-          lot_id: string
-          metadata: Json
-          movement_type: Database["public"]["Enums"]["movement_type"]
-          product_id: string
-          product_name: string
-          product_sku: string
-          quantity: number
-          reason: string
-          reference_id: string
-          reference_type: string
-          supplier_id: string
-          supplier_name: string
-          to_section_code: string
-          to_section_id: string
-          unit: string
-          unit_cost: number
-        }[]
-      }
-      get_stock_movements_v2: {
-        Args: {
-          p_cursor?: string
-          p_end: string
-          p_limit?: number
-          p_movement_type?: string
-          p_product_id?: string
-          p_start: string
-        }
-        Returns: Json
-      }
-      get_stock_position_v1: { Args: { p_as_of?: string }; Returns: Json }
-      get_stock_variance_v3: {
-        Args: { p_date_end?: string; p_date_start?: string }
-        Returns: {
-          closing: number
-          consumed: number
-          corrected: number
-          current_qty: number
-          opening: number
-          other: number
-          product_id: string
-          product_name: string
-          sku: string
-          sold: number
-          stock_in: number
-          wasted: number
-        }[]
-      }
       get_supplier_payments_v1: {
         Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_trial_balance_v4: {
-        Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
       get_user_kitchen_access_v1: {
         Args: { p_user_profile_id: string }
         Returns: Json
       }
-      get_wastage_report_v2: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_zreport_snapshot_v1: { Args: { p_zreport_id: string }; Returns: Json }
       grant_store_credit_v1: {
         Args: {
           p_amount: number
@@ -9888,25 +10397,6 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v22: {
-        Args: {
-          p_customer_id?: string
-          p_discount_amount?: number
-          p_discount_auth_id?: string
-          p_discount_authorized_by?: string
-          p_discount_reason?: string
-          p_discount_type?: string
-          p_discount_value?: number
-          p_idempotency_key?: string
-          p_loyalty_points_redeemed?: number
-          p_offline_replay?: boolean
-          p_order_id: string
-          p_payment?: Json
-          p_payments?: Json
-          p_promotions?: Json
-        }
-        Returns: Json
-      }
       pay_expense_v4: {
         Args: { p_expense_id: string; p_payment_method?: string }
         Returns: Json
@@ -9992,20 +10482,6 @@ export type Database = {
         }
         Returns: Json
       }
-      recipe_bom_full_v3: {
-        Args: { p_max_depth?: number; p_product_id: string }
-        Returns: {
-          cost_price: number
-          current_stock: number
-          line_cost: number
-          material_id: string
-          material_name: string
-          material_unit: string
-          qty_in_base: number
-          qty_per_unit: number
-          recipe_unit: string
-        }[]
-      }
       recipe_cost_history_v1: {
         Args: { p_from: string; p_product_id?: string; p_to: string }
         Returns: {
@@ -10018,20 +10494,6 @@ export type Database = {
           product_id: string
           product_name: string
           version_number: number
-        }[]
-      }
-      recipe_direct_cost_v1: {
-        Args: { p_product_id: string }
-        Returns: {
-          cost_price: number
-          current_stock: number
-          line_cost: number
-          material_id: string
-          material_name: string
-          material_unit: string
-          qty_in_base: number
-          qty_per_unit: number
-          recipe_unit: string
         }[]
       }
       recompute_all_recipe_costs_v3: {
@@ -10093,17 +10555,6 @@ export type Database = {
           p_wallet_code?: string
         }
         Returns: string
-      }
-      record_incoming_stock_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_product_id: string
-          p_quantity: number
-          p_reason?: string
-          p_supplier_id?: string
-          p_unit_cost?: number
-        }
-        Returns: Json
       }
       record_kitchen_production_v3: { Args: { p_request: Json }; Returns: Json }
       record_pin_failure_v1: {
@@ -10247,165 +10698,6 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: Json
       }
-      get_basket_analysis_v5: {
-        Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
-        Returns: {
-          co_occurrence_count: number
-          confidence: number
-          lift: number
-          product_a_name: string
-          product_b_name: string
-          product_id_a: string
-          product_id_b: string
-          support_a: number
-          support_b: number
-          support_pair: number
-        }[]
-      }
-      get_combo_sales_v3: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_discounts_loyalty_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_gross_margin_by_product_v3: {
-        Args: {
-          p_category_id?: string
-          p_end_date: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_pos_activity_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_margin_v3: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_order_type_category_mix_v3: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_sales_overview_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_top_products_v3: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_voids_refunds_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_product_dashboard_v5: {
-        Args: { p_days?: number; p_product_id: string }
-        Returns: Json
-      }
-      get_product_dashboard_v6: {
-        Args: { p_days?: number; p_product_id: string }
-        Returns: Json
-      }
-      get_product_performance_v3: {
-        Args: { p_days?: number; p_product_id: string }
-        Returns: Json
-      }
-      get_product_sales_lines_v3: {
-        Args: {
-          p_cursor?: string
-          p_end_date: string
-          p_limit?: number
-          p_product_id: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_sales_by_category_v5: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: {
-          category_id: string
-          category_name: string
-          qty: number
-          total: number
-        }[]
-      }
-      get_sales_by_customer_v2: {
-        Args: {
-          p_churn_min_orders?: number
-          p_customer_type?: string
-          p_end_date: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_sales_by_hour_v4: {
-        Args: { p_date: string }
-        Returns: {
-          hour: number
-          order_count: number
-          total: number
-        }[]
-      }
-      get_sales_by_origin_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_sales_by_product_v3: {
-        Args: {
-          p_category_id?: string
-          p_end_date: string
-          p_start_date: string
-        }
-        Returns: Json
-      }
-      get_sales_by_staff_v4: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: {
-          avg_basket: number
-          order_count: number
-          staff_id: string
-          staff_name: string
-          total: number
-        }[]
-      }
-      get_sales_by_table_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_staff_performance_v2: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_daily_sales_v4: {
-        Args: { p_date_end: string; p_date_start: string }
-        Returns: Json
-      }
-      get_pb1_report_v4: {
-        Args: { p_period_month: number; p_period_year: number }
-        Returns: Json
-      }
-      get_pos_payment_breakdown_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_sessions_report_v2: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_customer_recognized_orders_v1: {
-        Args: { p_customer_id: string }
-        Returns: {
-          id: string
-          order_type: Database["public"]["Enums"]["order_type"]
-          recognized_at: string
-          status: Database["public"]["Enums"]["order_status"]
-          total: number
-        }[]
-      }
       defer_pos_order_v2: {
         Args: {
           p_customer_id: string
@@ -10432,10 +10724,6 @@ export type Database = {
           p_order_id: string
           p_session_id?: string
         }
-        Returns: Json
-      }
-      reopen_held_order_v9: {
-        Args: { p_order_id: string; p_session_id?: string }
         Returns: Json
       }
       reorder_categories_v2: {
@@ -10466,19 +10754,6 @@ export type Database = {
         Args: { p_reservation_id: string }
         Returns: Json
       }
-      reservation_hold_v1: {
-        Args: {
-          p_expires_at: string
-          p_holder_id?: string
-          p_holder_type: string
-          p_idempotency_key?: string
-          p_notes?: string
-          p_product_id: string
-          p_quantity: number
-          p_section_id?: string
-        }
-        Returns: Json
-      }
       reservation_release_v1: {
         Args: { p_reason?: string; p_reservation_id: string }
         Returns: Json
@@ -10497,15 +10772,6 @@ export type Database = {
       }
       retry_sale_journal_entry_v5: {
         Args: { p_order_id: string }
-        Returns: Json
-      }
-      return_display_to_kitchen_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_product_id: string
-          p_quantity: number
-          p_reason?: string
-        }
         Returns: Json
       }
       revert_production_v3: {
@@ -10546,31 +10812,6 @@ export type Database = {
           total_spent: number
           total_visits: number
           updated_at: string
-        }[]
-      }
-      search_ingredients_v1: {
-        Args: { p_kind?: string; p_limit?: number; p_query?: string }
-        Returns: {
-          cost_price: number
-          current_stock: number
-          has_recipe: boolean
-          kind: string
-          name: string
-          product_id: string
-          sku: string
-          unit: string
-        }[]
-      }
-      search_orders_v1: {
-        Args: { p_limit?: number; p_query: string }
-        Returns: {
-          created_at: string
-          customer_name: string
-          id: string
-          order_number: string
-          order_type: Database["public"]["Enums"]["order_type"]
-          status: Database["public"]["Enums"]["order_status"]
-          total: number
         }[]
       }
       send_items_to_kitchen: {
@@ -10636,18 +10877,6 @@ export type Database = {
           p_threshold_id?: string
         }
         Returns: string
-      }
-      set_opname_count_v2: {
-        Args: {
-          p_count_item_id: string
-          p_counted_qty: number
-          p_notes?: string
-        }
-        Returns: Json
-      }
-      set_product_base_unit_v2: {
-        Args: { p_new_unit: string; p_product_id: string }
-        Returns: Json
       }
       set_product_is_test_v2: {
         Args: { p_is_test: boolean; p_product_id: string }
@@ -10736,10 +10965,6 @@ export type Database = {
         Args: { p_expense_id: string; p_idempotency_key?: string }
         Returns: Json
       }
-      suggest_production_schedule_v1: {
-        Args: { p_target_date: string }
-        Returns: Json
-      }
       throws_ok: { Args: { "": string }; Returns: string }
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
@@ -10770,14 +10995,6 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
-      }
-      update_b2b_pickup_v1: {
-        Args: {
-          p_mark_delivered?: boolean
-          p_order_id: string
-          p_pickup_date?: string
-        }
-        Returns: Json
       }
       update_b2b_settings_v1: { Args: { p_patch: Json }; Returns: Json }
       update_category_v2: {
@@ -10862,10 +11079,6 @@ export type Database = {
           p_waste_qty?: number
           p_waste_reason?: string
         }
-        Returns: Json
-      }
-      update_product_v4: {
-        Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }
       update_purchase_order_v1: {
@@ -11022,24 +11235,6 @@ export type Database = {
       }
       void_zreport_v3: {
         Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
-        Returns: Json
-      }
-      waste_display_stock_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_product_id: string
-          p_quantity: number
-          p_reason?: string
-        }
-        Returns: Json
-      }
-      waste_stock_v2: {
-        Args: {
-          p_idempotency_key?: string
-          p_product_id: string
-          p_quantity: number
-          p_reason: string
-        }
         Returns: Json
       }
     }

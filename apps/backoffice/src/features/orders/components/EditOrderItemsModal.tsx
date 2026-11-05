@@ -5,7 +5,7 @@
 // 2-col layout (60/40): ProductPicker left, cart preview right.
 // Accumulates OrderEditDiff in local state; "Apply" calls useEditOrderItems
 // orchestrator (sequential removes -> updates -> adds). S33 orchestrator
-// and RPCs (add_order_item / update_order_item_qty_v1 / remove_order_item_v1)
+// and RPCs (add_order_item / update_order_item_qty_v7 / remove_order_item_v4)
 // are UNCHANGED.
 //
 // addedMeta: preview-enrichment only (name + price for pending adds).

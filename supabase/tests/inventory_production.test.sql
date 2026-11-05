@@ -294,7 +294,7 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_cash_auth);
   PERFORM set_config('role', 'authenticated', true);
   BEGIN
-    PERFORM record_production_v8(v_dummy, 10, NULL, NULL, 0, NULL, NULL);
+    PERFORM record_production_v10(v_dummy, 10, NULL, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -302,7 +302,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_08_pass', CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_08_pass') = 'yes',
-  'T_PROD_08: CASHIER → forbidden on record_production_v8');
+  'T_PROD_08: CASHIER → forbidden on record_production_v10');
 
 -- ---------------------------------------------------------------------------
 -- T_PROD_09 — qty <= 0 rejected with quantity_must_be_positive
@@ -321,7 +321,7 @@ BEGIN
     -- record_production_v5 now requires a non-null section (raised as
     -- section_required BEFORE the qty check), so pass the seeded section to
     -- actually reach and exercise the quantity_must_be_positive guard.
-    PERFORM record_production_v8(v_bag, 0, v_section, NULL, 0, NULL, NULL);
+    PERFORM record_production_v10(v_bag, 0, v_section, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -341,7 +341,7 @@ DECLARE
   v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
   v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
   v_section UUID := current_setting('breakery.t_prod_section')::uuid;
-  v_caught TEXT; v_detail TEXT;
+  v_caught TEXT; v_detail TEXT; v_owner UUID; v_owner_detail BOOLEAN;
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
@@ -362,19 +362,33 @@ BEGIN
   -- Skipped to keep the test isolated.
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
   BEGIN
-    PERFORM record_production_v8(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+    PERFORM record_production_v10(v_bag, 50, v_section, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_detail = PG_EXCEPTION_DETAIL;
     v_caught := SQLERRM;
   END;
   PERFORM set_config('role','postgres',true);
+  IF v_caught<>'stock_operation_rejected' OR coalesce(v_detail,'')<>'' THEN
+    RAISE EXCEPTION 'non_owner_shortage_details_leaked';
+  END IF;
+  SELECT auth_user_id INTO v_owner FROM user_profiles WHERE employee_code='EMP000';
+  PERFORM pg_temp.authenticate_pin(v_owner);
+  PERFORM set_config('role','authenticated',true);
+  BEGIN
+    PERFORM record_production_v10(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+    v_owner_detail := false;
+  EXCEPTION WHEN SQLSTATE 'P0002' THEN
+    GET STACKED DIAGNOSTICS v_detail = PG_EXCEPTION_DETAIL;
+    v_owner_detail := SQLERRM='insufficient_stock' AND v_detail LIKE '%Test Flour%';
+  END;
+  PERFORM set_config('role','postgres',true);
   UPDATE business_config SET allow_negative_stock = true WHERE id = 1;
   PERFORM set_config('breakery.t_prod_10_pass',
-    CASE WHEN v_caught='insufficient_stock' AND v_detail LIKE '%Test Flour%' THEN 'yes' ELSE 'no' END, true);
+    CASE WHEN v_caught='stock_operation_rejected' AND v_owner_detail THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_10_pass') = 'yes',
-  'T_PROD_10: insufficient_stock raised with missing material in DETAIL');
+  'T_PROD_10: shortage details hidden from MANAGER and retained for Owner');
 
 -- ADR-008 D9.3 (20260729000005) : record_production_v5 drops `_bom_flatten` /
 -- `_leaf_consumption` itself before re-creating them, so successive invocations
@@ -420,10 +434,12 @@ BEGIN
   PERFORM upsert_recipe_v2(v_bag, v_yeast,   5, 'g',  NULL);
   PERFORM upsert_recipe_v2(v_bag, v_water, 150, 'mL', NULL);
 
-  v_result := record_production_v8(v_bag, 50, v_section, 'BATCH-T11', 0, NULL, NULL);
+  v_result := record_production_v10(v_bag, 50, v_section, 'BATCH-T11', 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
   v_movements_count := (v_result->>'movements_count')::int;
 
+  -- Observer les écritures comme fixture privilégiée, hors de la session MANAGER.
+  PERFORM set_config('role','postgres',true);
   SELECT COUNT(*) INTO v_je_balanced
     FROM journal_entries je
     JOIN stock_movements sm ON sm.id = je.reference_id
@@ -464,8 +480,8 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
-  v_r1 := record_production_v8(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
-  v_r2 := record_production_v8(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
+  v_r1 := record_production_v10(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
+  v_r2 := record_production_v10(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
   SELECT COUNT(*) INTO v_dup FROM production_records WHERE idempotency_key = v_key;
   PERFORM set_config('role','postgres',true);
   PERFORM set_config('breakery.t_prod_12_pass',

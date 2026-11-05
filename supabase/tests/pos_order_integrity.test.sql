@@ -35,7 +35,7 @@ BEGIN
   INSERT INTO pos_audit_results VALUES('replay preserves a single line', (SELECT count(*)=1 FROM order_items WHERE order_items.order_id=v_order_id));
   UPDATE order_items SET is_cancelled=true, cancelled_at=now(), cancelled_by=profile,
     cancelled_reason='Audit cancellation' WHERE order_items.order_id=v_order_id;
-  envelope := get_pos_order_snapshot_v4(v_order_id);
+  envelope := get_pos_order_snapshot_v5(v_order_id);
   INSERT INTO pos_audit_results VALUES('snapshot retains cancellation facts', (envelope->'items'->0->>'is_cancelled')::boolean);
   payload := jsonb_set(payload, '{0,discount_amount}', '1000');
   BEGIN

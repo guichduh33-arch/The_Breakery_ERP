@@ -1,46 +1,24 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fetchPromotionVariants } from '../hooks/usePromotionVariants';
-
-const mocks = vi.hoisted(() => ({ from: vi.fn() }));
-vi.mock('@/lib/supabase', () => ({ supabase: { from: mocks.from } }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock('@/features/lan/hooks/useSaleQueryEnabled', () => ({ useSaleQueryEnabled: () => true }));
-
-beforeEach(() => mocks.from.mockReset());
-
-it('chunks parents by 100, paginates variants and applies sale visibility filters', async () => {
-  const pages = [Array.from({ length: 500 }, (_, i) => ({ id: String(i) })), [{ id: 'last' }], []];
-  const builder = {
-    select: vi.fn().mockReturnThis(), in: vi.fn<(column: string, ids: string[]) => unknown>().mockReturnThis(), eq: vi.fn().mockReturnThis(),
-    is: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
-    range: vi.fn().mockImplementation(() => Promise.resolve({ data: pages.shift(), error: null })),
-  };
-  mocks.from.mockReturnValue(builder);
+beforeEach(() => mocks.rpc.mockReset());
+it('returns every matching visible active variant across more than 100 parents', async () => {
   const ids = Array.from({ length: 101 }, (_, i) => String(i));
-  expect(await fetchPromotionVariants(ids)).toHaveLength(501);
-  expect(builder.in.mock.calls.map((call) => call[1].length)).toEqual([100, 100, 1]);
-  expect(builder.range.mock.calls).toEqual([[0, 499], [500, 999], [0, 499]]);
-  expect(builder.eq).toHaveBeenCalledWith('is_active', true);
-  expect(builder.eq).toHaveBeenCalledWith('visible_on_pos', true);
-  expect(builder.is).toHaveBeenCalledWith('deleted_at', null);
-  expect(builder.order).toHaveBeenCalledWith('id', { ascending: true });
+  const rows = Array.from({ length: 501 }, (_, i) => ({ id: String(i), parent_product_id: ids[i % ids.length],
+    is_active: true, visible_on_pos: true, variant_sort_order: i, track_inventory: true, current_stock: null,
+    display_stock: { quantity: null }, is_sellable: true }));
+  mocks.rpc.mockResolvedValue({ data: [...rows, { ...rows[0], id: 'hidden', visible_on_pos: false },
+    { ...rows[0], id: 'inactive', is_active: false }, { ...rows[0], id: 'other', parent_product_id: 'other' }], error: null });
+  expect(await fetchPromotionVariants(ids)).toEqual(rows);
+  expect(mocks.rpc).toHaveBeenCalledTimes(1);
 });
-
-it('propagates errors instead of publishing a partial catalog', async () => {
-  const builder = { select: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), is: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), range: vi.fn().mockResolvedValue({ data: null, error: new Error('offline') }) };
-  mocks.from.mockReturnValue(builder);
+it('propagates errors instead of publishing a partial catalogue', async () => {
+  mocks.rpc.mockResolvedValue({ data: null, error: { message: 'offline' } });
   await expect(fetchPromotionVariants(['p'])).rejects.toThrow('offline');
 });
-
-it('hydrates the shared variant shape with tracking and normalized vitrine stock', async () => {
-  const builder = { select: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
-    is: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), range: vi.fn().mockResolvedValue({ data: [
-      { id: 'tracked', parent_product_id: 'p', track_inventory: true, display_stock: [{ quantity: 0 }] },
-      { id: 'untracked', parent_product_id: 'p', track_inventory: false, display_stock: null },
-    ], error: null }) };
-  mocks.from.mockReturnValue(builder);
-  expect(await fetchPromotionVariants(['p'])).toMatchObject([
-    { id: 'tracked', track_inventory: true, display_stock: { quantity: 0 } },
-    { id: 'untracked', track_inventory: false, display_stock: null },
-  ]);
-  expect(builder.select).toHaveBeenCalledWith(expect.stringContaining('track_inventory, display_stock(quantity)'));
+it('does not request a catalogue without promotion parents', async () => {
+  expect(await fetchPromotionVariants([])).toEqual([]);
+  expect(mocks.rpc).not.toHaveBeenCalled();
 });

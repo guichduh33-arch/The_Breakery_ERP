@@ -10,7 +10,7 @@
 //   - Locked-product mode (initialProduct provided) hides the typeahead.
 //   - The "Apply" button is disabled until product + non-negative quantity
 //     newQty + 3+-char reason are all valid.
-//   - Submitting calls supabase.rpc('adjust_stock_v2', {...}) with the
+//   - Submitting calls supabase.rpc('adjust_stock_v4', {...}) with the
 //     correct args (productId, newQty, reason, idempotencyKey).
 //   - The delta preview reflects (newQty - current_stock).
 
@@ -36,7 +36,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       const out = mockRpc(fn, args) as RpcResult | undefined;
-      return Promise.resolve(out ?? { data: { movement_id: 'mock-id', new_current_stock: 99 }, error: null });
+      return Promise.resolve(out ?? { data: { declaration_id: 'mock-id', status: 'pending', idempotent_replay: false }, error: null });
     },
     from: () => emptyChain,
   },
@@ -91,7 +91,7 @@ describe('AdjustModal', () => {
 
   it('locked-product mode hides the typeahead and shows product name in title', () => {
     renderModal(STOCK_ROW);
-    expect(screen.getByText(/Adjust stock — Adjust Sample/i)).toBeInTheDocument();
+    expect(screen.getByText(/Declare stock count — Adjust Sample/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Product$/i)).not.toBeInTheDocument();
   });
 
@@ -99,9 +99,9 @@ describe('AdjustModal', () => {
     renderModal({ ...STOCK_ROW, unit: 'kg', current_stock: 2 });
     fireEvent.change(screen.getByLabelText(/New on-hand quantity.*kg/i), { target: { value: '1.375' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
-    expect(screen.getByText(/2 kg → 1,375 kg/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('adjust_stock_v2', expect.objectContaining({ p_new_qty: 1.375 })));
+    expect(screen.queryByText(/2 kg →/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('submit_stock_declaration_v2', expect.objectContaining({ p_operation: 'adjust', p_quantity: 1.375 })));
   });
 
   it('locks uncertain details and retries with the identical key and payload', async () => {
@@ -110,10 +110,10 @@ describe('AdjustModal', () => {
     const quantity = screen.getByLabelText(/New on-hand quantity/i);
     fireEvent.change(quantity, { target: { value: '12' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
-    await screen.findByRole('button', { name: 'Retry adjustment' });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await screen.findByRole('button', { name: 'Retry declaration' });
     expect(quantity).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Retry adjustment' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry declaration' }));
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
     expect(mockRpc.mock.calls[1]).toEqual(mockRpc.mock.calls[0]);
   });
@@ -126,24 +126,24 @@ describe('AdjustModal', () => {
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '12' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i), { target: { value: 'Physical recount' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(message));
   });
 
-  it('shows current stock and renders Apply button (initially disabled)', () => {
+  it('keeps theoretical stock hidden and starts with a disabled declaration button', () => {
     renderModal(STOCK_ROW);
-    expect(screen.getByText(/Current stock:/)).toBeInTheDocument();
-    expect(screen.getByText('10 pcs')).toBeInTheDocument();
-    const apply = screen.getByRole('button', { name: /Apply/i });
+    expect(screen.queryByText(/Current stock:/)).not.toBeInTheDocument();
+    expect(screen.queryByText('10 pcs')).not.toBeInTheDocument();
+    const apply = screen.getByRole('button', { name: 'Submit for approval' });
     expect(apply).toBeDisabled();
   });
 
-  it('shows the delta preview when newQty is valid', () => {
+  it('never reveals the theoretical delta when a count is entered', () => {
     renderModal(STOCK_ROW);
     const newQty = screen.getByLabelText(/New on-hand quantity/i);
     fireEvent.change(newQty, { target: { value: '15' } });
     // Preview "10 → 15 (Δ +5)" — assert on the Δ token.
-    expect(screen.getByText(/Δ \+5/)).toBeInTheDocument();
+    expect(screen.queryByText(/Δ \+5/)).not.toBeInTheDocument();
   });
 
   it('rejects negative newQty (validator) — Apply stays disabled', () => {
@@ -152,26 +152,27 @@ describe('AdjustModal', () => {
     fireEvent.change(newQty, { target: { value: '-3' } });
     const reason = screen.getByPlaceholderText(/At least 3 characters/i);
     fireEvent.change(reason, { target: { value: 'Some reason here' } });
-    expect(screen.getByRole('button', { name: /Apply/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
   });
 
   it('submits with productId + newQty + reason + idempotencyKey when valid', async () => {
-    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 22 }, error: null });
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd-1', status: 'pending' }, error: null });
     renderModal(STOCK_ROW);
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '22' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),
       { target: { value: 'Manual recount after closing' } });
 
-    const apply = screen.getByRole('button', { name: /Apply/i });
+    const apply = screen.getByRole('button', { name: 'Submit for approval' });
     expect(apply).toBeEnabled();
     fireEvent.click(apply);
 
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
     const call = mockRpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(call[0]).toBe('adjust_stock_v2');
+    expect(call[0]).toBe('submit_stock_declaration_v2');
     expect(call[1]).toMatchObject({
       p_product_id: 'p-1',
-      p_new_qty:    22,
+      p_quantity:   22,
+      p_operation: 'adjust',
       p_reason:     'Manual recount after closing',
     });
     expect(call[1]).toHaveProperty('p_idempotency_key');
@@ -183,28 +184,28 @@ describe('AdjustModal', () => {
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '12' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),
       { target: { value: 'Going to fail with forbidden' } });
-    fireEvent.click(screen.getByRole('button', { name: /Apply/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/no longer have permission/i);
     });
   });
 
-  it('states the irreversibility and confirms the new on-hand', async () => {
+  it('confirms the declaration and the independent approval requirement', async () => {
     mockToast.success.mockReset();
-    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', new_current_stock: 22 }, error: null });
+    mockRpc.mockReturnValue({ data: { declaration_id: 'd-1', status: 'pending' }, error: null });
     renderModal(STOCK_ROW);
 
     // Le registre est append-only : l'écran doit le dire avant le bouton.
-    expect(screen.getByText(/permanent movement in your name/i)).toBeInTheDocument();
+    expect(screen.getByText(/Stock changes only after independent owner approval/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '22' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),
       { target: { value: 'Manual recount after closing' } });
-    fireEvent.click(screen.getByRole('button', { name: /Apply/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for approval' }));
 
     await waitFor(() => { expect(mockToast.success).toHaveBeenCalledTimes(1); });
-    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/Adjust Sample is now 22/);
+    expect(mockToast.success.mock.calls[0]?.[0]).toMatch(/Declaration submitted — Adjust Sample.*Owner approval is required/);
   });
 
   it('rejects reason < 3 chars (Apply disabled)', () => {
@@ -212,6 +213,6 @@ describe('AdjustModal', () => {
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '20' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),
       { target: { value: 'hi' } });
-    expect(screen.getByRole('button', { name: /Apply/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
   });
 });

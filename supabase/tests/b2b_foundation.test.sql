@@ -113,7 +113,7 @@ BEGIN
   -- cache seul, reliquat jeté).
   UPDATE customers SET b2b_current_balance = 0
    WHERE id = 'b2bf0001-0000-0000-0000-000000000003';
-  PERFORM create_b2b_order_v9(
+  PERFORM create_b2b_order_v10(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000003',
     p_items       => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -327,7 +327,7 @@ BEGIN
   UPDATE products SET current_stock = 100.000
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
-  v_result := create_b2b_order_v9(
+  v_result := create_b2b_order_v10(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_items       => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -353,7 +353,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t11$;
 SELECT ok(current_setting('breakery.t11_pass')::boolean,
-  'T11: create_b2b_order_v1 — AR 0→150K, stock 100→97, JE 150K');
+  'T11: create_b2b_order_v10 — AR 0→150K, stock 100→97, JE 150K');
 
 -- ===========================================================================
 -- T12 — create_b2b_order_v1 credit limit exceeded → RAISE P0011
@@ -368,7 +368,7 @@ BEGIN
 END $t12_setup$;
 
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v9(
+  $$ SELECT create_b2b_order_v10(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
        p_items       => jsonb_build_array(jsonb_build_object(
          'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -378,7 +378,7 @@ SELECT throws_ok(
      ) $$,
   'P0011',
   NULL,
-  'T12: create_b2b_order_v1 credit limit exceeded raises P0011'
+  'T12: create_b2b_order_v10 credit limit exceeded raises P0011'
 );
 
 -- ===========================================================================
@@ -398,7 +398,7 @@ BEGIN
   UPDATE products SET current_stock = 100.000
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
-  v_r1 := create_b2b_order_v9(
+  v_r1 := create_b2b_order_v10(
     p_customer_id     => 'b2bf0001-0000-0000-0000-000000000002',
     p_items           => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -408,7 +408,7 @@ BEGIN
     p_idempotency_key => v_key
   );
 
-  v_r2 := create_b2b_order_v9(
+  v_r2 := create_b2b_order_v10(
     p_customer_id     => 'b2bf0001-0000-0000-0000-000000000002',
     p_items           => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -428,7 +428,7 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t13$;
 SELECT ok(current_setting('breakery.t13_pass')::boolean,
-  'T13: create_b2b_order_v1 idempotency — 2 calls same key → 1 order, replay flag');
+  'T13: create_b2b_order_v10 idempotency — 2 calls same key → 1 order, replay flag');
 
 -- ===========================================================================
 -- T14 — REVOKE UPDATE customers.b2b_current_balance pour authenticated
@@ -474,7 +474,7 @@ BEGIN
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
   BEGIN
-    PERFORM create_b2b_order_v9(
+    PERFORM create_b2b_order_v10(
       p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
       p_items       => jsonb_build_array(jsonb_build_object(
         'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -492,7 +492,7 @@ BEGIN
     false);
 END $t15$;
 SELECT ok(current_setting('breakery.t15_pass')::boolean,
-  'T15: validate_b2b_credit_limit_v1 wired in create_b2b_order_v1 — error contains credit_limit_exceeded');
+  'T15: validate_b2b_credit_limit_v1 wired in create_b2b_order_v10 — error contains credit_limit_exceeded');
 
 SELECT * FROM finish();
 ROLLBACK;

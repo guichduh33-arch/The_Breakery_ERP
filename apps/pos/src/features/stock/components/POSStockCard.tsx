@@ -91,7 +91,7 @@ export function POSStockCard({
           <div className="text-xs uppercase tracking-widest text-text-muted">{product.sku}</div>
         </div>
         <div className={cn('font-mono text-2xl font-bold tabular-nums', stockTextTone)}>
-          {product.display_stock}
+          {product.display_stock ?? 'Hidden'}
         </div>
       </div>
 

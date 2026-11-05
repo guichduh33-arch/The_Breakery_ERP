@@ -106,22 +106,22 @@ SELECT ok(
 
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM search_ingredients_v2('TestPainChocoMaster', 'semi_finished', 20)
+    SELECT 1 FROM search_ingredients_v3('TestPainChocoMaster', 'semi_finished', 20)
      WHERE product_id = current_setting('test.semi')::uuid
   ),
-  'T6 — search_ingredients_v2 returns semi product under kind=semi_finished'
+  'T6 — search_ingredients_v3 returns semi product under kind=semi_finished'
 );
 
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM search_ingredients_v2('croisant', 'all', 20)
+    SELECT 1 FROM search_ingredients_v3('croisant', 'all', 20)
      WHERE product_id = current_setting('test.leaf')::uuid
   ),
   'T7 — trigram similarity matches misspelled query'
 );
 
 SELECT is(
-  (SELECT product_id FROM search_ingredients_v2('TestLeafCroisant', 'all', 5) LIMIT 1),
+  (SELECT product_id FROM search_ingredients_v3('TestLeafCroisant', 'all', 5) LIMIT 1),
   current_setting('test.leaf')::uuid,
   'T8 — exact name match wins rank 0'
 );

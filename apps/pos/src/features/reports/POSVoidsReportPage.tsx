@@ -2,7 +2,7 @@
 //
 // Reports POS refonte — Lot C — POS Reports / Voids tab.
 //
-// Annulations & remises. Source serveur unique : get_pos_voids_refunds_v1 —
+// Annulations & remises. Source serveur unique : get_pos_voids_refunds_v3 —
 // même périmètre que l'Overview. Deux blocs :
 //   * Voids & refunds — voids pleins + refunds partiels + annulations de ligne,
 //     par motif / opérateur / autorisant + distinction avant/après cuisine.

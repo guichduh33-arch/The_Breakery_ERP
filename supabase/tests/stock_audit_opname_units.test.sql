@@ -34,21 +34,21 @@ BEGIN
   RETURN NEXT throws_ok(format('SELECT set_opname_count_v3(%L, 4)', v_item), 'P0001', 'set_count_not_allowed_in_status', 'Écriture après révélation refusée');
   RETURN NEXT is((SELECT counted_qty FROM inventory_count_items WHERE id = v_item), 0::numeric, 'Refus sans modification du comptage');
 
-  PERFORM record_incoming_stock_v4(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
-  PERFORM record_incoming_stock_v4(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
+  PERFORM record_incoming_stock_v5(p_product_id := v_product, p_quantity := 10, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
+  PERFORM record_incoming_stock_v5(p_product_id := v_kg, p_quantity := 2.5, p_reason := 'Audit incoming', p_idempotency_key := gen_random_uuid());
   PERFORM pg_temp.approved_adjustment(v_product, 12, 'Audit positive', gen_random_uuid());
   PERFORM pg_temp.approved_adjustment(v_product, 11, 'Audit negative', gen_random_uuid());
-  v_json := get_movement_aggregates_v4(p_product_id := v_product, p_movement_type := 'adjustment');
+  v_json := get_movement_aggregates_v5(p_product_id := v_product, p_movement_type := 'adjustment');
   RETURN NEXT is(jsonb_array_length(v_json), 2, 'Ajustements positifs et négatifs séparés');
   RETURN NEXT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(v_json) r WHERE r->>'unit' = 'pcs' AND (r->>'direction')::int = 1 AND (r->>'qty_total')::numeric = 2), 'Entrée classée par signe');
   RETURN NEXT ok(EXISTS(SELECT 1 FROM jsonb_array_elements(v_json) r WHERE (r->>'direction')::int = -1 AND (r->>'qty_total')::numeric = 1), 'Sortie classée par signe');
-  v_json := get_movement_aggregates_v4(p_product_id := v_kg);
+  v_json := get_movement_aggregates_v5(p_product_id := v_kg);
   RETURN NEXT ok(jsonb_array_length(v_json) = 1 AND v_json->0->>'unit' = 'kg' AND (v_json->0->>'qty_total')::numeric = 2.5, 'Quantité conservée dans son unité');
-  RETURN NEXT is(get_movement_aggregates_v4(p_product_id := v_kg, p_date_end := now()), '[]'::jsonb, 'Borne de fin exclusive');
+  RETURN NEXT is(get_movement_aggregates_v5(p_product_id := v_kg, p_date_end := now()), '[]'::jsonb, 'Borne de fin exclusive');
   PERFORM set_config('request.jwt.claim.sub', '', true);
   RETURN NEXT throws_ok(format('SELECT set_opname_count_v3(%L, 0)', v_item), 'P0003', 'forbidden', 'Comptage sans permission refusé');
   RETURN NEXT throws_ok(format('SELECT validate_opname_v2(%L)', v_count), 'P0003', 'forbidden', 'Validation sans permission refusée');
-  RETURN NEXT throws_ok('SELECT get_movement_aggregates_v4()', 'P0003', 'forbidden', 'Agrégats sans permission refusés');
+  RETURN NEXT throws_ok('SELECT get_movement_aggregates_v5()', 'P0003', 'stock_visibility_owner_required', 'Agrégats sans identité Owner refusés');
 END;
 $$;
 CREATE TEMP TABLE audit_results (seq serial, tap text);

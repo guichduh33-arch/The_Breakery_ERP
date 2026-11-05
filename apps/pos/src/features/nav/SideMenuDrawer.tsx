@@ -81,7 +81,7 @@ export interface SideMenuDrawerProps {
   onOpenCustomers?: () => void;
   /** Open the live sessions modal (cashier connections). */
   onOpenLiveSessions?: () => void;
-  /** Open the close-shift modal (cash count → close_shift_v2 → Z-report draft).
+  /** Open the close-shift modal (cash count → close_shift_v13 → Z-report draft).
       Omit when no shift is open — the item renders disabled. */
   onCloseShift?: () => void;
   /** Lock the terminal (force re-auth). */

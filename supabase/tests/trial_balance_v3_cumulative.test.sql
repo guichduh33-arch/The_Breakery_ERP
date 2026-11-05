@@ -55,7 +55,7 @@ INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, de
  ((SELECT id FROM journal_entries WHERE entry_number='TBV3-C'),(SELECT id FROM accounts WHERE code='4990'),0,300,'x');
 
 CREATE TEMP TABLE _tb ON COMMIT DROP AS
-  SELECT get_trial_balance_v4('2026-06-01','2026-06-30') AS j;
+  SELECT get_trial_balance_v5('2026-06-01','2026-06-30') AS j;
 
 CREATE TEMP TABLE _line ON COMMIT DROP AS
   SELECT e->>'code' AS code,
@@ -98,7 +98,7 @@ CROSS JOIN accounts a WHERE a.code IN ('1991','2991');
 
 SELECT ok(
   (SELECT (e->>'balance')::numeric
-     FROM jsonb_array_elements((get_trial_balance_v4('2026-06-01','2026-06-30'))->'lines') e
+     FROM jsonb_array_elements((get_trial_balance_v5('2026-06-01','2026-06-30'))->'lines') e
     WHERE e->>'code'='1991') = 100,
   'T7 — cumul 1991 = 100 (JE draft 40 et JE future 25 exclues du cumul, leak _061 corrige)');
 

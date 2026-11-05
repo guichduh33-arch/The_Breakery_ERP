@@ -98,13 +98,13 @@ DECLARE
   v_all BIGINT; v_low BIGINT; v_zero BIGINT; v_neg BIGINT; v_untracked BIGINT;
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
-  SELECT * INTO c FROM get_stock_counters_v2(NULL, NULL);
+  SELECT * INTO c FROM get_stock_counters_v3(NULL, NULL);
 
-  SELECT COUNT(*) INTO v_all       FROM get_stock_levels_v5(NULL, NULL, 'all',       100000, 0);
-  SELECT COUNT(*) INTO v_low       FROM get_stock_levels_v5(NULL, NULL, 'low',       100000, 0);
-  SELECT COUNT(*) INTO v_zero      FROM get_stock_levels_v5(NULL, NULL, 'zero',      100000, 0);
-  SELECT COUNT(*) INTO v_neg       FROM get_stock_levels_v5(NULL, NULL, 'negative',  100000, 0);
-  SELECT COUNT(*) INTO v_untracked FROM get_stock_levels_v5(NULL, NULL, 'untracked', 100000, 0);
+  SELECT COUNT(*) INTO v_all       FROM get_stock_levels_v6(NULL, NULL, 'all',       100000, 0);
+  SELECT COUNT(*) INTO v_low       FROM get_stock_levels_v6(NULL, NULL, 'low',       100000, 0);
+  SELECT COUNT(*) INTO v_zero      FROM get_stock_levels_v6(NULL, NULL, 'zero',      100000, 0);
+  SELECT COUNT(*) INTO v_neg       FROM get_stock_levels_v6(NULL, NULL, 'negative',  100000, 0);
+  SELECT COUNT(*) INTO v_untracked FROM get_stock_levels_v6(NULL, NULL, 'untracked', 100000, 0);
 
   PERFORM set_config('breakery.t41_pass',
     (c.total_count     = v_all
@@ -114,7 +114,7 @@ BEGIN
      AND c.untracked_count = v_untracked)::text, false);
 END $t41$;
 SELECT ok(current_setting('breakery.t41_pass')::boolean,
-  'T41: get_stock_counters_v2 equals the row count of get_stock_levels_v5 for every bucket');
+  'T41: get_stock_counters_v3 equals the row count of get_stock_levels_v6 for every bucket');
 
 -- =========================================================================
 -- T42 — ADR-021 déc. 6 : toute garde ajoutée porte son test NÉGATIF. La
@@ -129,15 +129,15 @@ BEGIN
   SELECT auth_user_id INTO v_cashier FROM user_profiles WHERE employee_code = 'EMP001';
   PERFORM pg_temp.set_jwt_uid(v_cashier);
   BEGIN
-    PERFORM * FROM get_stock_counters_v2(NULL, NULL);
+    PERFORM * FROM get_stock_counters_v3(NULL, NULL);
   EXCEPTION WHEN OTHERS THEN
-    v_blocked := (SQLSTATE = 'P0003' AND SQLERRM = 'forbidden');
+    v_blocked := (SQLSTATE = 'P0003' AND SQLERRM = 'stock_visibility_owner_required');
   END;
   PERFORM set_config('breakery.t42_pass', v_blocked::text, false);
   PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
 END $t42$;
 SELECT ok(current_setting('breakery.t42_pass')::boolean,
-  'T42: CASHIER without inventory.read receives forbidden (P0003) from get_stock_counters_v2');
+  'T42: CASHIER without inventory.read receives stock_visibility_owner_required (P0003) from get_stock_counters_v3');
 
 -- ---------------------------------------------------------------------------
 SELECT * FROM finish();

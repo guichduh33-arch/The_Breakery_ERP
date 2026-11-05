@@ -73,7 +73,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     jsonb_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, true);
 
-  v_result := update_product_v5(
+  v_result := update_product_v6(
     v_pid,
     '{"name": "S27 pgTAP T1 BEV-AMER", "retail_price": 42424}'::JSONB
   );
@@ -117,11 +117,11 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  format($q$SELECT update_product_v5(%L::UUID, '{"name":"nope"}'::JSONB)$q$,
+  format($q$SELECT update_product_v6(%L::UUID, '{"name":"nope"}'::JSONB)$q$,
          current_setting('breakery.s27_product_id')),
   '42501',
   'permission_denied',
-  'T2 CASHIER cannot call update_product_v5 (42501 permission_denied)'
+  'T2 CASHIER cannot call update_product_v6 (42501 permission_denied)'
 );
 
 -- =============================================================================
@@ -137,7 +137,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $q$SELECT update_product_v5(
+  $q$SELECT update_product_v6(
        '00000000-0000-0000-0000-deadbeefdead'::UUID,
        '{"name":"ghost"}'::JSONB
      )$q$,
@@ -159,7 +159,7 @@ DECLARE
   v_result JSONB;
   v_ignored JSONB;
 BEGIN
-  v_result := update_product_v5(
+  v_result := update_product_v6(
     v_pid,
     '{"name": "S27 pgTAP T4 BEV-AMER", "cost_price": 999999}'::JSONB
   );
@@ -202,7 +202,7 @@ DECLARE
   v_pid UUID := current_setting('breakery.s27_product_id')::UUID;
   v_result JSONB;
 BEGIN
-  v_result := update_product_v5(
+  v_result := update_product_v6(
     v_pid,
     '{"tax_inclusive": false}'::JSONB
   );

@@ -58,7 +58,7 @@ BEGIN
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
-  v_result := record_production_v8(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+  v_result := record_production_v10(v_bag, 50, v_section, NULL, 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
   PERFORM set_config('role','postgres',true);
   PERFORM pg_temp.authenticate_pin(v_adm);
@@ -94,7 +94,7 @@ DECLARE
   v_session UUID;
   v_opener UUID;
 BEGIN
-  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP000';
   IF v_mgr IS NULL THEN
     RAISE EXCEPTION 'T_PROD_15: missing required actor fixture';
   END IF;
@@ -123,11 +123,11 @@ BEGIN
   PERFORM pg_temp.fixture_released_days(current_date-30,current_date);
   PERFORM pg_temp.authenticate_pin(v_mgr);
   PERFORM set_config('role','authenticated',true);
-  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v2(7, 3, 7) WHERE product_id = v_bag;
+  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v3(7, 3, 7) WHERE product_id = v_bag;
   PERFORM set_config('role','postgres',true);
 
   PERFORM set_config('breakery.t_prod_15_pass',
     CASE WHEN v_count = 1 THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_15_pass') = 'yes',
-  'T_PROD_15: get_production_suggestions_v2 returns row for low-stock product');
+  'T_PROD_15: get_production_suggestions_v3 returns row for low-stock product');

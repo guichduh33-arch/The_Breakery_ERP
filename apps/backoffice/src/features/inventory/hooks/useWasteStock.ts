@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory/hooks/useWasteStock.ts
 //
-// Calls `waste_stock_v2` RPC (session 12). Records a negative movement of
+// Calls `waste_stock_v4` RPC (session 12). Records a negative movement of
 // type `waste` and decrements `products.current_stock`. Server enforces
 // non-negative invariant.
 //
@@ -11,8 +11,7 @@
 //   P0002 'insufficient_stock'         — quantity > current_stock
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { StockMovementRpcResult } from '@breakery/domain';
-import { supabase } from '@/lib/supabase.js';
+import { submitStockDeclaration, type StockDeclarationResult } from '../stockDeclaration.js';
 import { invalidateStockQueries } from '../invalidateStockQueries.js';
 
 export type WasteStockErrorCode =
@@ -50,17 +49,13 @@ function classify(message: string): WasteStockErrorCode {
 
 export function useWasteStock() {
   const qc = useQueryClient();
-  return useMutation<StockMovementRpcResult, WasteStockError, WasteStockArgs>({
+  return useMutation<StockDeclarationResult, WasteStockError, WasteStockArgs>({
     mutationFn: async ({ productId, quantity, reason, idempotencyKey }) => {
-      const { data, error } = await supabase.rpc('waste_stock_v2', {
-        p_product_id:      productId,
-        p_quantity:        quantity,
-        p_reason:          reason,
-        p_idempotency_key: idempotencyKey,
-      });
-      if (error) throw new WasteStockError(classify(error.message), error.message);
-      if (data === null) throw new WasteStockError('unknown', 'Empty RPC response');
-      return data as unknown as StockMovementRpcResult;
+      try { return await submitStockDeclaration('waste', productId, quantity, reason, idempotencyKey); }
+      catch (error) {
+        const message = error instanceof Error ? error.message : 'Declaration failed';
+        throw new WasteStockError(classify(message), message);
+      }
     },
     onSuccess: () => invalidateStockQueries(qc),
   });

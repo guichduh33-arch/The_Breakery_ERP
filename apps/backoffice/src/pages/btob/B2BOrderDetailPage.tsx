@@ -22,7 +22,7 @@ export default function B2BOrderDetailPage(): JSX.Element {
   const { orderId } = useParams<{ orderId: string }>();
   const location = useLocation();
   const canPickup = useAuthStore(
-    (s) => s.hasPermission('b2b.read') && s.hasPermission('pos.sale.create'),
+    (s) => s.hasPermission('b2b.read') && s.hasPermission('b2b.order.create'),
   );
   const canPay = useAuthStore((s) => s.hasPermission('b2b.payment.record'));
   const [pickup, setPickup] = useState<'schedule' | 'deliver' | null>(null);

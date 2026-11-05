@@ -74,7 +74,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v24(
+  r := pay_existing_order_v25(
     p_order_id := current_setting('c19.order_id')::uuid,
     p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb, p_idempotency_key := gen_random_uuid());
   PERFORM set_config('c19.pay_status', 'ok', false);
@@ -110,13 +110,13 @@ INSERT INTO _cap SELECT ok(
 
 INSERT INTO _cap SELECT ok(
   NOT has_function_privilege('anon',
-    'public.pay_existing_order_v24(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean,uuid,boolean)',
+    'public.pay_existing_order_v25(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean,uuid,boolean)',
     'execute'),
-  'T6: anon lacks EXECUTE on pay_existing_order_v24 (defense-in-depth REVOKE pair)');
+  'T6: anon lacks EXECUTE on pay_existing_order_v25 (defense-in-depth REVOKE pair)');
 
-INSERT INTO _cap SELECT hasnt_function('public', 'pay_existing_order_v18',
+INSERT INTO _cap SELECT hasnt_function('public', 'pay_existing_order_v25',
   ARRAY['uuid','jsonb','uuid','integer','uuid','numeric','text','numeric','text','uuid','uuid','jsonb','jsonb','boolean'],
-  'T7: pay_existing_order_v18 no longer exists (dropped in the same migration as v19)');
+  'T7: pay_existing_order_v25 no longer exists (dropped in the same migration as v19)');
 
 SELECT count(*) FILTER (WHERE l LIKE 'not ok%') AS failures, count(*) AS total, string_agg(l,' | ') AS lines FROM _cap;
 ROLLBACK;

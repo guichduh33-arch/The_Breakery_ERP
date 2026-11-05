@@ -22,7 +22,7 @@ export function useFinancialAttempt<K extends FinancialOperation>(operation: K, 
   const token = useAuthStore((s) => s.sessionToken);
   const permissions: Record<FinancialOperation, PermissionCode> = {
     bank_manage: 'accounting.bank.manage', bank_post: 'accounting.bank.settle', bank_finalize: 'accounting.bank.validate',
-    refund: 'orders.refund', payment: 'b2b.payment.record', b2bEdit: 'pos.sale.create',
+    refund: 'orders.refund', payment: 'b2b.payment.record', b2bEdit: 'b2b.order.create',
     expense_creation: 'expenses.create', expense_receipt: 'expenses.create',
     loyalty_conversion: 'customers.store_credit.convert', loyalty_adjustment: 'loyalty.adjust',
   };

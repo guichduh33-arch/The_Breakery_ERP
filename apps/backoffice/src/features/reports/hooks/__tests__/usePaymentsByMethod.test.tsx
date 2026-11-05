@@ -52,13 +52,13 @@ beforeEach(() => {
 });
 
 describe('usePaymentsByMethod', () => {
-  it('appelle get_payments_by_method_v3', async () => {
+  it('appelle get_payments_by_method_v4', async () => {
     const { result } = renderHook(
       () => usePaymentsByMethod({ start: '2026-07-01', end: '2026-07-02' }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockRpc).toHaveBeenCalledWith('get_payments_by_method_v3', {
+    expect(mockRpc).toHaveBeenCalledWith('get_payments_by_method_v4', {
       p_date_start: '2026-07-01',
       p_date_end:   '2026-07-02',
     });

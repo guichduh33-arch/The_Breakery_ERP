@@ -50,7 +50,7 @@ describe('B2B order editing', () => {
     fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'Updated' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => { expect(close).toHaveBeenCalledOnce(); });
-    expect(rpc).toHaveBeenCalledWith('edit_b2b_order_v2', expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith('edit_b2b_order_v3', expect.objectContaining({
       p_order_id: 'order-1', p_items: [{ id: itemId, product_id: productId, quantity: 3 }, { product_id: addedId, quantity: 1 }],
       p_notes: 'Updated', p_expected_updated_at: revision,
     }));

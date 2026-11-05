@@ -48,12 +48,12 @@ SELECT ok(
 -- T_MKT_02 : RPCs declared
 -- ---------------------------------------------------------------------------
 
-SELECT has_function('public', 'get_customer_cohort_v1', ARRAY['date','integer'],
-  'T_MKT_02a get_customer_cohort_v1 exists');
-SELECT has_function('public', 'get_customer_segments_v1', ARRAY['text'],
-  'T_MKT_02b get_customer_segments_v1 exists');
-SELECT has_function('public', 'get_promo_roi_v1', ARRAY['uuid','date','date'],
-  'T_MKT_02c get_promo_roi_v1 exists');
+SELECT has_function('public', 'get_customer_cohort_v2', ARRAY['date','integer'],
+  'T_MKT_02a get_customer_cohort_v2 exists');
+SELECT has_function('public', 'get_customer_segments_v2', ARRAY['text'],
+  'T_MKT_02b get_customer_segments_v2 exists');
+SELECT has_function('public', 'get_promo_roi_v2', ARRAY['uuid','date','date'],
+  'T_MKT_02c get_promo_roi_v2 exists');
 SELECT has_function('public', 'notify_birthday_customers_v2',
   'T_MKT_02d notify_birthday_customers_v2 exists');
 
@@ -151,22 +151,22 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 
 SELECT throws_ok(
-  $$ SELECT public.get_customer_segments_v1('all') $$,
+  $$ SELECT public.get_customer_segments_v2('all') $$,
   '42501',
   NULL,
   'T_MKT_BONUS_01 segments RPC enforces reports.read (42501 without JWT)'
 );
 
 SELECT throws_ok(
-  $$ SELECT public.get_customer_cohort_v1(date_trunc('month', current_date - INTERVAL '6 months')::date, 6) $$,
+  $$ SELECT public.get_customer_cohort_v2(date_trunc('month', current_date - INTERVAL '6 months')::date, 6) $$,
   '42501',
   NULL,
   'T_MKT_BONUS_02 cohort RPC enforces reports.read'
 );
 
 SELECT throws_ok(
-  $$ SELECT public.get_promo_roi_v1('00000000-0000-0000-0000-000000000000'::uuid, current_date - 30, current_date) $$,
-  '42501',
+  $$ SELECT public.get_promo_roi_v2('00000000-0000-0000-0000-000000000000'::uuid, current_date - 30, current_date) $$,
+  'P0003',
   NULL,
   'T_MKT_BONUS_03 promo ROI enforces reports.read'
 );

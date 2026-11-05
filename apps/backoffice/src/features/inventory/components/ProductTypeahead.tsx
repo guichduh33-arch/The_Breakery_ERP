@@ -142,7 +142,7 @@ export function ProductTypeahead({
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate">{p.name}</span>
                 <span className="shrink-0 font-mono tabular-nums text-xs text-text-secondary">
-                  {p.sku} · {formatStockQuantity(p.current_stock, p.unit)}
+                  {p.sku} · {p.current_stock === null ? 'Stock hidden' : formatStockQuantity(p.current_stock, p.unit)}
                 </span>
               </div>
             </div>

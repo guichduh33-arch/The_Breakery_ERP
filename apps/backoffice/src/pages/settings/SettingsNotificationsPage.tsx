@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/settings/SettingsNotificationsPage.tsx
 //
 // S73 Lot 3 — System notification templates editor (channel email/sms/push/
-// inapp; consumed by enqueue_notification_v1). Update-only: codes are system
+// inapp; consumed by enqueue_notification_v2). Update-only: codes are system
 // events, no create/delete from the UI. Mirrors SettingsEmailTemplatesPage's
 // card-per-template rendering for visual homogeneity. Edit gate is
 // `notifications.send` (matches the RLS write policy), NOT `settings.update`

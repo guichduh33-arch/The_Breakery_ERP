@@ -67,17 +67,17 @@ SELECT lives_ok(
 -- T_RPT_06 — sales-by-hour 24-bucket
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_sales_by_hour_v3(CURRENT_DATE)),
+  (SELECT COUNT(*)::INT FROM public.get_sales_by_hour_v5(CURRENT_DATE)),
   24,
-  'T_RPT_06 — get_sales_by_hour_v3 returns 24 rows (zero-filled)'
+  'T_RPT_06 — get_sales_by_hour_v5 returns 24 rows (zero-filled)'
 );
 
 -- ============================================================
 -- T_RPT_07 — sales-by-category date range
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_sales_by_category_v4(CURRENT_DATE - 7, CURRENT_DATE)$$,
-  'T_RPT_07 — get_sales_by_category_v4 accepts a date range'
+  $$SELECT * FROM public.get_sales_by_category_v6(CURRENT_DATE - 7, CURRENT_DATE)$$,
+  'T_RPT_07 — get_sales_by_category_v6 accepts a date range'
 );
 
 -- ============================================================
@@ -89,7 +89,7 @@ SELECT lives_ok(
 -- calculée par le RPC coïncident.
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v4()),
+  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v5()),
   (SELECT COUNT(*)::INT FROM products p
     WHERE p.deleted_at IS NULL
       AND p.track_inventory = true
@@ -102,7 +102,7 @@ SELECT is(
         OR p.current_stock <> 0
       )
   ),
-  'T_RPT_08 — get_stock_variance_v4 emits one row per tracked product with a movement in the default window or a non-zero stock'
+  'T_RPT_08 — get_stock_variance_v5 emits one row per tracked product with a movement in the default window or a non-zero stock'
 );
 
 -- ============================================================

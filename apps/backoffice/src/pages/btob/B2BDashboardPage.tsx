@@ -2,7 +2,7 @@
 //
 // Session 14 / Phase 5.B — B2B Wholesale dashboard.
 // Session 24 / Phase 2.A.3 — "+ New B2B Order" now opens CreateB2bOrderModal
-// which calls create_b2b_order_v1 (closes deviation D-W6-B2B-01).
+// which calls create_b2b_order_v10 (closes deviation D-W6-B2B-01).
 
 import { Link } from 'react-router-dom';
 import { useState, type JSX } from 'react';
@@ -61,11 +61,11 @@ export default function B2BDashboardPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   // Écart de gates ASSUMÉ ici, pas harmonisé : la route est gatée `b2b.read`
   // (routes/index.tsx) mais la page re-vérifie `customers.read` (ses données
-  // viennent de la table customers) et la création exige `pos.sale.create`.
+  // viennent de la table customers) et la création exige `b2b.order.create`.
   // Toute harmonisation est un changement de sémantique sécurité — hors du
   // chantier de conformité visuelle (validation owner + tests négatifs).
   const canRead   = hasPermission('customers.read');
-  const canCreate = hasPermission('pos.sale.create');
+  const canCreate = hasPermission('b2b.order.create');
   const [createOpen, setCreateOpen] = useState<boolean>(false);
 
   const dash = useB2bDashboard();

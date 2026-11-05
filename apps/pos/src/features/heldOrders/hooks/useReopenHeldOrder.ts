@@ -35,7 +35,7 @@ export function useReopenHeldOrder() {
         if (error) throw error;
         payload = await fetchOrderSnapshot(orderId);
       } else {
-        const { data, error } = await supabase.rpc('reopen_held_order_v9', {
+        const { data, error } = await supabase.rpc('reopen_held_order_v10', {
           p_order_id: orderId,
           p_session_id: sessionId,
         });

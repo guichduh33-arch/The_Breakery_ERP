@@ -3,10 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
-const rpcSpy = vi.fn<(...args: unknown[]) => Promise<unknown>>();
+const rpcSpy = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>());
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc: (...a: unknown[]) => rpcSpy(...a),
+    rpc: rpcSpy,
     functions: { invoke: vi.fn() },
   },
 }));

@@ -24,6 +24,18 @@ function row(
 }
 
 describe('IngredientPicker', () => {
+  it('keeps ingredients selectable when their theoretical stock is masked', async () => {
+    const flour = { ...row('hidden', 'Hidden-stock flour'), current_stock: null };
+    const onChange = vi.fn();
+    render(<IngredientPicker value={null} onChange={onChange} searchFn={vi.fn().mockResolvedValue([flour])} />);
+    const input = screen.getByRole('textbox', { name: 'Search ingredient' });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'fl' } });
+    const option = await screen.findByRole('option', { name: /Hidden-stock flour/ });
+    expect(option).not.toHaveTextContent(/stock 0/);
+    fireEvent.mouseDown(option);
+    expect(onChange).toHaveBeenCalledWith('hidden', expect.objectContaining({ current_stock: null }));
+  });
   it('affiche le choix avant validation, efface une sélection devenue ambiguë et se réinitialise après ajout', async () => {
     const flour = row('1', 'Bread flour');
     const searchFn = vi.fn().mockResolvedValue([flour]);
