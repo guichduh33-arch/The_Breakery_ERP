@@ -23,6 +23,8 @@ import { PageHeader } from '@/components/PageHeader.js';
 import { FOCUS_RING } from '@/components/focusRing.js';
 import { QueryErrorBanner } from '@/components/QueryErrorBanner.js';
 import { errorDetailText } from '@/components/errorDetailText.js';
+import { StockDeclarationsPanel } from '@/features/inventory/components/StockDeclarationsPanel.js';
+import { DisplayDayReviewPanel } from '@/features/inventory/components/DisplayDayReviewPanel.js';
 
 const STATUS_OPTIONS: readonly { value: '' | OpnameStatus; label: string }[] = [
   { value: '',          label: 'All statuses' },
@@ -207,6 +209,8 @@ export default function OpnameListPage(): JSX.Element {
         />
       )}
 
+      <DisplayDayReviewPanel />
+      <StockDeclarationsPanel />
       {createOpen && (
         <CreateOpnameModal
           onCreated={(id) => {

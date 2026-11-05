@@ -4,7 +4,7 @@
 //
 // Répartition de l'encaissé par mode de paiement (Cash / Card / QRIS / EDC /
 // Transfer / Store credit + « other »). Source serveur unique :
-// get_pos_payment_breakdown_v1 — même périmètre que l'Overview (l'encaissé
+// get_pos_payment_breakdown_v3 — même périmètre que l'Overview (l'encaissé
 // réconcilie avec le revenue, hors commandes outstanding). Barre de part par
 // méthode + tuile total encaissé + export CSV.
 

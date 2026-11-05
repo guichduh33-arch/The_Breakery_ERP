@@ -114,7 +114,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
   return useQuery<POSReportsSessions>({
     queryKey: ['pos-reports-sessions', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_sessions_report_v2', {
+      const { data, error } = await supabase.rpc('get_pos_sessions_report_v4', {
         p_start_date: period.startDate,
         p_end_date: period.endDate,
       });
@@ -164,7 +164,7 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
 
 
 //
-// Source of truth: server RPC `get_pos_order_type_category_mix_v3(p_start_date,
+// Source of truth: server RPC `get_pos_order_type_category_mix_v4(p_start_date,
 // p_end_date)`. Same order scope as the Overview, so the order-type revenue
 // sums back to Overview revenue exactly. Two breakdowns:
 //   * byOrderType — order-level (dine_in / take_out / delivery): revenue TTC,

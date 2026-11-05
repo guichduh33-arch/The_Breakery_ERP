@@ -51,7 +51,7 @@ export function useEditB2bOrder() {
     mutationFn: async ({ snapshot, key, current }: { snapshot: B2bEditSnapshot; key: string; current: () => boolean }) => {
       const session = captureFinancialSession();
       if (!session.current() || !current()) throw new FinancialAttemptError('Your session changed. Reopen this form.');
-      const { data, error } = await supabase.rpc('edit_b2b_order_v2', {
+      const { data, error } = await supabase.rpc('edit_b2b_order_v3', {
         p_order_id: snapshot.orderId, p_items: snapshot.items, p_notes: snapshot.notes,
         p_expected_updated_at: snapshot.expectedUpdatedAt, p_idempotency_key: key,
       });

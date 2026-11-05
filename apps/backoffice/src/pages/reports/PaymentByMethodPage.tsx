@@ -4,7 +4,7 @@
 // socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
 // CE QUI NE CHANGE PAS : les montants, parts, frais estimés et nets estimés
-// viennent de `get_payments_by_method_v3` et sont rendus tels quels. Les frais
+// viennent de `get_payments_by_method_v4` et sont rendus tels quels. Les frais
 // restent INFORMATIFS (ADR-006 déc. 9, `business_config.payment_method_fees`) :
 // ils n'entrent dans aucune écriture comptable.
 //

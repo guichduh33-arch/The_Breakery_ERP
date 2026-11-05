@@ -11,7 +11,7 @@ export interface FinishedProductOption {
   sku: string;
   name: string;
   unit: string;
-  current_stock: number;
+  current_stock: number | null;
   cost_price: number;
   has_active_recipe: boolean;
 }
@@ -21,14 +21,9 @@ export function useFinishedProducts(opts?: { withRecipeOnly?: boolean }) {
     queryKey: ['inventory-production', 'finished-products', opts] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, sku, name, unit, current_stock, cost_price')
-        .eq('product_type', 'finished')
-        .eq('is_active', true)
-        .is('deleted_at', null)
-        .order('name')
-        .limit(500);
+      const { data, error } = await supabase.from('products')
+        .select('id,sku,name,unit,cost_price').eq('product_type', 'finished')
+        .eq('is_active', true).is('deleted_at', null).order('name').limit(500);
       if (error) throw error;
 
       // Fetch active recipe product_ids to mark `has_active_recipe`.
@@ -39,14 +34,14 @@ export function useFinishedProducts(opts?: { withRecipeOnly?: boolean }) {
         .is('deleted_at', null)
         .limit(2000);
       if (recErr) throw recErr;
-      const withRecipe = new Set((recRows ?? []).map((r) => r.product_id as string));
+      const withRecipe = new Set((recRows ?? []).map((r) => r.product_id));
 
       const all = (data ?? []).map((p) => ({
         id: p.id,
         sku: p.sku,
         name: p.name,
         unit: p.unit,
-        current_stock: Number(p.current_stock),
+        current_stock: null,
         cost_price: Number(p.cost_price),
         has_active_recipe: withRecipe.has(p.id),
       }));

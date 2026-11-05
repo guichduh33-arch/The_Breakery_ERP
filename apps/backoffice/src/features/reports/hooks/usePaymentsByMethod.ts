@@ -54,7 +54,7 @@ export function usePaymentsByMethod(params: UsePaymentsByMethodParams) {
   return useQuery<PaymentsByMethodData, Error>({
     queryKey: ['reports', 'payments_by_method', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_payments_by_method_v3', {
+      const { data, error } = await supabase.rpc('get_payments_by_method_v4', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });

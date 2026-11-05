@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useCashFlow.ts
 //
-// Wraps `get_cash_flow_v3(p_date_start, p_date_end)`. Methode indirecte par
+// Wraps `get_cash_flow_v4(p_date_start, p_date_end)`. Methode indirecte par
 // CONTREPARTIE : operating + investing + financing = cash_end - cash_start par
 // identite de la partie double, et non plus `net_change := operating_total`.
 //
@@ -56,7 +56,7 @@ export function useCashFlow(dateStart: string, dateEnd: string) {
     queryKey: [...CASH_FLOW_QK, dateStart, dateEnd] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cash_flow_v3', {
+      const { data, error } = await supabase.rpc('get_cash_flow_v4', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
       });

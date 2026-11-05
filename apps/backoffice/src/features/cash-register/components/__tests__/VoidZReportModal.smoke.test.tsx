@@ -6,7 +6,7 @@ import type { ReactElement } from 'react';
 const rpcSpy = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc: (...a: unknown[]) => rpcSpy(...a),
+    rpc: rpcSpy,
     functions: { invoke: vi.fn() },
   },
 }));

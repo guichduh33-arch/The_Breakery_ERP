@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/useProductSalesLines.ts
 //
 // Le drill-down de « Sales by Product » : les LIGNES de vente d'un produit,
-// paginées au curseur keyset (`get_product_sales_lines_v3`).
+// paginées au curseur keyset (`get_product_sales_lines_v4`).
 //
 // `totals` porte le jeu COMPLET, pas la page chargée. La page rendue en tire un
 // pied honnête même quand seules cent lignes sur mille sont descendues — un pied
@@ -98,7 +98,7 @@ export function useProductSalesLines({ productId, start, end }: UseProductSalesL
       };
       if (typeof pageParam === 'string' && pageParam !== '') args.p_cursor = pageParam;
 
-      const { data, error } = await supabase.rpc('get_product_sales_lines_v3', args);
+      const { data, error } = await supabase.rpc('get_product_sales_lines_v4', args);
       if (error) throw error as Error;
 
       const r      = (data ?? {}) as Record<string, unknown>;

@@ -4,7 +4,7 @@
 // socle Report shell v2 (archétype maquette 4c, patron : DailySalesPage).
 //
 // CE QUI NE CHANGE PAS : la méthode indirecte PAR CONTREPARTIE de
-// `get_cash_flow_v3`. Les trois sections, leurs postes explicatifs
+// `get_cash_flow_v4`. Les trois sections, leurs postes explicatifs
 // (net_profit, Δ AR, Δ AP, Δ stocks, ajustements non monétaires) et les deux
 // soldes de trésorerie sont rendus tels quels, dans le même ordre. Les postes
 // de la section opérationnelle EXPLIQUENT son total, ils ne le fondent pas :

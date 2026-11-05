@@ -43,7 +43,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_cash_flow_v3') {
+      if (fn === 'get_cash_flow_v4') {
         return Promise.resolve({ data: payload, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -79,7 +79,7 @@ function renderPage() {
 
 function boundsQueried(): { p_date_start: string; p_date_end: string }[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_cash_flow_v3')
+    .filter(([fn]) => fn === 'get_cash_flow_v4')
     .map(([, args]) => args as { p_date_start: string; p_date_end: string });
 }
 

@@ -86,6 +86,14 @@ describe('DashboardKpiStrip — comparisons with no baseline', () => {
     // La mention d'ouverture couvre déjà le cas : la doubler serait le mur en gris.
     expect(screen.queryByTestId('no-baseline')).not.toBeInTheDocument();
   });
+
+  it('labels closed-shift cash without rendering a hidden drawer split', () => {
+    const kpis = kpisWith(null, null);
+    kpis.cash_on_hand = { value: 2_100_000, drawer: null, safe: null, wallets: [], is_derived: false };
+    wrap(<DashboardKpiStrip kpis={kpis} isLoading={false} />);
+    expect(screen.getByText('Closed-shift cash balances')).toBeInTheDocument();
+    expect(screen.queryByText(/drawer .*safe/)).not.toBeInTheDocument();
+  });
 });
 
 it('hides restricted margin values and comparisons even when residual numbers exist', () => {

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/marketing/hooks/usePromoRoi.ts
 //
-// Wraps `get_promo_roi_v1(p_promotion_id, p_date_start, p_date_end)` RPC.
+// Wraps `get_promo_roi_v2(p_promotion_id, p_date_start, p_date_end)` RPC.
 // Returns ROI summary jsonb for a single promotion in the date range.
 //
 // Note : `incremental_revenue` is a proxy (revenue minus discount).
@@ -38,7 +38,7 @@ export function usePromoRoi(
     enabled:   promotionId !== null && promotionId.length > 0,
     queryFn: async () => {
       if (promotionId === null || promotionId.length === 0) return null;
-      const { data, error } = await supabase.rpc('get_promo_roi_v1', {
+      const { data, error } = await supabase.rpc('get_promo_roi_v2', {
         p_promotion_id: promotionId,
         p_date_start:   dateStart,
         p_date_end:     dateEnd,

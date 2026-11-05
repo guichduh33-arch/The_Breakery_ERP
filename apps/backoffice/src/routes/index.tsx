@@ -660,7 +660,7 @@ export function AppRoutes() {
           path="accounting/trial-balance"
           element={
             <PermissionGate required="accounting.tb.read">
-              <TrialBalancePage />
+              <SuperAdminGate><TrialBalancePage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -820,7 +820,7 @@ export function AppRoutes() {
           path="reports/profit-loss"
           element={
             <PermissionGate required="reports.financial.read">
-              <ProfitLossPage />
+              <SuperAdminGate><ProfitLossPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -836,7 +836,7 @@ export function AppRoutes() {
           path="reports/balance-sheet"
           element={
             <PermissionGate required="reports.financial.read">
-              <BalanceSheetPage />
+              <SuperAdminGate><BalanceSheetPage /></SuperAdminGate>
             </PermissionGate>
           }
         />
@@ -844,7 +844,7 @@ export function AppRoutes() {
           path="reports/cash-flow"
           element={
             <PermissionGate required="reports.financial.read">
-              <CashFlowPage />
+              <SuperAdminGate><CashFlowPage /></SuperAdminGate>
             </PermissionGate>
           }
         />

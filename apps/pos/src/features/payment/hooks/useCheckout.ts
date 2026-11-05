@@ -9,7 +9,7 @@ import { snapshotCart } from '@/stores/orderSnapshot';
 import { mintDiscountAuthorization } from '@/features/discounts/mintDiscountAuthorization';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v22']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v25']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -93,7 +93,7 @@ export function useCheckout() {
       }
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v13 / pay_existing_order_v22). The client no
+      // (complete_order_with_payment_v32 / pay_existing_order_v25). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
@@ -132,7 +132,7 @@ export function useCheckout() {
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
           const authorizationId = unsynced.some((i) => i.discount) ? await savedDiscountAuthorization(input.context, 'appendDiscountAuthId') : undefined;
           const sourceCode = input.context?.sourceCode ?? getOrderSourceCode();
-          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v11', {
+          const { data: appended, error: appendErr } = await supabase.rpc('fire_counter_order_v12', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
@@ -141,7 +141,7 @@ export function useCheckout() {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v22
+              // S47 — combo lines persist their components so pay_existing_order_v25
               // deducts each component's stock at payment.
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
@@ -204,7 +204,7 @@ export function useCheckout() {
           args.p_promotions = promotionPayload;
         }
 
-        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v22 exige
+        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v25 exige
         // un nonce discount_authorizations à usage unique. Le RPC étant appelé en
         // DIRECT depuis le navigateur (contrairement à complete_order qui passe
         // par process-payment), le mint service-role ne peut se faire dans le RPC.
@@ -221,7 +221,7 @@ export function useCheckout() {
         const { error, data } = outstanding
           ? await supabase.rpc('defer_pos_order_v2', { ...args, p_customer_id: customerId!,
             p_session_id: sessionId, p_idempotency_key: idempotencyKey } as Database['public']['Functions']['defer_pos_order_v2']['Args'])
-          : await supabase.rpc('pay_existing_order_v22', args as PayExistingOrderArgs);
+          : await supabase.rpc('pay_existing_order_v25', args as PayExistingOrderArgs);
         if (error) {
           const giftCode = ['promo_gift_requires_configuration', 'promo_gift_unavailable']
             .find((code) => error.message.startsWith(`${code}:`));

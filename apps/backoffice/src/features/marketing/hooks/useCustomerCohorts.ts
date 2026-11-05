@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/marketing/hooks/useCustomerCohorts.ts
 //
-// Wraps `get_customer_cohort_v1(p_cohort_month, p_lookback_months)` RPC.
+// Wraps `get_customer_cohort_v2(p_cohort_month, p_lookback_months)` RPC.
 // Returns retention/revenue buckets for the cohort that signed up in the
 // given month.
 //
@@ -24,7 +24,7 @@ export function useCustomerCohorts(cohortMonth: string, lookbackMonths = 12) {
     queryKey: [...COHORT_QUERY_KEY, cohortMonth, lookbackMonths] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_customer_cohort_v1', {
+      const { data, error } = await supabase.rpc('get_customer_cohort_v2', {
         p_cohort_month:    cohortMonth,
         p_lookback_months: lookbackMonths,
       });

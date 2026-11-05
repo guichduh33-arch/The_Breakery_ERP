@@ -296,6 +296,8 @@ export function DashboardKpiStrip({
         >
           {cash.restricted === true ? (
             <span className={NOTE}>restricted — cash permission required</span>
+          ) : cash.drawer == null || cash.safe == null ? (
+            <span className={NOTE}>Closed-shift cash balances</span>
           ) : (
             <span
               className={NOTE}

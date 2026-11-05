@@ -61,9 +61,10 @@ vi.mock('@/features/inventory-opname/components/AddItemForm.js', () => ({
 }));
 
 let currentPerms = new Set<string>();
+let currentRole = 'SUPER_ADMIN';
 vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: (p: string) => currentPerms.has(p) }),
+  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean; user: { role_code: string } }) => unknown) =>
+    sel({ hasPermission: (p: string) => currentPerms.has(p), user: { role_code: currentRole } }),
 }));
 
 function renderPage() {
@@ -83,6 +84,7 @@ function renderPage() {
 
 describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   beforeEach(() => {
+    currentRole = 'SUPER_ADMIN';
     validateMutate.mockReset();
     currentPerms = new Set(['inventory.read', 'inventory.opname.create', 'inventory.opname.finalize']);
     detail = makeDetail('counting');
@@ -91,7 +93,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   it('blocks reveal immediately when an already-counted quantity is edited', () => {
     renderPage();
     fireEvent.change(screen.getByLabelText('Counted quantity for White Flour'), { target: { value: '10' } });
-    expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Submit & lock count/i })).toBeDisabled();
     expect(screen.getByText(/Save all changes/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download template' })).toBeDisabled();
     expect(screen.getByLabelText('Import counts (.xlsx)')).toBeDisabled();
@@ -137,7 +139,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
   it('ne valide qu\'après confirmation, en annonçant qu\'il n\'y a pas de retour', () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /Validate & reveal variances/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit & lock count/i }));
     expect(validateMutate).not.toHaveBeenCalled();
 
     expect(screen.getByText(/no way back to counting/i)).toBeInTheDocument();
@@ -164,7 +166,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     renderPage();
 
     expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Validate & reveal variances/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Submit & lock count/i })).toBeInTheDocument();
 
     // Et il réapparaît une fois la révélation faite.
     detail = makeDetail('review');
@@ -187,7 +189,7 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
 
     // Un bouton désactivé n'est pas focalisable : la raison doit lui être liée
     // par `aria-describedby`, pas seulement posée à côté.
-    const validate = screen.getByRole('button', { name: /Validate & reveal variances/i });
+    const validate = screen.getByRole('button', { name: /Submit & lock count/i });
     expect(validate).toBeDisabled();
     expect(validate.getAttribute('aria-describedby')).toBe(reason.id);
   });
@@ -206,5 +208,14 @@ describe('OpnameDetailPage — comptage à l\'aveugle', () => {
     renderPage();
     expect(screen.queryByRole('button', { name: 'Download template' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Import counts (.xlsx)')).not.toBeInTheDocument();
+  });
+
+  it.each(['review', 'finalized'] as const)('keeps theoretical quantities private for ADMIN in %s', (status) => {
+    currentRole = 'ADMIN';
+    detail = makeDetail(status);
+    renderPage();
+    expect(screen.queryByTestId('cell-expected')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cell-variance')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Finalize/i })).not.toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/reports/__tests__/SalesByHourPage.smoke.test.tsx
 //
 // Smoke au niveau RPC : la page rend son titre et interroge
-// `get_sales_by_hour_v4` sur le BON jour.
+// `get_sales_by_hour_v5` sur le BON jour.
 //
 // Lot D (campagne Reports 2026-08-15) — deux propriétés ajoutées, qui tiennent
 // la migration sur la période unifiée :
@@ -23,7 +23,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_sales_by_hour_v4') {
+      if (fn === 'get_sales_by_hour_v5') {
         // 24-bucket zero-filled response shape
         const data = Array.from({ length: 24 }, (_, hour) => ({
           hour,
@@ -62,7 +62,7 @@ function renderPage(search = '') {
 
 function datesQueried(): string[] {
   return mockRpc.mock.calls
-    .filter(([fn]) => fn === 'get_sales_by_hour_v4')
+    .filter(([fn]) => fn === 'get_sales_by_hour_v5')
     .map(([, args]) => (args as { p_date: string }).p_date);
 }
 
@@ -72,7 +72,7 @@ describe('SalesByHourPage (smoke)', () => {
     sessionStorage.clear();
   });
 
-  it('renders the heading and queries get_sales_by_hour_v4 with a YYYY-MM-DD day', async () => {
+  it('renders the heading and queries get_sales_by_hour_v5 with a YYYY-MM-DD day', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Sales by Hour', level: 1 })).toBeInTheDocument();
 

@@ -69,7 +69,7 @@ export function CountItemRow({ countId, item, revealed, locked, onEditingChange 
     );
   }
 
-  const variance = item.counted_qty === null ? null : item.counted_qty - item.expected_qty;
+  const variance = item.counted_qty === null || item.expected_qty === null ? null : item.counted_qty - item.expected_qty;
 
   return (
     <tr className="border-b border-border-subtle">
@@ -79,7 +79,7 @@ export function CountItemRow({ countId, item, revealed, locked, onEditingChange 
       </td>
       {revealed && (
         <td className="py-2 px-3 text-sm font-mono text-right" data-testid="cell-expected">
-          {formatStockQuantity(item.expected_qty, item.unit)}
+          {item.expected_qty === null ? 'Hidden' : formatStockQuantity(item.expected_qty, item.unit)}
         </td>
       )}
       <td className="py-2 px-3">

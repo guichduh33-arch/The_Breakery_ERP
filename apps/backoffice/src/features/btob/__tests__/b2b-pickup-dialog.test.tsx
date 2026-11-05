@@ -32,7 +32,7 @@ describe('B2B pickup actions', () => {
     fireEvent.change(screen.getByLabelText('Pickup date'), { target: { value: '2026-09-14' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save pickup date' }));
     await waitFor(() => { expect(close).toHaveBeenCalledOnce(); });
-    expect(rpc).toHaveBeenCalledWith('update_b2b_pickup_v1', { p_order_id: 'order-1', p_pickup_date: '2026-09-14', p_mark_delivered: false });
+    expect(rpc).toHaveBeenCalledWith('update_b2b_pickup_v2', { p_order_id: 'order-1', p_pickup_date: '2026-09-14', p_mark_delivered: false });
     expect(invalidation).toHaveBeenCalledWith({ queryKey: ['b2b-invoices'] });
   });
 
@@ -40,7 +40,7 @@ describe('B2B pickup actions', () => {
     const { close } = setup(true);
     fireEvent.click(screen.getByRole('button', { name: 'Mark delivered' }));
     await waitFor(() => { expect(close).toHaveBeenCalledOnce(); });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('update_b2b_pickup_v1', { p_order_id: 'order-1', p_mark_delivered: true });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('update_b2b_pickup_v2', { p_order_id: 'order-1', p_mark_delivered: true });
   });
 
   it('keeps the dialog open and allows retry after an error', async () => {

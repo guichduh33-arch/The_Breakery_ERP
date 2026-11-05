@@ -93,6 +93,13 @@ serve(async (req) => {
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
   if (!hasPerm) return jsonResponse({ error: 'permission_denied', required: tplReg.permission }, 403);
 
+  const ownerTemplates = ['pnl', 'bs', 'cf', 'stock_variance', 'stock_movements', 'wastage', 'perishable_turnover'];
+  if (ownerTemplates.includes(body.template)) {
+    const { data: owner, error: ownerError } = await userClient.rpc('can_view_stock_v1');
+    if (ownerError) return jsonResponse({ error: 'permission_check_failed' }, 500);
+    if (owner !== true) return jsonResponse({ error: 'stock_visibility_owner_required' }, 403);
+  }
+
   // Audit Reports 2026-08-01, lot C / D3 — second verrou : EXTRAIRE un rapport
   // est un geste distinct de le CONSULTER. `reports.export` existait dans le set
   // fermé de permissions et était seedée, mais n'était lue nulle part ; elle

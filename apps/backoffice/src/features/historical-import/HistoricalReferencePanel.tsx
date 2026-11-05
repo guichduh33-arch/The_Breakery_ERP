@@ -60,7 +60,7 @@ export function HistoricalReferencePanel() {
       for (const ref of pack.products) {
         let record = await productLookup(ref);
         if (!record) {
-          guard(); const q = await supabase.rpc('create_product_v3', { p_payload: historicalProductPayload(ref) });
+          guard(); const q = await supabase.rpc('create_product_v5', { p_payload: historicalProductPayload(ref) });
           if (q.error && q.error.code !== '23505') throw new Error(q.error.message);
           if (!q.error && q.data && typeof q.data === 'object' && !Array.isArray(q.data)
             && Array.isArray(q.data.ignored_fields) && q.data.ignored_fields.length > 0) throw new Error(`Some reference fields were ignored for ${ref.sku}.`);

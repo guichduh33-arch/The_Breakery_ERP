@@ -5,12 +5,12 @@
 // Computes a coarse "kitchen rhythm" signal for the current local hour:
 //   - average fulfillment time = avg(paid_at - created_at) for paid orders
 //     completed in the current hour (local timezone)
-//   - order count this hour (already exposed by get_sales_by_hour_v3)
+//   - order count this hour (already exposed by get_sales_by_hour_v5)
 //
 // The indicator does NOT promise SLA accuracy ; it's a glance signal that
 // helps a cashier-manager decide whether to call extra hands. Therefore we
 // accept the cheaper query path:
-//   - read order_count from get_sales_by_hour_v3
+//   - read order_count from get_sales_by_hour_v5
 //   - read avg(paid_at - created_at) via a lightweight inline query against
 //     `orders` for today, this hour. RLS already constrains visibility.
 
@@ -58,7 +58,7 @@ interface LooseSupabase {
 
 /**
  * Local-date stamp YYYY-MM-DD in the device timezone — passed to
- * `get_sales_by_hour_v3` which internally normalises to business_config.timezone.
+ * `get_sales_by_hour_v5` which internally normalises to business_config.timezone.
  */
 function todayLocalISO(): string {
   const d = new Date();
@@ -83,7 +83,7 @@ export function useServiceSpeed(enabled = true) {
 
       // ── Pull hourly counts via the existing reports RPC (Phase 2.B). ──────
       // ADR-009 déc. 4 : repointé v1 (droppée depuis S50) → v3 (paid|completed).
-      const { data: rows, error: rpcErr } = await sb.rpc('get_sales_by_hour_v3', {
+      const { data: rows, error: rpcErr } = await sb.rpc('get_sales_by_hour_v5', {
         p_date: todayLocalISO(),
       });
       if (rpcErr) throw new Error(rpcErr.message);

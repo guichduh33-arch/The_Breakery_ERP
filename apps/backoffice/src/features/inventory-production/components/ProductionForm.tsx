@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/components/ProductionForm.tsx
 //
-// Records a production batch via record_production_v5. Live feasibility
+// Records a production batch via record_production_v10. Live feasibility
 // preview powered by @breakery/domain's checkFeasibility() against the
 // currently-fetched recipe + per-material current_stock from useFinishedProducts.
 //
@@ -94,11 +94,14 @@ export default function ProductionForm(): JSX.Element {
   // Stock snapshot map (material_id → current_stock).
   const stockMap = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const p of products.data ?? []) map[p.id] = p.current_stock;
+    for (const p of products.data ?? []) {
+      if (p.current_stock !== null) map[p.id] = p.current_stock;
+    }
     return map;
   }, [products.data]);
 
   const feasibility = useMemo(() => {
+    if ((products.data ?? []).some((p) => p.current_stock === null)) return null;
     if (recipes.data === undefined || recipes.data.length === 0) return null;
     if (!Number.isFinite(qtyForFeasibility) || qtyForFeasibility <= 0) return null;
     try {
@@ -106,7 +109,7 @@ export default function ProductionForm(): JSX.Element {
     } catch {
       return null;
     }
-  }, [recipes.data, stockMap, qtyForFeasibility, numericWaste]);
+  }, [recipes.data, stockMap, qtyForFeasibility, numericWaste, products.data]);
 
   const variancePct = useMemo(() => {
     if (!Number.isFinite(numericExpected) || numericExpected <= 0) return null;
@@ -263,7 +266,7 @@ export default function ProductionForm(): JSX.Element {
             >
               <option value="">— select —</option>
               {(products.data ?? []).map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.unit}) — stock {p.current_stock}</option>
+                <option key={p.id} value={p.id}>{p.name} ({p.unit}){p.current_stock !== null && ` — stock ${p.current_stock}`}</option>
               ))}
             </Select>
           </div>

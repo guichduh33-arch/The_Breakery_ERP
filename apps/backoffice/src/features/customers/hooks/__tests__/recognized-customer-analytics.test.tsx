@@ -30,7 +30,7 @@ describe('recognized customer analytics', () => {
   it('counts an unpaid recognized sale and reads its items without querying raw orders', async () => {
     const { result } = renderHook(() => useCustomerAnalytics('customer'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpc).toHaveBeenCalledWith('get_customer_recognized_orders_v1', { p_customer_id: 'customer' });
+    expect(rpc).toHaveBeenCalledWith('get_customer_recognized_orders_v2', { p_customer_id: 'customer' });
     expect(from).toHaveBeenCalledWith('order_items');
     expect(from).not.toHaveBeenCalledWith('orders');
     expect(result.current.data?.ordersConsidered).toBe(1);

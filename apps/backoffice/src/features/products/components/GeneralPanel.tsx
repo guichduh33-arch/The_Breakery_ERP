@@ -172,7 +172,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
       {/* ───────────── Right column ───────────── */}
       <div className="space-y-6">
         {/* La carte « Performance (30d) » affichait `0%`, `0` et `—` en dur ;
-            le distill l'a retirée, `get_product_performance_v1` la ramène sur
+            le distill l'a retirée, `get_product_performance_v4` la ramène sur
             du vrai. Elle est montée dans deux variantes plutôt que gardée par
             un booléen interne : sans `reports.sales.read` (que CASHIER et
             waiter n'ont pas), c'est la version restreinte qui rend, et elle
@@ -317,7 +317,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               <label htmlFor="product-current-stock" className="font-data font-semibold block text-xs uppercase tracking-widest text-text-secondary">Current stock</label>
               <Input
                 id="product-current-stock"
-                value={draft.current_stock}
+                value={draft.current_stock ?? 'Hidden'}
                 disabled
                 className="mt-1.5 font-mono"
               />
@@ -413,5 +413,3 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
     </button>
   );
 }
-
-

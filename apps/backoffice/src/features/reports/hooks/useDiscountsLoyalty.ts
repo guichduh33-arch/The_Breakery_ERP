@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useDiscountsLoyalty.ts
 //
-// Query hook pour `get_discounts_loyalty_v2` — l'argent consenti (quatre
+// Query hook pour `get_discounts_loyalty_v3` — l'argent consenti (quatre
 // leviers) et le flux de points. Le TOTAL consenti, le taux et les parts se
 // recalculent dans la page depuis summary/by_day — la bande ne peut pas
 // diverger des ventilations. Le passif PROJETÉ des points se valorise avec
@@ -88,7 +88,7 @@ export function useDiscountsLoyalty(params: UseDiscountsLoyaltyParams) {
     staleTime: 60_000,
     enabled: Boolean(start && end),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_discounts_loyalty_v2', {
+      const { data, error } = await supabase.rpc('get_discounts_loyalty_v3', {
         p_start_date: start,
         p_end_date:   end,
       });

@@ -1,9 +1,7 @@
 // apps/backoffice/src/features/btob/hooks/useProductsForB2bOrder.ts
 //
-// Session 24 / Phase 2.A.3 — minimal active-products list for the B2B order
-// items picker. Returns id + name + price + current_stock so the modal can
-// default unit_price and gate against insufficient_stock client-side before
-// the RPC complains.
+// Références et prix de saisie B2B. Le stock théorique n'est pas chargé par ce
+// sélecteur opérationnel ; la RPC valide la disponibilité et résout le prix.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -13,7 +11,7 @@ export interface B2bOrderProductOption {
   sku:           string;
   name:          string;
   price:         number;
-  current_stock: number;
+  current_stock: number | null;
   track_inventory: boolean;
   unit:          string | null;
 }
@@ -25,18 +23,12 @@ export function useProductsForB2bOrder() {
     queryKey: B2B_ORDER_PRODUCTS_QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        // `price` is an alias of the real column retail_price (products has no `price`
-        // column) — used only as the client-side prefill fallback; the server (v5) is
-        // authoritative and resolves negotiated > category > retail regardless.
-        .select('id, sku, name, price:retail_price, current_stock, track_inventory, unit')
-        .is('deleted_at', null)
-        .eq('is_active', true)
-        .order('name', { ascending: true })
-        .limit(500);
+      // Le sélecteur est un catalogue. La disponibilité reste vérifiée par la RPC de commande.
+      const { data, error } = await supabase.from('products')
+        .select('id,sku,name,price:retail_price,track_inventory,unit')
+        .is('deleted_at', null).eq('is_active', true).order('name').limit(500);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((product) => ({ ...product, current_stock: null }));
     },
   });
 }

@@ -86,6 +86,20 @@ describe('VariantSelectModal', () => {
     expect(screen.getByTestId('variant-tile-v2')).toBeInTheDocument();
   });
 
+  it('uses server sellability when the theoretical stock is masked', async () => {
+    mockState.variants = [
+      { ...mockVariants[0], current_stock: null, is_sellable: true },
+      { ...mockVariants[1], current_stock: null, is_sellable: false },
+    ];
+    const { VariantSelectModal } = await import('../VariantSelectModal');
+    const Wrapper = makeWrapper();
+    render(<Wrapper><VariantSelectModal open onOpenChange={vi.fn()}
+      parent={{ id: 'p1', name: 'Croissant' }} onPick={vi.fn()} /></Wrapper>);
+    expect(screen.getByTestId('variant-tile-v1')).toBeEnabled();
+    expect(screen.getByTestId('variant-tile-v2')).toBeDisabled();
+    expect(screen.queryByText(/stock 0/)).not.toBeInTheDocument();
+  });
+
   it('T2: invokes onPick with the variant when tapped and closes the modal', async () => {
     const { VariantSelectModal } = await import('../VariantSelectModal');
     const onPick = vi.fn();

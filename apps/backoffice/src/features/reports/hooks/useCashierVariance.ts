@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/hooks/useCashierVariance.ts
 //
-// Wraps `get_cashier_variance_v2(p_start_date, p_end_date)` — read-only cashier
+// Wraps `get_cashier_variance_v3(p_start_date, p_end_date)` — read-only cashier
 // shift-variance report (fiche 12 D2.4). Returns a JSONB envelope.
 //
 // Audit Reports 2026-08-01 lot C / D2 bis — bumped v1 -> v2 : la v1 etait gatee
@@ -119,7 +119,7 @@ export function useCashierVariance(start: string, end: string) {
     queryKey: [...CASHIER_VARIANCE_QK, start, end] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cashier_variance_v2', {
+      const { data, error } = await supabase.rpc('get_cashier_variance_v3', {
         p_start_date: start,
         p_end_date:   end,
       });

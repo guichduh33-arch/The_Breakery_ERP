@@ -24,7 +24,7 @@ import {
 import { useB2bOrdersCounters } from '@/features/btob/hooks/useB2bOrdersCounters.js';
 import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
 
-const CREATE_REASON = 'Requires the pos.sale.create permission.';
+const CREATE_REASON = 'Requires the b2b.order.create permission.';
 const SEARCH_COMMIT_MS = 300;
 
 // Colonne d'écran ↔ colonne de tri serveur. Ce qui n'est pas ici n'est pas
@@ -54,7 +54,7 @@ function orderDate(iso: string | null): string {
 
 export default function B2BOrdersPage(): JSX.Element {
   const [params, patchParams] = useListParams();
-  const canCreate = useAuthStore((s) => s.hasPermission('pos.sale.create'));
+  const canCreate = useAuthStore((s) => s.hasPermission('b2b.order.create'));
   const [createOpen, setCreateOpen] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();

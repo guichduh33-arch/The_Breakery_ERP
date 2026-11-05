@@ -220,7 +220,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const hasPayments   = (payments.data?.payments.length ?? 0) > 0;
   const canRecordPay  = canPay && paymentStatus !== 'paid' && totalDue > 0;
   // Fix (dev incident 2026-08-21): a cancelled PO still accepted a payment —
-  // record_po_payment_v1 had no status guard, and this button was simply
+  // record_po_payment_v2 had no status guard, and this button was simply
   // enabled. The server now refuses it (record_po_payment_v2, po_cancelled).
   // The button itself must NOT disappear for a cancelled PO (an absent button
   // does not say why) — it stays rendered and DISABLED, same motif as `Edit`

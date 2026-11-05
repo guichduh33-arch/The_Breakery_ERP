@@ -137,7 +137,9 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
       wholesale_price: variantParent.wholesale_price,
       product_type: 'finished',
       image_url: variantParent.image_url,
-      current_stock: variant.current_stock ?? 0,
+      current_stock: variant.current_stock,
+      track_inventory: variant.track_inventory ?? variant.deduct_stock,
+      ...(variant.is_sellable === undefined ? {} : { is_sellable: variant.is_sellable }),
       is_active: variant.is_active,
       is_favorite: false,
       parent_product_id: variantParent.id,
@@ -256,7 +258,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
               const disabled = soldOut || allExpired || pendingSend !== null;
               const overlayLabel = soldOut ? 'Sold out' : allExpired ? 'Expired' : null;
               const lowStockLabel =
-                !disabled && p.current_stock > 0 && p.current_stock <= 3
+                !disabled && p.current_stock !== null && p.current_stock > 0 && p.current_stock <= 3
                   ? `Low stock · ${p.current_stock} left`
                   : null;
 

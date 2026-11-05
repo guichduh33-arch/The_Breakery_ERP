@@ -38,7 +38,7 @@ describe('historical reference creation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create or verify references' }));
     await screen.findByRole('list', { name: 'Verified references' });
     const call = mocks.rpc.mock.calls[0] as unknown[] | undefined;
-    expect(call?.[0]).toBe('create_product_v3');
+    expect(call?.[0]).toBe('create_product_v5');
     expect(call?.[1]).toMatchObject({ p_payload: { is_active: false, visible_on_pos: false, track_inventory: false, deduct_stock: false, is_display_item: false, available_for_sale: false, product_type: 'combo' } });
   });
   it('stops before creation if the session changes during lookup', async () => {
