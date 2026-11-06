@@ -13,6 +13,13 @@ INSERT INTO public.user_permission_overrides(user_profile_id,permission_code,is_
  SELECT id,'settings.update',false,'Transactional template test' FROM invoice_template_actors WHERE role_code='ADMIN';
 
 INSERT INTO invoice_template_tap(tap) SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.invoice_print_templates'::regclass),'template storage uses RLS');
+INSERT INTO invoice_template_tap(tap) SELECT is((SELECT count(*) FROM pg_policy
+ WHERE polrelid='public.invoice_print_templates'::regclass AND polname='pin_session_required'
+ AND NOT polpermissive AND polcmd='*'
+ AND polroles=ARRAY[(SELECT oid FROM pg_roles WHERE rolname='authenticated')]::oid[]
+ AND regexp_replace(pg_get_expr(polqual,polrelid),'[[:space:]]','','g')='(SELECTrequest_has_active_pin_session_v1()ASrequest_has_active_pin_session_v1)'
+ AND regexp_replace(pg_get_expr(polwithcheck,polrelid),'[[:space:]]','','g')='(SELECTrequest_has_active_pin_session_v1()ASrequest_has_active_pin_session_v1)'),
+ 1::bigint,'template has the common restrictive PIN guard for reads and writes');
 INSERT INTO invoice_template_tap(tap) SELECT ok(NOT has_table_privilege('authenticated','public.invoice_print_templates','UPDATE'),'direct client writes denied');
 INSERT INTO invoice_template_tap(tap) SELECT ok(NOT has_table_privilege('authenticated','public.invoice_print_templates','SELECT'),'direct client reads denied');
 INSERT INTO invoice_template_tap(tap) SELECT ok(NOT has_function_privilege('anon','public.get_invoice_print_template_v1()','EXECUTE'),'anonymous template reads denied through PUBLIC too');
