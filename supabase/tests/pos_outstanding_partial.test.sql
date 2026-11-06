@@ -33,17 +33,28 @@ BEGIN
   PERFORM set_config('out.cash_key',gen_random_uuid()::text,true);
   PERFORM set_config('out.bo_cash_key',gen_random_uuid()::text,true);
 END $fixture$;
-SELECT throws_ok(format('SELECT public.defer_pos_order_v4(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+SELECT throws_ok(format('SELECT public.defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+ current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),gen_random_uuid(),
+ '[{"method":"cash","amount":30000,"cash_received":0},{"method":"card","amount":10000}]'),'23514','invalid_tender','cash must be received even before a noncash tender');
+SELECT throws_ok(format('SELECT public.defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+ current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),gen_random_uuid(),
+ '[{"method":"card","amount":10000},{"method":"cash","amount":30000,"cash_received":0}]'),'23514','invalid_tender','last cash tender must also be received');
+SELECT is((SELECT count(*)::int FROM order_payments WHERE order_id=current_setting('out.order')::uuid),0,'insufficient cash leaves no payments');
+SELECT is((SELECT count(*)::int FROM journal_entries WHERE reference_id=current_setting('out.order')::uuid),0,'insufficient cash leaves no journal');
+SELECT is((SELECT current_stock FROM products WHERE id=current_setting('out.product')::uuid),100::numeric,'insufficient cash leaves stock unchanged');
+SELECT is((SELECT count(*)::int FROM pos_payment_attempt_keys WHERE order_id=current_setting('out.order')::uuid),0,'insufficient cash leaves no accepted attempt');
+
+SELECT throws_ok(format('SELECT public.defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
  current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),gen_random_uuid(),
  '[{"method":"cash","amount":100000,"cash_received":100000}]'),'23514',NULL,'full payment must use normal checkout');
 UPDATE customers SET retail_credit_limit=10000 WHERE id=current_setting('out.customer')::uuid;
-SELECT throws_ok(format('SELECT public.defer_pos_order_v4(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+SELECT throws_ok(format('SELECT public.defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
  current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),gen_random_uuid(),
  '[{"method":"cash","amount":30000,"cash_received":30000}]'),NULL,NULL,'remaining balance must fit customer credit limit');
 SELECT is((SELECT count(*)::int FROM order_payments WHERE order_id=current_setting('out.order')::uuid),0,'credit rejection leaves no payment');
 SELECT is((SELECT current_stock FROM products WHERE id=current_setting('out.product')::uuid),100::numeric,'credit rejection leaves stock unchanged');
 UPDATE customers SET retail_credit_limit=70000 WHERE id=current_setting('out.customer')::uuid;
-CREATE TEMP TABLE partial_snapshot AS SELECT public.defer_pos_order_v4(
+CREATE TEMP TABLE partial_snapshot AS SELECT public.defer_pos_order_v5(
  current_setting('out.order')::uuid,current_setting('out.customer')::uuid,current_setting('out.origin')::uuid,
  current_setting('out.defer_key')::uuid,p_payments:='[{"method":"cash","amount":30000,"cash_received":30000}]') result;
 SELECT is((result->>'amount_received')::numeric,30000::numeric,'only actual cash is received') FROM partial_snapshot;
@@ -51,7 +62,7 @@ SELECT is((result->>'remaining_due')::numeric,70000::numeric,'only the balance i
 SELECT is((result->>'outstanding_due')::numeric,70000::numeric,'receipt balance matches outstanding') FROM partial_snapshot;
 SELECT is((SELECT sum(amount) FROM order_payments WHERE order_id=current_setting('out.order')::uuid),30000::numeric,'one actual tender');
 SELECT is((SELECT current_stock FROM products WHERE id=current_setting('out.product')::uuid),99::numeric,'stock deducted once');
-SELECT ok((public.defer_pos_order_v4(current_setting('out.order')::uuid,current_setting('out.customer')::uuid,
+SELECT ok((public.defer_pos_order_v5(current_setting('out.order')::uuid,current_setting('out.customer')::uuid,
  current_setting('out.origin')::uuid,current_setting('out.defer_key')::uuid,
  p_payments:='[{"method":"cash","amount":30000,"cash_received":30000}]')->>'idempotent_replay')::boolean,'same key returns first result');
 SELECT is((SELECT count(*)::int FROM order_payments WHERE order_id=current_setting('out.order')::uuid),1,'retry never duplicates payment');
@@ -62,15 +73,15 @@ SELECT is((SELECT sum(l.debit) FROM journal_entry_lines l JOIN journal_entries j
  WHERE j.reference_type='sale' AND j.reference_id=current_setting('out.order')::uuid
  AND l.account_id=resolve_mapping_account('POS_RECEIVABLE')),70000::numeric,'receivable equals outstanding balance');
 SELECT ok(EXISTS(SELECT 1 FROM list_pos_outstanding_v1() WHERE order_id=current_setting('out.order')::uuid),'partial ticket remains collectible');
-SELECT throws_ok(format('SELECT public.defer_pos_order_v4(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+SELECT throws_ok(format('SELECT public.defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
  current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),current_setting('out.defer_key'),
  '[{"method":"cash","amount":20000,"cash_received":20000}]'),'22023','idempotency_conflict','same key cannot change tender');
-SELECT ok(NOT has_function_privilege('anon','public.defer_pos_order_v4(uuid,uuid,uuid,uuid,integer,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb)','EXECUTE'),'anonymous deferral denied');
+SELECT ok(NOT has_function_privilege('anon','public.defer_pos_order_v5(uuid,uuid,uuid,uuid,integer,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb)','EXECUTE'),'anonymous deferral denied');
 
-SELECT throws_ok(format('SELECT defer_pos_order_v4(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+SELECT throws_ok(format('SELECT defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
  current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),gen_random_uuid(),
  '[{"method":"cash","amount":"NaN","cash_received":"NaN"}]'),'23514','invalid_tender','nonfinite amount rejected');
-SELECT throws_ok(format('SELECT defer_pos_order_v4(%L,%L,%L,%L,p_payments:=%L::jsonb)',
+SELECT throws_ok(format('SELECT defer_pos_order_v5(%L,%L,%L,%L,p_payments:=%L::jsonb)',
  current_setting('out.order'),current_setting('out.customer'),current_setting('out.origin'),gen_random_uuid(),
  '[{"method":"cash","amount":30000,"cash_received":"NaN","change_given":"NaN"}]'),'23514','invalid_tender','nonfinite cash rejected');
 SELECT * FROM finish();

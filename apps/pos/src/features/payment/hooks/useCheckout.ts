@@ -219,7 +219,7 @@ export function useCheckout() {
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
         const { error, data } = outstanding
-          ? await supabase.rpc('defer_pos_order_v4', { ...args, p_order_id: pickedUpOrderId, p_customer_id: customerId!,
+          ? await supabase.rpc('defer_pos_order_v5', { ...args, p_order_id: pickedUpOrderId, p_customer_id: customerId!,
             p_session_id: sessionId, p_idempotency_key: idempotencyKey, p_payments: input.payment as unknown as Json })
           : await supabase.rpc('pay_existing_order_v25', args as PayExistingOrderArgs);
         if (error) {

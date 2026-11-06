@@ -119,7 +119,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
       lockedItemIds: [], printedItemIds: [], appliedPromotions: [] };
     let due: number | undefined;
     await act(async () => { due = (await result.current.mutateAsync({ cart, payment: received ? [{ method: 'cash', amount: received, cash_received: received }] : [], context })).outstanding_due; });
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['fire_counter_order_v12', 'defer_pos_order_v4']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['fire_counter_order_v12', 'defer_pos_order_v5']);
     expect(rpcMock.mock.calls[0]?.[1]).toMatchObject({ p_client_uuid: 'stable-fire-key', p_session_id: 'sess-1' });
     expect(rpcMock.mock.calls[1]?.[1]).toMatchObject({ p_order_id: 'order-db-1', p_customer_id: 'customer-1',
       p_session_id: 'sess-1', p_idempotency_key: 'defer-key' });

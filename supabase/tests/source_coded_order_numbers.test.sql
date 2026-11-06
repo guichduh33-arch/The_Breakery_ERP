@@ -68,7 +68,7 @@ BEGIN
   );
   PERFORM set_config('test.src_fire_number', v_fire->>'order_number', true);
 
-  v_tablet := create_tablet_order_v11(
+  v_tablet := create_tablet_order_v12(
     p_client_uuid  := gen_random_uuid(),
     p_waiter_id    := NULL,
     p_table_number := 'T-01',

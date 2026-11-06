@@ -10851,7 +10851,7 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: Json
       }
-      defer_pos_order_v4: {
+      defer_pos_order_v5: {
         Args: {
           p_customer_id: string
           p_discount_amount?: number

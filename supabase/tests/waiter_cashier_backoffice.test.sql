@@ -44,7 +44,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.waiter_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.waiter_claims'),true);
 
-SELECT set_config('wa.order',create_tablet_order_v11(
+SELECT set_config('wa.order',create_tablet_order_v12(
   current_setting('wa.key')::uuid,current_setting('wa.waiter')::uuid,'AUDIT-7','dine_in',
   jsonb_build_array(jsonb_build_object('product_id',current_setting('wa.product'),'quantity',1,'unit_price',1,'modifiers','[]'::jsonb)),
   'Integration note')::text,true);
@@ -52,7 +52,7 @@ SELECT set_config('wa.order',create_tablet_order_v11(
 SELECT is((SELECT waiter_id FROM orders WHERE id=current_setting('wa.order')::uuid),current_setting('wa.waiter')::uuid,'serveur réel attribué à la commande');
 SELECT is((SELECT notes FROM orders WHERE id=current_setting('wa.order')::uuid),'Integration note','note cuisine persistée');
 SELECT ok((SELECT sent_to_kitchen_at IS NOT NULL FROM orders WHERE id=current_setting('wa.order')::uuid),'commande envoyée en cuisine dès la création');
-SELECT is(create_tablet_order_v11(current_setting('wa.key')::uuid,current_setting('wa.waiter')::uuid,'AUDIT-7','dine_in',
+SELECT is(create_tablet_order_v12(current_setting('wa.key')::uuid,current_setting('wa.waiter')::uuid,'AUDIT-7','dine_in',
   jsonb_build_array(jsonb_build_object('product_id',current_setting('wa.product'),'quantity',1,'unit_price',1,'modifiers','[]'::jsonb))),
   current_setting('wa.order')::uuid,'réponse perdue : même clé, même commande');
 
@@ -64,7 +64,7 @@ SELECT throws_ok(format('SELECT pickup_tablet_order(%L::uuid,%L::uuid)',current_
 
 SELECT set_config('request.jwt.claim.sub',current_setting('wa.waiter_auth'),true);
 SELECT set_config('request.jwt.claims',current_setting('wa.waiter_claims'),true);
-SELECT lives_ok(format($q$SELECT create_tablet_order_v11(gen_random_uuid(),%L::uuid,'AUDIT-7','dine_in',
+SELECT lives_ok(format($q$SELECT create_tablet_order_v12(gen_random_uuid(),%L::uuid,'AUDIT-7','dine_in',
   jsonb_build_array(jsonb_build_object('product_id',%L,'quantity',1,'unit_price',1,'modifiers','[]'::jsonb)),NULL,%L::uuid)$q$,
   current_setting('wa.waiter'),current_setting('wa.product'),current_setting('wa.order')),'ajout après reprise accepté');
 

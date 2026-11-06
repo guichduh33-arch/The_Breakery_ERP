@@ -53,7 +53,7 @@ BEGIN
   INSERT INTO pos_audit_results VALUES('a nonce cannot authorize another fire', refused);
   envelope := fire_counter_order_v12(gen_random_uuid(),session,payload,p_discount_authorized_by:=profile,p_tolerate_unsellable:=true,p_offline_replay:=true);
   INSERT INTO pos_audit_results VALUES('legacy offline discounted sale remains replayable', envelope->>'order_id' IS NOT NULL);
-  tablet_id := create_tablet_order_v11(gen_random_uuid(),profile,'','take_out',payload);
+  tablet_id := create_tablet_order_v12(gen_random_uuid(),profile,'','take_out',payload);
   INSERT INTO pos_audit_results VALUES('tablet resolves the same canonical simple price',
     (SELECT line_total=46000 FROM order_items WHERE order_items.order_id=tablet_id));
 END;

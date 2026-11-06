@@ -35,14 +35,14 @@ BEGIN
 END $fixture$;
 INSERT INTO outstanding_results SELECT ok(NOT has_function_privilege('anon',
   'public.settle_pos_outstanding_v2(uuid,payment_method,numeric,uuid,uuid,numeric)','EXECUTE'),'anonymous payment refused');
-INSERT INTO outstanding_results SELECT throws_ok(format('SELECT public.defer_pos_order_v4(%L,NULL,%L,%L)',
+INSERT INTO outstanding_results SELECT throws_ok(format('SELECT public.defer_pos_order_v5(%L,NULL,%L,%L)',
   current_setting('out.order'),current_setting('out.origin'),gen_random_uuid()),'23514','outstanding_requires_customer','customer required');
-CREATE TEMP TABLE deferred_snapshot AS SELECT public.defer_pos_order_v4(current_setting('out.order')::uuid,
+CREATE TEMP TABLE deferred_snapshot AS SELECT public.defer_pos_order_v5(current_setting('out.order')::uuid,
   current_setting('out.customer')::uuid,current_setting('out.origin')::uuid,current_setting('out.defer_key')::uuid) AS result;
 INSERT INTO outstanding_results SELECT is((result->>'outstanding_due')::numeric,100000::numeric,'whole total is outstanding') FROM deferred_snapshot;
 INSERT INTO outstanding_results SELECT is((SELECT count(*)::int FROM public.order_payments WHERE order_id=current_setting('out.order')::uuid),0,'no fake payment created');
 INSERT INTO outstanding_results SELECT is((SELECT current_stock FROM public.products WHERE id=current_setting('out.product')::uuid),99::numeric,'stock deducted when sale is deferred');
-INSERT INTO outstanding_results SELECT is((public.defer_pos_order_v4(current_setting('out.order')::uuid,
+INSERT INTO outstanding_results SELECT is((public.defer_pos_order_v5(current_setting('out.order')::uuid,
   current_setting('out.customer')::uuid,current_setting('out.origin')::uuid,current_setting('out.defer_key')::uuid)->>'idempotent_replay')::boolean,
   true,'defer retry uses original result');
 INSERT INTO outstanding_results SELECT is((SELECT current_stock FROM public.products WHERE id=current_setting('out.product')::uuid),99::numeric,'defer retry does not deduct stock twice');
@@ -134,7 +134,7 @@ DO $small$ DECLARE v_shift uuid; v_order uuid; BEGIN
  PERFORM set_config('out.small',v_order::text,true);
  PERFORM set_config('out.small_shift',v_shift::text,true);
 END $small$;
-SELECT public.defer_pos_order_v4(current_setting('out.small')::uuid,current_setting('out.customer')::uuid,current_setting('out.small_shift')::uuid,gen_random_uuid());
+SELECT public.defer_pos_order_v5(current_setting('out.small')::uuid,current_setting('out.customer')::uuid,current_setting('out.small_shift')::uuid,gen_random_uuid());
 INSERT INTO outstanding_results SELECT is((SELECT tax_amount FROM orders WHERE id=current_setting('out.small')::uuid),0::numeric,'zero tax sale posts successfully');
 SELECT public.settle_pos_outstanding_v2(current_setting('out.small')::uuid,'cash',10,gen_random_uuid(),current_setting('out.small_shift')::uuid,0);
 INSERT INTO outstanding_results SELECT throws_ok(format('SELECT public.settle_pos_outstanding_v2(%L,''cash'',10,%L,%L,0)',
