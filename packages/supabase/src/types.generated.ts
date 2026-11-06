@@ -195,6 +195,89 @@ export type Database = {
           },
         ]
       }
+      invoice_print_templates: {
+        Row: {
+          business_name: string
+          contact_text: string
+          density: Database["public"]["Enums"]["invoice_print_density"]
+          footer_message: string
+          heading: string
+          id: boolean
+          margin_bottom_mm: number
+          margin_left_mm: number
+          margin_right_mm: number
+          margin_top_mm: number
+          offset_x_mm: number
+          offset_y_mm: number
+          paper_height_mm: number
+          paper_width_mm: number
+          payment_instructions: string
+          revision: number
+          show_contact: boolean
+          show_due_date: boolean
+          show_logo: boolean
+          show_unit_prices: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_name?: string
+          contact_text?: string
+          density?: Database["public"]["Enums"]["invoice_print_density"]
+          footer_message?: string
+          heading?: string
+          id?: boolean
+          margin_bottom_mm?: number
+          margin_left_mm?: number
+          margin_right_mm?: number
+          margin_top_mm?: number
+          offset_x_mm?: number
+          offset_y_mm?: number
+          paper_height_mm?: number
+          paper_width_mm?: number
+          payment_instructions?: string
+          revision?: number
+          show_contact?: boolean
+          show_due_date?: boolean
+          show_logo?: boolean
+          show_unit_prices?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_name?: string
+          contact_text?: string
+          density?: Database["public"]["Enums"]["invoice_print_density"]
+          footer_message?: string
+          heading?: string
+          id?: boolean
+          margin_bottom_mm?: number
+          margin_left_mm?: number
+          margin_right_mm?: number
+          margin_top_mm?: number
+          offset_x_mm?: number
+          offset_y_mm?: number
+          paper_height_mm?: number
+          paper_width_mm?: number
+          payment_instructions?: string
+          revision?: number
+          show_contact?: boolean
+          show_due_date?: boolean
+          show_logo?: boolean
+          show_unit_prices?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_print_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_declarations: {
         Row: {
           baseline_quantity: number
@@ -7889,6 +7972,39 @@ export type Database = {
       }
     }
     Functions: {
+      get_invoice_print_template_v1: {
+        Args: never
+        Returns: {
+          business_name: string
+          contact_text: string
+          density: Database["public"]["Enums"]["invoice_print_density"]
+          footer_message: string
+          heading: string
+          id: boolean
+          margin_bottom_mm: number
+          margin_left_mm: number
+          margin_right_mm: number
+          margin_top_mm: number
+          offset_x_mm: number
+          offset_y_mm: number
+          paper_height_mm: number
+          paper_width_mm: number
+          payment_instructions: string
+          revision: number
+          show_contact: boolean
+          show_due_date: boolean
+          show_logo: boolean
+          show_unit_prices: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoice_print_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_pos_transaction_history_v2: {
         Args: { p_order_number?: string; p_session_id: string }
         Returns: Json
@@ -8689,6 +8805,39 @@ export type Database = {
           p_pickup_date?: string
         }
         Returns: Json
+      }
+      update_invoice_print_template_v1: {
+        Args: { p_expected_revision: number; p_settings: Json }
+        Returns: {
+          business_name: string
+          contact_text: string
+          density: Database["public"]["Enums"]["invoice_print_density"]
+          footer_message: string
+          heading: string
+          id: boolean
+          margin_bottom_mm: number
+          margin_left_mm: number
+          margin_right_mm: number
+          margin_top_mm: number
+          offset_x_mm: number
+          offset_y_mm: number
+          paper_height_mm: number
+          paper_width_mm: number
+          payment_instructions: string
+          revision: number
+          show_contact: boolean
+          show_due_date: boolean
+          show_logo: boolean
+          show_unit_prices: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoice_print_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_product_v6: {
         Args: { p_patch: Json; p_product_id: string }
@@ -11252,6 +11401,7 @@ export type Database = {
         | "return_to_kitchen"
         | "waste"
         | "adjustment"
+      invoice_print_density: "comfortable" | "compact"
       loyalty_txn_type: "earn" | "redeem" | "adjust" | "refund"
       modifier_group_type: "single_select" | "multi_select"
       movement_type:
@@ -11491,6 +11641,7 @@ export const Constants = {
         "waste",
         "adjustment",
       ],
+      invoice_print_density: ["comfortable", "compact"],
       loyalty_txn_type: ["earn", "redeem", "adjust", "refund"],
       modifier_group_type: ["single_select", "multi_select"],
       movement_type: [
