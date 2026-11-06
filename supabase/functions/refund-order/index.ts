@@ -30,6 +30,7 @@ import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempo
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { logAndRedact } from '../_shared/error-redact.ts';
+import { withPermissionErrors } from '../_shared/permissions.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // gopay/ovo/dana : lot B ADR-006 déc. 9 (enum _207) — settlement type QRIS.
@@ -44,7 +45,7 @@ interface RefundOrderPayload {
   reason: string;
 }
 
-serve(async (req) => {
+serve(withPermissionErrors(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -127,7 +128,7 @@ serve(async (req) => {
   }
 
   // SEC-07 — check fail bucket before attempting PIN verification.
-  if (await isManagerPinBlocked(ip)) {
+  if (await isManagerPinBlocked(ip, actingAuthUserId)) {
     return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
   }
 
@@ -135,7 +136,7 @@ serve(async (req) => {
   if (!mgr.ok) {
     if (mgr.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
     if (mgr.reason === 'no_match') {
-      const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'refund-order');
+      const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'refund-order', actingAuthUserId);
       if (blocked) return rateLimitedResponse(retryAfterSec);
       return jsonResponse({ error: 'wrong_pin' }, 401);
     }
@@ -195,4 +196,4 @@ serve(async (req) => {
     ...data,
     manager: { id: mgr.manager_profile_id, full_name: mgr.full_name, role_code: mgr.role_code },
   });
-});
+}));

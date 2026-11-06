@@ -8,14 +8,13 @@
 // This is fine for The Breakery scale (typically <10 managers). For larger
 // organisations a dedicated lookup table or manager-id-with-PIN UX is preferable.
 //
-// Session 38 (Wave B1, SEC-07) — brute-force hardening:
-//   Added per-IP fail bucket (MANAGER_PIN_FAIL_MAX attempts per MANAGER_PIN_FAIL_WINDOW_SEC).
-//   WARNING: do NOT count failures per-manager — a wrong PIN fails against ALL candidates,
-//   so per-manager counting would lock ALL managers on each typo (DoS vector).
-//   The bucket is per-IP only, via checkRateLimitDurable with function_name='manager-pin-fail'.
+// Les échecs sont comptés par IP ET par appelant authentifié, sur toutes les EF.
+// Ne pas les compter par manager : le PIN seul teste tous les candidats et
+// une faute de frappe verrouillerait chacun d'eux. Aucun repli mémoire seul
+// n'est autorisé pour cette vérification privilégiée.
 
 import { getAdminClient } from './supabase-admin.ts';
-import { checkRateLimitDurable } from './rate-limit.ts';
+import { PermissionsUnavailableError } from './permissions.ts';
 
 const PIN_REGEX = /^\d{6}$/;
 const MANAGER_ROLES = ['MANAGER', 'ADMIN', 'SUPER_ADMIN'];
@@ -24,74 +23,83 @@ const MANAGER_ROLES = ['MANAGER', 'ADMIN', 'SUPER_ADMIN'];
 export const MANAGER_PIN_FAIL_MAX = 5;
 export const MANAGER_PIN_FAIL_WINDOW_SEC = 900; // 15 minutes
 
-/**
- * Records a manager-PIN failure for the given IP in the durable rate-limit bucket.
- * Also inserts an audit_logs row (actor_id NULL — no known actor on wrong PIN).
- * Returns whether the IP is now blocked and for how long.
- *
- * ONLY call this on `verifyManagerPin` returning `{ok: false, reason: 'no_match'}`.
- * Do NOT call on invalid_pin_format (format errors are not brute-force signals).
- */
+function failureBuckets(ip: string, actingAuthUserId: string): string[] {
+  if (!actingAuthUserId) throw new PermissionsUnavailableError();
+  return [`ip:${ip}`, `actor:${actingAuthUserId}`];
+}
+
+/** Seulement après un PIN sans correspondance ; jamais après une panne DB. */
 export async function recordManagerPinFailure(
   ip: string,
   functionName: string,
+  actingAuthUserId: string,
 ): Promise<{ blocked: boolean; retryAfterSec: number }> {
   const admin = getAdminClient();
 
-  // Consume a slot in the fail bucket (this increments the counter).
-  const rl = await checkRateLimitDurable({
-    functionName:  'manager-pin-fail',
-    bucketKey:     `ip:${ip}`,
-    ipAddress:     ip,
-    maxPerWindow:  MANAGER_PIN_FAIL_MAX,
-    windowSec:     MANAGER_PIN_FAIL_WINDOW_SEC,
-  });
+  const results = await Promise.all(failureBuckets(ip, actingAuthUserId).map(async (bucketKey) => {
+    try {
+      // La RPC sérialise les compteurs entre instances. Une erreur ne doit
+      // jamais être transformée en autorisation par le repli mémoire générique.
+      const { data, error } = await admin.rpc('record_rate_limit_v1', {
+        p_function_name: 'manager-pin-fail', p_bucket_key: bucketKey,
+        p_ip_address: ip, p_max_per_window: MANAGER_PIN_FAIL_MAX,
+        p_window_sec: MANAGER_PIN_FAIL_WINDOW_SEC,
+      });
+      const row = data?.[0];
+      if (error || !row || typeof row.allowed !== 'boolean'
+        || !Number.isInteger(row.retry_after_sec) || row.retry_after_sec < 0
+        || !Number.isInteger(row.current_count) || row.current_count < 1) {
+        throw new PermissionsUnavailableError();
+      }
+      return { blocked: !row.allowed, retryAfterSec: row.retry_after_sec };
+    } catch {
+      console.error('[manager-pin] durable failure counter unavailable');
+      throw new PermissionsUnavailableError();
+    }
+  }));
 
-  // Audit the failure (actor_id is NULL — the PIN didn't match anyone).
-  // supabase-js does not throw on DB errors — check the returned error explicitly.
+  // Manager inconnu ; l'appelant vérifié reste attribuable sans confondre
+  // auth.users.id et user_profiles.id dans actor_id.
   try {
     const { error: auditErr } = await admin.from('audit_logs').insert({
       actor_id:    null,
       action:      'manager_pin.failed',
       entity_type: 'edge_function',
       entity_id:   null,
-      metadata:    { ip, function: functionName },
+      metadata:    { ip, function: functionName, acting_auth_user_id: actingAuthUserId },
     });
     if (auditErr) console.warn('[manager-pin] audit_logs insert failed', auditErr);
   } catch (auditErr) {
     console.warn('[manager-pin] audit_logs insert failed', auditErr);
   }
 
-  return { blocked: !rl.allowed, retryAfterSec: rl.retryAfterSec };
+  return { blocked: results.some((r) => r.blocked),
+    retryAfterSec: Math.max(...results.map((r) => r.retryAfterSec)) };
 }
 
-/**
- * Peek-only check: returns true if the IP is already blocked in the fail bucket
- * WITHOUT incrementing the counter.
- *
- * Reads directly from edge_function_rate_limits; returns false on DB error (fail-open).
- */
-export async function isManagerPinBlocked(ip: string): Promise<boolean> {
+/** Lecture sans incrément ; une panne refuse l'autorisation privilégiée. */
+export async function isManagerPinBlocked(ip: string, actingAuthUserId: string): Promise<boolean> {
   const admin = getAdminClient();
-  try {
-    const { data, error } = await admin
-      .from('edge_function_rate_limits')
-      .select('request_count, window_end')
-      .eq('function_name', 'manager-pin-fail')
-      .eq('bucket_key', `ip:${ip}`)
-      .gt('window_end', new Date().toISOString())
-      .maybeSingle();
-
-    if (error) {
-      console.warn('[manager-pin] isManagerPinBlocked read error, fail-open', error);
-      return false;
+  const results = await Promise.all(failureBuckets(ip, actingAuthUserId).map(async (bucketKey) => {
+    try {
+      const { data, error } = await admin
+        .from('edge_function_rate_limits')
+        .select('request_count, window_end')
+        .eq('function_name', 'manager-pin-fail')
+        .eq('bucket_key', bucketKey)
+        .gt('window_end', new Date().toISOString())
+        .maybeSingle();
+      if (error || data === undefined || (data !== null
+        && (!Number.isInteger(data.request_count) || data.request_count < 0))) {
+        throw new PermissionsUnavailableError();
+      }
+      return data !== null && data.request_count >= MANAGER_PIN_FAIL_MAX;
+    } catch {
+      console.error('[manager-pin] durable failure bucket unavailable');
+      throw new PermissionsUnavailableError();
     }
-    if (!data) return false;
-    return data.request_count >= MANAGER_PIN_FAIL_MAX;
-  } catch (e) {
-    console.warn('[manager-pin] isManagerPinBlocked unexpected error, fail-open', e);
-    return false;
-  }
+  }));
+  return results.some(Boolean);
 }
 
 export type ManagerPinResult =
@@ -129,9 +137,10 @@ export async function verifyManagerPin(pin: string): Promise<ManagerPinResult> {
     });
     if (error) {
       console.error('[manager-pin] verify_user_pin error', error);
-      continue;  // Try next candidate
+      return { ok: false, reason: 'internal' };
     }
-    if (pinValid) {
+    if (typeof pinValid !== 'boolean') return { ok: false, reason: 'internal' };
+    if (pinValid === true) {
       return {
         ok: true,
         manager_profile_id: c.id,

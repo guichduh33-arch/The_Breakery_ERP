@@ -291,14 +291,14 @@ serve(withPermissionErrors(async (req) => {
     if (!managerPin || managerPin.trim().length === 0) {
       return jsonResponse({ error: 'missing_manager_pin' }, 400);
     }
-    if (await isManagerPinBlocked(ip)) {
+    if (await isManagerPinBlocked(ip, actingUser)) {
       return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
     }
     const mgr = await verifyManagerPin(managerPin);
     if (!mgr.ok) {
       if (mgr.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
       if (mgr.reason === 'no_match') {
-        const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'process-payment');
+        const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'process-payment', actingUser);
         if (blocked) return rateLimitedResponse(retryAfterSec);
         // Oracle harmonisé void/refund/cancel — aucun détail sur le gate.
         return jsonResponse({ error: 'wrong_pin' }, 401);
