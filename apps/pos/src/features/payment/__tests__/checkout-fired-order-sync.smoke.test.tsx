@@ -106,25 +106,25 @@ async function runCheckout() {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('useCheckout — fired counter order syncs unfired items before paying (P0-3)', () => {
-  it('persists a new customer ticket and defers it without creating a payment tender', async () => {
+  it.each([0, 20000])('persists a new ticket, receives %s and defers only the balance', async (received) => {
     const { useCheckout } = await import('../hooks/useCheckout');
     const cart = { items: [{ id: 'new-line', product_id: 'p1', name: 'Coffee', unit_price: 60000,
       quantity: 1, modifiers: [] }], order_type: 'take_out' as const, customerId: 'customer-1' };
     useCartStore.setState({ cart, pickedUpOrderId: null, lockedItemIds: [], printedItemIds: [] });
     rpcMock.mockImplementation((name: string) => Promise.resolve(name === 'fire_counter_order_v12' ? FIRE_OK
-      : { data: { ...PAY_OK.data, outstanding_due: 60000 }, error: null }));
+      : { data: { ...PAY_OK.data, outstanding_due: 60000 - received, amount_received: received, amount_paid: received, remaining_due: 60000 - received }, error: null }));
     const { result } = renderHook(() => useCheckout(), { wrapper });
     const context = { outstanding: true, idempotencyKey: 'defer-key', appendUuid: 'stable-fire-key',
       sessionId: 'sess-1', userId: 'cashier', pickedUpOrderId: null, orderOrigin: null,
       lockedItemIds: [], printedItemIds: [], appliedPromotions: [] };
     let due: number | undefined;
-    await act(async () => { due = (await result.current.mutateAsync({ cart, payment: [], context })).outstanding_due; });
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['fire_counter_order_v12', 'defer_pos_order_v2']);
+    await act(async () => { due = (await result.current.mutateAsync({ cart, payment: received ? [{ method: 'cash', amount: received, cash_received: received }] : [], context })).outstanding_due; });
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['fire_counter_order_v12', 'defer_pos_order_v5']);
     expect(rpcMock.mock.calls[0]?.[1]).toMatchObject({ p_client_uuid: 'stable-fire-key', p_session_id: 'sess-1' });
     expect(rpcMock.mock.calls[1]?.[1]).toMatchObject({ p_order_id: 'order-db-1', p_customer_id: 'customer-1',
       p_session_id: 'sess-1', p_idempotency_key: 'defer-key' });
-    expect(rpcMock.mock.calls[1]?.[1]).not.toHaveProperty('p_payments');
-    expect(due).toBe(60000);
+    expect(rpcMock.mock.calls[1]?.[1]).toHaveProperty('p_payments', received ? [{ method: 'cash', amount: received, cash_received: received }] : []);
+    expect(due).toBe(60000 - received);
   });
   beforeEach(() => {
     rpcMock.mockReset();

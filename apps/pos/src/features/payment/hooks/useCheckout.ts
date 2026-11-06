@@ -88,8 +88,8 @@ export function useCheckout() {
       let { pickedUpOrderId } = cartState;
       const { appliedPromotions } = cartState;
       const outstanding = input.context?.outstanding === true;
-      if (outstanding && (!customerId || !Array.isArray(input.payment) || input.payment.length > 0)) {
-        throw new Error('Outstanding requires a customer and no payment tenders');
+      if (outstanding && (!customerId || !Array.isArray(input.payment))) {
+        throw new Error('Outstanding requires a customer and an array of payment tenders');
       }
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
@@ -219,8 +219,8 @@ export function useCheckout() {
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
         const { error, data } = outstanding
-          ? await supabase.rpc('defer_pos_order_v2', { ...args, p_customer_id: customerId!,
-            p_session_id: sessionId, p_idempotency_key: idempotencyKey } as Database['public']['Functions']['defer_pos_order_v2']['Args'])
+          ? await supabase.rpc('defer_pos_order_v5', { ...args, p_order_id: pickedUpOrderId, p_customer_id: customerId!,
+            p_session_id: sessionId, p_idempotency_key: idempotencyKey, p_payments: input.payment as unknown as Json })
           : await supabase.rpc('pay_existing_order_v25', args as PayExistingOrderArgs);
         if (error) {
           const giftCode = ['promo_gift_requires_configuration', 'promo_gift_unavailable']
@@ -229,6 +229,9 @@ export function useCheckout() {
         }
         const envelope = data as unknown as {
           outstanding_due?: number;
+          amount_received?: number;
+          amount_paid?: number;
+          remaining_due?: number;
           order_id: string;
           order_number: string;
           subtotal: number;
@@ -245,11 +248,17 @@ export function useCheckout() {
         if (!envelope?.order_number || !Number.isFinite(envelope.total) || !Number.isFinite(envelope.tax_amount)) {
           throw new Error('network_error');
         }
+        if (outstanding && (![envelope.amount_received, envelope.amount_paid, envelope.remaining_due].every(Number.isFinite)
+          || envelope.amount_received! < 0 || envelope.amount_paid! < envelope.amount_received! || envelope.remaining_due! <= 0
+          || envelope.outstanding_due !== envelope.remaining_due
+          || Math.abs(envelope.amount_paid! + envelope.remaining_due! - envelope.total) > 0.001)) {
+          throw new Error('network_error');
+        }
         clearManagerPin();
         return {
           ok: true,
           order_id: envelope.order_id ?? pickedUpOrderId,
-          ...(envelope.outstanding_due !== undefined ? { outstanding_due: envelope.outstanding_due } : {}),
+          ...(envelope.outstanding_due !== undefined ? { outstanding_due: envelope.outstanding_due, amount_received: envelope.amount_received!, amount_paid: envelope.amount_paid!, remaining_due: envelope.remaining_due! } : {}),
           order_number: envelope.order_number ?? '',
           total: envelope.total ?? 0,
           tax_amount: envelope.tax_amount ?? 0,
@@ -321,6 +330,8 @@ export function useCheckout() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['products'] });
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['outstanding-orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['held-orders'] });
     },
   });
 }

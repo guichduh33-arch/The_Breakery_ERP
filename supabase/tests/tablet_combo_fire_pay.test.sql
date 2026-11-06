@@ -136,7 +136,7 @@ DECLARE
   ));
 BEGIN
   BEGIN
-    v_order_id := create_tablet_order_v11(
+    v_order_id := create_tablet_order_v12(
       p_client_uuid  := '00000000-0000-0000-0000-0000000ca001'::uuid,
       p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
       p_table_number := '',
@@ -161,7 +161,7 @@ SELECT ok(
   AND (SELECT combo_components IS NOT NULL FROM order_items
         WHERE order_id = current_setting('tcfp.order1')::uuid
           AND product_id = '00000000-0000-0000-0000-0000000cd001'),
-  'T1: create_tablet_order_v11 persiste combo_components (NULL sous v8, le P0) - recu: ' || current_setting('tcfp.order1_msg'));
+  'T1: create_tablet_order_v12 persiste combo_components (NULL sous v8, le P0) - recu: ' || current_setting('tcfp.order1_msg'));
 
 SELECT is(
   (SELECT unit_price::int FROM order_items
@@ -220,7 +220,7 @@ SELECT is(
 -- par defaut (false) -> refus check_violation.
 -- ===========================================================================
 SELECT throws_ok(
-  $q$ SELECT create_tablet_order_v11(
+  $q$ SELECT create_tablet_order_v12(
         p_client_uuid  := '00000000-0000-0000-0000-0000000ca006'::uuid,
         p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
         p_table_number := '',
@@ -244,7 +244,7 @@ DECLARE
   v_msg      TEXT := '';
 BEGIN
   BEGIN
-    v_order_id := create_tablet_order_v11(
+    v_order_id := create_tablet_order_v12(
       p_client_uuid  := '00000000-0000-0000-0000-0000000ca007'::uuid,
       p_waiter_id    := current_setting('tcfp.actor_pid')::uuid,
       p_table_number := '',
@@ -279,8 +279,8 @@ SELECT ok(
              AND entity_id = current_setting('tcfp.order7')::uuid
              AND (metadata->>'product_id') = '00000000-0000-0000-0000-0000000cd001'
              AND (metadata->>'client_uuid') = '00000000-0000-0000-0000-0000000ca007'
-             AND (metadata->>'rpc_version') = 'tablet_v11'),
-  'T7c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version tablet_v11)');
+             AND (metadata->>'rpc_version') = 'tablet_v12'),
+  'T7c: audit_logs order.combo_price_tolerated trace la tolerance (product_id, client_uuid, rpc_version tablet_v12)');
 
 -- ===========================================================================
 -- T8/T9 — versionnage monotone + defense-in-depth anon.
@@ -290,8 +290,8 @@ SELECT hasnt_function('public', 'create_tablet_order_v8',
 
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.create_tablet_order_v11(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text,uuid)', 'EXECUTE'),
-  'T9: anon n''a pas EXECUTE sur create_tablet_order_v11');
+    'public.create_tablet_order_v12(uuid,uuid,text,order_type,jsonb,text,uuid,boolean,text,uuid)', 'EXECUTE'),
+  'T9: anon n''a pas EXECUTE sur create_tablet_order_v12');
 
 SELECT * FROM finish();
 ROLLBACK;

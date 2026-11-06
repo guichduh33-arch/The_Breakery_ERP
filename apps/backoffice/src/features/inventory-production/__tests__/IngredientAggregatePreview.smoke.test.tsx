@@ -10,6 +10,8 @@ import {
 } from '../components/IngredientAggregatePreview.js';
 
 const mockRpc = vi.fn();
+const auth = vi.hoisted(() => ({ role: 'SUPER_ADMIN' }));
+vi.mock('@/stores/authStore.js', () => ({ useAuthStore: (selector: (s: { user: { role_code: string } }) => unknown) => selector({ user: { role_code: auth.role } }) }));
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
@@ -67,8 +69,28 @@ function leaf(overrides: {
 }
 
 describe('IngredientAggregatePreview smoke', () => {
+  it.each(['ADMIN', 'MANAGER', 'CASHIER'])('hides availability and shortages for %s even if a cached response contains stock', async (role) => {
+    auth.role = role;
+    mockRpc.mockResolvedValue({ data: [leaf({ material_id: 'flour', material_name: 'Flour', qty_per_unit: 2, current_stock: 1 })], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 3 })]);
+    await screen.findByText('Flour');
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(screen.queryByText('Available')).not.toBeInTheDocument();
+    expect(screen.queryByText('Status')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('status-short')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+  it('does not treat a masked stock value as zero', async () => {
+    mockRpc.mockResolvedValue({ data: [{ ...leaf({ material_id: 'flour', material_name: 'Flour', qty_per_unit: 2 }), current_stock: null }], error: null });
+    renderPreview([row({ productId: 'bread', quantityProduced: 3 })]);
+    await screen.findByText('Flour');
+    expect(screen.queryByTestId('status-short')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
   beforeEach(() => {
     mockRpc.mockReset();
+    auth.role = 'SUPER_ADMIN';
+    auth.role = 'SUPER_ADMIN';
   });
 
   it('renders empty-state hint when no items are valid', () => {

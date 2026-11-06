@@ -9847,7 +9847,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v10: {
+      create_tablet_order_v12: {
         Args: {
           p_client_uuid: string
           p_customer_id?: string
@@ -10851,7 +10851,7 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: Json
       }
-      defer_pos_order_v2: {
+      defer_pos_order_v5: {
         Args: {
           p_customer_id: string
           p_discount_amount?: number
@@ -10863,6 +10863,7 @@ export type Database = {
           p_idempotency_key: string
           p_loyalty_points_redeemed?: number
           p_order_id: string
+          p_payments?: Json
           p_promotions?: Json
           p_session_id: string
         }
