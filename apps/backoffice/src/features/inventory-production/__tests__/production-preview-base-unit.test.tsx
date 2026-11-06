@@ -15,8 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProductionEntryCard } from '../components/ProductionEntryCard.js';
 
 vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: () => true }),
+  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean; user: { role_code: string } }) => unknown) =>
+    sel({ hasPermission: () => true, user: { role_code: 'SUPER_ADMIN' } }),
 }));
 
 const mockRpc = vi.fn();

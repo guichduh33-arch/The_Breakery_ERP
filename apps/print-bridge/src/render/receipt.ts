@@ -54,17 +54,28 @@ export function renderReceipt(p: PrinterLike, r: ReceiptPayload): void {
   p.bold(false);
   p.drawLine();
 
+  const hasPayment = r.outstanding_due === undefined || r.outstanding_due < r.totals.total;
+  if (hasPayment) {
+    if (r.payments?.length) {
+      for (const tender of r.payments) p.leftRight(METHOD_LABELS[tender.method] ?? tender.method, money(tender.amount));
+    } else {
+      p.leftRight(METHOD_LABELS[r.payment.method] ?? r.payment.method, money(r.payment.amount));
+    }
+    const cashTenders = r.payments?.filter((tender) => tender.method === 'cash');
+    const cashReceived = cashTenders?.length
+      ? cashTenders.reduce((sum, tender) => sum + (tender.cash_received ?? tender.amount), 0)
+      : r.payment.cash_received;
+    const change = cashTenders?.length
+      ? cashTenders.reduce((sum, tender) => sum + (tender.change_given ?? 0), 0)
+      : r.payment.change_given;
+    if (cashReceived !== undefined) p.leftRight('Cash received', money(cashReceived));
+    if (change !== undefined) p.leftRight('Change', money(change));
+  }
   if (r.outstanding_due !== undefined) {
     p.bold(true);
-    p.leftRight('OUTSTANDING — NOT PAID', money(r.outstanding_due));
+    p.leftRight(hasPayment ? 'OUTSTANDING BALANCE' : 'OUTSTANDING — NOT PAID', money(r.outstanding_due));
     p.bold(false);
-  } else if (r.payments?.length) {
-    for (const tender of r.payments) p.leftRight(METHOD_LABELS[tender.method] ?? tender.method, money(tender.amount));
-  } else {
-    p.leftRight(METHOD_LABELS[r.payment.method] ?? r.payment.method, money(r.payment.amount));
   }
-  if (r.outstanding_due === undefined && r.payment.cash_received !== undefined) p.leftRight('Cash received', money(r.payment.cash_received));
-  if (r.outstanding_due === undefined && r.payment.change_given !== undefined) p.leftRight('Change', money(r.payment.change_given));
 
   if (r.loyalty) {
     p.drawLine();
