@@ -26,6 +26,7 @@ import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getPublishableApiKey } from '../_shared/api-keys.ts';
 import { initLayout, type BusinessInfo } from '../_shared/pdf-layout.ts';
 import { TEMPLATES, type TemplateName } from '../_shared/pdf-templates/index.ts';
+import type { InvoicePrintOptions } from '../_shared/invoice-print-options.ts';
 
 interface Body {
   template:         TemplateName;
@@ -117,7 +118,7 @@ serve(async (req) => {
   const admin = getAdminClient();
   const { data: biz } = await admin
     .from('business_config')
-    .select('name, fiscal_address, npwp, logo_url')
+    .select('name, fiscal_address, npwp, logo_url, phone')
     .limit(1)
     .maybeSingle();
   const business: BusinessInfo = {
@@ -125,12 +126,23 @@ serve(async (req) => {
     npwp:    biz?.npwp || undefined,
     address: biz?.fiscal_address || undefined,
     logoUrl: biz?.logo_url || undefined,
+    phone: biz?.phone || undefined,
   };
+
+  // La présentation des factures vient du modèle audité, jamais du body client.
+  let invoiceTemplate: InvoicePrintOptions | undefined;
+  if (body.template === 'b2b_invoice') {
+    const { data: savedTemplate, error: templateError } = await admin
+      .from('invoice_print_templates').select('*').eq('id', true).maybeSingle();
+    if (templateError || !savedTemplate) return jsonResponse({ error: 'invoice_template_unavailable' }, 503);
+    invoiceTemplate = savedTemplate as InvoicePrintOptions;
+  }
 
   // Build PDF
   let pdfBytes: Uint8Array;
   try {
     const ctx = await initLayout(business);
+    if (invoiceTemplate) ctx.invoiceTemplate = invoiceTemplate;
     await tplReg.render(ctx, body.data, body.period ?? null);
     if (body.comparePrevious) {
       // Render previous period as additional page(s).

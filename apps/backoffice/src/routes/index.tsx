@@ -106,6 +106,7 @@ const SettingsBusinessHoursPage = lazy(() => import('@/pages/settings/SettingsBu
 const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsEmailTemplatesPage.js'));
 const SettingsNotificationsPage = lazy(() => import('@/pages/settings/SettingsNotificationsPage.js'));
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
+const SettingsInvoiceTemplatePage = lazy(() => import('@/pages/settings/SettingsInvoiceTemplatePage.js'));
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
 const SettingsHistoryPage = lazy(() => import('@/pages/settings/SettingsHistoryPage.js'));
 const LanDevicesPage = lazy(() => import('@/pages/lan-devices/LanDevicesPage.js'));
@@ -1191,6 +1192,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsReceiptTemplatesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/templates/invoice"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsInvoiceTemplatePage />
             </PermissionGate>
           }
         />

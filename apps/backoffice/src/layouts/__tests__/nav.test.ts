@@ -105,6 +105,7 @@ const LEGACY_DESTINATIONS = [
   '/backoffice/settings/notifications',
   '/backoffice/settings/templates/email',
   '/backoffice/settings/templates/receipt',
+  '/backoffice/settings/templates/invoice',
   '/backoffice/settings/accounting',
   '/backoffice/settings/expense-thresholds',
   '/backoffice/b2b/settings',

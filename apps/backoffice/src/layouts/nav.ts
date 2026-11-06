@@ -298,6 +298,7 @@ export const NAV_DOMAINS: NavDomain[] = [
           { to: '/backoffice/settings/notifications', label: 'Notifications', permission: 'settings.read' },
           { to: '/backoffice/settings/templates/email', label: 'Email templates', permission: 'settings.read' },
           { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', permission: 'settings.read' },
+          { to: '/backoffice/settings/templates/invoice', label: 'Invoice template', permission: 'settings.read' },
         ],
       },
       {

@@ -203,6 +203,27 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               </div>
             </div>
             <div>
+              <label htmlFor="product-corporate-price" className="block">
+                <SectionLabel as="span" size="xs">Corporate price (IDR)</SectionLabel>
+              </label>
+              <Input
+                id="product-corporate-price"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={draft.wholesale_price ?? ''}
+                disabled={readOnly}
+                aria-describedby="product-corporate-price-help"
+                aria-invalid={draft.wholesale_price !== null && (!Number.isFinite(draft.wholesale_price) || draft.wholesale_price < 0)}
+                onChange={(e) => update('wholesale_price', e.target.value === '' ? null : e.target.valueAsNumber)}
+                className="mt-1.5"
+              />
+              <p id="product-corporate-price-help" className="mt-1.5 text-xs text-text-muted">
+                Used for Corporate customers unless a customer-specific price applies. Leave blank to use the retail price.
+              </p>
+            </div>
+            <div>
               <SectionLabel as="div" size="xs">Recipe cost / {draft.unit}</SectionLabel>
               <div className="mt-1.5 rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono">
                 {draft.cost_price > 0

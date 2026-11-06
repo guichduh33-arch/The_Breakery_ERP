@@ -41,7 +41,7 @@ const MOCK_CATEGORIES = [
 ];
 
 const rpcSpy = vi.fn();
-const response = vi.hoisted(() => ({ ignored: [] as string[], canEditRecipe: true }));
+const response = vi.hoisted(() => ({ ignored: [] as string[], canEditRecipe: true, canUpdate: true, wholesalePrice: null as number | null }));
 
 vi.mock('@/features/recipes/index.js', () => ({
   RecipeBuilder: ({ readOnly }: { readOnly: boolean }) => <div>{readOnly ? 'Recipe read only' : 'Recipe editable'}</div>,
@@ -50,7 +50,7 @@ vi.mock('@/features/recipes/index.js', () => ({
 vi.mock('@/lib/supabase.js', () => {
   function buildChain(table: string): unknown {
     const data =
-      table === 'products' ? MOCK_PRODUCT :
+      table === 'products' ? { ...MOCK_PRODUCT, wholesale_price: response.wholesalePrice } :
       table === 'categories' ? MOCK_CATEGORIES :
       null;
     const chain: Record<string, unknown> = {};
@@ -65,7 +65,7 @@ vi.mock('@/lib/supabase.js', () => {
     supabase: {
       from: (t: string) => buildChain(t),
       rpc: (...args: unknown[]) => {
-        if (args[0] === 'get_operational_products_v2') return Promise.resolve({ data: [MOCK_PRODUCT], error: null });
+        if (args[0] === 'get_operational_products_v2') return Promise.resolve({ data: [{ ...MOCK_PRODUCT, wholesale_price: response.wholesalePrice }], error: null });
         const override = rpcSpy(...args) as Promise<unknown> | undefined;
         return override ?? Promise.resolve({
           data: { product: { ...MOCK_PRODUCT, name: 'Affogato Deluxe' }, ignored_fields: response.ignored },
@@ -80,7 +80,7 @@ vi.mock('@/lib/supabase.js', () => {
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (selector: (s: unknown) => unknown) =>
     selector({
-      hasPermission: (code: string) => code !== 'inventory.recipes.update' || response.canEditRecipe,
+      hasPermission: (code: string) => code === 'products.update' ? response.canUpdate : code !== 'inventory.recipes.update' || response.canEditRecipe,
     }),
 }));
 
@@ -99,7 +99,46 @@ function renderDetail(productId = 'p-1') {
 }
 
 describe('ProductDetailPage — save flow (S27)', () => {
-  beforeEach(() => { response.ignored = []; response.canEditRecipe = true; rpcSpy.mockReset(); });
+  beforeEach(() => { response.ignored = []; response.canEditRecipe = true; response.canUpdate = true; response.wholesalePrice = null; rpcSpy.mockReset(); });
+
+  it.each([30_000, 0])('saves a Corporate price of %s without changing the retail price', async (price) => {
+    renderDetail();
+    // Le premier montage charge l'onglet General à la demande ; dans la suite
+    // complète, son import peut dépasser la seconde par défaut de Testing Library.
+    fireEvent.change(await screen.findByLabelText('Corporate price (IDR)', {}, { timeout: 10_000 }), { target: { value: String(price) } });
+    fireEvent.click(screen.getByTestId('product-detail-save'));
+    await waitFor(() => expect(rpcSpy).toHaveBeenCalledWith('update_product_v6', {
+      p_product_id: 'p-1', p_patch: { wholesale_price: price },
+    }));
+  });
+
+  it('clears the Corporate price to restore the retail fallback', async () => {
+    response.wholesalePrice = 30_000;
+    renderDetail();
+    const input = await screen.findByLabelText('Corporate price (IDR)');
+    expect(input).toHaveValue(30_000);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.click(screen.getByTestId('product-detail-save'));
+    await waitFor(() => expect(rpcSpy).toHaveBeenCalledWith('update_product_v6', {
+      p_product_id: 'p-1', p_patch: { wholesale_price: null },
+    }));
+  });
+
+  it('rejects a negative Corporate price before sending a mutation', async () => {
+    renderDetail();
+    const input = await screen.findByLabelText('Corporate price (IDR)');
+    fireEvent.change(input, { target: { value: '-1' } });
+    fireEvent.click(screen.getByTestId('product-detail-save'));
+    expect(await screen.findByText(/Enter a corporate price of zero or more/)).toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(rpcSpy).not.toHaveBeenCalledWith('update_product_v6', expect.anything());
+  });
+
+  it('keeps the Corporate price read-only without products.update', async () => {
+    response.canUpdate = false;
+    renderDetail();
+    expect(await screen.findByLabelText('Corporate price (IDR)')).toBeDisabled();
+  });
 
   it('preserves edits when a background query refreshes the product', async () => {
     const { qc } = renderDetail();
@@ -119,6 +158,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
     fireEvent.change(await screen.findByLabelText('Product name'), { target: { value: 'Affogato Deluxe' } });
     fireEvent.click(screen.getByTestId('product-detail-save'));
     await waitFor(() => expect(screen.getByLabelText('Product name')).toBeDisabled());
+    expect(screen.getByLabelText('Corporate price (IDR)')).toBeDisabled();
     expect(screen.getByTestId('product-detail-save')).toBeDisabled();
     await act(async () => { resolveSave({ data: { product: MOCK_PRODUCT, ignored_fields: [] }, error: null }); await pending; });
     await waitFor(() => expect(screen.getByLabelText('Product name')).not.toBeDisabled());
