@@ -136,3 +136,20 @@ describe('SuccessModal auto toggles', () => {
     expect(drawerMock).not.toHaveBeenCalled();
   });
 });
+
+it('prints the received portion and opens the drawer for a partially deferred cash sale', async () => {
+  const view = render(wrap(<SuccessModal {...props({ outstandingDue: 600, amountReceived: 400, amountPaid: 400,
+    paymentAttemptId: 'partial-cash', cashReceived: 400 })} />));
+  await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+  expect(printMock.mock.calls[0]?.[0].payment.amount).toBe(400);
+  expect(printMock.mock.calls[0]?.[0].outstanding_due).toBe(600);
+  expect(drawerMock).toHaveBeenCalledTimes(1);
+  expect(view.getByText('Received now')).toBeVisible();
+});
+it('never opens the drawer or records a fake cash payment for a wholly deferred sale', async () => {
+  render(wrap(<SuccessModal {...props({ outstandingDue: 1000, amountReceived: 0, amountPaid: 0,
+    paymentAttemptId: 'deferred-only', cashReceived: 0 })} />));
+  await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+  expect(printMock.mock.calls[0]?.[0].payment.amount).toBe(0);
+  expect(drawerMock).not.toHaveBeenCalled();
+});

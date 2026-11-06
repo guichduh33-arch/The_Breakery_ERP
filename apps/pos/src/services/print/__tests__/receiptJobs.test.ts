@@ -21,3 +21,14 @@ it('persists an unconfirmed receipt and retries the original composition as a du
   expect(send.mock.calls[1]?.[0].template?.header).toContain('DUPLICATE');
   expect(useReceiptJobs.getState().jobs[0]?.status).toBe('confirmed');
 });
+
+it('keeps separate receipts for successive payments on one order and retries only that payment', async () => {
+  await runReceiptJob({ ...receipt, payment: { method: 'cash', amount: 3000 } }, undefined, 'payment-1');
+  await runReceiptJob({ ...receipt, payment: { method: 'cash', amount: 7000 } }, undefined, 'payment-2');
+  expect(useReceiptJobs.getState().jobs).toHaveLength(2);
+  expect(send.mock.calls[1]?.[0].payment.amount).toBe(7000);
+  expect(send.mock.calls[1]?.[0].template).toBeUndefined();
+  await runReceiptJob(receipt, undefined, 'payment-1');
+  expect(send.mock.calls[2]?.[0].payment.amount).toBe(3000);
+  expect(send.mock.calls[2]?.[0].template?.header).toContain('DUPLICATE');
+});

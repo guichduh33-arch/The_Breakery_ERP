@@ -18,6 +18,7 @@
 
 import { useMemo, type JSX } from 'react';
 import { useQueries } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
 
 /**
@@ -41,7 +42,7 @@ interface BomLeafRow {
   material_name: string;
   material_unit: string;
   qty_per_unit:  number;
-  current_stock: number;
+  current_stock: number | null;
   cost_price:    number;
   // recipe qty already converted into the material's stock unit (material_unit),
   // so it can be compared against current_stock directly (both in material_unit).
@@ -53,9 +54,9 @@ interface AggregatedRow {
   materialName: string;
   materialUnit: string;
   totalQty:     number;
-  available:    number;
-  sufficient:   boolean;
-  shortfall:    number;
+  available:    number | null;
+  sufficient:   boolean | null;
+  shortfall:    number | null;
 }
 
 function fmt(n: number): string {
@@ -66,6 +67,7 @@ function fmt(n: number): string {
 }
 
 export function IngredientAggregatePreview({ items }: IngredientAggregatePreviewProps): JSX.Element {
+  const owner = useAuthStore((state) => state.user?.role_code === 'SUPER_ADMIN');
   const validRows = useMemo(
     () => items.filter((it) => Number.isFinite(it.quantityProduced) && it.quantityProduced > 0),
     [items],
@@ -93,7 +95,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
   const bomDataUpdatedKeys = bomQueries.map((q) => q.dataUpdatedAt).join(',');
 
   const rows: AggregatedRow[] = useMemo(() => {
-    const acc = new Map<string, { name: string; unit: string; totalQty: number; available: number }>();
+    const acc = new Map<string, { name: string; unit: string; totalQty: number; available: number | null }>();
     validRows.forEach((row, i) => {
       const bom = bomQueries[i]?.data;
       if (!bom) return;
@@ -107,21 +109,22 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
         const existing = acc.get(leaf.material_id);
         if (existing) {
           existing.totalQty += need;
+          if (!Number.isFinite(leaf.current_stock)) existing.available = null;
         } else {
           acc.set(leaf.material_id, {
             name: leaf.material_name, unit: leaf.material_unit,
-            totalQty: need, available: leaf.current_stock,
+            totalQty: need, available: owner && Number.isFinite(leaf.current_stock) ? leaf.current_stock : null,
           });
         }
       }
     });
     return Array.from(acc.entries())
       .map(([materialId, x]) => {
-        const shortfall = Math.max(0, x.totalQty - x.available);
+        const shortfall = x.available === null ? null : Math.max(0, x.totalQty - x.available);
         return {
           materialId, materialName: x.name, materialUnit: x.unit,
           totalQty: x.totalQty, available: x.available,
-          sufficient: shortfall === 0, shortfall,
+          sufficient: shortfall === null ? null : shortfall === 0, shortfall,
         };
       })
       .sort((a, b) => {
@@ -129,9 +132,9 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
         return a.materialName.localeCompare(b.materialName);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validRows, bomDataUpdatedKeys]);
+  }, [validRows, bomDataUpdatedKeys, owner]);
 
-  const anyShortage = rows.some((r) => !r.sufficient);
+  const anyShortage = owner && rows.some((r) => r.sufficient === false);
 
   return (
     <div data-testid="ingredient-aggregate-preview"
@@ -166,13 +169,13 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <caption className="sr-only">Required quantity, available stock and shortage status per material</caption>
+              <caption className="sr-only">{owner ? 'Required quantity, available stock and shortage status per material' : 'Required quantity per material'}</caption>
               <thead>
                 <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
                   <th scope="col" className="py-1">Material</th>
                   <th scope="col" className="py-1 text-right">Required</th>
-                  <th scope="col" className="py-1 text-right">Available</th>
-                  <th scope="col" className="py-1 text-right">Status</th>
+                  {owner && <th scope="col" className="py-1 text-right">Available</th>}
+                  {owner && <th scope="col" className="py-1 text-right">Status</th>}
                 </tr>
               </thead>
               <tbody>
@@ -182,18 +185,18 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
                     <td className="py-1.5 text-right tabular-nums">
                       {fmt(r.totalQty)} {r.materialUnit}
                     </td>
-                    <td className="py-1.5 text-right tabular-nums">
-                      {fmt(r.available)} {r.materialUnit}
-                    </td>
-                    <td className="py-1.5 text-right">
-                      {r.sufficient ? (
+                    {owner && <td className="py-1.5 text-right tabular-nums">
+                      {r.available === null ? '–' : fmt(r.available)} {r.materialUnit}
+                    </td>}
+                    {owner && <td className="py-1.5 text-right">
+                      {r.sufficient === null ? '–' : r.sufficient ? (
                         <span className="text-success" data-testid="status-ok">OK</span>
                       ) : (
                         <span className="text-red" data-testid="status-short">
-                          short {fmt(r.shortfall)}
+                          short {fmt(r.shortfall!)}
                         </span>
                       )}
-                    </td>
+                    </td>}
                   </tr>
                 ))}
               </tbody>

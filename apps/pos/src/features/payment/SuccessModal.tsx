@@ -18,6 +18,9 @@ import { toast } from 'sonner';
 
 export interface SuccessModalProps {
   outstandingDue?: number;
+  amountReceived?: number;
+  amountPaid?: number;
+  paymentAttemptId?: string;
   open: boolean;
   orderNumber: string;
   receiptId?: string;
@@ -150,8 +153,8 @@ function buildReceiptPayload(
     },
     payment: {
       method: props.paymentMethod,
-      amount: props.outstandingDue === undefined ? props.total : 0,
-      ...(props.paymentMethod === 'cash' && props.outstandingDue === undefined
+      amount: props.amountReceived ?? (props.outstandingDue === undefined ? props.total : 0),
+      ...(props.paymentMethod === 'cash' && (props.amountReceived ?? (props.outstandingDue === undefined ? props.total : 0)) > 0
         ? { cash_received: props.cashReceived, change_given: props.changeGiven ?? 0 }
         : {}),
     },
@@ -195,7 +198,7 @@ export function SuccessModal(props: SuccessModalProps) {
   // S72 audit — first receipt print vs. subsequent reprints. The auto-print
   // effect and the manual Print button both call handlePrint; the first pass is
   // `receipt_printed`, every later pass `receipt_reprinted`.
-  const receiptKey = props.receiptId ?? orderNumber;
+  const receiptKey = props.paymentAttemptId ?? props.receiptId ?? orderNumber;
   const receiptJob = useReceiptJobs((s) => s.jobs.find((job) => job.id === receiptKey));
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
@@ -220,7 +223,7 @@ export function SuccessModal(props: SuccessModalProps) {
     setIsPrinting(true);
     const isReprint = useReceiptJobs.getState().jobs.some((job) => job.id === receiptKey);
     const payload = buildReceiptPayload(props, taxRate, taxInclusive, businessIdentity, receiptTemplate);
-    const result = await runReceiptJob(payload, cashierPrinter);
+    const result = await runReceiptJob(payload, cashierPrinter, props.paymentAttemptId);
     // S72 audit — journal every receipt print (reprints are a fraud signal).
     emitPosEvent(isReprint ? 'receipt_reprinted' : 'receipt_printed', {
       order_number_snap: orderNumber,
@@ -277,7 +280,7 @@ export function SuccessModal(props: SuccessModalProps) {
       // includes a cash tender even when paymentMethod (first tender only) isn't
       // 'cash'. Previously the call was gated solely on the autoOpenDrawer
       // setting, so every card/QRIS sale opened the drawer.
-      const needsDrawer = props.outstandingDue === undefined && (props.tenders?.some((t) => t.method === 'cash') ?? (props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0));
+      const needsDrawer = (props.amountReceived ?? (props.outstandingDue === undefined ? props.total : 0)) > 0 && (props.tenders?.some((t) => t.method === 'cash') ?? (props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0));
       const drawerTask = autoOpenDrawer && needsDrawer
         ? openCashDrawer()
         : Promise.resolve({ success: true } as const);
@@ -358,6 +361,11 @@ export function SuccessModal(props: SuccessModalProps) {
               <span className="text-text-secondary">Total</span>
               <Currency amount={total} emphasis="gold" />
             </div>
+            {props.amountReceived !== undefined && <>
+              <div className="flex justify-between text-sm"><span>Received now</span><Currency amount={props.amountReceived} /></div>
+              <div className="flex justify-between text-sm"><span>Paid to date</span><Currency amount={props.amountPaid ?? 0} /></div>
+              <div className="flex justify-between text-sm"><span>Outstanding</span><Currency amount={props.outstandingDue ?? 0} /></div>
+            </>}
             {pointsEarned !== undefined && pointsEarned > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Points earned</span>

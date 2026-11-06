@@ -306,8 +306,12 @@ export function usePaymentFlowLogic() {
   }
 
   async function handleOutstanding(): Promise<void> {
-    if (!attachedCustomer || offlineGate.offlineMode || tenders.length > 0) return;
-    await dispatchCheckout([], true);
+    if (!attachedCustomer || offlineGate.offlineMode || remaining <= 0) return;
+    if (tenders.length > 0) {
+      const validation = validateTenders(tenderedSum, tenders);
+      if (!validation.ok) { toast.error('Check the entered payments before saving the balance'); return; }
+    }
+    await dispatchCheckout(tenders, true);
   }
 
   async function dispatchCheckout(tendersToShip: Tender[], outstanding = false): Promise<void> {
@@ -384,7 +388,7 @@ export function usePaymentFlowLogic() {
       // estimate only if the server omitted points (legacy / no customer).
       setSuccess({
         orderNumber: result.order_number,
-        ...(result.outstanding_due !== undefined ? { outstandingDue: result.outstanding_due } : {}),
+        ...(result.outstanding_due !== undefined ? { outstandingDue: result.outstanding_due, amountReceived: result.amount_received ?? 0, amountPaid: result.amount_paid ?? 0 } : {}),
         orderId: result.order_id,
         total: result.total,
         // S51 — consume server tax/subtotal/lines; fall back to the pre-payment
@@ -411,7 +415,7 @@ export function usePaymentFlowLogic() {
       // S72 audit — the charge succeeded (order now exists server-side).
       emitPosEvent('payment_completed', {
         order_number_snap: result.order_number,
-        amount: snapshot.context.outstanding ? 0 : result.total,
+        amount: result.amount_received ?? (snapshot.context.outstanding ? 0 : result.total),
         payload: { method: tendersToShip[0]?.method ?? 'outstanding', change_given: result.change_given },
       });
     } catch (err: unknown) {
