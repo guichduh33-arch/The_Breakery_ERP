@@ -1,6 +1,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Printer } from 'lucide-react';
 import { formatCurrency, formatDateShortWita } from '@breakery/utils';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -12,6 +13,7 @@ import { B2bOrderStatus } from '@/features/btob/components/B2bOrderStatus.js';
 import { B2bPickupDialog } from '@/features/btob/components/B2bPickupDialog.js';
 import { EditB2bOrderDialog } from '@/features/btob/components/EditB2bOrderDialog.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
+import { useDownloadB2bInvoice } from '@/features/btob/hooks/useDownloadB2bInvoice.js';
 import {
   B2B_INVOICES_QUERY_KEY,
   type B2bInvoiceRow,
@@ -25,6 +27,9 @@ export default function B2BOrderDetailPage(): JSX.Element {
     (s) => s.hasPermission('b2b.read') && s.hasPermission('b2b.order.create'),
   );
   const canPay = useAuthStore((s) => s.hasPermission('b2b.payment.record'));
+  const canPrint = useAuthStore((s) => s.hasPermission('b2b.read') && s.hasPermission('reports.export'));
+  const invoicePdf = useDownloadB2bInvoice();
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [pickup, setPickup] = useState<'schedule' | 'deliver' | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -81,8 +86,30 @@ export default function B2BOrderDetailPage(): JSX.Element {
               <h1 className="text-2xl font-semibold">{order.order_number}</h1>
               <p className="mt-2 text-lg">{order.b2b_company_name ?? order.customer_name}</p>
             </div>
-            <B2bOrderStatus order={order} />
+            <div className="flex flex-wrap items-center gap-3">
+              <B2bOrderStatus order={order} />
+              <Button
+                variant="secondary"
+                disabled={!canPrint || invoicePdf.isPending || query.isError}
+                aria-busy={invoicePdf.isPending}
+                title={!canPrint ? 'You do not have permission to export B2B invoices.' : undefined}
+                onClick={() => {
+                  setPdfError(null);
+                  invoicePdf.download({
+                    orderId: order.invoice_id,
+                    invoiceNumber: order.invoice_number,
+                    orderNumber: order.order_number,
+                  }, {
+                    onError: () => setPdfError('Could not generate the invoice PDF. Please try again.'),
+                  });
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" aria-hidden />
+                {invoicePdf.isPending ? 'Preparing PDF…' : 'Print PDF'}
+              </Button>
+            </div>
           </header>
+          {pdfError && <p role="alert">{pdfError}</p>}
           <section
             aria-label="Order dates and payment"
             className="grid gap-6 rounded-md border border-border-subtle bg-bg-elevated p-6 sm:grid-cols-2 lg:grid-cols-4"
