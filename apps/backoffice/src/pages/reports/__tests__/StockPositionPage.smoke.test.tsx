@@ -104,6 +104,18 @@ beforeEach(() => {
 });
 
 describe('StockPositionPage smoke', () => {
+  it('affiche et autorise le jour métier courant avant 08 h WITA', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-11-06T17:00:00Z'));
+      renderPage();
+      expect(screen.getByTestId('as-of-picker')).toHaveValue('2026-11-07');
+      expect(screen.getByTestId('as-of-picker')).toHaveAttribute('max', '2026-11-07');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('renders the heading and the Reports › Inventory breadcrumb', () => {
     renderPage();
     expect(
