@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input, Select } from '@breakery/ui';
 import { Button, Card } from '@/components/BackofficeUi.js';
 import { PageHeader } from '@/components/PageHeader.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { invoiceTemplateError, templateSettings, type InvoicePrintTemplate, type InvoiceTemplateSettings } from '../invoiceTemplate.js';
 import { InvoicePaperFields } from './InvoicePaperFields.js';
 import { InvoiceTemplatePreview, type InvoicePreviewBusiness } from './InvoiceTemplatePreview.js';
@@ -17,7 +18,7 @@ const TOGGLES = [
   { key: 'show_logo', label: 'Show business logo' }, { key: 'show_contact', label: 'Show address and contact text' },
   { key: 'show_unit_prices', label: 'Show unit prices' }, { key: 'show_due_date', label: 'Show payment due date' },
 ] as const;
-const TEXTAREA_CLASS = 'mt-1 min-h-20 w-full rounded-md border border-border-strong bg-bg-elevated px-3 py-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold';
+const TEXTAREA_CLASS = `mt-1 min-h-20 w-full rounded-md border border-border-strong bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted ${FOCUS_RING}`;
 
 export function InvoiceTemplateEditor({ row, canEdit, business, saving, saveError, onSave, onReload }: {
   row: InvoicePrintTemplate; canEdit: boolean; business: InvoicePreviewBusiness; saving: boolean;
@@ -74,7 +75,7 @@ export function InvoiceTemplateEditor({ row, canEdit, business, saving, saveErro
         </Card>
         <Card padding="md" className="space-y-3"><h2 className="font-semibold">Visible details</h2>
           {TOGGLES.map(({ key, label }) => <label key={key} className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={draft[key]} disabled={disabled} onChange={(event) => patch({ [key]: event.target.checked })} />{label}
+            <input type="checkbox" className={FOCUS_RING} checked={draft[key]} disabled={disabled} onChange={(event) => patch({ [key]: event.target.checked })} />{label}
           </label>)}
           <label className="block text-sm">Density
             <Select className="mt-1 w-full" value={draft.density} disabled={disabled} onChange={(event) => {

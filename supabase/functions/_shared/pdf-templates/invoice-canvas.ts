@@ -19,6 +19,7 @@ export class InvoiceCanvas {
   y = 0;
   private page!: PDFPage;
   private bodyTop = 0;
+  private compactHeader = false;
   private readonly characters: Set<number>;
 
   constructor(private ctx: LayoutContext, readonly options: InvoicePrintOptions, private invoiceNumber: string) {
@@ -33,6 +34,15 @@ export class InvoiceCanvas {
     this.lineHeight = this.fontSize + 4;
     this.characters = new Set(ctx.font.getCharacterSet());
     this.newPage();
+    // Un petit papier conserve tous les textes ; seuls les repères répétés
+    // restent dans l'en-tête borné. Les détails coulent sur autant de pages que nécessaire.
+    if (this.compactHeader) {
+      this.paragraph(options.business_name || ctx.business.name, true);
+      this.paragraph(options.heading, true);
+      if (options.show_contact) this.paragraph(this.contact());
+      if (ctx.business.npwp) this.paragraph(`NPWP: ${ctx.business.npwp}`);
+      this.y -= 8;
+    }
   }
 
   private safe(value: string) {
@@ -45,7 +55,7 @@ export class InvoiceCanvas {
   wrap(value: string, width: number, bold = false, size = this.fontSize): string[] {
     const font = bold ? this.ctx.fontBold : this.ctx.font;
     const result: string[] = [];
-    for (const paragraph of this.safe(value).split(/\r?\n/)) {
+    for (const paragraph of value.split(/\r\n|\r|\n/).map((line) => this.safe(line))) {
       let line = '';
       for (const character of paragraph) {
         if (line && font.widthOfTextAtSize(line + character, size) > width) {
@@ -80,24 +90,39 @@ export class InvoiceCanvas {
       businessX += width + 7;
     }
     const businessWidth = this.printableWidth * .55 - (businessX - this.left) - 10;
+    const businessLines = this.wrap(this.options.business_name || this.ctx.business.name, businessWidth, true, 11);
+    const contactLines = this.options.show_contact ? this.wrap(this.contact(), businessWidth, false, 8) : [];
+    const taxLines = this.ctx.business.npwp ? this.wrap(`NPWP: ${this.ctx.business.npwp}`, businessWidth, false, 8) : [];
+    const headingLines = this.wrap(this.options.heading, this.printableWidth * .4, true, 13);
+    const headerHeight = Math.max(11 + businessLines.length * 14 + (contactLines.length + taxLines.length) * 11,
+      29 + headingLines.length * 16, this.options.show_logo && this.ctx.logo ? 30 : 0) + 22;
+    this.compactHeader = this.top - headerHeight - this.bottom < this.lineHeight * 3;
+    if (this.compactHeader) {
+      this.text(businessLines.join(' '), businessX, this.top - 11, true, 11, businessWidth);
+      this.text(headingLines.join(' '), this.right, this.top - 12, true, 13, this.printableWidth * .4, true);
+      this.text(this.invoiceNumber, this.right, this.top - 28, false, 8, this.printableWidth * .4, true);
+      if (taxLines.length) this.text(taxLines.join(' '), this.left, this.top - 44, false, 8, this.printableWidth);
+      this.y = this.top - 53;
+      this.rule(); this.y -= 14; this.bodyTop = this.y;
+      return;
+    }
     let by = this.top - 11;
-    for (const line of this.wrap(this.options.business_name || this.ctx.business.name, businessWidth, true, 11)) {
+    for (const line of businessLines) {
       this.text(line, businessX, by, true, 11); by -= 14;
     }
     if (this.options.show_contact) {
-      const contact = this.options.contact_text || [this.ctx.business.address, this.ctx.business.phone].filter(Boolean).join('\n');
-      if (contact) for (const line of this.wrap(contact, businessWidth, false, 8)) {
+      for (const line of contactLines) {
         this.text(line, businessX, by, false, 8); by -= 11;
       }
     }
     // L'identifiant fiscal reste canonique même lorsque les coordonnées sont masquées.
     if (this.ctx.business.npwp) {
-      for (const line of this.wrap(`NPWP: ${this.ctx.business.npwp}`, businessWidth, false, 8)) {
+      for (const line of taxLines) {
         this.text(line, businessX, by, false, 8); by -= 11;
       }
     }
     let hy = this.top - 12;
-    for (const line of this.wrap(this.options.heading, this.printableWidth * .4, true, 13)) {
+    for (const line of headingLines) {
       this.text(line, this.right, hy, true, 13, this.printableWidth * .4, true); hy -= 16;
     }
     this.text(this.invoiceNumber, this.right, hy - 2, false, 8, this.printableWidth * .4, true);
@@ -105,7 +130,10 @@ export class InvoiceCanvas {
     this.rule();
     this.y -= 14;
     this.bodyTop = this.y;
-    if (this.bodyTop - this.bottom < this.lineHeight * 3) throw new Error('invoice_template_header_too_large');
+  }
+
+  private contact(): string {
+    return this.options.contact_text || [this.ctx.business.address, this.ctx.business.phone].filter(Boolean).join('\n');
   }
 
   ensure(height = this.lineHeight): boolean {

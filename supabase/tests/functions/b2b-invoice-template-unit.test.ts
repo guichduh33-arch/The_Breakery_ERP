@@ -6,7 +6,7 @@ import type { LayoutContext } from '../../functions/_shared/pdf-layout.ts';
 
 vi.mock('https://esm.sh/pdf-lib@1.17.1', () => ({ rgb: () => ({}) }));
 
-const font = { getCharacterSet: () => [...Array.from({ length: 256 }, (_, i) => i), 0x2014],
+const font = { getCharacterSet: () => [...Array.from({ length: 224 }, (_, i) => i + 32), 0x2014],
   widthOfTextAtSize: (text: string, size: number) => text.length * size * .5 };
 const pages: { drawText: ReturnType<typeof vi.fn>; drawLine: ReturnType<typeof vi.fn>; drawImage: ReturnType<typeof vi.fn> }[] = [];
 const addPage = vi.fn((_size: number[]) => {
@@ -76,5 +76,27 @@ describe('B2B configurable invoice PDF', () => {
     await render(ctx, invoice(), null);
     expect(texts()).toContain('NPWP: SAMPLE-TAX-ID');
     expect(texts()).not.toContain('Business address');
+  });
+  it('preserves multiline contact, notes and payment instructions without escaping line breaks', async () => {
+    const data = invoice();
+    data.invoice.notes = 'First note\r\nSecond note';
+    await render(context({ contact_text: 'First contact\nSecond contact', payment_instructions: 'First instruction\rLast instruction' }), data, null);
+    expect(texts()).toEqual(expect.arrayContaining(['First contact', 'Second contact', 'First note', 'Second note', 'First instruction', 'Last instruction']));
+    expect(texts().some((text) => text.includes('[U+A]') || text.includes('[U+D]'))).toBe(false);
+  });
+  it('paginates all long header text on the smallest accepted paper', async () => {
+    const contact = Array.from({ length: 60 }, (_, i) => `WORD${i}`).join(' ');
+    const ctx = context({ paper_width_mm: 100, paper_height_mm: 100, margin_left_mm: 10,
+      margin_right_mm: 10, margin_top_mm: 12.5, margin_bottom_mm: 12.5, contact_text: contact });
+    ctx.business.npwp = 'SAMPLE-TAX-ID';
+    await render(ctx, invoice(10), null);
+    const printed = texts().join(' ');
+    for (let i = 0; i < 60; i++) expect(printed).toContain(`WORD${i}`);
+    for (let i = 0; i < 10; i++) expect(texts()).toContain(`PRODUCT-${i}`);
+    expect(texts()).toContain('NPWP: SAMPLE-TAX-ID');
+    for (const page of pages) for (const [, options] of page.drawText.mock.calls) {
+      expect(options.y).toBeGreaterThanOrEqual(12.5 * MM_TO_PT);
+      expect(options.y).toBeLessThanOrEqual(87.5 * MM_TO_PT);
+    }
   });
 });
