@@ -41,9 +41,12 @@ Complément de [SKILL.md](../SKILL.md). Lire les sections nécessaires au parcou
   information_schema.column_privileges WHERE table_name='customers' AND
   column_name='b2b_current_balance' AND privilege_type='UPDATE'` ne doit inclure ni
   `authenticated` ni `anon`.
-- [ ] **Aucun 5ᵉ écrivain de `b2b_current_balance`** — grep `b2b_current_balance =` dans
-  `supabase/migrations/` : seules les familles `create_b2b_order`, `record_b2b_payment`,
-  `adjust_b2b_balance`, `cancel_b2b_order` doivent apparaître.
+- [ ] **Écrivains autorisés de `b2b_current_balance`** — repérer les écritures dans
+  `supabase/migrations/`, puis vérifier les corps courants : `create_b2b_order`,
+  `record_b2b_payment`, `adjust_b2b_balance`, `cancel_b2b_order`, `edit_b2b_order`
+  et le circuit spécialisé `apply_historical_import` avec ses helpers internes.
+  Contrôler droits, verrous, JE et reprise ; l’historique des migrations n’est pas
+  l’inventaire des fonctions encore exécutables.
 - [ ] **Credit-limit gate wired** — tout code path créant un ordre B2B appelle
   `validate_b2b_credit_limit` avant l'INSERT orders. Le vérifier sur le corps de la
   version live, pas sur la migration d'origine.

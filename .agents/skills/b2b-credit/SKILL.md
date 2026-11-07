@@ -20,13 +20,17 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
 ## Critical patterns (don't break these)
 
 1. **`b2b_payments` et `b2b_payment_allocations` append-only** — jamais d'INSERT direct.
-   Seul `record_b2b_payment` (SECURITY DEFINER) écrit dans les deux. RLS + REVOKE
+   Le règlement ordinaire passe par `record_b2b_payment` (SECURITY DEFINER).
+   L’import historique spécialisé passe par `apply_historical_import` et ses helpers
+   internes, sans EXECUTE direct et sous contexte SUPER_ADMIN actif. RLS + REVOKE
    (INSERT/UPDATE/DELETE/TRUNCATE) pour authenticated/anon/PUBLIC.
 2. **`b2b_current_balance` write-only via RPCs** — la colonne n'est pas dans le GRANT
    UPDATE per-colonne de `customers`. Tout UPDATE direct raise 42501. Les écrivains
-   légitimes sont **quatre** : `create_b2b_order` (+= total), `record_b2b_payment`
-   (−= amount), `adjust_b2b_balance` (±= delta), **`cancel_b2b_order` (−= total)**.
-   Bypass légal : SECURITY DEFINER postgres owner. Un cinquième écrivain = bypass réel.
+   ordinaires sont `create_b2b_order` (+= total), `record_b2b_payment` (−= amount),
+   `adjust_b2b_balance` (±= delta), `cancel_b2b_order` (−= total) et `edit_b2b_order`
+   (variation du total). L’import historique spécialisé écrit aussi cet encours.
+   Tout nouvel écrivain exige l’audit des droits, verrous, JE et garanties de reprise ;
+   un propriétaire SECURITY DEFINER ne constitue pas, à lui seul, une autorisation métier.
 3. **Credit-limit gate OBLIGATOIRE** avant tout ordre B2B — `validate_b2b_credit_limit`
    doit être appelé dans toute RPC ou EF créant un ordre B2B, **avant** l'INSERT.
    `NULL` credit_limit = unlimited (gate retourne `allowed: true`). Payload
@@ -36,13 +40,19 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
    `adjust_b2b_balance` et `cancel_b2b_order` acceptent tous `p_idempotency_key UUID`.
    Replay retourne le résultat original + `idempotent_replay: true`, sans re-poster de JE.
    Pattern AGENTS.md §"Idempotence, 2 saveurs". `record_b2b_payment` déduplique sur
-   `b2b_payments.idempotency_key` ; les trois autres sur `audit_logs.metadata`.
+   `b2b_payments.idempotency_key` ; la création utilise `orders.idempotency_key`,
+   l’ajustement et l’annulation utilisent `audit_logs.metadata`.
+   `edit_b2b_order` exige aussi la révision attendue ; sa table
+   `b2b_order_edit_keys` lie acteur, requête et résultat sous verrou consultatif.
+   Réutiliser une clé pour un autre acteur ou une autre requête est refusé.
 5. **Overpayment guard (P0011)** — `record_b2b_payment` refuse si
    `balance_before − amount < 0` ; `adjust_b2b_balance` refuse si `balance + delta < 0` ;
-   `cancel_b2b_order` refuse si `balance − total < 0`. Le CHECK
+   `cancel_b2b_order` refuse si `balance − total < 0` ; `edit_b2b_order` refuse
+   si le solde après variation devient négatif. Le CHECK
    `customers_b2b_current_balance_nonneg` double la garde au niveau table.
 6. **Fiscal period guard** — `record_b2b_payment`, `create_b2b_order`,
-   `adjust_b2b_balance` et `cancel_b2b_order` appellent `check_fiscal_period_open()`.
+   `adjust_b2b_balance`, `cancel_b2b_order` et `edit_b2b_order` appellent
+   `check_fiscal_period_open()`.
    Raise P0004 si période fermée.
 7. **Allocation = LIGNES RÉELLES, pas un snapshot** — `record_b2b_payment` écrit dans
    `b2b_payment_allocations` : d'abord les factures ciblées `p_invoice_ids` (dans l'ORDRE
@@ -78,7 +88,8 @@ Les règles d’AGENTS.md restent applicables. Les liens ci-dessous sont conditi
     §Critical patterns.
 13. **Permissions dédiées, plus le générique `customers.update`** : `b2b.read` (lecture /
     reconcile), `b2b.payment.record`, `b2b.order.cancel`, `b2b.balance.adjust`.
-    `create_b2b_order` reste gardé par `pos.sale.create`.
+    La création d’une commande exige `b2b.order.create`, indépendante du droit
+    de vente POS `pos.sale.create`.
 14. **Prix B2B résolu serveur** — `create_b2b_order` calcule chaque ligne via
     `_resolve_b2b_line_price` (négocié > catégorie > retail) et **ignore tout
     `unit_price` client** (ADR-020).

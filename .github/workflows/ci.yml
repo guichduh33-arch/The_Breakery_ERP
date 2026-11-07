@@ -50,6 +50,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Describe changed scope (informational)
+        run: node scripts/ci/ci-scope.mjs
+
       # Contrôles statiques avant installation ; une base illisible bloque.
       - name: Guard has_permission lock (D10 / Audit R14)
         run: |
