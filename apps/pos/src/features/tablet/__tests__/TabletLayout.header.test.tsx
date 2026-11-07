@@ -13,6 +13,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useLanCredential } from '@/features/lan/lanCredential';
+
+const nativeShell = vi.hoisted(() => vi.fn(() => false));
+vi.mock('@/lib/nativeShell', () => ({ isNativeShell: nativeShell }));
 
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
@@ -47,6 +51,8 @@ function LoginDestination() {
 
 describe('TabletLayout header (LOT 6)', () => {
   beforeEach(() => {
+    nativeShell.mockReturnValue(false);
+    useLanCredential.setState({ credential: { id: 'cashier', code: 'POS', device_type: 'pos', secret: 'fixture' } });
     rpcMock.mockClear();
     useCloudStatusStore.setState({ cloudOnline: true, lastSyncAt: null, offlineSince: null });
     useHubConnectionStore.setState({ connected: false });
@@ -64,6 +70,26 @@ describe('TabletLayout header (LOT 6)', () => {
       lockReason: null,
     });
     useTabletCartStore.setState({ items: [], tableNumber: null, orderType: 'dine_in' });
+  });
+
+  it('links back to the POS from a paired cashier terminal', async () => {
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.getByRole('link', { name: 'Back to POS' })).toHaveAttribute('href', '/pos');
+  });
+
+  it.each(['tablet', 'kds'])('hides the POS link on a paired %s terminal', async (deviceType) => {
+    useLanCredential.setState({ credential: { id: 'ordering', code: 'ORDER', device_type: deviceType, secret: 'fixture' } });
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.queryByRole('link', { name: 'Back to POS' })).not.toBeInTheDocument();
+  });
+
+  it('hides the POS link in the native shell regardless of the paired device type', async () => {
+    nativeShell.mockReturnValue(true);
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.queryByRole('link', { name: 'Back to POS' })).not.toBeInTheDocument();
   });
 
   it('transmet la destination tablette à la connexion lorsque la session manque', async () => {

@@ -15,7 +15,7 @@ const MOCK_SUPPLIERS = [
 const MOCK_CATEGORIES = [
   { id: 'c-1', name: 'Beverage' },
 ];
-const MOCK_PRODUCTS = [
+const MOCK_PRODUCTS: { id: string; sku: string; name: string; current_stock: number | null; unit: string; track_inventory: boolean }[] = [
   { id: 'p-1', sku: 'BEV-AMER', name: 'Americano', current_stock: 100, unit: 'pcs', track_inventory: true },
 ];
 
@@ -91,6 +91,20 @@ async function pickProduct() {
 describe('IncomingStockForm', () => {
   beforeEach(() => {
     mockRpc.mockReset();
+    MOCK_PRODUCTS[0]!.current_stock = 100;
+  });
+
+  it('keeps masked stock explicitly hidden before and after a receipt', async () => {
+    MOCK_PRODUCTS[0]!.current_stock = null;
+    mockRpc.mockReturnValue({ data: { movement_id: 'm-1', product_id: 'p-1', new_current_stock: null }, error: null });
+    renderForm();
+    await pickProduct();
+    expect(screen.getByText('Hidden')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Quantity received/i), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Record receipt' }));
+    const confirmation = await screen.findByText('Receipt recorded for Americano. On hand after receipt: Hidden.');
+    expect(confirmation).toHaveAttribute('role', 'status');
+    expect(confirmation).not.toHaveTextContent('0 pcs');
   });
 
   it('locks uncertain receipt details and reuses its request on retry', async () => {

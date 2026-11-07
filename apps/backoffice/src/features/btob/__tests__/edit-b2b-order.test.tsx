@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EditB2bOrderDialog } from '../components/EditB2bOrderDialog.js';
@@ -38,9 +38,11 @@ function success(_name: string, args: { p_order_id: string; p_idempotency_key: s
 
 describe('B2B order editing', () => {
   beforeEach(() => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://b2b-edit.test');
     installFinancialBrowser(); resetFinancialSession(); state.readError = false;
     rpc.mockReset().mockImplementation(success);
   });
+  afterEach(() => { vi.unstubAllEnvs(); });
   it('edits quantities, adds products and saves notes with the original revision', async () => {
     const { close } = setup();
     fireEvent.change(await screen.findByLabelText('Quantity 1'), { target: { value: '3' } });
@@ -92,7 +94,15 @@ describe('B2B order editing', () => {
     await screen.findByRole('button', { name: 'Check pending edit' });
     expect(close).not.toHaveBeenCalled();
   });
-  it('requires both read and sale permissions', async () => {
+  it('saves with B2B read and order creation permissions without POS sale permission', async () => {
+    financialTestAuth.setState({ hasPermission: (permission) => ['b2b.read', 'b2b.order.create'].includes(permission) });
+    const { close } = setup();
+    expect(await screen.findByRole('button', { name: 'Save changes' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => { expect(close).toHaveBeenCalledOnce(); });
+    expect(rpc).toHaveBeenCalledWith('edit_b2b_order_v3', expect.objectContaining({ p_order_id: 'order-1' }));
+  });
+  it('refuses POS sale permission without B2B permissions', async () => {
     financialTestAuth.setState({ hasPermission: (permission) => permission === 'pos.sale.create' });
     setup();
     expect(await screen.findByRole('button', { name: 'Save changes' })).toBeDisabled();

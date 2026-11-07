@@ -16,7 +16,7 @@ export interface BomLine {
   material_unit: string;
   recipe_unit:   string;
   qty_per_unit:  number;
-  current_stock: number;
+  current_stock: number | null;
   cost_price:    number;
   // recipe qty converted into the material's stock unit (e.g. 284 gr → 0.284 kg)
   qty_in_base:   number;

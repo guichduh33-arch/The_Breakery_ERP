@@ -41,13 +41,13 @@ schema reality, and audit checklists that AGENTS.md doesn't carry.
 Customer setup               Order creation (AR ↑)         Payment receipt (AR ↓)
 ─────────────────            ─────────────────────         ──────────────────────
 customers.customer_type      create_b2b_order              record_b2b_payment
-  = 'b2b'                      ↓ gate pos.sale.create         ↓ gate b2b.payment.record
+  = 'b2b'                      ↓ gate b2b.order.create        ↓ gate b2b.payment.record
 customers.b2b_credit_limit     ↓ prix résolu SERVEUR          ↓ DR Cash/Bank
   (NULL = unlimited)             (négocié>catégorie>retail)   ↓ CR B2B_AR (1132)
 customers.b2b_current_balance  ↓ validate_b2b_credit_limit    ↓ INSERT b2b_payments
   (cache AR, CHECK ≥ 0)        ↓ INSERT orders (b2b_pending)  ↓ INSERT b2b_payment_allocations
                                ↓ order_number + invoice_number   (ciblé p_invoice_ids puis
-                               ↓ _record_sale_stock_v1            FIFO sur le reliquat)
+                               ↓ _record_sale_stock               FIFO sur le reliquat)
                                ↓ DR B2B_AR / CR revenue (4131) ↓ orders.paid_at + status='paid'
                                ↓ balance += total                sur règlement COMPLET
                                ↓ audit_logs b2b.order.created ↓ balance -= amount
@@ -107,8 +107,10 @@ Créé par `20260710000065_create_b2b_payment_allocations.sql`.
 - UNIQUE `(payment_id, invoice_id)` — un paiement ne touche une facture qu'une fois.
 - **Point de dérivation unique** : `outstanding(facture) = orders.total − Σ amount_applied`.
 - RLS : SELECT `authenticated` seulement ; aucune policy d'écriture ;
-  INSERT/UPDATE/DELETE/TRUNCATE révoqués. Écrit uniquement par `record_b2b_payment`
-  (SECURITY DEFINER).
+  INSERT/UPDATE/DELETE/TRUNCATE révoqués. Le règlement ordinaire passe par
+  `record_b2b_payment` (SECURITY DEFINER). L’import historique spécialisé utilise
+  `apply_historical_import` et des helpers internes non exécutables directement,
+  sous contexte SUPER_ADMIN actif.
 
 ### `orders` table — champs B2B
 - `order_type` ENUM inclut `'b2b'`.
